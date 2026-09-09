@@ -1,0 +1,9 @@
+{
+  "measure": "average_minutes_per_day",
+  "activity": {"preset": "sleep"},
+  "years": [2025],
+  "population": {"age_min": 25, "age_max": 54},
+  "weights": "multiyear",
+  "variance": "replicate",
+  "confidence_level": 0.95
+}

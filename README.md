@@ -8,13 +8,14 @@ household reports a complete 24-hour diary of activities, coded against a
 hierarchical activity lexicon, together with rich demographic, labor-force, and
 household context.
 
-**Current status: Phase 2 — Analytical Engine complete.** Phase 1 turned the
+**Current status: Phase 3 — Read-Only API complete.** Phase 1 turned the
 official BLS 2003–2025 multi-year microdata into a validated PostgreSQL
-database; Phase 2 adds a statistical engine on top of it that produces
-weighted time-use estimates with official replicate-weight standard errors —
-validated by reproducing 24 published BLS numbers exactly
-(`atus validate-analytics`). Later phases add the API and interactive UI;
-there is no web application yet, by design.
+database; Phase 2 added a statistical engine producing weighted time-use
+estimates with official replicate-weight standard errors — validated by
+reproducing 24 published BLS numbers exactly (`atus validate-analytics`);
+Phase 3 exposes that engine through a documented, versioned, cached HTTP API
+(`atus api`, OpenAPI at `/docs`), with a representative subset of those
+benchmarks replayed end-to-end over HTTP. The interactive web UI is Phase 4; there is no frontend yet, by design.
 
 ```bash
 atus analyze estimate --activity sleep --year 2025
@@ -24,6 +25,9 @@ atus analyze estimate --activity sleep --year 2025
 atus analyze trend --activity leisure_and_sports_bls_table --start-year 2003 --end-year 2025
 atus analyze compare --activity household_activities_bls_table --year 2025 \
     --group-a sex=male --group-b sex=female
+
+atus api    # then: curl -X POST http://127.0.0.1:8000/api/v1/analysis/estimate \
+            #   -H 'Content-Type: application/json' -d @docs/examples/api/sleep_2025_estimate.json
 ```
 
 ## Architecture
@@ -49,11 +53,16 @@ Analytical engine (atus_pipeline.analytics)     ← Phase 2
         │  atus analyze …          estimates, trends, comparisons (+ JSON)
         │  atus validate-analytics reproduces 24 official BLS numbers
         ▼
-Phase 3+: API → interactive app
+Read-only HTTP API (atus_pipeline.api)          ← Phase 3
+        │  atus api → FastAPI: /api/v1/analysis/{estimate,trend,compare},
+        │  activity lexicon + population metadata + meta/capabilities,
+        │  structured errors, versioned result cache (11 s → 4 ms), OpenAPI
+        ▼
+Phase 4: interactive app
 ```
 
-Details: [docs/architecture.md](docs/architecture.md) and
-[docs/analytics.md](docs/analytics.md).
+Details: [docs/architecture.md](docs/architecture.md),
+[docs/analytics.md](docs/analytics.md), and [docs/api.md](docs/api.md).
 
 ## Technology
 
@@ -98,7 +107,14 @@ atus status
 
 # 7. analyze (Phase 2 engine; see docs/examples.md)
 atus analyze estimate --activity sleep --year 2025
+
+# 8. serve the HTTP API (Phase 3; OpenAPI docs at http://127.0.0.1:8000/docs)
+atus api
 ```
+
+A future local frontend connects via CORS configuration, e.g.
+`ATUS_API_CORS_ORIGINS=http://localhost:3000` in `.env` — see
+[docs/api.md](docs/api.md).
 
 If `atus download` is blocked (BLS adjusts its bot protections from time to
 time), download the files listed in [docs/source-data.md](docs/source-data.md)
@@ -183,5 +199,7 @@ docs/                 architecture, database, lineage, methodology, sources, roa
 Phase 1 — data acquisition, modeling, ETL, validation, database. ✅
 Phase 2 — statistical/analytical engine (official estimators, replicate-weight
 variance, trends, comparisons, BLS benchmark validation). ✅
-Phase 3 — backend API over the engine. Phase 4 — interactive web application.
-Phase 5 — hardening and deployment. See [docs/roadmap.md](docs/roadmap.md).
+Phase 3 — read-only HTTP API over the engine (versioned contract, structured
+errors, result caching, benchmarks replayed over HTTP). ✅
+Phase 4 — interactive web application. Phase 5 — hardening and deployment.
+See [docs/roadmap.md](docs/roadmap.md).

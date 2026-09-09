@@ -1,0 +1,7 @@
+{
+  "measure": "average_minutes_per_day",
+  "activity": {"preset": "sleep"},
+  "years": [2020],
+  "weights": "pandemic",
+  "population": {"diary_date_min": "2020-05-10"}
+}

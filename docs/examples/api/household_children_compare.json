@@ -1,0 +1,9 @@
+{
+  "measure": "average_minutes_per_day",
+  "activity": {"preset": "household_activities_bls_table"},
+  "years": [2025],
+  "group_a": {"has_household_children": true},
+  "group_b": {"has_household_children": false},
+  "label_a": "Household children present",
+  "label_b": "No household children"
+}

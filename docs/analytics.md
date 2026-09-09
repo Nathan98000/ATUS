@@ -2,7 +2,18 @@
 
 What every term in the Phase 2 analytical engine means, precisely, with the
 BLS sources it comes from. Package: `src/atus_pipeline/analytics/`; version
-stamped on every result (`analytics_version`, currently `0.1`).
+stamped on every result (`analytics_version`, currently `0.2`).
+
+**Version history.** `0.2` (Phase 3 review): two semantic corrections found
+by adversarial API probing — (1) `day_type` filters now use day-type-specific
+person-day denominators (weights are day-of-week calibrated, so
+`participants_per_day` on weekends divides by the number of weekend days, not
+365); (2) zero-weight respondents (2019 diaries inside the pandemic-excluded
+window under TU20FWGT — their replicate weights are all zero too, verified)
+are excluded from the query base, so `n_respondents`/`n_participants` no
+longer overstate the effective sample. No weighted estimate changed; both
+fixes affect denominators/counts for those specific request shapes. `0.1`:
+initial Phase 2 implementation, validated against 24 official BLS values.
 
 ## Vocabulary
 

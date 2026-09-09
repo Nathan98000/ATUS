@@ -126,7 +126,7 @@ atus analyze estimate --activity sleep --year 2025 --json
   "days_in_period": 365,
   "weight": {"scheme": "multiyear", "bls_variable": "TUFNWGTP", "column": "respondents.final_weight"},
   "variance_method": "replicate",
-  "analytics_version": "0.1",
+  "analytics_version": "0.2",
   "spec": { "...": "the exact serialized AnalysisSpec, reproducible verbatim" },
   "warnings": ["Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."]
 }

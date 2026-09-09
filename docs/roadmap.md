@@ -55,11 +55,36 @@ distributional statistics (medians/percentiles need their own design), module
 files and module weights, materialized analytical tables (benchmarked as not
 yet needed).
 
-## Phase 3 — Backend / API
+## Phase 3 — Backend / API ✅ (this repository)
 
-Read-only HTTP API over the analytical layer (likely FastAPI): estimate
-endpoints with subgroup/year/activity parameters, activity-hierarchy
-browsing, caching of expensive estimates.
+Delivered (package `atus_pipeline.api`, contract version `v1`):
+
+- FastAPI application (`atus api`) whose request bodies are the canonical
+  Phase 2 analysis specs and whose responses are the engine result objects'
+  `to_dict()` — no statistical logic in HTTP code, CLI and API share the one
+  engine.
+- Endpoints: analysis estimate/trend/compare; activity lexicon
+  (list/search/detail/presets); population-filter metadata served from the
+  engine's own dimension registry; `/meta` with API/analytics/data versions
+  and capability discovery; `/health` + `/ready`.
+- Structured error contract (one envelope, stable codes): 400 malformed JSON,
+  422 validation/domain/unsupported (2020 guidance preserved verbatim),
+  404 unknown activity resource, 503 database unavailable, sanitized 500s.
+- Versioned deterministic result cache (canonical spec + analytics version +
+  data release/ingestion run): pooled 22-year variance 11.0 s → 4 ms; errors
+  never cached; graceful degradation without the cache.
+- Tests: 53 DB-less contract/error/cache/CORS tests, 24 full-stack tests
+  against the hand-computed fixture database, and 9 BLS benchmarks +
+  published-value comparisons replayed through HTTP; performance baseline
+  script. An adversarial review fleet (86 agents: 7 code reviewers, 3 live
+  black-box probes, 2-vote verification) confirmed 25 findings, all fixed —
+  including two analytics-semantics corrections that bumped the engine to
+  version 0.2 (see docs/analytics.md version history).
+- Docs: docs/api.md, OpenAPI with real verified examples,
+  runnable request files in docs/examples/api/.
+
+Deliberately deferred: authentication, rate limiting, async jobs, persistent
+saved analyses, production deployment (Phase 5).
 
 ## Phase 4 — Interactive Application
 
