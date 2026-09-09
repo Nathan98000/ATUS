@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "atus-pipeline"
+version = "0.1.0"
+description = "Data foundation for the American Time Use Survey (ATUS) analysis platform: acquisition, validation, transformation, and PostgreSQL loading of official BLS microdata."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "click>=8.1",
+    "psycopg[binary]>=3.1",
+    "curl_cffi>=0.7",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+    "pdfplumber>=0.11",  # only needed to regenerate the activity lexicon reference CSV
+]
+
+[project.scripts]
+atus = "atus_pipeline.cli:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: tests that need a running PostgreSQL instance (skipped when unavailable)",
+    "data_quality: tests that run against a fully loaded ATUS database (opt-in via ATUS_DATA_QUALITY=1)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: atus-postgres
+    environment:
+      POSTGRES_USER: atus
+      POSTGRES_PASSWORD: atus
+      POSTGRES_DB: atus
+    ports:
+      # Host port 5434 so an existing local PostgreSQL on 5432 is never disturbed
+      - "5434:5432"
+    volumes:
+      - atus_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atus -d atus"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  atus_pgdata:

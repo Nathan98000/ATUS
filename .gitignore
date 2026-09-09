@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+
+# Environment / secrets
+.env
+
+# ATUS data: raw and staged files are large and are re-downloadable from BLS.
+# Only the acquisition manifest and small committed reference data live in Git.
+data/raw/
+data/staging/
+data/docs/
+data/manifest.json
+
+# OS noise
+.DS_Store
