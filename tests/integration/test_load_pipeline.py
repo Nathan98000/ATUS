@@ -213,12 +213,16 @@ def test_full_fixture_load(fixture_settings):
         ).fetchone()[0]
         assert name == "Work & Work-Related Activities"
 
-        # provenance was recorded
-        run = conn.execute(
-            "SELECT status FROM atus.ingestion_runs ORDER BY id DESC LIMIT 1"
+        # provenance was recorded for this run (the shared test database may
+        # hold source_files rows from other tests' ingestion runs)
+        run_id, status = conn.execute(
+            "SELECT id, status FROM atus.ingestion_runs ORDER BY id DESC LIMIT 1"
         ).fetchone()
-        assert run[0] == "succeeded"
-        assert conn.execute("SELECT count(*) FROM atus.source_files").fetchone()[0] == 7
+        assert status == "succeeded"
+        assert conn.execute(
+            "SELECT count(*) FROM atus.source_files WHERE ingestion_run_id = %s",
+            (run_id,),
+        ).fetchone()[0] == 7
 
 
 def test_failed_load_leaves_database_unchanged(fixture_settings):
