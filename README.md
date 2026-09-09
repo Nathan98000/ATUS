@@ -1,0 +1,158 @@
+# ATUS Analysis Platform
+
+A platform for analyzing how Americans spend their time, built on the official
+[American Time Use Survey (ATUS)](https://www.bls.gov/tus/) microdata published
+by the U.S. Bureau of Labor Statistics (BLS). ATUS is the only federal survey
+that measures how people divide their days — one respondent per sampled
+household reports a complete 24-hour diary of activities, coded against a
+hierarchical activity lexicon, together with rich demographic, labor-force, and
+household context.
+
+**Current status: Phase 1 — Data Foundation.** This repository turns the
+official BLS 2003–2025 multi-year microdata files into a validated, documented
+PostgreSQL database that later phases (statistical engine, API, interactive
+visualization) will build on. There is no application UI yet, by design.
+
+## Architecture
+
+```text
+Official BLS files (bls.gov)
+        │  atus download          acquisition + provenance manifest
+        ▼
+data/raw/            immutable zip archives
+        │  atus extract           streaming extraction
+        ▼
+data/staging/0325/   staged CSV data files
+        │  atus validate-source   headers, official row counts, survey years
+        │  atus load              pure-Python row transforms → COPY (atomic rebuild)
+        ▼
+PostgreSQL  schema "atus"   canonical tables + lexicon + provenance metadata
+        │  atus validate-db       ~35 data-quality checks (diary arithmetic,
+        ▼                         weights, referential integrity, BLS cross-checks)
+Phase 2+: statistical layer → API → interactive app
+```
+
+Details: [docs/architecture.md](docs/architecture.md).
+
+## Technology
+
+| Choice | Why |
+| --- | --- |
+| Python 3.11+ (stdlib `csv` streaming, no dataframe library) | transformations are row-wise and pure; streaming keeps memory flat across multi-GB files |
+| PostgreSQL 16 | relational integrity (FKs, CHECKs) matches the survey's structure; strong analytical SQL for Phase 2 |
+| psycopg 3 + COPY protocol | bulk-loads ~13M rows in minutes while keeping per-row typed transforms |
+| Plain-SQL migrations + ~100-line runner | the whole schema mechanism is readable; checksummed, ordered, re-runnable |
+| `curl_cffi` for acquisition | bls.gov rejects non-browser TLS clients (see [docs/source-data.md](docs/source-data.md)) |
+| pytest (unit / integration / data-quality markers) | fast tests need no DB; integration tests build a disposable DB; full-data checks are opt-in |
+
+## Quick start
+
+Prerequisites: Python 3.11+, Docker (or any PostgreSQL 14+), ~6 GB free disk
+(0.6 GB downloads + 2.8 GB staged files + ~2 GB database).
+
+```bash
+# 1. install
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+
+# 2. configure (defaults work with the compose file below)
+cp .env.example .env
+
+# 3. database
+docker compose up -d          # PostgreSQL 16 on localhost:5434
+atus migrate                  # create the schema
+
+# 4. data (~600 MB download from bls.gov, ~2.8 GB staged)
+atus download
+atus extract
+atus validate-source          # headers + official BLS record counts
+
+# 5. load (~13M rows, single atomic transaction; a few minutes)
+atus load
+
+# 6. verify
+atus validate-db              # full data-quality suite
+atus status
+```
+
+If `atus download` is blocked (BLS adjusts its bot protections from time to
+time), download the files listed in [docs/source-data.md](docs/source-data.md)
+manually in a browser, drop them into `data/raw/`, and re-run `atus download`
+(it records provenance for existing files without re-fetching) followed by the
+remaining steps.
+
+## Testing
+
+```bash
+pytest tests/unit                          # pure functions, no DB (fast)
+pytest tests/integration                   # needs PostgreSQL; builds atus_test DB
+ATUS_DATA_QUALITY=1 pytest tests/data_quality   # needs the fully loaded DB
+```
+
+Integration tests use `ATUS_TEST_DATABASE_URL` (default: the compose instance,
+database `atus_test`) and never touch the real `atus` database.
+
+## What's in the database
+
+Seven canonical tables mirror the conceptual structure of the survey — see
+[docs/database.md](docs/database.md) for grains, keys, and indexes:
+
+- `atus.respondents` — one row per respondent/diary day (258,954), with survey
+  weights, labor-force status, earnings, and household context
+- `atus.household_members` — household roster incl. the respondent (702,409)
+- `atus.activities` — diary episodes with harmonized activity codes, start/stop
+  times, durations (4,994,172)
+- `atus.activity_companions` — who was present during each episode (6,358,042)
+- `atus.cps_persons` — CPS demographics/geography for respondent households
+- `atus.replicate_weights`, `atus.pandemic_replicate_weights` — 160 replicate
+  weights per respondent for variance estimation
+- `atus.activity_tier1/2` + `atus.activity_codes` — the official three-level
+  activity lexicon (18 / 107 / 431 entries), extracted from the BLS coding
+  lexicon PDF
+- `atus.ingestion_runs`, `atus.source_files`, `atus.validation_results` —
+  provenance and validation history
+
+Methodological ground rules (read before analyzing): survey weights are
+mandatory for population statements; 2020 is a partial year with its own
+weight; the multi-year weight `TUFNWGTP` is the only weight valid across
+years. All of it is documented with BLS citations in
+[docs/methodology.md](docs/methodology.md).
+
+## Repository layout
+
+```text
+src/atus_pipeline/    pipeline package (acquisition, staging, validation,
+                      transformation, loading, database, cli)
+migrations/           plain-SQL schema migrations, applied in order
+data/reference/       committed reference data (activity lexicon CSV)
+data/raw|staging/     downloaded + staged BLS files (gitignored)
+scripts/              one-time generation scripts (lexicon PDF → CSV)
+tests/                unit / integration / data_quality suites
+docs/                 architecture, database, lineage, methodology, sources, roadmap
+```
+
+## Documentation
+
+- [docs/architecture.md](docs/architecture.md) — pipeline stages and design decisions
+- [docs/database.md](docs/database.md) — schema reference (grain, keys, indexes, ER diagram)
+- [docs/data-lineage.md](docs/data-lineage.md) — every canonical column traced to its BLS variable
+- [docs/methodology.md](docs/methodology.md) — weights, the 2020 disruption, cross-year comparability
+- [docs/source-data.md](docs/source-data.md) — the official files, how they're obtained, provenance
+- [docs/roadmap.md](docs/roadmap.md) — phase plan
+
+## Authoritative references
+
+- [ATUS microdata files](https://www.bls.gov/tus/data.htm) · [2003–2025 files](https://www.bls.gov/tus/data/datafiles-0325.htm)
+- [ATUS User's Guide](https://www.bls.gov/tus/atususersguide.pdf)
+- [2003–25 Interview Data Dictionary](https://www.bls.gov/tus/dictionaries/atusintcodebk0325.pdf) · [ATUS-CPS Data Dictionary](https://www.bls.gov/tus/dictionaries/atuscpscodebk0325.pdf)
+- [2003–2025 Activity Coding Lexicon](https://www.bls.gov/tus/lexicons/lexiconnoex0325.pdf)
+- [Changes between data files across years](https://www.bls.gov/tus/lexicons/changes.pdf)
+- [COVID-19 impact on 2020 ATUS data](https://www.bls.gov/tus/notices/2021/covid19tech.htm)
+
+## Roadmap
+
+Phase 1 (this repo) — data acquisition, modeling, ETL, validation, database. ✅
+Phase 2 — statistical/analytical layer (weighted estimates, variance via
+replicate weights, subgroup comparisons). Phase 3 — backend API. Phase 4 —
+interactive web application. Phase 5 — hardening and deployment. See
+[docs/roadmap.md](docs/roadmap.md).
