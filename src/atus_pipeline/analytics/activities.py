@@ -45,8 +45,8 @@ class ActivityResolver:
         self._codes = {code: name for code, name in rows}
         if not self._codes:
             raise InvalidSpecError(
-                "The activity lexicon tables are empty — run the Phase 1 load "
-                "(`atus load`) before using the analytical engine."
+                "The activity lexicon is not loaded — the ATUS database has "
+                "not been populated yet."
             )
 
     def _check_code(self, code: str) -> None:
@@ -55,7 +55,7 @@ class ActivityResolver:
             tier = {2: "tier-1", 4: "tier-2", 6: "6-digit"}[len(code)]
             raise UnknownActivityError(
                 f"Activity code {code!r} is not a {tier} code in the 2003-25 "
-                f"harmonized lexicon (see atus.activity_tier1/2, atus.activity_codes)."
+                f"harmonized activity lexicon."
             )
 
     def resolve(self, selector: ActivitySelector) -> ResolvedActivity:

@@ -63,3 +63,37 @@ class TestDaysRepresented:
 
     def test_multiyear_scheme_ignores_the_gap(self):
         assert days_represented(MULTIYEAR, 2019, NO_WINDOW) == 365
+
+
+class TestDayTypeDays:
+    """ATUS weights are day-of-week calibrated, so a day_type filter changes
+    the person-day denominator to the count of days of that type."""
+
+    def test_weekend_and_weekday_days_2023(self):
+        # 2023 starts on a Sunday: 53 Sundays + 52 Saturdays = 105 weekend days
+        weekend = PopulationFilter(day_type="weekend")
+        weekday = PopulationFilter(day_type="weekday")
+        assert days_represented(MULTIYEAR, 2023, weekend) == 105
+        assert days_represented(MULTIYEAR, 2023, weekday) == 260
+        assert 105 + 260 == 365
+
+    def test_weekend_days_under_pandemic_gap_2020(self):
+        # 2020 has 104 weekend days; the excluded Mar 18 - May 9 window
+        # contains 8 Saturdays + 7 Sundays = 15 of them
+        weekend = PopulationFilter(day_type="weekend")
+        assert days_represented(PANDEMIC, 2020, weekend) == 104 - 15
+
+    def test_day_type_with_diary_window(self):
+        # May 10 - Dec 31, 2020: 236 days, of which 67 are weekend days
+        # (34 Sundays starting May 10 + 33 Saturdays starting May 16)
+        window = PopulationFilter(
+            day_type="weekend", diary_date_min=date(2020, 5, 10)
+        )
+        days = days_represented(PANDEMIC, 2020, window)
+        no_type = PopulationFilter(diary_date_min=date(2020, 5, 10))
+        weekday = PopulationFilter(
+            day_type="weekday", diary_date_min=date(2020, 5, 10)
+        )
+        assert days + days_represented(PANDEMIC, 2020, weekday) == \
+            days_represented(PANDEMIC, 2020, no_type) == 236
+        assert days == 67

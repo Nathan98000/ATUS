@@ -1,6 +1,6 @@
 """Hand-computable fixture dataset for analytics integration tests.
 
-Five respondents whose weighted estimates, replicate variances, and filter
+Six respondents whose weighted estimates, replicate variances, and filter
 behaviors can be verified by pencil-and-paper (expected values are derived in
 the test module):
 
@@ -10,13 +10,15 @@ id   year  weight  sleep (010101) minutes       sex    notes
 E1   2023  1.0     100 (one episode)            male   education bachelor's (43)
 E2   2023  1.0     200 (TEN 20-min episodes)    female CPS education missing (-1)
 E3   2023  2.0     0 (plus a 0-minute episode)  female age 70, region 3
+P8   2019  1.5     360 (diary in the gap win.)  male   pandemic weight 0.0
 P9   2019  1.5     120                          male   pandemic weight 3.0
 P0   2020  NULL    240                          female pandemic weight 1.0
 ===  ====  ======  ===========================  =====  ==========================
 
 Replicate weights (2023 cases, multi-year scheme): E1 = [2, 1, 1, ...];
-E2 = [0, 2, 1, ...]; E3 = all 2. Pandemic replicates: P9 all 3.0, P0 all 1.0;
-P0's multi-year replicates are all -1 (NULL), mirroring the real 2020 data.
+E2 = [0, 2, 1, ...]; E3 = all 2; P8/P9 all 1.5. Pandemic replicates: P8 all
+0.0 (gap window), P9 all 3.0, P0 all 1.0; P0's multi-year replicates are all
+-1 (NULL), mirroring the real 2020 data.
 
 The dataset flows through the real Phase 1 loader so the analytics tests also
 exercise the actual schema, constraints, and lexicon.
@@ -46,6 +48,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 E1, E2, E3 = "20230101000001", "20230101000002", "20230101000003"
 P9, P0 = "20190101000009", "20200101000010"
+# P8: a 2019 diary inside the pandemic-excluded window (Mar 18 - May 9), so its
+# TU20FWGT is 0 (mirroring the real data): included under multiyear weights,
+# excluded entirely under the pandemic scheme.
+P8 = "20190101000008"
 
 SLEEP, TV = "010101", "120303"
 
@@ -94,12 +100,16 @@ def build_analytics_dataset(data_dir: Path) -> None:
             TUFNWGTP="1.000000", TELFS="1",
         ),
         fixtures.respondent_row(
-            TUCASEID=E2, TUYEAR="2023", TUDIARYDATE="20230116",
+            TUCASEID=E2, TUYEAR="2023", TUDIARYDATE="20230116", TUDIARYDAY="2",
             TUFNWGTP="1.000000", TELFS="5", TRCHILDNUM="2",
         ),
         fixtures.respondent_row(
-            TUCASEID=E3, TUYEAR="2023", TUDIARYDATE="20230117",
+            TUCASEID=E3, TUYEAR="2023", TUDIARYDATE="20230117", TUDIARYDAY="3",
             TUFNWGTP="2.000000", TELFS="5",
+        ),
+        fixtures.respondent_row(
+            TUCASEID=P8, TUYEAR="2019", TUDIARYDATE="20190401", TUDIARYDAY="2",
+            TUFNWGTP="1.500000", TU20FWGT="0.000000", TELFS="1",
         ),
         fixtures.respondent_row(
             TUCASEID=P9, TUYEAR="2019", TUDIARYDATE="20190602",
@@ -115,6 +125,7 @@ def build_analytics_dataset(data_dir: Path) -> None:
         fixtures.roster_row(TUCASEID=E1, TULINENO="1", TERRP="18", TEAGE="30", TESEX="1"),
         fixtures.roster_row(TUCASEID=E2, TULINENO="1", TERRP="18", TEAGE="40", TESEX="2"),
         fixtures.roster_row(TUCASEID=E3, TULINENO="1", TERRP="18", TEAGE="70", TESEX="2"),
+        fixtures.roster_row(TUCASEID=P8, TULINENO="1", TERRP="18", TEAGE="35", TESEX="1"),
         fixtures.roster_row(TUCASEID=P9, TULINENO="1", TERRP="18", TEAGE="25", TESEX="1"),
         fixtures.roster_row(TUCASEID=P0, TULINENO="1", TERRP="18", TEAGE="50", TESEX="2"),
     ])
@@ -134,6 +145,9 @@ def build_analytics_dataset(data_dir: Path) -> None:
     episodes.append(_episode(E3, 1, TV, "04:00:00", "09:00:00", 300, 300))
     episodes.append(_episode(E3, 2, SLEEP, "09:00:00", "09:00:00", 0, 300))
     episodes.append(_episode(E3, 3, TV, "09:00:00", "04:00:00", 1140, 1440))
+    # P8 (2019, gap window): sleep then TV.
+    episodes.append(_episode(P8, 1, SLEEP, "04:00:00", "10:00:00", 360, 360))
+    episodes.append(_episode(P8, 2, TV, "10:00:00", "04:00:00", 1080, 1440))
     # P9 (2019) and P0 (2020): sleep then TV.
     episodes.append(_episode(P9, 1, SLEEP, "04:00:00", "06:00:00", 120, 120))
     episodes.append(_episode(P9, 2, TV, "06:00:00", "04:00:00", 1320, 1440))
@@ -152,6 +166,7 @@ def build_analytics_dataset(data_dir: Path) -> None:
         fixtures.cps_row(TUCASEID=E1, TULINENO="1", PEEDUCA="43", GEREG="1"),
         fixtures.cps_row(TUCASEID=E2, TULINENO="1", PEEDUCA="-1", GEREG="2"),
         fixtures.cps_row(TUCASEID=E3, TULINENO="1", PEEDUCA="39", GEREG="3"),
+        fixtures.cps_row(TUCASEID=P8, TULINENO="1", PEEDUCA="40", GEREG="4"),
         fixtures.cps_row(TUCASEID=P9, TULINENO="1", PEEDUCA="40", GEREG="4"),
         fixtures.cps_row(TUCASEID=P0, TULINENO="1", PEEDUCA="40", GEREG="4"),
     ])
@@ -167,6 +182,9 @@ def build_analytics_dataset(data_dir: Path) -> None:
             TUCASEID=E3, **_replicates("TUFNWGTP", {}, "2.000000"),
         ),
         fixtures.replicate_weights_row(
+            TUCASEID=P8, **_replicates("TUFNWGTP", {}, "1.500000"),
+        ),
+        fixtures.replicate_weights_row(
             TUCASEID=P9, **_replicates("TUFNWGTP", {}, "1.500000"),
         ),
         fixtures.replicate_weights_row(
@@ -175,6 +193,9 @@ def build_analytics_dataset(data_dir: Path) -> None:
     ])
 
     _write(staging / "atuswgtspan_1920.dat", PANDEMIC_WEIGHT_COLUMNS, [
+        fixtures.pandemic_weights_row(
+            TUCASEID=P8, **_replicates("TU20FWGT", {}, "0.000000"),
+        ),
         fixtures.pandemic_weights_row(
             TUCASEID=P9, **_replicates("TU20FWGT", {}, "3.000000"),
         ),

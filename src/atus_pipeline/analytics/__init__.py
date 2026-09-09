@@ -32,7 +32,7 @@ from .spec import (
     PopulationFilter,
 )
 
-ANALYTICS_VERSION = "0.1"
+ANALYTICS_VERSION = "0.2"
 
 __all__ = [
     "ANALYTICS_VERSION",

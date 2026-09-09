@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import calendar
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 
 from .errors import UnsupportedAnalysisError
 from .spec import PopulationFilter
@@ -99,34 +99,54 @@ def validate_scheme_for_years(scheme: WeightScheme, years: tuple[int, ...]) -> N
             )
 
 
-def _overlap_days(start_a: date, end_a: date, start_b: date, end_b: date) -> int:
-    """Inclusive-day overlap between two date ranges."""
-    start, end = max(start_a, start_b), min(end_a, end_b)
-    return max(0, (end - start).days + 1)
+# TUDIARYDAY weekend = Sunday/Saturday; Python date.weekday(): Mon=0 .. Sun=6.
+_WEEKEND_WEEKDAYS = (5, 6)
 
 
 def days_represented(
     scheme: WeightScheme, year: int, population: PopulationFilter
 ) -> int:
-    """Person-days per person that the weights represent for one year,
-    honoring any diary-date window in the population filter.
+    """Days per person that the weights represent for one year, honoring any
+    diary-date window and day-type restriction in the population filter.
 
-    Under the pandemic scheme the excluded Mar 18 - May 9 window (in both 2019
-    and 2020) is subtracted, matching how TU20FWGT was calibrated.
+    ATUS weights are day-of-week calibrated: the weights of (say) weekend
+    respondents sum to population x (number of weekend days in the period), so
+    a ``day_type`` filter changes the denominator to the count of days *of
+    that type* — that is what makes person-count measures mean "on an average
+    such day". Under the pandemic scheme the excluded Mar 18 - May 9 window
+    (in both 2019 and 2020) is skipped, matching how TU20FWGT was calibrated.
+
+    Implemented as a literal iteration over the (at most 366) days of the year
+    so every combination of window, day type, and pandemic gap is exactly
+    right by construction.
     """
     year_start, year_end = date(year, 1, 1), date(year, 12, 31)
-    window_start = population.diary_date_min or date.min
-    window_end = population.diary_date_max or date.max
-    days = _overlap_days(year_start, year_end, window_start, window_end)
+    window_start = max(year_start, population.diary_date_min or date.min)
+    window_end = min(year_end, population.diary_date_max or date.max)
+    if window_start > window_end:
+        return 0
 
+    gap_start = gap_end = None
     if scheme is PANDEMIC:
         (m1, d1), (m2, d2) = PANDEMIC_EXCLUDED_WINDOW
-        excluded = _overlap_days(
-            max(year_start, window_start), min(year_end, window_end),
-            date(year, m1, d1), date(year, m2, d2),
-        )
-        days -= excluded
+        gap_start, gap_end = date(year, m1, d1), date(year, m2, d2)
+
+    days = 0
+    current = window_start
+    one_day = timedelta(days=1)
+    while current <= window_end:
+        in_gap = gap_start is not None and gap_start <= current <= gap_end
+        if not in_gap and _matches_day_type(current, population.day_type):
+            days += 1
+        current += one_day
     return days
+
+
+def _matches_day_type(day: date, day_type: str | None) -> bool:
+    if day_type is None:
+        return True
+    is_weekend = day.weekday() in _WEEKEND_WEEKDAYS
+    return is_weekend if day_type == "weekend" else not is_weekend
 
 
 def total_days_represented(

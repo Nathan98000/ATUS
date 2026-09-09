@@ -90,6 +90,21 @@ class TestEstimators:
         assert result.estimate.value == pytest.approx(2 / 365)
         assert result.days_in_period == 365
 
+    def test_day_type_uses_matching_day_denominator(self, engine):
+        """Weights are day-of-week calibrated: a weekend filter divides by the
+        number of weekend days (105 in 2023), not by 365. Only E1's diary
+        (2023-01-15, a Sunday) is a weekend day in the fixture."""
+        result = engine.estimate(
+            spec(
+                measure=Measure.PARTICIPANTS_PER_DAY,
+                population=PopulationFilter(day_type="weekend"),
+                variance="none",
+            )
+        )
+        assert result.n_respondents == 1              # E1 only
+        assert result.days_in_period == 105
+        assert result.estimate.value == pytest.approx(1 / 105)
+
 
 class TestReplicateVariance:
     def test_hand_computed_standard_error(self, engine):
@@ -144,8 +159,11 @@ class TestSchemeRules:
 
     def test_pandemic_pooled_2019_2020(self, engine):
         result = engine.estimate(spec(years=(2019, 2020), weights="pandemic"))
-        # (3·120 + 1·240) / 4 = 150, over 312 + 313 person-days per person
+        # (3·120 + 1·240) / 4 = 150, over 312 + 313 person-days per person.
+        # P8 (zero pandemic weight: gap-window 2019 diary) is excluded entirely,
+        # including from the unweighted sample counts.
         assert result.estimate.value == pytest.approx(150.0)
+        assert result.n_respondents == 2
         assert result.days_in_period == 312 + 313
         assert result.estimate.standard_error == pytest.approx(0.0)  # constant replicates
         assert any("Pandemic weights" in w for w in result.warnings)
@@ -153,7 +171,7 @@ class TestSchemeRules:
     def test_trend_marks_2020_unavailable_under_multiyear(self, engine):
         result = engine.trend(spec(years=(2019, 2020)))
         by_year = {p.year: p for p in result.points}
-        assert by_year[2019].estimate.value == pytest.approx(120.0)
+        assert by_year[2019].estimate.value == pytest.approx(240.0)  # P8 + P9
         assert by_year[2020].estimate is None
         assert "TUFNWGTP" in by_year[2020].unavailable_reason
 

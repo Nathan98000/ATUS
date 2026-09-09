@@ -42,7 +42,7 @@ from .weights import (
     validate_scheme_for_years,
 )
 
-_ANALYTICS_VERSION = "0.1"  # kept in sync with atus_pipeline.analytics.ANALYTICS_VERSION
+_ANALYTICS_VERSION = "0.2"  # kept in sync with atus_pipeline.analytics.ANALYTICS_VERSION
 
 _HARMONIZATION_NOTE = (
     "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon "

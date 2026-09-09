@@ -210,6 +210,16 @@ def _check_choice(name: str, value: str | None, valid: tuple[str, ...]) -> None:
         raise InvalidSpecError(f"{name} must be one of {valid}, got {value!r}")
 
 
+def population_to_dict(population: PopulationFilter) -> dict:
+    """Canonical JSON-ready form of a population filter: unset dimensions are
+    omitted, dates become ISO strings. Used by spec serialization and by the
+    API's deterministic cache keys."""
+    return {
+        k: (v.isoformat() if isinstance(v, date) else v)
+        for k, v in asdict(population).items() if v is not None
+    }
+
+
 @dataclass(frozen=True)
 class AnalysisSpec:
     """A complete, reproducible description of one estimate (or trend)."""
@@ -252,11 +262,7 @@ class AnalysisSpec:
             "label": self.activity.label,
         }
         payload["years"] = list(self.years)
-        population = {
-            k: (v.isoformat() if isinstance(v, date) else v)
-            for k, v in asdict(self.population).items() if v is not None
-        }
-        payload["population"] = population
+        payload["population"] = population_to_dict(self.population)
         return payload
 
     @classmethod

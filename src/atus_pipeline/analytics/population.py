@@ -124,3 +124,77 @@ def build_population_sql(population: PopulationFilter) -> PopulationSQL:
         out.params["diary_date_max"] = population.diary_date_max
 
     return out
+
+
+def describe_dimensions() -> list[dict]:
+    """Machine-readable description of every supported population dimension.
+
+    This is the domain-owned source of truth the API's population-metadata
+    endpoint serves, derived from the same constants the filters use — so the
+    advertised vocabulary can never drift from what filtering accepts. Every
+    dimension shares one missing-data rule: filtering on it excludes
+    respondents whose value is missing (never treated as "no").
+    """
+    return [
+        {
+            "name": "age_min", "type": "integer", "unit": "years",
+            "description": "Inclusive lower age bound (interview-time roster age).",
+            "notes": "Age is topcoded: 80 in 2003-04, 85 from 2005 onward.",
+        },
+        {
+            "name": "age_max", "type": "integer", "unit": "years",
+            "description": "Inclusive upper age bound (interview-time roster age).",
+            "notes": "Age is topcoded: 80 in 2003-04, 85 from 2005 onward.",
+        },
+        {
+            "name": "sex", "type": "category",
+            "values": sorted(_SEX_CODES),
+            "description": "Respondent sex from the ATUS household roster (TESEX).",
+        },
+        {
+            "name": "employment_status", "type": "category",
+            "values": sorted(_EMPLOYMENT_CODES),
+            "description": "ATUS-interview labor force status (TELFS): employed {1,2}, "
+                           "unemployed {3,4}, not_in_labor_force {5}.",
+        },
+        {
+            "name": "has_household_children", "type": "boolean",
+            "description": "Any household child under 18 present (TRCHILDNUM > 0). "
+                           "Household children, not necessarily own children.",
+        },
+        {
+            "name": "region", "type": "category",
+            "values": [1, 2, 3, 4],
+            "description": "Census region at the CPS interview (GEREG): 1 Northeast, "
+                           "2 Midwest, 3 South, 4 West.",
+            "notes": "Measured 2-5 months before the diary day.",
+        },
+        {
+            "name": "state_fips", "type": "category",
+            "description": "Two-digit state FIPS code at the CPS interview (GESTFIPS), "
+                           "e.g. '06' for California.",
+            "notes": "Measured 2-5 months before the diary day.",
+        },
+        {
+            "name": "education_level", "type": "category",
+            "values": sorted(_EDUCATION_RANGES),
+            "description": "Educational attainment at the CPS interview (PEEDUCA), grouped.",
+            "notes": "Measured 2-5 months before the diary day; missing education is "
+                     "excluded when this filter is used.",
+        },
+        {
+            "name": "day_type", "type": "category",
+            "values": sorted(_DAY_TYPE_CODES),
+            "description": "Diary day of week: weekend = Saturday/Sunday. Estimates then "
+                           "represent the average such day.",
+        },
+        {
+            "name": "diary_date_min", "type": "date",
+            "description": "Inclusive lower bound on the diary date (YYYY-MM-DD) for "
+                           "within-year period estimates.",
+        },
+        {
+            "name": "diary_date_max", "type": "date",
+            "description": "Inclusive upper bound on the diary date (YYYY-MM-DD).",
+        },
+    ]

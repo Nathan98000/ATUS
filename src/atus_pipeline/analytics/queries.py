@@ -102,7 +102,16 @@ def build_query(
         )
     if population.needs_cps:
         joins.append("JOIN atus.cps_persons c ON c.tucaseid = r.tucaseid AND c.lineno = 1")
-    conditions = ["r.data_year = ANY(%(years)s)", *population.conditions]
+    # Zero-weight respondents (2019 diaries inside the pandemic-excluded window
+    # under TU20FWGT) contribute nothing to any weighted sum — and their
+    # replicate weights are all zero too (verified against the loaded data) —
+    # but counting them in n_respondents/n_participants would overstate the
+    # effective sample. Exclude them from the base outright.
+    conditions = [
+        "r.data_year = ANY(%(years)s)",
+        f"r.{scheme.point_column} > 0",
+        *population.conditions,
+    ]
 
     replicate_join = (
         f"JOIN {scheme.replicate_table} rw ON rw.tucaseid = base.tucaseid"
