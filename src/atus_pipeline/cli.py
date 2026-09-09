@@ -1,12 +1,14 @@
 """``atus`` command-line interface: one subcommand per pipeline stage.
 
-    atus download         fetch official BLS source files into data/raw/
-    atus extract          stage the CSV data members into data/staging/<release>/
-    atus validate-source  file-level checks of staged data (pre-load)
-    atus migrate          create/upgrade the database schema
-    atus load             transform staged data and load it (atomic rebuild)
-    atus validate-db      data-quality checks against the loaded database
-    atus status           show manifest and database state
+    atus download            fetch official BLS source files into data/raw/
+    atus extract             stage the CSV data members into data/staging/<release>/
+    atus validate-source     file-level checks of staged data (pre-load)
+    atus migrate             create/upgrade the database schema
+    atus load                transform staged data and load it (atomic rebuild)
+    atus validate-db         data-quality checks against the loaded database
+    atus analyze ...         run analyses with the Phase 2 statistical engine
+    atus validate-analytics  reproduce official BLS estimates (benchmark suite)
+    atus status              show manifest and database state
 """
 
 from __future__ import annotations
@@ -171,6 +173,14 @@ def _migrations_dir():
             f"migrations directory not found at {candidate}; run from the repository root"
         )
     return candidate
+
+
+# Phase 2: analytical engine commands (kept in their own module; imported at
+# the bottom because analytics_cli reuses this module's helpers).
+from .analytics_cli import analyze, validate_analytics  # noqa: E402
+
+cli.add_command(analyze)
+cli.add_command(validate_analytics)
 
 
 if __name__ == "__main__":
