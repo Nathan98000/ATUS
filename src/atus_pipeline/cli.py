@@ -175,6 +175,23 @@ def _migrations_dir():
     return candidate
 
 
+@cli.command(help="Run the read-only analytical HTTP API (Phase 3).")
+@click.option("--host", default="127.0.0.1", show_default=True)
+@click.option("--port", default=8000, show_default=True, type=int)
+@click.option("--reload", "reload_", is_flag=True, help="Auto-reload on code changes (dev).")
+def api(host: str, port: int, reload_: bool) -> None:
+    import uvicorn
+
+    _settings()  # fail fast on malformed configuration
+    uvicorn.run(
+        "atus_pipeline.api.app:create_app",
+        factory=True,
+        host=host,
+        port=port,
+        reload=reload_,
+    )
+
+
 # Phase 2: analytical engine commands (kept in their own module; imported at
 # the bottom because analytics_cli reuses this module's helpers).
 from .analytics_cli import analyze, validate_analytics  # noqa: E402

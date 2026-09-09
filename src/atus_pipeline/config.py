@@ -24,6 +24,9 @@ class Settings:
     data_dir: Path
     release: str
     log_level: str
+    # Phase 3 API settings
+    api_cors_origins: tuple[str, ...] = ()   # allowed frontend origins, e.g. http://localhost:3000
+    api_cache_size: int = 256                # analysis-result cache entries (LRU)
 
     @property
     def raw_dir(self) -> Path:
@@ -46,9 +49,16 @@ def load_settings() -> Settings:
     """Build settings from the environment, loading `.env` if present."""
     load_dotenv()
     data_dir = Path(os.environ.get("ATUS_DATA_DIR", DEFAULT_DATA_DIR))
+    cors = tuple(
+        origin.strip()
+        for origin in os.environ.get("ATUS_API_CORS_ORIGINS", "").split(",")
+        if origin.strip()
+    )
     return Settings(
         database_url=os.environ.get("ATUS_DATABASE_URL", DEFAULT_DATABASE_URL),
         data_dir=data_dir,
         release=os.environ.get("ATUS_RELEASE", DEFAULT_RELEASE),
         log_level=os.environ.get("ATUS_LOG_LEVEL", "INFO").upper(),
+        api_cors_origins=cors,
+        api_cache_size=int(os.environ.get("ATUS_API_CACHE_SIZE", "256")),
     )
