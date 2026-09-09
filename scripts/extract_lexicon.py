@@ -227,7 +227,7 @@ def main() -> int:
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", newline="") as fh:
-        writer = csv.writer(fh)
+        writer = csv.writer(fh, lineterminator="\n")
         writer.writerow(["level", "code", "name", "harmonization_note"])
         for code, name in sorted(parser.tier1.items()):
             writer.writerow(["1", code, name, ""])
