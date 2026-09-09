@@ -58,7 +58,7 @@ test('the loading state announces the calculation', async ({ page }) => {
   await page.goto('/explore')
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
   await analyze(page)
-  await expect(page.getByText('Calculating estimate…')).toBeVisible()
+  await expect(page.getByText('Calculating estimate…').first()).toBeVisible()
   await expect(page.getByText(/minutes per day/).first()).toBeVisible({ timeout: 15_000 })
 })
 

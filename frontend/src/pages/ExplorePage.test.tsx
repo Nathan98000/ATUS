@@ -2,14 +2,24 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
-import { MemoryRouter, Route, Routes } from 'react-router'
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router'
 import { describe, expect, it } from 'vitest'
 
 import type { CompareRequest, EstimateRequest } from '../api/types'
 import { decodeSpec, encodeSpec } from '../domain/urlSpec'
 import { LocationProbe, testQueryClient } from '../test/render'
+import { metaFixture } from '../test/fixtures'
 import { api, server } from '../test/server'
 import { ExplorePage } from './ExplorePage'
+
+function BackButton() {
+  const navigate = useNavigate()
+  return (
+    <button type="button" onClick={() => navigate(-1)}>
+      test-go-back
+    </button>
+  )
+}
 
 function renderExplore(route = '/explore') {
   return render(
@@ -19,6 +29,7 @@ function renderExplore(route = '/explore') {
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/analysis/:operation" element={<p>analysis page</p>} />
         </Routes>
+        <BackButton />
         <LocationProbe />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -135,5 +146,71 @@ describe('prefilling from a shared analysis', () => {
     expect(screen.getByRole('radio', { name: /Participation rate/ })).toBeChecked()
     expect(screen.getByLabelText('Year')).toHaveValue('2024')
     expect(screen.getByLabelText('Sex')).toHaveValue('female')
+  })
+})
+
+describe('browser history (review finding: Back must not reset the builder)', () => {
+  it('Back from a result returns to a prefilled builder, not defaults', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await user.selectOptions(screen.getByLabelText('Sex'), 'female')
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    expect(screen.getByText('analysis page')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'test-go-back' }))
+    await waitForBuilder()
+    // The configuration survived the round trip through history.
+    expect(screen.getByLabelText('Sex')).toHaveValue('female')
+    expect(screen.getByTestId('location').textContent).toMatch(/^\/explore\?op=estimate&spec=/)
+  })
+})
+
+describe('capability discovery (review finding: no hard-coded measures)', () => {
+  it('renders only the measures the API reports', async () => {
+    server.use(
+      http.get(api('/meta'), () =>
+        HttpResponse.json({
+          ...metaFixture,
+          capabilities: {
+            ...metaFixture.capabilities,
+            measures: metaFixture.capabilities.measures.filter(
+              (measure) => measure.name === 'average_minutes_per_day',
+            ),
+          },
+        }),
+      ),
+    )
+    renderExplore()
+    await waitForBuilder()
+    expect(screen.getByRole('radio', { name: /Average time per day/ })).toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: /Participation rate/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: /People per day/ })).not.toBeInTheDocument()
+  })
+
+  it('ignores a future measure the UI does not know', async () => {
+    server.use(
+      http.get(api('/meta'), () =>
+        HttpResponse.json({
+          ...metaFixture,
+          capabilities: {
+            ...metaFixture.capabilities,
+            measures: [
+              ...metaFixture.capabilities.measures,
+              {
+                name: 'median_minutes_per_day',
+                unit: 'minutes_per_day',
+                description: 'future',
+              },
+            ],
+          },
+        }),
+      ),
+    )
+    renderExplore()
+    await waitForBuilder()
+    expect(screen.queryByRole('radio', { name: /median/i })).not.toBeInTheDocument()
+    // The known measures are unaffected.
+    expect(screen.getByRole('radio', { name: /Average time per day/ })).toBeChecked()
   })
 })

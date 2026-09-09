@@ -132,10 +132,13 @@ stateless. The URL encodes exactly that:
   (“Represents”) are always separate statements.
 - Formatting precision policy (`utils/format.ts`): durations as h + m
   rounded to the minute (detailed form: one decimal of minutes);
-  percentages one decimal; SEs/CIs in the estimate's own scale and
-  precision (proportion SEs as percentage points); people in millions (one
-  decimal) above 1M. Exact raw values are always available under “View
-  exact values”, and raw API values are never mutated in state.
+  percentages one decimal (small nonzero values keep two significant digits
+  rather than collapsing to “0.0”); SEs/CIs in the estimate's own scale and
+  precision; a **difference** of two proportions is formatted in percentage
+  points (pp), matching its SE — never as “%”. Estimate and comparison
+  pages expose the raw full-precision API values under “View exact values”;
+  the trend page's “View data” table uses display precision. Raw API values
+  are never mutated in state.
 - The one-sentence interpretation on result pages is a deterministic
   template over response fields — descriptive wording only, no causal
   claims, no significance language.
@@ -157,7 +160,7 @@ stateless. The URL encodes exactly that:
 ## Testing
 
 ```bash
-npm test          # 93 unit/component tests (Vitest + Testing Library + MSW)
+npm test          # 119 unit/component tests (Vitest + Testing Library + MSW)
 npm run test:e2e  # 20 Playwright tests (18 desktop + 2 mobile)
 ```
 
@@ -175,6 +178,12 @@ npm run test:e2e  # 20 Playwright tests (18 desktop + 2 mobile)
   comparison scenario, share-link reproduction in a fresh browser context,
   refresh, the 2020 gap, error handling incl. backend-down recovery, axe
   checks, keyboard operation, mobile viewport.
+- An adversarial review fleet (96 agents: 8 code-dimension reviewers,
+  3 live browser probes, an aggregator, and two independent refuters per
+  finding) audited the implementation; 37 confirmed findings — including
+  proportion-difference units, a day-type-unaware interpretation sentence,
+  and line-drawing across non-contiguous trend years — were all fixed with
+  regression tests (see docs/roadmap.md).
 
 ## Local development
 
@@ -196,8 +205,8 @@ work around CORS by disabling browser security.
 ## Production build and deployment shape
 
 `npm run build` type-checks and emits static assets into `frontend/dist/`
-(measured: 361.9 kB JS / 110.9 kB gzip, 14.8 kB CSS / 3.8 kB gzip — one
-chunk, no SSR, no server runtime). The intended architecture is a static
+(measured Sept 2026: 365.0 kB JS / 110.8 kB gzip, 15.0 kB CSS / 3.8 kB
+gzip — one chunk, no SSR, no server runtime). The intended architecture is a static
 host for `dist/` plus the FastAPI service on its own origin with CORS;
 `VITE_API_BASE_URL` is baked at build time. Serving `dist/` from FastAPI
 (static mount + SPA fallback) remains a Phase 5 option; nothing in the

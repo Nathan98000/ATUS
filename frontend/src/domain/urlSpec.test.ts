@@ -75,3 +75,14 @@ describe('invalid share links', () => {
     expect(decodeSpec(encodeSpec(compare), 'compare')).toEqual(compare)
   })
 })
+
+describe('prototype-pollution key names (review finding)', () => {
+  it('rejects specs containing __proto__/constructor/prototype keys', () => {
+    for (const key of ['__proto__', 'constructor', 'prototype']) {
+      const hostile = btoa(
+        JSON.stringify({ activity: { preset: 'sleep' }, years: [2025], [key]: { x: 1 } }),
+      )
+      expect(() => decodeSpec(hostile, 'estimate')).toThrow(InvalidShareLinkError)
+    }
+  })
+})

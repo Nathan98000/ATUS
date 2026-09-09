@@ -484,6 +484,9 @@ legend {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .chip {
@@ -1007,6 +1010,18 @@ details.panel > .panel__body {
   position: relative;
 }
 
+/* Below ~620px the chart keeps a minimum drawing width and scrolls inside
+   its own container, so axis text stays legible and the page never scrolls
+   horizontally. */
+@media (max-width: 620px) {
+  .chart-wrap {
+    overflow-x: auto;
+  }
+  .chart-wrap .chart-svg {
+    min-width: 560px;
+  }
+}
+
 .chart-svg {
   width: 100%;
   height: auto;
@@ -1020,7 +1035,7 @@ details.panel > .panel__body {
 
 .chart-tick {
   fill: var(--ink-faint);
-  font-size: 12px;
+  font-size: 13px;
   text-anchor: middle;
 }
 

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  formatAxisTicks,
   formatConfidenceInterval,
+  formatDifferenceInterval,
+  formatDifferenceValue,
   formatConfidenceLevel,
   formatEstimate,
   formatMinutesAsDuration,
@@ -103,5 +106,45 @@ describe('years and units', () => {
   it('never renders a value without context', () => {
     expect(formatValueShort(528.75, 'minutes_per_day')).toContain('min')
     expect(formatValueShort(0.5, 'proportion_of_population')).toContain('%')
+  })
+})
+
+describe('differences (review finding: pp, never %)', () => {
+  it('formats proportion differences and their CIs in percentage points', () => {
+    expect(formatDifferenceValue(-0.023, 'proportion_of_population')).toBe('-2.3 pp')
+    expect(formatDifferenceInterval(-0.031, -0.015, 'proportion_of_population')).toBe(
+      '-3.1 to -1.5 pp',
+    )
+  })
+
+  it('keeps minute differences in the estimate scale', () => {
+    expect(formatDifferenceValue(-11.09, 'minutes_per_day')).toBe('-11.1 min')
+  })
+})
+
+describe('adaptive precision (review finding: no 0.0 floor)', () => {
+  it('keeps small nonzero SEs and rates visible', () => {
+    expect(formatStandardError(0.0004, 'proportion_of_population')).toBe('0.04 pp')
+    expect(formatProportionAsPercent(0.0004)).toBe('0.04%')
+    expect(formatProportionAsPercent(0)).toBe('0.0%')
+  })
+})
+
+describe('axis tick labels (review finding: no duplicate labels)', () => {
+  it('adds decimals until proportion labels are distinct', () => {
+    expect(formatAxisTicks([0.715, 0.72, 0.725], 'proportion_of_population')).toEqual([
+      '71.5%',
+      '72.0%',
+      '72.5%',
+    ])
+    expect(formatAxisTicks([0.7, 0.72, 0.74], 'proportion_of_population')).toEqual([
+      '70%',
+      '72%',
+      '74%',
+    ])
+  })
+
+  it('labels minute ticks plainly', () => {
+    expect(formatAxisTicks([300, 320, 340], 'minutes_per_day')).toEqual(['300', '320', '340'])
   })
 })

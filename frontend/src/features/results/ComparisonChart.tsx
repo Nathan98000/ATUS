@@ -45,8 +45,8 @@ export function ComparisonChart({ groups, unit }: ComparisonChartProps) {
     <div>
       {/* SVG with role="img" + aria-label is the standard accessible-graphic
           pattern; the exact values are in the table below the chart. */}
-      {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role */}
       <svg
+        // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
         role="img"
         viewBox={`0 0 ${WIDTH} ${height}`}
         className="chart-svg"

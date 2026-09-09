@@ -47,7 +47,7 @@ test('the chart is keyboard-inspectable, including the unavailable year', async 
   await page.getByLabel('To', { exact: true }).selectOption('2023')
   await page.getByRole('button', { name: 'Analyze' }).click()
 
-  const chart = page.getByRole('group', { name: /Average time per day by year/ })
+  const chart = page.getByRole('application', { name: /Average time per day by year/ })
   await expect(chart).toBeVisible({ timeout: 15_000 })
   await chart.focus()
   await page.keyboard.press('ArrowRight')

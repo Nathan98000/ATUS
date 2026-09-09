@@ -14,6 +14,13 @@ export function ErrorPanel({ error, onRetry, adjustHref }: ErrorPanelProps) {
     <div className="error-banner" role="alert">
       <h2>{presented.heading}</h2>
       <p style={{ marginBottom: presented.hint ? '0.3rem' : 0 }}>{presented.message}</p>
+      {presented.detailLines.length > 0 ? (
+        <ul style={{ margin: '0.2rem 0 0.4rem', paddingLeft: '1.2rem' }}>
+          {presented.detailLines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      ) : null}
       {presented.hint ? <p style={{ margin: 0 }}>{presented.hint}</p> : null}
       <p style={{ margin: '0.8rem 0 0', display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
         {presented.retryable && onRetry ? (

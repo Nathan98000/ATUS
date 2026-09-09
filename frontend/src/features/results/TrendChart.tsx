@@ -13,6 +13,7 @@ import { useMemo, useState } from 'react'
 
 import type { TrendPoint } from '../../api/types'
 import {
+  formatAxisTicks,
   formatConfidenceInterval,
   formatStandardError,
   formatValueShort,
@@ -40,8 +41,10 @@ interface AvailablePoint {
 }
 
 /**
- * Splits the trend into runs of consecutive available points. A run breaks at
- * every unavailable point, producing the visible gap. Exported for tests.
+ * Splits the trend into runs of consecutive available points. A run breaks
+ * at every unavailable point AND at any jump in years (a spec may request
+ * non-contiguous years; the x-scale is linear in calendar time, so drawing
+ * across a skipped year would visually interpolate it). Exported for tests.
  */
 export function availableSegments(points: readonly TrendPoint[]): AvailablePoint[][] {
   const segments: AvailablePoint[][] = []
@@ -51,6 +54,11 @@ export function availableSegments(points: readonly TrendPoint[]): AvailablePoint
       if (current.length > 0) segments.push(current)
       current = []
       continue
+    }
+    const previous = current[current.length - 1]
+    if (previous && point.year !== previous.year + 1) {
+      segments.push(current)
+      current = []
     }
     current.push({
       year: point.year,
@@ -91,6 +99,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
   const y = linearScale([yMin, yMax], [HEIGHT - MARGIN.bottom, MARGIN.top])
 
   const yTicks = niceTicks(yMin, yMax, 5)
+  const yTickLabels = formatAxisTicks(yTicks, unit)
   const xTickStep = Math.max(1, Math.ceil((maxYear - minYear) / 8))
   const xTicks = years.filter(
     (year) =>
@@ -167,17 +176,19 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
   return (
     <div className="trend-chart">
       {/* Interactive chart widget: one tab stop, arrow keys inspect years.
-          A div with role="group" + tabIndex is deliberate — there is no
-          native element for this composite; the data table below remains
+          role="application" is deliberate: it switches screen readers into
+          focus mode so the arrow keys reach the widget (a plain group would
+          leave arrows to the virtual cursor). The data table below remains
           the primary non-visual representation. */}
-      {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-element-to-interactive-role */}
+      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
-        role="group"
+        role="application"
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
         tabIndex={0}
         className="chart-wrap"
-        aria-label={`${measureLabel} by year, ${minYear} to ${maxYear}. Interactive chart: use the left and right arrow keys to read each year's value; the full data table is below the chart.`}
+        aria-roledescription="interactive chart"
+        aria-label={`${measureLabel} by year, ${minYear} to ${maxYear}. Use the left and right arrow keys to read each year's value; Escape dismisses the readout. The full data table is below the chart.`}
         onKeyDown={onKeyDown}
-        onBlur={() => setActiveYear(null)}
       >
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
@@ -187,7 +198,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
           onMouseLeave={() => setActiveYear(null)}
         >
           {/* Gridlines + y axis */}
-          {yTicks.map((tick) => (
+          {yTicks.map((tick, tickIndex) => (
             <g key={tick}>
               <line
                 x1={MARGIN.left}
@@ -197,7 +208,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
                 className="chart-grid"
               />
               <text x={MARGIN.left - 8} y={y(tick)} className="chart-tick chart-tick--y">
-                {formatAxisValue(tick, unit)}
+                {yTickLabels[tickIndex]}
               </text>
             </g>
           ))}
@@ -340,13 +351,4 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
       ) : null}
     </div>
   )
-}
-
-function formatAxisValue(value: number, unit: string): string {
-  if (unit === 'proportion_of_population') return `${Math.round(value * 100)}%`
-  if (unit === 'persons_per_day') {
-    if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(0)}M`
-    return value.toLocaleString('en-US')
-  }
-  return value.toLocaleString('en-US')
 }

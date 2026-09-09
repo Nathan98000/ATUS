@@ -170,7 +170,9 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
           <Link className="btn btn--small" to={adjustHref}>
             Adjust analysis
           </Link>
-          {operation === 'estimate' && meta.data ? (
+          {operation === 'estimate' && meta.data && spec.weights !== 'pandemic' ? (
+            // Only for the multi-year weights: the pandemic scheme covers
+            // 2019–2020 only, so a full-period trend would always be refused.
             <Link
               className="btn btn--small"
               to={analysisPath('trend', {
@@ -184,7 +186,12 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
         </div>
       </header>
 
-      {query.isPending ? (
+      {meta.isError ? (
+        // The analysis query is version-keyed on /meta and stays disabled
+        // while it has no version tag — a failing /meta must surface here,
+        // or a cold deep link would show the loading state forever.
+        <ErrorPanel error={meta.error} onRetry={() => meta.refetch()} />
+      ) : query.isPending ? (
         <LoadingPanel
           message={LOADING_MESSAGES[operation]}
           hint={
@@ -206,6 +213,16 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
           analysisKey={query.data.analysisKey}
         />
       )}
+      {/* Persistent live region: reliably announces the start and end of a
+          potentially ~10 s computation (content mounted with its text
+          already present is often not announced by screen readers). */}
+      <p className="visually-hidden" aria-live="polite">
+        {meta.isError || query.isError
+          ? 'The analysis could not be completed.'
+          : query.isPending
+            ? LOADING_MESSAGES[operation]
+            : 'Analysis ready.'}
+      </p>
     </div>
   )
 }

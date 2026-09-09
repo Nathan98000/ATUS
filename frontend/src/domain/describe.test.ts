@@ -110,3 +110,41 @@ describe('labels and jargon', () => {
     )
   })
 })
+
+describe('interpretation faithfulness (review findings)', () => {
+  it('never claims "all days of the week" for day-type-filtered estimates', () => {
+    const weekend = {
+      ...estimateSleepFixture,
+      spec: {
+        ...(estimateSleepFixture.spec as Record<string, unknown>),
+        population: { day_type: 'weekend' },
+      },
+    }
+    const sentence = interpretEstimate(weekend)
+    expect(sentence).toContain('averaged across weekend days')
+    expect(sentence).not.toContain('all days of the week')
+  })
+
+  it('mentions the diary window when date filters are set', () => {
+    const windowed = {
+      ...estimateSleepFixture,
+      spec: {
+        ...(estimateSleepFixture.spec as Record<string, unknown>),
+        population: { diary_date_min: '2020-05-10' },
+      },
+    }
+    expect(interpretEstimate(windowed)).toContain('within the selected diary period')
+  })
+
+  it('never uses a non-person filter as the sentence subject', () => {
+    const fips = {
+      ...estimateSleepFixture,
+      spec: {
+        ...(estimateSleepFixture.spec as Record<string, unknown>),
+        population: { state_fips: '06' },
+      },
+    }
+    const sentence = interpretEstimate(fips)
+    expect(sentence).toMatch(/^People in the selected population spent/)
+  })
+})

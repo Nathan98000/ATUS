@@ -3,8 +3,13 @@
  * the harmonized lexicon — all driven by the activities API. Selecting a
  * 2- or 4-digit tier means the tier and all of its descendants; the picker
  * says so explicitly rather than pretending every code is one activity.
+ *
+ * The search results implement the WAI-ARIA combobox/listbox pattern, which
+ * a native <select> cannot express — the two rules below flag exactly that
+ * pattern, so they are disabled for this file only.
  */
-import { useId, useMemo, useRef, useState } from 'react'
+/* oxlint-disable jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-to-interactive-role */
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { useActivities, useActivityPresets } from '../../api/queries'
 import type { ActivityEntry, ActivitySelection } from '../../api/types'
@@ -95,7 +100,7 @@ function SelectionSummary({
         <span className="activity-picker__name">
           {presetLabels.get(value.preset) ?? value.preset}
         </span>
-        <span className="field-hint"> — curated selection (preset “{value.preset}”)</span>
+        <span className="field-hint"> — curated selection</span>
       </div>
     )
   }
@@ -143,6 +148,26 @@ function PickerPanel({
   const [activeIndex, setActiveIndex] = useState(0)
   const results = useMemo(() => index.search(query), [index, query])
 
+  // Option ids are keyed by activity code (not list position) so
+  // aria-activedescendant changes value as the results change — screen
+  // readers then re-announce the active option while the user types.
+  const optionId = (code: string) => `${listboxId}-option-${code}`
+  const activeOptionId =
+    query.trim() === ''
+      ? undefined
+      : results.length === 0
+        ? `${listboxId}-no-results`
+        : results[activeIndex]
+          ? optionId(results[activeIndex].code)
+          : undefined
+
+  // Keep the active option visible inside the scrollable listbox.
+  useEffect(() => {
+    if (activeOptionId) {
+      document.getElementById(activeOptionId)?.scrollIntoView?.({ block: 'nearest' })
+    }
+  }, [activeOptionId])
+
   const selectEntry = (entry: ActivityEntry) => {
     onSelect({ include: [entry.code], label: entry.name })
   }
@@ -178,11 +203,7 @@ function PickerPanel({
           role="combobox"
           aria-expanded={query.trim() !== ''}
           aria-controls={`${listboxId}-list`}
-          aria-activedescendant={
-            query.trim() !== '' && results[activeIndex]
-              ? `${listboxId}-option-${activeIndex}`
-              : undefined
-          }
+          aria-activedescendant={activeOptionId}
           aria-autocomplete="list"
           autoComplete="off"
           placeholder="e.g. television, sleep, cooking"
@@ -199,7 +220,6 @@ function PickerPanel({
         /* WAI-ARIA combobox pattern: the list is a listbox driven by the
            search input via aria-activedescendant (oxlint prefers native
            <select>, which cannot express this searchable hierarchy). */
-        /* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-to-interactive-role */
         <ul
           className="activity-picker__results"
           role="listbox"
@@ -207,7 +227,16 @@ function PickerPanel({
           aria-label="Matching activities"
         >
           {results.length === 0 ? (
-            <li className="field-hint" role="presentation" style={{ padding: '0.4rem 0.6rem' }}>
+            /* A disabled option (not presentation) so the combobox's active
+               descendant can announce the empty state to screen readers. */
+            <li
+              className="field-hint"
+              role="option"
+              aria-disabled="true"
+              aria-selected={false}
+              id={`${listboxId}-no-results`}
+              style={{ padding: '0.4rem 0.6rem' }}
+            >
               No activities match “{query}”.
             </li>
           ) : (
@@ -220,11 +249,10 @@ function PickerPanel({
                   role="presentation"
                   className={position === activeIndex ? 'is-active' : undefined}
                 >
-                  {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role */}
                   <button
                     type="button"
                     role="option"
-                    id={`${listboxId}-option-${position}`}
+                    id={optionId(entry.code)}
                     aria-selected={position === activeIndex}
                     tabIndex={-1}
                     onClick={() => selectEntry(entry)}

@@ -35,9 +35,36 @@ export function formatMinutesDetailed(minutes: number): string {
   return ONE_DECIMAL.format(minutes)
 }
 
+/**
+ * One decimal by default; small nonzero values keep two significant digits
+ * instead of collapsing to "0.0" (e.g. 0.0004 → "0.04%").
+ */
+function adaptiveScaled(value: number): string {
+  const rounded = ONE_DECIMAL.format(value)
+  if (value !== 0 && rounded === '0.0') return value.toPrecision(2).replace(/0+$/, '')
+  if (value !== 0 && rounded === '-0.0') return value.toPrecision(2).replace(/0+$/, '')
+  return rounded
+}
+
 /** 0.7278 → "72.8%". */
 export function formatProportionAsPercent(proportion: number): string {
-  return `${ONE_DECIMAL.format(proportion * 100)}%`
+  return `${adaptiveScaled(proportion * 100)}%`
+}
+
+/**
+ * A DIFFERENCE of two proportions is percentage points, never "%".
+ * −0.023 → "−2.3 pp". Non-proportion differences keep the estimate scale.
+ */
+export function formatDifferenceValue(value: number, unit: string): string {
+  if (unit === 'proportion_of_population') return `${adaptiveScaled(value * 100)} pp`
+  return formatValueShort(value, unit)
+}
+
+export function formatDifferenceInterval(lower: number, upper: number, unit: string): string {
+  if (unit === 'proportion_of_population') {
+    return `${adaptiveScaled(lower * 100)} to ${adaptiveScaled(upper * 100)} pp`
+  }
+  return formatConfidenceInterval(lower, upper, unit)
 }
 
 /** 272912483 → "272.9 million"; 41200 → "41,200". */
@@ -118,7 +145,7 @@ export function formatValueShort(value: number, unit: string): string {
 
 /** SE in the estimate's scale: percentages become percentage points. */
 export function formatStandardError(se: number, unit: string): string {
-  if (unit === 'proportion_of_population') return `${ONE_DECIMAL.format(se * 100)} pp`
+  if (unit === 'proportion_of_population') return `${adaptiveScaled(se * 100)} pp`
   return formatValueShort(se, unit)
 }
 
@@ -151,4 +178,26 @@ export function formatYears(years: readonly number[]): string {
   const contiguous = sorted.every((year, index) => year === first + index)
   if (contiguous) return `${first}–${last}`
   return sorted.join(', ')
+}
+
+/**
+ * Axis tick labels: chooses the fewest decimals that keep every label
+ * distinct (whole percents can collide when ticks are sub-point apart).
+ */
+export function formatAxisTicks(ticks: readonly number[], unit: string): string[] {
+  const render = (value: number, decimals: number): string => {
+    if (unit === 'proportion_of_population') return `${(value * 100).toFixed(decimals)}%`
+    if (unit === 'persons_per_day' && Math.abs(value) >= 1_000_000) {
+      return `${(value / 1_000_000).toFixed(decimals)}M`
+    }
+    return value.toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })
+  }
+  for (let decimals = 0; decimals <= 3; decimals += 1) {
+    const labels = ticks.map((tick) => render(tick, decimals))
+    if (new Set(labels).size === labels.length) return labels
+  }
+  return ticks.map((tick) => render(tick, 4))
 }

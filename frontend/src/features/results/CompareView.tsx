@@ -9,9 +9,10 @@ import {
   formatConfidenceInterval,
   formatConfidenceLevel,
   formatCount,
+  formatDifferenceInterval,
+  formatDifferenceValue,
   formatEstimate,
   formatStandardError,
-  formatValueShort,
   unitLabel,
 } from '../../utils/format'
 import { ComparisonChart } from './ComparisonChart'
@@ -101,7 +102,7 @@ export function CompareView({
           </h3>
           <p className="difference-block__value">
             {difference.value > 0 ? '+' : ''}
-            {formatValueShort(difference.value, unit)}
+            {formatDifferenceValue(difference.value, unit)}
           </p>
           {difference.standard_error != null ? (
             <p className="field-hint">
@@ -109,7 +110,7 @@ export function CompareView({
               {difference.ci_lower != null &&
               difference.ci_upper != null &&
               difference.confidence_level != null
-                ? ` · ${formatConfidenceLevel(difference.confidence_level)} CI ${formatConfidenceInterval(difference.ci_lower, difference.ci_upper, unit)}`
+                ? ` · ${formatConfidenceLevel(difference.confidence_level)} CI ${formatDifferenceInterval(difference.ci_lower, difference.ci_upper, unit)}`
                 : ''}
             </p>
           ) : null}

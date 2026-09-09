@@ -113,15 +113,21 @@ Vite, client-side only):
 - API types generated from the backend's OpenAPI schema
   (`scripts/export_openapi.py` + `npm run generate:api-types`); one central
   typed client mapping the error envelope to distinct user presentations.
-- Tests: 93 unit/component/integration tests (Vitest + Testing Library +
+- Tests: 119 unit/component/integration tests (Vitest + Testing Library +
   MSW with captured real payloads, including a stale-response race test) and
   20 Playwright E2E tests (18 desktop + 2 mobile) against the real API on
   the hand-computed fixture database — full user journeys, share-link
   reproduction in a fresh browser context, the 2020 gap, error handling,
   axe accessibility checks, keyboard-only operation. CI runs
-  typecheck/lint/format/unit/build and the E2E suite.
+  typecheck/lint/format/unit/build and the E2E suite. An adversarial review
+  fleet (96 agents: 8 code-dimension reviewers, 3 live browser probes
+  driving the running app, 2-vote verification) confirmed 37 findings — all
+  fixed, including three statistical-presentation defects (proportion
+  differences shown in % instead of percentage points; an interpretation
+  sentence claiming "all days of the week" under day-type filters; trend
+  lines drawn across non-contiguous requested years).
 - Docs: [frontend.md](frontend.md), ADRs 007–010; measured performance:
-  110.9 kB gzip JS, home visually complete ~170 ms locally with exactly one
+  110.8 kB gzip JS, home visually complete ~170 ms locally with exactly one
   API call.
 
 Deliberately not built: exports (CSV/PNG/PDF), saved analyses/accounts,

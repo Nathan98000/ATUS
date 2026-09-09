@@ -81,7 +81,7 @@ describe('TrendChart keyboard access', () => {
     render(
       <TrendChart points={points} unit="minutes_per_day" measureLabel="Average time per day" />,
     )
-    const chart = screen.getByRole('group', { name: /Average time per day by year/ })
+    const chart = screen.getByRole('application', { name: /Average time per day by year/ })
     chart.focus()
     await user.keyboard('{ArrowRight}')
     expect(chart).toHaveTextContent('2003')

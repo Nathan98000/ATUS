@@ -3,6 +3,7 @@
  * the API mocked at the HTTP layer (fixtures are real captured responses).
  */
 import { QueryClientProvider } from '@tanstack/react-query'
+import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, delay, http } from 'msw'
 import { MemoryRouter, Route, Routes } from 'react-router'
@@ -13,9 +14,12 @@ import { encodeSpec } from '../domain/urlSpec'
 import {
   compareChildrenFixture,
   error2020Fixture,
+  estimatePandemicFixture,
   estimateSleepFixture,
   trendLeisureFixture,
 } from '../test/fixtures'
+import { Link } from 'react-router'
+
 import { LocationProbe, testQueryClient } from '../test/render'
 import { analysisHeaders, api, server } from '../test/server'
 import { AnalysisPage } from './AnalysisPage'
@@ -30,13 +34,20 @@ const sleepSpec: EstimateRequest = {
   confidence_level: 0.95,
 }
 
-function renderAnalysisRoute(route: string) {
+function renderAnalysisRoute(
+  route: string,
+  {
+    client = testQueryClient(),
+    navTo,
+  }: { client?: ReturnType<typeof testQueryClient>; navTo?: string } = {},
+) {
   return render(
-    <QueryClientProvider client={testQueryClient()}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[route]}>
         <Routes>
           <Route path="/analysis/:operation" element={<AnalysisPage />} />
         </Routes>
+        {navTo ? <Link to={navTo}>go-to-next</Link> : null}
         <LocationProbe />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -61,7 +72,14 @@ describe('estimate results', () => {
     expect(screen.getByText(/TUFNWGTP \(multiyear\)/)).toBeInTheDocument()
   })
 
-  it('rewrites the URL to the canonical spec from the response', async () => {
+  it('rewrites the URL to the canonical spec from the response without refetching', async () => {
+    let posts = 0
+    server.use(
+      http.post(api('/analysis/estimate'), () => {
+        posts += 1
+        return HttpResponse.json(estimateSleepFixture, { headers: analysisHeaders() })
+      }),
+    )
     // Request written with unsorted years/keys; response carries the canonical spec.
     const uncanonical = { ...sleepSpec, years: [2025] }
     renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(uncanonical)}`)
@@ -72,7 +90,45 @@ describe('estimate results', () => {
         `/analysis/estimate?spec=${encodeSpec(estimateSleepFixture.spec as EstimateRequest)}`,
       )
     })
+    // The canonical result was seeded into the cache — no second request.
+    await waitFor(() => expect(screen.getByText('8h 49m')).toBeInTheDocument())
+    expect(posts).toBe(1)
   })
+
+  it('rewrites trend URLs to the canonical spec too', async () => {
+    const requestSpec: EstimateRequest = {
+      activity: { preset: 'leisure_and_sports_bls_table' },
+      years: trendLeisureFixture.points.map((point) => point.year),
+    }
+    renderAnalysisRoute(`/analysis/trend?spec=${encodeSpec(requestSpec)}`)
+    await screen.findByTestId('unavailable-2020')
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? ''
+      expect(location).toBe(
+        `/analysis/trend?spec=${encodeSpec(trendLeisureFixture.spec as EstimateRequest)}`,
+      )
+    })
+  })
+
+  it('does not offer the full-period trend shortcut for pandemic-weighted estimates', async () => {
+    server.use(
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(estimatePandemicFixture, { headers: analysisHeaders() }),
+      ),
+    )
+    const pandemicSpec = estimatePandemicFixture.spec as EstimateRequest
+    renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(pandemicSpec)}`)
+    await screen.findByRole('note') // the pandemic warning banner
+    expect(screen.queryByRole('link', { name: /trend/i })).not.toBeInTheDocument()
+  })
+
+  it('surfaces a /meta failure instead of spinning forever', async () => {
+    server.use(http.get(api('/meta'), () => HttpResponse.error()))
+    renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
+    const alert = await screen.findByRole('alert', {}, { timeout: 8000 })
+    expect(alert).toHaveTextContent('could not be reached')
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+  }, 10000)
 
   it('sets a descriptive document title', async () => {
     renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
@@ -90,6 +146,8 @@ describe('trend and compare results', () => {
     renderAnalysisRoute(`/analysis/trend?spec=${encodeSpec(spec)}`)
     expect(await screen.findByTestId('unavailable-2020')).toBeInTheDocument()
     expect(screen.getAllByTestId('trend-line-segment').length).toBe(2)
+    // API warnings must be visible on trend pages too.
+    expect(screen.getByRole('note')).toHaveTextContent(/BLS-harmonized/)
     // The data table lists 2020 as unavailable, never as zero.
     const row = screen.getByRole('rowheader', { name: '2020' }).closest('tr') as HTMLElement
     expect(row).toHaveTextContent('Unavailable')
@@ -115,6 +173,8 @@ describe('trend and compare results', () => {
       'Household children present − No household children',
     )
     expect(compareChildrenFixture.difference.value).toBeLessThan(0)
+    // API warnings must be visible on compare pages too.
+    expect(screen.getByRole('note')).toHaveTextContent(/per-replicate differences/)
   })
 })
 
@@ -157,8 +217,9 @@ describe('error handling', () => {
 })
 
 describe('race safety', () => {
-  it('a slow earlier analysis can never overwrite a newer one', async () => {
-    // Two different specs: the first response is slow, the second fast.
+  it('a slow superseded analysis can never overwrite the newer one', async () => {
+    // One page, one QueryClient: the user navigates from spec A (slow
+    // response) to spec B (fast response) while A is still in flight.
     const slowSpec = { ...sleepSpec, population: {} }
     let calls = 0
     server.use(
@@ -178,13 +239,16 @@ describe('race safety', () => {
       }),
     )
 
-    const first = renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(slowSpec)}`)
+    const user = userEvent.setup()
+    renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(slowSpec)}`, {
+      navTo: `/analysis/estimate?spec=${encodeSpec(sleepSpec)}`,
+    })
     await waitFor(() => expect(calls).toBe(1))
-    first.unmount()
-    renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
+    await user.click(screen.getByRole('link', { name: 'go-to-next' }))
 
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
-    // Give the slow response time to land; the shown value must not change.
+    // Let the slow response land; the displayed result must not change to
+    // the superseded analysis's value (999 min = 16h 39m).
     await new Promise((resolve) => setTimeout(resolve, 500))
     expect(screen.queryByText(/16h 39m/)).not.toBeInTheDocument()
     expect(screen.getByText('8h 49m')).toBeInTheDocument()

@@ -67,3 +67,29 @@ describe('ErrorPanel', () => {
     expect(screen.getByText('Technical details')).toBeInTheDocument()
   })
 })
+
+describe('validation details (review finding: field errors surfaced)', () => {
+  it('lists field-level problems from 422 validation details', () => {
+    const error = new ApiError(
+      422,
+      'validation_error',
+      'Request validation failed.',
+      {
+        errors: [
+          {
+            loc: ['body', 'population', 'age_min'],
+            msg: 'Input should be less than or equal to 130',
+          },
+          { loc: ['body', 'years', 0], msg: 'Input should be greater than or equal to 2003' },
+        ],
+      },
+      null,
+    )
+    render(<ErrorPanel error={error} adjustHref="/explore" />)
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent(
+      'population.age_min: Input should be less than or equal to 130',
+    )
+    expect(alert).toHaveTextContent('years.0: Input should be greater than or equal to 2003')
+  })
+})

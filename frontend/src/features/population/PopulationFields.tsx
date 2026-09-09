@@ -22,8 +22,13 @@ interface PopulationFieldsProps {
   value: PopulationRequest
   onChange: (value: PopulationRequest) => void
   ageError?: string
-  /** Show the age inputs (paired age_min/age_max) first. Default true. */
-  compact?: boolean
+}
+
+/** '25' → 25; '' or non-numeric input → undefined (never NaN in a spec). */
+function numberOrUndefined(raw: string): number | undefined {
+  if (raw === '') return undefined
+  const parsed = Number(raw)
+  return Number.isNaN(parsed) ? undefined : parsed
 }
 
 export function PopulationFields({
@@ -31,7 +36,6 @@ export function PopulationFields({
   value,
   onChange,
   ageError,
-  compact = false,
 }: PopulationFieldsProps) {
   const id = useId()
   const byName = new Map(dimensions.map((dimension) => [dimension.name, dimension]))
@@ -46,6 +50,11 @@ export function PopulationFields({
     (dimension) =>
       !PRIMARY_DIMENSIONS.has(dimension.name) &&
       !['age_min', 'age_max'].includes(dimension.name),
+  )
+  // Filters must never be active yet invisible: if a secondary dimension has
+  // a value (e.g. from a shared analysis), its section starts open.
+  const secondaryActive = secondary.some(
+    (dimension) => (value as Record<string, unknown>)[dimension.name] != null,
   )
 
   return (
@@ -65,13 +74,10 @@ export function PopulationFields({
                 min={15}
                 max={130}
                 placeholder="Min"
+                aria-invalid={ageError ? true : undefined}
+                aria-describedby={`${id}-age-note`}
                 value={value.age_min ?? ''}
-                onChange={(event) =>
-                  set(
-                    'age_min',
-                    event.target.value === '' ? undefined : Number(event.target.value),
-                  )
-                }
+                onChange={(event) => set('age_min', numberOrUndefined(event.target.value))}
               />
               <span aria-hidden="true">–</span>
               <label className="visually-hidden" htmlFor={`${id}-age-max`}>
@@ -84,19 +90,20 @@ export function PopulationFields({
                 min={15}
                 max={130}
                 placeholder="Max"
+                aria-invalid={ageError ? true : undefined}
+                aria-describedby={`${id}-age-note`}
                 value={value.age_max ?? ''}
-                onChange={(event) =>
-                  set(
-                    'age_max',
-                    event.target.value === '' ? undefined : Number(event.target.value),
-                  )
-                }
+                onChange={(event) => set('age_max', numberOrUndefined(event.target.value))}
               />
             </div>
             {ageError ? (
-              <p className="error-text">{ageError}</p>
+              <p className="error-text" id={`${id}-age-note`}>
+                {ageError}
+              </p>
             ) : (
-              <p className="field-hint">Leave empty for all ages (15+).</p>
+              <p className="field-hint" id={`${id}-age-note`}>
+                Leave empty for all ages (15+).
+              </p>
             )}
           </fieldset>
         ) : null}
@@ -110,9 +117,9 @@ export function PopulationFields({
           />
         ))}
       </div>
-      {secondary.length > 0 && !compact ? (
-        <details className="more-filters">
-          <summary>More filters</summary>
+      {secondary.length > 0 ? (
+        <details className="more-filters" open={secondaryActive || undefined}>
+          <summary>More filters{secondaryActive ? ' (active)' : ''}</summary>
           <div className="population-grid" style={{ marginTop: '0.6rem' }}>
             {secondary.map((dimension) => (
               <DimensionField

@@ -11,7 +11,7 @@ import { useMeta, usePopulationMetadata } from '../api/queries'
 import { isOperation, type Operation } from '../api/types'
 import { ErrorPanel } from '../components/ErrorPanel'
 import { LoadingPanel } from '../components/LoadingPanel'
-import { analysisPath, decodeSpec } from '../domain/urlSpec'
+import { analysisPath, decodeSpec, explorePath } from '../domain/urlSpec'
 import { ActivityPicker } from '../features/activities/ActivityPicker'
 import {
   AdvancedOptions,
@@ -88,7 +88,6 @@ function Builder({
 }) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const latestYear = metaYears.length > 0 ? Math.max(...metaYears) : null
 
   const [state, setState] = useState<BuilderState>(() => {
     const operationParam = searchParams.get('op')
@@ -96,15 +95,22 @@ function Builder({
     if (isOperation(operationParam ?? undefined) && specParam) {
       try {
         const operation = operationParam as Operation
-        return fromRequest(operation, decodeSpec(specParam, operation), latestYear)
+        return fromRequest(operation, decodeSpec(specParam, operation), metaYears)
       } catch {
         // Fall through to the default analysis on a malformed prefill link.
       }
     }
-    return defaultBuilderState(latestYear)
+    return defaultBuilderState(metaYears)
   })
-  const [attempted, setAttempted] = useState(false)
+  const [failedSubmits, setFailedSubmits] = useState(0)
+  const attempted = failedSubmits > 0
   const errorSummaryRef = useRef<HTMLDivElement>(null)
+
+  // Focus the validation summary AFTER it renders (it does not exist at the
+  // moment a failed submit is registered).
+  useEffect(() => {
+    if (failedSubmits > 0) errorSummaryRef.current?.focus()
+  }, [failedSubmits])
 
   const update = (partial: Partial<BuilderState>) =>
     setState((current) => ({ ...current, ...partial }))
@@ -113,12 +119,16 @@ function Builder({
   const shownErrors = attempted ? validation.errors : {}
 
   const submit = () => {
-    setAttempted(true)
     if (!validation.valid) {
-      errorSummaryRef.current?.focus()
+      setFailedSubmits((count) => count + 1)
       return
     }
-    navigate(analysisPath(state.operation, toRequest(state, metaYears)))
+    const request = toRequest(state, metaYears)
+    // Write the configuration into the /explore history entry first (replace),
+    // then push the result — so browser Back returns to a prefilled builder
+    // instead of a reset one.
+    navigate(explorePath(state.operation, request), { replace: true })
+    navigate(analysisPath(state.operation, request))
   }
 
   const dimensions = populationMetadata.dimensions
@@ -149,6 +159,11 @@ function Builder({
         ))}
       </div>
 
+      {state.prefillNote ? (
+        <p className="info-note" style={{ marginBottom: '1rem' }}>
+          {state.prefillNote}
+        </p>
+      ) : null}
       {attempted && !validation.valid ? (
         <div
           ref={errorSummaryRef}
@@ -239,7 +254,6 @@ function Builder({
                         )
                       }
                       ageError={group.ageError}
-                      compact
                     />
                   </fieldset>
                 ))}

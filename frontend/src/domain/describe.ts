@@ -158,13 +158,48 @@ export function analysisTitle(
 }
 
 /**
+ * The averaging clause must match what the weights actually average over:
+ * a day_type filter restricts the estimate to weekend days or weekdays, and
+ * a diary-date window restricts the period — never claim "all days of the
+ * week" then.
+ */
+function averagingClause(population: PopulationRequest | undefined): string {
+  const dayPhrase =
+    population?.day_type === 'weekend'
+      ? 'weekend days'
+      : population?.day_type === 'weekday'
+        ? 'weekdays'
+        : 'all days of the week'
+  const window =
+    population?.diary_date_min != null || population?.diary_date_max != null
+      ? ' within the selected diary period'
+      : ''
+  return `averaged across ${dayPhrase}${window}`
+}
+
+/**
+ * A grammatical subject for the interpretation sentence. Filters that are
+ * not person-nouns (state FIPS, diary dates, region alone) would read as
+ * nonsense subjects ("State FIPS 06 spent…"), so those fall back to a
+ * generic subject; the population is always fully described elsewhere on
+ * the page.
+ */
+function interpretationSubject(population: PopulationRequest | undefined): string {
+  const phrase = populationPhrase(population)
+  if (phrase.startsWith('All respondents')) return 'Americans age 15 and over'
+  if (/^(Women|Men|Employed|Unemployed|Not in the labor force)/.test(phrase)) return phrase
+  if (/^Ages? /.test(phrase))
+    return `People ${phrase.charAt(0).toLowerCase()}${phrase.slice(1)}`
+  return 'People in the selected population'
+}
+
+/**
  * One deterministic plain-language sentence about an estimate. Descriptive
  * only — no causal claims, no significance language.
  */
 export function interpretEstimate(result: EstimateResponse): string {
-  const population = populationPhrase(
-    (result.spec as { population?: PopulationRequest }).population,
-  )
+  const specPopulation = (result.spec as { population?: PopulationRequest }).population
+  const population = populationPhrase(specPopulation)
   const activity = result.activity.label
   const years = formatYears(result.years)
   const { value, unit } = result.estimate
@@ -172,8 +207,9 @@ export function interpretEstimate(result: EstimateResponse): string {
   switch (result.measure) {
     case 'average_minutes_per_day':
       return (
-        `${population} spent an estimated ${formatEstimate(value, unit).primary} per day ` +
-        `on “${activity}” in ${years}, averaged across all days of the week.`
+        `${interpretationSubject(specPopulation)} spent an estimated ` +
+        `${formatEstimate(value, unit).primary} per day on “${activity}” in ${years}, ` +
+        `${averagingClause(specPopulation)}.`
       )
     case 'participation_rate':
       return (

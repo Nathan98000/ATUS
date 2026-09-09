@@ -12,10 +12,11 @@ reloads.
 
 ## Decision
 
-- **TanStack Query owns all server state.** Metadata queries
-  (`/meta`, `/population/metadata`, `/activities`, `/activities/presets`)
-  are fetched once and cached for the session; the ~70 KB lexicon is
-  searched client-side so typing performs zero requests.
+- **TanStack Query owns all server state.** The population metadata,
+  lexicon, and preset queries are fetched once and cached for the session;
+  `/meta` uses a 5-minute staleTime (matching the API's `Cache-Control`) so
+  a data reload is noticed without polling. The ~70 KB lexicon is searched
+  client-side, so typing performs zero requests.
 - **Analysis query keys embed the backend's version triple**
   (`analytics_version:release:runN` from `/meta`) plus the canonical spec
   JSON. This mirrors the server's own cache key, so a data reload or

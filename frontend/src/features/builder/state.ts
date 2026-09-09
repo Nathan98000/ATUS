@@ -40,6 +40,8 @@ export type YearsMode = 'single' | 'pooled'
 export interface BuilderState {
   operation: Operation
   activity: ActivitySelection
+  /** One-time note when a prefilled shared analysis could not be represented exactly. */
+  prefillNote?: string
   measure: Measure
   /** estimate/compare: one year or a pooled set. */
   yearsMode: YearsMode
@@ -58,7 +60,9 @@ export interface BuilderState {
   confidenceLevel: number
 }
 
-export function defaultBuilderState(latestYear: number | null): BuilderState {
+export function defaultBuilderState(availableYears: readonly number[]): BuilderState {
+  const latestYear = availableYears.length > 0 ? Math.max(...availableYears) : null
+  const earliestYear = availableYears.length > 0 ? Math.min(...availableYears) : null
   return {
     operation: 'estimate',
     activity: { preset: 'sleep' },
@@ -66,7 +70,7 @@ export function defaultBuilderState(latestYear: number | null): BuilderState {
     yearsMode: 'single',
     singleYear: latestYear,
     pooledYears: [],
-    trendFrom: null,
+    trendFrom: earliestYear,
     trendTo: latestYear,
     population: {},
     groupA: {},
@@ -171,8 +175,9 @@ export function toRequest(
     ...base,
     group_a: prunePopulation(state.groupA),
     group_b: prunePopulation(state.groupB),
-    label_a: state.labelA,
-    label_b: state.labelB,
+    // Empty names would make the result page and difference labels unreadable.
+    label_a: state.labelA.trim() || 'Group A',
+    label_b: state.labelB.trim() || 'Group B',
   } satisfies CompareRequest
 }
 
@@ -180,9 +185,9 @@ export function toRequest(
 export function fromRequest(
   operation: Operation,
   spec: AnalysisRequest,
-  latestYear: number | null,
+  availableYears: readonly number[],
 ): BuilderState {
-  const state = defaultBuilderState(latestYear)
+  const state = defaultBuilderState(availableYears)
   state.operation = operation
   state.activity = spec.activity
   if (spec.measure && (KNOWN_MEASURES as readonly string[]).includes(spec.measure)) {
@@ -193,10 +198,32 @@ export function fromRequest(
   if (spec.confidence_level != null) state.confidenceLevel = spec.confidence_level
   state.population = spec.population ?? {}
 
-  const years = [...spec.years].sort((a, b) => a - b)
+  // The builder can only represent years that exist in the loaded data,
+  // each at most once; anything else is dropped WITH a visible note rather
+  // than silently changing the shared analysis.
+  const requested = [...spec.years].sort((a, b) => a - b)
+  const years = [...new Set(requested)].filter(
+    (year) => availableYears.length === 0 || availableYears.includes(year),
+  )
+  if (years.length !== requested.length) {
+    state.prefillNote =
+      'Some years in the shared analysis are not in the loaded data release and were dropped from the builder.'
+  }
   if (operation === 'trend') {
-    state.trendFrom = years[0] ?? null
-    state.trendTo = years[years.length - 1] ?? null
+    state.trendFrom = years[0] ?? state.trendFrom
+    state.trendTo = years[years.length - 1] ?? state.trendTo
+    const first = years[0]
+    const contiguousInData =
+      first !== undefined &&
+      years.every((year, index) => index === 0 || availableYears.includes(year)) &&
+      years.length ===
+        availableYears.filter(
+          (y) => y >= (years[0] as number) && y <= (years[years.length - 1] as number),
+        ).length
+    if (years.length > 0 && !contiguousInData) {
+      state.prefillNote =
+        'The shared trend skipped some years; the builder represents trends as full ranges, so the range was filled in.'
+    }
   } else if (years.length === 1) {
     state.yearsMode = 'single'
     state.singleYear = years[0] ?? null

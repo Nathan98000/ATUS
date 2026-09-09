@@ -30,7 +30,7 @@ behind `/api/v1`.
 
 ## Consequences
 
-- The production artifact is a static `dist/` (110.9 kB gzip JS measured);
+- The production artifact is a static `dist/` (110.8 kB gzip JS measured);
   any static host works, and FastAPI static mounting stays an option.
 - Type errors, not runtime surprises, when the API schema changes: regenerate
   types and the compiler lists every affected call site.

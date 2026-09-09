@@ -45,8 +45,17 @@ export function decodeSpec(encoded: string, operation: Operation): AnalysisReque
 
   let parsed: unknown
   try {
-    parsed = JSON.parse(json)
-  } catch {
+    // The reviver rejects prototype-pollution key names outright: they can
+    // never be legitimate spec fields, and letting them through would make
+    // the POSTed body diverge from the sorted-keys cache key / share URL.
+    parsed = JSON.parse(json, (key, value) => {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        throw new InvalidShareLinkError('The analysis link contains an invalid field name.')
+      }
+      return value as unknown
+    })
+  } catch (error) {
+    if (error instanceof InvalidShareLinkError) throw error
     throw new InvalidShareLinkError('The analysis link does not contain a valid specification.')
   }
 

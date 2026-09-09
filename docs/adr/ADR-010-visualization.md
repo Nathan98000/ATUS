@@ -18,7 +18,7 @@ not styling preferences:
 ## Decision
 
 Build the two charts as plain React SVG components (`TrendChart`,
-`ComparisonChart`, ~450 lines total including interaction), with a tiny
+`ComparisonChart`, ~480 lines total including interaction), with a tiny
 scale/ticks helper (`chartScale.ts`, no statistics — presentation math
 only).
 
@@ -40,7 +40,7 @@ aria-live description.
 
 - The 2020-gap contract is enforced by tests at three levels (pure function,
   component render, live E2E).
-- Bundle stays small (whole app: 110.9 kB gzip, one chunk — no chart-library
+- Bundle stays small (whole app: 110.8 kB gzip, one chunk — no chart-library
   code splitting needed).
 - New chart types are real work rather than a config object; acceptable —
   Phase 4 needs two, and the scale helpers are reusable.

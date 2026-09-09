@@ -14,7 +14,7 @@ const YEARS = Array.from({ length: 23 }, (_, index) => 2003 + index) // 2003–2
 
 describe('toRequest', () => {
   it('builds a single-year estimate request with explicit methodology', () => {
-    const state = defaultBuilderState(2025)
+    const state = defaultBuilderState(YEARS)
     expect(toRequest(state, YEARS)).toEqual({
       measure: 'average_minutes_per_day',
       activity: { preset: 'sleep' },
@@ -27,7 +27,7 @@ describe('toRequest', () => {
   })
 
   it('sorts pooled years and prunes unset population fields', () => {
-    const state = defaultBuilderState(2025)
+    const state = defaultBuilderState(YEARS)
     state.yearsMode = 'pooled'
     state.pooledYears = [2024, 2022, 2023]
     state.population = { sex: 'female', age_min: undefined }
@@ -37,7 +37,7 @@ describe('toRequest', () => {
   })
 
   it('expands a trend range to the years the API actually has', () => {
-    const state = defaultBuilderState(2025)
+    const state = defaultBuilderState(YEARS)
     state.operation = 'trend'
     state.trendFrom = 2019
     state.trendTo = 2022
@@ -47,7 +47,7 @@ describe('toRequest', () => {
   })
 
   it('includes groups and labels for comparisons', () => {
-    const state = defaultBuilderState(2025)
+    const state = defaultBuilderState(YEARS)
     state.operation = 'compare'
     state.groupA = { sex: 'male' }
     state.groupB = { sex: 'female' }
@@ -61,20 +61,20 @@ describe('toRequest', () => {
 
 describe('fromRequest (deep links back into the builder)', () => {
   it('round-trips an estimate spec', () => {
-    const original = toRequest(defaultBuilderState(2025), YEARS)
-    const rebuilt = fromRequest('estimate', original, 2025)
+    const original = toRequest(defaultBuilderState(YEARS), YEARS)
+    const rebuilt = fromRequest('estimate', original, YEARS)
     expect(toRequest(rebuilt, YEARS)).toEqual(original)
   })
 
   it('round-trips a compare spec including groups', () => {
-    const state = defaultBuilderState(2025)
+    const state = defaultBuilderState(YEARS)
     state.operation = 'compare'
     state.groupA = { has_household_children: true }
     state.groupB = { has_household_children: false }
     state.labelA = 'With children'
     state.labelB = 'Without children'
     const original = toRequest(state, YEARS)
-    const rebuilt = fromRequest('compare', original, 2025)
+    const rebuilt = fromRequest('compare', original, YEARS)
     expect(toRequest(rebuilt, YEARS)).toEqual(original)
   })
 
@@ -82,7 +82,7 @@ describe('fromRequest (deep links back into the builder)', () => {
     const pooled = fromRequest(
       'estimate',
       { activity: { preset: 'sleep' }, years: [2023, 2025] },
-      2025,
+      YEARS,
     )
     expect(pooled.yearsMode).toBe('pooled')
     expect(pooled.pooledYears).toEqual([2023, 2025])
@@ -90,7 +90,7 @@ describe('fromRequest (deep links back into the builder)', () => {
     const trend = fromRequest(
       'trend',
       { activity: { preset: 'sleep' }, years: [2019, 2020, 2021] },
-      2025,
+      YEARS,
     )
     expect(trend.trendFrom).toBe(2019)
     expect(trend.trendTo).toBe(2021)
@@ -100,7 +100,7 @@ describe('fromRequest (deep links back into the builder)', () => {
     const rebuilt = fromRequest(
       'estimate',
       { activity: { preset: 'sleep' }, years: [2025], measure: 'median_minutes' as never },
-      2025,
+      YEARS,
     )
     expect(rebuilt.measure).toBe('average_minutes_per_day')
   })
@@ -108,11 +108,11 @@ describe('fromRequest (deep links back into the builder)', () => {
 
 describe('validateBuilder', () => {
   it('accepts the default analysis', () => {
-    expect(validateBuilder(defaultBuilderState(2025), YEARS).valid).toBe(true)
+    expect(validateBuilder(defaultBuilderState(YEARS), YEARS).valid).toBe(true)
   })
 
   it('rejects age minimum above maximum', () => {
-    const state = defaultBuilderState(2025)
+    const state = defaultBuilderState(YEARS)
     state.population = { age_min: 90, age_max: 20 }
     const validation = validateBuilder(state, YEARS)
     expect(validation.valid).toBe(false)
@@ -120,12 +120,12 @@ describe('validateBuilder', () => {
   })
 
   it('rejects an empty pooled selection and an inverted trend range', () => {
-    const pooled = defaultBuilderState(2025)
+    const pooled = defaultBuilderState(YEARS)
     pooled.yearsMode = 'pooled'
     pooled.pooledYears = []
     expect(validateBuilder(pooled, YEARS).errors.years).toBeTruthy()
 
-    const trend = defaultBuilderState(2025)
+    const trend = defaultBuilderState(YEARS)
     trend.operation = 'trend'
     trend.trendFrom = 2024
     trend.trendTo = 2019
@@ -133,7 +133,7 @@ describe('validateBuilder', () => {
   })
 
   it('validates group ages independently in compare mode', () => {
-    const state = defaultBuilderState(2025)
+    const state = defaultBuilderState(YEARS)
     state.operation = 'compare'
     state.groupB = { age_min: 60, age_max: 30 }
     expect(validateBuilder(state, YEARS).errors.ageB).toBeTruthy()
@@ -148,7 +148,7 @@ describe('prunePopulation / selectedYears', () => {
   })
 
   it('returns an empty list when nothing is selected', () => {
-    const state = defaultBuilderState(null)
+    const state = defaultBuilderState([])
     expect(selectedYears(state, YEARS)).toEqual([])
   })
 })
