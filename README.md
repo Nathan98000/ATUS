@@ -8,10 +8,23 @@ household reports a complete 24-hour diary of activities, coded against a
 hierarchical activity lexicon, together with rich demographic, labor-force, and
 household context.
 
-**Current status: Phase 1 — Data Foundation.** This repository turns the
-official BLS 2003–2025 multi-year microdata files into a validated, documented
-PostgreSQL database that later phases (statistical engine, API, interactive
-visualization) will build on. There is no application UI yet, by design.
+**Current status: Phase 2 — Analytical Engine complete.** Phase 1 turned the
+official BLS 2003–2025 multi-year microdata into a validated PostgreSQL
+database; Phase 2 adds a statistical engine on top of it that produces
+weighted time-use estimates with official replicate-weight standard errors —
+validated by reproducing 24 published BLS numbers exactly
+(`atus validate-analytics`). Later phases add the API and interactive UI;
+there is no web application yet, by design.
+
+```bash
+atus analyze estimate --activity sleep --year 2025
+# 541.96 min/day (9.03 h)   SE 2.166   95% CI [537.72, 546.21]
+# 6,146 respondents · represents 277,984,657 persons on an average day
+
+atus analyze trend --activity leisure_and_sports_bls_table --start-year 2003 --end-year 2025
+atus analyze compare --activity household_activities_bls_table --year 2025 \
+    --group-a sex=male --group-b sex=female
+```
 
 ## Architecture
 
@@ -27,12 +40,20 @@ data/staging/0325/   staged CSV data files
         │  atus load              pure-Python row transforms → COPY (atomic rebuild)
         ▼
 PostgreSQL  schema "atus"   canonical tables + lexicon + provenance metadata
-        │  atus validate-db       ~35 data-quality checks (diary arithmetic,
-        ▼                         weights, referential integrity, BLS cross-checks)
-Phase 2+: statistical layer → API → interactive app
+        │  atus validate-db       ~38 data-quality checks (diary arithmetic,
+        │                         weights, referential integrity, BLS cross-checks)
+        ▼
+Analytical engine (atus_pipeline.analytics)     ← Phase 2
+        │  AnalysisSpec → population/activity SQL → sufficient statistics
+        │  → estimators (User's Guide ch. 7.4) → replicate variance (ch. 7.5)
+        │  atus analyze …          estimates, trends, comparisons (+ JSON)
+        │  atus validate-analytics reproduces 24 official BLS numbers
+        ▼
+Phase 3+: API → interactive app
 ```
 
-Details: [docs/architecture.md](docs/architecture.md).
+Details: [docs/architecture.md](docs/architecture.md) and
+[docs/analytics.md](docs/analytics.md).
 
 ## Technology
 
@@ -72,7 +93,11 @@ atus load
 
 # 6. verify
 atus validate-db              # full data-quality suite
+atus validate-analytics       # reproduce 24 official BLS estimates end-to-end
 atus status
+
+# 7. analyze (Phase 2 engine; see docs/examples.md)
+atus analyze estimate --activity sleep --year 2025
 ```
 
 If `atus download` is blocked (BLS adjusts its bot protections from time to
@@ -122,7 +147,8 @@ years. All of it is documented with BLS citations in
 
 ```text
 src/atus_pipeline/    pipeline package (acquisition, staging, validation,
-                      transformation, loading, database, cli)
+                      transformation, loading, database, cli) and the
+                      analytics/ package (Phase 2 statistical engine)
 migrations/           plain-SQL schema migrations, applied in order
 data/reference/       committed reference data (activity lexicon CSV)
 data/raw|staging/     downloaded + staged BLS files (gitignored)
@@ -134,10 +160,13 @@ docs/                 architecture, database, lineage, methodology, sources, roa
 ## Documentation
 
 - [docs/architecture.md](docs/architecture.md) — pipeline stages and design decisions
+- [docs/analytics.md](docs/analytics.md) — the statistical contract: estimators, weights, variance, filters
+- [docs/examples.md](docs/examples.md) — worked example analyses with real outputs
 - [docs/database.md](docs/database.md) — schema reference (grain, keys, indexes, ER diagram)
 - [docs/data-lineage.md](docs/data-lineage.md) — every canonical column traced to its BLS variable
 - [docs/methodology.md](docs/methodology.md) — weights, the 2020 disruption, cross-year comparability
 - [docs/source-data.md](docs/source-data.md) — the official files, how they're obtained, provenance
+- [docs/adr/](docs/adr) — decision records for the analytical layer (ADR-001…006)
 - [docs/roadmap.md](docs/roadmap.md) — phase plan
 
 ## Authoritative references
@@ -151,8 +180,8 @@ docs/                 architecture, database, lineage, methodology, sources, roa
 
 ## Roadmap
 
-Phase 1 (this repo) — data acquisition, modeling, ETL, validation, database. ✅
-Phase 2 — statistical/analytical layer (weighted estimates, variance via
-replicate weights, subgroup comparisons). Phase 3 — backend API. Phase 4 —
-interactive web application. Phase 5 — hardening and deployment. See
-[docs/roadmap.md](docs/roadmap.md).
+Phase 1 — data acquisition, modeling, ETL, validation, database. ✅
+Phase 2 — statistical/analytical engine (official estimators, replicate-weight
+variance, trends, comparisons, BLS benchmark validation). ✅
+Phase 3 — backend API over the engine. Phase 4 — interactive web application.
+Phase 5 — hardening and deployment. See [docs/roadmap.md](docs/roadmap.md).

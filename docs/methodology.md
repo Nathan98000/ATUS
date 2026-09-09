@@ -63,9 +63,15 @@ Facts, all schema-enforced or validated here:
   days). **Annual 2020 estimates are impossible**; partial-period estimates
   must account for the number of days in the window. There are no diary dates
   inside the gap (validated).
-- Practical guardrail for Phase 2: any query pooling years with
-  `final_weight` silently *excludes* 2020 (its weight is NULL) — which is the
-  methodologically correct default, not a bug.
+- **How the Phase 2 engine operationalizes this** (details:
+  [ADR-004](adr/ADR-004-2020-handling.md)): the default `multiyear` weight
+  scheme *refuses* any 2020-inclusive estimate with an error explaining what
+  to do; trends return 2020 as an explicit unavailable point; the `pandemic`
+  scheme must be requested explicitly, accepts only 2019/2020, uses person-day
+  denominators of 312/313 (the collection-comparable windows — 2019 diaries
+  inside the excluded window carry zero TU20FWGT, verified), and stamps every
+  result with a window warning. Hand-written SQL should never rely on NULL
+  weights silently dropping 2020 rows — ask for the weight scheme you mean.
 
 ## 3. Cross-year comparability
 
