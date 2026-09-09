@@ -33,7 +33,7 @@ Configuration (same `.env` mechanism as the pipeline):
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `ATUS_DATABASE_URL` | compose instance on :5434 | analytical database |
-| `ATUS_API_CORS_ORIGINS` | *(empty — no cross-origin access)* | comma-separated allowed frontend origins, e.g. `http://localhost:3000` |
+| `ATUS_API_CORS_ORIGINS` | *(empty — no cross-origin access)* | comma-separated allowed frontend origins, e.g. `http://localhost:5173` (the ATUS Explorer dev server) |
 | `ATUS_API_CACHE_SIZE` | `256` | analysis-result cache entries (LRU) |
 
 ## Endpoints

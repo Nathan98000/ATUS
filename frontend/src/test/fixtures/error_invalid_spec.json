@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "invalid_spec",
+    "message": "age_min 90 > age_max 20",
+    "details": null
+  }
+}

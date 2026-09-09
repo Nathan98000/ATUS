@@ -8,14 +8,19 @@ household reports a complete 24-hour diary of activities, coded against a
 hierarchical activity lexicon, together with rich demographic, labor-force, and
 household context.
 
-**Current status: Phase 3 — Read-Only API complete.** Phase 1 turned the
-official BLS 2003–2025 multi-year microdata into a validated PostgreSQL
-database; Phase 2 added a statistical engine producing weighted time-use
-estimates with official replicate-weight standard errors — validated by
-reproducing 24 published BLS numbers exactly (`atus validate-analytics`);
+**Current status: Phase 4 — Interactive Web Application complete.** Phase 1
+turned the official BLS 2003–2025 multi-year microdata into a validated
+PostgreSQL database; Phase 2 added a statistical engine producing weighted
+time-use estimates with official replicate-weight standard errors — validated
+by reproducing 24 published BLS numbers exactly (`atus validate-analytics`);
 Phase 3 exposes that engine through a documented, versioned, cached HTTP API
-(`atus api`, OpenAPI at `/docs`), with a representative subset of those
-benchmarks replayed end-to-end over HTTP. The interactive web UI is Phase 4; there is no frontend yet, by design.
+(`atus api`, OpenAPI at `/docs`); Phase 4 adds **ATUS Explorer**
+([frontend/](frontend/)) — a React application through which a nontechnical
+user can build estimates, trends, and group comparisons, see the uncertainty
+and methodology behind every number, and share any analysis as a URL that
+reproduces it. The frontend consumes the API as its single source of
+numerical truth: no statistics are computed client-side. Production hardening
+and deployment are Phase 5.
 
 ```bash
 atus analyze estimate --activity sleep --year 2025
@@ -58,11 +63,25 @@ Read-only HTTP API (atus_pipeline.api)          ← Phase 3
         │  activity lexicon + population metadata + meta/capabilities,
         │  structured errors, versioned result cache (11 s → 4 ms), OpenAPI
         ▼
-Phase 4: interactive app
+ATUS Explorer (frontend/)                       ← Phase 4
+        │  React + TypeScript SPA: analysis builder driven by the API's
+        │  discovery endpoints, uncertainty-first result views, explicit
+        │  2020 gaps, shareable analysis URLs (spec-encoded, stateless)
 ```
 
 Details: [docs/architecture.md](docs/architecture.md),
-[docs/analytics.md](docs/analytics.md), and [docs/api.md](docs/api.md).
+[docs/analytics.md](docs/analytics.md), [docs/api.md](docs/api.md), and
+[docs/frontend.md](docs/frontend.md).
+
+### ATUS Explorer
+
+![ATUS Explorer showing a 2003-2025 leisure-time trend with confidence bands and an explicit 2020 gap](docs/images/atus-explorer-trend.png)
+
+Every number in the UI comes from the API: estimates carry standard errors
+and confidence intervals, methodological warnings are always displayed, 2020
+renders as a labeled gap rather than an interpolated value, and the "Share
+analysis" URL encodes the full canonical specification so anyone can
+reproduce the result.
 
 ## Technology
 
@@ -109,12 +128,18 @@ atus status
 atus analyze estimate --activity sleep --year 2025
 
 # 8. serve the HTTP API (Phase 3; OpenAPI docs at http://127.0.0.1:8000/docs)
+#    the frontend origin must be allowed for CORS:
+#    ATUS_API_CORS_ORIGINS=http://localhost:5173 in .env
 atus api
+
+# 9. run ATUS Explorer (Phase 4; requires Node 20+)
+cd frontend && npm install && npm run dev    # http://localhost:5173
 ```
 
-A future local frontend connects via CORS configuration, e.g.
-`ATUS_API_CORS_ORIGINS=http://localhost:3000` in `.env` — see
-[docs/api.md](docs/api.md).
+Frontend commands (from `frontend/`): `npm run dev`, `npm run build`,
+`npm test` (unit/component), `npm run test:e2e` (Playwright against a
+fixture-database API), `npm run typecheck`, `npm run lint` — see
+[docs/frontend.md](docs/frontend.md).
 
 If `atus download` is blocked (BLS adjusts its bot protections from time to
 time), download the files listed in [docs/source-data.md](docs/source-data.md)

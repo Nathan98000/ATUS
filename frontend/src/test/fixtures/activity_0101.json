@@ -1,0 +1,39 @@
+{
+  "code": "0101",
+  "name": "Sleeping",
+  "level": 2,
+  "parents": [
+    {
+      "code": "01",
+      "name": "Personal Care Activities",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    }
+  ],
+  "children": [
+    {
+      "code": "010101",
+      "name": "Sleeping",
+      "level": 3,
+      "parent_code": "0101",
+      "harmonization_note": null
+    },
+    {
+      "code": "010102",
+      "name": "Sleeplessness",
+      "level": 3,
+      "parent_code": "0101",
+      "harmonization_note": null
+    },
+    {
+      "code": "010199",
+      "name": "Sleeping, n.e.c.*",
+      "level": 3,
+      "parent_code": "0101",
+      "harmonization_note": null
+    }
+  ],
+  "harmonization_note": null,
+  "descendant_leaf_count": 3
+}

@@ -1,0 +1,58 @@
+{
+  "presets": [
+    {
+      "name": "eating_and_drinking",
+      "label": "Eating and drinking",
+      "include": ["11"],
+      "exclude": []
+    },
+    {
+      "name": "eating_and_drinking_bls_table",
+      "label": "Eating and drinking (BLS table A-1 definition)",
+      "include": ["11", "1811"],
+      "exclude": []
+    },
+    {
+      "name": "household_activities_bls_table",
+      "label": "Household activities (BLS table A-1 definition)",
+      "include": ["02", "1802"],
+      "exclude": ["020903", "020904"]
+    },
+    {
+      "name": "housework",
+      "label": "Housework",
+      "include": ["0201"],
+      "exclude": []
+    },
+    {
+      "name": "leisure_and_sports_bls_table",
+      "label": "Leisure and sports (BLS table A-1 definition)",
+      "include": ["12", "13", "1812", "1813"],
+      "exclude": []
+    },
+    {
+      "name": "sleep",
+      "label": "Sleeping",
+      "include": ["0101"],
+      "exclude": []
+    },
+    {
+      "name": "watching_tv",
+      "label": "Watching TV",
+      "include": ["120303", "120304"],
+      "exclude": []
+    },
+    {
+      "name": "work_main_and_other_jobs",
+      "label": "Working (main and other jobs)",
+      "include": ["050101", "050102", "050189"],
+      "exclude": []
+    },
+    {
+      "name": "work_related_bls_table",
+      "label": "Working and work-related activities (BLS table A-1 definition)",
+      "include": ["05", "1805"],
+      "exclude": []
+    }
+  ]
+}

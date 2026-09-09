@@ -86,13 +86,50 @@ Delivered (package `atus_pipeline.api`, contract version `v1`):
 Deliberately deferred: authentication, rate limiting, async jobs, persistent
 saved analyses, production deployment (Phase 5).
 
-## Phase 4 — Interactive Application
+## Phase 4 — Interactive Application ✅ (this repository)
 
-Web UI for exploring time use: activity drill-down through the lexicon
-hierarchy, demographic comparisons, trends, uncertainty display.
+Delivered (**ATUS Explorer**, `frontend/` — React 19 + TypeScript strict +
+Vite, client-side only):
+
+- Analysis builder for estimates, trends, and two-group comparisons, driven
+  end-to-end by the API's discovery endpoints: years/measures/weight schemes
+  from `/meta`, population controls generated from `/population/metadata`,
+  activity search/presets/hierarchy from `/activities*` (the 556-entry
+  lexicon is fetched once and searched client-side — zero requests per
+  keystroke). Nothing analytical is hard-coded; no statistics are computed
+  in the frontend.
+- Uncertainty-first result views: estimate ± SE with confidence interval,
+  unweighted sample vs weighted population always distinguished, API
+  warnings always visible, a methodology panel built from response metadata,
+  and exact-value tables beside every formatted number.
+- Hand-rolled SVG charts (ADR-010): trend lines with confidence bands and
+  **explicit labeled gaps for unavailable years** (2020 is never connected,
+  interpolated, or zeroed — tested at unit, component, and E2E level), and a
+  dot-and-interval comparison chart; both keyboard-accessible with data-table
+  alternatives.
+- Shareable stateless analysis URLs (ADR-009): base64url-encoded canonical
+  specs, post-run canonicalization to the API's own `spec`, deep links,
+  refresh, and "adjust" back into the builder.
+- API types generated from the backend's OpenAPI schema
+  (`scripts/export_openapi.py` + `npm run generate:api-types`); one central
+  typed client mapping the error envelope to distinct user presentations.
+- Tests: 93 unit/component/integration tests (Vitest + Testing Library +
+  MSW with captured real payloads, including a stale-response race test) and
+  20 Playwright E2E tests (18 desktop + 2 mobile) against the real API on
+  the hand-computed fixture database — full user journeys, share-link
+  reproduction in a fresh browser context, the 2020 gap, error handling,
+  axe accessibility checks, keyboard-only operation. CI runs
+  typecheck/lint/format/unit/build and the E2E suite.
+- Docs: [frontend.md](frontend.md), ADRs 007–010; measured performance:
+  110.9 kB gzip JS, home visually complete ~170 ms locally with exactly one
+  API call.
+
+Deliberately not built: exports (CSV/PNG/PDF), saved analyses/accounts,
+persistent history, dark mode, SSR/SEO work.
 
 ## Phase 5 — Hardening & Deployment
 
-CI-run integration against a seeded database, performance work driven by real
-query patterns, deployment packaging, monitoring, release automation for new
-ATUS years.
+Deployment packaging for the API + static frontend, traffic controls (rate
+limiting) for public exposure, monitoring, performance work driven by real
+query patterns, release automation for new ATUS years, and frontend niceties
+deferred from Phase 4 (exports, short share links).

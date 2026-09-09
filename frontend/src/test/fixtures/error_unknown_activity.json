@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "unknown_activity",
+    "message": "Activity code '999999' is not a 6-digit code in the 2003-25 harmonized activity lexicon.",
+    "details": null
+  }
+}
