@@ -17,8 +17,10 @@ Checkout (audit F34): when every connection is busy, a request waits
 ``ATUS_API_POOL_TIMEOUT_S`` and then gets 503 ``overloaded``. When the pool
 must open a connection, it may wait ``POOL_TIMEOUT + CONNECT_TIMEOUT`` (a
 waking database is slow to accept), but fails as soon as a connection attempt
-has failed: 503 ``database_paused`` for Neon's quota refusals, otherwise 503
-``database_unavailable``.
+has failed while it waits: 503 ``database_paused`` for Neon's quota refusals,
+otherwise 503 ``database_unavailable``. Failures from before the checkout
+started are ignored, so a database that has since recovered is not reported
+as paused or unavailable just because it is slow to wake.
 
 Transactions: each request's work runs in one transaction whose first
 statement applies the request's limits with ``set_config(..., true)`` — the
@@ -140,10 +142,20 @@ class ConnectTracker:
         with self._lock:
             self._last = _ConnectEvent(monotonic(), error)
 
-    def failing(self) -> BaseException | None:
-        """The error of the latest attempt, if the latest attempt failed."""
+    def failing(self, since: float) -> BaseException | None:
+        """The error of the latest attempt, if the latest attempt failed at or
+        after ``since`` (a ``monotonic()`` time).
+
+        A checkout passes its own start time: a failure recorded before it
+        (minutes or a month earlier, before the database recovered) says
+        nothing about the attempt the checkout is waiting for, which may
+        merely be slow, e.g. a database waking from suspend.
+        """
         with self._lock:
-            return self._last.error if self._last is not None else None
+            last = self._last
+        if last is None or last.at < since:
+            return None
+        return last.error
 
 
 class CountingCursor(psycopg.Cursor):
@@ -235,8 +247,8 @@ class Database:
             stats.get("pool_size", 0) >= stats.get("pool_max", self._settings.api_pool_max_size)
         )
 
-    def _timeout_error(self) -> ApiError:
-        failure = self.tracker.failing()
+    def _timeout_error(self, started: float) -> ApiError:
+        failure = self.tracker.failing(since=started)
         if failure is not None:
             return classify_connect_failure(failure)
         if self._saturated():
@@ -247,22 +259,25 @@ class Database:
 
     def acquire(self) -> psycopg.Connection:
         settings = self._settings
+        # Only connection attempts that fail while this checkout waits count
+        # (ConnectTracker.failing).
+        started = monotonic()
         if self._saturated():
             try:
                 return self.pool.getconn(timeout=settings.api_pool_timeout_s)
             except PoolTimeout:
-                raise self._timeout_error() from None
-        deadline = monotonic() + settings.api_pool_timeout_s + settings.api_connect_timeout_s
+                raise self._timeout_error(started) from None
+        deadline = started + settings.api_pool_timeout_s + settings.api_connect_timeout_s
         while True:
             remaining = deadline - monotonic()
             try:
                 return self.pool.getconn(timeout=max(0.01, min(_ACQUIRE_SLICE_S, remaining)))
             except PoolTimeout:
-                failure = self.tracker.failing()
+                failure = self.tracker.failing(since=started)
                 if failure is not None:
                     raise classify_connect_failure(failure) from None
                 if monotonic() >= deadline:
-                    raise self._timeout_error() from None
+                    raise self._timeout_error(started) from None
 
     # ------------------------------------------------------------------ #
     # transactions

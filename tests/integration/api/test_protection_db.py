@@ -227,6 +227,32 @@ class TestStaleConnections:
         assert statuses == [200, 200, 200, 200]
 
 
+class TestSlowWakeAfterAnOldFailure:
+    def test_an_earlier_refusal_does_not_answer_a_slow_successful_connect(
+        self, loaded_settings
+    ):
+        """Regression: after a quota refusal (or any failed connect), the next
+        checkout whose connection took longer than one acquire slice — a
+        database waking from suspend — was answered 503 database_paused from
+        the stale failure although the connection then succeeded."""
+
+        class SlowWake(psycopg.Connection):
+            @classmethod
+            def connect(cls, conninfo="", **kwargs):
+                time.sleep(dbmod._ACQUIRE_SLICE_S + 0.5)
+                return super().connect(conninfo, **kwargs)
+
+        database = dbmod.Database(loaded_settings, connection_class=SlowWake)
+        try:
+            database.tracker.record(psycopg.OperationalError(
+                "ERROR:  Your project has exceeded the data transfer quota."
+            ))
+            with database.transaction("metadata") as conn:
+                assert conn.execute("SELECT 1").fetchone() == (1,)
+        finally:
+            database.close()
+
+
 class TestEdgeAuthCostsNothing:
     def test_forbidden_origin_runs_zero_statements(self, loaded_settings):
         with api(loaded_settings, edge_secrets=(SECRET,)) as (client, app):

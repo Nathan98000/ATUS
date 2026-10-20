@@ -13,6 +13,7 @@ import pytest
 from atus_pipeline.api import database as dbmod
 from atus_pipeline.api.database import (
     APPLICATION_NAME,
+    ConnectTracker,
     Database,
     _Deadline,
     connection_kwargs,
@@ -104,6 +105,24 @@ class TestClassification:
         )
 
 
+class TestConnectTracker:
+    def test_only_failures_since_the_given_time_count(self):
+        tracker = ConnectTracker()
+        assert tracker.failing(since=0.0) is None
+        error = psycopg.OperationalError("connection refused")
+        tracker.record(error)
+        recorded = time.monotonic()
+        assert tracker.failing(since=recorded - 60) is error
+        assert tracker.failing(since=recorded + 1) is None  # older than the checkout
+
+    def test_a_later_success_clears_the_failure(self):
+        tracker = ConnectTracker()
+        started = time.monotonic()
+        tracker.record(psycopg.OperationalError("connection refused"))
+        tracker.record(None)
+        assert tracker.failing(since=started) is None
+
+
 def _failing_connection_class(message: str):
     class Failing(psycopg.Connection):
         attempts = 0
@@ -142,6 +161,29 @@ class TestCheckout:
         db = self._database(tmp_path, _failing_connection_class("connection refused"))
         try:
             with pytest.raises(DatabaseUnavailableError), db.transaction("analysis"):
+                pass
+        finally:
+            db.close()
+
+    def test_a_failure_from_before_the_checkout_is_not_its_answer(self, tmp_path):
+        """Regression: a quota refusal recorded earlier (e.g. last month's)
+        used to answer a later checkout whose own connection attempt was
+        merely slower than one acquire slice — 503 database_paused with
+        Retry-After 3600 for a database that had recovered. The checkout must
+        report the outcome of attempts made while it waits."""
+
+        class SlowThenRefused(psycopg.Connection):
+            @classmethod
+            def connect(cls, conninfo="", **kwargs):
+                time.sleep(dbmod._ACQUIRE_SLICE_S + 0.3)  # a database slow to wake
+                raise psycopg.OperationalError("connection refused")
+
+        db = self._database(tmp_path, SlowThenRefused)
+        try:
+            db.tracker.record(psycopg.OperationalError(
+                "ERROR:  Your project has exceeded the data transfer quota."
+            ))
+            with pytest.raises(DatabaseUnavailableError), db.transaction("metadata"):
                 pass
         finally:
             db.close()
