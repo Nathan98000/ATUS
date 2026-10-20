@@ -1,22 +1,27 @@
 """The production stack's database has the roles and settings it claims (opt-in).
 
-Starts only `db` and `seed` from docker-compose.prod.yml (fixture data, throwaway
-secrets, a random loopback port), then connects from the host as each role:
+Starts only `db`, `seed` and `roles` from docker-compose.prod.yml (a serving
+database built from the fixture, throwaway secrets, a random loopback port).
+The API role comes from scripts/ops/roles.sql, applied exactly as the
+production restore applies it, so these checks hold for the deployed role:
 
-- `atus_api` can read but cannot write, truncate, create schemas or tables
-  (permanent or temporary) or alter other roles, and carries ADR-011's role
-  defaults. Those defaults are a backstop, not a privilege boundary: any
-  session may SET them (and Postgres lets a role change its own defaults);
+- `atus_api` reads exactly the served tables, and cannot write, truncate,
+  create schemas or tables (permanent or temporary) or alter other roles:
+  the privileges are the boundary, so every write is tried in an explicitly
+  READ WRITE transaction. Its transactions are also read-only by default (a
+  second guard), and it carries ADR-011's role defaults. Those defaults are
+  a backstop, not a privilege boundary: any session may SET them (and
+  Postgres lets a role change its own defaults);
 - `neondb_owner` owns the data but is not a superuser (as on Neon);
+- the database is a serving build (marker, serving data_version);
 - the server runs Neon's settings for the 0.25-2 CU compute with jit off (F37).
 
-This is the local stand-in. The deployed roles come from scripts/ops/roles.sql
-(serving-DB work), which needs its own test against the same rules.
 ATUS_DOCKER_TESTS=1 opts in (see conftest.py).
 """
 
 from __future__ import annotations
 
+import re
 import secrets
 import subprocess
 
@@ -25,6 +30,12 @@ import pytest
 from .conftest import REPO_ROOT
 
 psycopg = pytest.importorskip("psycopg")
+
+SERVED = {
+    "respondents", "household_members", "cps_persons", "activities", "replicate_weights",
+    "pandemic_replicate_weights", "activity_tier1", "activity_tier2", "activity_codes",
+    "ingestion_runs",
+}
 
 WRITES = [
     "INSERT INTO atus.respondents SELECT * FROM atus.respondents LIMIT 1",
@@ -57,9 +68,11 @@ def stack(docker_daemon, api_image, docker_prefix, tmp_path_factory):
     compose = ["docker", "compose", "-p", f"{docker_prefix}-roles", "--env-file",
                str(env_file), "-f", str(REPO_ROOT / "docker-compose.prod.yml")]
     try:
-        result = subprocess.run([*compose, "run", "--rm", "seed"], cwd=REPO_ROOT,
+        # `run` starts db and seed first (roles depends on both).
+        result = subprocess.run([*compose, "run", "--rm", "roles"], cwd=REPO_ROOT,
                                 capture_output=True, text=True, timeout=600, check=False)
         assert result.returncode == 0, result.stderr[-3000:]
+        assert "roles.sql: atus_api can log in and read the served tables" in result.stdout
         port = subprocess.run([*compose, "port", "db", "5432"], cwd=REPO_ROOT,
                               capture_output=True, text=True, check=True).stdout
         yield int(port.strip().rsplit(":", 1)[1]), passwords
@@ -82,9 +95,31 @@ def test_api_role_reads_the_data(stack):
 
 @pytest.mark.parametrize("statement", WRITES)
 def test_api_role_cannot_write(stack, statement):
+    """Privileges alone: the read-only transaction default is switched off first."""
     with _connect(stack, "atus_api") as conn:
+        conn.execute("SET default_transaction_read_only = off")
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             conn.execute(statement)
+
+
+def test_api_role_transactions_are_read_only_by_default(stack):
+    with _connect(stack, "atus_api") as conn:
+        with pytest.raises(psycopg.errors.ReadOnlySqlTransaction):
+            conn.execute(WRITES[0])
+
+
+def test_api_role_reads_exactly_the_served_tables(stack):
+    with _connect(stack, "atus_api") as conn:
+        readable = {
+            name for (name,) in conn.execute(
+                "SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+                "WHERE n.nspname = 'atus' AND c.relkind = 'r' "
+                "AND has_table_privilege(c.oid, 'SELECT')"
+            )
+        }
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("SELECT count(*) FROM atus.validation_results")
+    assert readable == SERVED
 
 
 def test_api_role_carries_the_adr011_defaults(stack):
@@ -92,15 +127,33 @@ def test_api_role_carries_the_adr011_defaults(stack):
         settings = {
             name: conn.execute(f"SHOW {name}").fetchone()[0]
             for name in ("statement_timeout", "lock_timeout",
-                         "idle_in_transaction_session_timeout", "jit")
+                         "idle_in_transaction_session_timeout", "jit",
+                         "default_transaction_read_only")
         }
         flags = conn.execute(
-            "SELECT rolsuper, rolcreaterole, rolcreatedb, rolinherit FROM pg_roles "
-            "WHERE rolname = current_user"
+            "SELECT rolsuper, rolcreaterole, rolcreatedb, rolreplication, rolbypassrls, "
+            "rolconnlimit FROM pg_roles WHERE rolname = current_user"
         ).fetchone()
+        memberships = conn.execute(
+            "SELECT count(*) FROM pg_auth_members m JOIN pg_roles r ON r.oid = m.member "
+            "WHERE r.rolname = current_user"
+        ).fetchone()[0]
     assert settings == {"statement_timeout": "85s", "lock_timeout": "5s",
-                        "idle_in_transaction_session_timeout": "30s", "jit": "off"}
-    assert flags == (False, False, False, False)
+                        "idle_in_transaction_session_timeout": "30s", "jit": "off",
+                        "default_transaction_read_only": "on"}
+    assert flags == (False, False, False, False, False, 10)
+    assert memberships == 0
+
+
+def test_the_database_is_a_serving_build(stack):
+    with _connect(stack, "atus_api") as conn:
+        marker = conn.execute(
+            "SELECT obj_description('atus'::regnamespace, 'pg_namespace')").fetchone()[0]
+        version = conn.execute(
+            "SELECT data_version FROM atus.ingestion_runs WHERE status = 'succeeded' "
+            "ORDER BY id DESC LIMIT 1").fetchone()[0]
+    assert marker.startswith("atus-serving")
+    assert re.fullmatch(r"\d{4}:serving-\d{8}T\d{6}Z-[0-9a-f]{8}:[0-9a-f]{12}", version)
 
 
 def test_owner_owns_the_data_but_is_not_a_superuser(stack):

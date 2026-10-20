@@ -13,11 +13,15 @@
 # Services and what each stands in for:
 #   db       Neon Free: Postgres 16 with Neon's settings for the 0.25-2 CU
 #            autoscaling compute (deploy/emulation/neon_settings.py), jit=off,
-#            the non-superuser owner `neondb_owner` and the read-only `atus_api`
+#            and what Neon's console creates: the non-superuser owner
+#            `neondb_owner` and the database `atus`
 #   restore  (profile `dump`) restores a serving dump as neondb_owner, as the
 #            release switch does on Neon
-#   seed     loads the fixture dataset as neondb_owner unless data is present;
-#            always re-applies the API grants
+#   seed     unless a serving database is present: loads the fixture dataset
+#            into a scratch full database and builds the serving database
+#            from it with the real serving builder, as neondb_owner
+#   roles    applies scripts/ops/roles.sql as neondb_owner, exactly as the
+#            production restore does: the read-only `atus_api` role
 #   api      the Render Free web service: the image, with exactly the
 #            environment Render sets (docs/deployment.md, Render step 4). Not
 #            published on the host: only the edge and the smoke probe reach it
@@ -43,7 +47,6 @@ services:
       POSTGRES_PASSWORD: ${ATUS_STACK_PG_SUPERUSER_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
       POSTGRES_DB: postgres
       ATUS_STACK_OWNER_PASSWORD: ${ATUS_STACK_OWNER_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
-      ATUS_STACK_API_DB_PASSWORD: ${ATUS_STACK_API_DB_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
     # Neon's published settings for an autoscaling 0.25-2 CU compute; other
     # compute sizes: python deploy/emulation/neon_settings.py --help.
     # jit=off: Neon builds Postgres without LLVM, the stock image has JIT on,
@@ -131,6 +134,30 @@ services:
     healthcheck:
       disable: true
 
+  roles:
+    # scripts/ops/roles.sql is the single definition of the API role: its
+    # grants (SELECT on the served tables only), its role defaults and the
+    # checks that it cannot write. Applied after every seed or restore, as
+    # neondb_owner, with the stack's throwaway API password.
+    image: postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    environment:
+      PGHOST: db
+      PGUSER: neondb_owner
+      PGPASSWORD: ${ATUS_STACK_OWNER_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
+      PGDATABASE: atus
+      ATUS_API_ROLE_PASSWORD: ${ATUS_STACK_API_DB_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
+    entrypoint: ["psql", "-X", "--quiet", "-v", "ON_ERROR_STOP=1", "-f", "/scripts/ops/roles.sql"]
+    volumes:
+      - ./scripts/ops/roles.sql:/scripts/ops/roles.sql:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      disable: true
+
   api:
     image: *api-image
     # Build locally by default. To run a registry image as is, set
@@ -143,7 +170,7 @@ services:
         ATUS_BUILD_SHA: ${ATUS_BUILD_SHA:-dev}
         ATUS_VERSION: ${ATUS_VERSION:-unknown}
     depends_on:
-      seed:
+      roles:
         condition: service_completed_successfully
     # Exactly what the Render service sets; every other setting keeps the
     # API's production default (.env.production.example).

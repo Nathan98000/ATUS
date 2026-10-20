@@ -7,10 +7,9 @@ image and packaging files (`ci/`). The usage guide is in
 
 | Path | Used by | Purpose |
 |---|---|---|
-| `postgres/initdb/10-roles.sh` | `db` (first start) | creates `neondb_owner` (non-superuser owner), `atus_api` (read-only, ADR-011 role defaults) and database `atus` |
-| `postgres/grant_api_role.sql` | `seed`, `restore` | re-applies the API role's SELECT grants after a load or restore |
-| `stack/seed_fixture.py` | `seed` | loads the hand-computed fixture dataset as the owner |
-| `stack/restore_dump.sh` | `restore` (profile `dump`) | `pg_restore --no-owner --no-acl` of a serving dump, grants, `VACUUM (ANALYZE)` |
+| `postgres/initdb/10-roles.sh` | `db` (first start) | creates what Neon's console creates: `neondb_owner` (non-superuser owner) and database `atus`. The API role comes from `scripts/ops/roles.sql` (the `roles` service), as in production |
+| `stack/seed_fixture.py` | `seed` | builds a serving database from the hand-computed fixture dataset as the owner (real loader into a scratch full database, then the real serving builder) |
+| `stack/restore_dump.sh` | `restore` (profile `dump`) | `pg_restore --no-owner --no-acl` of a serving dump, `VACUUM (ANALYZE)` |
 | `stack/smoke_probe.py` | `smoke`, `scripts/smoke_stack.sh` | stdlib HTTP checks run inside the stack network |
 | `stack/stack.env.example` | you | template for the stack's gitignored env file |
 | `pgbouncer/` | `pgbouncer` (emulation profile) | PgBouncer in transaction mode with Neon's pooler settings |

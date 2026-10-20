@@ -4,10 +4,11 @@
 # Runs in the `restore` service (profile `dump`, docker-compose.prod.yml) with
 # the postgres:16 client tools, as neondb_owner (PGHOST/PGUSER/PGPASSWORD/
 # PGDATABASE come from the service environment). Mirrors the production
-# restore (ADR-011 "Release switch"): pg_restore --no-owner --no-acl, the API
-# grants, then VACUUM (ANALYZE) so the planner has statistics before the first
-# query. A database that already holds the atus schema is left untouched, so
-# restarting the stack does not restore twice.
+# restore (ADR-011 "Release switch"): pg_restore --no-owner --no-acl, then
+# VACUUM (ANALYZE) so the planner has statistics before the first query. The
+# API role and its grants come next, from scripts/ops/roles.sql (the `roles`
+# service). A database that already holds the atus schema is left untouched,
+# so restarting the stack does not restore twice.
 set -eu
 
 dump=/seed/serving.dump
@@ -25,6 +26,5 @@ fi
 
 echo "restore: pg_restore --no-owner --no-acl ($(du -h "$dump" | cut -f1))"
 pg_restore --no-owner --no-acl --exit-on-error --single-transaction --dbname "$PGDATABASE" "$dump"
-psql --no-psqlrc -v ON_ERROR_STOP=1 --quiet -f /deploy/postgres/grant_api_role.sql
 vacuumdb --analyze --quiet --schema atus --dbname "$PGDATABASE"
 echo "restore: done"

@@ -132,7 +132,8 @@ class TestProductionCompose:
         assert env["PORT"] == "10000"
         assert api["read_only"] is True
         assert api["cap_drop"] == ["ALL"]
-        assert api["depends_on"]["seed"]["condition"] == "service_completed_successfully"
+        # the API starts only once roles.sql has created its role
+        assert api["depends_on"]["roles"]["condition"] == "service_completed_successfully"
 
     def test_api_runs_the_image_built_from_this_checkout_by_default(self, config):
         api = config["services"]["api"]
@@ -163,12 +164,38 @@ class TestProductionCompose:
         assert db["image"].startswith("postgres:16@")
         assert int(db["shm_size"]) >= 512 * MIB
 
-    def test_database_bootstraps_owner_and_api_roles(self, config):
+    def test_database_bootstraps_only_what_neons_console_creates(self, config):
         db = config["services"]["db"]
         mounts = {m["target"]: m for m in db["volumes"]}
         initdb = mounts["/docker-entrypoint-initdb.d"]
         assert initdb["read_only"] is True
         assert initdb["source"] == str(REPO_ROOT / "deploy" / "postgres" / "initdb")
+        # the owner only: the API role comes from scripts/ops/roles.sql
+        assert "ATUS_STACK_API_DB_PASSWORD" not in db["environment"]
+        bootstrap = (REPO_ROOT / "deploy" / "postgres" / "initdb" / "10-roles.sh").read_text()
+        assert "CREATE ROLE neondb_owner" in bootstrap
+        sql = bootstrap.split("<<'SQL'", 1)[1].split("\nSQL\n", 1)[0]
+        assert "atus_api" not in sql and "GRANT" not in sql
+        assert not (REPO_ROOT / "deploy" / "postgres" / "grant_api_role.sql").exists()
+
+    def test_roles_sql_is_the_single_definition_of_the_api_role(self, config):
+        roles = config["services"]["roles"]
+        assert roles["depends_on"]["seed"]["condition"] == "service_completed_successfully"
+        assert roles["image"].startswith("postgres:16@") and DIGEST.search(roles["image"])
+        (mount,) = roles["volumes"]
+        assert mount["source"] == str(REPO_ROOT / "scripts" / "ops" / "roles.sql")
+        assert mount["read_only"] is True
+        assert roles["entrypoint"][0] == "psql" and roles["entrypoint"][-1] == mount["target"]
+        assert "ON_ERROR_STOP=1" in roles["entrypoint"]
+        env = roles["environment"]
+        assert env["PGUSER"] == "neondb_owner" and env["PGDATABASE"] == "atus"
+        assert env["ATUS_API_ROLE_PASSWORD"] == DUMMY_STACK_ENV["ATUS_STACK_API_DB_PASSWORD"]
+        assert roles["read_only"] is True and _published(roles) == []
+        # nothing else in the stack defines roles or grants
+        for path in (REPO_ROOT / "deploy").rglob("*"):
+            if path.is_file() and path.suffix in (".sql", ".sh", ".py"):
+                text = path.read_text()
+                assert "GRANT SELECT" not in text and "CREATE ROLE atus_api" not in text, path
         # The superuser exists for initdb only; nothing else logs in with it.
         for name, service in config["services"].items():
             for value in (service.get("environment") or {}).values():

@@ -297,21 +297,16 @@ def _assert_no_leftovers(prefix: str) -> None:
 
 
 def test_api_image_passes_the_gate(api_image, docker_prefix):
-    result = _gate(api_image, docker_prefix, "--allow-startup-connection")
+    """Strict, with no startup allowance: the pool is lazy (ADR-011 min_size=0)."""
+    result = _gate(api_image, docker_prefix)
     assert result.returncode == 0, result.stdout + result.stderr[-3000:]
     statuses = _statuses(result.stdout)
     for name in ("user", "build_tools", "healthcheck", "health_no_db", "user_runtime",
-                 "health_db_quiet", "detector"):
+                 "health_db_quiet", "detector", "startup_db_quiet"):
         assert statuses[name] == "PASS", name
-    assert statuses["startup_db_quiet"] in ("PASS", "SKIP")
     _assert_no_leftovers(docker_prefix)
 
 
-@pytest.mark.xfail(
-    reason="the pool still connects at start-up (min_size=1) until the API workstream "
-    "makes it lazy (ADR-011: min_size=0); remove this marker once merged",
-    strict=False,
-)
 def test_api_image_opens_no_database_connection_at_start(api_image, docker_prefix):
     result = _gate(api_image, docker_prefix)
     assert result.returncode == 0, result.stdout
@@ -322,7 +317,7 @@ def test_root_user_and_build_tools_fail_the_gate(derived_image, docker_prefix):
     image = derived_image(
         "root-tools", "USER 0\nRUN ln -s /bin/true /usr/local/bin/gcc && mkdir /opt/buildenv"
     )
-    result = _gate(image, docker_prefix, "--allow-startup-connection")
+    result = _gate(image, docker_prefix)
     assert result.returncode == 1, result.stdout + result.stderr[-3000:]
     statuses = _statuses(result.stdout)
     assert statuses["user"] == statuses["user_runtime"] == statuses["build_tools"] == "FAIL"
@@ -347,7 +342,7 @@ def test_a_health_check_that_queries_the_database_fails_the_gate(derived_image, 
         "HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --start-interval=2s "
         f'CMD ["python", "-c", "{probe}"]',
     )
-    result = _gate(image, docker_prefix, "--allow-startup-connection")
+    result = _gate(image, docker_prefix)
     assert result.returncode == 1, result.stdout + result.stderr[-3000:]
     statuses = _statuses(result.stdout)
     assert statuses["healthcheck"] == "PASS"

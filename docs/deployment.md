@@ -369,7 +369,7 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
     - `/ready` and `/metrics` behind the ops token;
     - the globally unique `data_version` format.
 
-  `--skip-protection-checks` reports the contract checks as SKIP. It exists only for images built before the API work landed. On 2026-10-20 the current image passed every other check, and strict mode failed exactly the contract checks and `build`, which are not implemented yet (TODO(WS-A), TODO(WS-B)).
+  `--skip-protection-checks` reports the contract checks as SKIP. It exists only for images built before the API work landed. Strict mode (the default) passed every check on 2026-10-20 (wave 2), plain and with `--emulation`.
 - **Run the stack yourself:**
 
   ```bash
@@ -381,9 +381,10 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
 
   | Service | Stands in for | Notes |
   |---|---|---|
-  | `db` | Neon Free, Postgres 16 | Neon's settings for the 0.25–2 CU compute (`jit=off`, `shared_buffers=215MB`, `max_connections=839`, `max_worker_processes=17`, `max_parallel_workers=8`), `shm_size: 1g` (F33). Bootstrap creates `neondb_owner` (owner, not a superuser) and `atus_api` (SELECT only, ADR-011 role defaults); `tests/deploy/test_stack_roles.py` (opt-in) proves both, and that `atus_api` cannot write, truncate or create anything. Host port `127.0.0.1:5470` |
-  | `restore` | the release switch's `pg_restore` | profile `dump`; set `ATUS_STACK_DUMP` to a serving dump. Restores as `neondb_owner` with `--no-owner --no-acl`, grants, `VACUUM (ANALYZE)` |
-  | `seed` | the owner's loader (`atus load`) | loads the fixture dataset as `neondb_owner` unless data is present, in development mode like the real loader; re-applies the API grants |
+  | `db` | Neon Free, Postgres 16 | Neon's settings for the 0.25–2 CU compute (`jit=off`, `shared_buffers=215MB`, `max_connections=839`, `max_worker_processes=17`, `max_parallel_workers=8`), `shm_size: 1g` (F33). Bootstrap creates only what Neon's console creates: `neondb_owner` (owner, `CREATEDB`/`CREATEROLE`, not a superuser) and database `atus`. Host port `127.0.0.1:5470` |
+  | `restore` | the release switch's `pg_restore` | profile `dump`; set `ATUS_STACK_DUMP` to a serving dump. Restores as `neondb_owner` with `--no-owner --no-acl`, then `VACUUM (ANALYZE)` |
+  | `seed` | the owner's loader and the serving build | unless a serving database is present: loads the fixture dataset with the real loader into a scratch full database, then builds the serving database from it into `atus` with the real serving builder (`atus build-serving-db`: serving shape, marker, a serving `data_version`), as `neondb_owner` in development mode like the real loader. `ATUS_SEED_FORCE=1` rebuilds it |
+  | `roles` | the restore script's role step | applies `scripts/ops/roles.sql` as `neondb_owner`, exactly as production does: `atus_api` with SELECT on the served tables only, read-only transactions by default and the ADR-011 role defaults. It is the only definition of the role; `tests/deploy/test_stack_roles.py` (opt-in) proves it cannot write, truncate or create anything, and reads exactly the served tables |
   | `api` | the Render web service | the image with exactly Render's environment (`ATUS_ENV=production`, ...). Read-only root filesystem, all capabilities dropped. **Not published on the host** |
   | `edge` | Cloudflare Worker + static assets | profile `edge`; `wrangler dev` in local mode on `127.0.0.1:8541`, assets from `frontend/dist`. Defined against the edge contract; validated once `edge/` lands (TODO(WS-D2)) |
   | `smoke` | — | profile `smoke`; the HTTP probe, run inside the stack network with the edge secret and the API's ops token |
@@ -441,7 +442,7 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
   - writing the `atus_api` DSN to `~/.config/atus/neon.env`.
 
   Also `scripts/ops/roles.sql`.
-- **TODO(wave 2):** switch the stack's role bootstrap (`deploy/postgres/initdb/10-roles.sh`, `deploy/postgres/grant_api_role.sql`) to `scripts/ops/roles.sql`, so the rehearsal applies exactly the deployed roles.
+- **The stack's roles are the deployed roles.** Its bootstrap creates only `neondb_owner` and the database; the `roles` service then applies `scripts/ops/roles.sql` after every seed or restore, exactly as the restore script does on Neon.
 
 ### 3. The image
 
@@ -473,7 +474,7 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
 
   ```bash
   deploy/ci/lint.sh                                                   # Dockerfiles, compose files, shell syntax
-  python deploy/ci/check_image.py atus-api:local --allow-startup-connection
+  python deploy/ci/check_image.py atus-api:local
   ```
 
   - **`check_image.py`** needs only Python and the Docker CLI. It fails unless all of these hold:
@@ -481,12 +482,12 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
     - it holds no compiler, linker, build system, VCS, downloader, `-dev` package, Python build backend or build-stage leftover;
     - its `HEALTHCHECK` passes with a database host that cannot resolve;
     - it leaves no trace in a throwaway Postgres that logs every connection and statement from the API's role. A control `/api/v1/meta` request must leave a trace, so that a quiet log means something. This catches a health check that reaches the database in a way no static check can see; the tests prove it with a deliberately broken image.
-  - **`--allow-startup-connection`** is needed until the lazy pool lands (TODO(WS-A): ADR-011 `min_size=0`). Today the pool opens one connection at start-up; in strict mode the check reports `startup_db_quiet` as FAIL.
+  - **Strict.** The pool is lazy (ADR-011 `min_size=0`), so the image opens no database connection at start-up and `startup_db_quiet` must PASS. The `--allow-startup-connection` option only exists for images that predate the lazy pool; no recipe uses it.
   - **`lint.sh`** runs `docker build --check` on every Dockerfile, `docker compose config` on every compose set, and `sh -n`/`bash -n` on every script. It runs hadolint and shellcheck only if they are already installed. Neither was installed where this was written, so neither has run on these files. The script never installs anything.
 - **TODO(wave 2): the CI image job,** in this order:
   1. `deploy/ci/lint.sh`;
   2. `docker buildx build --platform linux/amd64` with `ATUS_BUILD_SHA=$GITHUB_SHA`;
-  3. `python deploy/ci/check_image.py <image>`, without `--allow-startup-connection` after the WS-A merge;
+  3. `python deploy/ci/check_image.py <image>` (strict);
   4. `ATUS_DOCKER_TESTS=1 ATUS_TEST_IMAGE=<image> pytest tests/deploy`;
   5. `scripts/smoke_stack.sh --no-build` with `ATUS_STACK_IMAGE=<image>`, once plain and once with `--emulation`;
   6. a Trivy scan, pinned to a commit;
