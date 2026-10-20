@@ -7,6 +7,8 @@ record zero transactions and the stub engine must never run."""
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -297,6 +299,81 @@ class TestValidationCostsNothing:
         )
         assert response.status_code == 400
         assert fake_db.transactions == []
+
+
+def raw_request(app, method: str, path: str, headers: list[tuple[bytes, bytes]]):
+    """Drive the ASGI app directly with header bytes no HTTP client library
+    would send (h11 rejects most of them in production; the guard must hold
+    on its own). Returns the status and the response headers."""
+    messages = []
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        messages.append(message)
+
+    scope = {
+        "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
+        "method": method, "scheme": "http", "path": path, "raw_path": path.encode(),
+        "query_string": b"", "root_path": "", "headers": headers, "client": REMOTE,
+        "server": ("testserver", 80),
+    }
+    asyncio.run(app(scope, receive, send))
+    start = messages[0]
+    return start["status"], {k.decode().lower(): v.decode("latin-1") for k, v in start["headers"]}
+
+
+class TestRawHeaders:
+    """Regressions: the guard parsed Content-Length with ``str.isdigit`` +
+    ``int`` (a 500 for ``'²'`` and for values over 4,300 digits), and the
+    request-id pattern used ``re.match``, whose ``$`` accepts a trailing
+    newline."""
+
+    @pytest.fixture
+    def app(self, stub_engine, tmp_path):
+        return make_app(make_settings(tmp_path, edge_secrets=(SECRET_A,)), stub_engine,
+                        FakeDatabase())
+
+    def edge(self, *extra):
+        return [(b"x-atus-edge-auth", SECRET_A.encode()), *extra]
+
+    @pytest.mark.parametrize(
+        "value", [b"\xb2", "\N{ARABIC-INDIC DIGIT THREE}".encode(), b"1 2"],
+        ids=["superscript-two", "arabic-indic-three", "space"],
+    )
+    def test_non_ascii_or_odd_content_length_is_not_a_500(self, app, value):
+        status, _ = raw_request(app, "GET", "/health", self.edge((b"content-length", value)))
+        assert status == 200
+
+    @pytest.mark.parametrize(
+        "value", [b"9" * 5000, b"65537", b"0" * 30 + b"65537"],
+        ids=["5000-digits", "one-over", "leading-zeros"],
+    )
+    def test_huge_declared_length_is_413(self, app, value):
+        status, headers = raw_request(app, "POST", ESTIMATE, self.edge(
+            (b"content-type", b"application/json"), (b"content-length", value),
+        ))
+        assert status == 413 and headers["connection"] == "close"
+
+    @pytest.mark.parametrize("value", [b"0" * 30 + b"2", b"65536"], ids=["zeros", "at-cap"])
+    def test_declared_length_within_the_cap_passes(self, value):
+        from atus_pipeline.api.middleware import declares_more_than
+
+        assert not declares_more_than(value.decode(), 65_536)
+
+    def test_request_id_with_a_trailing_newline_is_replaced(self, app):
+        incoming = b"abcdefgh12\n"
+        status, headers = raw_request(app, "GET", "/health", self.edge(
+            (b"x-request-id", incoming),
+        ))
+        assert status == 200
+        assert headers["x-request-id"] != incoming.decode()
+        assert "\n" not in headers["x-request-id"]
+        status, headers = raw_request(app, "GET", "/health", self.edge(
+            (b"x-request-id", b"abcdefgh12"),
+        ))
+        assert headers["x-request-id"] == "abcdefgh12"
 
 
 class TestHttpEdgeCases:

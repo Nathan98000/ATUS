@@ -290,6 +290,29 @@ class TestOperatorEndpoints:
         assert client.get(path, headers=OPS).status_code == 200
         assert client.get(path, headers={"Authorization": f"bearer {OPS_TOKEN}"}).status_code == 200
 
+    @pytest.mark.parametrize("path", ["/ready", "/metrics"])
+    @pytest.mark.parametrize("edge", [False, True])
+    def test_other_methods_do_not_reveal_the_path_either(self, build, path, edge):
+        """Regression: without a valid bearer, POST/PUT/PATCH/DELETE on an
+        operator path answered 405 with "Allow: GET" (an unknown path is
+        404), revealing that it exists. Every method must look exactly like
+        an unknown path; a valid bearer still gets the truthful 405."""
+        overrides = {"edge_secrets": (SECRET,)} if edge else {}
+        client, _ = build(ops_token=OPS_TOKEN, **overrides)
+        base = {"X-ATUS-Edge-Auth": SECRET} if edge else {}
+        for method in ("POST", "PUT", "PATCH", "DELETE"):
+            for headers in ({"Content-Type": "application/json"}, {}):
+                sent = {**base, **headers}
+                kwargs = {"content": b"{}"} if headers else {}
+                hidden = client.request(method, path, headers=sent, **kwargs)
+                unknown = client.request(method, "/api/v1/nope", headers=sent, **kwargs)
+                assert hidden.status_code == unknown.status_code, (method, headers)
+                assert hidden.content == unknown.content
+                assert "allow" not in hidden.headers
+        allowed = client.post(path, headers={**base, **OPS, "Content-Type": "application/json"},
+                              content=b"{}")
+        assert allowed.status_code == 405 and allowed.headers["allow"] == "GET"
+
     def test_edge_auth_interplay(self, build):
         """Behind edge auth, an ops path without a valid bearer is refused
         like every unknown path (403); a valid bearer suffices on its own."""

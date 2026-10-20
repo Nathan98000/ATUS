@@ -11,7 +11,8 @@ Order of the stack (outermost first)::
     GZipMiddleware            responses >= 1 KB, when the client accepts gzip
     GuardMiddleware           declared body size, edge auth, per-client
                               request bucket, media type, streamed body size,
-                              control characters in the query string
+                              control characters in the query string,
+                              operator paths without a valid bearer (404)
     ExceptionMiddleware -> routes
 
 The guard rejects before routing, so a rejected request never reaches a
@@ -29,6 +30,7 @@ import re
 import time
 import unicodedata
 import uuid
+from http import HTTPStatus
 from urllib.parse import parse_qsl
 
 from starlette.datastructures import Headers, MutableHeaders
@@ -195,7 +197,9 @@ class RequestContextMiddleware:
         authenticated = edge_secret_matches(headers.get(EDGE_AUTH_HEADER), settings.edge_secrets)
 
         incoming_id = headers.get(REQUEST_ID_HEADER)
-        if authenticated and incoming_id and _REQUEST_ID_PATTERN.match(incoming_id):
+        # fullmatch: "$" in match() would also accept a trailing newline,
+        # which must never be echoed into a response header.
+        if authenticated and incoming_id and _REQUEST_ID_PATTERN.fullmatch(incoming_id):
             request_id = incoming_id
         else:
             request_id = uuid.uuid4().hex[:16]
@@ -326,7 +330,7 @@ class GuardMiddleware:
         method = scope["method"]
 
         declared = headers.get("content-length", "")
-        if declared.isdigit() and int(declared) > settings.api_max_body_bytes:
+        if declares_more_than(declared, settings.api_max_body_bytes):
             await self._reject(PayloadTooLargeError(), scope, receive, send, close=True)
             return
 
@@ -379,6 +383,16 @@ class GuardMiddleware:
             await response(scope, receive, send)
             return
 
+        if path in OPS_PATHS and not ops_authorized(headers, settings):
+            # Without a valid bearer an operator endpoint is an unknown path
+            # for every method: the router would answer a POST with 405 and
+            # "Allow: GET", revealing that it exists. Checked last, so every
+            # earlier answer (415, 413, 422) is the one an unknown path gets.
+            note_error_code(scope.setdefault("state", {}), "not_found")
+            response = error_response(404, "not_found", HTTPStatus.NOT_FOUND.phrase)
+            await response(scope, receive, send)
+            return
+
         await self.app(scope, receive, send)
 
     @staticmethod
@@ -408,6 +422,21 @@ class GuardMiddleware:
 
 
 _TOO_LARGE = object()
+
+
+def declares_more_than(content_length: str, limit: int) -> bool:
+    """Whether a ``Content-Length`` value declares more than ``limit`` bytes.
+
+    Only plain ASCII digits count; anything else is left to the server's
+    HTTP parser (h11 rejects it with 400). ``str.isdigit`` alone would also
+    accept digits like ``'²'`` that ``int`` refuses, and ``int`` refuses
+    strings over 4,300 digits, so the length is compared first: the guard
+    must never fail with a 500 on a client's header.
+    """
+    if not (content_length.isascii() and content_length.isdigit()):
+        return False
+    digits = content_length.lstrip("0") or "0"
+    return len(digits) > len(str(limit)) or int(digits) > limit
 
 
 def _replay(body: bytes, receive: Receive) -> Receive:
