@@ -131,7 +131,7 @@ The full database is 1,980 MiB and fits no free managed Postgres tier; the engin
 
 **Derived, not restated.** The builder applies the real migrations to the new database, reads the canonical tables they created (`serving/shape.py`), and recreates each reshaped table with its contract columns in canonical order, the same types (replicates overridden to `double precision`), `NOT NULL` rules and defaults, and every CHECK constraint whose columns it keeps, under the same name. After the data is in, it adds the canonical keys, indexes and foreign keys whose columns it keeps, with their canonical names. Tables are recreated rather than altered with `DROP COLUMN`, which would leave dropped-attribute slots in every row. A future migration that changes a CHECK therefore reaches the serving database without code changes. `public.schema_migrations` records 0001-0003 as applied, which is why the explicit serving marker exists (F57).
 
-**All or nothing, source read only.** The source is read in one `REPEATABLE READ READ ONLY` transaction of a session with `default_transaction_read_only = on`; a role with only `SELECT` builds successfully (test). The target must be new (empty, or freshly migrated and empty); everything after the migrations happens in one transaction, which commits only if every invariant holds:
+**All or nothing, source read only.** The source is read in one `REPEATABLE READ READ ONLY` transaction of a session with `default_transaction_read_only = on`; a role with only `SELECT` builds successfully (test). The target must be new (empty, or freshly migrated and empty); everything written to it, the migrations included, happens in one transaction, which commits only if every invariant holds:
 
 1. the source assertions above count zero;
 2. by default, the source has passing `atus validate-db` and `atus validate-analytics` results recorded for its loaded data (`--allow-unvalidated` is for test fixtures);
@@ -140,11 +140,11 @@ The full database is 1,980 MiB and fits no free managed Postgres tier; the engin
 5. every served table re-read from the target hashes to exactly the bytes streamed from the source transformation (cell-exact, `float8` bits included);
 6. `validation_results` is empty and the new data version reads back.
 
-A failure leaves the target as it was (tests inject a lossy `float8` cell, an omitted row an estimate would read, a hash mismatch after the copy, a non-new target and a serving database as the source). Then `VACUUM (ANALYZE)` runs.
+A failure leaves the target as it was, an empty database empty (tests inject a lossy `float8` cell, an omitted row an estimate would read, minute sums above 1,440, a hash mismatch after the copy, a non-new target and a serving database as the source). Then `VACUUM (ANALYZE)` runs.
 
 **Content hash and data version.** The content hash is SHA-256 over every served table's rows (`COPY ... TO STDOUT` text, every column, ordered by a unique key, with the settings that affect the text pinned: `extra_float_digits = 1` prints the shortest text that reads back as the same `float8`), combined over `<table>\t<column>:<type>,...\t<rows>\t<sha256>` lines (`serving/content.py`). `ingestion_runs` (it holds the build id), `source_files` and `validation_results` are excluded, so two builds from the same full database have the same content hash. The data version is `<release>:serving-<build_id>:<content_hash[:12]>` with `build_id = <UTC YYYYMMDDTHHMMSSZ>-<8 random hex>`: it differs for every build, including two builds of the same data, so caches keyed by it can never serve one database's result for another, and its suffix says which data it is. Tests: two builds from the fixture have equal content hashes and different data versions; a one-minute change in the source changes the content hash.
 
-**Measured on the real full database (2026-10-20).** Two builds (`20261020T220809Z-ab187c5e`, `20261020T222927Z-5bf8eb66`) gave the same content hash, `de834e672474e24898d20c17585f0ef48cc39c0e8df2289bc96b08034dd7f833`. All nine per-table hashes equal those of the audit prototype ([`../evidence/phase5/02-serving-proto.md`](../evidence/phase5/02-serving-proto.md)), which passed 24/24 benchmarks and the engine diff, so the builder serves cell-for-cell the same rows. The database is 629,365,783 B (600.2 MiB), of which the `atus` tables are 620,363,776 B. A build took 42.7 s of wall time (illustrative: a shared laptop).
+**Measured on the real full database (2026-10-20).** Three builds (`20261020T220809Z-ab187c5e`, `20261020T222927Z-5bf8eb66`, `20261020T224252Z-a7420a5c`) gave the same content hash, `de834e672474e24898d20c17585f0ef48cc39c0e8df2289bc96b08034dd7f833`. All nine per-table hashes equal those of the audit prototype ([`../evidence/phase5/02-serving-proto.md`](../evidence/phase5/02-serving-proto.md)), which passed 24/24 benchmarks and the engine diff, so the builder serves cell-for-cell the same rows. The database is 629,357,591 B (600.2 MiB), of which the `atus` tables are 620,363,776 B. A build took 39.8 s, and the dump about 24 s more (illustrative: a shared laptop).
 
 ## Decision 7: the release artifact is the backup
 
@@ -158,7 +158,7 @@ Free tiers have no scheduled backups, so a versioned dump is the backup (brief �
 
 - **Client.** `pg_dump`, `pg_restore` and `psql` run locally when their major version is at least the server's, otherwise from the `postgres:<server major>` image through docker (`serving/pgtools.py`). The connection travels in libpq environment variables, never in a command line; tool output is redacted.
 - **Reproducibility.** The dump's SHA-256 identifies the file and is not expected to repeat across builds; the content hash identifies the data and does.
-- **Storage.** The owner publishes the three files as assets of an immutable GitHub release (ADR-011: release immutability on; "Each file included in a release must be under 2 GiB", https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases, read 2026-10-20). Release 0325's dump is 336,549,548 B (321 MiB). The data is public BLS microdata and the dump holds no secret. Publishing is an owner action (§19); nothing here uploads anything.
+- **Storage.** The owner publishes the three files as assets of an immutable GitHub release (ADR-011: release immutability on; "Each file included in a release must be under 2 GiB", https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases, read 2026-10-20). Release 0325's dump is 336,549,536 B (321 MiB). The data is public BLS microdata and the dump holds no secret. Publishing is an owner action (§19); nothing here uploads anything.
 - **Dump before checking.** `atus validate-analytics` writes `validation_results`, so the builder dumps right after the build and refuses to dump a database where that table has rows. Checks run on restored copies.
 
 ## Decision 8: least-privilege roles, and the restore procedure
@@ -183,26 +183,26 @@ Free tiers have no scheduled backups, so a versioned dump is the backup (brief �
 
 `--verify-content-hash` reads every served row: on a metered host that is roughly the data's size in egress, so it is for local drills. `--roles-only` re-applies the roles (and with `--rotate-api-password` rotates) on a restored database.
 
-**Restore drill (2026-10-20; functional, to be re-timed in the serialized timing phase).** The release artifact of build `20261020T222927Z-5bf8eb66` was built from the full database (read only) into a container (`atus-wsb-build`, PostgreSQL 16.15) and restored with the script into a fresh PostgreSQL 16.15 cluster (`atus-wsb-drill`, `jit = off` as on Neon) whose database `atus` is owned by `neondb_owner`, a LOGIN CREATEDB CREATEROLE role that is neither a superuser nor named `atus`. Wall times are illustrative (a shared laptop).
+**Restore drill (2026-10-20; functional, to be re-timed in the serialized timing phase).** The release artifact of build `20261020T224252Z-a7420a5c` (commit 202d451) was built from the full database (read only) into a container (`atus-wsb-build`, PostgreSQL 16.15) and restored with the script into a fresh PostgreSQL 16.15 cluster (`atus-wsb-drill`, `jit = off` as on Neon) whose database `atus` is owned by `neondb_owner`, a LOGIN CREATEDB CREATEROLE role that is neither a superuser nor named `atus`. Wall times are illustrative (a shared laptop).
 
 | Step | Result |
 |---|---|
-| Artifact | 336,549,548 B, SHA-256 `af44b760e226d633befc65b606892cf6e114f60defcd7c68f6b8be86cf71eea5`, verified against `.sha256` and manifest (0.13 s) |
-| `pg_restore` (docker `postgres:16`, 16.15) | 8.1 s; no ownership, ACL or privilege error as a non-superuser |
-| `roles.sql` | 0.24 s; `ALTER ROLE ... SET` accepted from a non-superuser CREATEROLE owner |
-| `VACUUM (ANALYZE)`, 13 tables | 1.3 s |
-| Checks | every row count, the data version and the content hash `de834e67...f833` identical to the build; correlation 1.0000 (the physical order survives dump and restore); API role defaults as set; 7 live write probes refused; plans: sleep and BLS leisure pooled over 22 years read activities by Index Scan (costs 454,142 and 506,061), all 18 tier-1 codes by Seq Scan (cost 1,110,152) |
-| Metered size | `sum(pg_database_size)` 651,680,844 B: 65% of 10^9 B, headroom 348,319,156 B (`atus` 628,841,495 B; `postgres`, `template0`, `template1` the rest) |
-| Total | 15.0 s |
+| Artifact | 336,549,536 B, SHA-256 `24098d84cc05868e7607c5bba6f5c361deef31cffd1d082c0d1a2e0eee21304b`, verified against `.sha256` and manifest (0.12 s) |
+| `pg_restore` (docker `postgres:16`, 16.15) | 8.0 s; no ownership, ACL or privilege error as a non-superuser |
+| `roles.sql` | 0.22 s; `ALTER ROLE ... SET` accepted from a non-superuser CREATEROLE owner |
+| `VACUUM (ANALYZE)`, 13 tables | 1.2 s |
+| Checks | every row count, the data version and the content hash `de834e67...f833` identical to the build; correlation 1.0000 (the physical order survives dump and restore); API role defaults as set; 7 live write probes refused; plans: sleep and BLS leisure pooled over 22 years read activities by Index Scan (costs 452,649 and 504,806), all 18 tier-1 codes by Seq Scan (cost 1,102,773); 4.5 s with the content hash |
+| Metered size | `sum(pg_database_size)` 651,615,308 B: 65% of 10^9 B, headroom 348,384,692 B (`atus` 628,841,495 B; `postgres`, `template0`, `template1` the rest) |
+| Total | 14.5 s |
 | `atus validate-analytics` (owner) | 24 passed, 0 failed |
 | `ATUS_DATA_QUALITY=1 pytest tests/data_quality/test_analytics_benchmarks.py tests/data_quality/test_api_benchmarks.py` (owner) | 11 passed |
-| `atus compare-serving-db` (full DB read only vs the drill read as `atus_api`; the audit's extremes plus 150 random specifications, seed 20261020) | 161 specifications (104 estimates, 27 trends, 30 comparisons; 14 under pandemic weights; 12 identical refusals), 9,671 values: all equivalent. Largest relative SE/CI difference 2.02e-13 on non-degenerate estimates; 0.164 and 0.020 on two comparisons of a population with itself and 0.014 on all 18 tier-1 codes, whose true standard error is 0 (F40), all within 1.77e-15 of their estimates' scale; 256 s |
+| `atus compare-serving-db` (full DB read only vs the drill read as `atus_api`; the audit's extremes plus 150 random specifications, seed 20261020) | 161 specifications (104 estimates, 27 trends, 30 comparisons; 14 under pandemic weights; 12 identical refusals), 9,671 values: all equivalent. Largest relative SE/CI difference 3.33e-13 on non-degenerate estimates (personal-care participation pooled over 22 years); 0.146 and 0.065 on two comparisons of a population with itself and 0.060 on all 18 tier-1 codes, whose true standard error is 0 (F40), all within 1.66e-15 of their estimates' scale; 240 s. (A run against the first drill gave the same verdict: largest 2.02e-13 non-degenerate, 1.77e-15 scaled.) |
 
 Not emulated: Neon's WAL and history growth during a restore, its metered `logical_size` (versus `pg_database_size`), whether Neon accepts `ALTER ROLE ... SET` (ADR-011 "Unknowns"; if it does not, the API's per-request settings still bound each analysis), and its pageserver.
 
 ## Decision 9: year pushdown in the engine (F39), proven equivalent
 
-The measurements justified one engine SQL change (§13): the per-respondent activity CTE aggregated every year's episodes even for a single-year request (`queries.py`; audit probe 2.90 / 3.39 s -> 0.50 / 0.90 s at 0.25 CU, illustrative). It now aggregates only the requested years' respondents:
+The measurements justified one engine SQL change (§13): the per-respondent activity CTE aggregated every year's episodes even for a single-year request (`queries.py`; the audit's timed probe on the serving prototype at 0.25 CU: a single-year estimate 2.90 / 3.39 s -> 0.50 / 0.90 s with the years pushed down, F39). It now aggregates only the requested years' respondents:
 
 ```sql
 WHERE a.activity_code = ANY(%(activity_codes)s)

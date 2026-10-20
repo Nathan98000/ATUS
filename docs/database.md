@@ -215,7 +215,7 @@ reads) and published as a checksummed `pg_dump` release artifact
 keeps schema `atus` and every table and column name the engine, the API and
 `atus validate-analytics` use, so the engine runs on it unchanged and serves
 the same numbers (the equivalence criterion in
-[operations.md](operations.md)). Release 0325: 629,365,783 bytes
+[operations.md](operations.md)). Release 0325: 629,357,591 bytes
 (600.2 MiB) against 1,980.1 MiB.
 
 | Table | In the serving database |
