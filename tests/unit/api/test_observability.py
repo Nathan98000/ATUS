@@ -399,6 +399,45 @@ class TestMetrics:
             "h_sum 12.5", "h_count 3",
         ]
 
+    def test_metrics_event_only_after_traffic(self, build, caplog):
+        import asyncio
+
+        from atus_pipeline.api.metrics import emit_metrics_events
+
+        client, app = build()
+        client.post(ESTIMATE, json=BODY)
+        client.post(ESTIMATE, json=BODY)
+        metrics = app.state.metrics
+
+        async def scenario():
+            task = asyncio.ensure_future(emit_metrics_events(metrics, app.state, 0.02))
+            await asyncio.sleep(0.15)  # several intervals, traffic only before the first
+            task.cancel()
+
+        with caplog.at_level(logging.INFO, logger="atus.api.metrics"):
+            asyncio.run(scenario())
+        # the requests above are counted once the task starts: no event
+        assert [r for r in caplog.records if r.name == "atus.api.metrics"] == []
+
+        async def with_traffic():
+            task = asyncio.ensure_future(emit_metrics_events(metrics, app.state, 0.05))
+            await asyncio.sleep(0.01)
+            metrics.observe_request(route=ESTIMATE, method="POST", status=200, seconds=0.1,
+                                    db_statements=0, cache="hit", error=None)
+            await asyncio.sleep(0.2)
+            task.cancel()
+
+        with caplog.at_level(logging.INFO, logger="atus.api.metrics"):
+            asyncio.run(with_traffic())
+        events = [r.fields for r in caplog.records if r.name == "atus.api.metrics"]
+        assert len(events) == 1  # one event, not one per interval
+        event = events[0]
+        assert event["event"] == "metrics" and event["requests"] == 3
+        assert event["responses"] == {"2xx": 3}
+        assert event["cache"] == {"hit": 2, "miss": 1}
+        assert event["computations"] == 1 and event["daily_cap_used"] == 1
+        assert event["snapshot_age_s"] is not None
+
     def test_unknown_methods_are_bucketed(self):
         metrics = Metrics(build="dev")
         metrics.observe_request(route="unmatched", method="PROPFIND", status=405, seconds=0.01,

@@ -2,7 +2,7 @@
 
 **Status:** Accepted (2026-10-20) · Phase 5 · API layer implemented and tested; values provisional until calibration (see "Calibration")
 
-**Related:** [ADR-011](ADR-011-hosting.md) (hosting, request flow, process model), ADR-015 (edge cache, snapshot and quota governor), ADR-014 (observability). Audit findings are in [`../operations.md`](../operations.md).
+**Related:** [ADR-011](ADR-011-hosting.md) (hosting, request flow, process model), [ADR-015](ADR-015-edge-cache-snapshot-and-governor.md) (edge cache, static snapshot and the quota governor), [ADR-014](ADR-014-observability.md) (observability). Audit findings are in [`../operations.md`](../operations.md).
 
 ## Context
 
@@ -13,9 +13,10 @@ On the $0 stack, abuse does not cost money. It costs the month's availability: N
 - a 100 MB body raised memory from 54 to ~500 MB, and a 930 KB body produced a 9.7 MB 422 (F03, F04);
 - there was no rate limit, no client identity and no trusted proxy chain; the provider hostname bypasses anything that lives only at the edge (F07);
 - after the database closed its connections, each pooled connection produced one 503 (F05);
+- every cache hit and every 422 ran SQL before answering, so even free answers could wake a sleeping database (F14);
 - the cache key is trivially bypassed by respelling a request (F15).
 
-ADR-011 makes the Worker's quota governor the **primary** defense (durable daily and monthly budgets, fail closed). This ADR is the **second, independent layer inside the API**. It exists because the onrender.com hostname cannot be disabled, because a Worker misconfiguration must not expose the database, and because a single 0.1-CPU process must stay responsive no matter what reaches it.
+ADR-011 makes the Worker's quota governor the **primary** defense (durable daily and monthly budgets, fail closed; finalized in ADR-015). This ADR is the **second, independent layer inside the API**. It exists because the onrender.com hostname cannot be disabled, because a Worker misconfiguration must not expose the database, and because a single 0.1-CPU process must stay responsive no matter what reaches it.
 
 ## Decision
 
@@ -26,24 +27,27 @@ Every request passes these stages in order. Each rejection happens before routin
 | # | Stage | Rejection |
 |---|---|---|
 | 1 | declared `Content-Length` > `ATUS_API_MAX_BODY_BYTES` (64 KiB) | 413 `payload_too_large` (`Connection: close`) |
-| 2 | edge authentication (every path except `/health`) | 403 `forbidden_origin` |
+| 2 | edge authentication (every path except `/health`; `/ready` and `/metrics` also pass with a valid ops bearer) | 403 `forbidden_origin` |
 | 3 | client identity, then the per-client **request** bucket (every path except `/health`) | 429 `rate_limited` |
 | 4 | a `POST` (or a body on another method) that is not `application/json` | 415 `unsupported_media_type` |
 | 5 | the body is read with the same cap, also for chunked bodies | 413 `payload_too_large` |
 | 6 | control characters in query parameter names or values | 422 `validation_error` |
 | 7 | schema and domain validation of the body | 400 / 422 |
-| 8 | analyses only: data version, cache lookup, single-flight join | — |
-| 9 | analyses that will compute: daily cap, per-client **analysis** bucket | 503 `daily_capacity_reached`, 429 `rate_limited` |
-| 10 | admission lane (bounded wait), then a pool connection | 503 `overloaded` |
-| 11 | the query, under per-transaction limits and a request deadline | 503 `analysis_timeout`, `overloaded`, `database_paused`, `database_unavailable` |
+| 8 | data routes: the in-process data snapshot (read only when older than its TTL) and the expected data version | 503 `data_version_mismatch` |
+| 9 | analyses only: cache lookup, single-flight join | — |
+| 10 | analyses that will compute: the engine's dry run up to its first statement | 422 (`unknown_activity`, `invalid_spec`, `unsupported_analysis`, ...) |
+| 11 | analyses that will compute: daily cap, per-client **analysis** bucket | 503 `daily_capacity_reached`, 429 `rate_limited` |
+| 12 | admission lane (bounded wait), then a pool connection | 503 `overloaded` |
+| 13 | the query, under per-transaction limits and a request deadline | 503 `analysis_timeout`, `overloaded`, `database_paused`, `database_unavailable` |
 
-The code is `api/middleware.py` (1–6), `api/analysis_runner.py` (8–10) and `api/database.py` (10–11).
+The code is `api/middleware.py` (1–6), `api/snapshot.py` (8), `api/analysis_runner.py` (9–12) and `api/database.py` (12–13). Everything up to stage 11 costs no SQL statement while the snapshot is fresh.
 
 ### Edge authentication and client identity
 
 - **Shared secret.** `X-ATUS-Edge-Auth` must equal one of `ATUS_EDGE_SECRETS` (at most two values: current and next, for rotation). Every accepted value is compared with `hmac.compare_digest`, so timing reveals neither the secret nor which slot matched. Production refuses to start without a secret, and production secrets must be at least 32 characters.
 - **Disabled in development** when `ATUS_EDGE_SECRETS` is empty.
 - **`/health` is exempt.** The platform's health check reaches the container directly, and liveness touches nothing.
+- **Operator endpoints.** `/ready` and `/metrics` pass with a valid `Authorization: Bearer <ATUS_OPS_TOKEN>` alone, because the Worker never routes them. Without one they are refused like any other path (ADR-014).
 - **Client identity.** The client is `X-ATUS-Client-IP` only when edge authentication succeeded. Otherwise, or when that header is missing or malformed, it is the socket peer.
   - `X-Forwarded-For`, `Forwarded`, `CF-Connecting-IP` and `True-Client-IP` are never read. uvicorn's proxy-header handling is off and no forwarding peer is trusted.
   - IPv4 addresses are keyed whole. IPv6 addresses are keyed by their /64, the smallest prefix one subscriber normally controls.
@@ -60,6 +64,19 @@ The code is `api/middleware.py` (1–6), `api/analysis_runner.py` (8–10) and `
 - A rejection is 429 `rate_limited` with `Retry-After` (seconds until a token is available, at least 1), `details.retry_after_seconds` and `details.scope: "client"`.
 - An analysis token is refunded when the request is then shed (`overloaded`, `daily_capacity_reached`) before computing.
 - **Memory is bounded.** Each bucket set is an LRU of at most 10,000 clients (about 2 MB). Evicting a bucket forgets its debt, so a client whose bucket was pushed out by 10,000 newer clients starts again with a full bucket. That is the price of a fixed memory bound, and one reason the edge governor stays primary.
+
+### In-process data snapshot: answers that cost nothing (F14)
+
+The API keeps what it needs to know about the served data in memory (`api/snapshot.py`): the data version, the latest ingestion run, the loaded years, the respondent count, the activity lexicon, and an `ActivityResolver` built from it.
+
+- **One consistent read.** All of it is read in one `REPEATABLE READ`, read-only metadata transaction (11 statements), when a request needs it and it is older than `ATUS_API_SNAPSHOT_TTL_S` (600 s in production, 2 s in development). Concurrent requests share one read. There is no background refresh, so an idle API never wakes the database.
+- **What it makes free.** While it is fresh, analysis cache hits, every 400/413/415/422, `/meta`, `/activities*` and `/population/metadata` run no statement. Analyses that compute reuse its resolver and years (an additive, optional argument of the engine's constructor), so a computation runs only its statistics queries and the version recheck.
+- **The lexicon search** runs in Python with results identical to the `ILIKE` it replaced: names are stored as the database lowered them, and a term is lowered in Python only when it is ASCII and the database lowers ASCII as Python does (checked at every read). Other terms run the original SQL. An integration test compares both paths on the fixture database for thousands of terms.
+- **Dry run.** Before a computing request is charged, the real engine runs it on the snapshot's resolver and years with a stand-in connection that stops it at its first database use. An analytics error raised before that point (unknown activity code, year not loaded, 2020 under the multi-year weights) is exactly the error the computation would raise first, so it is answered as the usual 422 without a token, a lane or a statement. Nothing else changes; the dry run never produces a result.
+- **Reload guard.** An uncached analysis still re-reads the data version inside its own transaction after computing. If it differs from the snapshot's, the snapshot is invalidated and the result is returned once, uncached (`X-Cache: bypass`).
+- **Deployment binding.** With `ATUS_EXPECTED_DATA_VERSION` set (production), a snapshot of another version makes every data route answer 503 `data_version_mismatch` (`Retry-After: 60`, `scope: "global"`), and a version change detected by the recheck refuses the result the same way instead of returning it. `/population/metadata` and `/activities/presets`, which do not depend on the data, keep working. This is ADR-011's release-switch guard: an API pointed at the wrong database serves nothing from it.
+
+The per-request statement counts, verified against PostgreSQL's own statement log, are in [`../api.md`](../api.md#statements-per-request).
 
 ### Daily cap (process-wide backstop)
 
@@ -91,7 +108,7 @@ It is a pure function of the validated spec, so the same request is always in th
 
 ### Bounded work per request
 
-Every request's database work runs in one transaction. Its first statement applies the limits with `set_config(name, value, true)`, the function form of `SET LOCAL`. The values end with the transaction, so they are safe behind a transaction-mode pooler. Session `SET` and startup `options` are never used.
+Every request's database work runs in one transaction, started as `BEGIN READ ONLY` (the API never writes, I05; a write fails even under a role that could write). Its first statement applies the limits with `set_config(name, value, true)`, the function form of `SET LOCAL`. The values end with the transaction, so they are safe behind a transaction-mode pooler. Session `SET` and startup `options` are never used.
 
 | Parameter | Value | Source |
 |---|---|---|
@@ -131,6 +148,7 @@ Further bounds:
 | text matching Neon's quota or disabled-endpoint refusals | 503 `database_paused`, `Retry-After: 3600` |
 | any other `OperationalError` or `InterfaceError` (lost connection, admin shutdown, refused) | 503 `database_unavailable`, `Retry-After: 5` |
 | migrated but empty database (no succeeded run, or no respondents) | 503 `data_not_loaded`, generic message, `Retry-After: 300` (F51) |
+| the database serves another data version than `ATUS_EXPECTED_DATA_VERSION` | 503 `data_version_mismatch`, `Retry-After: 60` |
 | any other driver error | 500 `internal_error`, traceback logged once (F50) |
 
 **Neon's refusal texts.** Neon does not document them. The matched markers come from its proxy's user-facing messages ("endpoint is temporarily unavailable. Check your quotas and/or contact our support.", "endpoint is disabled"; `neondatabase/neon`, `proxy/src/control_plane/messages.rs`) and from user reports of the control plane's text ("Your account or project has exceeded the compute time quota", "Your project has exceeded the data transfer quota"). Matching is deliberately narrow; an unmatched refusal is still a 503, as `database_unavailable`.
@@ -155,6 +173,22 @@ These settings live in `api/serve.py`, which `atus api` runs.
 - **Connections.** Keep-alive 5 s. `limit_concurrency` is 4 × threads (64): beyond it uvicorn answers 503 before any app code runs (F49).
 - **Shutdown.** `timeout_graceful_shutdown` is 20 s, below Render's 30 s grace. On shutdown, queries still running are cancelled and detached computations get up to 5 s before the pool closes (F52).
 
+### Relation to the edge governor (ADR-015)
+
+The two layers count different things and fail differently:
+
+| | Edge governor (ADR-015) | This layer |
+|---|---|---|
+| Lives in | one Durable Object; survives Render restarts and spin-downs | API memory; reset on every restart |
+| Counts | uncached analyses per client network (60 per day), globally (600), heavy (300), Neon compute and egress from ground truth | per-client requests and computing analyses per minute, 600 computing analyses per UTC day, concurrent computations |
+| Client key | HMAC of the /24 or /48 prefix, daily key | the address from `X-ATUS-Client-IP` (IPv6 by /64) |
+| Sees | requests that reach the Worker | every request, including direct hits on onrender.com |
+| On failure | fails closed for uncached analyses (`capacity_unavailable`) | protects one process regardless of the edge |
+
+- The governor uses the same heavy rule (`len(years) × (2 for a compare) ≥ 8`), so both layers agree on what is expensive.
+- It sizes its compute charge from `Server-Timing: db;dur=` (ADR-014). Requests this layer answers without the database (hits, 4xx, sheds) report `db;dur=0` and are not charged compute.
+- The daily caps are the same number on purpose: the governor's is durable, this one is the backstop when the Worker is misconfigured or bypassed.
+
 ## What this does not protect against
 
 - **Distributed abuse.** Per-client buckets do not stop many IPs. The daily cap and the edge governor bound the total. A flood from many IPs can still use up the day's analysis capacity and push legitimate users to cached and static content.
@@ -163,6 +197,10 @@ These settings live in `api/serve.py`, which `atus api` runs.
 - **Idle and slow connections.** uvicorn has no request-head read timeout. A client that opens connections and sends nothing holds them until a proxy in front drops them. `limit_concurrency` bounds the memory this can pin, but a client holding 64 idle connections to the container would make uvicorn shed everyone else with 503. In production every connection reaches the container through Render's proxy, which is expected to buffer or terminate client connections. This is unverified (ADR-011 unknowns).
 - **Restarts.** All in-process state (buckets, daily count, cache) resets on restart or spin-down. The governor at the edge is the durable layer.
 - **Cache-key spelling** (F15). Respelling a request (label, `confidence_level`, prefix versus leaf codes) still misses the cache. It now costs an analysis token and a lane, so the bypass is bounded. Keying the cache on the resolved computation needs result assembly to change, which belongs to the analytics layer and is deferred.
+- **A stale snapshot** answers for up to its TTL (600 s in production) after the data changed in place. In production the data never changes in place: a release switch points the API at a new database and restarts it (ADR-013). Uncached analyses detect a change themselves (reload guard).
+- **Snapshot reads.** The first data request after the TTL pays the 11-statement read, also when it is only a cache hit, and with the database suspended it wakes it. A database that is down makes every request that needs a new snapshot fail with 503, even cache hits whose result is in memory.
+- **Dry-run reach.** It covers what the engine checks before its first query. A compare whose second group alone is invalid is still found invalid by the computation, after the first group's query (the dry run must not change which error a request gets).
+- **Non-ASCII search terms** run the lexicon SQL in a metadata transaction (3 statements: the connection check, the limits, the query), bounded by the request bucket.
 
 ## Calibration
 
@@ -175,9 +213,9 @@ No latency or load numbers were measured for this ADR.
 
 ## Consequences
 
-- Rejected and cached requests cost no analysis capacity, and rejected requests cost no SQL. Cache hits still read the data version: one short metadata transaction (`BEGIN`, the limits, the version read, `COMMIT`; counted from the code, not measured server-side). The in-process snapshot removes that read (ADR-011, F14).
+- Rejected and cached requests cost no analysis capacity, and while the data snapshot is fresh they cost no SQL either (F14): cache hits, 4xx and the metadata routes run 0 statements, an uncached estimate 4 (6 in PostgreSQL's log, with `BEGIN` and `COMMIT`), a compare 5 (7). These are counted per request by the API and verified against PostgreSQL's `log_statement=all` in a test.
 - Clients see specific, actionable errors with `Retry-After`. The frontend maps each code to its own message.
 - Every protection named here has a test:
-  - unit tests in `tests/unit/api/`: `test_guard.py`, `test_admission.py`, `test_protection.py`, `test_database_unit.py`, `test_config.py`, `test_serve_and_logging.py`;
-  - integration tests against PostgreSQL in `tests/integration/api/test_protection_db.py`;
+  - unit tests in `tests/unit/api/`: `test_guard.py`, `test_admission.py`, `test_protection.py`, `test_database_unit.py`, `test_config.py`, `test_serve_and_logging.py`, `test_snapshot.py` (snapshot, zero-statement paths, dry run, expected data version);
+  - integration tests against PostgreSQL in `tests/integration/api/test_protection_db.py` and `test_snapshot_db.py` (lexicon equivalence, unchanged statistics, read-only transactions, statement counts), and `test_statement_log.py` (PostgreSQL's own statement log, in a throwaway `postgres:16` container);
   - a production-configured uvicorn server in `tests/integration/api_prod/test_server.py`.

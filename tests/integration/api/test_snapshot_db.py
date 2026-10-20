@@ -291,6 +291,8 @@ class TestStatementCounts:
             ("activities", lambda: client.get("/api/v1/activities")),
             ("activities search", lambda: client.get("/api/v1/activities",
                                                      params={"search": "sleep"})),
+            ("activities non-ASCII search", lambda: client.get("/api/v1/activities",
+                                                               params={"search": "décor"})),
             ("activity detail", lambda: client.get("/api/v1/activities/0101")),
             ("unknown activity 404", lambda: client.get("/api/v1/activities/999999")),
             ("estimate miss", lambda: client.post(ESTIMATE, json=sleep)),
@@ -323,6 +325,7 @@ class TestStatementCounts:
             "meta (fresh snapshot)": (200, 0),
             "activities": (200, 0),
             "activities search": (200, 0),
+            "activities non-ASCII search": (200, 3),  # check, limits, the ILIKE query
             "activity detail": (200, 0),
             "unknown activity 404": (404, 0),
             # check, limits, the statistics query, the data-version recheck
@@ -338,6 +341,18 @@ class TestStatementCounts:
             "population metadata": (200, 0),
             "health": (200, 0),
         }
+
+    def test_db_free_routes_never_open_a_connection(self, loaded_settings):
+        """No startup connection, no background refresh, no idle traffic
+        (I08): until a request needs data, the pool stays empty."""
+        with api(loaded_settings, api_snapshot_ttl_s=0.0) as (client, app):
+            for path in ("/health", "/api/v1/population/metadata",
+                         "/api/v1/activities/presets", "/api/v1/activities/abc"):
+                client.get(path)
+            client.post(ESTIMATE, json={"activity": {"include": ["0101"]}, "years": []})
+            stats = app.state.database.pool.get_stats()
+            assert stats["pool_size"] == 0 and stats.get("requests_num", 0) == 0
+            assert app.state.snapshots.refreshes == 0
 
     def test_metrics_report_the_pool(self, loaded_settings):
         auth = {"Authorization": f"Bearer {OPS_TOKEN}"}

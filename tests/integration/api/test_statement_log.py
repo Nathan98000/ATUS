@@ -149,6 +149,9 @@ DOCUMENTED = [
     ("meta, snapshot read", lambda c: c.get("/api/v1/meta"), 13),
     ("meta, fresh snapshot", lambda c: c.get("/api/v1/meta"), 0),
     ("activities", lambda c: c.get("/api/v1/activities", params={"search": "sleep"}), 0),
+    # a non-ASCII term runs the original ILIKE query: BEGIN, check, limits, query, COMMIT
+    ("activities, non-ASCII search", lambda c: c.get("/api/v1/activities",
+                                                     params={"search": "décor"}), 5),
     ("activity detail", lambda c: c.get("/api/v1/activities/0101"), 0),
     # BEGIN, check, limits, statistics query, data-version recheck, COMMIT
     ("estimate, uncached", lambda c: c.post(ESTIMATE, json=SLEEP), 6),

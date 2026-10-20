@@ -36,6 +36,7 @@ _REDACTED_LOGGERS = (
     "atus",
     "atus.api",
     "atus.api.access",
+    "atus.api.metrics",
     "psycopg",
     "psycopg.pool",
     "uvicorn",

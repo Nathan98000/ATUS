@@ -11,9 +11,10 @@ Lifecycle: startup builds the database pool without connecting (``min_size``
 0: an API cold start never wakes the database), the analysis-result cache,
 the (empty) in-process data snapshot, and the per-process protection state
 (rate buckets, daily cap, admission lanes), and sizes the worker-thread
-limiter. Nothing reads the database until a request needs data. Shutdown
-cancels queries still running, waits briefly for detached computations, and
-closes the pool. Startup performs no data validation and is effectively
+limiter, and starts the periodic metrics log event (``metrics.py``; it
+touches no database). Nothing reads the database until a request needs
+data. Shutdown cancels queries still running, waits briefly for detached
+computations, and closes the pool. Startup performs no data validation and is effectively
 instantaneous; a production configuration without edge secrets is refused
 before anything starts.
 
@@ -24,6 +25,7 @@ line per request, with truncated client addresses (ADR-014).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -40,7 +42,7 @@ from .analysis_runner import AnalysisRunner
 from .cache import InMemoryAnalysisCache
 from .database import Database
 from .errors import register_exception_handlers
-from .metrics import Metrics
+from .metrics import Metrics, emit_metrics_events
 from .middleware import GuardMiddleware, RequestContextMiddleware, security_headers
 from .observability import RouteTemplates
 from .protection import Protection
@@ -116,9 +118,11 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
         app.state.snapshots = snapshots
         app.state.runner = AnalysisRunner(protection, snapshots)
         app.state.cache = InMemoryAnalysisCache(maxsize=settings.api_cache_size)
+        metrics_events = asyncio.ensure_future(emit_metrics_events(metrics, app.state))
         try:
             yield
         finally:
+            metrics_events.cancel()
             cancelled = await anyio.to_thread.run_sync(database.cancel_active)
             if cancelled:
                 log.warning("shutdown: cancelled %d running queries", cancelled)

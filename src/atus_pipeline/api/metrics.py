@@ -18,13 +18,26 @@ Two kinds of series:
 Every label value comes from a bounded vocabulary (route templates, HTTP
 methods and statuses, error codes, cache outcomes); no client input becomes
 a label. Counters reset when the process restarts.
+
+**Metrics events.** Render's free plan cannot scrape anything, so the same
+numbers also go to the log: every ``METRICS_EVENT_INTERVAL_S`` the process
+writes one ``event: "metrics"`` record with the cumulative counters
+(:meth:`Metrics.summary`), but only if requests arrived since the previous
+one; an idle process writes nothing and touches nothing.
 """
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import math
 import threading
+import time
 from collections.abc import Iterable, Sequence
+
+log = logging.getLogger("atus.api.metrics")
+
+METRICS_EVENT_INTERVAL_S = 300.0
 
 CONTENT_TYPE = "text/plain; version=0.0.4; charset=utf-8"
 
@@ -141,9 +154,12 @@ def _sample(name: str, kind: str, help_text: str, value: float,
 class Metrics:
     """The per-process registry (built once in ``create_app``)."""
 
-    def __init__(self, build: str):
+    def __init__(self, build: str, *, clock=time.monotonic):
         self.build = build
         self._lock = threading.Lock()
+        self._clock = clock
+        self.started = clock()
+        self.total_requests = 0
         self.requests = Counter(
             "atus_http_requests_total", "HTTP requests by route template, method and status.",
             ("route", "method", "status"),
@@ -173,6 +189,7 @@ class Metrics:
     ) -> None:
         method = method if method in _METHODS else "OTHER"
         with self._lock:
+            self.total_requests += 1
             self.requests.inc(route, method, str(status if status is not None else 0))
             self.latency.observe(seconds, route)
             self.db_statements.observe(db_statements, route)
@@ -196,6 +213,70 @@ class Metrics:
         lines += _snapshot_lines(getattr(state, "snapshots", None))
         lines += _database_lines(getattr(state, "database", None))
         return "\n".join(lines) + "\n"
+
+
+    def summary(self, state) -> dict:
+        """The headline numbers as one flat dict (the metrics log event)."""
+        with self._lock:
+            by_class: dict[str, int] = {}
+            for (_, _, status), count in self.requests._values.items():
+                key = f"{status[:1]}xx" if status != "0" else "unknown"
+                by_class[key] = by_class.get(key, 0) + int(count)
+            summary: dict = {
+                "event": "metrics",
+                "build": self.build,
+                "uptime_s": round(self._clock() - self.started),
+                "requests": self.total_requests,
+                "responses": dict(sorted(by_class.items())),
+                "errors": {code: int(n) for (code,), n in sorted(self.errors._values.items())},
+                "cache": {r: int(n) for (r,), n in sorted(self.cache._values.items())},
+            }
+        protection = getattr(state, "protection", None)
+        if protection is not None:
+            summary.update(
+                in_flight=protection.lanes.in_flight,
+                lane_waits=protection.lanes.waits,
+                lane_sheds=protection.lanes.rejections,
+                rate_limited={"request": protection.request_limiter.rejections,
+                              "analysis": protection.analysis_limiter.rejections},
+                daily_cap_used=protection.daily_cap.used_today(),
+                daily_cap_rejections=protection.daily_cap.rejections,
+            )
+        runner = getattr(state, "runner", None)
+        if runner is not None:
+            summary.update(computations=runner.computations, joins=runner.joins)
+        database = getattr(state, "database", None)
+        if database is not None:
+            summary["query_timeouts"] = getattr(database, "query_timeouts", 0)
+            pool = getattr(database, "pool", None)
+            if pool is not None:
+                stats = pool.get_stats()
+                summary["pool"] = {key: stats.get(key, 0) for key in
+                                   ("pool_size", "pool_available", "requests_waiting",
+                                    "connections_errors", "connections_lost")}
+        snapshots = getattr(state, "snapshots", None)
+        if snapshots is not None:
+            age = snapshots.age_s()
+            summary["snapshot_age_s"] = round(age) if age is not None else None
+        return summary
+
+
+async def emit_metrics_events(metrics: Metrics, state,
+                              interval_s: float = METRICS_EVENT_INTERVAL_S) -> None:
+    """Log :meth:`Metrics.summary` every ``interval_s`` while requests keep
+    arriving (runs for the application's lifetime; cancelled at shutdown)."""
+    last = metrics.total_requests
+    while True:
+        await asyncio.sleep(interval_s)
+        current = metrics.total_requests
+        if current == last:
+            continue
+        last = current
+        try:
+            summary = metrics.summary(state)
+            log.info("metrics: %d requests since start", current, extra={"fields": summary})
+        except Exception:  # observability must never take the process down
+            log.exception("metrics event failed")
 
 
 def _protection_lines(protection) -> list[str]:
@@ -265,7 +346,7 @@ def _database_lines(database) -> list[str]:
     if database is None:
         return []
     lines = _sample("atus_query_timeouts_total", "counter",
-                    "Queries cancelled by the statement timeout or the request deadline.",
+                    "Queries cancelled: statement timeout, request deadline or shutdown.",
                     getattr(database, "query_timeouts", 0))
     pool = getattr(database, "pool", None)
     if pool is None:
