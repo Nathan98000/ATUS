@@ -162,7 +162,9 @@ episodes.
   detail, timestamped. Both commands write here, so they need the
   owner/loader role; the read-only API role cannot. A serving database ships
   it empty (see below), and `atus build-serving-db` reads it on the full
-  database as evidence that the loaded data was validated.
+  database as evidence that the loaded data was validated (results recorded
+  at or after the loaded run's `finished_at`). The data-quality pytest suite
+  only reads: it never records here.
 
 ## Loading and reloading
 
