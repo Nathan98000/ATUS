@@ -248,6 +248,9 @@ def test_error_envelope_shape(probe, payload, ok):
         ("0325:load-7-20261020T120000Z-a1b2c3", True),
         ("0325:serving-20261020T120000Z-0a1b2c3d:0123456789ab", True),
         ("0325:run1", False),  # Phase 1-4 format: the same on every fresh DB
+        # versions.py's fallback for runs without an explicit version: the
+        # loader and the serving builder must write one (CONTRACT "data_version")
+        ("0325:run1:1792534349027622", False),
         ("0325:load-7-20261020T120000Z", False),  # no random suffix
         ("0325:serving-20261020T120000Z-0a1b2c3d", False),  # no content hash
         ("", False),
