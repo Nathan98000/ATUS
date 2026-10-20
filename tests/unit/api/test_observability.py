@@ -212,6 +212,26 @@ class TestJsonFormat:
         assert entry["exc_type"] == "RuntimeError" and "Traceback" in entry["exc"]
         assert "Sup3r-Secret-Value" not in line and "***" in line
 
+    def test_secrets_that_json_escapes_are_redacted(self):
+        """Regression: redaction ran only on the serialized line, where a
+        password containing a quote or a backslash appears escaped
+        (``\\"``, ``\\\\``) and no longer matched."""
+        secret = 'Pa"ss\\w0rd-xyz'
+        set_redacted_secrets([secret])
+        try:
+            try:
+                raise RuntimeError(f"connect failed for password {secret}")
+            except RuntimeError:
+                import sys
+                record = self.record(exc_info=sys.exc_info(), fields={"detail": secret})
+            line = JsonFormatter().format(record)
+        finally:
+            set_redacted_secrets([])
+        entry = json.loads(line)
+        assert secret not in entry["exc"] and secret not in entry["detail"]
+        assert json.dumps(secret)[1:-1] not in line
+        assert "***" in entry["exc"] and entry["detail"] == "***"
+
     def test_configure_logging_switches_the_installed_handler(self):
         root = logging.getLogger()
         saved, saved_level = root.handlers[:], root.level

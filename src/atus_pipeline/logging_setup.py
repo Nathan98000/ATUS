@@ -100,7 +100,14 @@ class TextFormatter(logging.Formatter):
 
 
 class JsonFormatter(logging.Formatter):
-    """One JSON object per record (see module docstring)."""
+    """One JSON object per record (see module docstring).
+
+    Secrets are redacted in every string *before* serialization: JSON
+    escapes ``"``, ``\\`` and control characters, so a database password
+    containing one of them would no longer match in the serialized line.
+    The serialized line is redacted again for anything ``default=str``
+    produced.
+    """
 
     def format(self, record: logging.LogRecord) -> str:
         entry: dict = {
@@ -119,6 +126,8 @@ class JsonFormatter(logging.Formatter):
             entry["exc"] = self.formatException(record.exc_info)
         elif record.exc_text:
             entry["exc"] = record.exc_text
+        entry = {key: _REDACTOR.redact(value) if isinstance(value, str) else value
+                 for key, value in entry.items()}
         return _REDACTOR.redact(json.dumps(entry, default=str, ensure_ascii=False))
 
 
