@@ -388,6 +388,14 @@ def register_exception_handlers(app: FastAPI, outermost_headers) -> None:
     ) -> JSONResponse:
         # Framework-generated 404/405/... use the same envelope as everything
         # else, keeping the framework's headers (e.g. Allow on a 405).
+        if exc.status_code == 400:
+            # FastAPI's only 400: a JSON body its parser gave up on with
+            # something other than a decode error (e.g. RecursionError on
+            # deeply nested arrays). Same code as any other unparsable body.
+            return respond(
+                request, 400, "malformed_json", "The request body could not be parsed as JSON.",
+                headers=getattr(exc, "headers", None),
+            )
         code = _HTTP_STATUS_CODES.get(exc.status_code, f"http_{exc.status_code}")
         return respond(
             request, exc.status_code, code, str(exc.detail),

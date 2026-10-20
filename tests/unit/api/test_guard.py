@@ -300,6 +300,19 @@ class TestValidationCostsNothing:
         assert response.status_code == 400
         assert fake_db.transactions == []
 
+    @pytest.mark.parametrize("body", [b"[" * 60_000, b'{"a":' * 10_000 + b"1" + b"}" * 10_000],
+                             ids=["arrays", "objects"])
+    def test_unparsable_nesting_is_malformed_json(self, build, body):
+        """Regression: JSON nested deeper than the parser's recursion limit
+        surfaced as FastAPI's generic 400, enveloped as ``http_400`` (the
+        docs promise none from documented routes)."""
+        client, fake_db = build()
+        response = client.post(ESTIMATE, content=body,
+                               headers={"Content-Type": "application/json"})
+        assert response.status_code == 400
+        assert response.json()["error"]["code"] == "malformed_json"
+        assert fake_db.transactions == []
+
 
 def raw_request(app, method: str, path: str, headers: list[tuple[bytes, bytes]]):
     """Drive the ASGI app directly with header bytes no HTTP client library

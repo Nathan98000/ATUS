@@ -187,7 +187,10 @@ Response headers:
   in database transactions (including waiting for a connection) and the rest,
   up to the response start. `db;dur=0.0` means the request touched no
   database.
-- `Retry-After` (seconds) on every 429 and every 503.
+- `Retry-After` (seconds) on every 429 and every 503 the API answers. The
+  one exception is uvicorn's own connection-limit 503 (beyond
+  `limit_concurrency`, before any app code runs): plain text
+  `Service Unavailable`, no envelope, no `Retry-After` (ADR-012).
 - Security headers on every response:
   - `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`;
   - `X-Content-Type-Options: nosniff`;
@@ -211,9 +214,9 @@ One envelope everywhere:
 
 | Status | `code` | When |
 | --- | --- | --- |
-| 400 | `malformed_json` | body is not valid JSON |
+| 400 | `malformed_json` | body is not valid JSON, or the parser gave up on it (e.g. nested too deeply) |
 | 403 | `forbidden_origin` | edge authentication is on and the request has no valid `X-ATUS-Edge-Auth` (every path except `/health`; `/ready` and `/metrics` also pass with a valid ops bearer) |
-| 404 | `not_found` | no such route, including a trailing-slash spelling; also `/ready` and `/metrics` without a valid ops bearer |
+| 404 | `not_found` | no such route, including a trailing-slash spelling; also `/ready` and `/metrics` without a valid ops bearer, for every method |
 | 404 | `activity_not_found` | `GET /activities/{code}` for a nonexistent code |
 | 405 | `method_not_allowed` | wrong method; the `Allow` header lists the right one |
 | other 4xx | `http_<status>` | any other framework-generated status (none is expected from the documented routes) |
@@ -235,7 +238,7 @@ One envelope everywhere:
 | 503 | `schema_not_initialized` | schema missing (any database-backed endpoint; also `/ready`) |
 | 500 | `internal_error` | unexpected failure; details are logged server-side, once, and never returned |
 
-Every 429 and every 503 carries `Retry-After` and
+Every 429 and every 503 in this table carries `Retry-After` and
 `details.retry_after_seconds`, and `details.scope` where a limit applies
 (`client`, `global`, `daily`, `monthly`). All these codes are additive
 within v1, and the envelope is unchanged. Messages are generic: operator
