@@ -4,7 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "atus-pipeline"
-version = "0.1.0"
+# Single source of truth: atus_pipeline.__version__ (read statically by setuptools).
+dynamic = ["version"]
 description = "Data foundation for the American Time Use Survey (ATUS) analysis platform: acquisition, validation, transformation, and PostgreSQL loading of official BLS microdata."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -32,6 +33,9 @@ atus = "atus_pipeline.cli:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = { attr = "atus_pipeline.__version__" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

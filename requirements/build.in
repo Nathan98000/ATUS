@@ -1,0 +1,6 @@
+# Build backend for the project wheel (input to build.lock.txt).
+#
+# Mirrors [build-system].requires in pyproject.toml, so the image builds the
+# atus-pipeline wheel with a hash-checked setuptools instead of letting pip
+# fetch an unpinned one into an isolated build environment.
+setuptools>=68
