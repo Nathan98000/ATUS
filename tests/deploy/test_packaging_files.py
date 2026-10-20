@@ -34,7 +34,7 @@ WORKER_SECRETS = ["EDGE_AUTH_SECRET", "OPS_TOKEN", "IP_HMAC_KEY", "RENDER_ORIGIN
 WORKER_VARS = ["DATA_VERSION", "ANALYTICS_VERSION", "RESPONSE_FORMAT", "SNAPSHOT_ID", "PREWAKE"]
 GITHUB_SECRETS = [
     "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "RENDER_DEPLOY_HOOK_URL", "RENDER_ORIGIN",
-    "PUBLIC_BASE_URL", "GHCR_IMAGE",
+    "ATUS_OPS_TOKEN", "EDGE_OPS_TOKEN", "PUBLIC_BASE_URL", "GHCR_IMAGE",
 ]
 
 
@@ -215,3 +215,37 @@ def test_development_example_keeps_development_defaults():
     values = _assignments(_read(".env.example"))
     assert values["ATUS_ENV"] == "development"
     assert values["ATUS_DATABASE_URL"] == "postgresql://atus:atus@localhost:5434/atus"
+
+
+# --- docs/deployment.md "Configuration reference" (brief §18) -----------------------
+
+
+def _configuration_reference() -> str:
+    text = _read("docs/deployment.md")
+    start = text.index("## Configuration reference")
+    return text[start:text.index("\n## ", start + 1)]
+
+
+def test_configuration_reference_covers_every_template_variable():
+    """Everything the templates name (active or commented) has a documented row."""
+    reference = _configuration_reference()
+    names = set()
+    for template in (".env.production.example", "deploy/stack/stack.env.example"):
+        names.update(re.findall(r"^#? ?([A-Z][A-Z0-9_]+)=", _read(template), re.MULTILINE))
+    missing = sorted(n for n in names if n not in reference)
+    assert missing == []
+
+
+def test_configuration_reference_covers_every_component_name():
+    reference = _configuration_reference()
+    for name in CONTRACT_API_VARIABLES + WORKER_SECRETS + WORKER_VARS + GITHUB_SECRETS:
+        assert f"`{name}`" in reference or name in reference, name
+
+
+def test_every_secret_has_a_rotation_entry():
+    reference = _configuration_reference()
+    rotation = reference[reference.index("### Rotation"):]
+    for secret in ("ATUS_EDGE_SECRETS", "EDGE_AUTH_SECRET", "atus_api", "ATUS_OPS_TOKEN",
+                   "OPS_TOKEN", "IP_HMAC_KEY", "CLOUDFLARE_API_TOKEN", "RENDER_DEPLOY_HOOK_URL",
+                   "NEON_API_KEY"):
+        assert secret in rotation, secret
