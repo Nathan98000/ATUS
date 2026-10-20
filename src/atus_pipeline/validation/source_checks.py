@@ -19,16 +19,15 @@ import csv
 import logging
 from pathlib import Path
 
-from ..sources import SourceFile
+from ..sources import SourceFile, get_release
 from .results import CheckResult
 
 log = logging.getLogger(__name__)
 
 
 def expected_years(release: str) -> set[int]:
-    """Survey years covered by a multi-year release code like '0325'."""
-    start, end = 2000 + int(release[:2]), 2000 + int(release[2:])
-    return set(range(start, end + 1))
+    """Survey years covered by a registered multi-year release like '0325'."""
+    return set(get_release(release).years)
 
 
 def _read_header(path: Path) -> list[str]:

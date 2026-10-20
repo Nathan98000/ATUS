@@ -1,14 +1,17 @@
 """Declarative registry of official BLS ATUS source files.
 
 Each multi-year "release" (e.g. ``0325`` = survey years 2003-2025) is described
-by a tuple of :class:`SourceFile` entries. Everything the pipeline knows about
-a source file lives here: its official URL, the exact archive member holding
-the data, the expected header, and the official record count published by BLS
-in the ``*_info.txt`` file inside each archive.
+by a :class:`Release`: its survey-year span plus a tuple of :class:`SourceFile`
+entries. Everything the pipeline knows about a source file lives here: its
+official URL, the exact archive member holding the data, the expected header,
+and the official record count published by BLS in the ``*_info.txt`` file
+inside each archive.
 
-Adding a future release (e.g. ``0326``) means adding one ``_build_release``
-call with the new row counts and, if BLS changes any file layout, updating the
-header constants — nothing else in the pipeline should need to change.
+Adding a future release (e.g. ``0326``) means adding one
+:func:`multiyear_release` entry to the registry with the new row counts (plus
+the release's committed lexicon CSV) and, if BLS changes any file layout,
+updating the header constants. Everything else that is release-specific (file
+names, expected years, lexicon path and label) derives from the entry.
 
 Sources:
     https://www.bls.gov/tus/data/datafiles-0325.htm
@@ -17,6 +20,7 @@ Sources:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 _BLS_DATAFILES = "https://www.bls.gov/tus/datafiles"
 
@@ -92,61 +96,118 @@ class SourceFile:
     notes: str = ""
 
 
-def _build_release_0325() -> tuple[SourceFile, ...]:
+@dataclass(frozen=True)
+class Release:
+    """One BLS multi-year release: its survey-year span and its source files.
+
+    Everything release-specific in the pipeline derives from this entry: file
+    names and URLs, the expected survey years (source and database
+    validation), the committed lexicon file, and the lexicon label shown in
+    analysis warnings and errors (e.g. "2003-25").
+    """
+
+    code: str                        # BLS release code, e.g. "0325" = 2003-2025
+    first_year: int
+    last_year: int
+    files: tuple[SourceFile, ...]
+
+    def __post_init__(self) -> None:
+        expected = f"{self.first_year % 100:02d}{self.last_year % 100:02d}"
+        if self.code != expected or self.first_year > self.last_year:
+            raise ValueError(
+                f"Release code {self.code!r} does not match its survey years "
+                f"{self.first_year}-{self.last_year} (expected code {expected!r})"
+            )
+
+    @property
+    def years(self) -> tuple[int, ...]:
+        return tuple(range(self.first_year, self.last_year + 1))
+
+    @property
+    def label(self) -> str:
+        """Short year span used in user-facing text, e.g. "2003-25"."""
+        return f"{self.first_year}-{self.last_year % 100:02d}"
+
+    @property
+    def lexicon_file(self) -> str:
+        """Committed lexicon CSV (under data/reference/) for this release."""
+        return f"activity_lexicon_{self.code}.csv"
+
+
+def multiyear_release(
+    code: str,
+    *,
+    first_year: int,
+    last_year: int,
+    expected_rows: dict[str, int],
+    cps_column_count: int = 265,
+    summary_column_count: int = 456,
+) -> Release:
+    """Describe a standard BLS multi-year release.
+
+    BLS names every multi-year archive ``<stem>-<code>.zip`` with a
+    ``<stem>_<code>.dat`` data member, so a new release needs only its code,
+    its year span, and the official record counts from each ``*_info.txt``
+    (``expected_rows``, keyed by source key). The column counts of the two
+    very wide files are parameters because they can grow between releases.
+    """
+    label = f"{first_year}-{last_year % 100:02d}"
+
     def bls(name: str) -> str:
         return f"{_BLS_DATAFILES}/{name}"
 
-    return (
+    def archive(stem: str) -> dict[str, str]:
+        return {
+            "url": bls(f"{stem}-{code}.zip"),
+            "zip_name": f"{stem}-{code}.zip",
+            "dat_name": f"{stem}_{code}.dat",
+        }
+
+    files = (
         SourceFile(
             key="respondent",
-            description="ATUS 2003-25 Respondent file (one record per respondent)",
-            url=bls("atusresp-0325.zip"),
-            zip_name="atusresp-0325.zip",
-            dat_name="atusresp_0325.dat",
-            expected_rows=258_954,
+            description=f"ATUS {label} Respondent file (one record per respondent)",
+            **archive("atusresp"),
+            expected_rows=expected_rows["respondent"],
             expected_columns=RESPONDENT_COLUMNS,
         ),
         SourceFile(
             key="roster",
             description=(
-                "ATUS 2003-25 Roster file (household members and own nonhousehold "
+                f"ATUS {label} Roster file (household members and own nonhousehold "
                 "children under 18)"
             ),
-            url=bls("atusrost-0325.zip"),
-            zip_name="atusrost-0325.zip",
-            dat_name="atusrost_0325.dat",
-            expected_rows=702_409,
+            **archive("atusrost"),
+            expected_rows=expected_rows["roster"],
             expected_columns=ROSTER_COLUMNS,
         ),
         SourceFile(
             key="activity",
-            description="ATUS 2003-25 Activity file (one record per diary-day activity episode)",
-            url=bls("atusact-0325.zip"),
-            zip_name="atusact-0325.zip",
-            dat_name="atusact_0325.dat",
-            expected_rows=4_994_172,
+            description=(
+                f"ATUS {label} Activity file (one record per diary-day activity episode)"
+            ),
+            **archive("atusact"),
+            expected_rows=expected_rows["activity"],
             expected_columns=ACTIVITY_COLUMNS,
         ),
         SourceFile(
             key="who",
-            description="ATUS 2003-25 Who file (one record per 'who was present' code per episode)",
-            url=bls("atuswho-0325.zip"),
-            zip_name="atuswho-0325.zip",
-            dat_name="atuswho_0325.dat",
-            expected_rows=6_358_042,
+            description=(
+                f"ATUS {label} Who file (one record per 'who was present' code per episode)"
+            ),
+            **archive("atuswho"),
+            expected_rows=expected_rows["who"],
             expected_columns=WHO_COLUMNS,
         ),
         SourceFile(
             key="cps",
             description=(
-                "ATUS-CPS 2003-25 file (CPS records for selected persons and their "
+                f"ATUS-CPS {label} file (CPS records for selected persons and their "
                 "household members)"
             ),
-            url=bls("atuscps-0325.zip"),
-            zip_name="atuscps-0325.zip",
-            dat_name="atuscps_0325.dat",
-            expected_rows=1_583_133,
-            expected_column_count=265,
+            **archive("atuscps"),
+            expected_rows=expected_rows["cps"],
+            expected_column_count=cps_column_count,
             required_columns=CPS_REQUIRED_COLUMNS,
             notes=(
                 "Only a documented subset of columns is loaded, and only for households "
@@ -156,11 +217,9 @@ def _build_release_0325() -> tuple[SourceFile, ...]:
         ),
         SourceFile(
             key="replicate_weights",
-            description="ATUS 2003-25 Replicate weights file (160 replicates of TUFNWGTP)",
-            url=bls("atuswgts-0325.zip"),
-            zip_name="atuswgts-0325.zip",
-            dat_name="atuswgts_0325.dat",
-            expected_rows=258_954,
+            description=f"ATUS {label} Replicate weights file (160 replicates of TUFNWGTP)",
+            **archive("atuswgts"),
+            expected_rows=expected_rows["replicate_weights"],
             expected_columns=REPLICATE_WEIGHT_COLUMNS,
         ),
         SourceFile(
@@ -169,21 +228,19 @@ def _build_release_0325() -> tuple[SourceFile, ...]:
             url=bls("atuswgtspan-1920.zip"),
             zip_name="atuswgtspan-1920.zip",
             dat_name="atuswgtspan_1920.dat",
-            expected_rows=18_217,
+            expected_rows=expected_rows["pandemic_weights"],
             expected_columns=PANDEMIC_WEIGHT_COLUMNS,
             notes="Fixed 2019-2020 span; independent of the multi-year release suffix.",
         ),
         SourceFile(
             key="activity_summary",
             description=(
-                "ATUS 2003-25 Activity summary file (BLS-derived per-respondent "
+                f"ATUS {label} Activity summary file (BLS-derived per-respondent "
                 "activity totals)"
             ),
-            url=bls("atussum-0325.zip"),
-            zip_name="atussum-0325.zip",
-            dat_name="atussum_0325.dat",
-            expected_rows=258_954,
-            expected_column_count=456,
+            **archive("atussum"),
+            expected_rows=expected_rows["activity_summary"],
+            expected_column_count=summary_column_count,
             required_columns=("TUCASEID",),
             load=False,
             notes=(
@@ -193,19 +250,60 @@ def _build_release_0325() -> tuple[SourceFile, ...]:
             ),
         ),
     )
+    return Release(code=code, first_year=first_year, last_year=last_year, files=files)
 
 
-_REGISTRY: dict[str, tuple[SourceFile, ...]] = {
-    "0325": _build_release_0325(),
+# The release registry. Adding a release is one entry here (plus its
+# committed lexicon CSV); see docs/source-data.md, "Adding the next release".
+_REGISTRY: dict[str, Release] = {
+    release.code: release
+    for release in (
+        multiyear_release(
+            "0325",
+            first_year=2003,
+            last_year=2025,
+            expected_rows={
+                "respondent": 258_954,
+                "roster": 702_409,
+                "activity": 4_994_172,
+                "who": 6_358_042,
+                "cps": 1_583_133,
+                "replicate_weights": 258_954,
+                "pandemic_weights": 18_217,
+                "activity_summary": 258_954,
+            },
+        ),
+    )
 }
 
 
-def release_files(release: str) -> tuple[SourceFile, ...]:
+def known_releases() -> tuple[str, ...]:
+    return tuple(sorted(_REGISTRY))
+
+
+def get_release(release: str) -> Release:
     try:
         return _REGISTRY[release]
     except KeyError as exc:
-        known = ", ".join(sorted(_REGISTRY))
+        known = ", ".join(known_releases())
         raise KeyError(f"Unknown ATUS release {release!r}. Known releases: {known}") from exc
+
+
+def register_release(release: Release) -> None:
+    """Add a release to the registry at runtime (tests and tooling; committed
+    releases are entries in ``_REGISTRY``). Refuses to replace an entry."""
+    if release.code in _REGISTRY:
+        raise ValueError(f"ATUS release {release.code!r} is already registered")
+    _REGISTRY[release.code] = release
+
+
+def unregister_release(code: str) -> None:
+    """Remove a release added with :func:`register_release`."""
+    _REGISTRY.pop(code, None)
+
+
+def release_files(release: str) -> tuple[SourceFile, ...]:
+    return get_release(release).files
 
 
 def get_source(release: str, key: str) -> SourceFile:
@@ -213,3 +311,27 @@ def get_source(release: str, key: str) -> SourceFile:
         if source.key == key:
             return source
     raise KeyError(f"No source {key!r} in release {release!r}")
+
+
+def lexicon_path(reference_dir: Path, release: str) -> Path:
+    """Path of the committed activity-lexicon CSV for a release."""
+    return reference_dir / get_release(release).lexicon_file
+
+
+def lexicon_label(release: str | None) -> str | None:
+    """Year span of a release's harmonized lexicon, e.g. "2003-25".
+
+    Used for text that names the loaded data's lexicon. A release code this
+    code version does not know (a database loaded by a newer pipeline) still
+    gets a label when it has the standard two-digit-years form; anything else
+    (``None``, "unloaded") yields ``None`` and callers fall back to neutral
+    wording.
+    """
+    if release is None:
+        return None
+    if release in _REGISTRY:
+        return _REGISTRY[release].label
+    if len(release) == 4 and release.isdigit() and release[:2] <= release[2:]:
+        return f"20{release[:2]}-{release[2:]}"
+    return None
+
