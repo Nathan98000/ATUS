@@ -31,6 +31,7 @@ from atus_pipeline.loading.switch import (
     METADATA_TABLES,
     SHADOW_SCHEMA,
     create_shadow,
+    sees_all_sessions,
 )
 from atus_pipeline.validation.db_checks import run_db_checks
 from atus_pipeline.validation.results import CheckResult
@@ -601,6 +602,21 @@ class TestRepeatableRead:
             old.close()
         assert not errors
         assert live_state(db_url)[1] == V2_RESPONDENTS
+
+    def test_waiting_needs_a_role_that_sees_other_sessions(self, db_url):
+        role = f"{db_url.rsplit('/', 1)[1]}_plain"
+        with psycopg.connect(db_url, autocommit=True) as admin:
+            admin.execute(f'DROP ROLE IF EXISTS "{role}"')
+            admin.execute(f'CREATE ROLE "{role}" NOLOGIN')
+            try:
+                with psycopg.connect(db_url, autocommit=True) as conn:
+                    assert sees_all_sessions(conn)          # the owner/superuser
+                    conn.execute(f'SET ROLE "{role}"')
+                    assert not sees_all_sessions(conn)      # a plain role
+                    admin.execute(f'GRANT pg_read_all_stats TO "{role}"')
+                    assert sees_all_sessions(conn)
+            finally:
+                admin.execute(f'DROP ROLE "{role}"')
 
     def test_an_old_transaction_that_never_ends_fails_the_load_safely(self, v1, v2, db_url):
         load(v1)

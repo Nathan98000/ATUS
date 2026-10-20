@@ -133,6 +133,9 @@ def migrate() -> None:
     help="Upper bound of each lock wait during the switch (what a reader may wait).",
 )
 def load(validate: bool, switch_timeout: float, lock_timeout_ms: int) -> None:
+    import psycopg
+
+    from .database.migrate import MigrationError
     from .database.versions import read_data_version
     from .loading.loader import LoadError, SwitchOptions, load_all
     from .validation.db_checks import run_db_checks
@@ -154,8 +157,13 @@ def load(validate: bool, switch_timeout: float, lock_timeout_ms: int) -> None:
                 options=SwitchOptions(lock_timeout_ms=lock_timeout_ms, timeout_s=switch_timeout),
                 migrations_dir=_migrations_dir(),
             )
-        except LoadError as exc:
+        except (LoadError, MigrationError) as exc:
             raise click.ClickException(f"load failed: {exc}") from exc
+        except psycopg.Error as exc:  # e.g. a staged code missing from the lexicon
+            first_line = str(exc).splitlines()[0] if str(exc) else ""
+            raise click.ClickException(
+                f"load failed, live data unchanged: {type(exc).__name__}: {first_line}"
+            ) from exc
         version = read_data_version(conn)
     click.echo("\nLoaded tables:")
     for result in results:

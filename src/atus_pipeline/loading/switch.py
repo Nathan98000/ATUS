@@ -143,6 +143,17 @@ def effective_lock_timeout_ms(conn: psycopg.Connection, requested_ms: int) -> in
     return max(1, min(requested_ms, deadlock_ms // (len(LOCK_ORDER) + 1)))
 
 
+def sees_all_sessions(conn: psycopg.Connection) -> bool:
+    """Whether this role can see other roles' transactions in
+    ``pg_stat_activity`` (superuser or ``pg_read_all_stats``); without it
+    :func:`older_transactions` only sees this role's own sessions."""
+    with conn.transaction():
+        return conn.execute(
+            "SELECT rolsuper OR pg_has_role(current_user, 'pg_read_all_stats', 'MEMBER') "
+            "FROM pg_roles WHERE rolname = current_user"
+        ).fetchone()[0]
+
+
 def older_transactions(conn: psycopg.Connection, cutoff: datetime) -> list[int]:
     """Backend pids of other sessions in this database whose transaction began
     before ``cutoff`` (their snapshots may predate the shadow data)."""
@@ -273,6 +284,13 @@ def switch(
     attempts; raises :class:`LoadError` (live data unchanged) on timeout.
     """
     lock_timeout_ms = effective_lock_timeout_ms(conn, options.lock_timeout_ms)
+    if not sees_all_sessions(conn):
+        log.warning(
+            "This role cannot see other roles' sessions in pg_stat_activity, so the "
+            "switch cannot wait for their transactions older than the new data "
+            "(REPEATABLE READ readers among them could see the new tables empty). "
+            "Grant pg_read_all_stats to the loading role."
+        )
     deadline = time.monotonic() + options.timeout_s
     attempt = 0
     while True:

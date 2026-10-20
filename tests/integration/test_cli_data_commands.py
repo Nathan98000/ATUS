@@ -5,12 +5,14 @@ guard (audit F57)."""
 from __future__ import annotations
 
 import re
+import shutil
 
 import psycopg
 import pytest
 from click.testing import CliRunner
 
 from atus_pipeline.cli import cli
+from atus_pipeline.database.migrate import MIGRATIONS_DIR_ENV
 from atus_pipeline.database.versions import (
     format_serving_version,
     new_build_id,
@@ -24,6 +26,7 @@ from atus_pipeline.serving.guard import (
     serving_marker,
 )
 from tests.integration.analytics_dataset import analytics_settings
+from tests.integration.conftest import MIGRATIONS_DIR
 
 pytestmark = pytest.mark.integration
 
@@ -73,6 +76,25 @@ class TestLoad:
         assert "load failed:" in result.output and "not switched" in result.output
         with psycopg.connect(fixture_db.database_url) as conn:
             assert read_data_version(conn) == before
+
+
+    def test_failures_are_reported_without_a_traceback(self, fixture_db, tmp_path, monkeypatch):
+        assert run(fixture_db, "load").exit_code == 0
+        staged = fixture_db.staging_dir / "atusact_0325.dat"
+        staged.write_text(staged.read_text().replace("120303", "120397"))  # not in the lexicon
+        result = run(fixture_db, "load")
+        assert result.exit_code == 1
+        assert "load failed, live data unchanged: ForeignKeyViolation" in result.output
+        assert "Traceback" not in result.output
+
+        newer = tmp_path / "migrations"
+        shutil.copytree(MIGRATIONS_DIR, newer)
+        (newer / "0099_future.sql").write_text("SELECT 1;\n")
+        monkeypatch.setenv(MIGRATIONS_DIR_ENV, str(newer))
+        result = run(fixture_db, "load")
+        assert result.exit_code == 1
+        assert "load failed: the database schema is behind this code" in result.output
+        assert respondents(fixture_db.database_url) == 6
 
 
 class TestServingGuard:

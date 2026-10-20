@@ -47,8 +47,10 @@ class TestTables:
 class TestRetries:
     @pytest.fixture
     def harness(self, monkeypatch):
-        state = {"busy_attempts": 0, "blocked_checks": 0, "swaps": 0, "sleeps": []}
+        state = {"busy_attempts": 0, "blocked_checks": 0, "swaps": 0, "sleeps": [],
+                 "sees_all": True}
         monkeypatch.setattr(switch, "effective_lock_timeout_ms", lambda conn, ms: ms)
+        monkeypatch.setattr(switch, "sees_all_sessions", lambda conn: state["sees_all"])
 
         def older_transactions(conn, cutoff):
             if state["blocked_checks"]:
@@ -99,6 +101,15 @@ class TestRetries:
         harness["blocked_checks"] = 10**9
         with pytest.raises(LoadError, match="older than the new data .*pids 4242"):
             self.run(harness, timeout_s=0)
+
+    def test_warns_when_other_sessions_are_invisible(self, harness, caplog):
+        harness["sees_all"] = False
+        self.run(harness)
+        assert "Grant pg_read_all_stats" in caplog.text
+
+    def test_no_warning_when_all_sessions_are_visible(self, harness, caplog):
+        self.run(harness)
+        assert "pg_read_all_stats" not in caplog.text
 
     def test_other_errors_are_not_retried(self, harness, monkeypatch):
         def broken(conn, lock_timeout_ms):
