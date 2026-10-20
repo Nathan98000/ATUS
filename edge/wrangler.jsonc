@@ -5,7 +5,7 @@
 // for `/api` and `/api/*`, where it proxies an allowlist of routes to the
 // never-published Render origin.
 //
-// Invariants asserted by test/config.test.ts (and so by CI, ADR-011 "Deploy"):
+// Invariants asserted by test/node/config.test.ts (and so by CI, ADR-011 "Deploy"):
 //   - no `cache` block: Workers Cache bills requests that are otherwise free;
 //   - `preview_urls: false` and `workers_dev: true`;
 //   - `run_worker_first` lists both "/api" and "/api/*";
