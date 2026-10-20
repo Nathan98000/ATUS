@@ -1,29 +1,39 @@
 #!/usr/bin/env bash
-# Generate the edge Worker's secrets (ADR-011) without ever printing them.
+# Generate the edge Worker's secrets and the API's ops token (ADR-011) without
+# ever printing them.
 #
 #   scripts/ops/gen_edge_secrets.sh [--file PATH] [--render-origin URL] [--rotate NAME]...
 #
-# Writes EDGE_AUTH_SECRET, OPS_TOKEN and IP_HMAC_KEY -- each 256 bits from the
-# operating system's CSPRNG, hex-encoded -- to ~/.config/atus/edge.env
-# (override with --file or ATUS_EDGE_ENV_FILE). A new directory is created
-# 0700; the file is always 0600 and replaced atomically.
+# Writes EDGE_AUTH_SECRET, OPS_TOKEN, IP_HMAC_KEY and ATUS_OPS_TOKEN -- each 256
+# bits from the operating system's CSPRNG, hex-encoded -- to
+# ~/.config/atus/edge.env (override with --file or ATUS_EDGE_ENV_FILE). A new
+# directory is created 0700; the file is always 0600 and replaced atomically.
+#
+# The first three are Worker secrets. ATUS_OPS_TOKEN is the API's bearer for
+# /ready and /metrics: it is never loaded into the Worker, and goes to the
+# Render environment (ATUS_OPS_TOKEN) and the GitHub `production` secret of
+# the same name. Every generated secret thus has one home: this file.
 #
 # Re-running keeps every existing value. `--rotate NAME` (EDGE_AUTH_SECRET,
-# OPS_TOKEN, IP_HMAC_KEY or all; repeatable) replaces one. Rotating
-# EDGE_AUTH_SECRET keeps the old value as EDGE_AUTH_SECRET_PREVIOUS, so the
-# API can accept both while the Worker switches (ATUS_EDGE_SECRETS=new,old).
-# `--render-origin https://<service>.onrender.com` records RENDER_ORIGIN.
-# Any other NAME=value lines already in the file (NEON_API_KEY, say) are kept.
+# OPS_TOKEN, IP_HMAC_KEY, ATUS_OPS_TOKEN or all; repeatable) replaces one.
+# Rotating EDGE_AUTH_SECRET keeps the old value as EDGE_AUTH_SECRET_PREVIOUS,
+# so the API can accept both while the Worker switches
+# (ATUS_EDGE_SECRETS=new,old). `--render-origin https://<service>.onrender.com`
+# records RENDER_ORIGIN. Any other NAME=value lines already in the file
+# (NEON_API_KEY, say) are kept.
 #
 # Output: the file path, which names were created, kept or rotated, and the
-# `wrangler secret put` commands that read each value from the file. Values
-# never reach stdout, stderr or any process's arguments.
+# commands that read each value from the file (`wrangler secret put` for the
+# Worker, `gh secret set` for GitHub). Values never reach stdout, stderr or
+# any process's arguments.
 
 set -euo pipefail
 umask 077
 
-MANAGED_RE='^(EDGE_AUTH_SECRET|EDGE_AUTH_SECRET_PREVIOUS|OPS_TOKEN|IP_HMAC_KEY|RENDER_ORIGIN)='
-GENERATED="EDGE_AUTH_SECRET OPS_TOKEN IP_HMAC_KEY"
+MANAGED_RE='^(EDGE_AUTH_SECRET|EDGE_AUTH_SECRET_PREVIOUS|OPS_TOKEN|IP_HMAC_KEY|ATUS_OPS_TOKEN|RENDER_ORIGIN)='
+GENERATED="EDGE_AUTH_SECRET OPS_TOKEN IP_HMAC_KEY ATUS_OPS_TOKEN"
+# Loaded into the Worker; ATUS_OPS_TOKEN belongs to the API (Render, GitHub).
+WORKER_SECRETS="EDGE_AUTH_SECRET OPS_TOKEN IP_HMAC_KEY"
 
 die() {
   printf 'gen_edge_secrets: %s\n' "$1" >&2
@@ -31,7 +41,7 @@ die() {
 }
 
 usage() {
-  sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 file="${ATUS_EDGE_ENV_FILE:-${HOME}/.config/atus/edge.env}"
@@ -53,9 +63,9 @@ while [[ $# -gt 0 ]]; do
     --rotate)
       [[ $# -ge 2 ]] || die "--rotate needs a name"
       case "$2" in
-        EDGE_AUTH_SECRET | OPS_TOKEN | IP_HMAC_KEY) rotate="${rotate}$2 " ;;
+        EDGE_AUTH_SECRET | OPS_TOKEN | IP_HMAC_KEY | ATUS_OPS_TOKEN) rotate="${rotate}$2 " ;;
         all) rotate=" ${GENERATED} " ;;
-        *) die "--rotate takes EDGE_AUTH_SECRET, OPS_TOKEN, IP_HMAC_KEY or all" ;;
+        *) die "--rotate takes EDGE_AUTH_SECRET, OPS_TOKEN, IP_HMAC_KEY, ATUS_OPS_TOKEN or all" ;;
       esac
       shift 2
       ;;
@@ -99,6 +109,7 @@ random_hex() {
 }
 
 report=""
+rotated=" "
 edge_previous="$(current EDGE_AUTH_SECRET_PREVIOUS)"
 for name in $GENERATED; do
   value="$(current "$name")"
@@ -108,6 +119,7 @@ for name in $GENERATED; do
   elif [[ "$rotate" == *" ${name} "* ]]; then
     [[ "$name" != EDGE_AUTH_SECRET ]] || edge_previous="$value"
     value="$(random_hex)"
+    rotated="${rotated}${name} "
     report="${report}  ${name}: rotated\n"
   else
     report="${report}  ${name}: kept\n"
@@ -139,6 +151,7 @@ trap 'rm -f -- "$tmp"' EXIT
   fi
   printf 'OPS_TOKEN=%s\n' "$value_OPS_TOKEN"
   printf 'IP_HMAC_KEY=%s\n' "$value_IP_HMAC_KEY"
+  printf 'ATUS_OPS_TOKEN=%s\n' "$value_ATUS_OPS_TOKEN"
   if [[ -n "$origin" ]]; then
     printf 'RENDER_ORIGIN=%s\n' "$origin"
   fi
@@ -149,7 +162,7 @@ trap - EXIT
 
 edge_dir="$(cd -- "$(dirname -- "$0")/../.." && pwd)/edge"
 quoted_file="$(printf '%q' "$file")"
-loadable="$GENERATED"
+loadable="$WORKER_SECRETS"
 [[ -z "$origin" ]] || loadable="$loadable RENDER_ORIGIN"
 
 printf 'Wrote %s (mode 600). Values are not printed.\n' "$file"
@@ -159,12 +172,33 @@ printf '  cd %q\n' "$edge_dir"
 for name in $loadable; do
   printf "  grep '^%s=' %s | cut -d= -f2- | npx wrangler secret put %s\n" "$name" "$quoted_file" "$name"
 done
+# A brand-new Worker's first `wrangler deploy` must carry the secrets that
+# wrangler.jsonc lists as required. --secrets-file uploads every line of the
+# file it reads, so it gets the Worker's names only, never ATUS_OPS_TOKEN or
+# EDGE_AUTH_SECRET_PREVIOUS.
+printf '\nA new Worker'"'"'s first deploy must carry its required secrets (Worker names only):\n\n'
+printf "  npx wrangler deploy --secrets-file <(grep -E '^(%s)=' %s)\n" \
+  "${WORKER_SECRETS// /|}|RENDER_ORIGIN" "$quoted_file"
+[[ -n "$origin" ]] || printf '  (needs RENDER_ORIGIN first: rerun with --render-origin)\n'
 printf '\nThe API must accept the same edge secret: set Render env ATUS_EDGE_SECRETS to the\n'
 printf 'EDGE_AUTH_SECRET value, copied from the file (never pasted into chat).\n'
-if [[ "$rotate" == *" EDGE_AUTH_SECRET "* ]]; then
+printf '\nATUS_OPS_TOKEN is the API'"'"'s ops bearer (/ready, /metrics), never a Worker secret:\n'
+printf '  Render -> Environment: ATUS_OPS_TOKEN, copied from the file\n'
+printf '  GitHub environment production, secret ATUS_OPS_TOKEN (post-deploy /ready check):\n'
+printf "    grep '^ATUS_OPS_TOKEN=' %s | cut -d= -f2- | gh secret set ATUS_OPS_TOKEN --env production\n" "$quoted_file"
+printf 'The Worker'"'"'s OPS_TOKEN is also the GitHub secret EDGE_OPS_TOKEN (environments production and ops):\n'
+for environment in production ops; do
+  printf "    grep '^OPS_TOKEN=' %s | cut -d= -f2- | gh secret set EDGE_OPS_TOKEN --env %s\n" \
+    "$quoted_file" "$environment"
+done
+if [[ "$rotated" == *" EDGE_AUTH_SECRET "* ]]; then
   printf 'Rotation order: set ATUS_EDGE_SECRETS=<EDGE_AUTH_SECRET>,<EDGE_AUTH_SECRET_PREVIOUS> and\n'
   printf 'redeploy the API, then load EDGE_AUTH_SECRET into the Worker, then drop the old value.\n'
 fi
-if [[ "$rotate" == *" OPS_TOKEN "* ]]; then
-  printf 'Also update every copy of OPS_TOKEN that monitors use (GitHub environment secrets).\n'
+if [[ "$rotated" == *" OPS_TOKEN "* ]]; then
+  printf 'Also update every copy of OPS_TOKEN that monitors use (GitHub secret EDGE_OPS_TOKEN).\n'
+fi
+if [[ "$rotated" == *" ATUS_OPS_TOKEN "* ]]; then
+  printf 'Set the new ATUS_OPS_TOKEN on Render ("Save and deploy") and in GitHub; until both\n'
+  printf 'match, only the ops checks see 404.\n'
 fi

@@ -1,7 +1,9 @@
 /**
  * scripts/ops/gen_edge_secrets.sh: 256-bit secrets in a 0600 file, never
  * printed, idempotent re-runs, explicit rotation, and only `wrangler secret
- * put` commands that read from the file. Every run uses a throwaway HOME.
+ * put` / `gh secret set` commands that read from the file. The API's
+ * ATUS_OPS_TOKEN is generated into the same file but never offered to the
+ * Worker. Every run uses a throwaway HOME.
  */
 
 import { spawnSync } from 'node:child_process'
@@ -22,7 +24,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 const SCRIPT = fileURLToPath(
   new URL('../../../scripts/ops/gen_edge_secrets.sh', import.meta.url),
 )
-const GENERATED = ['EDGE_AUTH_SECRET', 'OPS_TOKEN', 'IP_HMAC_KEY'] as const
+const GENERATED = ['EDGE_AUTH_SECRET', 'OPS_TOKEN', 'IP_HMAC_KEY', 'ATUS_OPS_TOKEN'] as const
+const WORKER_SECRETS = ['EDGE_AUTH_SECRET', 'OPS_TOKEN', 'IP_HMAC_KEY'] as const
 
 let home: string
 let envFile: string
@@ -58,16 +61,17 @@ function mode(path: string): number {
 }
 
 describe('gen_edge_secrets.sh', () => {
-  it('writes three 256-bit hex secrets to ~/.config/atus/edge.env with 0600/0700 modes', () => {
+  it('writes four 256-bit hex secrets to ~/.config/atus/edge.env with 0600/0700 modes', () => {
     const { status, stdout, stderr } = run()
     expect(status, stderr).toBe(0)
     const values = readValues()
     for (const name of GENERATED) expect(values[name], name).toMatch(/^[0-9a-f]{64}$/)
-    expect(new Set(GENERATED.map((name) => values[name])).size).toBe(3)
+    expect(new Set(GENERATED.map((name) => values[name])).size).toBe(4)
     expect(values).not.toHaveProperty('RENDER_ORIGIN')
     expect(mode(envFile)).toBe(0o600)
     expect(mode(join(home, '.config', 'atus'))).toBe(0o700)
     expect(stdout).toContain('EDGE_AUTH_SECRET: created')
+    expect(stdout).toContain('needs RENDER_ORIGIN first')
   })
 
   it('never prints a value, and prints only secret-put commands that read the file', () => {
@@ -78,13 +82,54 @@ describe('gen_edge_secrets.sh', () => {
       expect(stderr).not.toContain(value)
     }
     const commands = stdout.split('\n').filter((line) => line.includes('wrangler'))
-    expect(commands).toHaveLength(4)
-    for (const name of [...GENERATED, 'RENDER_ORIGIN']) {
+    expect(commands).toHaveLength(5)
+    for (const name of [...WORKER_SECRETS, 'RENDER_ORIGIN']) {
       expect(commands).toContain(
         `  grep '^${name}=' ${envFile} | cut -d= -f2- | npx wrangler secret put ${name}`,
       )
     }
+    // The first deploy uploads the Worker's names only (--secrets-file sends every line).
+    expect(commands).toContain(
+      `  npx wrangler deploy --secrets-file <(grep -E '^(EDGE_AUTH_SECRET|OPS_TOKEN|IP_HMAC_KEY|RENDER_ORIGIN)=' ${envFile})`,
+    )
+    expect(stdout).not.toContain('needs RENDER_ORIGIN first')
     expect(values.RENDER_ORIGIN).toBe('https://atus-api-abc123.onrender.com')
+  })
+
+  it('generates the API ops token for Render and GitHub, never for the Worker', () => {
+    const { stdout } = run()
+    expect(stdout).toContain('ATUS_OPS_TOKEN: created')
+    expect(stdout).not.toContain('secret put ATUS_OPS_TOKEN')
+    const gh = stdout.split('\n').filter((line) => line.includes('gh secret set'))
+    expect(gh).toEqual([
+      `    grep '^ATUS_OPS_TOKEN=' ${envFile} | cut -d= -f2- | gh secret set ATUS_OPS_TOKEN --env production`,
+      `    grep '^OPS_TOKEN=' ${envFile} | cut -d= -f2- | gh secret set EDGE_OPS_TOKEN --env production`,
+      `    grep '^OPS_TOKEN=' ${envFile} | cut -d= -f2- | gh secret set EDGE_OPS_TOKEN --env ops`,
+    ])
+    expect(stdout).toContain('Render -> Environment: ATUS_OPS_TOKEN')
+    const values = readValues()
+    expect(values.ATUS_OPS_TOKEN).not.toBe(values.OPS_TOKEN)
+  })
+
+  it('rotates the API ops token alone, and says where the new one goes', () => {
+    run()
+    const before = readValues()
+    const { stdout } = run('--rotate', 'ATUS_OPS_TOKEN')
+    const after = readValues()
+    expect(after.ATUS_OPS_TOKEN).toMatch(/^[0-9a-f]{64}$/)
+    expect(after.ATUS_OPS_TOKEN).not.toBe(before.ATUS_OPS_TOKEN)
+    for (const name of WORKER_SECRETS) expect(after[name]).toBe(before[name])
+    expect(stdout).toContain('ATUS_OPS_TOKEN: rotated')
+    expect(stdout).toContain('Set the new ATUS_OPS_TOKEN on Render')
+    // OPS_TOKEN was not rotated: its hint must not appear.
+    expect(stdout).not.toContain('Also update every copy of OPS_TOKEN')
+  })
+
+  it('prints rotation hints only for values it actually replaced', () => {
+    const { stdout } = run('--rotate', 'all')
+    expect(stdout).toContain('EDGE_AUTH_SECRET: created')
+    expect(stdout).not.toContain('Rotation order')
+    expect(stdout).not.toContain('Set the new ATUS_OPS_TOKEN')
   })
 
   it('keeps existing values on a re-run, and other lines in the file', () => {
@@ -108,6 +153,7 @@ describe('gen_edge_secrets.sh', () => {
     expect(after.EDGE_AUTH_SECRET_PREVIOUS).toBe(before.EDGE_AUTH_SECRET)
     expect(after.OPS_TOKEN).toBe(before.OPS_TOKEN)
     expect(after.IP_HMAC_KEY).toBe(before.IP_HMAC_KEY)
+    expect(after.ATUS_OPS_TOKEN).toBe(before.ATUS_OPS_TOKEN)
     expect(stdout).toContain('EDGE_AUTH_SECRET: rotated')
     expect(stdout).toContain('Rotation order')
     expect(stdout).not.toContain(after.EDGE_AUTH_SECRET_PREVIOUS!)
@@ -171,5 +217,6 @@ describe('gen_edge_secrets.sh', () => {
   it('rejects unknown arguments and rotation names', () => {
     expect(run('--bogus').status).not.toBe(0)
     expect(run('--rotate', 'RENDER_ORIGIN').status).not.toBe(0)
+    expect(run('--rotate', 'EDGE_AUTH_SECRET_PREVIOUS').status).not.toBe(0)
   })
 })

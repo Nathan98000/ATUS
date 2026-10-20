@@ -238,12 +238,12 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 3. *(After implementation provides `wrangler.jsonc`.)* On your Mac, from the repo:
    1. `npx wrangler@4 login`. Wrangler must be 4.20 or newer.
    2. `npx wrangler kv namespace create <KV_NAME>`. The namespace id is not secret; it goes into `wrangler.jsonc`.
-   3. Run the first `npx wrangler deploy` yourself. Creating a Worker needs account-level Admin. This creates the Worker, its static assets and the Durable Object migration.
-   4. Generate the Worker secrets with the provided script into `~/.config/atus/edge.env`. Load each with `npx wrangler secret put <NAME>`, piped from that file:
+   3. Generate the secrets: `scripts/ops/gen_edge_secrets.sh --render-origin https://<service>.onrender.com` writes `~/.config/atus/edge.env` (mode 600) and prints, without any value, the commands below. The Render origin exists only after step 2.3; until then run the script without `--render-origin` and re-run it later.
+   4. Run the first `npx wrangler deploy` yourself. Creating a Worker needs account-level Admin. This creates the Worker, its static assets and the Durable Object migration. `wrangler.jsonc` marks `EDGE_AUTH_SECRET`, `OPS_TOKEN`, `IP_HMAC_KEY` and `RENDER_ORIGIN` as required, so this first deploy passes them with `--secrets-file`, filtered to the Worker's names exactly as the script prints it (the file also holds the API's `ATUS_OPS_TOKEN`, which never goes to the Worker). Later changes use `npx wrangler secret put <NAME>`, piped from the file:
       - `EDGE_AUTH_SECRET`
       - `OPS_TOKEN`
       - `IP_HMAC_KEY`
-      - `RENDER_ORIGIN` (after step 4.3)
+      - `RENDER_ORIGIN` (after step 2.3)
       - optionally `NEON_API_KEY` (step 3.6)
 4. **Worker → Settings → Builds:** leave it **disconnected**. Never use "Connect to Git". The config sets `preview_urls = false`, so no extra Version URLs exist.
 5. **Account API Tokens → Create Token → Custom token** for CI:
@@ -267,7 +267,7 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
    - `ATUS_DATABASE_URL`: the `atus_api` direct DSN with `sslmode=verify-full&sslrootcert=system`, from the file the restore script writes (step 3.5)
    - `ATUS_EDGE_SECRETS`: the same value as `EDGE_AUTH_SECRET`
    - `ATUS_EXPECTED_DATA_VERSION`
-   - `ATUS_OPS_TOKEN`
+   - `ATUS_OPS_TOKEN`: the `ATUS_OPS_TOKEN` line of `~/.config/atus/edge.env` (step 1.3)
    - `WEB_CONCURRENCY=1`
 5. **Settings → Deploy Hook:** copy the URL into the GitHub environment secret `RENDER_DEPLOY_HOOK_URL`. Regenerate it if it ever leaks. Confirm that **no Git repository is connected**; image-backed services never auto-deploy.
 6. Do **not** create a Render API key: it grants access to every workspace you belong to. Enable email notifications for failed deploys and service events. Never add a second Free web service to this workspace.
@@ -296,11 +296,11 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 1. **Settings → Environments → New environment `production`:**
    - Required reviewers: yourself, with **Prevent self-review OFF** (otherwise nobody can approve).
    - Deployment branches and tags: `main` and the tag pattern `v*`.
-   - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `RENDER_DEPLOY_HOOK_URL`, `RENDER_ORIGIN`, `ATUS_OPS_TOKEN`.
+   - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `RENDER_DEPLOY_HOOK_URL`, `RENDER_ORIGIN`, `ATUS_OPS_TOKEN` (the API's), `EDGE_OPS_TOKEN` (the Worker's `OPS_TOKEN`). `scripts/ops/gen_edge_secrets.sh` prints the `gh secret set` commands for the last two, each reading its value from `edge.env`.
    - Variables: `PUBLIC_BASE_URL=https://<worker>.<account-subdomain>.workers.dev`, `GHCR_IMAGE=ghcr.io/nathan98000/atus-api`.
 2. **New environment `ops`**, used by the scheduled monitors and the quota report:
    - No reviewers. Branch: `main` only.
-   - Secret: `ATUS_OPS_TOKEN`. Variable: `PUBLIC_BASE_URL`.
+   - Secret: `EDGE_OPS_TOKEN` (the daily quota report reads `/api/_ops/budget`). Variable: `PUBLIC_BASE_URL`.
 3. **Repository settings:**
    - **Actions → General → Workflow permissions:** "Read repository contents". Jobs that push images request `packages: write` explicitly.
    - **General → Releases:** enable **release immutability**.
@@ -576,8 +576,8 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 
 This lists every variable and secret the deployed system uses: where it is set, where your own copy lives, its default, an example and how it changes or rotates.
 
-- **API names are final.** They match `src/` and [`.env.production.example`](../.env.production.example); `tests/deploy/test_packaging_files.py` fails if the code reads a setting this file does not document.
-- **Worker and GitHub names** follow ADR-011 and are confirmed when the edge and CI work lands (marked TODO).
+- **API names are final.** They match `src/` and [`.env.production.example`](../.env.production.example); `tests/deploy/test_packaging_files.py` fails if the code reads a setting this file does not document, or if a template names one this section does not.
+- **Worker names** are those of [`edge/wrangler.jsonc`](../edge/wrangler.jsonc), which is authoritative; `edge/test/node/config.test.ts` asserts its invariants. **GitHub names** follow ADR-011.
 - **Templates:** [`.env.example`](../.env.example) for development and [`deploy/stack/stack.env.example`](../deploy/stack/stack.env.example) for the local stack.
 
 **Where values live.** Real values exist only in the provider stores below and in your private files.
@@ -597,15 +597,15 @@ This lists every variable and secret the deployed system uses: where it is set, 
 
 ### API (Render → Environment)
 
-**Required in production.** `ATUS_ENV=production` refuses to start without `ATUS_DATABASE_URL` and `ATUS_EDGE_SECRETS`. **TODO(WS-A):** that start-up check. Until it lands, the image test `test_production_mode_refuses_to_start_without_its_settings` is marked xfail.
+**Required in production.** `ATUS_ENV=production` refuses to start without `ATUS_DATABASE_URL` and `ATUS_EDGE_SECRETS`, with an edge secret or ops token shorter than 32 characters, with more than two edge secrets, or with the development database URL. `tests/deploy/test_container_image.py::test_production_mode_refuses_to_start_without_its_settings` (opt-in) proves it on the image.
 
 | Variable | Set in (your copy) | Default (development) | Production example | Change / rotation |
 |---|---|---|---|---|
 | `ATUS_ENV` | Render env; also the image default | `development` | `production` | never |
 | `ATUS_DATABASE_URL` | Render env, **secret** (`~/.config/atus/neon.env`, written by the restore script) | `postgresql://atus:atus@localhost:5434/atus` | `postgresql://atus_api:<password>@ep-<endpoint-id>.us-east-1.aws.neon.tech:5432/atus?sslmode=verify-full&sslrootcert=system` | at every release switch (new project); the password per [Rotation](#rotation). Never the `-pooler` host; never `sslmode=require` alone |
 | `ATUS_EDGE_SECRETS` | Render env, **secret** (`~/.config/atus/edge.env`, as `EDGE_AUTH_SECRET`) | empty: no edge authentication | `<current>`, or `<current>,<next>` while rotating; each 32 random bytes, URL-safe (43 characters) | [Rotation](#rotation): two accepted values overlap, so no request fails |
-| `ATUS_EXPECTED_DATA_VERSION` | Render env | empty: no check | `0325:serving-20261020T120000Z-1a2b3c4d:0123456789ab` | at every release switch, together with `ATUS_DATABASE_URL` (ADR-011 "Release switch"). A mismatch answers 503 `data_version_mismatch` |
-| `ATUS_OPS_TOKEN` | Render env, **secret** (`~/.config/atus/edge.env`; GitHub secret `ATUS_OPS_TOKEN`) | empty: `/metrics` and `/ready` answer 404 | 32 random bytes, URL-safe | [Rotation](#rotation) |
+| `ATUS_EXPECTED_DATA_VERSION` | Render env | empty: no check | `0325:serving-20261020T120000Z-1a2b3c4d:0123456789ab` | at every release switch, together with `ATUS_DATABASE_URL` (ADR-011 "Release switch"). A mismatch answers 503 `data_version_mismatch`. While the database serves exactly this version, the in-process snapshot is pinned: metadata routes and cache hits never read the database again (ADR-012) |
+| `ATUS_OPS_TOKEN` | Render env, **secret** (`~/.config/atus/edge.env`, generated by `scripts/ops/gen_edge_secrets.sh`; GitHub secret `ATUS_OPS_TOKEN`) | empty: `/metrics` and `/ready` answer 404 | 32 random bytes, hex (64 characters) | [Rotation](#rotation) |
 | `WEB_CONCURRENCY` | Render env; also the image default | `1` (image) | `1` | never: one uvicorn process (ADR-011) |
 | `PORT` | set by Render; image default | `8000` (`atus api`), `10000` (image) | `10000` | never set by hand |
 
@@ -638,9 +638,28 @@ This lists every variable and secret the deployed system uses: where it is set, 
 | `ATUS_API_DAILY_ANALYSIS_CAP` | `600` | `600` | in-process backstop, resets 00:00 UTC; the Worker's governor is the primary cap |
 | `ATUS_API_MAX_BODY_BYTES` | `65536` | `65536` | larger bodies get 413 `payload_too_large` |
 | `ATUS_API_THREADS` | `16` | `16` | anyio worker-thread limit |
-| `ATUS_API_SNAPSHOT_TTL_S` | `2` → `600` | `600` | refresh interval of the in-process `data_version`, years and lexicon |
+| `ATUS_API_SNAPSHOT_TTL_S` | `2` → `600` | `600` | refresh interval of the in-process `data_version`, years and lexicon. Not applied while `ATUS_EXPECTED_DATA_VERSION` pins the snapshot; a failed refresh keeps serving the previous snapshot (ADR-012) |
+| `ATUS_API_PREPARE_THRESHOLD` | `5` | `none` | psycopg's automatic server-side prepare threshold; `none` or `off` disables prepared statements. Needed only behind a transaction pooler without prepared-statement support (production uses Neon's direct endpoint) |
 
-`ATUS_DATA_DIR` and `ATUS_RELEASE` (and a full-DB `ATUS_DATABASE_URL`) are pipeline-only. They are set in `.env` on your machine for `atus load` and the serving build; the API never reads them.
+### Pipeline and release tooling (your machine only)
+
+Never set on Render. The data commands (`atus load`, `atus build-serving-db`, `atus restore-serving-db`, ...) read these from the environment or from `.env` on your machine; the secrets among them live in `~/.config/atus/neon.env`.
+
+| Variable | Read by | Default | Example | Meaning |
+|---|---|---|---|---|
+| `ATUS_DATABASE_URL` (full DB) | `atus load`, `validate-*`, the source of `build-serving-db` | `postgresql://atus:atus@localhost:5434/atus` | — | the full local database; the serving build only reads it |
+| `ATUS_DATA_DIR` | the pipeline | `data` | — | raw and staged BLS files |
+| `ATUS_RELEASE` | the pipeline | `0325` | `0326` | the BLS multi-year release code (ADR-013 "New ATUS year") |
+| `ATUS_MIGRATIONS_DIR` | `atus migrate`/`load`, `build-serving-db` | the checkout's `migrations/` | `/workspace/migrations` | where the migration files are when not running from a checkout (the image ships none, F56) |
+| `ATUS_SERVING_DATABASE_URL` | `build-serving-db --target`, `compare-serving-db` | unset | `postgresql://neondb_owner:...@localhost:5465/atus` | the new, empty database the serving build writes |
+| `ATUS_OWNER_DATABASE_URL` | `restore-serving-db` (`scripts/ops/restore_serving_db.sh`) | unset: read from `neon.env` | `postgresql://neondb_owner:<password>@ep-<id>.us-east-1.aws.neon.tech:5432/atus?sslmode=verify-full&sslrootcert=system` | **secret**, the owner's direct DSN (never the `-pooler` host). A bare `postgresql://` line in `neon.env` counts as this key |
+| `ATUS_API_DB_PASSWORD` | written by `restore-serving-db` into `neon.env` | — | 192 random bits, URL-safe | **secret**, the generated `atus_api` password; reused by later restores unless `--rotate-api-password` |
+| `ATUS_API_DATABASE_URL` | written by `restore-serving-db` into `neon.env` | — | `postgresql://atus_api:<password>@ep-<id>...:5432/atus?sslmode=verify-full&sslrootcert=system` | **secret**, the DSN to copy into Render's `ATUS_DATABASE_URL` |
+| `ATUS_API_ROLE_PASSWORD` | `scripts/ops/roles.sql` (psql `\getenv`) | — | a SCRAM-SHA-256 verifier | set by the restore only while psql applies roles.sql, so the plaintext never reaches the server; the local stack passes its own throwaway password |
+| `ATUS_PG_CLIENT_IMAGE` | `pg_dump`/`pg_restore`/`psql` wrappers | `postgres:<server major>` | `postgres:16` | client image used through Docker when no local client is new enough |
+| `ATUS_BIN` | `scripts/ops/restore_serving_db.sh` | `.venv/bin/atus`, then `atus` on PATH | `/opt/atus/bin/atus` | the `atus` executable the wrapper runs |
+| `ATUS_EDGE_ENV_FILE` | `scripts/ops/gen_edge_secrets.sh` | `~/.config/atus/edge.env` | — | where the generated secrets go (`--file` overrides it) |
+| `EDGE_AUTH_SECRET` (environment) | `scripts/build_snapshot.py` | unset: `--edge-secret-file` | — | **secret**, sent to the local snapshot API as `X-ATUS-Edge-Auth` |
 
 ### Image (build arguments and baked environment)
 
@@ -654,7 +673,7 @@ This lists every variable and secret the deployed system uses: where it is set, 
 
 ### Cloudflare Worker
 
-**TODO(WS-D2):** `edge/wrangler.jsonc` is authoritative for these names. The local stack's `edge` service and `.env.production.example` already use them.
+`edge/wrangler.jsonc` is authoritative for these names: Worker `atus`, KV binding `RESULT_CACHE`, Durable Object binding `GOVERNOR` with class `Governor` (migration tag `v1`). The local stack's `edge` service and `.env.production.example` use the same names.
 
 | Secret | Set in (your copy) | If unset | Example | Rotation |
 |---|---|---|---|---|
@@ -670,12 +689,12 @@ This lists every variable and secret the deployed system uses: where it is set, 
 | `ANALYTICS_VERSION` | `deploy.yml` (from `/api/v1/meta`) | — | `0.2` | when the engine version changes |
 | `RESPONSE_FORMAT` | `deploy.yml` | — | `1` | only with a new response format (the API's `RESPONSE_FORMAT`) |
 | `SNAPSHOT_ID` | `deploy.yml` | — | `<api_build12>-<sha256(DATA_VERSION)[:16]>` | each deploy |
-| `EPOCH` | `edge/wrangler.jsonc` | **TODO(WS-D2)** | `2` | manually. Bumping it orphans every KV entry, a full edge-cache flush |
+| `EPOCH` | `edge/wrangler.jsonc` | `1` | `2` | manually. Bumping it orphans every KV entry, a full edge-cache flush |
 | `PREWAKE` | `edge/wrangler.jsonc` | `on` | `off` | manually, to stop `GET /api/v1/wake` from waking Render |
 | `NEON_PROJECT_ID` | `edge/wrangler.jsonc`, optional | unset | `<neon-project-id>` | each release project, with `NEON_API_KEY` |
 | `API_ORIGIN`, `GATE_INFLIGHT`, the Vercel origin mode | fallback only (ADR-011 "Fallback") | unset | `https://<project>.vercel.app`, `on` | only on an owner decision to fail over |
 
-Secrets are generated into `~/.config/atus/edge.env` and loaded with `npx wrangler secret put <NAME>`, piped from that file (owner step 1.3).
+Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_secrets.sh` and loaded with `npx wrangler secret put <NAME>`, piped from that file (owner step 1.3); the script prints each command. A brand-new Worker's first `wrangler deploy` must already carry the required secrets (`secrets.required` in `wrangler.jsonc`, so `RENDER_ORIGIN` must be known), and `--secrets-file` uploads every line of the file it reads: give it the Worker's names only, as the script prints (`--secrets-file <(grep -E '^(EDGE_AUTH_SECRET|OPS_TOKEN|IP_HMAC_KEY|RENDER_ORIGIN)=' ~/.config/atus/edge.env)`), never the whole file, which also holds the API's `ATUS_OPS_TOKEN`.
 
 ### GitHub environments
 
@@ -697,14 +716,14 @@ Secrets are generated into `~/.config/atus/edge.env` and loaded with `npx wrangl
   - the edge check calls `/api/_edge/health` and needs no token;
   - the deep check calls `/api/health` and needs no token;
   - the daily quota report reads `/api/_ops/budget` with `EDGE_OPS_TOKEN`.
-- **TODO(wave 2):** owner step 4.2 lists `ATUS_OPS_TOKEN` for `ops`, and neither step 4.1 nor 4.2 lists `EDGE_OPS_TOKEN`. Align those steps with the workflows. `ops` needs `ATUS_OPS_TOKEN` only if a monitor reads the origin's `/metrics`.
+- `ops` needs `ATUS_OPS_TOKEN` only if a monitor ever reads the origin's `/metrics`; none does, so owner steps 4.1 and 4.2 list `EDGE_OPS_TOKEN` for `ops` and both tokens for `production`.
 
 ### Owner files (`~/.config/atus/`, `chmod 600`)
 
 | File | Holds | Written by | Feeds |
 |---|---|---|---|
-| `edge.env` | `EDGE_AUTH_SECRET`, `OPS_TOKEN`, `IP_HMAC_KEY`, the API's `ATUS_OPS_TOKEN`, then `RENDER_ORIGIN` | `scripts/ops/gen_edge_secrets.sh`. **TODO(WS-D2):** the exact variable names, and whether the script also generates `ATUS_OPS_TOKEN` (it should, so that every generated secret has one home) | `wrangler secret put` (piped), Render env, GitHub secrets |
-| `neon.env` | the `neondb_owner` direct DSN (pasted from Neon → Connect, pooling off) and the `atus_api` DSN | you (owner DSN) and the restore script (`atus_api`). **TODO(WS-B):** variable names | restores, the API password rotation, Render's `ATUS_DATABASE_URL` |
+| `edge.env` | `EDGE_AUTH_SECRET` (and `EDGE_AUTH_SECRET_PREVIOUS` while rotating), `OPS_TOKEN`, `IP_HMAC_KEY`, the API's `ATUS_OPS_TOKEN`, then `RENDER_ORIGIN`; optionally `NEON_API_KEY`, which you add and the script keeps | `scripts/ops/gen_edge_secrets.sh`: 256-bit hex values, re-runs keep them, `--rotate NAME` replaces one, `--render-origin URL` records the origin | `wrangler secret put` (piped) for the Worker's names only; `ATUS_OPS_TOKEN` goes to Render env and the GitHub secret `ATUS_OPS_TOKEN`; `OPS_TOKEN` also to the GitHub secret `EDGE_OPS_TOKEN` |
+| `neon.env` | `ATUS_OWNER_DATABASE_URL`: the `neondb_owner` direct DSN (pasted from Neon → Connect, pooling off; a bare `postgresql://` line also counts), then `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` | you (the owner DSN) and `scripts/ops/restore_serving_db.sh` (the two `ATUS_API_*` lines) | restores, the API password rotation, Render's `ATUS_DATABASE_URL` (= `ATUS_API_DATABASE_URL`) |
 
 ### Local stack (`deploy/stack/stack.env.example`)
 
@@ -740,20 +759,20 @@ Secrets are generated into `~/.config/atus/edge.env` and loaded with `npx wrangl
 
 ### Rotation
 
-Every secret has one procedure. **TODO(wave 2):** the "rotating tokens" runbook in `operations.md` links here and adds a schedule.
+Every secret has one procedure.
 
 1. **Edge secret.** This one is designed so that no request fails.
-   1. Generate the new value into `edge.env`.
+   1. `scripts/ops/gen_edge_secrets.sh --rotate EDGE_AUTH_SECRET` writes the new value into `edge.env` and keeps the old one as `EDGE_AUTH_SECRET_PREVIOUS`.
    2. Render `ATUS_EDGE_SECRETS=<old>,<new>`, then "Save and deploy". Wait until Render → Events shows the deploy as live.
    3. `npx wrangler secret put EDGE_AUTH_SECRET` with `<new>`.
    4. Render `ATUS_EDGE_SECRETS=<new>`, then "Save and deploy".
 2. **`atus_api` database password.**
-   1. As `neondb_owner`, set a new password of at least 60 bits (**TODO(WS-B):** the restore script's role step). It also rewrites `neon.env`.
+   1. `scripts/ops/restore_serving_db.sh --artifact <the release dump> --roles-only --rotate-api-password` re-applies `scripts/ops/roles.sql` as `neondb_owner` with a new generated 192-bit password (sent as a SCRAM verifier) and rewrites `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` in `neon.env`.
    2. Update Render's `ATUS_DATABASE_URL`, then "Save and deploy".
 
    A Postgres role has only one password. Between steps 1 and 2, new connections fail, so uncached analyses may get 503 `database_unavailable` with `Retry-After`; open connections keep working. Rotate when the service is idle.
 3. **Ops tokens** (`ATUS_OPS_TOKEN`; the Worker's `OPS_TOKEN`).
-   1. Generate the new value into `edge.env`.
+   1. `scripts/ops/gen_edge_secrets.sh --rotate ATUS_OPS_TOKEN` (or `--rotate OPS_TOKEN`) writes the new value into `edge.env`.
    2. Set it on Render, or with `wrangler secret put OPS_TOKEN`.
    3. Update the matching GitHub secret.
 
