@@ -7,7 +7,8 @@ files, so they are opt-in:
 
 They run the same validation suite as ``atus validate-db`` plus a
 demonstration that the schema supports weighted estimation (ATUS User's Guide,
-chapter 7).
+chapter 7). Read only: the session refuses writes and nothing is recorded in
+``atus.validation_results`` (``atus validate-db`` records results).
 """
 
 from __future__ import annotations
@@ -37,7 +38,10 @@ def settings():
 @pytest.fixture(scope="module")
 def conn(settings):
     try:
-        connection = psycopg.connect(settings.database_url)
+        # read only: the full database is never written by a test
+        connection = psycopg.connect(
+            settings.database_url, options="-c default_transaction_read_only=on"
+        )
     except psycopg.OperationalError as exc:
         pytest.skip(f"database unavailable: {exc}")
     yield connection
@@ -45,7 +49,7 @@ def conn(settings):
 
 
 def test_validation_suite_has_no_errors(conn, settings):
-    results = run_db_checks(conn, settings)
+    results = run_db_checks(conn, settings, persist=False)
     failures = [r for r in results if not r.passed and r.severity == "error"]
     details = "\n".join(f"{r.name}: {r.observed} ({r.detail})" for r in failures)
     assert not failures, f"validation errors:\n{details}"

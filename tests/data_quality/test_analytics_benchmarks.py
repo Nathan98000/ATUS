@@ -4,6 +4,9 @@ Runs the same benchmarks as `atus validate-analytics` against the fully
 loaded database:
 
     ATUS_DATA_QUALITY=1 pytest tests/data_quality
+
+Read only: the session refuses writes and nothing is recorded in
+``atus.validation_results`` (``atus validate-analytics`` records results).
 """
 
 from __future__ import annotations
@@ -28,7 +31,10 @@ if not os.environ.get("ATUS_DATA_QUALITY"):
 def conn():
     settings = load_settings()
     try:
-        connection = psycopg.connect(settings.database_url)
+        # read only: the full database is never written by a test
+        connection = psycopg.connect(
+            settings.database_url, options="-c default_transaction_read_only=on"
+        )
     except psycopg.OperationalError as exc:
         pytest.skip(f"database unavailable: {exc}")
     yield connection
@@ -38,7 +44,7 @@ def conn():
 def test_engine_reproduces_official_bls_estimates(conn):
     from atus_pipeline.analytics.benchmarks import run_benchmarks
 
-    results = run_benchmarks(conn)
+    results = run_benchmarks(conn, persist=False)
     failures = [r for r in results if not r.passed]
     details = "\n".join(f"{r.name}: {r.observed}" for r in failures)
     assert not failures, f"benchmark failures:\n{details}"
