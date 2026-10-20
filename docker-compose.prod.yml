@@ -1,0 +1,218 @@
+# The production stack, locally: the deployed image, roles and database
+# settings (docs/adr/ADR-011-hosting.md), published on 127.0.0.1 only.
+#
+#   cp deploy/stack/stack.env.example .env.stack        # fill in the secrets
+#   docker compose --env-file .env.stack -f docker-compose.prod.yml up -d --wait api
+#   docker compose --env-file .env.stack -f docker-compose.prod.yml \
+#     --profile smoke run --rm smoke --fixture
+#   docker compose --env-file .env.stack -f docker-compose.prod.yml down -v
+#
+# scripts/smoke_stack.sh runs that cycle with throwaway secrets. Add
+# `-f docker-compose.emulation.yml` for the free-tier CPU/RAM limits.
+#
+# Services and what each stands in for:
+#   db       Neon Free: Postgres 16 with Neon's settings for the 0.25-2 CU
+#            autoscaling compute (deploy/emulation/neon_settings.py), jit=off,
+#            the non-superuser owner `neondb_owner` and the read-only `atus_api`
+#   restore  (profile `dump`) restores a serving dump as neondb_owner, as the
+#            release switch does on Neon
+#   seed     loads the fixture dataset as neondb_owner unless data is present;
+#            always re-applies the API grants
+#   api      the Render Free web service: the image, with exactly the
+#            environment Render sets (docs/deployment.md, Render step 4). Not
+#            published on the host: only the edge and the smoke probe reach it
+#   edge     (profile `edge`) the Cloudflare Worker and static assets under
+#            `wrangler dev`, in front of the API on 127.0.0.1
+#   smoke    (profile `smoke`) stdlib HTTP checks from inside the stack network
+#
+# The project name keeps this stack apart from the development database
+# (docker-compose.yml, project `atus`); pass `-p <name>` to run several.
+name: atus-stack
+
+x-api-image: &api-image ${ATUS_STACK_IMAGE:-atus-api:local}
+
+services:
+  db:
+    # postgres:16 (16.15), pinned by its multi-arch index digest; Neon Free
+    # runs Postgres 16 too (ADR-011).
+    image: postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+    environment:
+      # The bootstrap superuser only runs deploy/postgres/initdb; nothing in
+      # the stack connects as it (Neon gives the owner no superuser either).
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${ATUS_STACK_PG_SUPERUSER_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
+      POSTGRES_DB: postgres
+      ATUS_STACK_OWNER_PASSWORD: ${ATUS_STACK_OWNER_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
+      ATUS_STACK_API_DB_PASSWORD: ${ATUS_STACK_API_DB_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
+    # Neon's published settings for an autoscaling 0.25-2 CU compute; other
+    # compute sizes: python deploy/emulation/neon_settings.py --help.
+    # jit=off: Neon builds Postgres without LLVM, the stock image has JIT on,
+    # and JIT alone made the 0.25 CU worst case 64-71 s instead of ~52 s (F37).
+    command:
+      - postgres
+      - -c
+      - jit=off
+      - -c
+      - shared_buffers=${ATUS_STACK_DB_SHARED_BUFFERS:-215MB}
+      - -c
+      - max_connections=${ATUS_STACK_DB_MAX_CONNECTIONS:-839}
+      - -c
+      - max_worker_processes=${ATUS_STACK_DB_MAX_WORKER_PROCESSES:-17}
+      - -c
+      - max_parallel_workers=8
+    # Parallel hash joins use dynamic shared memory in /dev/shm; Docker's
+    # 64 MiB default failed 3 of 5 concurrent trends with DiskFull (F33).
+    shm_size: 1g
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deploy/postgres/initdb:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "127.0.0.1:${ATUS_STACK_DB_PORT-5470}:5432"
+    healthcheck:
+      # TCP, not the socket: during initdb the image's temporary server
+      # answers on the socket only, so this turns healthy after bootstrap.
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres", "-d", "postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  restore:
+    profiles: ["dump"]
+    image: postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGUSER: neondb_owner
+      PGPASSWORD: ${ATUS_STACK_OWNER_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
+      PGDATABASE: atus
+    entrypoint: ["sh", "/deploy/stack/restore_dump.sh"]
+    volumes:
+      - ./deploy:/deploy:ro
+      - type: bind
+        source: ${ATUS_STACK_DUMP:-./deploy/stack/ATUS_STACK_DUMP-is-not-set}
+        target: /seed/serving.dump
+        read_only: true
+        bind:
+          create_host_path: false
+
+  seed:
+    image: *api-image
+    pull_policy: never  # built by the api service, or pulled by digest beforehand
+    depends_on:
+      db:
+        condition: service_healthy
+      restore:
+        condition: service_completed_successfully
+        required: false
+    environment:
+      ATUS_SEED_DATABASE_URL: postgresql://neondb_owner:${ATUS_STACK_OWNER_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}@db:5432/atus
+      ATUS_SEED_FORCE: ${ATUS_SEED_FORCE:-0}
+    entrypoint: ["python", "/workspace/deploy/stack/seed_fixture.py"]
+    command: []
+    # The image carries no migrations, tests or data; mount just what the
+    # fixture load needs, read-only.
+    volumes:
+      - ./deploy:/workspace/deploy:ro
+      - ./migrations:/workspace/migrations:ro
+      - ./tests:/workspace/tests:ro
+      - ./data/reference:/workspace/data/reference:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    healthcheck:
+      disable: true
+
+  api:
+    image: *api-image
+    # Build locally by default. To run a registry image as is, set
+    # ATUS_STACK_IMAGE to its digest reference, ATUS_STACK_PULL_POLICY=missing,
+    # and start with --no-build.
+    pull_policy: ${ATUS_STACK_PULL_POLICY:-build}
+    build:
+      context: .
+      args:
+        ATUS_BUILD_SHA: ${ATUS_BUILD_SHA:-dev}
+        ATUS_VERSION: ${ATUS_VERSION:-unknown}
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    # Exactly what the Render service sets; every other setting keeps the
+    # API's production default (.env.production.example).
+    environment:
+      ATUS_ENV: production
+      ATUS_DATABASE_URL: postgresql://atus_api:${ATUS_STACK_API_DB_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}@${ATUS_STACK_API_DB_HOST:-db}:${ATUS_STACK_API_DB_HOST_PORT:-5432}/atus
+      ATUS_EDGE_SECRETS: ${ATUS_STACK_EDGE_SECRET:?set it in the stack env file (deploy/stack/stack.env.example)}
+      ATUS_EXPECTED_DATA_VERSION: ${ATUS_EXPECTED_DATA_VERSION:-}
+      ATUS_OPS_TOKEN: ${ATUS_STACK_OPS_TOKEN:?set it in the stack env file (deploy/stack/stack.env.example)}
+      WEB_CONCURRENCY: "1"
+      PORT: "10000"
+    expose:
+      - "10000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      # The image's /health check, polled faster while starting.
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+      start_interval: 1s
+
+  edge:
+    # Defined against the WS-D2 contract (edge/package.json + lockfile,
+    # edge/wrangler.jsonc, assets from frontend/dist); validated in wave 2.
+    # Build the SPA first: (cd frontend && npm ci && npm run build).
+    profiles: ["edge"]
+    image: atus-edge:local
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: deploy/edge/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      # Worker secrets (written to .dev.vars inside the container, never argv).
+      RENDER_ORIGIN: http://api:10000
+      EDGE_AUTH_SECRET: ${ATUS_STACK_EDGE_SECRET:?set it in the stack env file (deploy/stack/stack.env.example)}
+      OPS_TOKEN: ${ATUS_STACK_EDGE_OPS_TOKEN:-}
+      IP_HMAC_KEY: ${ATUS_STACK_IP_HMAC_KEY:-}
+      # Worker vars that deploy.yml publishes; empty ones keep wrangler.jsonc.
+      DATA_VERSION: ${ATUS_EXPECTED_DATA_VERSION:-}
+      WRANGLER_SEND_METRICS: "false"
+    volumes:
+      - type: bind
+        source: ./frontend/dist
+        target: /work/frontend/dist
+        read_only: true
+        bind:
+          create_host_path: false
+    ports:
+      - "127.0.0.1:${ATUS_STACK_EDGE_PORT-8541}:8787"
+
+  smoke:
+    profiles: ["smoke"]
+    image: *api-image
+    pull_policy: never
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      ATUS_SMOKE_EDGE_SECRET: ${ATUS_STACK_EDGE_SECRET:?set it in the stack env file (deploy/stack/stack.env.example)}
+    entrypoint: ["python", "/workspace/deploy/stack/smoke_probe.py"]
+    command: []
+    volumes:
+      - ./deploy/stack:/workspace/deploy/stack:ro
+    read_only: true
+    healthcheck:
+      disable: true
+
+volumes:
+  pgdata:

@@ -1,0 +1,18 @@
+# Build context for the API image (Dockerfile). Allow-list: everything is
+# excluded unless named below, so data/, .venv, node_modules, docs/evidence,
+# tests, frontend, edge, migrations, scripts and every .env* file can never
+# reach the image or the build cache, whatever new files appear in the repo.
+*
+
+!pyproject.toml
+!README.md
+!LICENSE
+!src/
+!requirements/api.lock.txt
+!requirements/build.lock.txt
+
+# Local build and editor residue that may sit inside src/.
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
+**/.DS_Store
