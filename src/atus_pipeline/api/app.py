@@ -24,6 +24,7 @@ from contextlib import asynccontextmanager
 import anyio
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from psycopg.conninfo import conninfo_to_dict
 
 from ..config import Settings, check_api_settings, load_settings
@@ -38,6 +39,8 @@ from .protection import Protection
 from .routes import activities, analysis, health, meta, population
 
 log = logging.getLogger("atus.api")
+
+GZIP_MINIMUM_BYTES = 1024
 
 # Response headers a cross-origin browser client may read (audit F45).
 CORS_EXPOSE_HEADERS = (
@@ -119,6 +122,9 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
 
     # add_middleware prepends, so the last one added is the outermost.
     app.add_middleware(GuardMiddleware, settings=settings)
+    # Responses of 1 KB or more are gzipped for clients that accept it (the
+    # activity lexicon is ~70 KB uncompressed; audit F42).
+    app.add_middleware(GZipMiddleware, minimum_size=GZIP_MINIMUM_BYTES)
     if settings.api_cors_origins:
         app.add_middleware(
             CORSMiddleware,

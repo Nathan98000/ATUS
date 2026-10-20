@@ -7,6 +7,7 @@ Order of the stack (outermost first)::
                               HEAD as GET, security headers, disconnect
                               detection, the access log line
     CORSMiddleware            only when ATUS_API_CORS_ORIGINS is set
+    GZipMiddleware            responses >= 1 KB, when the client accepts gzip
     GuardMiddleware           declared body size, edge auth, per-client
                               request bucket, media type, streamed body size,
                               control characters in the query string
