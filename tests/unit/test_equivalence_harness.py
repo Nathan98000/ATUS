@@ -419,6 +419,17 @@ def test_the_lexicon_wording_and_health_build_are_intended():
                health).outcome == "mismatch"
 
 
+@pytest.mark.parametrize("details", [[1, 2], {"errors": "bad"}, {"errors": [1, None]}, "x"])
+def test_odd_error_details_never_crash_the_rules(details):
+    request = RequestInfo("GET", "/api/v1/activities?search=a%00&x=" + "p" * 70)
+    long_preset = RequestInfo("POST", ESTIMATE, json.dumps(
+        {"activity": {"preset": "p" * 70}}).encode(), "application/json")
+    for req in (request, long_preset):
+        result = a_b(response(422, envelope("validation_error", "m", details)),
+                     response(422, envelope("validation_error", "n", details)), req)
+        assert result.outcome == "mismatch"
+
+
 @pytest.mark.parametrize("code", sorted(httpdiff.DOMAIN_ERROR_CODES))
 def test_domain_errors_have_no_intended_difference(code):
     baseline = response(422, envelope(code, "Old text."))
@@ -619,7 +630,8 @@ def _report(specs: list[dict], gets: list[dict]) -> dict:
                         "database": "u@h:1/d", "data_version": "v"} for k in "abc"},
         "criterion": httpdiff.criterion_description(),
         "whitelist": {"body": [r.as_dict() for r in httpdiff.WHITELIST],
-                      "headers": httpdiff.WHITELISTED_HEADERS},
+                      "headers": httpdiff.WHITELISTED_HEADERS,
+                      "not_whitelisted": httpdiff.NOT_WHITELISTED},
         "intended_differences": [d.as_dict() for d in httpdiff.INTENDED_DIFFERENCES],
         "summary": httpdiff.summarize(specs, gets), "specs": specs, "gets": gets,
     }
@@ -652,6 +664,7 @@ def test_the_report_summarizes_and_renders():
     assert text.startswith("# HTTP equivalence report\n\n**FAIL**: 2 of 3 specs passed")
     assert "`bad\\|id`" in text and "$.n_respondents" in text
     assert "`health_reports_build`" in text
+    assert "deliberately **not** whitelisted" in text and "ingestion_run_id" in text
 
 
 def test_infinite_ratios_stay_strict_json():
@@ -787,7 +800,10 @@ def test_a_server_starts_answers_and_stops_with_a_redacted_log(tmp_path):
         server = group.servers["b"]
         assert server.alive()
         assert servers.http_get(port, "/health")[0] == 200
-    assert not server.alive()
+        group.stop()                    # an interrupted run stops the servers early ...
+        assert not server.alive()
+    group.stop()                        # ... and the context exit stops them again: no-op
+    assert not server.alive() and server.process.returncode is not None
     log = (tmp_path / "logs" / "b.log").read_text()
     assert "s3cr3t-value" not in log and "atus_api:***@h:5466" in log
 

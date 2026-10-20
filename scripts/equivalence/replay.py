@@ -508,15 +508,24 @@ def run(args: argparse.Namespace) -> int:
                     save_responses(responses_dir / "specs", spec.id, answers)
 
             log(f"POST: {len(specs)} specs, {args.jobs} at a time")
-            with ThreadPoolExecutor(max_workers=args.jobs, thread_name_prefix="spec") as outer:
+            outer = ThreadPoolExecutor(max_workers=args.jobs, thread_name_prefix="spec")
+            try:
                 futures = [outer.submit(replay_one, i, spec) for i, spec in enumerate(specs)]
                 for done, future in enumerate(futures, 1):
                     future.result()
                     if done % 25 == 0 or done == len(futures):
                         failed = sum(1 for r in spec_results if r and not r["passed"])
                         log(f"  {done}/{len(futures)} replayed, {failed} failed so far")
+            except BaseException:
+                # Interrupted: stop the servers first, so requests in flight fail
+                # at once instead of being waited for.
+                outer.shutdown(wait=False, cancel_futures=True)
+                group.stop()
+                raise
+            finally:
+                outer.shutdown(wait=True, cancel_futures=True)
         finally:
-            inner.shutdown(wait=True)
+            inner.shutdown(wait=True, cancel_futures=True)
 
     results = [r for r in spec_results if r is not None]
     report = {
@@ -540,6 +549,7 @@ def run(args: argparse.Namespace) -> int:
         "criterion": httpdiff.criterion_description(),
         "whitelist": {"body": [rule.as_dict() for rule in WHITELIST],
                       "headers": WHITELISTED_HEADERS,
+                      "not_whitelisted": httpdiff.NOT_WHITELISTED,
                       "matched_headers_b_c": list(httpdiff.MATCHED_HEADERS)},
         "intended_differences": [d.as_dict() for d in INTENDED_DIFFERENCES],
         "summary": httpdiff.summarize(results, get_results),

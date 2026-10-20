@@ -179,6 +179,7 @@ class ManagedServer:
     config: ServerConfig
     process: subprocess.Popen | None = None
     _log: object | None = field(default=None, repr=False)
+    _terminated: bool = False
 
     @property
     def port(self) -> int:
@@ -217,13 +218,23 @@ class ManagedServer:
     def alive(self) -> bool:
         return self.process is not None and self.process.poll() is None
 
-    def stop(self, grace: float = 30.0) -> None:
+    def terminate(self) -> None:
+        """Ask the server to shut down (SIGTERM to its process group, once:
+        uvicorn treats a second signal as "exit now")."""
         process = self.process
-        if process is not None and process.poll() is None:
+        if process is not None and process.poll() is None and not self._terminated:
+            self._terminated = True
             try:
                 os.killpg(process.pid, signal.SIGTERM)
             except ProcessLookupError:
                 pass
+
+    def stop(self, grace: float = 30.0) -> None:
+        """Terminate, wait up to ``grace`` seconds, then kill; close and
+        redact the log. Safe to call more than once."""
+        self.terminate()
+        process = self.process
+        if process is not None and process.poll() is None:
             try:
                 process.wait(timeout=grace)
             except subprocess.TimeoutExpired:
@@ -280,7 +291,11 @@ class ServerGroup:
         self.stop()
 
     def stop(self) -> None:
+        """Signal every server, then wait for each (they shut down in
+        parallel). Safe to call more than once."""
         try:
+            for server in self.servers.values():
+                server.terminate()
             for server in self.servers.values():
                 server.stop()
         finally:

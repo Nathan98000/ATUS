@@ -16,6 +16,7 @@ server environment and command are unit-tested.
 from __future__ import annotations
 
 import json
+import os
 import socket
 import sys
 from pathlib import Path
@@ -113,6 +114,10 @@ def changed_serving(databases, test_db_url):
 
 
 def _ports() -> str:
+    """Three loopback ports: ``$ATUS_EQ_TEST_PORTS`` (e.g. ``8644,8645,8646``,
+    for a machine with reserved ranges), else three free ephemeral ones."""
+    if os.environ.get("ATUS_EQ_TEST_PORTS"):
+        return os.environ["ATUS_EQ_TEST_PORTS"]
     sockets = []
     try:
         for _ in range(3):

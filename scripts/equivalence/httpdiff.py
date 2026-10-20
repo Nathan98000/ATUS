@@ -365,10 +365,18 @@ WHITELISTED_HEADERS: dict[str, str] = {
     "content-length": "follows the body, which is compared itself",
 }
 
-# Not whitelisted on purpose: /meta's data.last_ingested_at and
-# data.ingestion_run_id. The serving builder copies the source run's
-# provenance (ADR-013), so they must be equal; a builder that stopped doing
-# so would be caught here and the rule added deliberately.
+# Considered and deliberately compared (reported with the whitelist).
+NOT_WHITELISTED: dict[str, str] = {
+    "/meta data.last_ingested_at, data.ingestion_run_id, data.release": (
+        "Ingestion provenance. The serving builder copies the source run's id, release "
+        "and finish time into the serving DB's ingestion_runs row (ADR-013; only "
+        "data_version and notes are new), so full and serving answer the same. A builder "
+        "that stopped doing so is caught here, and a rule must then be added deliberately."
+    ),
+    "/meta data.respondents, data.years": (
+        "Facts about the served data: equal by construction of the serving DB."
+    ),
+}
 
 
 def _strip(a: Any, b: Any, keys: dict[str, str], path: str, notes: list[dict]
@@ -567,6 +575,13 @@ def _validation_capped(a: Response, b: Response, request: RequestInfo) -> bool:
 _PRESET_LOCATION = ["body", "activity", "preset"]
 
 
+def _error_list(error: dict | None) -> list[dict]:
+    """``details.errors`` of an error object (only its well-formed entries)."""
+    details = (error or {}).get("details")
+    errors = details.get("errors") if isinstance(details, dict) else None
+    return [e for e in errors if isinstance(e, dict)] if isinstance(errors, list) else []
+
+
 def _preset_too_long(a: Response, b: Response, request: RequestInfo) -> bool:
     body = request.json_body()
     activity = body.get("activity") if isinstance(body, dict) else None
@@ -575,7 +590,7 @@ def _preset_too_long(a: Response, b: Response, request: RequestInfo) -> bool:
     if not (isinstance(preset, str) and len(preset) > 64 and a.status == 422 and b.status == 422
             and eb is not None and eb.get("code") == "validation_error"):
         return False
-    errors = (eb.get("details") or {}).get("errors") or []
+    errors = _error_list(eb)
     flagged = [e for e in errors if e.get("location") == _PRESET_LOCATION
                and e.get("type") == "string_too_long"]
     if not flagged:
@@ -587,7 +602,7 @@ def _preset_too_long(a: Response, b: Response, request: RequestInfo) -> bool:
             return {(tuple(e.get("location", ())), e.get("type")) for e in errs}
 
         rest = [e for e in errors if e not in flagged]
-        return problems(rest) == problems((ea.get("details") or {}).get("errors") or [])
+        return problems(rest) == problems(_error_list(ea))
     return True
 
 
@@ -616,9 +631,9 @@ def _control_characters(a: Response, b: Response, request: RequestInfo) -> bool:
         for name, value in parse_qsl(query, keep_blank_values=True)
     )
     eb = b.error or {}
-    errors = (eb.get("details") or {}).get("errors") or []
     return (has_control and b.status == 422 and eb.get("code") == "validation_error"
-            and any(e.get("message") == "Control characters are not allowed." for e in errors))
+            and any(e.get("message") == "Control characters are not allowed."
+                    for e in _error_list(eb)))
 
 
 def _lexicon_wording(a: Response, b: Response, request: RequestInfo) -> bool:
@@ -1073,6 +1088,10 @@ def render_markdown(report: dict, *, max_failures: int = 50) -> str:
                      f"{seen.get(rule['id'], 0)} | {_cell(rule['justification'])} |")
     for name, why in report["whitelist"]["headers"].items():
         lines.append(f"| header `{name}` | all | (not compared) | {_cell(why)} |")
+    compared = report["whitelist"].get("not_whitelisted", {})
+    if compared:
+        lines += ["", "Considered and deliberately **not** whitelisted (compared exactly):", ""]
+        lines += [f"- {field}: {why}" for field, why in compared.items()]
     misses = summary["expectation_misses"]
     lines += ["", f"## Expectation misses ({len(misses)})", "",
               "Specs whose Phase 5 full-DB answer (b) was not what the spec expected "
