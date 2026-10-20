@@ -147,7 +147,8 @@ def verify_serving_db(database_url, manifest_path, content_hash, explain) -> Non
               help="Generate a new API role password even if the secrets file has one.")
 @click.option("--roles-only", is_flag=True,
               help="Skip the restore: re-apply roles.sql (with --rotate-api-password, rotate) "
-                   "and re-run the checks on an already restored database.")
+                   "and re-run the checks on an already restored serving database (one "
+                   "without the serving marker is refused).")
 @click.option("--size-limit-bytes", type=int, default=1_000_000_000, show_default=True,
               help="Fail if sum(pg_database_size) exceeds this (0 disables the check).")
 @click.option("--verify-content-hash", is_flag=True,

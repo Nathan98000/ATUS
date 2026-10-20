@@ -9,7 +9,8 @@ The procedure of brief §9 and ADR-013, in order:
 2. verify the dump against its ``.sha256`` file and its manifest;
 3. refuse a target database that is not empty (each release goes into a new
    database: on Neon a new project, because one project's 1 GB covers every
-   database and branch in it);
+   database and branch in it); ``--roles-only`` skips the restore and instead
+   refuses a database without the serving marker (``serving/guard.py``);
 4. ``pg_restore --no-owner --no-acl --single-transaction --exit-on-error``
    over the connection given (Neon: the direct endpoint), with a client at
    least as new as the server's major version;
@@ -46,6 +47,7 @@ from ..validation.results import CheckResult
 from . import pgtools
 from .artifact import manifest_for, read_manifest, verify_artifact
 from .checks import explain_worst_cases, serving_checks
+from .guard import serving_marker
 from .secrets_file import (
     API_PASSWORD_KEY,
     API_URL_KEY,
@@ -201,8 +203,17 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
             "SELECT to_regnamespace('atus') IS NOT NULL "
             "OR to_regclass('public.schema_migrations') IS NOT NULL"
         ).fetchone()[0]
+        marker = serving_marker(conn) if occupied else None
     if options.roles_only and not occupied:
         raise RestoreError("--roles-only needs a restored serving database")
+    if options.roles_only and not marker:
+        # roles.sql revokes PUBLIC's privileges and creates a login role: never
+        # on a database that is not a serving build (the full database, say).
+        raise RestoreError(
+            "--roles-only needs a restored serving database, and this one has no "
+            "serving marker (is the owner's connection string pointing at the full "
+            "database?); nothing was changed"
+        )
     if not options.roles_only and occupied:
         raise RestoreError(
             "the target database is not empty: restore each release into a new, empty "

@@ -12,7 +12,9 @@
 -- environment variable ATUS_API_ROLE_PASSWORD; it is never written in this
 -- file. Pass a SCRAM-SHA-256 verifier (the restore script does): PostgreSQL
 -- stores it as is, so the plaintext never reaches the server, its logs or its
--- statement statistics. Running the script again is safe.
+-- statement statistics. Running the script again is safe. It refuses a
+-- database whose schema atus lacks the serving marker (the full database,
+-- for one), before changing anything.
 --
 -- Result:
 --   * the owner keeps owning every object: it restores, runs VACUUM (ANALYZE)
@@ -49,6 +51,14 @@ SELECT length(:'api_password') >= 16 AS password_ok \gset
 \if :password_ok
 \else
   DO $$ BEGIN RAISE EXCEPTION 'roles.sql: the API password is shorter than 16 characters'; END $$;
+\endif
+-- Only a serving database (the builder's marker on schema atus survives
+-- pg_dump/pg_restore): never revoke PUBLIC's privileges on the full database.
+SELECT coalesce(obj_description(to_regnamespace('atus')::oid, 'pg_namespace')
+                LIKE 'atus-serving%', false) AS serving_ok \gset
+\if :serving_ok
+\else
+  DO $$ BEGIN RAISE EXCEPTION 'roles.sql: schema atus carries no serving marker; run it on a restored serving database only'; END $$;
 \endif
 
 BEGIN;

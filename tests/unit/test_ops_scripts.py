@@ -8,6 +8,7 @@ import re
 from pathlib import Path
 
 from atus_pipeline.serving.contract import READ
+from atus_pipeline.serving.guard import SERVING_MARKER
 from atus_pipeline.serving.restore import DEFAULT_ROLES_SQL, EXPECTED_ROLE_SETTINGS
 
 OPS = Path(__file__).resolve().parents[2] / "scripts" / "ops"
@@ -34,6 +35,14 @@ def test_roles_sql_grants_no_write_and_holds_no_password():
         assert not re.search(rf"\bGRANT\s+{privilege}\b", code), privilege
     assert not re.search(r"PASSWORD\s+'", code, re.I)          # no literal password
     assert re.findall(r"\bPASSWORD\s+:'(\w+)'", code) == ["api_password"]
+
+
+def test_roles_sql_checks_the_serving_marker_before_changing_anything():
+    code = _code(ROLES_SQL)
+    check = code.index(f"LIKE '{SERVING_MARKER}%'")
+    assert check < code.index("BEGIN;") < code.index("CREATE ROLE")
+    assert re.search(r"AS serving_ok \\gset\s+\\if :serving_ok\s+\\else\s+DO \$\$ BEGIN "
+                     r"RAISE EXCEPTION", code)
 
 
 def test_roles_sql_sets_the_role_defaults_the_restore_checks():

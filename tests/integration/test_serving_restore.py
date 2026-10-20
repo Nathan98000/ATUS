@@ -33,6 +33,7 @@ from atus_pipeline.analytics import AnalysisEngine
 from atus_pipeline.api.app import create_app
 from atus_pipeline.cli import cli
 from atus_pipeline.config import Settings
+from atus_pipeline.database.migrate import apply_migrations
 from atus_pipeline.database.versions import read_data_version
 from atus_pipeline.loading.loader import load_all
 from atus_pipeline.serving import pgtools
@@ -42,6 +43,7 @@ from atus_pipeline.serving.equivalence import compare_results, run, seed_specs
 from atus_pipeline.serving.restore import EXPECTED_ROLE_SETTINGS
 from atus_pipeline.serving.secrets_file import API_PASSWORD_KEY, API_URL_KEY, read_env_file
 from tests.integration.conftest import (
+    MIGRATIONS_DIR,
     _admin_url,
     create_scratch_database,
     drop_scratch_database,
@@ -351,6 +353,38 @@ def test_roles_only_rotates_the_api_password(restored, cluster):
     restored["api_url"] = new_url
 
 
+def test_roles_only_refuses_a_database_that_is_not_a_serving_database(
+        restored, cluster, tmp_path):
+    """``--roles-only`` skips the emptiness check, so it must not apply
+    roles.sql (REVOKE ... FROM PUBLIC, a new login role) to a database that
+    is not a serving build, such as the full database."""
+    name, owner_url = cluster.new_owned_database("srvr_notserving")
+    with psycopg.connect(owner_url) as conn:
+        apply_migrations(conn, MIGRATIONS_DIR)       # the full database's schema
+    secrets_file = tmp_path / "neon.env"
+    secrets_file.write_text(f"ATUS_OWNER_DATABASE_URL={owner_url}\n")
+    secrets_file.chmod(0o600)
+    before = secrets_file.read_text()
+    role = f"{cluster.prefix}_srvr_notserving_api"
+    try:
+        result = restore(restored["dump"], secrets_file, role, "--roles-only")
+        assert result.returncode != 0
+        assert "no serving marker" in result.stdout + result.stderr
+        assert "Traceback" not in result.stdout + result.stderr
+        assert secrets_file.read_text() == before    # no API credentials written
+        with cluster.admin() as conn:
+            assert conn.execute("SELECT count(*) FROM pg_roles WHERE rolname = %s",
+                                (role,)).fetchone()[0] == 0
+        with psycopg.connect(owner_url) as conn:      # PUBLIC's privileges untouched
+            assert conn.execute(
+                "SELECT has_database_privilege('public', current_database(), 'TEMPORARY')"
+            ).fetchone()[0] is True
+    finally:
+        with cluster.admin() as conn:
+            conn.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+            conn.execute(f'DROP ROLE IF EXISTS "{role}"')
+
+
 def test_roles_sql_refuses_to_run_without_a_password(cluster, restored):
     tool = pgtools.resolve("psql", restored["owner_url"], server_major=16)
     env = {k: v for k, v in tool.env.items() if k != "ATUS_API_ROLE_PASSWORD"}
@@ -364,3 +398,33 @@ def test_roles_sql_refuses_to_run_without_a_password(cluster, restored):
     with cluster.admin() as conn:
         assert conn.execute("SELECT count(*) FROM pg_roles WHERE rolname = %s",
                             (f"{cluster.prefix}_srvr_nopw",)).fetchone()[0] == 0
+
+
+def test_roles_sql_refuses_a_database_without_the_serving_marker(cluster, tmp_path):
+    """Run by hand against the wrong database (the full one, say), roles.sql
+    stops before it revokes anything or creates the role."""
+    name, owner_url = cluster.new_owned_database("srvr_unmarked")
+    role = f"{cluster.prefix}_srvr_unmarked_api"
+    try:
+        with psycopg.connect(owner_url) as conn:
+            apply_migrations(conn, MIGRATIONS_DIR)       # the full database's schema
+        tool = pgtools.resolve("psql", owner_url, server_major=16,
+                               extra_env={"ATUS_API_ROLE_PASSWORD": secrets.token_urlsafe(24)})
+        result = subprocess.run(
+            [*tool.argv, "-X", "-q", "-v", "ON_ERROR_STOP=1", "-v", f"api_role={role}",
+             "-f", "-"],
+            input=ROLES_SQL.read_bytes(), capture_output=True, env=tool.env, check=False,
+        )
+        assert result.returncode != 0
+        assert b"no serving marker" in result.stderr
+        with cluster.admin() as conn:
+            assert conn.execute("SELECT count(*) FROM pg_roles WHERE rolname = %s",
+                                (role,)).fetchone()[0] == 0
+        with psycopg.connect(owner_url) as conn:
+            assert conn.execute(
+                "SELECT has_database_privilege('public', current_database(), 'TEMPORARY')"
+            ).fetchone()[0] is True
+    finally:
+        with cluster.admin() as conn:
+            conn.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+            conn.execute(f'DROP ROLE IF EXISTS "{role}"')
