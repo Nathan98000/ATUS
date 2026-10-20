@@ -7,7 +7,13 @@ import { App } from './App'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import './styles/global.css'
 
-const queryClient = new QueryClient()
+// Every query sets its own policy (src/api/queries.ts); these defaults only
+// make sure nothing refetches behind the visitor's back: a focus refetch can
+// wake a sleeping free-tier host for nothing (audit F62), and API retries are
+// handled by the time-budgeted loop in src/api/resilience.ts.
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { refetchOnWindowFocus: false, retry: false } },
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

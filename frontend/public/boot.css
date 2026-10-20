@@ -1,0 +1,47 @@
+/* Boot shell (index.html): visible only until the app replaces #root.
+   Served unhashed so it loads even when the hashed bundle does not; CSS only,
+   so it works under the strict CSP with no inline script or style (audit F65). */
+
+.boot-shell {
+  max-width: 36rem;
+  margin: 4rem auto;
+  padding: 0 1rem;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.55;
+  color: #3f4854;
+}
+
+.boot-shell h1 {
+  font-size: 1.4rem;
+  color: #191d23;
+}
+
+.boot-shell a {
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+/* The explanation stays hidden (and out of the accessibility tree) unless the
+   app has not replaced this shell after 10 seconds; the loading line then
+   gives way to it. */
+.boot-shell__stalled {
+  visibility: hidden;
+  animation: boot-shell-reveal 0s linear 10s forwards;
+}
+
+.boot-shell__loading {
+  animation: boot-shell-conceal 0s linear 10s forwards;
+}
+
+@keyframes boot-shell-reveal {
+  to {
+    visibility: visible;
+  }
+}
+
+@keyframes boot-shell-conceal {
+  to {
+    visibility: hidden;
+  }
+}

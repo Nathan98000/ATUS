@@ -3,20 +3,9 @@
  * keyboard-only pass through the primary workflow. Automated tooling is a
  * floor, not a ceiling — component tests cover widget-specific semantics.
  */
-import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 
-import { analyze, setAge } from './helpers'
-
-async function expectNoSeriousViolations(page: import('@playwright/test').Page) {
-  const results = await new AxeBuilder({ page }).analyze()
-  const serious = results.violations.filter((violation) =>
-    ['serious', 'critical'].includes(violation.impact ?? ''),
-  )
-  expect(
-    serious.map((violation) => `${violation.id}: ${violation.nodes.length} nodes`),
-  ).toEqual([])
-}
+import { analyze, expectNoSeriousViolations, setAge } from './helpers'
 
 test('home page has no serious axe violations', async ({ page }) => {
   await page.goto('/')
@@ -27,6 +16,14 @@ test('home page has no serious axe violations', async ({ page }) => {
 test('explorer has no serious axe violations', async ({ page }) => {
   await page.goto('/explore')
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  await expectNoSeriousViolations(page)
+})
+
+test('the About page, with its privacy and logging statement, has no serious axe violations', async ({
+  page,
+}) => {
+  await page.goto('/about')
+  await expect(page.getByRole('heading', { name: 'Privacy and logs' })).toBeVisible()
   await expectNoSeriousViolations(page)
 })
 

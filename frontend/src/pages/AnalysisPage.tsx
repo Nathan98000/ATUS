@@ -16,9 +16,11 @@ import {
   analysisQueryKey,
   useAnalysis,
   useActivityPresets,
+  useLoadedDataVersion,
   useMeta,
-  versionTag,
+  useVersionTag,
 } from '../api/queries'
+import { useServiceWaking } from '../api/serviceStatus'
 import type {
   AnalysisRequest,
   AnalysisResponse,
@@ -30,7 +32,9 @@ import type {
 import { isOperation } from '../api/types'
 import { ErrorPanel } from '../components/ErrorPanel'
 import { LoadingPanel } from '../components/LoadingPanel'
+import { ServiceInterruption } from '../components/ServiceInterruption'
 import { activityLabelFromSpec, analysisTitle, populationPhrase } from '../domain/describe'
+import { isFullPageError } from '../domain/presentError'
 import {
   InvalidShareLinkError,
   analysisPath,
@@ -41,6 +45,7 @@ import {
 import { formatYears } from '../utils/format'
 import { CompareView } from '../features/results/CompareView'
 import { EstimateView } from '../features/results/EstimateView'
+import { ResultDownloads } from '../features/results/ResultDownloads'
 import { ShareButton } from '../features/results/ShareButton'
 import { TrendView } from '../features/results/TrendView'
 
@@ -101,12 +106,19 @@ const LOADING_MESSAGES: Record<Operation, string> = {
   compare: 'Comparing groups…',
 }
 
+/** Before /meta arrives no analysis has been sent, so nothing is "calculating" yet (audit F11). */
+const PREPARING_MESSAGE = 'Preparing the analysis…'
+const WAKING_LOADING_MESSAGE = 'Waiting for the analysis service to wake up…'
+
 function AnalysisRunner({ operation, spec }: { operation: Operation; spec: AnalysisRequest }) {
   const meta = useMeta()
+  const versions = useVersionTag()
+  const loadedDataVersion = useLoadedDataVersion()
   const presets = useActivityPresets()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const query = useAnalysis(operation, spec)
+  const waking = useServiceWaking()
 
   const presetLabels = useMemo(() => {
     const map = new Map<string, string>()
@@ -134,18 +146,35 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
 
   // Canonicalize the URL from the API's own canonical spec (estimate/trend).
   useEffect(() => {
-    if (!result || operation === 'compare' || !meta.data) return
+    if (!result || operation === 'compare' || versions === null) return
     const canonical = (result as EstimateResponse | TrendResponse).spec as AnalysisRequest
     const canonicalEncoded = encodeSpec(canonical)
     if (canonicalEncoded === encodeSpec(spec)) return
-    queryClient.setQueryData(
-      analysisQueryKey(operation, canonical, versionTag(meta.data)),
-      query.data,
-    )
+    queryClient.setQueryData(analysisQueryKey(operation, canonical, versions), query.data)
     navigate(`/analysis/${operation}?spec=${canonicalEncoded}`, { replace: true })
-  }, [result, operation, spec, meta.data, navigate, query.data, queryClient])
+  }, [result, operation, spec, versions, navigate, query.data, queryClient])
 
   const adjustHref = explorePath(operation, spec)
+  // Only a /meta failure with nothing loaded blocks the page; a failed
+  // background refetch never hides a displayed result (audit F26).
+  const metaFailed = meta.data === undefined && meta.isError
+  const blockingError = metaFailed ? meta.error : query.isError ? query.error : null
+  const loadingMessage =
+    meta.data === undefined
+      ? PREPARING_MESSAGE
+      : waking
+        ? WAKING_LOADING_MESSAGE
+        : LOADING_MESSAGES[operation]
+
+  // A paused quota or an incompatible API replaces the whole page.
+  if (blockingError !== null && isFullPageError(blockingError)) {
+    return (
+      <ServiceInterruption
+        error={blockingError}
+        onRetry={() => void (metaFailed ? meta.refetch() : query.refetch())}
+      />
+    )
+  }
 
   return (
     <div className="analysis-page">
@@ -186,17 +215,17 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
         </div>
       </header>
 
-      {meta.isError ? (
+      {metaFailed ? (
         // The analysis query is version-keyed on /meta and stays disabled
         // while it has no version tag — a failing /meta must surface here,
         // or a cold deep link would show the loading state forever.
         <ErrorPanel error={meta.error} onRetry={() => meta.refetch()} />
-      ) : query.isPending ? (
+      ) : meta.data === undefined || query.isPending ? (
         <LoadingPanel
-          message={LOADING_MESSAGES[operation]}
+          message={loadingMessage}
           hint={
-            spec.variance !== 'none'
-              ? 'Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.'
+            meta.data !== undefined && !waking && spec.variance !== 'none'
+              ? 'Standard errors over many years can take up to a minute the first time; repeated analyses are nearly instant.'
               : undefined
           }
         />
@@ -207,20 +236,32 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
           adjustHref={adjustHref}
         />
       ) : (
-        <ResultBody
-          operation={operation}
-          result={query.data.data}
-          analysisKey={query.data.analysisKey}
-        />
+        <>
+          <ResultBody
+            operation={operation}
+            result={query.data.data}
+            analysisKey={query.data.analysisKey}
+          />
+          <ResultDownloads
+            operation={operation}
+            requestSpec={spec}
+            result={query.data.data}
+            analysisKey={query.data.analysisKey}
+            // The release that produced this response; the page's own if it did not say.
+            dataVersion={query.data.dataVersion ?? loadedDataVersion}
+            apiVersion={meta.data.api_version}
+            dataRelease={meta.data.data.release}
+          />
+        </>
       )}
       {/* Persistent live region: reliably announces the start and end of a
           potentially ~10 s computation (content mounted with its text
           already present is often not announced by screen readers). */}
       <p className="visually-hidden" aria-live="polite">
-        {meta.isError || query.isError
+        {metaFailed || query.isError
           ? 'The analysis could not be completed.'
-          : query.isPending
-            ? LOADING_MESSAGES[operation]
+          : meta.data === undefined || query.isPending
+            ? loadingMessage
             : 'Analysis ready.'}
       </p>
     </div>

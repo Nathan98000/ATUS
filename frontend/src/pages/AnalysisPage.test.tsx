@@ -7,7 +7,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, delay, http } from 'msw'
 import { MemoryRouter, Route, Routes } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { EstimateRequest } from '../api/types'
 import { encodeSpec } from '../domain/urlSpec'
@@ -20,7 +20,8 @@ import {
 } from '../test/fixtures'
 import { Link } from 'react-router'
 
-import { LocationProbe, testQueryClient } from '../test/render'
+import { COLD_START_BUDGET_MS } from '../api/resilience'
+import { LocationProbe, testQueryClient, withFakeClock } from '../test/render'
 import { analysisHeaders, api, server } from '../test/server'
 import { AnalysisPage } from './AnalysisPage'
 
@@ -123,12 +124,17 @@ describe('estimate results', () => {
   })
 
   it('surfaces a /meta failure instead of spinning forever', async () => {
-    server.use(http.get(api('/meta'), () => HttpResponse.error()))
-    renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
-    const alert = await screen.findByRole('alert', {}, { timeout: 8000 })
-    expect(alert).toHaveTextContent('could not be reached')
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
-  }, 10000)
+    // Intentional Phase 5 change: the failure surfaces once the cold-start
+    // retry budget is spent, not after ~3 s.
+    await withFakeClock(async () => {
+      server.use(http.get(api('/meta'), () => HttpResponse.error()))
+      renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
+      await vi.advanceTimersByTimeAsync(COLD_START_BUDGET_MS)
+      const alert = await screen.findByRole('alert')
+      expect(alert).toHaveTextContent('could not be reached')
+      expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+    })
+  })
 
   it('sets a descriptive document title', async () => {
     renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
@@ -195,11 +201,16 @@ describe('error handling', () => {
   })
 
   it('distinguishes a down backend from an invalid request', async () => {
-    server.use(http.post(api('/analysis/estimate'), () => HttpResponse.error()))
-    renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
-    const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent('could not be reached')
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+    // Intentional Phase 5 change: an unreachable host is retried within the
+    // cold-start budget before the failure is shown.
+    await withFakeClock(async () => {
+      server.use(http.post(api('/analysis/estimate'), () => HttpResponse.error()))
+      renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
+      await vi.advanceTimersByTimeAsync(COLD_START_BUDGET_MS)
+      const alert = await screen.findByRole('alert')
+      expect(alert).toHaveTextContent('could not be reached')
+      expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+    })
   })
 
   it('shows a helpful page for malformed share links', async () => {

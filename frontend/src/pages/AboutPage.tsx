@@ -96,6 +96,47 @@ export function AboutPage() {
         encodes its full specification.
       </p>
 
+      <h2 id="privacy">Privacy and logs</h2>
+      <p>
+        ATUS Explorer has no accounts, sets no cookies, keeps nothing in your browser's storage,
+        and uses no third-party analytics, trackers, fonts or scripts. The pages, the survey
+        metadata and the most common analyses (including the starter examples) are served as
+        static files that do not involve the analysis service.
+      </p>
+      <p>
+        A new analysis sends only its specification (activity, population, years, statistic) to
+        the analysis service; opening the analysis builder also sends one empty request that
+        wakes the service up. For each request that reaches the service, it logs:
+      </p>
+      <ul>
+        <li>a random request ID, the address requested, the response status and its timing;</li>
+        <li>
+          whether the result came from a cache, and the analysis key (a fingerprint of the
+          specification, not the specification itself);
+        </li>
+        <li>
+          your IP address <b>shortened to its network</b> (the first three parts of an IPv4
+          address, the first 48 bits of an IPv6 address).
+        </li>
+      </ul>
+      <p>
+        Request bodies are never logged. The service uses your full IP address only in memory,
+        to limit how many new analyses one visitor can start, and never writes it into its log
+        lines; the edge's daily usage counter keeps only a keyed hash of the shortened address,
+        with a key that changes every day. The database receives nothing about visitors.
+      </p>
+      <p>
+        Logs are kept by the hosting providers' free plans and then deleted: the API host
+        (Render) keeps them for 7 days, the edge (Cloudflare Workers Logs) for 3 days (7 days
+        from 1 December 2026). To deliver the site, Cloudflare and Render also handle standard
+        connection data, such as your full IP address, in their own systems and under their own
+        privacy policies.
+      </p>
+      <p>
+        A shared analysis link contains the analysis specification, so anyone you send it to can
+        see what you analyzed.
+      </p>
+
       <h2>Learn more</h2>
       <ul>
         <li>

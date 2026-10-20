@@ -9,12 +9,15 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "lint": "oxlint",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\" \"*.ts\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\" \"*.ts\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\" \"scripts/*.mjs\" \"public/*.css\" \"*.ts\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"e2e/**/*.ts\" \"scripts/*.mjs\" \"public/*.css\" \"*.ts\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "generate:api-types": "openapi-typescript openapi.json -o src/api/generated.ts && prettier --write src/api/generated.ts"
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "snapshot:requests": "node scripts/snapshot-requests.mjs",
+    "generate:api-types": "node scripts/api-types.mjs --write",
+    "check:api-types": "node scripts/api-types.mjs --check"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",

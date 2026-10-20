@@ -9,9 +9,32 @@
       content="Explore how Americans spend their time, using official American Time Use Survey data from the U.S. Bureau of Labor Statistics."
     />
     <title>ATUS Explorer</title>
+    <!-- Unhashed, so it still loads when a stale page points at removed bundles. -->
+    <link rel="stylesheet" href="/boot.css" />
   </head>
   <body>
-    <div id="root"></div>
+    <!--
+      The app replaces everything inside #root when it starts. If its bundle
+      never loads (a stale page after a deploy, a network failure, blocked
+      scripts), this shell stays, and boot.css reveals the explanation after
+      a few seconds. No inline script or style: the strict CSP stays intact.
+    -->
+    <div id="root">
+      <div class="boot-shell">
+        <p class="boot-shell__loading">Loading ATUS Explorer…</p>
+        <div class="boot-shell__stalled">
+          <h1>ATUS Explorer did not start</h1>
+          <p>
+            The application could not be loaded. This can happen right after a new version is
+            published, on an unreliable connection, or when JavaScript is blocked.
+          </p>
+          <p><a href="">Reload the page</a></p>
+        </div>
+        <noscript>
+          <p>ATUS Explorer needs JavaScript to build and display analyses.</p>
+        </noscript>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

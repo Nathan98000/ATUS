@@ -61,16 +61,43 @@ test('an empty population is explained, not rendered as zero', async ({ page }) 
 test('a down backend is presented as unavailability with retry, then recovers', async ({
   page,
 }) => {
+  // Phase 5: an unreachable host is retried for a 150 s cold-start budget
+  // (a sleeping free host looks exactly like this) before the failure shows.
+  // The page clock lets the test jump over that budget.
+  await page.clock.install()
   let blocked = true
   await page.route('**/api/v1/analysis/**', (route) => {
     if (blocked) return route.abort('connectionrefused')
     return route.fallback()
   })
   await page.goto(specUrl('estimate', { activity: { preset: 'sleep' }, years: [2023] }))
+  // While it retries, the visitor is told the service is waking up.
+  await expect(page.getByText(/Waking up the analysis service/)).toBeVisible({
+    timeout: 15_000,
+  })
+
+  await page.clock.fastForward('02:40')
   const alert = page.getByRole('alert')
   await expect(alert).toContainText('could not be reached', { timeout: 15_000 })
 
   blocked = false
   await page.getByRole('button', { name: 'Try again' }).click()
   await expect(page.locator('.stat-value')).toHaveText('1h 15m', { timeout: 15_000 }) // 75.0 min, all respondents 2023
+})
+
+test('a briefly unreachable backend is waited out without the visitor doing anything', async ({
+  page,
+}) => {
+  let blocked = true
+  await page.route('**/api/v1/analysis/**', (route) => {
+    if (blocked) return route.abort('connectionrefused')
+    return route.fallback()
+  })
+  await page.goto(specUrl('estimate', { activity: { preset: 'sleep' }, years: [2023] }))
+  await expect(page.getByText(/Waking up the analysis service/)).toBeVisible({
+    timeout: 15_000,
+  })
+  blocked = false
+  await expect(page.locator('.stat-value')).toHaveText('1h 15m', { timeout: 20_000 })
+  await expect(page.getByRole('alert')).toHaveCount(0)
 })
