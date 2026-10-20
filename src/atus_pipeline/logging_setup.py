@@ -3,9 +3,9 @@
 Two formats (``ATUS_LOG_FORMAT``): ``text`` for people (development) and
 ``json`` for log processors (production): one JSON object per line with
 ``ts``, ``level``, ``logger`` and ``message``, plus the structured fields a
-record carries. The API's access log puts its fields at the top level (see
-ADR-014 for the schema); tracebacks go into ``exc``, so a record never spans
-lines.
+record carries (``extra={"fields": {...}}``). The API's access log puts its
+fields at the top level this way (see ADR-014 for the schema); tracebacks go
+into ``exc``, so a record never spans lines.
 
 Besides the format this module installs two filters the API relies on:
 
@@ -48,9 +48,9 @@ LOGGED_MARKER = "_atus_logged"
 
 TEXT_FORMAT = "%(asctime)s %(levelname)-7s %(name)s: %(message)s"
 _HANDLER_MARKER = "_atus_handler"
-STRUCTURED_FIELDS = "access"
+STRUCTURED_FIELDS = "fields"
 """Name of the ``extra`` attribute whose dict the JSON format lifts to the
-top level of the line."""
+top level of the line: ``log.info("...", extra={"fields": {...}})``."""
 
 
 class _RedactingFilter(logging.Filter):

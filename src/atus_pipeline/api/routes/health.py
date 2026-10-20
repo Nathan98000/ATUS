@@ -23,6 +23,7 @@ from ..dependencies import get_database, get_settings, get_snapshots
 from ..errors import DataNotLoadedError
 from ..metrics import CONTENT_TYPE
 from ..middleware import ops_authorized
+from ..schemas.system import HealthResponse
 from ..snapshot import SnapshotStore
 
 log = logging.getLogger("atus.api")
@@ -39,6 +40,7 @@ def _require_ops_token(request: Request, settings: Settings) -> None:
 
 @router.get(
     "/health",
+    response_model=HealthResponse,
     summary="Liveness",
     description=(
         "Answers whether the API process is running, and which build it is "
@@ -48,9 +50,11 @@ def _require_ops_token(request: Request, settings: Settings) -> None:
         "every worker thread is busy with long analyses."
     ),
 )
-async def health(response: Response, settings: Settings = Depends(get_settings)) -> dict:
+async def health(
+    response: Response, settings: Settings = Depends(get_settings)
+) -> HealthResponse:
     response.headers.update(_NO_STORE)
-    return {"status": "ok", "build": settings.build_sha}
+    return HealthResponse(status="ok", build=settings.build_sha)
 
 
 @router.get("/ready", include_in_schema=False)

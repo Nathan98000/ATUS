@@ -39,3 +39,12 @@ class ErrorResponse(BaseModel):
             ]
         }
     }
+
+
+DATA_ROUTE_503 = {
+    "model": ErrorResponse,
+    "description": "Temporarily unable to read the data: database_unavailable, "
+                   "database_paused, overloaded, data_version_mismatch, "
+                   "schema_not_initialized; see Retry-After",
+}
+"""The 503 every route answering from the served data can return."""

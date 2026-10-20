@@ -8,6 +8,7 @@ from contextlib import contextmanager
 import pytest
 from fastapi.testclient import TestClient
 
+from atus_pipeline.api import observability
 from atus_pipeline.api.app import create_app
 from atus_pipeline.api.dependencies import get_database, get_engine_factory
 from atus_pipeline.api.snapshot import DataSnapshot, IngestionRun, LexiconEntry
@@ -76,9 +77,11 @@ def stub_engine() -> StubEngine:
 class FakeVersionConnection:
     """Answers only the data-version query (used by the cache recheck) and
     the loaded-data probe; any other SQL in a DB-less test is a bug and fails
-    loudly."""
+    loudly. Every statement is counted against the current request, like the
+    real pool's cursors do."""
 
     def execute(self, sql, params=None):
+        observability.note_statement()
         if "ingestion_runs" in sql:
             class _Cursor:
                 @staticmethod
@@ -115,7 +118,8 @@ class FakeDatabase:
     @contextmanager
     def transaction(self, kind: str, *, repeatable_read: bool = False):
         self.transactions.append(kind)
-        yield self.connection_factory()
+        with observability.database_time():
+            yield self.connection_factory()
 
     def read_data_version(self) -> str:
         if self.data_version is not None:
@@ -125,7 +129,12 @@ class FakeDatabase:
             return versions.read_data_version(conn)
 
     def read_snapshot(self) -> DataSnapshot:
-        version = self.read_data_version()
+        if self.data_version is not None:
+            with self.transaction("metadata"):
+                version = self.data_version
+        else:
+            with self.transaction("metadata") as conn:
+                version = versions.read_data_version(conn)
         return fake_snapshot(version, **self.snapshot_overrides)
 
 

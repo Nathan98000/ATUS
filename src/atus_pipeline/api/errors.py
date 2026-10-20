@@ -22,6 +22,11 @@ are classified by what the client should do about them, not by driver class:
   ``/dev/shm``), a pool with every connection busy -> 503 ``overloaded``;
 * Neon's quota/suspension refusals -> 503 ``database_paused``;
 * everything else about reaching the server -> 503 ``database_unavailable``.
+
+Data-state codes: 503 ``data_not_loaded`` (an empty database) and 503
+``data_version_mismatch`` (the database serves another data version than
+``ATUS_EXPECTED_DATA_VERSION``). Every handler records the code it answered
+in the request state, for the access log and the metrics.
 """
 
 from __future__ import annotations
@@ -412,9 +417,11 @@ def register_exception_handlers(app: FastAPI, outermost_headers) -> None:
         # Full detail server-side, logged once; nothing internal leaks to the
         # client. This handler runs at the outermost middleware layer, so it
         # re-attaches the request-ID/CORS/security headers itself.
+        request_id = getattr(request.state, "request_id", "-")
         log.exception(
-            "request_id=%s unhandled error on %s %s",
-            getattr(request.state, "request_id", "-"), request.method, request.url.path,
+            "request_id=%s unhandled error on %s %s", request_id, request.method,
+            request.url.path,
+            extra={"fields": {"event": "unhandled_error", "request_id": request_id}},
         )
         mark_logged(exc)
         return respond(

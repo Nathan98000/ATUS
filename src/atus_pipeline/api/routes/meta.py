@@ -16,6 +16,7 @@ from ...analytics.spec import ACTIVITY_PRESETS, Measure
 from .. import API_VERSION
 from ..database import Database
 from ..dependencies import get_database, get_snapshots
+from ..schemas.errors import DATA_ROUTE_503
 from ..schemas.meta import (
     CapabilitiesInfo,
     DataInfo,
@@ -46,6 +47,7 @@ _MEASURE_DESCRIPTIONS = {
 @router.get(
     "",
     response_model=MetaResponse,
+    responses={503: DATA_ROUTE_503},
     summary="API, analytics, and data versions plus capability discovery",
     description=(
         "What this service can compute and against which data. `api_version` is "

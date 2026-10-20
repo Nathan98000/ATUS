@@ -82,6 +82,16 @@ class TestDailyCap:
         cap = DailyCap(1, clock=lambda: datetime(2026, 10, 20, 23, 59, 59, 999_999, tzinfo=UTC))
         assert cap.seconds_until_reset() == 1
 
+    def test_refusals_are_counted_for_metrics(self):
+        now = [datetime(2026, 10, 20, 12, 0, tzinfo=UTC)]
+        cap = DailyCap(1, clock=lambda: now[0])
+        assert cap.try_take() and cap.used_today() == 1
+        error = cap.refuse()
+        assert error.code == "daily_capacity_reached" and error.retry_after == 12 * 3600
+        assert cap.rejections == 1
+        now[0] += timedelta(days=1)
+        assert cap.used_today() == 0  # the day rolled over
+
 
 class TestHeavyClassifier:
     @pytest.mark.parametrize(
@@ -155,8 +165,10 @@ class TestAdmissionLanes:
                         pass
                 assert info.value.retry_after == 10
             assert lanes.in_flight == 0 and lanes.rejections == 1
+            assert lanes.waits == 1  # the shed request had waited
             async with lanes.admit(heavy=False):  # free again
                 pass
+            assert lanes.waits == 1  # a free lane is not a wait
 
         anyio.run(scenario)
 
@@ -189,6 +201,7 @@ class TestAdmissionLanes:
                     await anyio.sleep(0.05)
                     assert admitted == []
             assert admitted == ["second"]
+            assert (lanes.waits, lanes.rejections) == (1, 0)
 
         anyio.run(scenario)
 

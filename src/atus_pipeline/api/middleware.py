@@ -154,6 +154,8 @@ class _DisconnectWatcher:
             log.info(
                 "request_id=%s client disconnected before the response; "
                 "an admitted analysis still completes and is cached", self._request_id,
+                extra={"fields": {"event": "client_disconnected",
+                                  "request_id": self._request_id}},
             )
 
     def stop(self) -> None:
@@ -297,7 +299,7 @@ class RequestContextMiddleware:
                 latency_ms, stats.db_ms, stats.db_statements, response["cache"] or "-",
                 f" error={error}" if error else "",
                 " client_disconnected=1" if disconnected else "",
-                extra={"access": fields},
+                extra={"fields": fields},
             )
             if self.metrics is not None:
                 self.metrics.observe_request(

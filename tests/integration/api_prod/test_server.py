@@ -11,7 +11,11 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import re
 import socket
+import subprocess
+import sys
 import threading
 import time
 from contextlib import contextmanager
@@ -117,8 +121,8 @@ class TestProductionServer:
             meta = httpx.get(f"{base}/api/v1/meta", headers=edge)
             assert meta.status_code == 200
             assert meta.json()["data"]["release"] == "0325"
-            assert httpx.get(f"{base}/docs", headers=edge).status_code == 404
-            assert httpx.get(f"{base}/openapi.json", headers=edge).status_code == 404
+            for path in ("/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"):
+                assert httpx.get(f"{base}{path}", headers=edge).status_code == 404, path
 
     def test_forwarded_headers_never_change_the_client(self, production_settings):
         """Proxy headers are off: with a valid secret the client is
@@ -219,3 +223,72 @@ class TestClientDisconnect:
         messages = [r.getMessage() for r in caplog.records]
         assert any("client disconnected before the response" in m for m in messages)
         assert any("client_disconnected=1" in m and "-> 200" in m for m in messages)
+
+
+OPS_TOKEN = "q" * 48
+
+
+class TestProductionProcess:
+    """``atus api`` with a production environment (on loopback, not the
+    production 0.0.0.0): JSON logs on stderr (one access line per request,
+    truncated client addresses, no uvicorn access line), the build on
+    /health, operator endpoints behind the ops token, and Server-Timing."""
+
+    def test_json_access_log_and_operator_endpoints(self, data_settings):
+        port = _free_port()
+        env = {
+            **os.environ,
+            "ATUS_ENV": "production",
+            "ATUS_DATABASE_URL": data_settings.database_url,
+            "ATUS_EDGE_SECRETS": SECRET,
+            "ATUS_OPS_TOKEN": OPS_TOKEN,
+            "ATUS_BUILD_SHA": "0123abcd",
+            "ATUS_DATA_DIR": str(data_settings.data_dir),
+            "PORT": str(port),
+        }
+        process = subprocess.Popen(
+            [sys.executable, "-m", "atus_pipeline.cli", "api", "--host", "127.0.0.1"], env=env,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        base = f"http://127.0.0.1:{port}"
+        try:
+            deadline = time.monotonic() + 20
+            while True:
+                try:
+                    health = httpx.get(f"{base}/health")
+                    break
+                except httpx.TransportError:
+                    assert process.poll() is None, process.stderr.read()
+                    assert time.monotonic() < deadline, "server did not start"
+                    time.sleep(0.1)
+            edge = {"X-ATUS-Edge-Auth": SECRET, "X-ATUS-Client-IP": "198.51.100.77",
+                    "X-Request-ID": "edge-request-0001"}
+            meta = httpx.get(f"{base}/api/v1/meta", headers=edge)
+            estimate = httpx.post(f"{base}/api/v1/analysis/estimate", json=BODY, headers=edge)
+            hidden = httpx.get(f"{base}/metrics", headers=edge)
+            metrics = httpx.get(f"{base}/metrics",
+                                headers={"Authorization": f"Bearer {OPS_TOKEN}"})
+            ready = httpx.get(f"{base}/ready", headers={"Authorization": f"Bearer {OPS_TOKEN}"})
+        finally:
+            process.terminate()
+            _, stderr = process.communicate(timeout=30)
+        assert health.json() == {"status": "ok", "build": "0123abcd"}
+        assert meta.status_code == 200 and estimate.status_code == 200
+        assert re.match(r"^db;dur=[0-9.]+, app;dur=[0-9.]+$", estimate.headers["Server-Timing"])
+        assert hidden.status_code == 404
+        assert metrics.status_code == 200 and 'atus_build_info{build="0123abcd"} 1' in metrics.text
+        assert ready.status_code == 200 and ready.json()["build"] == "0123abcd"
+
+        entries = [json.loads(line) for line in stderr.splitlines() if line.startswith("{")]
+        assert entries, stderr[-2000:]
+        assert all(set(e) >= {"ts", "level", "logger", "message"} for e in entries)
+        access = [e for e in entries if e.get("event") == "access"]
+        by_route = {e["route"]: e for e in access}
+        assert by_route["/api/v1/analysis/estimate"]["request_id"] == "edge-request-0001"
+        assert by_route["/api/v1/analysis/estimate"]["client_ip_prefix"] == "198.51.100.0/24"
+        assert by_route["/api/v1/analysis/estimate"]["cache"] == "miss"
+        assert by_route["/api/v1/meta"]["db_statements"] == 11  # the snapshot read
+        assert {e["route"] for e in access} >= {"/health", "/metrics", "/ready"}
+        assert "198.51.100.77" not in stderr
+        assert not [e for e in entries if e["logger"] == "uvicorn.access"]
+        assert all(not line or line.startswith("{") for line in stderr.splitlines()), stderr

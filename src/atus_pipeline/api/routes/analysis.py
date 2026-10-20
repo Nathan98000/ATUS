@@ -12,6 +12,11 @@ observability headers:
 * ``X-Cache`` — ``hit``, ``miss``, ``join`` (shared an identical computation
   already in progress) or ``bypass`` (computed during a data reload; not
   cached).
+
+Nothing touches the database before the body has been validated, the cache
+consulted and the engine's own up-front checks passed (the runner's dry
+run): while the data snapshot is fresh, cache hits and every 4xx cost no
+statement.
 * ``X-Data-Version``, ``X-Analytics-Version``, ``X-Response-Format`` — what
   the response bytes depend on (edge caches key on them).
 """
@@ -52,7 +57,7 @@ _ERROR_RESPONSES = {
         "model": ErrorResponse,
         "description": "Temporarily unable to compute: overloaded, analysis_timeout, "
                        "daily_capacity_reached, database_unavailable, database_paused, "
-                       "data_not_loaded; see Retry-After",
+                       "data_not_loaded, data_version_mismatch; see Retry-After",
     },
 }
 
