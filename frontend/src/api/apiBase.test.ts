@@ -99,4 +99,43 @@ describe('vite.config.ts', () => {
     vi.stubEnv('VITE_API_BASE_URL', 'api.example.org')
     await expect(resolveConfig('build', 'production')).rejects.toThrow(/VITE_API_BASE_URL/)
   })
+
+  /** Runs the build's <meta> CSP plugin as `vite build` does once the config is resolved. */
+  async function resolveMetaCsp() {
+    const config = await resolveConfig('build', 'production')
+    const plugin = (config.plugins ?? [])
+      .flat(Infinity)
+      .find(
+        (candidate) => (candidate as { name?: string } | null)?.name === 'atus-meta-csp',
+      ) as {
+      configResolved: (resolved: { publicDir: string }) => void
+    }
+    plugin.configResolved({ publicDir: 'public' })
+  }
+
+  it('builds the same-origin bundle under the site CSP', async () => {
+    await expect(resolveMetaCsp()).resolves.toBeUndefined()
+  })
+
+  it('fails a build whose cross-origin API the site CSP would block', async () => {
+    // connect-src 'self' would block every request of the built page, which
+    // would then retry a service it can never reach.
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.org')
+    await expect(resolveMetaCsp()).rejects.toThrow(
+      /VITE_API_BASE_URL=https:\/\/api\.example\.org .*connect-src in public\/_headers/,
+    )
+  })
+
+  it('explains the cross-origin conflict only for an absolute base the policy blocks', async () => {
+    const { crossOriginApiError } = await import('../../vite.config')
+    const site = "default-src 'none'; connect-src 'self'"
+    expect(crossOriginApiError(site, undefined)).toBeNull()
+    expect(crossOriginApiError(site, '')).toBeNull()
+    expect(crossOriginApiError(site, 'http://localhost:8000/')).toMatch(
+      /add http:\/\/localhost:8000 to connect-src/,
+    )
+    expect(
+      crossOriginApiError(`${site} https://api.example.org`, 'https://api.example.org/v'),
+    ).toBeNull()
+  })
 })

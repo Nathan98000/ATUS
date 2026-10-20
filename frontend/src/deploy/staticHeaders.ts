@@ -120,6 +120,36 @@ export function headersForPath(
 }
 
 /**
+ * Whether `policy` lets the page fetch from `url`, which is on another origin
+ * than the page: its `connect-src` (else `default-src`) must list `*`, the
+ * URL's scheme (`https:`) or the URL's exact origin. `'self'` never covers
+ * another origin. Wildcard hosts and path-restricted sources are not
+ * recognised, so they count as not allowing it: the build that asks fails
+ * loudly instead of shipping a page that cannot reach its API.
+ */
+export function cspAllowsConnection(policy: string, url: string): boolean {
+  const target = new URL(url)
+  const directives = new Map<string, string[]>()
+  for (const directive of policy.split(';')) {
+    const [name, ...sources] = directive.trim().split(/\s+/)
+    if (name) directives.set(name.toLowerCase(), sources)
+  }
+  const sources = directives.get('connect-src') ?? directives.get('default-src')
+  if (sources === undefined) return true
+  return sources.some((source) => {
+    if (source === '*') return true
+    if (/^[a-z][a-z0-9+.-]*:$/i.test(source)) return source.toLowerCase() === target.protocol
+    if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(source)) return false
+    try {
+      const allowed = new URL(source)
+      return allowed.origin === target.origin && /^\/?$/.test(allowed.pathname)
+    } catch {
+      return false
+    }
+  })
+}
+
+/**
  * The policy for a `<meta http-equiv>` CSP: the same directives minus those
  * a meta element cannot carry (browsers ignore them there and log an error).
  * `frame-ancestors` stays enforced by the response header.

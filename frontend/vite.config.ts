@@ -5,9 +5,10 @@ import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { type Plugin, defineConfig, loadEnv } from 'vite'
 
-import { apiBaseConfigError } from './src/api/apiBase.ts'
+import { apiBaseConfigError, resolveApiBase } from './src/api/apiBase.ts'
 import {
   type HeaderRule,
+  cspAllowsConnection,
   headersForPath,
   metaContentSecurityPolicy,
   parseHeadersFile,
@@ -31,18 +32,44 @@ export function siteContentSecurityPolicy(publicDir: string): string {
 }
 
 /**
+ * Why a build for this `VITE_API_BASE_URL` could not reach its API, or null.
+ * The built page enforces the site's policy (the `<meta>` backstop, and the
+ * `_headers` copy wherever the build is served), so an API on another origin
+ * must be one the policy's `connect-src` allows — otherwise every request is
+ * blocked in the browser, and the page retries a service it can never reach.
+ */
+export function crossOriginApiError(
+  policy: string,
+  configured: string | undefined,
+): string | null {
+  const base = resolveApiBase(configured)
+  if (base === '' || cspAllowsConnection(policy, base)) return null
+  return (
+    `VITE_API_BASE_URL=${base} is another origin, but the site's Content-Security-Policy ` +
+    `(public/_headers) does not allow connections to it, so the built page could not reach ` +
+    `that API. Leave VITE_API_BASE_URL unset for the deployed same-origin setup (also when ` +
+    `this URL is the site's own origin), use \`npm run dev\` for a development API on another ` +
+    `origin, or add ${new URL(base).origin} to connect-src in public/_headers.`
+  )
+}
+
+/**
  * Builds carry the same policy in a `<meta>` element as a backstop, in case
  * the host does not apply `_headers` to the SPA-fallback `index.html`
  * (ADR-011, an unverified detail). Build only: the dev server injects inline
- * scripts that the policy forbids.
+ * scripts that the policy forbids. A build whose cross-origin API the policy
+ * would block fails here.
  */
-function metaCspPlugin(): Plugin {
+function metaCspPlugin(apiBase: string | undefined): Plugin {
   let policy = ''
   return {
     name: 'atus-meta-csp',
     apply: 'build',
     configResolved(config) {
-      policy = metaContentSecurityPolicy(siteContentSecurityPolicy(config.publicDir))
+      const sitePolicy = siteContentSecurityPolicy(config.publicDir)
+      const apiError = crossOriginApiError(sitePolicy, apiBase)
+      if (apiError !== null) throw new Error(apiError)
+      policy = metaContentSecurityPolicy(sitePolicy)
     },
     transformIndexHtml: () => [
       {
@@ -101,7 +128,7 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     envDir,
-    plugins: [react(), metaCspPlugin(), previewStaticHeadersPlugin()],
+    plugins: [react(), metaCspPlugin(env.VITE_API_BASE_URL), previewStaticHeadersPlugin()],
     server: { proxy: apiProxy },
     preview: { proxy: apiProxy },
     test: {

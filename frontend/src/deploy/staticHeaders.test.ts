@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   HeadersFileError,
+  cspAllowsConnection,
   headersForPath,
   metaContentSecurityPolicy,
   parseHeadersFile,
@@ -94,6 +95,40 @@ describe('metaContentSecurityPolicy', () => {
         "default-src 'none'; frame-ancestors 'none'; script-src 'self'; report-uri /r; sandbox;",
       ),
     ).toBe("default-src 'none'; script-src 'self'")
+  })
+})
+
+describe('cspAllowsConnection', () => {
+  it("never lets 'self' cover an API on another origin", () => {
+    const policy = "default-src 'none'; connect-src 'self'"
+    expect(cspAllowsConnection(policy, 'https://api.example.org')).toBe(false)
+    expect(cspAllowsConnection(policy, 'http://localhost:8000')).toBe(false)
+  })
+
+  it('accepts the exact origin, the scheme or *, whatever the base path', () => {
+    const exact = "connect-src 'self' https://api.example.org/"
+    expect(cspAllowsConnection(exact, 'https://api.example.org')).toBe(true)
+    expect(cspAllowsConnection(exact, 'https://api.example.org/prefix')).toBe(true)
+    expect(cspAllowsConnection(exact, 'https://api.example.org:8443')).toBe(false)
+    expect(cspAllowsConnection(exact, 'http://api.example.org')).toBe(false)
+    expect(cspAllowsConnection("connect-src 'self' https:", 'https://x.example')).toBe(true)
+    expect(cspAllowsConnection("connect-src 'self' https:", 'http://x.example')).toBe(false)
+    expect(cspAllowsConnection('connect-src *', 'http://x.example')).toBe(true)
+  })
+
+  it('falls back to default-src, and allows anything when neither is set', () => {
+    expect(cspAllowsConnection("default-src 'self'", 'https://x.example')).toBe(false)
+    expect(cspAllowsConnection('default-src https://x.example', 'https://x.example')).toBe(true)
+    expect(cspAllowsConnection("script-src 'self'", 'https://x.example')).toBe(true)
+  })
+
+  it('does not guess at wildcard hosts or path-restricted sources', () => {
+    expect(
+      cspAllowsConnection('connect-src https://*.example.org', 'https://a.example.org'),
+    ).toBe(false)
+    expect(cspAllowsConnection('connect-src https://x.example/api/', 'https://x.example')).toBe(
+      false,
+    )
   })
 })
 

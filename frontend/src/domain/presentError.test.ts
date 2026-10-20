@@ -35,6 +35,9 @@ describe('presentError: every contract code is specific', () => {
     [503, 'data_not_loaded', 'service'],
     [503, 'database_unavailable', 'service'],
     [429, 'edge_daily_limit', 'paused'],
+    [404, 'not_found', 'app'],
+    [405, 'method_not_allowed', 'app'],
+    [415, 'unsupported_media_type', 'app'],
   ])('%i %s → %s', (status, code, kind) => {
     const presented = presentError(apiError(status, code))
     expect(presented.kind).toBe(kind)
@@ -42,6 +45,28 @@ describe('presentError: every contract code is specific', () => {
     // Operational states never show the server's internal wording as the message.
     expect(presented.message).not.toContain('server message')
     expect(presented.technical).toBe(`HTTP ${status} · ${code} · request req-9`)
+  })
+
+  it('a request outside the HTTP contract says "reload", never "not your request, try again"', () => {
+    // The retry policy treats these 4xx answers as final, so the copy must
+    // not offer a "Try again" that cannot help or blame the service.
+    for (const [status, code] of [
+      [404, 'not_found'],
+      [405, 'method_not_allowed'],
+      [415, 'unsupported_media_type'],
+    ] as const) {
+      const presented = presentError(apiError(status, code))
+      expect(presented.retryable).toBe(false)
+      expect(presented.message).not.toMatch(/not in your request/)
+      expect(presented.hint).toMatch(/Reload the page/)
+    }
+  })
+
+  it('an unknown activity code from the lexicon endpoint is a request problem', () => {
+    const presented = presentError(apiError(404, 'activity_not_found'))
+    expect(presented.kind).toBe('request')
+    expect(presented.heading).toBe('Unknown activity')
+    expect(presented.message).toBe('server message for activity_not_found')
   })
 
   it('no longer claims "the service is up" for a database outage', () => {

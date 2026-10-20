@@ -94,7 +94,10 @@ frontend/public/
     origin, which is how the public deployment works (one origin serves the
     SPA and proxies `/api`, ADR-011). `VITE_API_BASE_URL` opts into another
     origin and must be an absolute http(s) URL; any other value fails the
-    build. There is no fallback to a developer address (audit F24).
+    build. So does an origin that the site's CSP (`connect-src` in
+    `public/_headers`) does not allow: the built page enforces that policy
+    and could never reach the API. There is no fallback to a developer
+    address (audit F24).
   - **Errors.** An error status becomes `ApiError`
     (status/code/message/details/request id/`retryAfterSeconds`). With the
     API's envelope the code is the API's; an error page that is not the
@@ -198,11 +201,13 @@ contract and of the edge has its own public-facing copy:
 
 | Code | Presentation |
 | --- | --- |
-| `invalid_spec`, `validation_error`, `malformed_json`, `unknown_activity`, `unsupported_analysis`, `insufficient_data`, `payload_too_large` | the request is the problem: the API's own explanation, "Adjust analysis" |
+| `invalid_spec`, `validation_error`, `malformed_json`, `unknown_activity`, `activity_not_found`, `unsupported_analysis`, `insufficient_data`, `payload_too_large` | the request is the problem: the API's own explanation, "Adjust analysis" |
 | `rate_limited` | "Too many new analyses in a short time" with a `Retry-After` countdown on "Try again" (the ticking seconds are hidden from assistive technology; the message states the wait) |
 | `daily_capacity_reached` | today's capacity is used up (per visitor or for everyone, from `details.scope`); resets at 00:00 UTC, shown in local time |
 | `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); no more "the service is up" |
 | `database_paused`, `capacity_paused`, `edge_daily_limit` | **full-page** "paused" state: free hosting quota used up, when it resets, what still works (starter examples and earlier analyses), a link home |
+| `not_found`, `method_not_allowed`, `unsupported_media_type` | a request outside the HTTP contract, which the page never sends on purpose: most likely a page and a service from different versions, so the copy says to reload the page; no "Try again" (the retry policy treats these as final) |
+| `forbidden_origin` | the service accepts requests only through the site itself; no "Try again" |
 | incompatible API | **full-page** state with a reload button |
 
 **Boot fallback** (F65). `index.html` ships a shell inside `#root` that React
@@ -401,7 +406,7 @@ snapshot's), else the version the page's metadata reported — the legacy
 ## Testing
 
 ```bash
-npm test          # 337 unit/component tests (Vitest + Testing Library + MSW)
+npm test          # 349 unit/component tests (Vitest + Testing Library + MSW)
 npm run test:e2e  # 62 Playwright runs: 34 Chromium desktop + 2 mobile,
                   # and the 13 @core journeys again in Firefox and in WebKit
 npx playwright install firefox webkit   # once, for the cross-browser projects
@@ -459,7 +464,12 @@ npx playwright install firefox webkit   # once, for the cross-browser projects
 - Cross-browser: tests tagged `@core` — the first-time-user estimate, the
   comparison, share links (copy, refresh, invalid), the 2020 gap and chart
   keyboard access, the exports, the waking notice, and the headers/CSP
-  journey — also run in Firefox and WebKit (`playwright.config.ts`).
+  journey — also run in Firefox and WebKit (`playwright.config.ts`). The
+  Firefox runs have not passed anywhere yet: on the development machine
+  (macOS 27) Playwright's Firefox build exits at launch with "Could not find
+  profile folder", inside and outside the tool sandbox and with a persistent
+  profile, so the first CI run on Linux gives the first Firefox result.
+  Chromium (36 runs) and WebKit (13) pass.
 
 E2E ports default to 4173 (frontend) and 8137 (backend);
 `E2E_FRONTEND_PORT` / `E2E_BACKEND_PORT` override them,
@@ -492,12 +502,15 @@ documents both optional settings; use `.env.local` for machine-specific
 development overrides. To call an API on another origin instead, set
 `VITE_API_BASE_URL` to its absolute URL and list the frontend origin in the
 API's `ATUS_API_CORS_ORIGINS` — do not work around CORS by disabling browser
-security.
+security. That works under `npm run dev`, which has no CSP; a build for
+another origin also needs that origin in `connect-src` in `public/_headers`,
+or the build fails (and `npm run check:bundle` rejects such a policy for
+deployment).
 
 ## Production build and deployment shape
 
 `npm run build` type-checks and emits static assets into `frontend/dist/`
-(Oct 2026, Phase 5 with exports: 390.0 kB JS / 119.9 kB gzip, 15.8 kB CSS /
+(Oct 2026, Phase 5 with exports: 390.4 kB JS / 120.0 kB gzip, 15.8 kB CSS /
 4.0 kB gzip — one chunk, no SSR, no server runtime; Sept 2026, Phase 4:
 365.0 / 110.8 kB JS). The deployment (ADR-011) serves `dist/` as Cloudflare
 Workers static assets on one origin, whose Worker proxies `/api/*` to the
@@ -506,7 +519,9 @@ API — so the build calls `/api/v1` on its own origin:
 - **Configuration.** Builds read `VITE_*` variables from the process
   environment only; no `.env` file (not even `.env.local`) reaches a
   deployable bundle. A `VITE_API_BASE_URL` that is not an absolute http(s)
-  URL fails the build.
+  URL fails the build, as does an absolute one whose origin the CSP's
+  `connect-src` does not list (with the shipped `'self'`, any other origin):
+  the built page enforces that policy, so it could never reach the API.
 - **Response headers: `public/_headers`.** The static host applies this file
   (copied into `dist/`) to every static file; it does not apply to `/api`,
   whose headers the edge Worker sets. It is the single source of the site's

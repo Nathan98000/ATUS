@@ -126,6 +126,7 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         adjustable: true,
       }
     case 'unknown_activity':
+    case 'activity_not_found':
       return {
         ...common,
         kind: 'request',
@@ -297,6 +298,21 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         heading: 'This request was refused',
         message:
           'The analysis service only accepts requests sent through ATUS Explorer’s own site.',
+      }
+    // The API and the edge answer these when a request does not fit the HTTP
+    // contract at all (an unknown path, method or content type). The page
+    // only sends contract requests, so the likely cause is a page and a
+    // service from different versions; repeating the request cannot help.
+    case 'not_found':
+    case 'method_not_allowed':
+    case 'unsupported_media_type':
+      return {
+        ...common,
+        kind: 'app',
+        heading: 'The analysis service did not recognise this request',
+        message:
+          'This page sent a request the service does not handle. That usually means the page is out of date after an update of the service.',
+        hint: 'Reload the page. If that does not help, the problem is in ATUS Explorer, not in your analysis.',
       }
     default:
       return {
