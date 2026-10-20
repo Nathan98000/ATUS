@@ -81,6 +81,12 @@ class TestMediaType:
         assert response.json()["error"]["code"] == "unsupported_media_type"
         assert fake_db.transactions == []
 
+    def test_bodiless_non_post_methods_reach_the_router(self, build):
+        client, _ = build()
+        response = client.delete("/api/v1/meta")
+        assert response.status_code == 405
+        assert response.json()["error"]["code"] == "method_not_allowed"
+
     def test_json_with_charset_is_accepted(self, build):
         client, _ = build()
         response = client.post(
@@ -301,6 +307,16 @@ class TestHttpEdgeCases:
             assert response.status_code == 200, path
             assert response.content == b""
             assert int(response.headers["content-length"]) > 0
+
+    def test_logged_path_cannot_forge_log_lines(self, build, caplog):
+        import logging
+
+        client, _ = build()
+        with caplog.at_level(logging.INFO, logger="atus.api"):
+            client.get("/api/v1/x%0Aforged-line")
+        lines = [r.getMessage() for r in caplog.records if "request_id=" in r.getMessage()]
+        assert lines and all("\n" not in line for line in lines)
+        assert any("x%0Aforged-line" in line for line in lines)
 
     def test_405_keeps_the_allow_header(self, build):
         client, _ = build()

@@ -45,6 +45,26 @@
        }
       }
      },
+     "413": {
+      "description": "Request body too large (payload_too_large)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "415": {
+      "description": "Body is not JSON (unsupported_media_type)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "422": {
       "description": "Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme)",
       "content": {
@@ -55,8 +75,18 @@
        }
       }
      },
+     "429": {
+      "description": "Per-client rate limit (rate_limited); see Retry-After",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "503": {
-      "description": "Analytical database unavailable",
+      "description": "Temporarily unable to compute: overloaded, analysis_timeout, daily_capacity_reached, database_unavailable, database_paused, data_not_loaded; see Retry-After",
       "content": {
        "application/json": {
         "schema": {
@@ -107,6 +137,26 @@
        }
       }
      },
+     "413": {
+      "description": "Request body too large (payload_too_large)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "415": {
+      "description": "Body is not JSON (unsupported_media_type)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "422": {
       "description": "Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme)",
       "content": {
@@ -117,8 +167,18 @@
        }
       }
      },
+     "429": {
+      "description": "Per-client rate limit (rate_limited); see Retry-After",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "503": {
-      "description": "Analytical database unavailable",
+      "description": "Temporarily unable to compute: overloaded, analysis_timeout, daily_capacity_reached, database_unavailable, database_paused, data_not_loaded; see Retry-After",
       "content": {
        "application/json": {
         "schema": {
@@ -169,6 +229,26 @@
        }
       }
      },
+     "413": {
+      "description": "Request body too large (payload_too_large)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "415": {
+      "description": "Body is not JSON (unsupported_media_type)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "422": {
       "description": "Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme)",
       "content": {
@@ -179,8 +259,18 @@
        }
       }
      },
+     "429": {
+      "description": "Per-client rate limit (rate_limited); see Retry-After",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "503": {
-      "description": "Analytical database unavailable",
+      "description": "Temporarily unable to compute: overloaded, analysis_timeout, daily_capacity_reached, database_unavailable, database_paused, data_not_loaded; see Retry-After",
       "content": {
        "application/json": {
         "schema": {
@@ -405,7 +495,7 @@
      "system"
     ],
     "summary": "Liveness",
-    "description": "Answers whether the API process is running. No dependencies touched. Async on purpose: it bypasses the worker threadpool, so liveness stays instant even when every worker thread is busy with long analyses.",
+    "description": "Answers whether the API process is running. No dependencies touched (no database, no edge authentication; HEAD works too). Async on purpose: it bypasses the worker threadpool, so liveness stays instant even when every worker thread is busy with long analyses.",
     "operationId": "health_health_get",
     "responses": {
      "200": {
@@ -700,7 +790,8 @@
      "preset": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "maxLength": 64
        },
        {
         "type": "null"

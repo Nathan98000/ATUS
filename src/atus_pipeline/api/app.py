@@ -101,7 +101,7 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
         try:
             yield
         finally:
-            cancelled = database.cancel_active()
+            cancelled = await anyio.to_thread.run_sync(database.cancel_active)
             if cancelled:
                 log.warning("shutdown: cancelled %d running queries", cancelled)
             await app.state.runner.shutdown()

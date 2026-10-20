@@ -241,6 +241,37 @@ class TestSingleFlight:
         assert client.post(ESTIMATE, json=body(2021)).headers["X-Cache"] == "miss"
 
 
+class TestConnectionLifetime:
+    def test_transaction_ends_before_the_response_starts(self, stub_engine, tmp_path):
+        """The pool connection goes back before any response byte is sent,
+        so a slow-reading client cannot hold it (audit I10)."""
+        from contextlib import contextmanager
+
+        events: list[str] = []
+
+        class RecordingDatabase(FakeDatabase):
+            @contextmanager
+            def transaction(self, kind):
+                with super().transaction(kind) as conn:
+                    yield conn
+                events.append(f"end:{kind}")
+
+        stub_engine.estimate_behavior = lambda spec: known_estimate_result()
+        app = make_app(make_settings(tmp_path), stub_engine, RecordingDatabase())
+
+        async def recording_app(scope, receive, send):
+            async def send_and_record(message):
+                if message["type"] == "http.response.start":
+                    events.append("response")
+                await send(message)
+
+            await app(scope, receive, send_and_record)
+
+        with TestClient(recording_app) as client:
+            assert client.post(ESTIMATE, json=body()).status_code == 200
+        assert events == ["end:metadata", "end:analysis", "response"]
+
+
 class TestDataNotLoaded:
     def test_unloaded_database_is_503_without_operator_hints(self, build):
         client, _ = build(fake_db=FakeDatabase(data_version=versions.UNLOADED))

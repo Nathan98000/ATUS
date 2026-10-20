@@ -111,6 +111,7 @@ class _DisconnectWatcher:
             self._note_disconnect()
         elif message["type"] == "http.request" and not message.get("more_body", False):
             self._task = asyncio.ensure_future(self._watch())
+            self._task.add_done_callback(_consume_result)
         return message
 
     async def _watch(self) -> Message:
@@ -130,6 +131,18 @@ class _DisconnectWatcher:
     def stop(self) -> None:
         if self._task is not None and not self._task.done():
             self._task.cancel()
+
+
+def _consume_result(task: asyncio.Task) -> None:
+    if not task.cancelled():
+        task.exception()  # retrieved: a failed watch is not worth a warning
+
+
+def loggable_path(scope: Scope) -> str:
+    """The request path as received (still percent-encoded, so a decoded
+    newline cannot forge a log line), bounded in length."""
+    raw = scope.get("raw_path") or scope["path"].encode("utf-8", "replace")
+    return raw.decode("ascii", "backslashreplace")[:200]
 
 
 class RequestContextMiddleware:
@@ -169,6 +182,7 @@ class RequestContextMiddleware:
 
         method = scope["method"]
         path = scope["path"]
+        logged_path = loggable_path(scope)
         head = method == "HEAD"
         if head:  # HEAD is GET without the body, on every GET route
             scope = {**scope, "method": "GET"}
@@ -200,7 +214,7 @@ class RequestContextMiddleware:
             # The catch-all handler logs the traceback (once) and answers 500.
             log.error(
                 "request_id=%s %s %s -> 500 in %.1fms (unhandled)",
-                request_id, method, path, (time.perf_counter() - started) * 1000,
+                request_id, method, logged_path, (time.perf_counter() - started) * 1000,
             )
             raise
         finally:
@@ -208,7 +222,7 @@ class RequestContextMiddleware:
                 watcher.stop()
         log.info(
             "request_id=%s %s %s -> %s in %.1fms cache=%s%s",
-            request_id, method, path, status_code if status_code is not None else "-",
+            request_id, method, logged_path, status_code if status_code is not None else "-",
             (time.perf_counter() - started) * 1000, cache_status,
             " client_disconnected=1" if watcher is not None and watcher.disconnected else "",
         )
@@ -254,7 +268,8 @@ class GuardMiddleware:
                     )
                     return
 
-        if method in BODY_METHODS:
+        has_body = declared not in ("", "0") or "transfer-encoding" in headers
+        if method == "POST" or (method in BODY_METHODS and has_body):
             media_type = headers.get("content-type", "").split(";", 1)[0].strip().lower()
             if media_type != "application/json":
                 await self._reject(UnsupportedMediaTypeError(), scope, receive, send)
@@ -286,7 +301,7 @@ class GuardMiddleware:
     async def _reject(
         error: ApiError, scope: Scope, receive: Receive, send: Send, *, close: bool = False
     ) -> None:
-        log.info("rejected %s %s: %s", scope["method"], scope["path"], error.code)
+        log.info("rejected %s %s: %s", scope["method"], loggable_path(scope), error.code)
         response = error.to_response({"Connection": "close"} if close else None)
         await response(scope, receive, send)
 
