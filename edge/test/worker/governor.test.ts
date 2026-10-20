@@ -93,6 +93,42 @@ async function prefixCount(prefix = PREFIX, dayName = TODAY): Promise<number> {
   return rows[0]?.count ?? 0
 }
 
+/**
+ * Run `action` and count the SQLite rows the governor read and wrote (as
+ * Cloudflare bills them: index rows included), from its statements' cursors.
+ */
+async function rowsDuring(
+  action: () => Promise<unknown>,
+): Promise<{ read: number; written: number; statements: string[] }> {
+  const cursors: {
+    statement: string
+    cursor: SqlStorageCursor<Record<string, SqlStorageValue>>
+  }[] = []
+  await runInDurableObject(governor(), (instance: Governor) => {
+    const target = instance as unknown as { sql: SqlStorage }
+    const real = target.sql
+    target.sql = {
+      exec: (statement: string, ...bindings: SqlStorageValue[]) => {
+        const cursor = real.exec(statement, ...bindings)
+        cursors.push({ statement: statement.trim(), cursor })
+        return cursor
+      },
+    } as unknown as SqlStorage
+  })
+  try {
+    await action()
+  } finally {
+    await runInDurableObject(governor(), (instance: Governor, state) => {
+      ;(instance as unknown as { sql: SqlStorage }).sql = state.storage.sql
+    })
+  }
+  return {
+    read: cursors.reduce((sum, { cursor }) => sum + cursor.rowsRead, 0),
+    written: cursors.reduce((sum, { cursor }) => sum + cursor.rowsWritten, 0),
+    statements: cursors.map(({ statement }) => statement),
+  }
+}
+
 async function storedState(): Promise<string> {
   const rows = await governorSql<{ value: string }>('SELECT value FROM state WHERE id = 1')
   return rows[0]?.value ?? ''
@@ -222,27 +258,35 @@ describe('daily counts', () => {
       PREFIX,
     )
     await governorSql('INSERT INTO days (day, admitted) VALUES (?, 600)', TODAY)
-    const statements: string[] = []
-    await runInDurableObject(governor(), (instance: Governor) => {
-      const target = instance as unknown as { sql: SqlStorage }
-      const real = target.sql
-      target.sql = {
-        exec: (query: string, ...bindings: SqlStorageValue[]) => {
-          statements.push(query)
-          return real.exec(query, ...bindings)
-        },
-      } as unknown as SqlStorage
-    })
-    try {
-      await denied(PREFIX)
-      await denied(OTHER)
-    } finally {
-      await runInDurableObject(governor(), (instance: Governor, state) => {
-        ;(instance as unknown as { sql: SqlStorage }).sql = state.storage.sql
-      })
+    const prefixDenial = await rowsDuring(() => denied(PREFIX))
+    const globalDenial = await rowsDuring(() => denied(OTHER))
+    for (const usage of [prefixDenial, globalDenial]) {
+      expect(usage.written).toBe(0)
+      expect(usage.statements.every((statement) => /^SELECT/i.test(statement))).toBe(true)
     }
-    expect(statements.length).toBeGreaterThan(0)
-    for (const statement of statements) expect(statement.trim()).toMatch(/^SELECT/i)
+    // A flood of denials reads at most two rows each (5M rows read per day on Workers Free).
+    expect(prefixDenial.read).toBeLessThanOrEqual(1)
+    expect(globalDenial.read).toBeLessThanOrEqual(2)
+  })
+})
+
+describe('Durable Object row budget (Workers Free: 100k rows written, 5M read per day)', () => {
+  it('writes at most 8 rows to admit and 4 to settle (index rows included)', async () => {
+    const clock = controlClock(T)
+    let lease = ''
+    const firstAdmit = await rowsDuring(async () => {
+      lease = await admitted()
+    })
+    const secondAdmit = await rowsDuring(() => admitted())
+    clock.advance(3 * S)
+    const settleComputed = await rowsDuring(() => settle(lease, 'computed', 1000))
+    const leases = await governorSql<{ id: string }>('SELECT id FROM leases')
+    const settleRefund = await rowsDuring(() => settle(leases[0]!.id, 'not_reached'))
+    expect(firstAdmit.written).toBeLessThanOrEqual(8)
+    expect(secondAdmit.written).toBeLessThanOrEqual(8)
+    expect(settleComputed.written).toBeLessThanOrEqual(4)
+    expect(settleRefund.written).toBeLessThanOrEqual(4)
+    expect(firstAdmit.read + secondAdmit.read).toBeLessThanOrEqual(30)
   })
 })
 

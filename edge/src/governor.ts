@@ -618,12 +618,13 @@ export class Governor extends DurableObject<Env> {
     if (this.neonConfigured() && now - state.lastAdmitAt <= NEON_POLL_INTERVAL_MS) {
       times.push(Math.max(now, state.lastPollAt + NEON_POLL_INTERVAL_MS))
     }
+    // EXISTS reads at most one row per table (count(*) would read them all).
     const pending = this.sql
       .exec<{ n: number }>(
-        'SELECT (SELECT count(*) FROM prefixes) + (SELECT count(*) FROM leases) AS n',
+        'SELECT EXISTS (SELECT 1 FROM prefixes) OR EXISTS (SELECT 1 FROM leases) AS n',
       )
       .one()
-    if (pending.n > 0) times.push(nextUtcMidnight(now))
+    if (pending.n) times.push(nextUtcMidnight(now))
     const wanted = times.length > 0 ? Math.min(...times) : null
     const current = state.alarmAt !== null && state.alarmAt >= now ? state.alarmAt : null
     if (wanted === null || (current !== null && current <= wanted)) {
