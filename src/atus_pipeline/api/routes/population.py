@@ -21,7 +21,7 @@ router = APIRouter(prefix="/population", tags=["population"])
         "from what filtering actually accepts."
     ),
 )
-def population_metadata(response: Response) -> PopulationMetadataResponse:
+async def population_metadata(response: Response) -> PopulationMetadataResponse:
     response.headers["Cache-Control"] = "public, max-age=300"
     return PopulationMetadataResponse(
         dimensions=[PopulationDimension(**d) for d in describe_dimensions()],

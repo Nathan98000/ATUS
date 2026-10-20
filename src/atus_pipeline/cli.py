@@ -175,21 +175,24 @@ def _migrations_dir():
     return candidate
 
 
-@cli.command(help="Run the read-only analytical HTTP API (Phase 3).")
-@click.option("--host", default="127.0.0.1", show_default=True)
-@click.option("--port", default=8000, show_default=True, type=int)
+@cli.command(help="Run the read-only analytical HTTP API (one uvicorn process).")
+@click.option(
+    "--host", default=None,
+    help="Bind address. Default: 0.0.0.0 when ATUS_ENV=production, else 127.0.0.1.",
+)
+@click.option("--port", default=None, type=int, help="Default: $PORT, else 8000.")
 @click.option("--reload", "reload_", is_flag=True, help="Auto-reload on code changes (dev).")
-def api(host: str, port: int, reload_: bool) -> None:
-    import uvicorn
+def api(host: str | None, port: int | None, reload_: bool) -> None:
+    from .api import serve
+    from .config import ConfigError, check_api_settings
 
-    _settings()  # fail fast on malformed configuration
-    uvicorn.run(
-        "atus_pipeline.api.app:create_app",
-        factory=True,
-        host=host,
-        port=port,
-        reload=reload_,
-    )
+    try:
+        settings = load_settings()  # fail fast on malformed configuration
+        check_api_settings(settings)
+        serve.uvicorn_options(settings, host=host, port=port, reload=reload_)
+    except ConfigError as exc:
+        raise click.ClickException(f"configuration error: {exc}") from None
+    serve.run(settings, host=host, port=port, reload=reload_)
 
 
 # Phase 2: analytical engine commands (kept in their own module; imported at

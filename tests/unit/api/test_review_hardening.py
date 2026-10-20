@@ -9,9 +9,8 @@ import psycopg
 from fastapi.testclient import TestClient
 
 from atus_pipeline.analytics.results import ComparisonResult, EstimateValue
-from atus_pipeline.api.app import create_app
-from atus_pipeline.api.dependencies import get_cache, get_connection, get_data_version
-from atus_pipeline.config import Settings
+from atus_pipeline.api.dependencies import get_cache, get_database
+from tests.unit.api.conftest import FakeDatabase, make_app, make_settings
 from tests.unit.api.test_contract import known_estimate_result
 
 
@@ -62,14 +61,14 @@ class TestCacheDegradation:
         assert response.json()["estimate"]["value"] == 75.0
 
     def test_data_version_change_mid_request_bypasses_the_cache(
-        self, app, client, stub_engine
+        self, app, client, stub_engine, fake_db
     ):
         """If `atus load` finishes while a result is being computed, the result
         must not be stored under the pre-reload version key."""
         stub_engine.estimate_behavior = lambda spec: known_estimate_result()
         # The recheck (via the connection) sees run1; pretend the request
         # started when the version was run0.
-        app.dependency_overrides[get_data_version] = lambda: "0325:run0"
+        fake_db.data_version = "0325:run0"
         first = client.post("/api/v1/analysis/estimate", json=_estimate_body())
         assert first.headers["X-Cache"] == "bypass"
         second = client.post("/api/v1/analysis/estimate", json=_estimate_body())
@@ -142,19 +141,8 @@ class TestErrorEnvelopeCoverage:
 
 
 def _cors_app(stub_engine, tmp_path, origins):
-    settings = Settings(
-        database_url="postgresql://nobody:nobody@127.0.0.1:1/none",
-        data_dir=tmp_path, release="0325", log_level="WARNING",
-        api_cors_origins=origins,
-    )
-    from atus_pipeline.api.dependencies import get_engine
-    from tests.unit.api.conftest import FakeVersionConnection
-
-    application = create_app(settings, open_pool=False)
-    application.dependency_overrides[get_engine] = lambda: stub_engine
-    application.dependency_overrides[get_data_version] = lambda: "0325:run1"
-    application.dependency_overrides[get_connection] = FakeVersionConnection
-    return application
+    settings = make_settings(tmp_path, api_cors_origins=origins)
+    return make_app(settings, stub_engine, FakeDatabase())
 
 
 class TestCORS:
@@ -211,7 +199,7 @@ class _ReadyConnBase:
 
 class TestReadinessFailurePaths:
     def _client_with_conn(self, app, conn_factory):
-        app.dependency_overrides[get_connection] = conn_factory
+        app.dependency_overrides[get_database] = lambda: FakeDatabase(conn_factory)
         return TestClient(app, raise_server_exceptions=False)
 
     def test_schema_not_initialized(self, app):

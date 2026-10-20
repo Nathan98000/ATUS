@@ -1,18 +1,33 @@
-"""HTTP error model: one consistent envelope, explicit domain-exception mapping.
+"""HTTP error model: one consistent envelope, explicit exception mapping.
 
 Every non-2xx response has the shape
 
     {"error": {"code": "...", "message": "...", "details": {...} | null}}
 
 with a stable machine-readable ``code``. Phase 2 domain errors map to 422
-(the request is well-formed JSON but analytically invalid), database
-unavailability maps to 503, malformed JSON to 400, and anything unexpected is
-sanitized to a 500 whose details are logged server-side only.
+(the request is well-formed JSON but analytically invalid), malformed JSON to
+400, and anything unexpected is sanitized to a 500 whose details are logged
+server-side only (once, with the request id).
+
+Phase 5 adds the protection and capacity codes (ADR-012). Each is an
+:class:`ApiError` subclass carrying its status, code and public message;
+temporary conditions also carry ``Retry-After`` (header, and
+``details.retry_after_seconds``) and a ``details.scope`` naming whose limit
+was hit (``client``, ``global``, ``daily`` or ``monthly``). Database errors
+are classified by what the client should do about them, not by driver class:
+
+* the query hit the statement timeout or the request deadline -> 503
+  ``analysis_timeout`` (never cached);
+* lock waits, deadlocks, out-of-resources (SQLSTATE class 53, e.g. a full
+  ``/dev/shm``), a pool with every connection busy -> 503 ``overloaded``;
+* Neon's quota/suspension refusals -> 503 ``database_paused``;
+* everything else about reaching the server -> 503 ``database_unavailable``.
 """
 
 from __future__ import annotations
 
 import logging
+import math
 
 import psycopg
 from fastapi import FastAPI, Request
@@ -28,6 +43,7 @@ from ..analytics.errors import (
     UnknownActivityError,
     UnsupportedAnalysisError,
 )
+from ..logging_setup import mark_logged
 
 log = logging.getLogger("atus.api")
 
@@ -40,18 +56,193 @@ class ActivityNotFoundError(Exception):
         super().__init__(f"Activity code {code!r} does not exist in the 2003-25 lexicon.")
 
 
-class DatabaseUnavailableError(Exception):
+# --------------------------------------------------------------------------- #
+# API errors with a fixed status, code and public message                      #
+# --------------------------------------------------------------------------- #
+
+
+class ApiError(Exception):
+    """An error with a fixed HTTP status, code and client-facing message.
+
+    The constructor's positional ``detail`` is for the server log only; the
+    client always sees ``message`` (the class default unless overridden).
+    """
+
+    status: int = 500
+    code: str = "internal_error"
+    message: str = "An unexpected internal error occurred."
+    retry_after: int | None = None
+    scope: str | None = None
+
+    def __init__(
+        self,
+        detail: str | None = None,
+        *,
+        message: str | None = None,
+        retry_after: float | None = None,
+        scope: str | None = None,
+        details: dict | None = None,
+    ):
+        super().__init__(detail or message or self.message)
+        if message is not None:
+            self.message = message
+        if retry_after is not None:
+            self.retry_after = max(1, math.ceil(retry_after))
+        if scope is not None:
+            self.scope = scope
+        self.extra_details = details
+
+    def response_details(self) -> dict | None:
+        details = dict(self.extra_details or {})
+        if self.retry_after is not None:
+            details["retry_after_seconds"] = self.retry_after
+        if self.scope is not None:
+            details["scope"] = self.scope
+        return details or None
+
+    def response_headers(self) -> dict[str, str] | None:
+        if self.retry_after is None:
+            return None
+        return {"Retry-After": str(self.retry_after)}
+
+    def to_response(self, headers: dict[str, str] | None = None) -> JSONResponse:
+        merged = {**(self.response_headers() or {}), **(headers or {})}
+        return error_response(
+            self.status, self.code, self.message, self.response_details(), merged or None
+        )
+
+
+class ForbiddenOriginError(ApiError):
+    """A request that did not come through the edge (missing/wrong secret)."""
+
+    status, code = 403, "forbidden_origin"
+    message = "This API is only served through its public site."
+
+
+class PayloadTooLargeError(ApiError):
+    status, code = 413, "payload_too_large"
+    message = "The request body is too large."
+
+
+class UnsupportedMediaTypeError(ApiError):
+    status, code = 415, "unsupported_media_type"
+    message = "Request bodies must be JSON (Content-Type: application/json)."
+
+
+class RateLimitedError(ApiError):
+    status, code, scope = 429, "rate_limited", "client"
+    message = "Too many requests from this client. Retry after the indicated delay."
+
+
+class OverloadedError(ApiError):
+    status, code, scope, retry_after = 503, "overloaded", "global", 10
+    message = "The service is busy with other analyses. Retry shortly."
+
+
+class AnalysisTimeoutError(ApiError):
+    status, code, scope, retry_after = 503, "analysis_timeout", "global", 60
+    message = (
+        "The analysis took too long and was stopped. Retry later, or narrow the "
+        "request (fewer years, or variance 'none')."
+    )
+
+
+class DailyCapacityReachedError(ApiError):
+    status, code, scope = 503, "daily_capacity_reached", "daily"
+    message = (
+        "Today's capacity for new analyses has been used. Previously computed "
+        "results remain available; new analyses resume at 00:00 UTC."
+    )
+
+
+class DataNotLoadedError(ApiError):
+    status, code, retry_after = 503, "data_not_loaded", 300
+    message = "The analytical data is not available right now."
+
+
+class DatabasePausedError(ApiError):
+    status, code, scope, retry_after = 503, "database_paused", "monthly", 3600
+    message = (
+        "The analytical database is paused until its free usage quota resets. "
+        "Previously computed results remain available."
+    )
+
+
+class DatabaseUnavailableError(ApiError):
     """The analytical database cannot be reached (503)."""
 
+    status, code, retry_after = 503, "database_unavailable", 5
+    message = "The analytical database is currently unavailable. Try again shortly."
 
-# AnalyticsError subclasses -> (HTTP status, machine-readable code). All are
-# client-fixable analytical problems, hence 422 (well-formed but unprocessable).
-_DOMAIN_MAP: dict[type[AnalyticsError], tuple[int, str]] = {
-    InvalidSpecError: (422, "invalid_spec"),
-    UnknownActivityError: (422, "unknown_activity"),
-    UnsupportedAnalysisError: (422, "unsupported_analysis"),
-    InsufficientDataError: (422, "insufficient_data"),
-}
+
+class SchemaNotInitializedError(ApiError):
+    status, code, retry_after = 503, "schema_not_initialized", 300
+    message = "The analytical database schema has not been initialized."
+
+
+# --------------------------------------------------------------------------- #
+# database error classification                                                #
+# --------------------------------------------------------------------------- #
+
+# Neon's refusals when a project exhausts a quota or its endpoint is disabled.
+# Neon does not document these strings; they come from its proxy's
+# user-facing messages (neondatabase/neon, proxy/src/control_plane/messages.rs:
+# "endpoint is temporarily unavailable. Check your quotas and/or contact our
+# support.", "endpoint is disabled") and from client reports of the control
+# plane's text ("Your account or project has exceeded the compute time
+# quota", "Your project has exceeded the data transfer quota"). Matching is
+# deliberately narrow and case-insensitive: an unmatched refusal is still a
+# 503 (database_unavailable), only with a less specific message.
+NEON_PAUSED_MARKERS = (
+    "exceeded the compute time quota",
+    "exceeded the data transfer quota",
+    "check your quotas",
+    "endpoint is disabled",
+)
+
+# SQLSTATEs meaning "the server is too busy for this right now".
+_OVERLOAD_SQLSTATES = ("55P03", "40P01")  # lock_not_available, deadlock_detected
+_OVERLOAD_SQLSTATE_CLASSES = ("53",)      # insufficient resources (disk/shm, memory, slots)
+
+
+def is_neon_paused(text: str) -> bool:
+    lowered = text.lower()
+    return any(marker in lowered for marker in NEON_PAUSED_MARKERS)
+
+
+def classify_connect_failure(exc: BaseException) -> ApiError:
+    """The client-facing error for a failure to open a connection."""
+    if is_neon_paused(str(exc)):
+        return DatabasePausedError(f"connect refused by provider: {type(exc).__name__}")
+    sqlstate = getattr(exc, "sqlstate", None) or ""
+    if sqlstate.startswith(_OVERLOAD_SQLSTATE_CLASSES):  # e.g. too many connections
+        return OverloadedError(f"connect refused: {sqlstate}")
+    return DatabaseUnavailableError(f"connect failed: {type(exc).__name__}")
+
+
+def classify_database_error(exc: BaseException, *, analysis: bool) -> ApiError | None:
+    """Map a driver/server error to an :class:`ApiError`; ``None`` means it is
+    not an availability or capacity problem (a bug: answer 500)."""
+    if isinstance(exc, PoolTimeout):
+        return OverloadedError("pool timeout")
+    if isinstance(exc, psycopg.errors.QueryCanceled):
+        # statement_timeout, the request deadline, or a shutdown cancel
+        return AnalysisTimeoutError("query canceled") if analysis else OverloadedError(
+            "metadata query canceled"
+        )
+    sqlstate = getattr(exc, "sqlstate", None) or ""
+    if sqlstate in _OVERLOAD_SQLSTATES or sqlstate.startswith(_OVERLOAD_SQLSTATE_CLASSES):
+        return OverloadedError(f"database refused for capacity: {sqlstate}")
+    if is_neon_paused(str(exc)):
+        return DatabasePausedError(f"provider refusal: {type(exc).__name__}")
+    if isinstance(exc, psycopg.OperationalError | psycopg.InterfaceError):
+        return DatabaseUnavailableError(f"{type(exc).__name__} {sqlstate}".strip())
+    return None
+
+
+# --------------------------------------------------------------------------- #
+# rendering                                                                    #
+# --------------------------------------------------------------------------- #
 
 
 def error_response(
@@ -65,26 +256,60 @@ def error_response(
     )
 
 
+# AnalyticsError subclasses -> (HTTP status, machine-readable code). All are
+# client-fixable analytical problems, hence 422 (well-formed but unprocessable).
+_DOMAIN_MAP: dict[type[AnalyticsError], tuple[int, str]] = {
+    InvalidSpecError: (422, "invalid_spec"),
+    UnknownActivityError: (422, "unknown_activity"),
+    UnsupportedAnalysisError: (422, "unsupported_analysis"),
+    InsufficientDataError: (422, "insufficient_data"),
+}
+
 _HTTP_STATUS_CODES = {404: "not_found", 405: "method_not_allowed"}
 
-
-def _outermost_headers(request: Request) -> dict[str, str]:
-    """Headers for responses produced at the outermost error layer, which the
-    request-ID and CORS middleware never see (unexpected 500s): re-attach the
-    request ID and, for allowed origins, the CORS header so browser clients
-    can still read the error."""
-    headers = {}
-    request_id = getattr(request.state, "request_id", None)
-    if request_id:
-        headers["X-Request-ID"] = request_id
-    origin = request.headers.get("origin")
-    settings = getattr(request.app.state, "settings", None)
-    if origin and settings and origin in settings.api_cors_origins:
-        headers["Access-Control-Allow-Origin"] = origin
-    return headers
+# A 422 lists at most this many problems, each with bounded strings: request
+# keys are attacker-chosen, and an uncapped list turned a 930 KB body into a
+# 9.7 MB response (audit F04).
+MAX_VALIDATION_ERRORS = 20
+_MAX_LOCATION_PART = 64
+_MAX_MESSAGE = 200
 
 
-def register_exception_handlers(app: FastAPI) -> None:
+def truncate(text: str, limit: int) -> str:
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def validation_details(raw_errors: list[dict]) -> dict:
+    errors = [
+        {
+            "location": [truncate(str(part), _MAX_LOCATION_PART) for part in e.get("loc", ())],
+            "message": truncate(str(e.get("msg", "")), _MAX_MESSAGE),
+            "type": truncate(str(e.get("type", "")), _MAX_LOCATION_PART),
+        }
+        for e in raw_errors[:MAX_VALIDATION_ERRORS]
+    ]
+    details: dict = {"errors": errors}
+    if len(raw_errors) > MAX_VALIDATION_ERRORS:
+        details["truncated"] = True
+        details["error_count"] = len(raw_errors)
+    return details
+
+
+def _is_analysis_request(request: Request) -> bool:
+    return request.url.path.startswith("/api/v1/analysis/")
+
+
+def register_exception_handlers(app: FastAPI, outermost_headers) -> None:
+    """Install the envelope handlers. ``outermost_headers(request)`` supplies
+    the headers a 500 needs, because the catch-all runs outside every
+    middleware."""
+
+    @app.exception_handler(ApiError)
+    async def handle_api_error(request: Request, exc: ApiError) -> JSONResponse:
+        level = logging.WARNING if exc.status >= 500 else logging.INFO
+        log.log(level, "%s on %s %s: %s", exc.code, request.method, request.url.path, exc)
+        return exc.to_response()
+
     @app.exception_handler(AnalyticsError)
     async def handle_domain_error(request: Request, exc: AnalyticsError) -> JSONResponse:
         for exc_type, (status, code) in _DOMAIN_MAP.items():
@@ -105,57 +330,57 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def handle_validation_error(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
-        errors = [
-            {
-                "location": [str(part) for part in e.get("loc", ())],
-                "message": e.get("msg", ""),
-                "type": e.get("type", ""),
-            }
-            for e in exc.errors()
-        ]
-        if any(e["type"].startswith("json_") for e in errors):
+        raw = list(exc.errors())
+        details = validation_details(raw)
+        if any(str(e.get("type", "")).startswith("json_") for e in raw):
             return error_response(
-                400, "malformed_json", "The request body is not valid JSON.",
-                details={"errors": errors},
+                400, "malformed_json", "The request body is not valid JSON.", details=details,
             )
         return error_response(
             422, "validation_error", "The request does not match the API schema.",
-            details={"errors": errors},
+            details=details,
         )
 
     @app.exception_handler(StarletteHTTPException)
     async def handle_http_exception(
         request: Request, exc: StarletteHTTPException
     ) -> JSONResponse:
-        # Framework-generated 404/405/... use the same envelope as everything else.
+        # Framework-generated 404/405/... use the same envelope as everything
+        # else, keeping the framework's headers (e.g. Allow on a 405).
         code = _HTTP_STATUS_CODES.get(exc.status_code, f"http_{exc.status_code}")
-        return error_response(exc.status_code, code, str(exc.detail))
+        return error_response(
+            exc.status_code, code, str(exc.detail), headers=getattr(exc, "headers", None)
+        )
 
     @app.exception_handler(psycopg.errors.UndefinedTable)
     async def handle_missing_schema(request: Request, exc: Exception) -> JSONResponse:
         log.error("schema not initialized: %s", exc)
-        return error_response(
-            503, "schema_not_initialized",
-            "The analytical database schema has not been initialized.",
-        )
+        return SchemaNotInitializedError().to_response()
 
-    @app.exception_handler(DatabaseUnavailableError)
     @app.exception_handler(PoolTimeout)
-    @app.exception_handler(psycopg.OperationalError)
-    async def handle_database_unavailable(request: Request, exc: Exception) -> JSONResponse:
-        log.error("database unavailable: %s: %s", type(exc).__name__, exc)
-        return error_response(
-            503, "database_unavailable",
-            "The analytical database is currently unavailable. Try again shortly.",
+    @app.exception_handler(psycopg.Error)
+    async def handle_database_error(request: Request, exc: Exception) -> JSONResponse:
+        mapped = classify_database_error(exc, analysis=_is_analysis_request(request))
+        if mapped is None:
+            return await handle_unexpected(request, exc)
+        first_line = (str(exc).splitlines() or [""])[0][:200]
+        log.warning(
+            "%s on %s %s: %s %s: %s", mapped.code, request.method, request.url.path,
+            type(exc).__name__, getattr(exc, "sqlstate", None) or "", first_line,
         )
+        return mapped.to_response()
 
     @app.exception_handler(Exception)
     async def handle_unexpected(request: Request, exc: Exception) -> JSONResponse:
-        # Full detail server-side; nothing internal leaks to the client. This
-        # handler runs at the outermost middleware layer, so it re-attaches the
-        # request-ID/CORS headers itself.
-        log.exception("unhandled error on %s %s", request.method, request.url.path)
+        # Full detail server-side, logged once; nothing internal leaks to the
+        # client. This handler runs at the outermost middleware layer, so it
+        # re-attaches the request-ID/CORS/security headers itself.
+        log.exception(
+            "request_id=%s unhandled error on %s %s",
+            getattr(request.state, "request_id", "-"), request.method, request.url.path,
+        )
+        mark_logged(exc)
         return error_response(
             500, "internal_error", "An unexpected internal error occurred.",
-            headers=_outermost_headers(request),
+            headers=outermost_headers(request),
         )

@@ -7,8 +7,10 @@ import logging
 import psycopg
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 
-from ..dependencies import get_connection
+from ..database import Database
+from ..dependencies import get_database
 from ..schemas.errors import ErrorResponse
 
 log = logging.getLogger("atus.api")
@@ -20,9 +22,10 @@ router = APIRouter(tags=["system"])
     "/health",
     summary="Liveness",
     description=(
-        "Answers whether the API process is running. No dependencies touched. "
-        "Async on purpose: it bypasses the worker threadpool, so liveness stays "
-        "instant even when every worker thread is busy with long analyses."
+        "Answers whether the API process is running. No dependencies touched "
+        "(no database, no edge authentication; HEAD works too). Async on "
+        "purpose: it bypasses the worker threadpool, so liveness stays instant "
+        "even when every worker thread is busy with long analyses."
     ),
 )
 async def health() -> dict:
@@ -42,17 +45,25 @@ async def health() -> dict:
     ),
     responses={503: {"model": ErrorResponse, "description": "Not ready"}},
 )
-def ready(conn: psycopg.Connection = Depends(get_connection)) -> dict | JSONResponse:
-    try:
-        conn.execute("SELECT 1").fetchone()
-        loaded = conn.execute(
-            "SELECT EXISTS (SELECT 1 FROM atus.respondents)"
-        ).fetchone()[0]
-    except psycopg.errors.UndefinedTable:
+async def ready(db: Database = Depends(get_database)) -> dict | JSONResponse:
+    loaded = await run_in_threadpool(_data_loaded, db)
+    if loaded is None:
         return _not_ready("schema_not_initialized", "Run `atus migrate` to create the schema.")
     if not loaded:
         return _not_ready("data_not_loaded", "Run the Phase 1 pipeline (`atus load`) first.")
     return {"status": "ready", "database": "ok", "data_loaded": True}
+
+
+def _data_loaded(db: Database) -> bool | None:
+    """Whether ATUS data is loaded; ``None`` when the schema is missing."""
+    with db.transaction("metadata") as conn:
+        try:
+            conn.execute("SELECT 1").fetchone()
+            return bool(conn.execute(
+                "SELECT EXISTS (SELECT 1 FROM atus.respondents)"
+            ).fetchone()[0])
+        except psycopg.errors.UndefinedTable:
+            return None
 
 
 def _not_ready(code: str, message: str) -> JSONResponse:

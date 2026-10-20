@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import psycopg
 from fastapi import APIRouter, Depends, Response
+from starlette.concurrency import run_in_threadpool
 
 from ...analytics import ANALYTICS_VERSION
 from ...analytics.estimators import MEASURE_UNITS
 from ...analytics.population import describe_dimensions
 from ...analytics.spec import ACTIVITY_PRESETS, Measure
 from .. import API_VERSION
-from ..dependencies import get_connection
+from ..database import Database
+from ..dependencies import get_database
 from ..schemas.meta import (
     CapabilitiesInfo,
     DataInfo,
@@ -37,6 +39,24 @@ _MEASURE_DESCRIPTIONS = {
 }
 
 
+def _read_data_info(db: Database) -> tuple[tuple | None, list[int], int]:
+    with db.transaction("metadata") as conn:
+        return _data_info(conn)
+
+
+def _data_info(conn: psycopg.Connection) -> tuple[tuple | None, list[int], int]:
+    run = conn.execute(
+        "SELECT id, release, finished_at FROM atus.ingestion_runs "
+        "WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    years = [
+        row[0] for row in
+        conn.execute("SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1")
+    ]
+    respondents = conn.execute("SELECT count(*) FROM atus.respondents").fetchone()[0]
+    return run, years, respondents
+
+
 @router.get(
     "",
     response_model=MetaResponse,
@@ -49,19 +69,11 @@ _MEASURE_DESCRIPTIONS = {
         "discover capabilities here instead of hard-coding them."
     ),
 )
-def meta(
+async def meta(
     response: Response,
-    conn: psycopg.Connection = Depends(get_connection),
+    db: Database = Depends(get_database),
 ) -> MetaResponse:
-    run = conn.execute(
-        "SELECT id, release, finished_at FROM atus.ingestion_runs "
-        "WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-    years = [
-        row[0] for row in
-        conn.execute("SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1")
-    ]
-    respondents = conn.execute("SELECT count(*) FROM atus.respondents").fetchone()[0]
+    run, years, respondents = await run_in_threadpool(_read_data_info, db)
 
     response.headers["Cache-Control"] = "public, max-age=300"
     return MetaResponse(

@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import psycopg
 from fastapi import APIRouter, Depends, Query, Response
+from starlette.concurrency import run_in_threadpool
 
 from ...analytics.spec import ACTIVITY_PRESETS
-from ..dependencies import get_connection
+from ..database import Database
+from ..dependencies import get_database
 from ..errors import ActivityNotFoundError
 from ..schemas.activities import (
     ActivityDetailResponse,
@@ -57,7 +59,7 @@ def _escape_like(term: str) -> str:
         "requests, a 2- or 4-digit code selects itself plus all descendants."
     ),
 )
-def list_activities(
+async def list_activities(
     response: Response,
     level: int | None = Query(default=None, ge=1, le=3),
     parent: str | None = Query(
@@ -65,7 +67,7 @@ def list_activities(
         description="Return direct children of this 2- or 4-digit code.",
     ),
     search: str | None = Query(default=None, min_length=2, max_length=80),
-    conn: psycopg.Connection = Depends(get_connection),
+    db: Database = Depends(get_database),
 ) -> ActivityListResponse:
     conditions, params = [], {}
     if level is not None:
@@ -81,7 +83,7 @@ def list_activities(
     if conditions:
         sql += " WHERE " + " AND ".join(conditions)
     sql += " ORDER BY code, level"
-    rows = conn.execute(sql, params).fetchall()
+    rows = await run_in_threadpool(_fetch_all, db, sql, params)
     entries = [
         ActivityEntry(
             code=code, name=name, level=lvl, parent_code=parent_code,
@@ -103,7 +105,7 @@ def list_activities(
         "(verified against published Table A-1 values)."
     ),
 )
-def list_presets(response: Response) -> ActivityPresetsResponse:
+async def list_presets(response: Response) -> ActivityPresetsResponse:
     presets = [
         ActivityPreset(
             name=name, label=selector.label or name,
@@ -121,14 +123,29 @@ def list_presets(response: Response) -> ActivityPresetsResponse:
     responses={404: {"model": ErrorResponse, "description": "Unknown activity code"}},
     summary="One lexicon code with its ancestry and children",
 )
-def activity_detail(
+async def activity_detail(
     code: str,
     response: Response,
-    conn: psycopg.Connection = Depends(get_connection),
+    db: Database = Depends(get_database),
 ) -> ActivityDetailResponse:
     if not (code.isdigit() and len(code) in (2, 4, 6)):
         raise ActivityNotFoundError(code)
+    detail = await run_in_threadpool(_read_detail, db, code)
+    response.headers["Cache-Control"] = _CACHE_HEADER
+    return detail
 
+
+def _fetch_all(db: Database, sql: str, params: dict) -> list[tuple]:
+    with db.transaction("metadata") as conn:
+        return conn.execute(sql, params).fetchall()
+
+
+def _read_detail(db: Database, code: str) -> ActivityDetailResponse:
+    with db.transaction("metadata") as conn:
+        return _detail(conn, code)
+
+
+def _detail(conn: psycopg.Connection, code: str) -> ActivityDetailResponse:
     def fetch(one_code: str) -> tuple | None:
         return conn.execute(
             _LEXICON_SQL + " WHERE code = %(code)s", {"code": one_code}
@@ -155,7 +172,6 @@ def activity_detail(
         {"prefix": code + "%"},
     ).fetchone()[0]
 
-    response.headers["Cache-Control"] = _CACHE_HEADER
     return ActivityDetailResponse(
         code=code, name=name, level=level, parents=parents,
         children=[_entry(r) for r in child_rows],

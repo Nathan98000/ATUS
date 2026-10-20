@@ -53,6 +53,7 @@ class ActivitySelection(BaseModel):
 
     preset: str | None = Field(
         default=None,
+        max_length=64,
         description="Named selection (see GET /api/v1/activities/presets).",
     )
     include: list[ActivityCode] | None = Field(
