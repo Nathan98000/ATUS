@@ -1,7 +1,8 @@
 /**
  * Origin responses (ADR-011 step 7): API JSON and error envelopes pass
  * through byte for byte; platform responses that are not the API's become
- * `service_waking` (503) or `upstream_unavailable` (502) envelopes.
+ * `service_waking` (503), `overloaded` (503, uvicorn's own connection-limit
+ * answer) or `upstream_unavailable` (502, with the reason) envelopes.
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -140,7 +141,18 @@ describe('responses that are not the API are converted', () => {
           headers: { 'content-type': 'text/html' },
         }),
     ],
-    ['plain-text 503', () => new Response('Service Unavailable', { status: 503 })],
+    [
+      'plain-text 503 from the platform',
+      () => new Response('no healthy upstream', { status: 503 }),
+    ],
+    [
+      'plain-text 503 of another media type',
+      () =>
+        new Response('Service Unavailable', {
+          status: 503,
+          headers: { 'content-type': 'text/html' },
+        }),
+    ],
     ['JSON 503 that is not an envelope', () => apiJson('{"status":"starting"}', 503)],
   ]
 
@@ -155,18 +167,31 @@ describe('responses that are not the API are converted', () => {
     expect(error.details).toEqual({ retry_after_seconds: 5 })
   })
 
-  const unavailable: [string, () => Response][] = [
-    ...[520, 521, 522, 523, 524, 525, 526, 527, 530].map((status): [string, () => Response] => [
-      `Cloudflare ${status}`,
+  const unavailable: [string, () => Response, string][] = [
+    ...[520, 521, 522, 523, 525, 526, 527, 530].map(
+      (status): [string, () => Response, string] => [
+        `Cloudflare ${status}`,
+        () =>
+          new Response('<html>cloudflare error</html>', {
+            status,
+            headers: { 'content-type': 'text/html' },
+          }),
+        'platform_error',
+      ],
+    ),
+    [
+      'Cloudflare 524: the API took the request and had not answered',
       () =>
-        new Response('<html>cloudflare error</html>', {
-          status,
+        new Response('<html>a timeout occurred</html>', {
+          status: 524,
           headers: { 'content-type': 'text/html' },
         }),
-    ]),
+      'origin_timeout',
+    ],
     [
       'Cloudflare 52x even with a JSON body',
       () => apiJson('{"error":{"code":"x","message":"y","details":null}}', 522),
+      'platform_error',
     ],
     [
       'HTML 404 from the platform',
@@ -175,20 +200,31 @@ describe('responses that are not the API are converted', () => {
           status: 404,
           headers: { 'content-type': 'text/html' },
         }),
+      'platform_error',
     ],
-    ['HTML 502', () => new Response('<html>Bad Gateway</html>', { status: 502 })],
+    [
+      'HTML 502',
+      () => new Response('<html>Bad Gateway</html>', { status: 502 }),
+      'platform_error',
+    ],
     [
       'JSON 500 that is not an envelope',
       () => apiJson('{"detail":"Internal Server Error"}', 500),
+      'platform_error',
     ],
     [
       'JSON 422 with a non-string code',
       () => apiJson('{"error":{"code":1,"message":"x"}}', 422),
+      'platform_error',
     ],
-    ['JSON 400 that is not JSON', () => apiJson('not json', 400)],
-    ['JSON 429 array', () => apiJson('[]', 429)],
-    ['text/plain 200', () => new Response('ok', { headers: { 'content-type': 'text/plain' } })],
-    ['200 without a Content-Type', () => new Response('{}')],
+    ['JSON 400 that is not JSON', () => apiJson('not json', 400), 'platform_error'],
+    ['JSON 429 array', () => apiJson('[]', 429), 'platform_error'],
+    [
+      'text/plain 200',
+      () => new Response('ok', { headers: { 'content-type': 'text/plain' } }),
+      'platform_error',
+    ],
+    ['200 without a Content-Type', () => new Response('{}'), 'platform_error'],
     [
       'a redirect (never followed)',
       () =>
@@ -196,6 +232,7 @@ describe('responses that are not the API are converted', () => {
           status: 302,
           headers: { location: 'https://elsewhere.example/' },
         }),
+      'platform_error',
     ],
     [
       'an oversized JSON error body',
@@ -204,10 +241,11 @@ describe('responses that are not the API are converted', () => {
           `{"error":{"code":"x","message":"${'m'.repeat(300 * 1024)}","details":null}}`,
           422,
         ),
+      'platform_error',
     ],
   ]
 
-  it.each(unavailable)('%s -> 502 upstream_unavailable', async (_, make) => {
+  it.each(unavailable)('%s -> 502 upstream_unavailable (%s)', async (_, make, reason) => {
     mockOrigin(make)
     const response = await callWorker('/api/v1/meta')
     expect(response.status).toBe(502)
@@ -216,10 +254,32 @@ describe('responses that are not the API are converted', () => {
     expectSecurityHeaders(response)
     const error = await readEnvelope(response)
     expect(error.code).toBe('upstream_unavailable')
-    expect(error.details).toEqual({ retry_after_seconds: 10 })
+    expect(error.details).toEqual({ retry_after_seconds: 10, reason })
   })
 
-  it('an error body cut off mid-stream -> 502 upstream_unavailable, not a 500', async () => {
+  it("uvicorn's own connection-limit 503 -> 503 overloaded, Retry-After 10", async () => {
+    // Exactly what tests/integration/api_prod/test_server.py records uvicorn sending.
+    mockOrigin(
+      () =>
+        new Response('Service Unavailable', {
+          status: 503,
+          headers: { 'content-type': 'text/plain; charset=utf-8', connection: 'close' },
+        }),
+    )
+    const response = await callWorker('/api/v1/analysis/estimate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{"years":[2023]}',
+    })
+    expect(response.status).toBe(503)
+    expect(response.headers.get('retry-after')).toBe('10')
+    expectSecurityHeaders(response)
+    const error = await readEnvelope(response)
+    expect(error.code).toBe('overloaded')
+    expect(error.details).toEqual({ retry_after_seconds: 10, scope: 'global' })
+  })
+
+  it('an error body cut off mid-stream -> 502 upstream_unavailable (broken_response)', async () => {
     mockOrigin(() => {
       const body = new ReadableStream<Uint8Array>({
         start(controller) {
@@ -234,7 +294,9 @@ describe('responses that are not the API are converted', () => {
     })
     const response = await callWorker('/api/v1/meta')
     expect(response.status).toBe(502)
-    expect((await readEnvelope(response)).code).toBe('upstream_unavailable')
+    const error = await readEnvelope(response)
+    expect(error.code).toBe('upstream_unavailable')
+    expect(error.details).toEqual({ retry_after_seconds: 10, reason: 'broken_response' })
   })
 
   it('converted responses never leak the origin body or headers', async () => {

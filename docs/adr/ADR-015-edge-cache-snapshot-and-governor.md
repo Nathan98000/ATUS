@@ -123,6 +123,8 @@ The second limit in row 1 exists because refunds (below) give the 60 back: witho
 
 Refunding waking and shed outcomes matters because the SPA retries during a cold start for up to 150 s. A 524 from Render's Cloudflare zone is charged: the origin took the request and kept it past the proxy read timeout, and the API runs an admitted analysis to the end even when its client is gone. While the per-isolate circuit breaker skips the origin, analyses get 503 `upstream_unavailable` before any governor call.
 
+`upstream_unavailable` carries `details.reason`, because only some causes mean the API may have taken the request: `origin_timeout` (a 524) and `broken_response` (the API's body broke off) may have computed it, so the SPA retries such an analysis once, when it joins the running computation or hits the API's cache; `connect_failed`, `circuit_open`, `platform_error` (a platform page, a redirect, an unreadable envelope) and `not_configured` never reached the API and are retried like a cold start within the 150 s budget.
+
 The network count (the 60) is refunded for `not_reached` and `shed`, but every admission still counts toward the network's 300 admissions a day.
 
 **Ground truth (optional).** With the `NEON_API_KEY` secret (a project-scoped key) and the `NEON_PROJECT_ID` var, an alarm reads `GET https://console.neon.tech/api/v2/projects/{id}` (`compute_time_seconds` / 3600 = CU-h month to date, `data_transfer_bytes`, `consumption_period_start` and `_end`). It polls at most every 5 minutes and only while analyses arrived in the last 5 minutes, so the compute is awake anyway. Between polls, usage is bridged with the same conservative charges, counted from the *previous* successful poll (Neon's figures lag), plus the in-flight provisional window. Ground truth earns the 10 CU-h daily ceiling while it is at most 24 h old; the monthly checks apply whenever ground truth for the current period exists. A failed poll keeps the last ground truth and records only a status or error name (`http_401`, `TimeoutError`); the key goes only into the `Authorization` header.
@@ -200,7 +202,8 @@ A JSON round trip is lossy (`1e400` becomes `null`, and `1.0` becomes `1`), so t
 | Settle lost | the lease expires after 10 minutes and is charged in full | nothing |
 | Neon poll fails | last ground truth kept; after 24 h the conservative ceiling applies; the error name shows in `/api/_ops/budget` | possibly earlier `daily_capacity_reached` |
 | Snapshot build hits an error response | the build fails; nothing is published | the previous deploy stays live |
-| Mid-body failure while buffering for KV | 502 `upstream_unavailable`; nothing stored; the analysis is charged as computed | a retryable error |
+| Mid-body failure while buffering for KV | 502 `upstream_unavailable` (`reason: broken_response`); nothing stored; the analysis is charged as computed | a retryable error; the SPA retries it once (it joins or hits the API's cache) |
+| uvicorn's own connection-limit 503 (plain text `Service Unavailable`) | 503 `overloaded`, `Retry-After: 10`, `scope: global`; refunded (the API never ran) | the API's own "busy" copy |
 
 ## What this does not protect against
 

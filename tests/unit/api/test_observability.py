@@ -35,7 +35,7 @@ OPS = {"Authorization": f"Bearer {OPS_TOKEN}"}
 ESTIMATE = "/api/v1/analysis/estimate"
 BODY = {"activity": {"include": ["0101"], "label": "Visible-Label-7f3a"}, "years": [2023],
         "variance": "none"}
-SERVER_TIMING = re.compile(r"^db;dur=\d+\.\d, app;dur=\d+\.\d$")
+SERVER_TIMING = re.compile(r"^db;dur=(?:0|\d+\.\d), app;dur=\d+\.\d$")
 
 
 @pytest.fixture

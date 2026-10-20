@@ -58,7 +58,7 @@ Records may add structured fields (`extra={"fields": {...}}`), which the JSON fo
 
 The text format writes the same facts in one line: `request_id=… METHOD path -> status in N ms db=N ms/N cache=… [error=…] [client_disconnected=1]`.
 
-**Never logged:** request or response bodies, analysis specs, query strings (search terms), headers, full client addresses, secrets. The client's address that the access line truncates is the one the rate limiter uses (ADR-012): `X-ATUS-Client-IP` from an authenticated edge, the socket peer otherwise.
+**Never logged:** request or response bodies, analysis specs, query strings (search terms), headers, full client addresses, secrets. The client's address that the access line truncates is the one the rate limiter uses (ADR-012): `X-ATUS-Client-IP` from an authenticated edge (none when an edge request lacks it), the socket peer otherwise.
 
 **Errors.** An unhandled exception is logged once, with its traceback and `request_id` (field and message); uvicorn's duplicate record is dropped (F50). Rejections log their code at INFO. Database failures log the driver class, SQLSTATE and the first line of the server message, never the SQL.
 

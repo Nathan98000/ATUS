@@ -162,6 +162,33 @@ class TestProductionServer:
             assert b'"payload_too_large"' in streamed
 
 
+class TestEdgeContractOverSockets:
+    def test_odd_request_targets_get_envelopes_never_redirects(self, production_settings):
+        """What reaches the socket unnormalized (dot segments, double and
+        trailing slashes, an absolute-form target, bad percent-escapes): the
+        answer is a JSON envelope or the route itself, never a 3xx, which the
+        Worker would turn into a 502."""
+        app = create_app(production_settings)
+        targets = [
+            "/api/v1/activities/../meta", "/api/v1/./meta", "//api/v1/meta", "/api/v1/meta/",
+            "/api/v1/meta?%ZZ=1", "/api/v1/activities/%2e%2e", "/api", "/api/",
+            "http://localhost/api/v1/meta", "/api/v1/analysis/estimate/",
+        ]
+        with running(app, production_settings) as (_, port):
+            for target in targets:
+                reply = raw_request(port, (
+                    f"GET {target} HTTP/1.1\r\nHost: localhost\r\n"
+                    f"X-ATUS-Edge-Auth: {SECRET}\r\nConnection: close\r\n\r\n").encode())
+                head, _, body = reply.partition(b"\r\n\r\n")
+                status = int(head.split()[1])
+                assert not 300 <= status < 400, (target, head)
+                headers = {line.split(b":", 1)[0].strip().lower(): line.split(b":", 1)[1].strip()
+                           for line in head.split(b"\r\n")[1:]}
+                assert headers[b"content-type"] == b"application/json", (target, head)
+                if status >= 400:
+                    assert json.loads(body)["error"]["code"], target
+
+
 class TestConnectionBound:
     def test_connections_beyond_the_limit_are_shed_before_the_app(self, production_settings):
         """``limit_concurrency`` bounds what idle or slow clients can pin
@@ -177,6 +204,12 @@ class TestConnectionBound:
                 time.sleep(0.2)
                 shed = httpx.get(f"{base}/health")
                 assert shed.status_code == 503
+                # Exactly what the edge Worker recognizes and maps to the
+                # `overloaded` envelope (edge/src/proxy.ts): uvicorn's own
+                # plain-text answer, no envelope, no Retry-After.
+                assert shed.headers["content-type"] == "text/plain; charset=utf-8"
+                assert shed.text == "Service Unavailable"
+                assert "retry-after" not in shed.headers
             finally:
                 for sock in idle:
                     sock.close()

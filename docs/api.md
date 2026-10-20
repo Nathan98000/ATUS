@@ -185,12 +185,20 @@ Response headers:
   `/activities/{code}`, and `X-Analytics-Version` on `/meta`.
 - `Server-Timing: db;dur=<ms>, app;dur=<ms>` on every response: time spent
   in database transactions (including waiting for a connection) and the rest,
-  up to the response start. `db;dur=0.0` means the request touched no
-  database.
+  up to the response start. `db;dur=0` exactly means the request opened no
+  database transaction (cache hits, single-flight joins, every 4xx, shed
+  requests, metadata from the snapshot); any database work reports at least
+  `0.1`. The edge governor charges compute only when it is not 0.
 - `Retry-After` (seconds) on every 429 and every 503 the API answers. The
   one exception is uvicorn's own connection-limit 503 (beyond
   `limit_concurrency`, before any app code runs): plain text
-  `Service Unavailable`, no envelope, no `Retry-After` (ADR-012).
+  `Service Unavailable`, no envelope, no `Retry-After` (ADR-012). The edge
+  Worker turns exactly that answer into a 503 `overloaded` envelope with
+  `Retry-After: 10`.
+- No `/api` path is ever answered with a redirect (`redirect_slashes` is off;
+  a trailing slash, a double slash or a case variant is a 404 envelope), and
+  every error, including the framework's 404/405, is the JSON envelope with
+  `Content-Type: application/json`.
 - Security headers on every response:
   - `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`;
   - `X-Content-Type-Options: nosniff`;
@@ -369,8 +377,11 @@ a request meets them:
    - Two values are accepted, which allows rotation.
    - Anything else gets 403 `forbidden_origin`, with no database work.
 3. **Client identity.** This is `X-ATUS-Client-IP` when the request is
-   edge-authenticated, and the socket peer otherwise. `X-Forwarded-For`,
-   `Forwarded`, `CF-Connecting-IP` and `True-Client-IP` are ignored.
+   edge-authenticated, and the socket peer otherwise. An edge-authenticated
+   request without a usable `X-ATUS-Client-IP` is charged to one shared
+   bucket (`edge:unknown`), never to the peer, which behind the edge is the
+   platform's proxy. `X-Forwarded-For`, `Forwarded`, `CF-Connecting-IP` and
+   `True-Client-IP` are ignored.
 4. **Per-client buckets.** 120 requests per minute, and 6 *computed*
    analyses per minute. Cache hits and joins are free. Over a limit: 429
    with `Retry-After`.

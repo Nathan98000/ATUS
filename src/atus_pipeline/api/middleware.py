@@ -97,9 +97,19 @@ def ops_authorized(headers, settings: Settings) -> bool:
     )
 
 
-def server_timing(db_ms: float, total_ms: float) -> str:
-    """``Server-Timing``: time in database transactions and everything else."""
-    return f"db;dur={db_ms:.1f}, app;dur={max(0.0, total_ms - db_ms):.1f}"
+def server_timing(db_ms: float, total_ms: float, *, touched_db: bool = True) -> str:
+    """``Server-Timing``: time in database transactions and everything else.
+
+    The edge governor reads ``db;dur`` to settle an analysis: exactly 0 means
+    the database did no work for this request (cache hit, single-flight
+    join, 4xx, shed), so no compute is charged. It is therefore ``0`` only
+    when the request opened no transaction, and at least ``0.1`` when it did,
+    however fast (rounding must never turn real work into "none").
+    """
+    if not touched_db:
+        return f"db;dur=0, app;dur={max(0.0, total_ms):.1f}"
+    db = max(db_ms, 0.1)
+    return f"db;dur={db:.1f}, app;dur={max(0.0, total_ms - db_ms):.1f}"
 
 
 def security_headers(settings: Settings, path: str) -> dict[str, str]:
@@ -240,7 +250,8 @@ class RequestContextMiddleware:
                     response_headers[name] = value
                 response_headers["X-Request-ID"] = request_id
                 response_headers["Server-Timing"] = server_timing(
-                    stats.db_ms, (time.perf_counter() - started) * 1000
+                    stats.db_ms, (time.perf_counter() - started) * 1000,
+                    touched_db=stats.transactions > 0 or stats.db_statements > 0,
                 )
                 if status >= 400:
                     response_headers["Cache-Control"] = "no-store"  # never cache errors

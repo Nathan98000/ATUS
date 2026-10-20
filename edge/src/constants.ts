@@ -27,6 +27,9 @@ export const RETRY_AFTER_WAKING_S = 5
 /** `Retry-After` for `upstream_unavailable` produced by a failed or non-API response. */
 export const RETRY_AFTER_UNAVAILABLE_S = 10
 
+/** `Retry-After` for `overloaded` mapped from uvicorn's own 503 (the API's own value). */
+export const RETRY_AFTER_OVERLOADED_S = 10
+
 /** Prewake: how long the reply waits for origin /health before answering "waking". */
 export const WAKE_RACE_MS = 1_500
 

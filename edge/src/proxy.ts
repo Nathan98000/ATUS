@@ -8,13 +8,23 @@
  *
  * Downstream, API responses pass through byte for byte: status, body and an
  * allowlist of headers. Responses that are not the API's — Render's
- * hibernate 503 or HTML loading page, Cloudflare 52x pages, redirects — are
+ * hibernate 503 or HTML loading page, Cloudflare 52x pages, redirects,
+ * uvicorn's own plain-text 503 when its connection limit is reached — are
  * replaced by JSON envelopes the SPA understands.
+ *
+ * `upstream_unavailable` says why in `details.reason`, because only some
+ * causes mean the API may have taken (and computed) the request: an
+ * `origin_timeout` (Cloudflare 524) or a `broken_response` (the API's body
+ * cut off) may have computed it, so a client retries such an analysis once,
+ * when it joins the running computation or hits the API's cache; the other
+ * reasons (`connect_failed`, `circuit_open`, `platform_error`,
+ * `not_configured`) never reached the API and are retried like a cold start.
  */
 
 import {
   EDGE_VERSION,
   MAX_ERROR_BODY_BYTES,
+  RETRY_AFTER_OVERLOADED_S,
   RETRY_AFTER_UNAVAILABLE_S,
   RETRY_AFTER_WAKING_S,
 } from './constants'
@@ -81,11 +91,34 @@ export function buildUpstreamHeaders(
 }
 
 /** How an origin response reached the client. */
-export type RelayOutcome = 'pass' | 'waking' | 'unavailable'
+export type RelayOutcome = 'pass' | 'waking' | 'overloaded' | 'unavailable'
+
+/** Why the edge answered `upstream_unavailable` (`details.reason`). */
+export type UnavailableReason =
+  /** The origin's connection failed twice, before any response headers. */
+  | 'connect_failed'
+  /** The per-isolate breaker skipped the origin: it was not contacted. */
+  | 'circuit_open'
+  /** Not the API answering: a platform error page, a redirect, an unreadable envelope. */
+  | 'platform_error'
+  /** Cloudflare 524: the API took the request and had not answered in time. */
+  | 'origin_timeout'
+  /** The API's own response broke off mid-body. */
+  | 'broken_response'
+  /** The Worker has no usable RENDER_ORIGIN or EDGE_AUTH_SECRET. */
+  | 'not_configured'
+
+/** uvicorn's answer when its `limit_concurrency` is reached (before the app runs). */
+const UVICORN_SHED_BODY = 'Service Unavailable'
+
+/** Cloudflare's "origin did not answer in time" status. */
+const ORIGIN_TIMEOUT_STATUS = 524
 
 export interface Relayed {
   response: Response
   outcome: RelayOutcome
+  /** Set when `outcome` is `unavailable`. */
+  reason?: UnavailableReason
   /** The API's error code, when an error envelope was passed through. */
   errorCode?: string
   /** The complete body of a passed-through 2xx, when it was buffered (`bufferUpTo`). */
@@ -105,8 +138,9 @@ export interface RelayOptions {
  *
  * Passed through unchanged: 2xx JSON (streamed, or buffered when asked),
  * 304, and 4xx/5xx whose body is the API's error envelope. Converted:
- * everything else, to 503 `service_waking` (the origin is starting) or 502
- * `upstream_unavailable`.
+ * everything else, to 503 `service_waking` (the origin is starting), 503
+ * `overloaded` (uvicorn shed the connection) or 502 `upstream_unavailable`
+ * with its reason.
  */
 export async function relayResponse(
   upstream: Response,
@@ -114,7 +148,7 @@ export async function relayResponse(
   options: RelayOptions = {},
 ): Promise<Relayed> {
   const verdict = await judge(upstream, options)
-  if (typeof verdict === 'object') {
+  if (typeof verdict === 'object' && !('unavailable' in verdict)) {
     const relayed: Relayed = {
       response: passThrough(upstream, verdict.body, requestId),
       outcome: 'pass',
@@ -132,7 +166,19 @@ export async function relayResponse(
     }
   }
   if (verdict === 'waking') return { response: serviceWaking(requestId), outcome: 'waking' }
-  return { response: upstreamUnavailable(requestId, 502), outcome: 'unavailable' }
+  if (verdict === 'overloaded') {
+    return { response: originOverloaded(requestId), outcome: 'overloaded' }
+  }
+  return {
+    response: upstreamUnavailable(
+      requestId,
+      502,
+      RETRY_AFTER_UNAVAILABLE_S,
+      verdict.unavailable,
+    ),
+    outcome: 'unavailable',
+    reason: verdict.unavailable,
+  }
 }
 
 type Verdict =
@@ -142,13 +188,19 @@ type Verdict =
       complete?: Uint8Array
     }
   | 'waking'
-  | 'unavailable'
+  | 'overloaded'
+  | { unavailable: UnavailableReason }
 
 async function judge(upstream: Response, options: RelayOptions): Promise<Verdict> {
   const { status, headers } = upstream
   const contentType = headers.get('content-type')
   // Cloudflare's own error pages from Render's zone (52x, 530): never the API.
-  if (status >= 520 && status <= 530) return 'unavailable'
+  // A 524 means the API took the request and had not answered in time.
+  if (status >= 520 && status <= 530) {
+    return {
+      unavailable: status === ORIGIN_TIMEOUT_STATUS ? 'origin_timeout' : 'platform_error',
+    }
+  }
   // Render's routing layer while a free instance spins up.
   if ((headers.get('x-render-routing') ?? '').includes('hibernate')) return 'waking'
   if (status === 304) return { body: null }
@@ -161,24 +213,45 @@ async function judge(upstream: Response, options: RelayOptions): Promise<Verdict
           ? { body: read.bytes, complete: read.bytes }
           : { body: read.stream }
       } catch {
-        return 'unavailable' // The connection dropped mid-body.
+        return { unavailable: 'broken_response' } // The connection dropped mid-body.
       }
     }
     // An HTML 200 for an API path is a platform loading page.
-    return isHtmlContentType(contentType) ? 'waking' : 'unavailable'
+    return isHtmlContentType(contentType) ? 'waking' : { unavailable: 'platform_error' }
   }
   if (status >= 400 && status < 600 && isJsonContentType(contentType)) {
     let bytes: Uint8Array | null
     try {
       bytes = await readCapped(upstream.body, MAX_ERROR_BODY_BYTES)
     } catch {
-      return 'unavailable' // The connection dropped mid-body.
+      return { unavailable: 'broken_response' } // The connection dropped mid-body.
     }
     const code = bytes === null ? null : errorEnvelopeCode(bytes)
     if (bytes !== null && code !== null) return { body: bytes, errorCode: code }
   }
+  if (status === 503) return (await isUvicornShed(upstream)) ? 'overloaded' : 'waking'
   // Redirects (never followed) and non-API errors.
-  return status === 503 ? 'waking' : 'unavailable'
+  return { unavailable: 'platform_error' }
+}
+
+/**
+ * uvicorn's own 503 when its connection limit is reached: `text/plain`,
+ * exactly "Service Unavailable", no envelope, no Retry-After. The API is up
+ * but saturated, which is `overloaded`, not a cold start. (Render's
+ * hibernation answer carries `x-render-routing` and is judged before this.)
+ */
+async function isUvicornShed(upstream: Response): Promise<boolean> {
+  if (mediaTypeOf(upstream.headers.get('content-type')) !== 'text/plain') return false
+  try {
+    const bytes = await readCapped(upstream.body, 64)
+    return bytes !== null && new TextDecoder().decode(bytes).trim() === UVICORN_SHED_BODY
+  } catch {
+    return false
+  }
+}
+
+function mediaTypeOf(value: string | null): string {
+  return (value ?? '').split(';', 1)[0]!.trim().toLowerCase()
 }
 
 function passThrough(
@@ -207,18 +280,30 @@ export function serviceWaking(requestId: string): Response {
   )
 }
 
-/** 502 (or 503 while the breaker is open) `upstream_unavailable`. */
+/** 503 `overloaded`: the origin's server shed the connection before the API ran. */
+export function originOverloaded(requestId: string): Response {
+  return errorResponse(
+    503,
+    'overloaded',
+    'The analysis service is busy. Try again shortly.',
+    requestId,
+    { retryAfterSeconds: RETRY_AFTER_OVERLOADED_S, details: { scope: 'global' } },
+  )
+}
+
+/** 502 (or 503 while the breaker is open) `upstream_unavailable`, saying why. */
 export function upstreamUnavailable(
   requestId: string,
   status: 502 | 503,
-  retryAfterSeconds: number = RETRY_AFTER_UNAVAILABLE_S,
+  retryAfterSeconds: number,
+  reason: UnavailableReason,
 ): Response {
   return errorResponse(
     status,
     'upstream_unavailable',
     'The analysis service is temporarily unreachable. Try again shortly.',
     requestId,
-    { retryAfterSeconds },
+    { retryAfterSeconds, details: { reason } },
   )
 }
 

@@ -10,8 +10,10 @@ import pytest
 
 from atus_pipeline.api.errors import OverloadedError
 from atus_pipeline.api.protection import (
+    EDGE_UNKNOWN_CLIENT,
     HEAVY_YEAR_QUERIES,
     AdmissionLanes,
+    ClientIdentity,
     DailyCap,
     TokenBucketLimiter,
     client_identity,
@@ -125,12 +127,17 @@ class TestClientIdentity:
         )
         assert forged.rate_key == "203.0.113.9"
 
-    def test_malformed_edge_ip_falls_back_to_the_peer(self):
-        identity = client_identity(
-            peer="10.1.2.3", edge_client_ip="not-an-ip", authenticated=True,
-            edge_auth_enabled=True,
-        )
-        assert identity.rate_key == "10.1.2.3"
+    @pytest.mark.parametrize("header", [None, "", "not-an-ip", "198.51.100.7, 10.0.0.1"])
+    def test_missing_or_malformed_edge_ip_shares_one_edge_bucket(self, header):
+        """Never the peer: behind the edge it is the platform's proxy. Every
+        edge request without a usable address shares one bucket (as at the
+        governor), whatever proxy node it came through, and logs no IP."""
+        identities = {
+            client_identity(peer=peer, edge_client_ip=header, authenticated=True,
+                            edge_auth_enabled=True)
+            for peer in ("10.1.2.3", "10.9.8.7", None)
+        }
+        assert identities == {ClientIdentity(ip=None, rate_key=EDGE_UNKNOWN_CLIENT)}
 
     def test_ipv6_is_keyed_by_64_prefix(self):
         a = client_identity(peer=None, edge_client_ip="2001:db8:1:2::1", authenticated=True,
@@ -149,9 +156,12 @@ class TestClientIdentity:
             assert identity.rate_key is None, peer
 
     def test_loopback_is_limited_when_edge_auth_is_on(self):
-        identity = client_identity(peer="127.0.0.1", edge_client_ip=None,
-                                   authenticated=True, edge_auth_enabled=True)
-        assert identity.rate_key == "127.0.0.1"
+        authenticated = client_identity(peer="127.0.0.1", edge_client_ip=None,
+                                        authenticated=True, edge_auth_enabled=True)
+        assert authenticated.rate_key == EDGE_UNKNOWN_CLIENT
+        unauthenticated = client_identity(peer="127.0.0.1", edge_client_ip=None,
+                                          authenticated=False, edge_auth_enabled=True)
+        assert unauthenticated.rate_key == "127.0.0.1"
 
 
 class TestAdmissionLanes:

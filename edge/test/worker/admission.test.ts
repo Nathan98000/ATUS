@@ -212,6 +212,16 @@ describe('settleReportFor', () => {
     ).toEqual({ kind: 'computed', dbMs: null })
   })
 
+  it("reports uvicorn's connection-limit 503 (mapped to overloaded) as not reached", () => {
+    const shed = new Response('Service Unavailable', {
+      status: 503,
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+    })
+    expect(
+      settleReportFor(shed, { response: new Response(null), outcome: 'overloaded' }),
+    ).toEqual({ kind: 'not_reached', dbMs: null })
+  })
+
   it('reports an API 2xx whose body broke mid-stream as computed', () => {
     const upstream = json(200, { 'x-cache': 'miss' })
     expect(

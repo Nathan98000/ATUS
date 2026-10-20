@@ -13,7 +13,8 @@ One `workers.dev` origin serves the SPA build (`../frontend/dist`) as static ass
 - sets no timeout, retries once only when the connection fails before response headers, and skips the
   origin for 30 s after 2 consecutive connection failures (per isolate);
 - passes API JSON and error envelopes through byte for byte, and turns platform responses into
-  `service_waking` (503) or `upstream_unavailable` (502/503) envelopes with `Retry-After`;
+  `service_waking` (503), `overloaded` (503, uvicorn's own connection-limit answer) or
+  `upstream_unavailable` (502/503, with `details.reason`) envelopes with `Retry-After`;
 - sets the security headers on every `/api` response and drops `server`, `x-render-*`, `rndr-id`
   and every other origin header not on its allowlist;
 - answers `GET /api/_edge/health` itself and handles the `GET /api/v1/wake` prewake;

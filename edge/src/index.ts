@@ -42,7 +42,12 @@ import {
   storeCached,
   storeHeadersAllow,
 } from './cache'
-import { EDGE_VERSION, KV_MAX_VALUE_BYTES, MAX_BODY_BYTES } from './constants'
+import {
+  EDGE_VERSION,
+  KV_MAX_VALUE_BYTES,
+  MAX_BODY_BYTES,
+  RETRY_AFTER_UNAVAILABLE_S,
+} from './constants'
 import type { Denied, SettleReport } from './governor'
 import {
   errorResponse,
@@ -66,8 +71,10 @@ interface LogRecord {
   method: string
   route: string | null
   status?: number
-  /** edge | pass | waking | unavailable | circuit_open | connect_failed | rejected | denied | error */
+  /** edge | pass | waking | overloaded | unavailable | circuit_open | connect_failed | rejected | denied | error */
   outcome?: string
+  /** For `unavailable`: the `upstream_unavailable` reason. */
+  reason?: string
   /** Analysis POSTs: edge (KV hit) | miss | error (KV read failed) | off (no release vars) */
   cache?: string
   /** Analysis POSTs: admitted | denied:<budget> | unavailable */
@@ -192,7 +199,7 @@ async function dispatch(
     // A deploy without RENDER_ORIGIN or EDGE_AUTH_SECRET (wrangler normally refuses one).
     log.outcome = 'unavailable'
     log.error = 'origin_not_configured'
-    return upstreamUnavailable(requestId, 502)
+    return upstreamUnavailable(requestId, 502, RETRY_AFTER_UNAVAILABLE_S, 'not_configured')
   }
 
   if (route.kind === 'wake') {
@@ -208,7 +215,7 @@ async function dispatch(
     const openMs = originBreaker.remainingOpenMs(Date.now())
     if (openMs > 0) {
       log.outcome = 'circuit_open'
-      return upstreamUnavailable(requestId, 503, openMs / 1000)
+      return upstreamUnavailable(requestId, 503, openMs / 1000, 'circuit_open')
     }
     if (!env.IP_HMAC_KEY) {
       // Without the key no client can be charged (wrangler normally refuses such a deploy).
@@ -307,7 +314,12 @@ async function forward(
   if (outcome.kind === 'circuit-open') {
     log.outcome = 'circuit_open'
     return {
-      response: upstreamUnavailable(requestId, 503, outcome.retryAfterMs / 1000),
+      response: upstreamUnavailable(
+        requestId,
+        503,
+        outcome.retryAfterMs / 1000,
+        'circuit_open',
+      ),
       settle: NOT_REACHED,
     }
   }
@@ -315,7 +327,15 @@ async function forward(
     log.outcome = 'connect_failed'
     log.attempts = outcome.attempts
     log.error = outcome.error
-    return { response: upstreamUnavailable(requestId, 502), settle: NOT_REACHED }
+    return {
+      response: upstreamUnavailable(
+        requestId,
+        502,
+        RETRY_AFTER_UNAVAILABLE_S,
+        'connect_failed',
+      ),
+      settle: NOT_REACHED,
+    }
   }
   const { response: upstream, attempts } = outcome
   log.attempts = attempts
@@ -331,6 +351,7 @@ async function forward(
     storable ? { bufferUpTo: KV_MAX_VALUE_BYTES } : {},
   )
   log.outcome = relayed.outcome
+  if (relayed.reason !== undefined) log.reason = relayed.reason
   const forwarded: Forwarded = {
     response: relayed.response,
     settle: settleReportFor(upstream, relayed),

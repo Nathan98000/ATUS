@@ -70,7 +70,9 @@ describe('single retry', () => {
     expect(response.status).toBe(502)
     expect(response.headers.get('retry-after')).toBe('10')
     expectSecurityHeaders(response)
-    expect((await readEnvelope(response)).code).toBe('upstream_unavailable')
+    const error = await readEnvelope(response)
+    expect(error.code).toBe('upstream_unavailable')
+    expect(error.details).toEqual({ retry_after_seconds: 10, reason: 'connect_failed' })
   })
 
   it.each([
@@ -149,7 +151,7 @@ describe('circuit breaker', () => {
     expectSecurityHeaders(skipped)
     const error = await readEnvelope(skipped)
     expect(error.code).toBe('upstream_unavailable')
-    expect(error.details).toEqual({ retry_after_seconds: 30 })
+    expect(error.details).toEqual({ retry_after_seconds: 30, reason: 'circuit_open' })
 
     clock.advance(12_500)
     const later = await callWorker('/api/health')

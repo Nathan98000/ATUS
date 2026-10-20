@@ -72,6 +72,11 @@ class ClientIdentity:
     rate_key: str | None    # bucket key; None = not per-client limited
 
 
+EDGE_UNKNOWN_CLIENT = "edge:unknown"
+"""The one bucket of edge-authenticated requests that carry no usable
+``X-ATUS-Client-IP``."""
+
+
 def _ip_key(address: ipaddress.IPv4Address | ipaddress.IPv6Address) -> str:
     """IPv4 addresses are keyed whole; IPv6 by /64, the smallest prefix one
     subscriber normally controls (keying a full v6 address would let one host
@@ -99,8 +104,13 @@ def client_identity(
     """Who a request is charged to.
 
     * Edge-authenticated requests are charged to ``X-ATUS-Client-IP`` (the
-      Worker copies it from Cloudflare's ``CF-Connecting-IP``); if it is
-      missing or malformed, to the socket peer.
+      Worker copies it from Cloudflare's ``CF-Connecting-IP``). If it is
+      missing or malformed (the Worker omits it when Cloudflare gave no
+      usable address), they share one bucket, :data:`EDGE_UNKNOWN_CLIENT`,
+      as they share the governor's ``unknown`` prefix at the edge. Never the
+      socket peer: behind the edge that is the platform's proxy, so its
+      address would be logged as the client's and its buckets would mix
+      unrelated visitors by proxy node.
     * Otherwise the socket peer. ``X-Forwarded-For``, ``Forwarded``,
       ``CF-Connecting-IP`` and ``True-Client-IP`` are never consulted: any
       client can set them (and the edge -> provider hop appends to XFF).
@@ -113,6 +123,7 @@ def client_identity(
         trusted = _parse_ip(edge_client_ip)
         if trusted is not None:
             return ClientIdentity(ip=str(trusted), rate_key=_ip_key(trusted))
+        return ClientIdentity(ip=None, rate_key=EDGE_UNKNOWN_CLIENT)
     address = _parse_ip(peer)
     if address is None:
         exempt = not edge_auth_enabled
