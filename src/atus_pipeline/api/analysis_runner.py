@@ -170,9 +170,9 @@ class AnalysisRunner:
             return payload
 
         # Requests the engine would refuse before querying stop here, free.
+        dry_run(job, snapshot)
         # This request will compute: charge it (nothing above awaited since
         # the flight lookup, so registering the flight below is atomic).
-        dry_run(job, snapshot)
         protection = self.protection
         if protection.daily_cap.exhausted():
             raise protection.daily_cap.refuse()
