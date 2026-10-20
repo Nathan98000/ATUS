@@ -393,6 +393,50 @@ legend {
   font-size: 0.82rem;
 }
 
+/* Site-wide service notices (ServiceNotice): persistent live regions that
+   take no space while empty. */
+.service-notice-region {
+  display: block;
+}
+
+.service-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  background: var(--accent-soft);
+  border: 1px solid #c7d6f5;
+  border-radius: var(--radius);
+  color: var(--accent-ink);
+  padding: 0.65rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.92rem;
+}
+
+.service-notice--reload {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+  color: var(--warn-ink);
+}
+
+/* Full-page service states (ServiceInterruption). */
+.service-interruption {
+  max-width: 40rem;
+  margin: 2rem auto;
+}
+
+.service-interruption h1 {
+  color: var(--error-ink);
+  font-size: 1.35rem;
+}
+
+.service-interruption__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+}
+
 .info-note {
   background: var(--accent-soft);
   border: 1px solid #c7d6f5;

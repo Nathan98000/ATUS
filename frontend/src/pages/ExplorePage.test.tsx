@@ -3,11 +3,12 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { CompareRequest, EstimateRequest } from '../api/types'
 import { decodeSpec, encodeSpec } from '../domain/urlSpec'
-import { LocationProbe, testQueryClient } from '../test/render'
+import { COLD_START_BUDGET_MS } from '../api/resilience'
+import { LocationProbe, testQueryClient, withFakeClock } from '../test/render'
 import { metaFixture } from '../test/fixtures'
 import { api, server } from '../test/server'
 import { ExplorePage } from './ExplorePage'
@@ -62,12 +63,18 @@ describe('builder defaults and discovery', () => {
     }
   })
 
-  it('shows a clear failure state when the API is unreachable', async () => {
-    server.use(http.get(api('/meta'), () => HttpResponse.error()))
-    renderExplore()
-    const alert = await screen.findByRole('alert', {}, { timeout: 8000 })
-    expect(alert).toHaveTextContent('could not be reached')
-    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+  it('shows a clear failure state when the API stays unreachable past the cold-start budget', async () => {
+    // Intentional Phase 5 change: an unreachable API is retried for the
+    // cold-start budget (a sleeping free host looks exactly like this) before
+    // the failure is shown.
+    await withFakeClock(async () => {
+      server.use(http.get(api('/meta'), () => HttpResponse.error()))
+      renderExplore()
+      await vi.advanceTimersByTimeAsync(COLD_START_BUDGET_MS)
+      const alert = await screen.findByRole('alert')
+      expect(alert).toHaveTextContent('could not be reached')
+      expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+    })
   })
 })
 

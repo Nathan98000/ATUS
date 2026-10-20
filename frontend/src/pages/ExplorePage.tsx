@@ -7,7 +7,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 
-import { useMeta, usePopulationMetadata } from '../api/queries'
+import { prewake } from '../api/prewake'
+import {
+  refetchFailed,
+  useActivities,
+  useActivityPresets,
+  useMeta,
+  usePopulationMetadata,
+} from '../api/queries'
 import { isOperation, type Operation } from '../api/types'
 import { ErrorPanel } from '../components/ErrorPanel'
 import { LoadingPanel } from '../components/LoadingPanel'
@@ -40,30 +47,41 @@ const OPERATION_LABELS: { value: Operation; label: string; hint: string }[] = [
 export function ExplorePage() {
   const meta = useMeta()
   const populationMetadata = usePopulationMetadata()
+  // The builder's activity picker needs these as well: request them now, in
+  // parallel with /meta, instead of after it (audit I14).
+  useActivities()
+  useActivityPresets()
 
   useEffect(() => {
     document.title = 'Explore · ATUS Explorer'
+    // Entering Explore signals intent to run a new analysis: let a sleeping
+    // API host start waking while the visitor builds the specification.
+    void prewake()
     return () => {
       document.title = 'ATUS Explorer'
     }
   }, [])
 
-  if (meta.isPending || populationMetadata.isPending) {
+  // Page-level states only while something essential is missing. Once the
+  // builder has its data, a failed background refetch never unmounts it and
+  // loses the visitor's edits (audit F26).
+  if (meta.data === undefined || populationMetadata.data === undefined) {
+    const failure =
+      meta.data === undefined && meta.isError
+        ? meta.error
+        : populationMetadata.data === undefined && populationMetadata.isError
+          ? populationMetadata.error
+          : null
+    if (failure !== null) {
+      // "Try again" refetches every failed query, not just the one shown (F63).
+      return (
+        <ErrorPanel error={failure} onRetry={() => refetchFailed(meta, populationMetadata)} />
+      )
+    }
     return (
       <LoadingPanel
         message="Loading the analysis builder…"
         hint="Fetching what the analytical service supports."
-      />
-    )
-  }
-  if (meta.isError) {
-    return <ErrorPanel error={meta.error} onRetry={() => meta.refetch()} />
-  }
-  if (populationMetadata.isError) {
-    return (
-      <ErrorPanel
-        error={populationMetadata.error}
-        onRetry={() => populationMetadata.refetch()}
       />
     )
   }

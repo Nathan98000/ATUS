@@ -1,0 +1,135 @@
+/**
+ * Audit F13: every error code of the v1 contract, the edge's codes and the
+ * client-synthesized ones get a specific, public-facing presentation.
+ */
+import { describe, expect, it } from 'vitest'
+
+import { ApiError, NetworkError } from '../api/client'
+import { IncompatibleApiError } from '../api/compat'
+import { isFullPageError, presentError } from './presentError'
+
+const GENERIC_HEADING = 'The analysis service reported an unexpected problem'
+
+function apiError(
+  status: number,
+  code: string,
+  { retryAfter = null, details = null }: { retryAfter?: number | null; details?: unknown } = {},
+) {
+  return new ApiError(status, code, `server message for ${code}`, details, 'req-9', retryAfter)
+}
+
+describe('presentError: every contract code is specific', () => {
+  it.each([
+    [429, 'rate_limited', 'limit'],
+    [503, 'overloaded', 'service'],
+    [503, 'analysis_timeout', 'service'],
+    [503, 'daily_capacity_reached', 'limit'],
+    [503, 'capacity_paused', 'paused'],
+    [503, 'capacity_unavailable', 'service'],
+    [503, 'database_paused', 'paused'],
+    [503, 'data_version_mismatch', 'service'],
+    [413, 'payload_too_large', 'request'],
+    [403, 'forbidden_origin', 'app'],
+    [503, 'service_waking', 'service'],
+    [502, 'upstream_unavailable', 'service'],
+    [503, 'data_not_loaded', 'service'],
+    [503, 'database_unavailable', 'service'],
+    [429, 'edge_daily_limit', 'paused'],
+  ])('%i %s → %s', (status, code, kind) => {
+    const presented = presentError(apiError(status, code))
+    expect(presented.kind).toBe(kind)
+    expect(presented.heading).not.toBe(GENERIC_HEADING)
+    // Operational states never show the server's internal wording as the message.
+    expect(presented.message).not.toContain('server message')
+    expect(presented.technical).toBe(`HTTP ${status} · ${code} · request req-9`)
+  })
+
+  it('no longer claims "the service is up" for a database outage', () => {
+    const presented = presentError(apiError(503, 'database_unavailable'))
+    expect(presented.message).not.toMatch(/service is up/i)
+    expect(presented.heading).toMatch(/temporarily unavailable/)
+    expect(presented.retryable).toBe(true)
+  })
+
+  it('a rate limit says how long to wait and drives a countdown', () => {
+    const presented = presentError(apiError(429, 'rate_limited', { retryAfter: 42 }))
+    expect(presented.message).toContain('about 42 seconds')
+    expect(presented.retryAfterSeconds).toBe(42)
+    expect(presented.retryable).toBe(true)
+  })
+
+  it('a daily limit names the reset time, per visitor or for everyone', () => {
+    const now = Date.UTC(2026, 9, 20, 15, 0, 0)
+    const everyone = presentError(apiError(503, 'daily_capacity_reached'), now)
+    expect(everyone.message).toMatch(/today’s are used up/)
+    expect(everyone.message).toMatch(/00:00 UTC \(.+ your time\)/)
+    const visitor = presentError(
+      apiError(503, 'daily_capacity_reached', { details: { scope: 'client' } }),
+      now,
+    )
+    expect(visitor.message).toMatch(/Your network/)
+    expect(everyone.retryable).toBe(false)
+  })
+
+  it('a paused quota explains free hosting and what still works', () => {
+    const now = Date.UTC(2026, 9, 20, 12, 0, 0)
+    const presented = presentError(
+      apiError(503, 'capacity_paused', { retryAfter: 10 * 24 * 3600 }),
+      now,
+    )
+    expect(presented.message).toMatch(/free hosting/)
+    expect(presented.message).toMatch(/\(around .+\)/)
+    expect(presented.hint).toMatch(/Starter examples/)
+  })
+
+  it('the edge daily limit is a full-page state with the UTC reset', () => {
+    const presented = presentError(apiError(429, 'edge_daily_limit'))
+    expect(presented.heading).toMatch(/today’s request limit/)
+    expect(presented.message).toMatch(/00:00 UTC/)
+    expect(isFullPageError(apiError(429, 'edge_daily_limit'))).toBe(true)
+  })
+
+  it('a non-JSON host error page is an unavailability, not a broken request', () => {
+    const presented = presentError(apiError(504, 'upstream_unavailable'))
+    expect(presented.heading).toBe('The analysis service is unavailable')
+    expect(presented.adjustable).toBe(false)
+  })
+
+  it('an analysis timeout suggests a smaller analysis', () => {
+    const presented = presentError(apiError(503, 'analysis_timeout'))
+    expect(presented.adjustable).toBe(true)
+    expect(presented.message).toMatch(/fewer years/)
+  })
+
+  it('unknown codes still get the generic service presentation', () => {
+    const presented = presentError(apiError(500, 'internal_error'))
+    expect(presented.heading).toBe(GENERIC_HEADING)
+    expect(presented.retryable).toBe(true)
+  })
+})
+
+describe('presentError: client-side failures', () => {
+  it('an incompatible API is a full-page state naming both versions', () => {
+    const error = new IncompatibleApiError('The service speaks API v2.', 'v2')
+    const presented = presentError(error)
+    expect(presented.kind).toBe('incompatible')
+    expect(presented.message).toMatch(/API v1/)
+    expect(presented.message).toMatch(/version v2/)
+    expect(isFullPageError(error)).toBe(true)
+  })
+
+  it('distinguishes a time-out from an unreachable service', () => {
+    expect(presentError(new NetworkError('x', { timedOut: true })).message).toMatch(
+      /did not answer in time/,
+    )
+    expect(presentError(new NetworkError('x')).message).toMatch(/never got an answer/)
+  })
+
+  it('only paused and incompatible states are full-page', () => {
+    expect(isFullPageError(apiError(503, 'database_paused'))).toBe(true)
+    expect(isFullPageError(apiError(503, 'capacity_paused'))).toBe(true)
+    expect(isFullPageError(apiError(503, 'daily_capacity_reached'))).toBe(false)
+    expect(isFullPageError(apiError(429, 'rate_limited'))).toBe(false)
+    expect(isFullPageError(new NetworkError('x'))).toBe(false)
+  })
+})

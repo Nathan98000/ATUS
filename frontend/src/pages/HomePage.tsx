@@ -8,66 +8,10 @@ import { useEffect } from 'react'
 import { Link } from 'react-router'
 
 import { useMeta } from '../api/queries'
-import type { AnalysisRequest, Operation } from '../api/types'
+import { ServiceInterruption } from '../components/ServiceInterruption'
+import { isFullPageError } from '../domain/presentError'
+import { STARTER_EXAMPLES } from '../domain/prewarm'
 import { analysisPath } from '../domain/urlSpec'
-
-interface StarterExample {
-  question: string
-  detail: string
-  operation: Operation
-  spec: (years: number[], latest: number) => AnalysisRequest
-}
-
-const STARTER_EXAMPLES: StarterExample[] = [
-  {
-    question: 'How much do Americans sleep?',
-    detail: 'Average time per day, most recent year',
-    operation: 'estimate',
-    spec: (_years, latest) => ({
-      measure: 'average_minutes_per_day',
-      activity: { preset: 'sleep' },
-      years: [latest],
-    }),
-  },
-  {
-    question: 'How has leisure time changed?',
-    detail: 'Yearly trend across the full period',
-    operation: 'trend',
-    spec: (years) => ({
-      measure: 'average_minutes_per_day',
-      activity: { preset: 'leisure_and_sports_bls_table' },
-      years,
-    }),
-  },
-  {
-    question: 'Who watches more TV — men or women?',
-    detail: 'Two groups and their difference, most recent year',
-    operation: 'compare',
-    spec: (_years, latest) => ({
-      measure: 'average_minutes_per_day',
-      activity: { preset: 'watching_tv' },
-      years: [latest],
-      group_a: { sex: 'male' },
-      group_b: { sex: 'female' },
-      label_a: 'Men',
-      label_b: 'Women',
-    }),
-  },
-  {
-    question: 'Does household work differ with children at home?',
-    detail: 'Households with vs without children under 18',
-    operation: 'compare',
-    spec: (_years, latest) => ({
-      measure: 'average_minutes_per_day',
-      activity: { preset: 'household_activities_bls_table' },
-      years: [latest],
-      group_a: { has_household_children: true },
-      group_b: { has_household_children: false },
-      label_a: 'Household children present',
-      label_b: 'No household children',
-    }),
-  },
-]
 
 export function HomePage() {
   const meta = useMeta()
@@ -78,6 +22,11 @@ export function HomePage() {
 
   const years = meta.data?.data.years ?? []
   const latest = years.length > 0 ? Math.max(...years) : null
+
+  // A paused quota or an incompatible API is one honest page, not a broken home page.
+  if (meta.data === undefined && meta.isError && isFullPageError(meta.error)) {
+    return <ServiceInterruption error={meta.error} onRetry={() => void meta.refetch()} />
+  }
 
   return (
     <div className="home-page">
@@ -120,11 +69,24 @@ export function HomePage() {
             ))}
           </div>
         ) : (
-          <output className="field-hint" style={{ display: 'block' }}>
-            {meta.isError
-              ? 'Starter examples need the analysis service, which could not be reached.'
-              : 'Loading starter examples…'}
-          </output>
+          <>
+            <output className="field-hint" style={{ display: 'block' }}>
+              {meta.isError
+                ? 'Starter examples need the analysis service, which could not be reached.'
+                : 'Loading starter examples…'}
+            </output>
+            {meta.isError ? (
+              <p style={{ marginTop: '0.6rem' }}>
+                <button
+                  type="button"
+                  className="btn btn--small"
+                  onClick={() => void meta.refetch()}
+                >
+                  Try again
+                </button>
+              </p>
+            ) : null}
+          </>
         )}
       </section>
 

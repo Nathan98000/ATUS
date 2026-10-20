@@ -2,7 +2,14 @@ import type { ReactNode } from 'react'
 import { Link, NavLink } from 'react-router'
 
 import { useMeta } from '../api/queries'
+import { ServiceNotice } from './ServiceNotice'
 
+/**
+ * Header, footer and the site-wide service notices around every page. The
+ * footer's release line appears once metadata has loaded; `/meta` arrives
+ * already checked for compatibility, so the shell never renders a shape it
+ * cannot read (audit F25).
+ */
 export function AppShell({ children }: { children: ReactNode }) {
   const meta = useMeta()
 
@@ -23,7 +30,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-      <main id="main">{children}</main>
+      <main id="main">
+        <ServiceNotice />
+        {children}
+      </main>
       <footer className="site-footer">
         <div className="site-footer__inner">
           <p>
