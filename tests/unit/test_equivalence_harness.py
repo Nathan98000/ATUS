@@ -1109,6 +1109,22 @@ def test_generated_specs_are_valid_api_requests(tmp_path):
     assert {"group_a", "group_b", "measure", "years"} <= set(compare.body)
 
 
+def test_run_sh_prepares_a_locked_baseline_and_hands_over_to_replay():
+    import subprocess
+
+    script = HARNESS / "run.sh"
+    text = script.read_text()
+    assert os.access(script, os.X_OK)
+    subprocess.run(["bash", "-n", str(script)], check=True)
+    assert "set -euo pipefail" in text and "set +x" in text
+    assert 'commit="${ATUS_EQ_BASELINE_COMMIT:-387fc2d}"' in text
+    assert "worktree add --detach" in text                 # outside this checkout
+    assert text.count("--require-hashes") == 2              # uv and pip paths
+    assert text.count("-r \"$repo/requirements/api.lock.txt\"") == 2
+    assert 'exec "$python" "$here/replay.py" --baseline-dir "$baseline"' in text
+    assert "postgres" not in text                          # no connection strings
+
+
 def test_any_expectation_is_never_a_miss():
     spec = httpdiff.Spec("g", "estimate", {}, "random-estimate", "any", "f:1")
     for answer in (ok(estimate_body()), response(422, envelope("insufficient_data", "x"))):
