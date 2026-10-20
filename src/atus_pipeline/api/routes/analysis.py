@@ -1,33 +1,33 @@
 """Analysis endpoints: thin translations between HTTP and the Phase 2 engine.
 
-Each handler: validated request -> AnalysisSpec -> cache lookup ->
-AnalysisEngine -> result.to_dict() -> typed response. No statistical logic
-lives here. Responses carry two observability headers:
+Each handler: validated request -> AnalysisSpec -> AnalysisRunner (cache
+lookup, single-flight, admission) -> AnalysisEngine -> result.to_dict() ->
+typed response. No statistical logic lives here, and nothing touches the
+database before the request body has been validated. Responses carry
+observability headers:
 
 * ``X-Analysis-Key`` — the deterministic identifier of this analysis
   (hash of operation + canonical spec + analytics version + data version). It is a
   reproducibility/cache key, not a stored record ID.
-* ``X-Cache`` — ``hit`` or ``miss`` for the server-side result cache.
+* ``X-Cache`` — ``hit``, ``miss``, ``join`` (shared an identical computation
+  already in progress) or ``bypass`` (computed during a data reload; not
+  cached).
+
+Nothing touches the database before the body has been validated, the cache
+consulted and the engine's own up-front checks passed (the runner's dry
+run): while the data snapshot is fresh, cache hits and every 4xx cost no
+statement.
+* ``X-Data-Version``, ``X-Analytics-Version``, ``X-Response-Format`` — what
+  the response bytes depend on (edge caches key on them).
 """
 
 from __future__ import annotations
 
-import logging
-from collections.abc import Callable
+from fastapi import APIRouter, Depends, Request, Response
 
-import psycopg
-from fastapi import APIRouter, Depends, Response
-
-from ...analytics import ANALYTICS_VERSION, AnalysisEngine
 from ...analytics.spec import population_to_dict
-from ..cache import AnalysisCache, cache_key
-from ..dependencies import (
-    get_cache,
-    get_connection,
-    get_data_version,
-    get_engine,
-    read_data_version,
-)
+from ..analysis_runner import AnalysisJob
+from ..dependencies import AnalysisRuntime, get_analysis_runtime
 from ..schemas.analysis import (
     CompareRequest,
     CompareResponse,
@@ -38,66 +38,37 @@ from ..schemas.analysis import (
 )
 from ..schemas.errors import ErrorResponse
 
-log = logging.getLogger("atus.api")
-
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
 _ERROR_RESPONSES = {
     400: {"model": ErrorResponse, "description": "Malformed JSON body"},
+    413: {"model": ErrorResponse, "description": "Request body too large (payload_too_large)"},
+    415: {"model": ErrorResponse, "description": "Body is not JSON (unsupported_media_type)"},
     422: {
         "model": ErrorResponse,
         "description": "Schema violation, or analytically invalid/unsupported request "
                        "(e.g. 2020 under the multiyear weight scheme)",
     },
-    503: {"model": ErrorResponse, "description": "Analytical database unavailable"},
+    429: {
+        "model": ErrorResponse,
+        "description": "Per-client rate limit (rate_limited); see Retry-After",
+    },
+    503: {
+        "model": ErrorResponse,
+        "description": "Temporarily unable to compute: overloaded, analysis_timeout, "
+                       "daily_capacity_reached, database_unavailable, database_paused, "
+                       "data_not_loaded, data_version_mismatch; see Retry-After",
+    },
 }
 
 
-def _cached_analysis(
-    *,
-    operation: str,
-    spec_payload: dict,
-    cache: AnalysisCache,
-    data_version: str,
-    conn: psycopg.Connection,
-    response: Response,
-    compute: Callable[[], dict],
+async def _run(
+    job: AnalysisJob, request: Request, response: Response, runtime: AnalysisRuntime
 ) -> dict:
-    """Serve from the result cache or compute-and-store. Only successful
-    results are cached (a raising `compute` stores nothing), and a cache
-    failure degrades to computing — never to an error.
-
-    Concurrent-reload guard: `atus load` rebuilds the data mid-flight of a
-    request in rare cases, so the data version is re-read after computing and
-    the result is only cached if the version is unchanged — a result computed
-    against reloaded (or mixed-snapshot) data can never be stored under the
-    pre-reload key. Such a result is still returned once, uncached and marked
-    `X-Cache: bypass`.
-    """
-    key = cache_key(operation, spec_payload, ANALYTICS_VERSION, data_version)
-    response.headers["X-Analysis-Key"] = key
-    try:
-        hit = cache.get(key)
-    except Exception:  # cache trouble must never break analysis
-        log.exception("analysis cache get failed; computing without cache")
-        hit = None
-    if hit is not None:
-        response.headers["X-Cache"] = "hit"
-        return hit
-    payload = compute()
-    if read_data_version(conn) != data_version:
-        log.warning(
-            "data version changed during %s computation; result returned uncached",
-            operation,
-        )
-        response.headers["X-Cache"] = "bypass"
-        return payload
-    try:
-        cache.put(key, payload)
-    except Exception:
-        log.exception("analysis cache put failed; returning uncached result")
-    response.headers["X-Cache"] = "miss"
-    return payload
+    return await runtime.runner.run(
+        job, request=request, response=response, cache=runtime.cache,
+        db=runtime.db, engine_factory=runtime.engine_factory,
+    )
 
 
 @router.post(
@@ -114,24 +85,20 @@ def _cached_analysis(
         "ATUS User's Guide ch. 7 — never unweighted sample means."
     ),
 )
-def estimate(
+async def estimate(
     body: EstimateRequest,
+    request: Request,
     response: Response,
-    engine: AnalysisEngine = Depends(get_engine),
-    cache: AnalysisCache = Depends(get_cache),
-    data_version: str = Depends(get_data_version),
-    conn: psycopg.Connection = Depends(get_connection),
+    runtime: AnalysisRuntime = Depends(get_analysis_runtime),
 ) -> dict:
     spec = body.to_spec()
-    return _cached_analysis(
+    job = AnalysisJob(
         operation="estimate",
         spec_payload=spec.to_dict(),
-        cache=cache,
-        data_version=data_version,
-        conn=conn,
-        response=response,
-        compute=lambda: engine.estimate(spec).to_dict(),
+        years=spec.years,
+        compute=lambda engine: engine.estimate(spec).to_dict(),
     )
+    return await _run(job, request, response, runtime)
 
 
 @router.post(
@@ -146,24 +113,20 @@ def estimate(
         "reason — never silently dropped, and never serialized as zero."
     ),
 )
-def trend(
+async def trend(
     body: TrendRequest,
+    request: Request,
     response: Response,
-    engine: AnalysisEngine = Depends(get_engine),
-    cache: AnalysisCache = Depends(get_cache),
-    data_version: str = Depends(get_data_version),
-    conn: psycopg.Connection = Depends(get_connection),
+    runtime: AnalysisRuntime = Depends(get_analysis_runtime),
 ) -> dict:
     spec = body.to_spec()
-    return _cached_analysis(
+    job = AnalysisJob(
         operation="trend",
         spec_payload=spec.to_dict(),
-        cache=cache,
-        data_version=data_version,
-        conn=conn,
-        response=response,
-        compute=lambda: engine.trend(spec).to_dict(),
+        years=spec.years,
+        compute=lambda engine: engine.trend(spec).to_dict(),
     )
+    return await _run(job, request, response, runtime)
 
 
 @router.post(
@@ -179,13 +142,11 @@ def trend(
         "the overlapping-sample group estimates."
     ),
 )
-def compare(
+async def compare(
     body: CompareRequest,
+    request: Request,
     response: Response,
-    engine: AnalysisEngine = Depends(get_engine),
-    cache: AnalysisCache = Depends(get_cache),
-    data_version: str = Depends(get_data_version),
-    conn: psycopg.Connection = Depends(get_connection),
+    runtime: AnalysisRuntime = Depends(get_analysis_runtime),
 ) -> dict:
     comparison = body.to_comparison()
     spec_payload = {
@@ -195,12 +156,10 @@ def compare(
         "label_a": comparison.label_a,
         "label_b": comparison.label_b,
     }
-    return _cached_analysis(
+    job = AnalysisJob(
         operation="compare",
         spec_payload=spec_payload,
-        cache=cache,
-        data_version=data_version,
-        conn=conn,
-        response=response,
-        compute=lambda: engine.compare(comparison).to_dict(),
+        years=comparison.base.years,
+        compute=lambda engine: engine.compare(comparison).to_dict(),
     )
+    return await _run(job, request, response, runtime)

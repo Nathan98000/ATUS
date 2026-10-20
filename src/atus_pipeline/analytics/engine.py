@@ -64,10 +64,20 @@ _PANDEMIC_NOTE = (
 
 
 class AnalysisEngine:
-    def __init__(self, conn: psycopg.Connection):
+    def __init__(
+        self,
+        conn: psycopg.Connection,
+        *,
+        resolver: ActivityResolver | None = None,
+        loaded_years: tuple[int, ...] | None = None,
+    ):
+        """``resolver`` and ``loaded_years`` may be supplied by a caller that
+        already read them from the same database (the API keeps both in its
+        in-process data snapshot); otherwise they are read on first use. An
+        empty ``loaded_years`` counts as not supplied."""
         self._conn = conn
-        self._resolver: ActivityResolver | None = None
-        self._loaded_years: tuple[int, ...] | None = None
+        self._resolver: ActivityResolver | None = resolver
+        self._loaded_years: tuple[int, ...] | None = loaded_years or None
 
     # ------------------------------------------------------------------ #
     # public operations

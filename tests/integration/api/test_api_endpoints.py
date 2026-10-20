@@ -8,6 +8,8 @@ verifiable by pencil and paper.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import psycopg
 import pytest
 from fastapi.testclient import TestClient
@@ -19,32 +21,39 @@ from tests.integration.analytics_dataset import analytics_settings
 pytestmark = pytest.mark.integration
 
 
+OPS_TOKEN = "t" * 40
+OPS = {"Authorization": f"Bearer {OPS_TOKEN}"}
+
+
 @pytest.fixture(scope="module")
 def client(tmp_path_factory, migrated_db):
     settings = analytics_settings(tmp_path_factory.mktemp("api"), migrated_db)
     with psycopg.connect(settings.database_url) as conn:
         load_all(conn, settings)
-    app = create_app(settings)
+    app = create_app(replace(settings, ops_token=OPS_TOKEN))
     with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
 
 
 class TestSystemEndpoints:
     def test_health(self, client):
-        assert client.get("/health").json() == {"status": "ok"}
+        assert client.get("/health").json() == {"status": "ok", "build": "dev"}
 
     def test_ready_with_loaded_data(self, client):
-        response = client.get("/ready")
+        response = client.get("/ready", headers=OPS)
         assert response.status_code == 200
-        assert response.json()["data_loaded"] is True
+        payload = response.json()
+        assert payload["data_loaded"] is True
+        assert payload["data_version"].startswith("0325:")
+        assert client.get("/ready").status_code == 404  # no token: not revealed
 
     def test_ready_reports_unreachable_database(self, tmp_path):
         settings = analytics_settings(
             tmp_path / "brokendb", "postgresql://atus:atus@127.0.0.1:6553/nope"
         )
-        app = create_app(settings)
+        app = create_app(replace(settings, ops_token=OPS_TOKEN))
         with TestClient(app, raise_server_exceptions=False) as broken:
-            response = broken.get("/ready")
+            response = broken.get("/ready", headers=OPS)
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "database_unavailable"
 

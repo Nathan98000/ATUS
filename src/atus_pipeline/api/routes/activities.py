@@ -1,18 +1,24 @@
-"""Read-only activity-lexicon endpoints (the harmonized 2003-25 coding tree).
+"""Read-only activity-lexicon endpoints (the harmonized multi-year coding tree).
 
-Backed directly by the Phase 1 lexicon tables (``atus.activity_tier1/2``,
-``atus.activity_codes``). The whole lexicon is 556 entries, so listings are
-bounded and unpaginated. Responses are version-stable between data loads and
-carry a modest public Cache-Control.
+Answered from the lexicon in the in-process data snapshot, which is read from
+the Phase 1 lexicon tables (``atus.activity_tier1/2``, ``atus.activity_codes``)
+with the same SQL these endpoints used to run per request; a fresh snapshot
+answers with no database statement (audit F14). The one exception is a
+search term the snapshot cannot match exactly as PostgreSQL's ``ILIKE``
+would (a non-ASCII term; see ``snapshot.py``), which runs the original
+query. The lexicon has a few hundred entries, so listings are bounded and
+unpaginated. Responses are version-stable between data loads and carry a
+modest public Cache-Control.
 """
 
 from __future__ import annotations
 
-import psycopg
 from fastapi import APIRouter, Depends, Query, Response
+from starlette.concurrency import run_in_threadpool
 
 from ...analytics.spec import ACTIVITY_PRESETS
-from ..dependencies import get_connection
+from ..database import Database
+from ..dependencies import get_database, get_snapshots
 from ..errors import ActivityNotFoundError
 from ..schemas.activities import (
     ActivityDetailResponse,
@@ -21,52 +27,23 @@ from ..schemas.activities import (
     ActivityPreset,
     ActivityPresetsResponse,
 )
-from ..schemas.errors import ErrorResponse
+from ..schemas.errors import DATA_ROUTE_503, ErrorResponse
+from ..snapshot import LEXICON_SQL, LexiconEntry, SnapshotStore
 
 router = APIRouter(prefix="/activities", tags=["activities"])
 
 _CACHE_HEADER = "public, max-age=300"
-
-# One flat view over the three lexicon tables. level: 1 = major category (2
-# digits), 2 = subcategory (4), 3 = leaf activity (6).
-_LEXICON_SQL = """
-SELECT code, name, level, parent_code, harmonization_note FROM (
-    SELECT code, name, 1 AS level, NULL AS parent_code,
-           NULL AS harmonization_note
-    FROM atus.activity_tier1
-    UNION ALL
-    SELECT code, name, 2, left(code, 2), NULL FROM atus.activity_tier2
-    UNION ALL
-    SELECT code, name, 3, tier2_code, harmonization_note FROM atus.activity_codes
-) lexicon
-"""
 
 
 def _escape_like(term: str) -> str:
     return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-@router.get(
-    "",
-    response_model=ActivityListResponse,
-    summary="List/search the activity lexicon",
-    description=(
-        "Flat listing of the harmonized 2003-25 activity coding lexicon "
-        "(18 major categories, 107 subcategories, 431 leaf activities), "
-        "filterable by level, direct parent, and name search. In analysis "
-        "requests, a 2- or 4-digit code selects itself plus all descendants."
-    ),
-)
-def list_activities(
-    response: Response,
-    level: int | None = Query(default=None, ge=1, le=3),
-    parent: str | None = Query(
-        default=None, pattern=r"^[0-9]{2}([0-9]{2})?$",
-        description="Return direct children of this 2- or 4-digit code.",
-    ),
-    search: str | None = Query(default=None, min_length=2, max_length=80),
-    conn: psycopg.Connection = Depends(get_connection),
-) -> ActivityListResponse:
+def lexicon_query(
+    level: int | None, parent: str | None, search: str | None
+) -> tuple[str, dict]:
+    """The listing's SQL (the search fallback, and the reference the
+    snapshot's Python filter is tested against)."""
     conditions, params = [], {}
     if level is not None:
         conditions.append("level = %(level)s")
@@ -77,12 +54,44 @@ def list_activities(
     if search is not None:
         conditions.append(r"name ILIKE '%%' || %(search)s || '%%' ESCAPE '\'")
         params["search"] = _escape_like(search)
-    sql = _LEXICON_SQL
+    sql = LEXICON_SQL
     if conditions:
         sql += " WHERE " + " AND ".join(conditions)
     sql += " ORDER BY code, level"
-    rows = conn.execute(sql, params).fetchall()
-    entries = [
+    return sql, params
+
+
+@router.get(
+    "",
+    response_model=ActivityListResponse,
+    responses={503: DATA_ROUTE_503},
+    summary="List/search the activity lexicon",
+    description=(
+        "Flat listing of the harmonized multi-year activity coding lexicon of "
+        "the loaded release (major categories, subcategories and leaf "
+        "activities; see GET /api/v1/meta for the release), filterable by "
+        "level, direct parent, and name search. In analysis requests, a 2- or "
+        "4-digit code selects itself plus all descendants."
+    ),
+)
+async def list_activities(
+    response: Response,
+    level: int | None = Query(default=None, ge=1, le=3),
+    parent: str | None = Query(
+        default=None, pattern=r"^[0-9]{2}([0-9]{2})?$",
+        description="Return direct children of this 2- or 4-digit code.",
+    ),
+    search: str | None = Query(default=None, min_length=2, max_length=80),
+    db: Database = Depends(get_database),
+    snapshots: SnapshotStore = Depends(get_snapshots),
+) -> ActivityListResponse:
+    snapshot = await snapshots.get(db)
+    entries = snapshot.search_lexicon(level=level, parent=parent, search=search)
+    if entries is None:
+        rows = await run_in_threadpool(_fetch_all, db, *lexicon_query(level, parent, search))
+    else:
+        rows = [entry.row() for entry in entries]
+    activities = [
         ActivityEntry(
             code=code, name=name, level=lvl, parent_code=parent_code,
             harmonization_note=note,
@@ -90,7 +99,8 @@ def list_activities(
         for code, name, lvl, parent_code, note in rows
     ]
     response.headers["Cache-Control"] = _CACHE_HEADER
-    return ActivityListResponse(activities=entries, total=len(entries))
+    response.headers["X-Data-Version"] = snapshot.data_version
+    return ActivityListResponse(activities=activities, total=len(activities))
 
 
 @router.get(
@@ -103,7 +113,7 @@ def list_activities(
         "(verified against published Table A-1 values)."
     ),
 )
-def list_presets(response: Response) -> ActivityPresetsResponse:
+async def list_presets(response: Response) -> ActivityPresetsResponse:
     presets = [
         ActivityPreset(
             name=name, label=selector.label or name,
@@ -118,54 +128,45 @@ def list_presets(response: Response) -> ActivityPresetsResponse:
 @router.get(
     "/{code}",
     response_model=ActivityDetailResponse,
-    responses={404: {"model": ErrorResponse, "description": "Unknown activity code"}},
+    responses={
+        404: {"model": ErrorResponse, "description": "Unknown activity code"},
+        503: DATA_ROUTE_503,
+    },
     summary="One lexicon code with its ancestry and children",
 )
-def activity_detail(
+async def activity_detail(
     code: str,
     response: Response,
-    conn: psycopg.Connection = Depends(get_connection),
+    db: Database = Depends(get_database),
+    snapshots: SnapshotStore = Depends(get_snapshots),
 ) -> ActivityDetailResponse:
     if not (code.isdigit() and len(code) in (2, 4, 6)):
-        raise ActivityNotFoundError(code)
-
-    def fetch(one_code: str) -> tuple | None:
-        return conn.execute(
-            _LEXICON_SQL + " WHERE code = %(code)s", {"code": one_code}
-        ).fetchone()
-
-    row = fetch(code)
-    if row is None:
-        raise ActivityNotFoundError(code)
-    _, name, level, _, note = row
-
-    parents = []
-    for prefix_len in (2, 4):
-        if prefix_len < len(code):
-            parent_row = fetch(code[:prefix_len])
-            if parent_row:
-                parents.append(_entry(parent_row))
-
-    child_rows = conn.execute(
-        _LEXICON_SQL + " WHERE parent_code = %(code)s ORDER BY code", {"code": code}
-    ).fetchall()
-
-    leaf_count = conn.execute(
-        "SELECT count(*) FROM atus.activity_codes WHERE code LIKE %(prefix)s",
-        {"prefix": code + "%"},
-    ).fetchone()[0]
-
+        # Malformed codes never need the data; name the lexicon only when
+        # the snapshot already knows it.
+        current = snapshots.current
+        raise ActivityNotFoundError(code, current.lexicon_label if current else None)
+    snapshot = await snapshots.get(db)
+    detail = snapshot.detail(code)
+    if detail is None:
+        raise ActivityNotFoundError(code, snapshot.lexicon_label)
     response.headers["Cache-Control"] = _CACHE_HEADER
+    response.headers["X-Data-Version"] = snapshot.data_version
     return ActivityDetailResponse(
-        code=code, name=name, level=level, parents=parents,
-        children=[_entry(r) for r in child_rows],
-        harmonization_note=note, descendant_leaf_count=leaf_count,
+        code=code, name=detail.entry.name, level=detail.entry.level,
+        parents=[_entry(p) for p in detail.parents],
+        children=[_entry(c) for c in detail.children],
+        harmonization_note=detail.entry.harmonization_note,
+        descendant_leaf_count=detail.descendant_leaf_count,
     )
 
 
-def _entry(row: tuple) -> ActivityEntry:
-    code, name, level, parent_code, note = row
+def _fetch_all(db: Database, sql: str, params: dict) -> list[tuple]:
+    with db.transaction("metadata") as conn:
+        return conn.execute(sql, params).fetchall()
+
+
+def _entry(entry: LexiconEntry) -> ActivityEntry:
     return ActivityEntry(
-        code=code, name=name, level=level, parent_code=parent_code,
-        harmonization_note=note,
+        code=entry.code, name=entry.name, level=entry.level,
+        parent_code=entry.parent_code, harmonization_note=entry.harmonization_note,
     )

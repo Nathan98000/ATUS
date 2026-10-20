@@ -7,3 +7,11 @@ semantics live in ``atus_pipeline.analytics``.
 """
 
 API_VERSION = "v1"
+
+RESPONSE_FORMAT = "1"
+"""Version of the analysis response *bytes* (sent as ``X-Response-Format``).
+
+Edge caches key stored responses on it together with the data and analytics
+versions; bump it whenever the serialized form of an analysis response
+changes without a change in ``ANALYTICS_VERSION``.
+"""

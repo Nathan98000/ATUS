@@ -1,63 +1,96 @@
-"""Liveness and readiness endpoints (unversioned; for process supervisors)."""
+"""System endpoints (unversioned): liveness, readiness and metrics.
+
+* ``/health`` is the platform health check and the only monitor target. It
+  touches nothing (no database, no edge authentication, no thread) and
+  reports the build, which the deploy workflow polls for.
+* ``/ready`` and ``/metrics`` are for operators only (audit F16). They need
+  ``Authorization: Bearer <ATUS_OPS_TOKEN>``; without a valid token (or with
+  no token configured) they answer exactly like a path that does not exist.
+  Neither is in the OpenAPI schema, and the edge Worker never routes them.
+"""
 
 from __future__ import annotations
 
 import logging
 
-import psycopg
-from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, Depends, Request, Response
+from fastapi.responses import PlainTextResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from ..dependencies import get_connection
-from ..schemas.errors import ErrorResponse
+from ...config import Settings
+from ..database import Database
+from ..dependencies import get_database, get_settings, get_snapshots
+from ..errors import DataNotLoadedError
+from ..metrics import CONTENT_TYPE
+from ..middleware import ops_authorized
+from ..schemas.system import HealthResponse
+from ..snapshot import SnapshotStore
 
 log = logging.getLogger("atus.api")
 
 router = APIRouter(tags=["system"])
 
+_NO_STORE = {"Cache-Control": "no-store"}
+
+
+def _require_ops_token(request: Request, settings: Settings) -> None:
+    if not ops_authorized(request.headers, settings):
+        raise StarletteHTTPException(status_code=404)  # the unknown-route envelope
+
 
 @router.get(
     "/health",
+    response_model=HealthResponse,
     summary="Liveness",
     description=(
-        "Answers whether the API process is running. No dependencies touched. "
-        "Async on purpose: it bypasses the worker threadpool, so liveness stays "
-        "instant even when every worker thread is busy with long analyses."
+        "Answers whether the API process is running, and which build it is "
+        "(`build`, from ATUS_BUILD_SHA). No dependencies touched (no database, "
+        "no edge authentication; HEAD works too). Async on purpose: it "
+        "bypasses the worker threadpool, so liveness stays instant even when "
+        "every worker thread is busy with long analyses."
     ),
 )
-async def health() -> dict:
-    return {"status": "ok"}
+async def health(
+    response: Response, settings: Settings = Depends(get_settings)
+) -> HealthResponse:
+    response.headers.update(_NO_STORE)
+    return HealthResponse(status="ok", build=settings.build_sha)
 
 
-@router.get(
-    "/ready",
-    response_model=None,  # returns either a plain dict or a 503 JSONResponse
-    summary="Readiness",
-    description=(
-        "Verifies the dependencies needed to answer analysis requests: the "
-        "database is reachable and ATUS data is loaded. The (optional) result "
-        "cache is not a readiness dependency — the service degrades gracefully "
-        "without it. Readiness assumes the database passed `atus validate-db` "
-        "at load time; it does not re-run data-quality checks."
-    ),
-    responses={503: {"model": ErrorResponse, "description": "Not ready"}},
-)
-def ready(conn: psycopg.Connection = Depends(get_connection)) -> dict | JSONResponse:
-    try:
-        conn.execute("SELECT 1").fetchone()
-        loaded = conn.execute(
-            "SELECT EXISTS (SELECT 1 FROM atus.respondents)"
-        ).fetchone()[0]
-    except psycopg.errors.UndefinedTable:
-        return _not_ready("schema_not_initialized", "Run `atus migrate` to create the schema.")
-    if not loaded:
-        return _not_ready("data_not_loaded", "Run the Phase 1 pipeline (`atus load`) first.")
-    return {"status": "ready", "database": "ok", "data_loaded": True}
+@router.get("/ready", include_in_schema=False)
+async def ready(
+    request: Request,
+    response: Response,
+    settings: Settings = Depends(get_settings),
+    db: Database = Depends(get_database),
+    snapshots: SnapshotStore = Depends(get_snapshots),
+) -> dict:
+    """Whether the API can answer analyses: the database is reachable (or
+    was within the snapshot TTL), data is loaded, and it is the data version
+    the deployment expects. Failures are the ordinary 503 envelopes; the
+    remediation hints go to the log only."""
+    _require_ops_token(request, settings)
+    snapshot = await snapshots.get(db, check_expected=False)
+    if not snapshot.is_loaded:
+        log.warning("readiness: no succeeded ingestion run; load data with `atus load`")
+        raise DataNotLoadedError("readiness: no succeeded ingestion run")
+    snapshots.check_expected(snapshot)
+    response.headers.update(_NO_STORE)
+    age = snapshots.age_s()
+    return {
+        "status": "ready",
+        "database": "ok",
+        "data_loaded": True,
+        "data_version": snapshot.data_version,
+        "expected_data_version": snapshots.expected_version,
+        "build": settings.build_sha,
+        "snapshot_age_s": round(age, 3) if age is not None else None,
+    }
 
 
-def _not_ready(code: str, message: str) -> JSONResponse:
-    log.warning("readiness failed: %s", code)
-    return JSONResponse(
-        status_code=503,
-        content={"error": {"code": code, "message": message, "details": None}},
-    )
+@router.get("/metrics", include_in_schema=False)
+async def metrics(request: Request, settings: Settings = Depends(get_settings)) -> Response:
+    """Prometheus text format (``metrics.py``)."""
+    _require_ops_token(request, settings)
+    body = request.app.state.metrics.render(request.app.state)
+    return PlainTextResponse(body, media_type=CONTENT_TYPE, headers=_NO_STORE)

@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "ATUS Analysis API",
-  "description": "Read-only analytical API over the American Time Use Survey (ATUS) 2003-2025\nmulti-year microdata.\n\nAll estimates are **survey-weighted population statistics** computed by the\nproject's validated analytical engine (ATUS User's Guide ch. 7 estimators;\nreplicate-weight standard errors per ch. 7.5) \u2014 never unweighted sample\nmeans. 2020 has special weighting rules the engine enforces explicitly.\nMethodology: see docs/analytics.md and docs/methodology.md in the repository;\nthe engine reproduces 24 official BLS published values in its benchmark suite.\n\nResponses embed the exact canonical analysis `spec`; resubmitting it (same\n`analytics_version` and data release, see GET /api/v1/meta) reproduces the\nresult.\n",
+  "description": "Read-only analytical API over the American Time Use Survey (ATUS) multi-year\nmicrodata. The loaded BLS release and its survey years are reported by\nGET /api/v1/meta.\n\nAll estimates are **survey-weighted population statistics** computed by the\nproject's validated analytical engine (ATUS User's Guide ch. 7 estimators;\nreplicate-weight standard errors per ch. 7.5) \u2014 never unweighted sample\nmeans. 2020 has special weighting rules the engine enforces explicitly.\nMethodology: see docs/analytics.md and docs/methodology.md in the repository;\nthe engine reproduces 24 official BLS published values in its benchmark suite.\n\nResponses embed the exact canonical analysis `spec`; resubmitting it (same\n`analytics_version` and data release, see GET /api/v1/meta) reproduces the\nresult.\n",
   "version": "v1 (contract)"
  },
  "paths": {
@@ -45,6 +45,26 @@
        }
       }
      },
+     "413": {
+      "description": "Request body too large (payload_too_large)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "415": {
+      "description": "Body is not JSON (unsupported_media_type)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "422": {
       "description": "Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme)",
       "content": {
@@ -55,8 +75,18 @@
        }
       }
      },
+     "429": {
+      "description": "Per-client rate limit (rate_limited); see Retry-After",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "503": {
-      "description": "Analytical database unavailable",
+      "description": "Temporarily unable to compute: overloaded, analysis_timeout, daily_capacity_reached, database_unavailable, database_paused, data_not_loaded, data_version_mismatch; see Retry-After",
       "content": {
        "application/json": {
         "schema": {
@@ -107,6 +137,26 @@
        }
       }
      },
+     "413": {
+      "description": "Request body too large (payload_too_large)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "415": {
+      "description": "Body is not JSON (unsupported_media_type)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "422": {
       "description": "Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme)",
       "content": {
@@ -117,8 +167,18 @@
        }
       }
      },
+     "429": {
+      "description": "Per-client rate limit (rate_limited); see Retry-After",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "503": {
-      "description": "Analytical database unavailable",
+      "description": "Temporarily unable to compute: overloaded, analysis_timeout, daily_capacity_reached, database_unavailable, database_paused, data_not_loaded, data_version_mismatch; see Retry-After",
       "content": {
        "application/json": {
         "schema": {
@@ -169,6 +229,26 @@
        }
       }
      },
+     "413": {
+      "description": "Request body too large (payload_too_large)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "415": {
+      "description": "Body is not JSON (unsupported_media_type)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "422": {
       "description": "Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme)",
       "content": {
@@ -179,8 +259,18 @@
        }
       }
      },
+     "429": {
+      "description": "Per-client rate limit (rate_limited); see Retry-After",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "503": {
-      "description": "Analytical database unavailable",
+      "description": "Temporarily unable to compute: overloaded, analysis_timeout, daily_capacity_reached, database_unavailable, database_paused, data_not_loaded, data_version_mismatch; see Retry-After",
       "content": {
        "application/json": {
         "schema": {
@@ -198,7 +288,7 @@
      "activities"
     ],
     "summary": "List/search the activity lexicon",
-    "description": "Flat listing of the harmonized 2003-25 activity coding lexicon (18 major categories, 107 subcategories, 431 leaf activities), filterable by level, direct parent, and name search. In analysis requests, a 2- or 4-digit code selects itself plus all descendants.",
+    "description": "Flat listing of the harmonized multi-year activity coding lexicon of the loaded release (major categories, subcategories and leaf activities; see GET /api/v1/meta for the release), filterable by level, direct parent, and name search. In analysis requests, a 2- or 4-digit code selects itself plus all descendants.",
     "operationId": "list_activities_api_v1_activities_get",
     "parameters": [
      {
@@ -264,6 +354,16 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/ActivityListResponse"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "Temporarily unable to read the data: database_unavailable, database_paused, overloaded, data_version_mismatch, schema_not_initialized; see Retry-After",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
         }
        }
       }
@@ -342,6 +442,16 @@
        }
       }
      },
+     "503": {
+      "description": "Temporarily unable to read the data: database_unavailable, database_paused, overloaded, data_version_mismatch, schema_not_initialized; see Retry-After",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
      "422": {
       "description": "Validation Error",
       "content": {
@@ -395,6 +505,16 @@
         }
        }
       }
+     },
+     "503": {
+      "description": "Temporarily unable to read the data: database_unavailable, database_paused, overloaded, data_version_mismatch, schema_not_initialized; see Retry-After",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
      }
     }
    }
@@ -405,7 +525,7 @@
      "system"
     ],
     "summary": "Liveness",
-    "description": "Answers whether the API process is running. No dependencies touched. Async on purpose: it bypasses the worker threadpool, so liveness stays instant even when every worker thread is busy with long analyses.",
+    "description": "Answers whether the API process is running, and which build it is (`build`, from ATUS_BUILD_SHA). No dependencies touched (no database, no edge authentication; HEAD works too). Async on purpose: it bypasses the worker threadpool, so liveness stays instant even when every worker thread is busy with long analyses.",
     "operationId": "health_health_get",
     "responses": {
      "200": {
@@ -413,39 +533,7 @@
       "content": {
        "application/json": {
         "schema": {
-         "additionalProperties": true,
-         "type": "object",
-         "title": "Response Health Health Get"
-        }
-       }
-      }
-     }
-    }
-   }
-  },
-  "/ready": {
-   "get": {
-    "tags": [
-     "system"
-    ],
-    "summary": "Readiness",
-    "description": "Verifies the dependencies needed to answer analysis requests: the database is reachable and ATUS data is loaded. The (optional) result cache is not a readiness dependency \u2014 the service degrades gracefully without it. Readiness assumes the database passed `atus validate-db` at load time; it does not re-run data-quality checks.",
-    "operationId": "ready_ready_get",
-    "responses": {
-     "200": {
-      "description": "Successful Response",
-      "content": {
-       "application/json": {
-        "schema": {}
-       }
-      }
-     },
-     "503": {
-      "description": "Not ready",
-      "content": {
-       "application/json": {
-        "schema": {
-         "$ref": "#/components/schemas/ErrorResponse"
+         "$ref": "#/components/schemas/HealthResponse"
         }
        }
       }
@@ -519,7 +607,7 @@
      "code": {
       "type": "string",
       "title": "Code",
-      "description": "Harmonized 2003-25 lexicon code (2, 4, or 6 digits)."
+      "description": "Harmonized multi-year lexicon code of the loaded release (2, 4, or 6 digits)."
      },
      "name": {
       "type": "string",
@@ -700,7 +788,8 @@
      "preset": {
       "anyOf": [
        {
-        "type": "string"
+        "type": "string",
+        "maxLength": 64
        },
        {
         "type": "null"
@@ -1418,6 +1507,26 @@
     },
     "type": "object",
     "title": "HTTPValidationError"
+   },
+   "HealthResponse": {
+    "properties": {
+     "status": {
+      "type": "string",
+      "const": "ok",
+      "title": "Status"
+     },
+     "build": {
+      "type": "string",
+      "title": "Build",
+      "description": "Build identifier of the running image (ATUS_BUILD_SHA; 'dev' locally). The deploy workflow waits until it equals the deployed commit."
+     }
+    },
+    "type": "object",
+    "required": [
+     "status",
+     "build"
+    ],
+    "title": "HealthResponse"
    },
    "MeasureInfo": {
     "properties": {
