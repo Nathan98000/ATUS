@@ -171,8 +171,10 @@ not an error (`resilience.ts`, audit F11, F12, F64):
 | Failure | Metadata GET | Analysis POST |
 | --- | --- | --- |
 | No answer / connection error, `service_waking`, `upstream_unavailable` (incl. any non-JSON 5xx page), other 502/504/52x | retried until 150 s have passed | same |
-| `overloaded`, `database_unavailable`, a 503 with an unknown code | retried until 150 s | retried **once** |
+| `upstream_unavailable` whose `details.reason` is `origin_timeout` (a Cloudflare 524) or `broken_response`: the API may have taken the analysis | retried until 150 s | retried **once** (it joins the running computation or hits the API's cache), never re-sent for the whole budget |
+| `overloaded` (also the edge's mapping of uvicorn's own connection-limit 503), `database_unavailable`, a 503 with an unknown code | retried until 150 s | retried **once** |
 | `rate_limited` (429) with `Retry-After` | retried until 150 s | never (visitor decides) |
+| `rate_limited` with `details.budget: "prefix"` (the edge's per-network daily allowance, waiting until 00:00 UTC) | never | never |
 | client time-out (60 s per metadata attempt, 150 s per analysis) | retried until 150 s | never |
 | anything else (4xx, quota states, `analysis_timeout`, `data_version_mismatch`, incompatible API) | never | never |
 
@@ -202,7 +204,7 @@ contract and of the edge has its own public-facing copy:
 | Code | Presentation |
 | --- | --- |
 | `invalid_spec`, `validation_error`, `malformed_json`, `unknown_activity`, `activity_not_found`, `unsupported_analysis`, `insufficient_data`, `payload_too_large` | the request is the problem: the API's own explanation, "Adjust analysis" |
-| `rate_limited` | "Too many new analyses in a short time" with a `Retry-After` countdown on "Try again" (the ticking seconds are hidden from assistive technology; the message states the wait) |
+| `rate_limited` | "Too many new analyses in a short time" with a `Retry-After` countdown on "Try again" (the ticking seconds are hidden from assistive technology; the message states the wait). The edge's per-network daily allowance (`details.budget: "prefix"`) instead says that the network's new analyses for today are used up and that the limit resets at 00:00 UTC (in local time), with no countdown and no "Try again"; any other wait over 15 minutes names the local time it ends |
 | `daily_capacity_reached` | today's capacity is used up (per visitor or for everyone, from `details.scope`); resets at 00:00 UTC, shown in local time |
 | `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); no more "the service is up" |
 | `database_paused`, `capacity_paused`, `edge_daily_limit` | **full-page** "paused" state: free hosting quota used up, when it resets, what still works (starter examples and earlier analyses), a link home |

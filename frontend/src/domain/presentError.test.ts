@@ -83,6 +83,52 @@ describe('presentError: every contract code is specific', () => {
     expect(presented.retryable).toBe(true)
   })
 
+  it('the per-network daily allowance at the edge never says "per minute"', () => {
+    // The governor's denial: 429 rate_limited, scope client, budget prefix,
+    // Retry-After until 00:00 UTC (up to ~24 h).
+    const now = Date.UTC(2026, 9, 20, 15, 0, 0)
+    const presented = presentError(
+      apiError(429, 'rate_limited', {
+        retryAfter: 9 * 3600,
+        details: {
+          scope: 'client',
+          budget: 'prefix',
+          resumes_at: '2026-10-21T00:00:00Z',
+          retry_after_seconds: 32400,
+        },
+      }),
+      now,
+    )
+    expect(presented.kind).toBe('limit')
+    expect(presented.message).not.toMatch(/per minute/)
+    expect(presented.message).toMatch(/per day/)
+    expect(presented.message).toMatch(/00:00 UTC \(.+ your time\)/)
+    expect(presented.retryable).toBe(false)
+    expect(presented.retryAfterSeconds).toBeNull() // no countdown of hours
+    expect(presented.hint).toMatch(/Starter examples/)
+    expect(
+      isFullPageError(apiError(429, 'rate_limited', { details: { budget: 'prefix' } })),
+    ).toBe(false)
+  })
+
+  it('a long rate-limit wait without a budget names a time, not a countdown', () => {
+    const now = Date.UTC(2026, 9, 20, 15, 0, 0)
+    const presented = presentError(apiError(429, 'rate_limited', { retryAfter: 2 * 3600 }), now)
+    expect(presented.message).not.toMatch(/per minute/)
+    expect(presented.message).toMatch(/at about /)
+    expect(presented.retryable).toBe(false)
+    expect(presented.retryAfterSeconds).toBeNull()
+  })
+
+  it('the API and edge per-minute limits keep the countdown', () => {
+    for (const details of [null, { scope: 'client', retry_after_seconds: 8 }]) {
+      const presented = presentError(apiError(429, 'rate_limited', { retryAfter: 8, details }))
+      expect(presented.message).toMatch(/per minute/)
+      expect(presented.retryAfterSeconds).toBe(8)
+      expect(presented.retryable).toBe(true)
+    }
+  })
+
   it('a daily limit names the reset time, per visitor or for everyone', () => {
     const now = Date.UTC(2026, 9, 20, 15, 0, 0)
     const everyone = presentError(apiError(503, 'daily_capacity_reached'), now)

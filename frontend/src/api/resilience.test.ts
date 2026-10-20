@@ -9,8 +9,13 @@ import { ApiError, NetworkError } from './client'
 import { COLD_START_BUDGET_MS, classifyFailure, retryDelayMs, withRetries } from './resilience'
 import { isServiceWaking } from './serviceStatus'
 
-function apiError(status: number, code: string, retryAfter: number | null = null): ApiError {
-  return new ApiError(status, code, code, null, null, retryAfter)
+function apiError(
+  status: number,
+  code: string,
+  retryAfter: number | null = null,
+  details: unknown = null,
+): ApiError {
+  return new ApiError(status, code, code, details, null, retryAfter)
 }
 
 /** An attempt function that fails with `failures` in order, then returns 'ok'. */
@@ -30,6 +35,13 @@ describe('classifyFailure', () => {
     [new NetworkError('down'), 'waking'],
     [apiError(503, 'service_waking', 5), 'waking'],
     [apiError(502, 'upstream_unavailable'), 'waking'],
+    [apiError(502, 'upstream_unavailable', 10, { reason: 'connect_failed' }), 'waking'],
+    [apiError(503, 'upstream_unavailable', 30, { reason: 'circuit_open' }), 'waking'],
+    [apiError(502, 'upstream_unavailable', 10, { reason: 'platform_error' }), 'waking'],
+    // The API may have taken these: retried once (joins or hits its cache), not for 150 s.
+    [apiError(502, 'upstream_unavailable', 10, { reason: 'origin_timeout' }), 'transient'],
+    [apiError(502, 'upstream_unavailable', 10, { reason: 'broken_response' }), 'transient'],
+    [apiError(429, 'rate_limited', 30000, { scope: 'client', budget: 'prefix' }), 'final'],
     [apiError(503, 'something_new'), 'transient'],
     [apiError(504, 'malformed_response'), 'waking'],
     [apiError(524, 'malformed_response'), 'waking'],
@@ -144,6 +156,35 @@ describe('withRetries', () => {
     await vi.advanceTimersByTimeAsync(2000)
     await expect(result).resolves.toBe('ok')
     expect(calls).toHaveLength(2)
+  })
+
+  it('re-sends an analysis the API may have computed only once (a 524 at the edge)', async () => {
+    // A cold start keeps retrying; an origin timeout does not: the API took
+    // the request, so one retry joins its computation or hits its cache.
+    const timeout = apiError(502, 'upstream_unavailable', 10, { reason: 'origin_timeout' })
+    const { attempt, calls } = scripted([timeout, timeout])
+    const result = withRetries(attempt, { kind: 'analysis' }).catch((error: unknown) => error)
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(await result).toBe(timeout)
+    expect(calls).toHaveLength(2)
+    // ...and the waking notice is not shown for it.
+    expect(isServiceWaking()).toBe(false)
+  })
+
+  it('keeps retrying an analysis that never reached the API', async () => {
+    const refused = apiError(502, 'upstream_unavailable', 10, { reason: 'connect_failed' })
+    const { attempt, calls } = scripted([refused, refused, refused])
+    const result = withRetries(attempt, { kind: 'analysis' })
+    await vi.advanceTimersByTimeAsync(30_000)
+    await expect(result).resolves.toBe('ok')
+    expect(calls).toHaveLength(4)
+  })
+
+  it('never retries the per-network daily allowance, even for metadata', async () => {
+    const denied = apiError(429, 'rate_limited', 3600, { scope: 'client', budget: 'prefix' })
+    const { attempt, calls } = scripted([denied])
+    await expect(withRetries(attempt, { kind: 'metadata' })).rejects.toBe(denied)
+    expect(calls).toHaveLength(1)
   })
 
   it('does not retry an analysis a second time on a transient 503', async () => {

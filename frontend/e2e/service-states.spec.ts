@@ -137,6 +137,39 @@ test('a data release switch under an open page offers a reload, politely', async
   await reloaded
 })
 
+test("the API's own data versions: no notice while they agree, a reload offer when they differ", async ({
+  page,
+}) => {
+  // Nothing is injected on /meta: the page learns its release from the
+  // API's own X-Data-Version (or the static snapshot's pointer, which the
+  // snapshot builder takes from that header).
+  let switched = false
+  const served: string[] = []
+  await page.route('**/api/v1/analysis/**', async (route) => {
+    const response = await route.fetch()
+    const headers = response.headers()
+    served.push(headers['x-data-version'] ?? '')
+    await route.fulfill({
+      response,
+      headers: switched
+        ? { ...headers, 'x-data-version': `${headers['x-data-version']}-next` }
+        : headers,
+    })
+  })
+  const notice = page.getByRole('status').filter({ hasText: 'different data release' })
+
+  await page.goto(sleep2023)
+  await expect(page.locator('.stat-value')).toHaveText('1h 15m', { timeout: 15_000 })
+  expect(served.length).toBeGreaterThan(0)
+  expect(served.every((version) => /^\d{4}:(load|serving)-/.test(version))).toBe(true)
+  await expect(notice).toHaveCount(0)
+
+  switched = true
+  await page.goto(analysisUrl('estimate', { activity: { preset: 'sleep' }, years: [2019] }))
+  await expect(page.locator('.stat-value').first()).toBeVisible({ timeout: 15_000 })
+  await expect(notice).toBeVisible()
+})
+
 test('an API that is mid-switch (data_version_mismatch) is a temporary, accessible state', async ({
   page,
 }) => {

@@ -11,8 +11,13 @@
  *   `COLD_START_BUDGET_MS` has passed, honouring `Retry-After`.
  * - **Analysis POSTs** retry "waking" failures (the host was not up, so no
  *   work was done) within the same budget, and other transient failures
- *   (`overloaded`, `database_unavailable`) once. A rate limit or a client
- *   time-out is never retried automatically: the visitor decides.
+ *   (`overloaded`, `database_unavailable`) once. An `upstream_unavailable`
+ *   whose `details.reason` says the API may have taken the request
+ *   (`origin_timeout`: a Cloudflare 524; `broken_response`) is transient,
+ *   not waking: it is retried once, which joins the running computation or
+ *   hits the API's cache, instead of being re-sent for the whole budget. A
+ *   rate limit or a client time-out is never retried automatically: the
+ *   visitor decides.
  * - Nothing retries a final answer: a 4xx other than a 429 with
  *   `Retry-After`, a paused quota, an analysis time-out, a data-version
  *   mismatch, or an incompatible API.
@@ -52,6 +57,14 @@ const FINAL_CODES = new Set([
 /** The host is not answering yet: nothing was computed. */
 const WAKING_CODES = new Set(['service_waking', 'upstream_unavailable'])
 
+/** `upstream_unavailable` reasons after which the API may have computed the request. */
+const ORIGIN_MAY_HAVE_COMPUTED = new Set(['origin_timeout', 'broken_response'])
+
+function detailString(error: ApiError, name: string): string | null {
+  const value = (error.details as Record<string, unknown> | null)?.[name]
+  return typeof value === 'string' ? value : null
+}
+
 /** The service answered but could not take the request right now. */
 const TRANSIENT_CODES = new Set(['overloaded', 'database_unavailable'])
 
@@ -63,7 +76,16 @@ export function classifyFailure(error: unknown): FailureClass {
   }
   if (!(error instanceof ApiError)) return 'final'
   if (FINAL_CODES.has(error.code)) return 'final'
+  if (
+    error.code === 'upstream_unavailable' &&
+    ORIGIN_MAY_HAVE_COMPUTED.has(detailString(error, 'reason') ?? '')
+  ) {
+    return 'transient'
+  }
   if (WAKING_CODES.has(error.code)) return 'waking'
+  // The edge's per-network daily allowance: waiting until 00:00 UTC is the visitor's call.
+  if (error.code === 'rate_limited' && detailString(error, 'budget') === 'prefix')
+    return 'final'
   if (TRANSIENT_CODES.has(error.code)) return 'transient'
   if (error.status === 429) {
     return error.code === 'rate_limited' && error.retryAfterSeconds !== null

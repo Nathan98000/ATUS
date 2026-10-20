@@ -163,6 +163,26 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
       }
 
     case 'rate_limited':
+      // The edge's per-network daily allowance (details.budget 'prefix',
+      // Retry-After up to the next 00:00 UTC) is not a per-minute limit.
+      if (budgetOf(error) === 'prefix') {
+        return {
+          ...common,
+          kind: 'limit',
+          heading: 'Today’s new analyses from your network are used up',
+          message: `To keep this free service available to everyone, each network can start only a limited number of new analyses per day, and yours has reached it. The limit resets at ${utcMidnightPhrase(now)}.`,
+          hint: STILL_WORKS,
+        }
+      }
+      if (retryAfter !== null && retryAfter > LONG_WAIT_SECONDS) {
+        return {
+          ...common,
+          kind: 'limit',
+          heading: 'New analyses are on hold for your network',
+          message: `To keep this free service available to everyone, new analyses from your network are paused for a while. You can start new ones again ${resumeTimePhrase(retryAfter, now)}.`,
+          hint: STILL_WORKS,
+        }
+      }
       return {
         ...common,
         kind: 'limit',
@@ -327,9 +347,26 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
   }
 }
 
+/** A rate limit asking for more than this is not "a few per minute": no countdown. */
+const LONG_WAIT_SECONDS = 15 * 60
+
 function scopeOf(error: ApiError): string | null {
   const scope = (error.details as { scope?: unknown } | null)?.scope
   return typeof scope === 'string' ? scope : null
+}
+
+/** The edge governor's budget name (`details.budget`), when it sent one. */
+export function budgetOf(error: ApiError): string | null {
+  const budget = (error.details as { budget?: unknown } | null)?.budget
+  return typeof budget === 'string' ? budget : null
+}
+
+/** "at about 3:45 PM" (local), or "tomorrow at about 3:45 PM". */
+function resumeTimePhrase(seconds: number, now: number): string {
+  const at = new Date(now + seconds * 1000)
+  const time = at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  const sameDay = at.toDateString() === new Date(now).toDateString()
+  return `${sameDay ? '' : 'tomorrow '}at about ${time}`
 }
 
 function waitPhrase(seconds: number | null): string {
