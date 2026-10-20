@@ -1,0 +1,249 @@
+Building wheel...
+$HOME/.cache/uv/builds-v0/.tmpQ2hLi4/lib/python3.12/site-packages/setuptools/config/_apply_pyprojecttoml.py:82: SetuptoolsDeprecationWarning: `project.license` as a TOML table is deprecated
+!!
+
+        ********************************************************************************
+        Please use a simple string containing a SPDX expression for `project.license`. You can also use `project.license-files`. (Both options available on setuptools>=77.0.0).
+
+        By 2027-Feb-18, you need to update your project and remove deprecated calls
+        or your builds will no longer be supported.
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  corresp(dist, value, root_dir)
+running egg_info
+writing src/atus_pipeline.egg-info/PKG-INFO
+writing dependency_links to src/atus_pipeline.egg-info/dependency_links.txt
+writing entry points to src/atus_pipeline.egg-info/entry_points.txt
+writing requirements to src/atus_pipeline.egg-info/requires.txt
+writing top-level names to src/atus_pipeline.egg-info/top_level.txt
+reading manifest file 'src/atus_pipeline.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file 'src/atus_pipeline.egg-info/SOURCES.txt'
+$HOME/.cache/uv/builds-v0/.tmpQ2hLi4/lib/python3.12/site-packages/setuptools/config/_apply_pyprojecttoml.py:82: SetuptoolsDeprecationWarning: `project.license` as a TOML table is deprecated
+!!
+
+        ********************************************************************************
+        Please use a simple string containing a SPDX expression for `project.license`. You can also use `project.license-files`. (Both options available on setuptools>=77.0.0).
+
+        By 2027-Feb-18, you need to update your project and remove deprecated calls
+        or your builds will no longer be supported.
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  corresp(dist, value, root_dir)
+running bdist_wheel
+running build
+running build_py
+creating build/lib/atus_pipeline
+copying src/atus_pipeline/config.py -> build/lib/atus_pipeline
+copying src/atus_pipeline/manifest.py -> build/lib/atus_pipeline
+copying src/atus_pipeline/__init__.py -> build/lib/atus_pipeline
+copying src/atus_pipeline/sources.py -> build/lib/atus_pipeline
+copying src/atus_pipeline/analytics_cli.py -> build/lib/atus_pipeline
+copying src/atus_pipeline/cli.py -> build/lib/atus_pipeline
+copying src/atus_pipeline/logging_setup.py -> build/lib/atus_pipeline
+creating build/lib/atus_pipeline/database
+copying src/atus_pipeline/database/__init__.py -> build/lib/atus_pipeline/database
+copying src/atus_pipeline/database/connection.py -> build/lib/atus_pipeline/database
+copying src/atus_pipeline/database/migrate.py -> build/lib/atus_pipeline/database
+creating build/lib/atus_pipeline/staging
+copying src/atus_pipeline/staging/__init__.py -> build/lib/atus_pipeline/staging
+copying src/atus_pipeline/staging/extract.py -> build/lib/atus_pipeline/staging
+creating build/lib/atus_pipeline/loading
+copying src/atus_pipeline/loading/__init__.py -> build/lib/atus_pipeline/loading
+copying src/atus_pipeline/loading/loader.py -> build/lib/atus_pipeline/loading
+creating build/lib/atus_pipeline/acquisition
+copying src/atus_pipeline/acquisition/download.py -> build/lib/atus_pipeline/acquisition
+copying src/atus_pipeline/acquisition/__init__.py -> build/lib/atus_pipeline/acquisition
+creating build/lib/atus_pipeline/transformation
+copying src/atus_pipeline/transformation/__init__.py -> build/lib/atus_pipeline/transformation
+copying src/atus_pipeline/transformation/common.py -> build/lib/atus_pipeline/transformation
+copying src/atus_pipeline/transformation/tables.py -> build/lib/atus_pipeline/transformation
+creating build/lib/atus_pipeline/api
+copying src/atus_pipeline/api/cache.py -> build/lib/atus_pipeline/api
+copying src/atus_pipeline/api/__init__.py -> build/lib/atus_pipeline/api
+copying src/atus_pipeline/api/app.py -> build/lib/atus_pipeline/api
+copying src/atus_pipeline/api/errors.py -> build/lib/atus_pipeline/api
+copying src/atus_pipeline/api/dependencies.py -> build/lib/atus_pipeline/api
+creating build/lib/atus_pipeline/validation
+copying src/atus_pipeline/validation/results.py -> build/lib/atus_pipeline/validation
+copying src/atus_pipeline/validation/__init__.py -> build/lib/atus_pipeline/validation
+copying src/atus_pipeline/validation/source_checks.py -> build/lib/atus_pipeline/validation
+copying src/atus_pipeline/validation/db_checks.py -> build/lib/atus_pipeline/validation
+creating build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/activities.py -> build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/results.py -> build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/population.py -> build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/__init__.py -> build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/spec.py -> build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/variance.py -> build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/engine.py -> build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/queries.py -> build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/errors.py -> build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/estimators.py -> build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/weights.py -> build/lib/atus_pipeline/analytics
+copying src/atus_pipeline/analytics/benchmarks.py -> build/lib/atus_pipeline/analytics
+creating build/lib/atus_pipeline/api/schemas
+copying src/atus_pipeline/api/schemas/activities.py -> build/lib/atus_pipeline/api/schemas
+copying src/atus_pipeline/api/schemas/analysis.py -> build/lib/atus_pipeline/api/schemas
+copying src/atus_pipeline/api/schemas/population.py -> build/lib/atus_pipeline/api/schemas
+copying src/atus_pipeline/api/schemas/__init__.py -> build/lib/atus_pipeline/api/schemas
+copying src/atus_pipeline/api/schemas/errors.py -> build/lib/atus_pipeline/api/schemas
+copying src/atus_pipeline/api/schemas/meta.py -> build/lib/atus_pipeline/api/schemas
+creating build/lib/atus_pipeline/api/routes
+copying src/atus_pipeline/api/routes/activities.py -> build/lib/atus_pipeline/api/routes
+copying src/atus_pipeline/api/routes/analysis.py -> build/lib/atus_pipeline/api/routes
+copying src/atus_pipeline/api/routes/health.py -> build/lib/atus_pipeline/api/routes
+copying src/atus_pipeline/api/routes/population.py -> build/lib/atus_pipeline/api/routes
+copying src/atus_pipeline/api/routes/__init__.py -> build/lib/atus_pipeline/api/routes
+copying src/atus_pipeline/api/routes/meta.py -> build/lib/atus_pipeline/api/routes
+running egg_info
+writing src/atus_pipeline.egg-info/PKG-INFO
+writing dependency_links to src/atus_pipeline.egg-info/dependency_links.txt
+writing entry points to src/atus_pipeline.egg-info/entry_points.txt
+writing requirements to src/atus_pipeline.egg-info/requires.txt
+writing top-level names to src/atus_pipeline.egg-info/top_level.txt
+reading manifest file 'src/atus_pipeline.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file 'src/atus_pipeline.egg-info/SOURCES.txt'
+warning: build_py: byte-compiling is disabled, skipping.
+
+installing to build/bdist.macosx-11.0-arm64/wheel
+running install
+running install_lib
+creating build/bdist.macosx-11.0-arm64/wheel
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline/database
+copying build/lib/atus_pipeline/database/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/database
+copying build/lib/atus_pipeline/database/connection.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/database
+copying build/lib/atus_pipeline/database/migrate.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/database
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline/staging
+copying build/lib/atus_pipeline/staging/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/staging
+copying build/lib/atus_pipeline/staging/extract.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/staging
+copying build/lib/atus_pipeline/config.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline/loading
+copying build/lib/atus_pipeline/loading/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/loading
+copying build/lib/atus_pipeline/loading/loader.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/loading
+copying build/lib/atus_pipeline/manifest.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline/acquisition
+copying build/lib/atus_pipeline/acquisition/download.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/acquisition
+copying build/lib/atus_pipeline/acquisition/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/acquisition
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline/transformation
+copying build/lib/atus_pipeline/transformation/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/transformation
+copying build/lib/atus_pipeline/transformation/common.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/transformation
+copying build/lib/atus_pipeline/transformation/tables.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/transformation
+copying build/lib/atus_pipeline/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline
+copying build/lib/atus_pipeline/sources.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline
+copying build/lib/atus_pipeline/analytics_cli.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline
+copying build/lib/atus_pipeline/cli.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline/api
+copying build/lib/atus_pipeline/api/cache.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api
+copying build/lib/atus_pipeline/api/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline/api/schemas
+copying build/lib/atus_pipeline/api/schemas/activities.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/schemas
+copying build/lib/atus_pipeline/api/schemas/analysis.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/schemas
+copying build/lib/atus_pipeline/api/schemas/population.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/schemas
+copying build/lib/atus_pipeline/api/schemas/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/schemas
+copying build/lib/atus_pipeline/api/schemas/errors.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/schemas
+copying build/lib/atus_pipeline/api/schemas/meta.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/schemas
+copying build/lib/atus_pipeline/api/app.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api
+copying build/lib/atus_pipeline/api/errors.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline/api/routes
+copying build/lib/atus_pipeline/api/routes/activities.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/routes
+copying build/lib/atus_pipeline/api/routes/analysis.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/routes
+copying build/lib/atus_pipeline/api/routes/health.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/routes
+copying build/lib/atus_pipeline/api/routes/population.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/routes
+copying build/lib/atus_pipeline/api/routes/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/routes
+copying build/lib/atus_pipeline/api/routes/meta.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api/routes
+copying build/lib/atus_pipeline/api/dependencies.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/api
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline/validation
+copying build/lib/atus_pipeline/validation/results.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/validation
+copying build/lib/atus_pipeline/validation/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/validation
+copying build/lib/atus_pipeline/validation/source_checks.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/validation
+copying build/lib/atus_pipeline/validation/db_checks.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/validation
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/activities.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/results.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/population.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/spec.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/variance.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/engine.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/queries.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/errors.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/estimators.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/weights.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/analytics/benchmarks.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline/analytics
+copying build/lib/atus_pipeline/logging_setup.py -> build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline
+warning: install_lib: byte-compiling is disabled, skipping.
+
+running install_egg_info
+Copying src/atus_pipeline.egg-info to build/bdist.macosx-11.0-arm64/wheel/./atus_pipeline-0.1.0-py3.12.egg-info
+running install_scripts
+creating build/bdist.macosx-11.0-arm64/wheel/atus_pipeline-0.1.0.dist-info/WHEEL
+creating 'docs/evidence/phase5/audit/refute/migrations-not-packaged-0/wheel/.tmp-7b5w6qo9/atus_pipeline-0.1.0-py3-none-any.whl' and adding 'build/bdist.macosx-11.0-arm64/wheel' to it
+adding 'atus_pipeline/__init__.py'
+adding 'atus_pipeline/analytics_cli.py'
+adding 'atus_pipeline/cli.py'
+adding 'atus_pipeline/config.py'
+adding 'atus_pipeline/logging_setup.py'
+adding 'atus_pipeline/manifest.py'
+adding 'atus_pipeline/sources.py'
+adding 'atus_pipeline/acquisition/__init__.py'
+adding 'atus_pipeline/acquisition/download.py'
+adding 'atus_pipeline/analytics/__init__.py'
+adding 'atus_pipeline/analytics/activities.py'
+adding 'atus_pipeline/analytics/benchmarks.py'
+adding 'atus_pipeline/analytics/engine.py'
+adding 'atus_pipeline/analytics/errors.py'
+adding 'atus_pipeline/analytics/estimators.py'
+adding 'atus_pipeline/analytics/population.py'
+adding 'atus_pipeline/analytics/queries.py'
+adding 'atus_pipeline/analytics/results.py'
+adding 'atus_pipeline/analytics/spec.py'
+adding 'atus_pipeline/analytics/variance.py'
+adding 'atus_pipeline/analytics/weights.py'
+adding 'atus_pipeline/api/__init__.py'
+adding 'atus_pipeline/api/app.py'
+adding 'atus_pipeline/api/cache.py'
+adding 'atus_pipeline/api/dependencies.py'
+adding 'atus_pipeline/api/errors.py'
+adding 'atus_pipeline/api/routes/__init__.py'
+adding 'atus_pipeline/api/routes/activities.py'
+adding 'atus_pipeline/api/routes/analysis.py'
+adding 'atus_pipeline/api/routes/health.py'
+adding 'atus_pipeline/api/routes/meta.py'
+adding 'atus_pipeline/api/routes/population.py'
+adding 'atus_pipeline/api/schemas/__init__.py'
+adding 'atus_pipeline/api/schemas/activities.py'
+adding 'atus_pipeline/api/schemas/analysis.py'
+adding 'atus_pipeline/api/schemas/errors.py'
+adding 'atus_pipeline/api/schemas/meta.py'
+adding 'atus_pipeline/api/schemas/population.py'
+adding 'atus_pipeline/database/__init__.py'
+adding 'atus_pipeline/database/connection.py'
+adding 'atus_pipeline/database/migrate.py'
+adding 'atus_pipeline/loading/__init__.py'
+adding 'atus_pipeline/loading/loader.py'
+adding 'atus_pipeline/staging/__init__.py'
+adding 'atus_pipeline/staging/extract.py'
+adding 'atus_pipeline/transformation/__init__.py'
+adding 'atus_pipeline/transformation/common.py'
+adding 'atus_pipeline/transformation/tables.py'
+adding 'atus_pipeline/validation/__init__.py'
+adding 'atus_pipeline/validation/db_checks.py'
+adding 'atus_pipeline/validation/results.py'
+adding 'atus_pipeline/validation/source_checks.py'
+adding 'atus_pipeline-0.1.0.dist-info/licenses/LICENSE'
+adding 'atus_pipeline-0.1.0.dist-info/METADATA'
+adding 'atus_pipeline-0.1.0.dist-info/WHEEL'
+adding 'atus_pipeline-0.1.0.dist-info/entry_points.txt'
+adding 'atus_pipeline-0.1.0.dist-info/top_level.txt'
+adding 'atus_pipeline-0.1.0.dist-info/RECORD'
+removing build/bdist.macosx-11.0-arm64/wheel
+Successfully built wheel/atus_pipeline-0.1.0-py3-none-any.whl

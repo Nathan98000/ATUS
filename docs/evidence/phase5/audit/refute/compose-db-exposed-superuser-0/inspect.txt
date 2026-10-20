@@ -1,0 +1,9 @@
+{"5432/tcp":[{"HostIp":"","HostPort":"5434"}]} postgres:16
+5432/tcp -> 0.0.0.0:5434
+5432/tcp -> [::]:5434
+COMMAND     PID    USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME
+com.docke 95787 nathann  123u  IPv6 0xab404db581d2c95      0t0  TCP *:5434 (LISTEN)
+atus|t
+POSTGRES_USER=atus
+POSTGRES_PASSWORD=atus
+POSTGRES_DB=atus

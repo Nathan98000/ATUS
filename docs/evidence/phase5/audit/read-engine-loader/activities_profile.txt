@@ -1,0 +1,21 @@
+SET
+ episodes | zero_min_episodes | resp_with_zero_ep 
+----------+-------------------+-------------------
+  4994172 |                 0 |                 0
+(1 row)
+
+ groups  | zero_sum_groups | max_sum | min 
+---------+-----------------+---------+-----
+ 2982182 |               0 |    1436 |   1
+(1 row)
+
+ max_total_per_resp | resp_total_ne_1440 
+--------------------+--------------------
+               1440 |                  0
+(1 row)
+
+ count 
+-------
+     0
+(1 row)
+

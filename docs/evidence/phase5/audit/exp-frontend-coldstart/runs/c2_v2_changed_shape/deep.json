@@ -1,0 +1,147 @@
+{
+  "scenario": "c2_v2_changed_shape",
+  "page": "deep",
+  "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+  "t0_epoch": 1792517391.333,
+  "meta_request_times_s": [
+    0.141
+  ],
+  "meta_request_gaps_s": [],
+  "api_requests": 2,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.035,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/deep_002s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.014,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/deep_005s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.019,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/deep_015s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.049,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/deep_030s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.031,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/deep_060s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.021,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/deep_075s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.124,
+      "main": ""
+    },
+    {
+      "t": 0.376,
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+    }
+  ],
+  "network": [
+    {
+      "t": 0.141,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.141,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities/presets"
+    },
+    {
+      "t": 0.141,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 200
+    },
+    {
+      "t": 0.141,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/activities/presets",
+      "status": 200
+    }
+  ],
+  "console": [
+    {
+      "t": 0.141,
+      "type": "error",
+      "text": "TypeError: Cannot read properties of undefined (reading '0')\n    at zi (http://[::1]:4182/assets/index-DehE4oRV.js:9:125410)\n    at ts (http://[::1]:4182/assets/index-DehE4oRV.js:8:49206)\n    at Jc (http://[::1]:4182/assets/index-DehE4oRV.js:8:71910)\n    at hl (http://[::1]:4182/assets/index-DehE4oRV.js:8:82814)\n    at Zd (http://[::1]:4182/assets/index-DehE4oRV.js:8:127984)\n    at Jd (http://[::1]:4182/assets/index-DehE4oRV.js:8:127067)\n    at qd (http://[::1]:4182/assets/index-DehE4oRV.js:8:126906)\n    at Fd (http://[::1]:4182/assets/index-DehE4oRV.js:8:123634)\n    at Mf (http://[::1]:4182/assets/index-DehE4oRV.js:8:136037)\n    at Df (http://[::1]:4182/assets/index-DehE4oRV.js:8:134601)"
+    },
+    {
+      "t": 0.141,
+      "type": "error",
+      "text": "Unhandled application error TypeError: Cannot read properties of undefined (reading '0')\n    at zi (http://[::1]:4182/assets/index-DehE4oRV.js:9:125410)\n    at ts (http://[::1]:4182/assets/index-DehE4oRV.js:8:49206)\n    at Jc (http://[::1]:4182/assets/index-DehE4oRV.js:8:71910)\n    at hl (http://[::1]:4182/assets/index-DehE4oRV.js:8:82814)\n    at Zd (http://[::1]:4182/assets/index-DehE4oRV.js:8:127984)\n    at Jd (http://[::1]:4182/assets/index-DehE4oRV.js:8:127067)\n    at qd (http://[::1]:4182/assets/index-DehE4oRV.js:8:126906)\n    at Fd (http://[::1]:4182/assets/index-DehE4oRV.js:8:123634)\n    at Mf (http://[::1]:4182/assets/index-DehE4oRV.js:8:136037)\n    at Df (http://[::1]:4182/assets/index-DehE4oRV.js:8:134601) \n    at zi (http://[::1]:4182/assets/index-DehE4oRV.js:9:124247)\n    at To (<anonymous>)\n    at pr (http://[::1]:4182/assets/index-DehE4oRV.js:9:104248)\n    at ri (http://[::1]:4182/assets/index-DehE4oRV.js:9:115114)\n    at te (http://[::1]:4182/assets/index-DehE4oRV.js:9:51237)\n    at Eo (http://[::1]:4182/assets/index-DehE4oRV.js:9:194955)"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+applied ['0001_core_schema.sql', '0002_indexes.sql']
+scratch (empty data) data_version: 0325:run1
+scratch respondents: 0
+full DB data_version: 0325:run1
+full respondents: 258954

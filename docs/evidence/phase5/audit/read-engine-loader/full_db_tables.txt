@@ -1,0 +1,45 @@
+SET
+ ingestion_run_id | release |     file_key      |    data_file_name    |        loaded_table        | loaded_row_count 
+------------------+---------+-------------------+----------------------+----------------------------+------------------
+                1 | 0325    | respondent        | atusresp_0325.dat    | respondents                |           258954
+                1 | 0325    | roster            | atusrost_0325.dat    | household_members          |           702409
+                1 | 0325    | activity          | atusact_0325.dat     | activities                 |          4994172
+                1 | 0325    | who               | atuswho_0325.dat     | activity_companions        |          6358042
+                1 | 0325    | cps               | atuscps_0325.dat     | cps_persons                |           681624
+                1 | 0325    | replicate_weights | atuswgts_0325.dat    | replicate_weights          |           258954
+                1 | 0325    | pandemic_weights  | atuswgtspan_1920.dat | pandemic_replicate_weights |            18217
+(7 rows)
+
+ count |              min              |              max              
+-------+-------------------------------+-------------------------------
+   196 | 2026-09-09 02:08:04.953393+00 | 2026-10-20 16:59:36.355753+00
+(1 row)
+
+          relname           | n_live_tup | pg_size_pretty 
+----------------------------+------------+----------------
+ activities                 |          0 | 725 MB
+ activity_companions        |          0 | 547 MB
+ replicate_weights          |          0 | 495 MB
+ cps_persons                |          0 | 82 MB
+ household_members          |          0 | 51 MB
+ respondents                |          0 | 36 MB
+ pandemic_replicate_weights |          0 | 34 MB
+ validation_results         |         24 | 120 kB
+ activity_codes             |          0 | 80 kB
+ source_files               |          0 | 48 kB
+ activity_tier2             |          0 | 40 kB
+ activity_tier1             |          0 | 32 kB
+ ingestion_runs             |          0 | 32 kB
+ schema_migrations          |          0 | 32 kB
+(14 rows)
+
+ pg_size_pretty 
+----------------
+ 1980 MB
+(1 row)
+
+ last_value | is_called 
+------------+-----------
+          1 | t
+(1 row)
+

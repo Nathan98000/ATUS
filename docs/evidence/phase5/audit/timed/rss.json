@@ -1,0 +1,8685 @@
+{
+ "label": "rss",
+ "date_utc": "2026-10-20T18:06:22.283561Z",
+ "ran_alone": "yes - sole ATUS audit workload; other projects' containers (supabase_*, timeblock-postgres) and host apps kept running (see env_snapshot_*.txt)",
+ "machine": "Apple M4, 10-core, 24 GB RAM, macOS 27.0.1; Docker Desktop VM 10 vCPU / 7.75 GiB",
+ "docker": "server 29.6.2 client 29.6.2",
+ "api_limits": "--cpus=0.1 --memory=512m --memory-swap=512m",
+ "db": "atus-emu-pg prototype serving DB, unconstrained, session jit=off",
+ "snapshots": [
+  {
+   "raw": "47951872\n===\n48730112\n===\nanon 43188224\nfile 937984\nkernel 2830336\nsock 0\nshmem 0\n===\nVmHWM:\t   64188 kB\nVmRSS:\t   64188 kB\nRssAnon:\t   41912 kB\nRssFile:\t   22276 kB\nThreads:\t5\n===\n    1 64188 381176    5 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 748541\nuser_usec 654974\nsystem_usec 93567\nnice_usec 0\nnr_periods 75\nnr_throttled 75\nthrottled_usec 6617965\nnr_bursts 0\nburst_usec 0",
+   "memory_current": 47951872,
+   "memory_peak": 48730112,
+   "memory_stat": {
+    "anon": 43188224,
+    "file": 937984,
+    "kernel": 2830336,
+    "sock": 0,
+    "shmem": 0
+   },
+   "proc1": {
+    "VmHWM": "64188 kB",
+    "VmRSS": "64188 kB",
+    "RssAnon": "41912 kB",
+    "RssFile": "22276 kB",
+    "Threads": "5"
+   },
+   "ps": "1 64188 381176    5 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000",
+   "cpu_stat": {
+    "usage_usec": 748541,
+    "user_usec": 654974,
+    "system_usec": 93567,
+    "nice_usec": 0,
+    "nr_periods": 75,
+    "nr_throttled": 75,
+    "throttled_usec": 6617965,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "docker_stats": "atus-audit-api-rss\t0.16%\t43.27MiB / 512MiB",
+   "at": "S0_first_health",
+   "t": 528150.068220375
+  },
+  {
+   "raw": "47460352\n===\n49332224\n===\nanon 43188224\nfile 937984\nkernel 2842624\nsock 0\nshmem 0\n===\nVmHWM:\t   64188 kB\nVmRSS:\t   64188 kB\nRssAnon:\t   41912 kB\nRssFile:\t   22276 kB\nThreads:\t5\n===\n    1 64188 381176    5 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 774831\nuser_usec 672351\nsystem_usec 102480\nnice_usec 0\nnr_periods 98\nnr_throttled 76\nthrottled_usec 6691251\nnr_bursts 0\nburst_usec 0",
+   "memory_current": 47460352,
+   "memory_peak": 49332224,
+   "memory_stat": {
+    "anon": 43188224,
+    "file": 937984,
+    "kernel": 2842624,
+    "sock": 0,
+    "shmem": 0
+   },
+   "proc1": {
+    "VmHWM": "64188 kB",
+    "VmRSS": "64188 kB",
+    "RssAnon": "41912 kB",
+    "RssFile": "22276 kB",
+    "Threads": "5"
+   },
+   "ps": "1 64188 381176    5 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000",
+   "cpu_stat": {
+    "usage_usec": 774831,
+    "user_usec": 672351,
+    "system_usec": 102480,
+    "nice_usec": 0,
+    "nr_periods": 98,
+    "nr_throttled": 76,
+    "throttled_usec": 6691251,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "docker_stats": "atus-audit-api-rss\t0.17%\t43.27MiB / 512MiB",
+   "at": "S1_idle_5s_pool_open",
+   "t": 528156.266039541
+  },
+  {
+   "raw": "48607232\n===\n49610752\n===\nanon 44097536\nfile 937984\nkernel 2871296\nsock 0\nshmem 0\n===\nVmHWM:\t   65208 kB\nVmRSS:\t   65208 kB\nRssAnon:\t   42804 kB\nRssFile:\t   22404 kB\nThreads:\t6\n===\n    1 65208 456008    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 808761\nuser_usec 697906\nsystem_usec 110855\nnice_usec 0\nnr_periods 105\nnr_throttled 79\nthrottled_usec 7020626\nnr_bursts 0\nburst_usec 0",
+   "memory_current": 48607232,
+   "memory_peak": 49610752,
+   "memory_stat": {
+    "anon": 44097536,
+    "file": 937984,
+    "kernel": 2871296,
+    "sock": 0,
+    "shmem": 0
+   },
+   "proc1": {
+    "VmHWM": "65208 kB",
+    "VmRSS": "65208 kB",
+    "RssAnon": "42804 kB",
+    "RssFile": "22404 kB",
+    "Threads": "6"
+   },
+   "ps": "1 65208 456008    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000",
+   "cpu_stat": {
+    "usage_usec": 808761,
+    "user_usec": 697906,
+    "system_usec": 110855,
+    "nice_usec": 0,
+    "nr_periods": 105,
+    "nr_throttled": 79,
+    "throttled_usec": 7020626,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "docker_stats": "atus-audit-api-rss\t0.18%\t44.17MiB / 512MiB",
+   "at": "S2_after_metadata",
+   "t": 528158.274469833
+  },
+  {
+   "raw": "50188288\n===\n50970624\n===\nanon 45461504\nfile 937984\nkernel 2883584\nsock 0\nshmem 0\n===\nVmHWM:\t   66544 kB\nVmRSS:\t   66544 kB\nRssAnon:\t   44136 kB\nRssFile:\t   22408 kB\nThreads:\t6\n===\n    1 66544 456008    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 1379222\nuser_usec 1195649\nsystem_usec 183572\nnice_usec 0\nnr_periods 299\nnr_throttled 96\nthrottled_usec 7943103\nnr_bursts 0\nburst_usec 0",
+   "memory_current": 50188288,
+   "memory_peak": 50970624,
+   "memory_stat": {
+    "anon": 45461504,
+    "file": 937984,
+    "kernel": 2883584,
+    "sock": 0,
+    "shmem": 0
+   },
+   "proc1": {
+    "VmHWM": "66544 kB",
+    "VmRSS": "66544 kB",
+    "RssAnon": "44136 kB",
+    "RssFile": "22408 kB",
+    "Threads": "6"
+   },
+   "ps": "1 66544 456008    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000",
+   "cpu_stat": {
+    "usage_usec": 1379222,
+    "user_usec": 1195649,
+    "system_usec": 183572,
+    "nice_usec": 0,
+    "nr_periods": 299,
+    "nr_throttled": 96,
+    "throttled_usec": 7943103,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "docker_stats": "atus-audit-api-rss\t0.23%\t45.47MiB / 512MiB",
+   "at": "after_50_analyses",
+   "t": 528190.46496
+  },
+  {
+   "raw": "51380224\n===\n52678656\n===\nanon 47153152\nfile 937984\nkernel 2895872\nsock 0\nshmem 0\n===\nVmHWM:\t   68196 kB\nVmRSS:\t   68196 kB\nRssAnon:\t   45788 kB\nRssFile:\t   22408 kB\nThreads:\t6\n===\n    1 68196 530824    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 1987824\nuser_usec 1741797\nsystem_usec 246027\nnice_usec 0\nnr_periods 514\nnr_throttled 114\nthrottled_usec 8776499\nnr_bursts 0\nburst_usec 0",
+   "memory_current": 51380224,
+   "memory_peak": 52678656,
+   "memory_stat": {
+    "anon": 47153152,
+    "file": 937984,
+    "kernel": 2895872,
+    "sock": 0,
+    "shmem": 0
+   },
+   "proc1": {
+    "VmHWM": "68196 kB",
+    "VmRSS": "68196 kB",
+    "RssAnon": "45788 kB",
+    "RssFile": "22408 kB",
+    "Threads": "6"
+   },
+   "ps": "1 68196 530824    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000",
+   "cpu_stat": {
+    "usage_usec": 1987824,
+    "user_usec": 1741797,
+    "system_usec": 246027,
+    "nice_usec": 0,
+    "nr_periods": 514,
+    "nr_throttled": 114,
+    "throttled_usec": 8776499,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "docker_stats": "atus-audit-api-rss\t0.20%\t47.1MiB / 512MiB",
+   "at": "after_100_analyses",
+   "t": 528223.773029125
+  },
+  {
+   "raw": "52334592\n===\n53379072\n===\nanon 47853568\nfile 937984\nkernel 2891776\nsock 0\nshmem 0\n===\nVmHWM:\t   68880 kB\nVmRSS:\t   68880 kB\nRssAnon:\t   46472 kB\nRssFile:\t   22408 kB\nThreads:\t6\n===\n    1 68880 530824    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 2463067\nuser_usec 2161002\nsystem_usec 302064\nnice_usec 0\nnr_periods 681\nnr_throttled 122\nthrottled_usec 9287083\nnr_bursts 0\nburst_usec 0",
+   "memory_current": 52334592,
+   "memory_peak": 53379072,
+   "memory_stat": {
+    "anon": 47853568,
+    "file": 937984,
+    "kernel": 2891776,
+    "sock": 0,
+    "shmem": 0
+   },
+   "proc1": {
+    "VmHWM": "68880 kB",
+    "VmRSS": "68880 kB",
+    "RssAnon": "46472 kB",
+    "RssFile": "22408 kB",
+    "Threads": "6"
+   },
+   "ps": "1 68880 530824    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000",
+   "cpu_stat": {
+    "usage_usec": 2463067,
+    "user_usec": 2161002,
+    "system_usec": 302064,
+    "nice_usec": 0,
+    "nr_periods": 681,
+    "nr_throttled": 122,
+    "throttled_usec": 9287083,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "docker_stats": "atus-audit-api-rss\t0.21%\t47.92MiB / 512MiB",
+   "at": "after_150_analyses",
+   "t": 528248.261865125
+  },
+  {
+   "raw": "53043200\n===\n54083584\n===\nanon 48562176\nfile 937984\nkernel 2707456\nsock 0\nshmem 0\n===\nVmHWM:\t   69568 kB\nVmRSS:\t   69568 kB\nRssAnon:\t   47160 kB\nRssFile:\t   22408 kB\nThreads:\t6\n===\n    1 69568 531848    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 2896493\nuser_usec 2559946\nsystem_usec 336546\nnice_usec 0\nnr_periods 827\nnr_throttled 132\nthrottled_usec 9838004\nnr_bursts 0\nburst_usec 0",
+   "memory_current": 53043200,
+   "memory_peak": 54083584,
+   "memory_stat": {
+    "anon": 48562176,
+    "file": 937984,
+    "kernel": 2707456,
+    "sock": 0,
+    "shmem": 0
+   },
+   "proc1": {
+    "VmHWM": "69568 kB",
+    "VmRSS": "69568 kB",
+    "RssAnon": "47160 kB",
+    "RssFile": "22408 kB",
+    "Threads": "6"
+   },
+   "ps": "1 69568 531848    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000",
+   "cpu_stat": {
+    "usage_usec": 2896493,
+    "user_usec": 2559946,
+    "system_usec": 336546,
+    "nice_usec": 0,
+    "nr_periods": 827,
+    "nr_throttled": 132,
+    "throttled_usec": 9838004,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "docker_stats": "atus-audit-api-rss\t0.16%\t48.45MiB / 512MiB",
+   "at": "after_200_analyses",
+   "t": 528273.362953125
+  },
+  {
+   "raw": "54255616\n===\n54792192\n===\nanon 49262592\nfile 937984\nkernel 2899968\nsock 0\nshmem 0\n===\nVmHWM:\t   70256 kB\nVmRSS:\t   70256 kB\nRssAnon:\t   47848 kB\nRssFile:\t   22408 kB\nThreads:\t6\n===\n    1 70256 531848    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 3339552\nuser_usec 2959740\nsystem_usec 379811\nnice_usec 0\nnr_periods 979\nnr_throttled 143\nthrottled_usec 10208482\nnr_bursts 0\nburst_usec 0",
+   "memory_current": 54255616,
+   "memory_peak": 54792192,
+   "memory_stat": {
+    "anon": 49262592,
+    "file": 937984,
+    "kernel": 2899968,
+    "sock": 0,
+    "shmem": 0
+   },
+   "proc1": {
+    "VmHWM": "70256 kB",
+    "VmRSS": "70256 kB",
+    "RssAnon": "47848 kB",
+    "RssFile": "22408 kB",
+    "Threads": "6"
+   },
+   "ps": "1 70256 531848    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000",
+   "cpu_stat": {
+    "usage_usec": 3339552,
+    "user_usec": 2959740,
+    "system_usec": 379811,
+    "nice_usec": 0,
+    "nr_periods": 979,
+    "nr_throttled": 143,
+    "throttled_usec": 10208482,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "docker_stats": "atus-audit-api-rss\t0.30%\t49.13MiB / 512MiB",
+   "at": "after_256_analyses",
+   "t": 528300.367319625
+  },
+  {
+   "raw": "54128640\n===\n55148544\n===\nanon 49373184\nfile 937984\nkernel 2895872\nsock 0\nshmem 0\n===\nVmHWM:\t   70364 kB\nVmRSS:\t   70364 kB\nRssAnon:\t   47956 kB\nRssFile:\t   22408 kB\nThreads:\t6\n===\n    1 70364 531848    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 3603410\nuser_usec 3203916\nsystem_usec 399493\nnice_usec 0\nnr_periods 1078\nnr_throttled 150\nthrottled_usec 10427442\nnr_bursts 0\nburst_usec 0",
+   "memory_current": 54128640,
+   "memory_peak": 55148544,
+   "memory_stat": {
+    "anon": 49373184,
+    "file": 937984,
+    "kernel": 2895872,
+    "sock": 0,
+    "shmem": 0
+   },
+   "proc1": {
+    "VmHWM": "70364 kB",
+    "VmRSS": "70364 kB",
+    "RssAnon": "47956 kB",
+    "RssFile": "22408 kB",
+    "Threads": "6"
+   },
+   "ps": "1 70364 531848    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000",
+   "cpu_stat": {
+    "usage_usec": 3603410,
+    "user_usec": 3203916,
+    "system_usec": 399493,
+    "nice_usec": 0,
+    "nr_periods": 1078,
+    "nr_throttled": 150,
+    "throttled_usec": 10427442,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "docker_stats": "atus-audit-api-rss\t0.32%\t49.22MiB / 512MiB",
+   "at": "after_300_analyses",
+   "t": 528317.230336125
+  },
+  {
+   "raw": "53362688\n===\n55451648\n===\nanon 49377280\nfile 937984\nkernel 2875392\nsock 0\nshmem 0\n===\nVmHWM:\t   70364 kB\nVmRSS:\t   70364 kB\nRssAnon:\t   47956 kB\nRssFile:\t   22408 kB\nThreads:\t6\n===\n    1 70364 531848    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 3635495\nuser_usec 3230998\nsystem_usec 404497\nnice_usec 0\nnr_periods 1112\nnr_throttled 150\nthrottled_usec 10427442\nnr_bursts 0\nburst_usec 0",
+   "memory_current": 53362688,
+   "memory_peak": 55451648,
+   "memory_stat": {
+    "anon": 49377280,
+    "file": 937984,
+    "kernel": 2875392,
+    "sock": 0,
+    "shmem": 0
+   },
+   "proc1": {
+    "VmHWM": "70364 kB",
+    "VmRSS": "70364 kB",
+    "RssAnon": "47956 kB",
+    "RssFile": "22408 kB",
+    "Threads": "6"
+   },
+   "ps": "1 70364 531848    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000",
+   "cpu_stat": {
+    "usage_usec": 3635495,
+    "user_usec": 3230998,
+    "system_usec": 404497,
+    "nice_usec": 0,
+    "nr_periods": 1112,
+    "nr_throttled": 150,
+    "throttled_usec": 10427442,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "docker_stats": "atus-audit-api-rss\t0.36%\t49.29MiB / 512MiB",
+   "at": "final_idle_5s",
+   "t": 528323.363152958
+  }
+ ],
+ "requests": [
+  {
+   "op": "GET /api/v1/meta",
+   "status": 200,
+   "wall_s": 0.02890058304183185,
+   "bytes": 2360,
+   "x_cache": null,
+   "request_id": "582ea89a3e30492b",
+   "t_start": 528156.266120625,
+   "t_end": 528156.295021208
+  },
+  {
+   "op": "GET /api/v1/activities",
+   "status": 200,
+   "wall_s": 0.023606707924045622,
+   "bytes": 70851,
+   "x_cache": null,
+   "request_id": "1f1e35e5ddf546bb",
+   "t_start": 528156.295060083,
+   "t_end": 528156.318666791
+  },
+  {
+   "op": "GET /api/v1/activities/presets",
+   "status": 200,
+   "wall_s": 0.002132790978066623,
+   "bytes": 1039,
+   "x_cache": null,
+   "request_id": "2df1119d65f14488",
+   "t_start": 528156.31870275,
+   "t_end": 528156.320835541
+  },
+  {
+   "op": "GET /api/v1/population/metadata",
+   "status": 200,
+   "wall_s": 0.0026344169164076447,
+   "bytes": 2675,
+   "x_cache": null,
+   "request_id": "5d1341b8669a4f7f",
+   "t_start": 528156.320855041,
+   "t_end": 528156.323489458
+  },
+  {
+   "op": "GET /api/v1/activities/0101",
+   "status": 200,
+   "wall_s": 0.0050652079517021775,
+   "bytes": 516,
+   "x_cache": null,
+   "request_id": "8fd44d8b91404499",
+   "t_start": 528156.323516333,
+   "t_end": 528156.328581541
+  },
+  {
+   "op": "estimate",
+   "i": 1,
+   "spec": {
+    "activity": {
+     "include": [
+      "04"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.178337125107646,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "40c1b23ffa95461c",
+   "t_start": 528158.274935916,
+   "t_end": 528158.453273041
+  },
+  {
+   "op": "estimate",
+   "i": 2,
+   "spec": {
+    "activity": {
+     "include": [
+      "0202"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.47936387499794364,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "9b9a0afc36b2424d",
+   "t_start": 528158.453328083,
+   "t_end": 528158.932691958
+  },
+  {
+   "op": "estimate",
+   "i": 3,
+   "spec": {
+    "activity": {
+     "include": [
+      "07"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.26340704096946865,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "88fb37c34e894ff3",
+   "t_start": 528158.932802375,
+   "t_end": 528159.196209416
+  },
+  {
+   "op": "trend",
+   "i": 4,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0701"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.924422416021116,
+   "bytes": 8271,
+   "x_cache": "miss",
+   "request_id": "c3ff76333d5047d7",
+   "t_start": 528159.196260375,
+   "t_end": 528161.120682791
+  },
+  {
+   "op": "trend",
+   "i": 5,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "1101"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.9028214589925483,
+   "bytes": 8262,
+   "x_cache": "miss",
+   "request_id": "f8fa5056af7e48d4",
+   "t_start": 528161.120734791,
+   "t_end": 528163.02355625
+  },
+  {
+   "op": "trend",
+   "i": 6,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0701"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.602400374948047,
+   "bytes": 8319,
+   "x_cache": "miss",
+   "request_id": "77d79c7b2aa44799",
+   "t_start": 528163.023646833,
+   "t_end": 528164.626047208
+  },
+  {
+   "op": "trend",
+   "i": 7,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "1201"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.5965048749931157,
+   "bytes": 8348,
+   "x_cache": "miss",
+   "request_id": "b0649e57cc1f462a",
+   "t_start": 528164.626121791,
+   "t_end": 528166.222626666
+  },
+  {
+   "op": "estimate",
+   "i": 8,
+   "spec": {
+    "activity": {
+     "include": [
+      "09"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.21587558393366635,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "22494a487c2448b4",
+   "t_start": 528166.223051666,
+   "t_end": 528166.43892725
+  },
+  {
+   "op": "estimate",
+   "i": 9,
+   "spec": {
+    "activity": {
+     "include": [
+      "1203"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.6616919169900939,
+   "bytes": 1112,
+   "x_cache": "miss",
+   "request_id": "1335ad2db904476f",
+   "t_start": 528166.438974041,
+   "t_end": 528167.100665958
+  },
+  {
+   "op": "estimate",
+   "i": 10,
+   "spec": {
+    "activity": {
+     "include": [
+      "04"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.18731020798441023,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "ce45ccb60a6b4538",
+   "t_start": 528167.100718083,
+   "t_end": 528167.288028291
+  },
+  {
+   "op": "estimate",
+   "i": 11,
+   "spec": {
+    "activity": {
+     "include": [
+      "02"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.5190154591109604,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "ab9150441c304952",
+   "t_start": 528167.288083416,
+   "t_end": 528167.807098875
+  },
+  {
+   "op": "estimate",
+   "i": 12,
+   "spec": {
+    "activity": {
+     "include": [
+      "07"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2205681250197813,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "ebd1c45db1be4493",
+   "t_start": 528167.807156875,
+   "t_end": 528168.027725
+  },
+  {
+   "op": "estimate",
+   "i": 13,
+   "spec": {
+    "activity": {
+     "include": [
+      "01"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.6083426249679178,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "98e99c129d414062",
+   "t_start": 528168.027830416,
+   "t_end": 528168.636173041
+  },
+  {
+   "op": "estimate",
+   "i": 14,
+   "spec": {
+    "activity": {
+     "include": [
+      "0101"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.5630407909629866,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "f2e8d89541da4727",
+   "t_start": 528168.636227375,
+   "t_end": 528169.199268166
+  },
+  {
+   "op": "estimate",
+   "i": 15,
+   "spec": {
+    "activity": {
+     "include": [
+      "0103"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.4120394579367712,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "b54655553e0f48d1",
+   "t_start": 528169.199318583,
+   "t_end": 528169.611358041
+  },
+  {
+   "op": "estimate",
+   "i": 16,
+   "spec": {
+    "activity": {
+     "include": [
+      "0301"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.6296989170368761,
+   "bytes": 1110,
+   "x_cache": "miss",
+   "request_id": "5738195371164d0a",
+   "t_start": 528169.611426541,
+   "t_end": 528170.241125458
+  },
+  {
+   "op": "compare",
+   "i": 17,
+   "spec": {
+    "activity": {
+     "include": [
+      "0203"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.1874870000174269,
+   "bytes": 2548,
+   "x_cache": "miss",
+   "request_id": "f5bf7c63423b4c03",
+   "t_start": 528170.241183541,
+   "t_end": 528170.428670541
+  },
+  {
+   "op": "estimate",
+   "i": 18,
+   "spec": {
+    "activity": {
+     "include": [
+      "04"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2077280000085011,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "c891b707361e49f6",
+   "t_start": 528170.428723166,
+   "t_end": 528170.636451166
+  },
+  {
+   "op": "estimate",
+   "i": 19,
+   "spec": {
+    "activity": {
+     "include": [
+      "0601"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.4981995830312371,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "a028f6f9d0f843e4",
+   "t_start": 528170.63651925,
+   "t_end": 528171.134718833
+  },
+  {
+   "op": "estimate",
+   "i": 20,
+   "spec": {
+    "activity": {
+     "include": [
+      "0501"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.39509487501345575,
+   "bytes": 1108,
+   "x_cache": "miss",
+   "request_id": "3bfc1f9fd43f44a4",
+   "t_start": 528171.134770833,
+   "t_end": 528171.529865708
+  },
+  {
+   "op": "estimate",
+   "i": 21,
+   "spec": {
+    "activity": {
+     "include": [
+      "1805"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.32898175006266683,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "e01085b0c10548d0",
+   "t_start": 528171.529921041,
+   "t_end": 528171.858902791
+  },
+  {
+   "op": "estimate",
+   "i": 22,
+   "spec": {
+    "activity": {
+     "include": [
+      "10"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.20364283409435302,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "e3f0fc79e8d3453a",
+   "t_start": 528171.858966291,
+   "t_end": 528172.062609125
+  },
+  {
+   "op": "estimate",
+   "i": 23,
+   "spec": {
+    "activity": {
+     "include": [
+      "0401"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.453434000024572,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "c677549d9f544242",
+   "t_start": 528172.062688625,
+   "t_end": 528172.516122625
+  },
+  {
+   "op": "trend",
+   "i": 24,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0102"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 2.104969250038266,
+   "bytes": 7974,
+   "x_cache": "miss",
+   "request_id": "dad3dfd432bc4a00",
+   "t_start": 528172.516177,
+   "t_end": 528174.62114625
+  },
+  {
+   "op": "compare",
+   "i": 25,
+   "spec": {
+    "activity": {
+     "include": [
+      "0501"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.365386167075485,
+   "bytes": 2536,
+   "x_cache": "miss",
+   "request_id": "5df4ba1d34b64011",
+   "t_start": 528174.621203083,
+   "t_end": 528174.98658925
+  },
+  {
+   "op": "estimate",
+   "i": 26,
+   "spec": {
+    "activity": {
+     "include": [
+      "01"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3716846249299124,
+   "bytes": 968,
+   "x_cache": "miss",
+   "request_id": "085c8ab71d254193",
+   "t_start": 528174.9866595,
+   "t_end": 528175.358344125
+  },
+  {
+   "op": "estimate",
+   "i": 27,
+   "spec": {
+    "activity": {
+     "include": [
+      "0201"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.486480874940753,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "151cb45c1d294a24",
+   "t_start": 528175.358402041,
+   "t_end": 528175.844882916
+  },
+  {
+   "op": "trend",
+   "i": 28,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0101"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 2.28208666597493,
+   "bytes": 7945,
+   "x_cache": "miss",
+   "request_id": "2e8191b14ccd4a2d",
+   "t_start": 528175.844962,
+   "t_end": 528178.127048666
+  },
+  {
+   "op": "trend",
+   "i": 29,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0601"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.7932237909408286,
+   "bytes": 7968,
+   "x_cache": "miss",
+   "request_id": "e7c6775279074cdd",
+   "t_start": 528178.12710975,
+   "t_end": 528179.920333541
+  },
+  {
+   "op": "compare",
+   "i": 30,
+   "spec": {
+    "activity": {
+     "include": [
+      "0202"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.363463917048648,
+   "bytes": 2550,
+   "x_cache": "miss",
+   "request_id": "d59a0344da5b43db",
+   "t_start": 528179.920381291,
+   "t_end": 528180.283845208
+  },
+  {
+   "op": "estimate",
+   "i": 31,
+   "spec": {
+    "activity": {
+     "include": [
+      "0101"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.6029950840165839,
+   "bytes": 1105,
+   "x_cache": "miss",
+   "request_id": "9acb3c5ea04444ec",
+   "t_start": 528180.283888291,
+   "t_end": 528180.886883375
+  },
+  {
+   "op": "compare",
+   "i": 32,
+   "spec": {
+    "activity": {
+     "include": [
+      "0202"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.3831876249751076,
+   "bytes": 2464,
+   "x_cache": "miss",
+   "request_id": "53882a2eb1294e50",
+   "t_start": 528180.886936625,
+   "t_end": 528181.27012425
+  },
+  {
+   "op": "estimate",
+   "i": 33,
+   "spec": {
+    "activity": {
+     "include": [
+      "02"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.38084712508134544,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "cf5b40629b4e4fd3",
+   "t_start": 528181.270164541,
+   "t_end": 528181.651011666
+  },
+  {
+   "op": "estimate",
+   "i": 34,
+   "spec": {
+    "activity": {
+     "include": [
+      "12"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.44635591690894216,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "5e413a7bdbae4a3e",
+   "t_start": 528181.651069708,
+   "t_end": 528182.097425625
+  },
+  {
+   "op": "trend",
+   "i": 35,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "1805"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 2.0271522499388084,
+   "bytes": 8270,
+   "x_cache": "miss",
+   "request_id": "1f60120e26f7448e",
+   "t_start": 528182.097498708,
+   "t_end": 528184.124650958
+  },
+  {
+   "op": "estimate",
+   "i": 36,
+   "spec": {
+    "activity": {
+     "include": [
+      "06"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.14211883407551795,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "79272ea2aed443d7",
+   "t_start": 528184.124702291,
+   "t_end": 528184.266821125
+  },
+  {
+   "op": "compare",
+   "i": 37,
+   "spec": {
+    "activity": {
+     "include": [
+      "1812"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.2733144999947399,
+   "bytes": 2461,
+   "x_cache": "miss",
+   "request_id": "27a9b87e82b646e9",
+   "t_start": 528184.266867458,
+   "t_end": 528184.540181958
+  },
+  {
+   "op": "compare",
+   "i": 38,
+   "spec": {
+    "activity": {
+     "include": [
+      "0104"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.17221437499392778,
+   "bytes": 2554,
+   "x_cache": "miss",
+   "request_id": "07b5f8751d1b4f15",
+   "t_start": 528184.540238291,
+   "t_end": 528184.712452666
+  },
+  {
+   "op": "estimate",
+   "i": 39,
+   "spec": {
+    "activity": {
+     "include": [
+      "04"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.11182049999479204,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "57cbf3aee0a74957",
+   "t_start": 528184.712502,
+   "t_end": 528184.8243225
+  },
+  {
+   "op": "trend",
+   "i": 40,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0501"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.6946684999857098,
+   "bytes": 8267,
+   "x_cache": "miss",
+   "request_id": "5459fd9f86c745d8",
+   "t_start": 528184.82436725,
+   "t_end": 528186.51903575
+  },
+  {
+   "op": "estimate",
+   "i": 41,
+   "spec": {
+    "activity": {
+     "include": [
+      "08"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.1170408750185743,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "496de53a36de4751",
+   "t_start": 528186.519093291,
+   "t_end": 528186.636134166
+  },
+  {
+   "op": "estimate",
+   "i": 42,
+   "spec": {
+    "activity": {
+     "include": [
+      "07"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.1995098750339821,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "fbd1bc643bd1423b",
+   "t_start": 528186.636181916,
+   "t_end": 528186.835691791
+  },
+  {
+   "op": "compare",
+   "i": 43,
+   "spec": {
+    "activity": {
+     "include": [
+      "0301"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.2686414159834385,
+   "bytes": 2552,
+   "x_cache": "miss",
+   "request_id": "aa5db41ba82d4c7e",
+   "t_start": 528186.83574925,
+   "t_end": 528187.104390666
+  },
+  {
+   "op": "estimate",
+   "i": 44,
+   "spec": {
+    "activity": {
+     "include": [
+      "10"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.12357437505852431,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "4e0eaa3948094418",
+   "t_start": 528187.104446583,
+   "t_end": 528187.228020958
+  },
+  {
+   "op": "estimate",
+   "i": 45,
+   "spec": {
+    "activity": {
+     "include": [
+      "1812"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3706655839923769,
+   "bytes": 1105,
+   "x_cache": "miss",
+   "request_id": "3ba3b8ec6b3847f0",
+   "t_start": 528187.228068041,
+   "t_end": 528187.598733625
+  },
+  {
+   "op": "estimate",
+   "i": 46,
+   "spec": {
+    "activity": {
+     "include": [
+      "0502"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.29693391697946936,
+   "bytes": 1108,
+   "x_cache": "miss",
+   "request_id": "8fbacd9476724126",
+   "t_start": 528187.598782583,
+   "t_end": 528187.8957165
+  },
+  {
+   "op": "compare",
+   "i": 47,
+   "spec": {
+    "activity": {
+     "include": [
+      "1101"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.48618891707155854,
+   "bytes": 2539,
+   "x_cache": "miss",
+   "request_id": "974b10a4635d41d0",
+   "t_start": 528187.895759458,
+   "t_end": 528188.381948375
+  },
+  {
+   "op": "compare",
+   "i": 48,
+   "spec": {
+    "activity": {
+     "include": [
+      "1203"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.4745716250035912,
+   "bytes": 2552,
+   "x_cache": "miss",
+   "request_id": "d9cb0947b18c43df",
+   "t_start": 528188.3820285,
+   "t_end": 528188.856600125
+  },
+  {
+   "op": "compare",
+   "i": 49,
+   "spec": {
+    "activity": {
+     "include": [
+      "0101"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.39076462492812425,
+   "bytes": 2543,
+   "x_cache": "miss",
+   "request_id": "87dea9099cab456e",
+   "t_start": 528188.856662416,
+   "t_end": 528189.247427041
+  },
+  {
+   "op": "estimate",
+   "i": 50,
+   "spec": {
+    "activity": {
+     "include": [
+      "08"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.10850570898037404,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "b1cf0729b90d4d75",
+   "t_start": 528189.247475166,
+   "t_end": 528189.355980875
+  },
+  {
+   "op": "trend",
+   "i": 51,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0203"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.1550248749554157,
+   "bytes": 8322,
+   "x_cache": "miss",
+   "request_id": "3a4ee6fe4f1a4fe2",
+   "t_start": 528190.465059708,
+   "t_end": 528191.620084583
+  },
+  {
+   "op": "estimate",
+   "i": 52,
+   "spec": {
+    "activity": {
+     "include": [
+      "10"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.10528558306396008,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "e5843f5b5c374cb6",
+   "t_start": 528191.620136458,
+   "t_end": 528191.725422041
+  },
+  {
+   "op": "estimate",
+   "i": 53,
+   "spec": {
+    "activity": {
+     "include": [
+      "10"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.15464125003200024,
+   "bytes": 977,
+   "x_cache": "miss",
+   "request_id": "2d889b3c73ed4f29",
+   "t_start": 528191.725464166,
+   "t_end": 528191.880105416
+  },
+  {
+   "op": "compare",
+   "i": 54,
+   "spec": {
+    "activity": {
+     "include": [
+      "1801"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.18972879205830395,
+   "bytes": 2552,
+   "x_cache": "miss",
+   "request_id": "ce445d201ab14c0b",
+   "t_start": 528191.880170458,
+   "t_end": 528192.06989925
+  },
+  {
+   "op": "estimate",
+   "i": 55,
+   "spec": {
+    "activity": {
+     "include": [
+      "11"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.254400874953717,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "ba31d61488324750",
+   "t_start": 528192.069946791,
+   "t_end": 528192.324347666
+  },
+  {
+   "op": "estimate",
+   "i": 56,
+   "spec": {
+    "activity": {
+     "include": [
+      "1201"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.4798839580034837,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "5bf1d789eb0f48d2",
+   "t_start": 528192.324390125,
+   "t_end": 528192.804274083
+  },
+  {
+   "op": "estimate",
+   "i": 57,
+   "spec": {
+    "activity": {
+     "include": [
+      "09"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.09654862503521144,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "77d24eb046f64afc",
+   "t_start": 528192.804321541,
+   "t_end": 528192.900870166
+  },
+  {
+   "op": "compare",
+   "i": 58,
+   "spec": {
+    "activity": {
+     "include": [
+      "1301"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.21768704208079726,
+   "bytes": 2552,
+   "x_cache": "miss",
+   "request_id": "6aa572ad75a448c9",
+   "t_start": 528192.900916416,
+   "t_end": 528193.118603458
+  },
+  {
+   "op": "estimate",
+   "i": 59,
+   "spec": {
+    "activity": {
+     "include": [
+      "05"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.19425812491681427,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "3bee4423b9524f28",
+   "t_start": 528193.11865325,
+   "t_end": 528193.312911375
+  },
+  {
+   "op": "compare",
+   "i": 60,
+   "spec": {
+    "activity": {
+     "include": [
+      "1801"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.18428037501871586,
+   "bytes": 2465,
+   "x_cache": "miss",
+   "request_id": "debbd919b12845b1",
+   "t_start": 528193.312967833,
+   "t_end": 528193.497248208
+  },
+  {
+   "op": "trend",
+   "i": 61,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "1805"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.5252154999179766,
+   "bytes": 7994,
+   "x_cache": "miss",
+   "request_id": "ab12a6c7482943f0",
+   "t_start": 528193.497313083,
+   "t_end": 528195.022528583
+  },
+  {
+   "op": "trend",
+   "i": 62,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0202"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.6962071660673246,
+   "bytes": 8317,
+   "x_cache": "miss",
+   "request_id": "9817875c3e514094",
+   "t_start": 528195.022592875,
+   "t_end": 528196.718800041
+  },
+  {
+   "op": "trend",
+   "i": 63,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "1203"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.6916495830519125,
+   "bytes": 8353,
+   "x_cache": "miss",
+   "request_id": "7d0776fb7ce84849",
+   "t_start": 528196.718849125,
+   "t_end": 528198.410498708
+  },
+  {
+   "op": "trend",
+   "i": 64,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0301"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.5125645420048386,
+   "bytes": 7974,
+   "x_cache": "miss",
+   "request_id": "f686203394364114",
+   "t_start": 528198.410559166,
+   "t_end": 528199.923123708
+  },
+  {
+   "op": "estimate",
+   "i": 65,
+   "spec": {
+    "activity": {
+     "include": [
+      "01"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3493282919516787,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "3ef79638a02c4a62",
+   "t_start": 528199.923183833,
+   "t_end": 528200.272512125
+  },
+  {
+   "op": "estimate",
+   "i": 66,
+   "spec": {
+    "activity": {
+     "include": [
+      "03"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.15950795891694725,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "2c99af0445ca426e",
+   "t_start": 528200.272548916,
+   "t_end": 528200.432056875
+  },
+  {
+   "op": "estimate",
+   "i": 67,
+   "spec": {
+    "activity": {
+     "include": [
+      "09"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.16158120799809694,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "ab186bab3bea4174",
+   "t_start": 528200.43211875,
+   "t_end": 528200.593699958
+  },
+  {
+   "op": "trend",
+   "i": 68,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0502"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 2.9327227079775184,
+   "bytes": 8035,
+   "x_cache": "miss",
+   "request_id": "d6382b3e73d84691",
+   "t_start": 528200.593764625,
+   "t_end": 528203.526487333
+  },
+  {
+   "op": "estimate",
+   "i": 69,
+   "spec": {
+    "activity": {
+     "include": [
+      "01"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.7397737910505384,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "36ea67c5406e475f",
+   "t_start": 528203.526812625,
+   "t_end": 528204.266586416
+  },
+  {
+   "op": "compare",
+   "i": 70,
+   "spec": {
+    "activity": {
+     "include": [
+      "0502"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.24374620895832777,
+   "bytes": 2474,
+   "x_cache": "miss",
+   "request_id": "1ac7007cc9a34776",
+   "t_start": 528204.266794416,
+   "t_end": 528204.510540625
+  },
+  {
+   "op": "estimate",
+   "i": 71,
+   "spec": {
+    "activity": {
+     "include": [
+      "02"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.4431194580392912,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "28bcdcc562884625",
+   "t_start": 528204.510601625,
+   "t_end": 528204.953721083
+  },
+  {
+   "op": "trend",
+   "i": 72,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0301"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 2.3687742920592427,
+   "bytes": 8307,
+   "x_cache": "miss",
+   "request_id": "407f594e944a4473",
+   "t_start": 528204.953787333,
+   "t_end": 528207.322561625
+  },
+  {
+   "op": "estimate",
+   "i": 73,
+   "spec": {
+    "activity": {
+     "include": [
+      "05"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3869755830382928,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "9dbd6bf99d434b50",
+   "t_start": 528207.32309575,
+   "t_end": 528207.710071333
+  },
+  {
+   "op": "estimate",
+   "i": 74,
+   "spec": {
+    "activity": {
+     "include": [
+      "04"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.32232337503228337,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "30d0e8a7013446c2",
+   "t_start": 528207.710240041,
+   "t_end": 528208.032563416
+  },
+  {
+   "op": "estimate",
+   "i": 75,
+   "spec": {
+    "activity": {
+     "include": [
+      "08"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2123048750218004,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "55f0f6e8d133439d",
+   "t_start": 528208.032674083,
+   "t_end": 528208.244978958
+  },
+  {
+   "op": "trend",
+   "i": 76,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0104"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.7796045410213992,
+   "bytes": 8357,
+   "x_cache": "miss",
+   "request_id": "376d420430d445d6",
+   "t_start": 528208.245065375,
+   "t_end": 528210.024669916
+  },
+  {
+   "op": "compare",
+   "i": 77,
+   "spec": {
+    "activity": {
+     "include": [
+      "0601"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.17822158406488597,
+   "bytes": 2456,
+   "x_cache": "miss",
+   "request_id": "27c22d6f90f14cc1",
+   "t_start": 528210.024722041,
+   "t_end": 528210.202943625
+  },
+  {
+   "op": "compare",
+   "i": 78,
+   "spec": {
+    "activity": {
+     "include": [
+      "0102"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.3513144589960575,
+   "bytes": 2460,
+   "x_cache": "miss",
+   "request_id": "b35629b2cfb64f76",
+   "t_start": 528210.202987916,
+   "t_end": 528210.554302375
+  },
+  {
+   "op": "compare",
+   "i": 79,
+   "spec": {
+    "activity": {
+     "include": [
+      "0201"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.24786020792089403,
+   "bytes": 2538,
+   "x_cache": "miss",
+   "request_id": "d7b1ac8937d1473a",
+   "t_start": 528210.554350625,
+   "t_end": 528210.802210833
+  },
+  {
+   "op": "estimate",
+   "i": 80,
+   "spec": {
+    "activity": {
+     "include": [
+      "0102"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.5022682079579681,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "8fcd9f14552145ef",
+   "t_start": 528210.802267208,
+   "t_end": 528211.304535416
+  },
+  {
+   "op": "trend",
+   "i": 81,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0103"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.2144153339322656,
+   "bytes": 7935,
+   "x_cache": "miss",
+   "request_id": "b93ea16af8c7454f",
+   "t_start": 528211.304600041,
+   "t_end": 528212.519015375
+  },
+  {
+   "op": "estimate",
+   "i": 82,
+   "spec": {
+    "activity": {
+     "include": [
+      "08"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.10372170794289559,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "519b218b797f4ea7",
+   "t_start": 528212.519063833,
+   "t_end": 528212.622785541
+  },
+  {
+   "op": "estimate",
+   "i": 83,
+   "spec": {
+    "activity": {
+     "include": [
+      "07"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.17262541700620204,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "2254767864ad497b",
+   "t_start": 528212.622833041,
+   "t_end": 528212.795458458
+  },
+  {
+   "op": "estimate",
+   "i": 84,
+   "spec": {
+    "activity": {
+     "include": [
+      "01"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.30777345795650035,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "ca1ac1a3b8ad4603",
+   "t_start": 528212.795501625,
+   "t_end": 528213.103275083
+  },
+  {
+   "op": "compare",
+   "i": 85,
+   "spec": {
+    "activity": {
+     "include": [
+      "0203"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.13767804100643843,
+   "bytes": 2457,
+   "x_cache": "miss",
+   "request_id": "9e33c04f8fee4e86",
+   "t_start": 528213.103317625,
+   "t_end": 528213.240995666
+  },
+  {
+   "op": "estimate",
+   "i": 86,
+   "spec": {
+    "activity": {
+     "include": [
+      "02"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.301122208009474,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "15bfaeafb6b54698",
+   "t_start": 528213.241045875,
+   "t_end": 528213.542168083
+  },
+  {
+   "op": "compare",
+   "i": 87,
+   "spec": {
+    "activity": {
+     "include": [
+      "0201"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.21148675004951656,
+   "bytes": 2547,
+   "x_cache": "miss",
+   "request_id": "bb562f889f404fa9",
+   "t_start": 528213.542209375,
+   "t_end": 528213.753696125
+  },
+  {
+   "op": "estimate",
+   "i": 88,
+   "spec": {
+    "activity": {
+     "include": [
+      "0102"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.4023738339310512,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "0d614e3b664d4a24",
+   "t_start": 528213.753740541,
+   "t_end": 528214.156114375
+  },
+  {
+   "op": "estimate",
+   "i": 89,
+   "spec": {
+    "activity": {
+     "include": [
+      "11"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.27359012502711266,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "4123efae5c1c419a",
+   "t_start": 528214.156172083,
+   "t_end": 528214.429762208
+  },
+  {
+   "op": "estimate",
+   "i": 90,
+   "spec": {
+    "activity": {
+     "include": [
+      "0502"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3522353330627084,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "1a416fe30b21443d",
+   "t_start": 528214.429800708,
+   "t_end": 528214.782036041
+  },
+  {
+   "op": "estimate",
+   "i": 91,
+   "spec": {
+    "activity": {
+     "include": [
+      "07"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.1795278750360012,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "630994caa4b542f3",
+   "t_start": 528214.782080625,
+   "t_end": 528214.9616085
+  },
+  {
+   "op": "trend",
+   "i": 92,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "1201"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.3582682500127703,
+   "bytes": 7957,
+   "x_cache": "miss",
+   "request_id": "1248fbeaf96e49b8",
+   "t_start": 528214.961659791,
+   "t_end": 528216.319928041
+  },
+  {
+   "op": "estimate",
+   "i": 93,
+   "spec": {
+    "activity": {
+     "include": [
+      "06"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.15990374993998557,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "514a61b8d25f4991",
+   "t_start": 528216.319974291,
+   "t_end": 528216.479878041
+  },
+  {
+   "op": "trend",
+   "i": 94,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "1101"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.6460371669381857,
+   "bytes": 7951,
+   "x_cache": "miss",
+   "request_id": "60830aee0b3e4c57",
+   "t_start": 528216.479919916,
+   "t_end": 528218.125957083
+  },
+  {
+   "op": "compare",
+   "i": 95,
+   "spec": {
+    "activity": {
+     "include": [
+      "0101"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.7233252499718219,
+   "bytes": 2539,
+   "x_cache": "miss",
+   "request_id": "e16304b2dc10442a",
+   "t_start": 528218.126013916,
+   "t_end": 528218.849339166
+  },
+  {
+   "op": "compare",
+   "i": 96,
+   "spec": {
+    "activity": {
+     "include": [
+      "1805"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.24335483298636973,
+   "bytes": 2542,
+   "x_cache": "miss",
+   "request_id": "9f15f944e4134b25",
+   "t_start": 528218.849413833,
+   "t_end": 528219.092768666
+  },
+  {
+   "op": "compare",
+   "i": 97,
+   "spec": {
+    "activity": {
+     "include": [
+      "0203"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.16083325003273785,
+   "bytes": 2541,
+   "x_cache": "miss",
+   "request_id": "c08added5e914867",
+   "t_start": 528219.092833416,
+   "t_end": 528219.253666666
+  },
+  {
+   "op": "compare",
+   "i": 98,
+   "spec": {
+    "activity": {
+     "include": [
+      "0701"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.32260754192247987,
+   "bytes": 2461,
+   "x_cache": "miss",
+   "request_id": "9c42d07534ec4201",
+   "t_start": 528219.253747666,
+   "t_end": 528219.576355208
+  },
+  {
+   "op": "trend",
+   "i": 99,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "1101"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.4480924169765785,
+   "bytes": 8317,
+   "x_cache": "miss",
+   "request_id": "b64c14e9db1544de",
+   "t_start": 528219.576435416,
+   "t_end": 528221.024527833
+  },
+  {
+   "op": "trend",
+   "i": 100,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "1812"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.594692749902606,
+   "bytes": 7976,
+   "x_cache": "miss",
+   "request_id": "75af420dad6c4b5a",
+   "t_start": 528221.024596833,
+   "t_end": 528222.619289583
+  },
+  {
+   "op": "trend",
+   "i": 101,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0601"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.2469214160228148,
+   "bytes": 8304,
+   "x_cache": "miss",
+   "request_id": "b8c8573a26dc4073",
+   "t_start": 528223.773914,
+   "t_end": 528225.020835416
+  },
+  {
+   "op": "estimate",
+   "i": 102,
+   "spec": {
+    "activity": {
+     "include": [
+      "03"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.19888974993955344,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "c44317d32a354dc9",
+   "t_start": 528225.020910458,
+   "t_end": 528225.219800208
+  },
+  {
+   "op": "estimate",
+   "i": 103,
+   "spec": {
+    "activity": {
+     "include": [
+      "1101"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.6987666659988463,
+   "bytes": 1108,
+   "x_cache": "miss",
+   "request_id": "c03351025ec5422f",
+   "t_start": 528225.219865,
+   "t_end": 528225.918631666
+  },
+  {
+   "op": "compare",
+   "i": 104,
+   "spec": {
+    "activity": {
+     "include": [
+      "1805"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.2533242499921471,
+   "bytes": 2458,
+   "x_cache": "miss",
+   "request_id": "ea751c8862a34874",
+   "t_start": 528225.918702375,
+   "t_end": 528226.172026625
+  },
+  {
+   "op": "estimate",
+   "i": 105,
+   "spec": {
+    "activity": {
+     "include": [
+      "07"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.24032374995294958,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "194fbc63b37543d1",
+   "t_start": 528226.172118833,
+   "t_end": 528226.412442583
+  },
+  {
+   "op": "estimate",
+   "i": 106,
+   "spec": {
+    "activity": {
+     "include": [
+      "1301"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.47874008398503065,
+   "bytes": 1111,
+   "x_cache": "miss",
+   "request_id": "dddcc54569f144ef",
+   "t_start": 528226.412504416,
+   "t_end": 528226.8912445
+  },
+  {
+   "op": "estimate",
+   "i": 107,
+   "spec": {
+    "activity": {
+     "include": [
+      "10"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.12891062500420958,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "2b2daf42a95d447f",
+   "t_start": 528226.891303041,
+   "t_end": 528227.020213666
+  },
+  {
+   "op": "estimate",
+   "i": 108,
+   "spec": {
+    "activity": {
+     "include": [
+      "03"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.16658379195723683,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "589fae440c21431f",
+   "t_start": 528227.020297833,
+   "t_end": 528227.186881625
+  },
+  {
+   "op": "compare",
+   "i": 109,
+   "spec": {
+    "activity": {
+     "include": [
+      "1201"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.2731414999580011,
+   "bytes": 2548,
+   "x_cache": "miss",
+   "request_id": "041cad4f055043ab",
+   "t_start": 528227.186943875,
+   "t_end": 528227.460085375
+  },
+  {
+   "op": "compare",
+   "i": 110,
+   "spec": {
+    "activity": {
+     "include": [
+      "0301"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.25272637500893325,
+   "bytes": 2465,
+   "x_cache": "miss",
+   "request_id": "7bc6b7ae1d35466b",
+   "t_start": 528227.460156125,
+   "t_end": 528227.7128825
+  },
+  {
+   "op": "estimate",
+   "i": 111,
+   "spec": {
+    "activity": {
+     "include": [
+      "09"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.11832595802843571,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "549f84862fde45e7",
+   "t_start": 528227.712944833,
+   "t_end": 528227.831270791
+  },
+  {
+   "op": "estimate",
+   "i": 112,
+   "spec": {
+    "activity": {
+     "include": [
+      "0104"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.4113266250351444,
+   "bytes": 1110,
+   "x_cache": "miss",
+   "request_id": "0423fabb49044414",
+   "t_start": 528227.831335875,
+   "t_end": 528228.2426625
+  },
+  {
+   "op": "estimate",
+   "i": 113,
+   "spec": {
+    "activity": {
+     "include": [
+      "06"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.1059291249839589,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "abc85b2139e742e2",
+   "t_start": 528228.242722041,
+   "t_end": 528228.348651166
+  },
+  {
+   "op": "estimate",
+   "i": 114,
+   "spec": {
+    "activity": {
+     "include": [
+      "09"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.122628791956231,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "b8629572b5b94e4a",
+   "t_start": 528228.348744833,
+   "t_end": 528228.471373625
+  },
+  {
+   "op": "estimate",
+   "i": 115,
+   "spec": {
+    "activity": {
+     "include": [
+      "05"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.21292800002265722,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "7dd0599db2fb4c8e",
+   "t_start": 528228.471447833,
+   "t_end": 528228.684375833
+  },
+  {
+   "op": "trend",
+   "i": 116,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0701"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.7356900409795344,
+   "bytes": 7979,
+   "x_cache": "miss",
+   "request_id": "dbb3a1e9cdc046cb",
+   "t_start": 528228.68446775,
+   "t_end": 528230.420157791
+  },
+  {
+   "op": "compare",
+   "i": 117,
+   "spec": {
+    "activity": {
+     "include": [
+      "1812"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.2639330829260871,
+   "bytes": 2544,
+   "x_cache": "miss",
+   "request_id": "bf47a48fcae84a22",
+   "t_start": 528230.420221833,
+   "t_end": 528230.684154916
+  },
+  {
+   "op": "estimate",
+   "i": 118,
+   "spec": {
+    "activity": {
+     "include": [
+      "09"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.12604183296207339,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "dac0103fface4a05",
+   "t_start": 528230.684234,
+   "t_end": 528230.810275833
+  },
+  {
+   "op": "estimate",
+   "i": 119,
+   "spec": {
+    "activity": {
+     "include": [
+      "1203"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.577060459065251,
+   "bytes": 1111,
+   "x_cache": "miss",
+   "request_id": "16e32a2152ae4bdb",
+   "t_start": 528230.810351666,
+   "t_end": 528231.387412125
+  },
+  {
+   "op": "compare",
+   "i": 120,
+   "spec": {
+    "activity": {
+     "include": [
+      "0501"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.26192987500689924,
+   "bytes": 2545,
+   "x_cache": "miss",
+   "request_id": "7740c60983ca4006",
+   "t_start": 528231.387503041,
+   "t_end": 528231.649432916
+  },
+  {
+   "op": "estimate",
+   "i": 121,
+   "spec": {
+    "activity": {
+     "include": [
+      "1201"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.28465741593390703,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "6d87d2bcfcfe4bda",
+   "t_start": 528231.649509125,
+   "t_end": 528231.934166541
+  },
+  {
+   "op": "compare",
+   "i": 122,
+   "spec": {
+    "activity": {
+     "include": [
+      "0401"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.15833474998362362,
+   "bytes": 2552,
+   "x_cache": "miss",
+   "request_id": "01a683ac67f5458b",
+   "t_start": 528231.934214541,
+   "t_end": 528232.092549291
+  },
+  {
+   "op": "estimate",
+   "i": 123,
+   "spec": {
+    "activity": {
+     "include": [
+      "1801"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.38067629106808454,
+   "bytes": 1111,
+   "x_cache": "miss",
+   "request_id": "cd1d952af96144ed",
+   "t_start": 528232.092601375,
+   "t_end": 528232.473277666
+  },
+  {
+   "op": "estimate",
+   "i": 124,
+   "spec": {
+    "activity": {
+     "include": [
+      "04"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.10290162498131394,
+   "bytes": 967,
+   "x_cache": "miss",
+   "request_id": "53f747c647fb4bc3",
+   "t_start": 528232.4733335,
+   "t_end": 528232.576235125
+  },
+  {
+   "op": "estimate",
+   "i": 125,
+   "spec": {
+    "activity": {
+     "include": [
+      "07"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.14561216696165502,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "6cb4e8b4346c4bcb",
+   "t_start": 528232.576287916,
+   "t_end": 528232.721900083
+  },
+  {
+   "op": "estimate",
+   "i": 126,
+   "spec": {
+    "activity": {
+     "include": [
+      "03"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.20980920898728073,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "d71a6be70ade4b67",
+   "t_start": 528232.721956416,
+   "t_end": 528232.931765625
+  },
+  {
+   "op": "trend",
+   "i": 127,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0202"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.7914116670144722,
+   "bytes": 8241,
+   "x_cache": "miss",
+   "request_id": "119dafffb68448e5",
+   "t_start": 528232.931816083,
+   "t_end": 528234.72322775
+  },
+  {
+   "op": "estimate",
+   "i": 128,
+   "spec": {
+    "activity": {
+     "include": [
+      "0501"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.44303733308333904,
+   "bytes": 1110,
+   "x_cache": "miss",
+   "request_id": "9894f946c46a44c2",
+   "t_start": 528234.7232835,
+   "t_end": 528235.166320833
+  },
+  {
+   "op": "compare",
+   "i": 129,
+   "spec": {
+    "activity": {
+     "include": [
+      "0501"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.24024608300533146,
+   "bytes": 2461,
+   "x_cache": "miss",
+   "request_id": "dc9cc3bb31484020",
+   "t_start": 528235.166376625,
+   "t_end": 528235.406622708
+  },
+  {
+   "op": "trend",
+   "i": 130,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0201"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.5132907499792054,
+   "bytes": 8322,
+   "x_cache": "miss",
+   "request_id": "6b37cd82f7424428",
+   "t_start": 528235.406681,
+   "t_end": 528236.91997175
+  },
+  {
+   "op": "trend",
+   "i": 131,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0502"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.3976280830102041,
+   "bytes": 8383,
+   "x_cache": "miss",
+   "request_id": "fcf6ae39ffda4734",
+   "t_start": 528236.920033333,
+   "t_end": 528238.317661416
+  },
+  {
+   "op": "estimate",
+   "i": 132,
+   "spec": {
+    "activity": {
+     "include": [
+      "06"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.11826366593595594,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "3e55851c47ca4023",
+   "t_start": 528238.31771325,
+   "t_end": 528238.435976916
+  },
+  {
+   "op": "compare",
+   "i": 133,
+   "spec": {
+    "activity": {
+     "include": [
+      "1203"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.46702549990732223,
+   "bytes": 2545,
+   "x_cache": "miss",
+   "request_id": "2d2929ae4ecd4318",
+   "t_start": 528238.436026875,
+   "t_end": 528238.903052375
+  },
+  {
+   "op": "estimate",
+   "i": 134,
+   "spec": {
+    "activity": {
+     "include": [
+      "1201"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3084538340335712,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "a1414c283b194694",
+   "t_start": 528238.903098291,
+   "t_end": 528239.211552125
+  },
+  {
+   "op": "compare",
+   "i": 135,
+   "spec": {
+    "activity": {
+     "include": [
+      "1101"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.4329306249273941,
+   "bytes": 2546,
+   "x_cache": "miss",
+   "request_id": "3988e2bc303d490d",
+   "t_start": 528239.211596625,
+   "t_end": 528239.64452725
+  },
+  {
+   "op": "estimate",
+   "i": 136,
+   "spec": {
+    "activity": {
+     "include": [
+      "1101"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.39145666698459536,
+   "bytes": 1105,
+   "x_cache": "miss",
+   "request_id": "c7d0054ea40c4115",
+   "t_start": 528239.644584083,
+   "t_end": 528240.03604075
+  },
+  {
+   "op": "estimate",
+   "i": 137,
+   "spec": {
+    "activity": {
+     "include": [
+      "02"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3605592080857605,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "e0faeeb2a21444be",
+   "t_start": 528240.036096375,
+   "t_end": 528240.396655583
+  },
+  {
+   "op": "estimate",
+   "i": 138,
+   "spec": {
+    "activity": {
+     "include": [
+      "0202"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.4303830839926377,
+   "bytes": 1108,
+   "x_cache": "miss",
+   "request_id": "3aac4f4ef6344e7a",
+   "t_start": 528240.396702666,
+   "t_end": 528240.82708575
+  },
+  {
+   "op": "compare",
+   "i": 139,
+   "spec": {
+    "activity": {
+     "include": [
+      "0601"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.15895516704767942,
+   "bytes": 2538,
+   "x_cache": "miss",
+   "request_id": "aaaf4b4112984b6f",
+   "t_start": 528240.827140666,
+   "t_end": 528240.986095833
+  },
+  {
+   "op": "compare",
+   "i": 140,
+   "spec": {
+    "activity": {
+     "include": [
+      "1812"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.22201129200402647,
+   "bytes": 2539,
+   "x_cache": "miss",
+   "request_id": "e86c58f685ae41bb",
+   "t_start": 528240.986140041,
+   "t_end": 528241.208151333
+  },
+  {
+   "op": "trend",
+   "i": 141,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "1801"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.4125534580089152,
+   "bytes": 8291,
+   "x_cache": "miss",
+   "request_id": "56549b8188a14522",
+   "t_start": 528241.208199958,
+   "t_end": 528242.620753416
+  },
+  {
+   "op": "estimate",
+   "i": 142,
+   "spec": {
+    "activity": {
+     "include": [
+      "0203"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2865265829022974,
+   "bytes": 1106,
+   "x_cache": "miss",
+   "request_id": "e68ef87bbb7041a2",
+   "t_start": 528242.620827625,
+   "t_end": 528242.907354208
+  },
+  {
+   "op": "estimate",
+   "i": 143,
+   "spec": {
+    "activity": {
+     "include": [
+      "0102"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.47447087499313056,
+   "bytes": 1108,
+   "x_cache": "miss",
+   "request_id": "eb5c614f84b04c99",
+   "t_start": 528242.907454625,
+   "t_end": 528243.3819255
+  },
+  {
+   "op": "compare",
+   "i": 144,
+   "spec": {
+    "activity": {
+     "include": [
+      "1301"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.24946387496311218,
+   "bytes": 2546,
+   "x_cache": "miss",
+   "request_id": "ef943c98e0784d09",
+   "t_start": 528243.381987208,
+   "t_end": 528243.631451083
+  },
+  {
+   "op": "trend",
+   "i": 145,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0203"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.595946375047788,
+   "bytes": 7934,
+   "x_cache": "miss",
+   "request_id": "c831bbf674d24abd",
+   "t_start": 528243.631544416,
+   "t_end": 528245.227490791
+  },
+  {
+   "op": "estimate",
+   "i": 146,
+   "spec": {
+    "activity": {
+     "include": [
+      "02"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.5338701669825241,
+   "bytes": 976,
+   "x_cache": "miss",
+   "request_id": "9bbc92e3f1774b69",
+   "t_start": 528245.227549291,
+   "t_end": 528245.761419458
+  },
+  {
+   "op": "compare",
+   "i": 147,
+   "spec": {
+    "activity": {
+     "include": [
+      "0101"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.3958870420465246,
+   "bytes": 2459,
+   "x_cache": "miss",
+   "request_id": "08c4562531bd4de5",
+   "t_start": 528245.761466583,
+   "t_end": 528246.157353625
+  },
+  {
+   "op": "estimate",
+   "i": 148,
+   "spec": {
+    "activity": {
+     "include": [
+      "0501"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2658785410458222,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "13fce8ac541542e1",
+   "t_start": 528246.15739775,
+   "t_end": 528246.423276291
+  },
+  {
+   "op": "estimate",
+   "i": 149,
+   "spec": {
+    "activity": {
+     "include": [
+      "0103"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.4104757499881089,
+   "bytes": 1108,
+   "x_cache": "miss",
+   "request_id": "63331b1a7d9746b6",
+   "t_start": 528246.423319833,
+   "t_end": 528246.833795583
+  },
+  {
+   "op": "estimate",
+   "i": 150,
+   "spec": {
+    "activity": {
+     "include": [
+      "0301"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2971857920056209,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "a9ff97f49ce04272",
+   "t_start": 528246.833846833,
+   "t_end": 528247.131032625
+  },
+  {
+   "op": "trend",
+   "i": 151,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0102"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.3590102079324424,
+   "bytes": 8338,
+   "x_cache": "miss",
+   "request_id": "bf1c068fb8034d9a",
+   "t_start": 528248.26204175,
+   "t_end": 528249.621051958
+  },
+  {
+   "op": "trend",
+   "i": 152,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0201"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.6980892920400947,
+   "bytes": 8277,
+   "x_cache": "miss",
+   "request_id": "39313b26633e4450",
+   "t_start": 528249.621109583,
+   "t_end": 528251.319198875
+  },
+  {
+   "op": "estimate",
+   "i": 153,
+   "spec": {
+    "activity": {
+     "include": [
+      "08"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.12108083290513605,
+   "bytes": 968,
+   "x_cache": "miss",
+   "request_id": "5f5ae25e18bf44b4",
+   "t_start": 528251.319251458,
+   "t_end": 528251.440332291
+  },
+  {
+   "op": "estimate",
+   "i": 154,
+   "spec": {
+    "activity": {
+     "include": [
+      "12"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.4393869999330491,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "effc7e67584b4809",
+   "t_start": 528251.440408166,
+   "t_end": 528251.879795166
+  },
+  {
+   "op": "estimate",
+   "i": 155,
+   "spec": {
+    "activity": {
+     "include": [
+      "01"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.47609020897652954,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "171f13f771f74220",
+   "t_start": 528251.879849166,
+   "t_end": 528252.355939375
+  },
+  {
+   "op": "estimate",
+   "i": 156,
+   "spec": {
+    "activity": {
+     "include": [
+      "04"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.13534399995114654,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "f2364bdbd0694da1",
+   "t_start": 528252.355987375,
+   "t_end": 528252.491331375
+  },
+  {
+   "op": "estimate",
+   "i": 157,
+   "spec": {
+    "activity": {
+     "include": [
+      "12"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.41963462496642023,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "e7d3a10510d74e8a",
+   "t_start": 528252.491394,
+   "t_end": 528252.911028625
+  },
+  {
+   "op": "trend",
+   "i": 158,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0103"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.4091948750428855,
+   "bytes": 8267,
+   "x_cache": "miss",
+   "request_id": "c4a026a71d684fc9",
+   "t_start": 528252.911079666,
+   "t_end": 528254.320274541
+  },
+  {
+   "op": "estimate",
+   "i": 159,
+   "spec": {
+    "activity": {
+     "include": [
+      "01"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.36935562500730157,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "5691e93db9544894",
+   "t_start": 528254.32034125,
+   "t_end": 528254.689696875
+  },
+  {
+   "op": "estimate",
+   "i": 160,
+   "spec": {
+    "activity": {
+     "include": [
+      "10"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.08176075003575534,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "1f0ede6c695e4c83",
+   "t_start": 528254.6897485,
+   "t_end": 528254.77150925
+  },
+  {
+   "op": "trend",
+   "i": 161,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0601"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.4480011250125244,
+   "bytes": 8297,
+   "x_cache": "miss",
+   "request_id": "51b68773e01d4c0a",
+   "t_start": 528254.771568083,
+   "t_end": 528256.219569208
+  },
+  {
+   "op": "compare",
+   "i": 162,
+   "spec": {
+    "activity": {
+     "include": [
+      "0502"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.15206416603177786,
+   "bytes": 2497,
+   "x_cache": "miss",
+   "request_id": "b8bf43eca53d4d8e",
+   "t_start": 528256.2196225,
+   "t_end": 528256.371686666
+  },
+  {
+   "op": "trend",
+   "i": 163,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0501"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.4480188330635428,
+   "bytes": 8334,
+   "x_cache": "miss",
+   "request_id": "2dd7d9df15914826",
+   "t_start": 528256.371770583,
+   "t_end": 528257.819789416
+  },
+  {
+   "op": "estimate",
+   "i": 164,
+   "spec": {
+    "activity": {
+     "include": [
+      "10"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.09781554096844047,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "345d9b9e2a3249af",
+   "t_start": 528257.819842375,
+   "t_end": 528257.917657916
+  },
+  {
+   "op": "estimate",
+   "i": 165,
+   "spec": {
+    "activity": {
+     "include": [
+      "03"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.15611520793754607,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "bd351af1310249ac",
+   "t_start": 528257.917706875,
+   "t_end": 528258.073822083
+  },
+  {
+   "op": "estimate",
+   "i": 166,
+   "spec": {
+    "activity": {
+     "include": [
+      "03"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.12975291698239744,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "6c76bbc99e054426",
+   "t_start": 528258.073877916,
+   "t_end": 528258.203630833
+  },
+  {
+   "op": "trend",
+   "i": 167,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0102"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.4846549170324579,
+   "bytes": 8235,
+   "x_cache": "miss",
+   "request_id": "c4d5b2e9d2b04cab",
+   "t_start": 528258.203679833,
+   "t_end": 528259.68833475
+  },
+  {
+   "op": "trend",
+   "i": 168,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0101"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.5612624579807743,
+   "bytes": 8375,
+   "x_cache": "miss",
+   "request_id": "16e55f55442b491a",
+   "t_start": 528259.688380208,
+   "t_end": 528261.249642666
+  },
+  {
+   "op": "estimate",
+   "i": 169,
+   "spec": {
+    "activity": {
+     "include": [
+      "07"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.20061104197520763,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "91f59646a8f14f6d",
+   "t_start": 528261.249697041,
+   "t_end": 528261.450308083
+  },
+  {
+   "op": "estimate",
+   "i": 170,
+   "spec": {
+    "activity": {
+     "include": [
+      "0201"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2671031249919906,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "4d7b1de2770b4884",
+   "t_start": 528261.450351791,
+   "t_end": 528261.717454916
+  },
+  {
+   "op": "estimate",
+   "i": 171,
+   "spec": {
+    "activity": {
+     "include": [
+      "0104"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.26764829200692475,
+   "bytes": 1110,
+   "x_cache": "miss",
+   "request_id": "4570c51f861445bc",
+   "t_start": 528261.717500083,
+   "t_end": 528261.985148375
+  },
+  {
+   "op": "estimate",
+   "i": 172,
+   "spec": {
+    "activity": {
+     "include": [
+      "12"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3320087910396978,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "0f10eb0c1b0f43d0",
+   "t_start": 528261.985194,
+   "t_end": 528262.317202791
+  },
+  {
+   "op": "estimate",
+   "i": 173,
+   "spec": {
+    "activity": {
+     "include": [
+      "06"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.09995016700122505,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "b375b1e920a34a29",
+   "t_start": 528262.317243416,
+   "t_end": 528262.417193583
+  },
+  {
+   "op": "estimate",
+   "i": 174,
+   "spec": {
+    "activity": {
+     "include": [
+      "09"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.09985899995081127,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "f2b58c69c3ec4aff",
+   "t_start": 528262.417238125,
+   "t_end": 528262.517097125
+  },
+  {
+   "op": "compare",
+   "i": 175,
+   "spec": {
+    "activity": {
+     "include": [
+      "1301"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.17550374998245388,
+   "bytes": 2461,
+   "x_cache": "miss",
+   "request_id": "9bda9401c0dd4239",
+   "t_start": 528262.517145125,
+   "t_end": 528262.692648875
+  },
+  {
+   "op": "estimate",
+   "i": 176,
+   "spec": {
+    "activity": {
+     "include": [
+      "10"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.07922275003511459,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "11639954e68a4f6c",
+   "t_start": 528262.692691208,
+   "t_end": 528262.771913958
+  },
+  {
+   "op": "estimate",
+   "i": 177,
+   "spec": {
+    "activity": {
+     "include": [
+      "06"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.08485962497070432,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "4247bfe2328f43af",
+   "t_start": 528262.771956,
+   "t_end": 528262.856815625
+  },
+  {
+   "op": "estimate",
+   "i": 178,
+   "spec": {
+    "activity": {
+     "include": [
+      "0103"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.21038041706196964,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "4790f971e5384dba",
+   "t_start": 528262.856858208,
+   "t_end": 528263.067238625
+  },
+  {
+   "op": "estimate",
+   "i": 179,
+   "spec": {
+    "activity": {
+     "include": [
+      "1805"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2972641660599038,
+   "bytes": 1111,
+   "x_cache": "miss",
+   "request_id": "be9cce557ffa4ba7",
+   "t_start": 528263.067283875,
+   "t_end": 528263.364548041
+  },
+  {
+   "op": "estimate",
+   "i": 180,
+   "spec": {
+    "activity": {
+     "include": [
+      "12"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.31883266696240753,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "00ec14b5ecf544c8",
+   "t_start": 528263.364590166,
+   "t_end": 528263.683422833
+  },
+  {
+   "op": "compare",
+   "i": 181,
+   "spec": {
+    "activity": {
+     "include": [
+      "0201"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.25915870897006243,
+   "bytes": 2463,
+   "x_cache": "miss",
+   "request_id": "cae22dd2aa3641a2",
+   "t_start": 528263.683481791,
+   "t_end": 528263.9426405
+  },
+  {
+   "op": "compare",
+   "i": 182,
+   "spec": {
+    "activity": {
+     "include": [
+      "1201"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.1928452920401469,
+   "bytes": 2458,
+   "x_cache": "miss",
+   "request_id": "4c6fe5cfeb074861",
+   "t_start": 528263.942688708,
+   "t_end": 528264.135534
+  },
+  {
+   "op": "trend",
+   "i": 183,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "1805"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.2825338749680668,
+   "bytes": 8320,
+   "x_cache": "miss",
+   "request_id": "56cc05c1f8954bf6",
+   "t_start": 528264.135579291,
+   "t_end": 528265.418113166
+  },
+  {
+   "op": "estimate",
+   "i": 184,
+   "spec": {
+    "activity": {
+     "include": [
+      "07"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.15286212495993823,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "81704656c8f341a6",
+   "t_start": 528265.418167333,
+   "t_end": 528265.571029458
+  },
+  {
+   "op": "estimate",
+   "i": 185,
+   "spec": {
+    "activity": {
+     "include": [
+      "0301"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.30120237497612834,
+   "bytes": 1110,
+   "x_cache": "miss",
+   "request_id": "3fbf42469ec44451",
+   "t_start": 528265.571074291,
+   "t_end": 528265.872276666
+  },
+  {
+   "op": "estimate",
+   "i": 186,
+   "spec": {
+    "activity": {
+     "include": [
+      "0203"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.375047417008318,
+   "bytes": 1106,
+   "x_cache": "miss",
+   "request_id": "2af4b7921aa34794",
+   "t_start": 528265.872320541,
+   "t_end": 528266.247367958
+  },
+  {
+   "op": "estimate",
+   "i": 187,
+   "spec": {
+    "activity": {
+     "include": [
+      "0202"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.5050006250385195,
+   "bytes": 1108,
+   "x_cache": "miss",
+   "request_id": "0002374b3c894927",
+   "t_start": 528266.247414458,
+   "t_end": 528266.752415083
+  },
+  {
+   "op": "trend",
+   "i": 188,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0104"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.3694726660614833,
+   "bytes": 8281,
+   "x_cache": "miss",
+   "request_id": "b4826d7b87904307",
+   "t_start": 528266.752465625,
+   "t_end": 528268.121938291
+  },
+  {
+   "op": "estimate",
+   "i": 189,
+   "spec": {
+    "activity": {
+     "include": [
+      "01"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.33282045798841864,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "3b2bea29f5104faa",
+   "t_start": 528268.121999208,
+   "t_end": 528268.454819666
+  },
+  {
+   "op": "estimate",
+   "i": 190,
+   "spec": {
+    "activity": {
+     "include": [
+      "08"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.10818333306815475,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "ad06b020fe5e4952",
+   "t_start": 528268.4548665,
+   "t_end": 528268.563049833
+  },
+  {
+   "op": "estimate",
+   "i": 191,
+   "spec": {
+    "activity": {
+     "include": [
+      "1812"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.24303204205352813,
+   "bytes": 1105,
+   "x_cache": "miss",
+   "request_id": "dd2a14d8296747f2",
+   "t_start": 528268.563094666,
+   "t_end": 528268.806126708
+  },
+  {
+   "op": "trend",
+   "i": 192,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0502"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.3071883750380948,
+   "bytes": 8267,
+   "x_cache": "miss",
+   "request_id": "7c2e6dae350c46fd",
+   "t_start": 528268.806173416,
+   "t_end": 528270.113361791
+  },
+  {
+   "op": "estimate",
+   "i": 193,
+   "spec": {
+    "activity": {
+     "include": [
+      "1801"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.28977991605643183,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "e4f28575827e476d",
+   "t_start": 528270.11340375,
+   "t_end": 528270.403183666
+  },
+  {
+   "op": "compare",
+   "i": 194,
+   "spec": {
+    "activity": {
+     "include": [
+      "0701"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.35000524995848536,
+   "bytes": 2550,
+   "x_cache": "miss",
+   "request_id": "e9f923a6b4d5472b",
+   "t_start": 528270.403231291,
+   "t_end": 528270.753236541
+  },
+  {
+   "op": "estimate",
+   "i": 195,
+   "spec": {
+    "activity": {
+     "include": [
+      "12"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.4887975410092622,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "0744e5baa83d49dd",
+   "t_start": 528270.753306,
+   "t_end": 528271.242103541
+  },
+  {
+   "op": "compare",
+   "i": 196,
+   "spec": {
+    "activity": {
+     "include": [
+      "0401"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.16314808302558959,
+   "bytes": 2546,
+   "x_cache": "miss",
+   "request_id": "b78a63a41bc746d0",
+   "t_start": 528271.2421605,
+   "t_end": 528271.405308583
+  },
+  {
+   "op": "compare",
+   "i": 197,
+   "spec": {
+    "activity": {
+     "include": [
+      "0301"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.21360929205548018,
+   "bytes": 2480,
+   "x_cache": "miss",
+   "request_id": "c5394c33e6a24de7",
+   "t_start": 528271.405372583,
+   "t_end": 528271.618981875
+  },
+  {
+   "op": "compare",
+   "i": 198,
+   "spec": {
+    "activity": {
+     "include": [
+      "0104"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.13880199997220188,
+   "bytes": 2477,
+   "x_cache": "miss",
+   "request_id": "c025e084e7d14511",
+   "t_start": 528271.619023458,
+   "t_end": 528271.757825458
+  },
+  {
+   "op": "estimate",
+   "i": 199,
+   "spec": {
+    "activity": {
+     "include": [
+      "03"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.11112666700500995,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "d04a1d1eeb8840ff",
+   "t_start": 528271.757878958,
+   "t_end": 528271.869005625
+  },
+  {
+   "op": "estimate",
+   "i": 200,
+   "spec": {
+    "activity": {
+     "include": [
+      "02"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.309223624994047,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "44c13335547a4d3f",
+   "t_start": 528271.869041333,
+   "t_end": 528272.178264958
+  },
+  {
+   "op": "estimate",
+   "i": 201,
+   "spec": {
+    "activity": {
+     "include": [
+      "05"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2058120829751715,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "9ff7ac1671084370",
+   "t_start": 528273.363063375,
+   "t_end": 528273.568875458
+  },
+  {
+   "op": "estimate",
+   "i": 202,
+   "spec": {
+    "activity": {
+     "include": [
+      "09"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.12024687509983778,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "1445c89f67224f85",
+   "t_start": 528273.568948458,
+   "t_end": 528273.689195333
+  },
+  {
+   "op": "estimate",
+   "i": 203,
+   "spec": {
+    "activity": {
+     "include": [
+      "04"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.15286116604693234,
+   "bytes": 968,
+   "x_cache": "miss",
+   "request_id": "5fe2fc0791734f3d",
+   "t_start": 528273.689257375,
+   "t_end": 528273.842118541
+  },
+  {
+   "op": "estimate",
+   "i": 204,
+   "spec": {
+    "activity": {
+     "include": [
+      "0701"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3836270000319928,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "a737a7a801214f1d",
+   "t_start": 528273.842181333,
+   "t_end": 528274.225808333
+  },
+  {
+   "op": "trend",
+   "i": 205,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0401"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.6947930420283228,
+   "bytes": 8320,
+   "x_cache": "miss",
+   "request_id": "991fa0533d044c89",
+   "t_start": 528274.225877958,
+   "t_end": 528275.920671
+  },
+  {
+   "op": "trend",
+   "i": 206,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0103"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.3022792499978095,
+   "bytes": 8293,
+   "x_cache": "miss",
+   "request_id": "c0d710f8041e4207",
+   "t_start": 528275.920725333,
+   "t_end": 528277.223004583
+  },
+  {
+   "op": "estimate",
+   "i": 207,
+   "spec": {
+    "activity": {
+     "include": [
+      "0601"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2702787920134142,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "fce753afd57447b0",
+   "t_start": 528277.223045958,
+   "t_end": 528277.49332475
+  },
+  {
+   "op": "compare",
+   "i": 208,
+   "spec": {
+    "activity": {
+     "include": [
+      "0401"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.16555758309550583,
+   "bytes": 2464,
+   "x_cache": "miss",
+   "request_id": "18f9c8ef82d843ac",
+   "t_start": 528277.493371125,
+   "t_end": 528277.658928708
+  },
+  {
+   "op": "compare",
+   "i": 209,
+   "spec": {
+    "activity": {
+     "include": [
+      "0102"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.32056020805612206,
+   "bytes": 2534,
+   "x_cache": "miss",
+   "request_id": "cdb55b2902104343",
+   "t_start": 528277.658975833,
+   "t_end": 528277.979536041
+  },
+  {
+   "op": "estimate",
+   "i": 210,
+   "spec": {
+    "activity": {
+     "include": [
+      "1812"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.39883350010495633,
+   "bytes": 1110,
+   "x_cache": "miss",
+   "request_id": "56320cf2b4ca4db5",
+   "t_start": 528277.97957475,
+   "t_end": 528278.37840825
+  },
+  {
+   "op": "estimate",
+   "i": 211,
+   "spec": {
+    "activity": {
+     "include": [
+      "06"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.17275154206436127,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "431dec2711a24ee0",
+   "t_start": 528278.378454833,
+   "t_end": 528278.551206375
+  },
+  {
+   "op": "trend",
+   "i": 212,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "0203"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.3653697079280391,
+   "bytes": 8335,
+   "x_cache": "miss",
+   "request_id": "eb618fa14a2f4d63",
+   "t_start": 528278.551254958,
+   "t_end": 528279.916624666
+  },
+  {
+   "op": "compare",
+   "i": 213,
+   "spec": {
+    "activity": {
+     "include": [
+      "1101"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.36560745805036277,
+   "bytes": 2456,
+   "x_cache": "miss",
+   "request_id": "8cb08f661c9043ee",
+   "t_start": 528279.916667208,
+   "t_end": 528280.282274666
+  },
+  {
+   "op": "estimate",
+   "i": 214,
+   "spec": {
+    "activity": {
+     "include": [
+      "01"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3662976250052452,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "229672f6f3eb492e",
+   "t_start": 528280.28231275,
+   "t_end": 528280.648610375
+  },
+  {
+   "op": "estimate",
+   "i": 215,
+   "spec": {
+    "activity": {
+     "include": [
+      "06"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.11349316604901105,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "3103a599d10d442e",
+   "t_start": 528280.648650875,
+   "t_end": 528280.762144041
+  },
+  {
+   "op": "estimate",
+   "i": 216,
+   "spec": {
+    "activity": {
+     "include": [
+      "07"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.18039045901969075,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "b167dd07a6a24784",
+   "t_start": 528280.762219166,
+   "t_end": 528280.942609625
+  },
+  {
+   "op": "estimate",
+   "i": 217,
+   "spec": {
+    "activity": {
+     "include": [
+      "1301"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2935962090268731,
+   "bytes": 1112,
+   "x_cache": "miss",
+   "request_id": "c91699cae39c4867",
+   "t_start": 528280.942651291,
+   "t_end": 528281.2362475
+  },
+  {
+   "op": "compare",
+   "i": 218,
+   "spec": {
+    "activity": {
+     "include": [
+      "0701"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.24473233299795538,
+   "bytes": 2542,
+   "x_cache": "miss",
+   "request_id": "777d6afc822f4b69",
+   "t_start": 528281.236292375,
+   "t_end": 528281.481024708
+  },
+  {
+   "op": "estimate",
+   "i": 219,
+   "spec": {
+    "activity": {
+     "include": [
+      "12"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3036885419860482,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "a56386fadd104da2",
+   "t_start": 528281.481064708,
+   "t_end": 528281.78475325
+  },
+  {
+   "op": "estimate",
+   "i": 220,
+   "spec": {
+    "activity": {
+     "include": [
+      "11"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2308352499967441,
+   "bytes": 968,
+   "x_cache": "miss",
+   "request_id": "57b5a58807584547",
+   "t_start": 528281.784797,
+   "t_end": 528282.01563225
+  },
+  {
+   "op": "estimate",
+   "i": 221,
+   "spec": {
+    "activity": {
+     "include": [
+      "12"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.30872254201676697,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "3c7eb2812e194c52",
+   "t_start": 528282.015676791,
+   "t_end": 528282.324399333
+  },
+  {
+   "op": "estimate",
+   "i": 222,
+   "spec": {
+    "activity": {
+     "include": [
+      "10"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.09683720907196403,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "10508a4bf8a7425f",
+   "t_start": 528282.324439916,
+   "t_end": 528282.421277125
+  },
+  {
+   "op": "trend",
+   "i": 223,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0101"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.5063603339949623,
+   "bytes": 8314,
+   "x_cache": "miss",
+   "request_id": "eef944d7f0004fbb",
+   "t_start": 528282.421331541,
+   "t_end": 528283.927691875
+  },
+  {
+   "op": "compare",
+   "i": 224,
+   "spec": {
+    "activity": {
+     "include": [
+      "0502"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.15174929099157453,
+   "bytes": 2554,
+   "x_cache": "miss",
+   "request_id": "fcccea28b99d4a26",
+   "t_start": 528283.92774025,
+   "t_end": 528284.079489541
+  },
+  {
+   "op": "estimate",
+   "i": 225,
+   "spec": {
+    "activity": {
+     "include": [
+      "08"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.12070041697006673,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "d33bd59ed2324180",
+   "t_start": 528284.079534458,
+   "t_end": 528284.200234875
+  },
+  {
+   "op": "estimate",
+   "i": 226,
+   "spec": {
+    "activity": {
+     "include": [
+      "0601"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.23570412502158433,
+   "bytes": 1106,
+   "x_cache": "miss",
+   "request_id": "ef0b7cdbd34245fb",
+   "t_start": 528284.200275791,
+   "t_end": 528284.435979916
+  },
+  {
+   "op": "trend",
+   "i": 227,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "1801"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.2814653749810532,
+   "bytes": 8336,
+   "x_cache": "miss",
+   "request_id": "3d04c27a000b434e",
+   "t_start": 528284.436028583,
+   "t_end": 528285.717493958
+  },
+  {
+   "op": "compare",
+   "i": 228,
+   "spec": {
+    "activity": {
+     "include": [
+      "0202"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.3458452080376446,
+   "bytes": 2539,
+   "x_cache": "miss",
+   "request_id": "5e21fd3263ee4194",
+   "t_start": 528285.71754675,
+   "t_end": 528286.063391958
+  },
+  {
+   "op": "estimate",
+   "i": 229,
+   "spec": {
+    "activity": {
+     "include": [
+      "06"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.10491029103286564,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "721ef1c9958e4583",
+   "t_start": 528286.063443125,
+   "t_end": 528286.168353416
+  },
+  {
+   "op": "estimate",
+   "i": 230,
+   "spec": {
+    "activity": {
+     "include": [
+      "11"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3055452089756727,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "9db97987c9594585",
+   "t_start": 528286.168400916,
+   "t_end": 528286.473946125
+  },
+  {
+   "op": "estimate",
+   "i": 231,
+   "spec": {
+    "activity": {
+     "include": [
+      "0104"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.19667249999474734,
+   "bytes": 1112,
+   "x_cache": "miss",
+   "request_id": "07caa9a00c6041c2",
+   "t_start": 528286.473989458,
+   "t_end": 528286.670661958
+  },
+  {
+   "op": "estimate",
+   "i": 232,
+   "spec": {
+    "activity": {
+     "include": [
+      "05"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.16061283298768103,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "0e40ee7651644aa5",
+   "t_start": 528286.670700958,
+   "t_end": 528286.831313791
+  },
+  {
+   "op": "trend",
+   "i": 233,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "1812"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.2220480419928208,
+   "bytes": 8273,
+   "x_cache": "miss",
+   "request_id": "89dd141efe8d4974",
+   "t_start": 528286.831353541,
+   "t_end": 528288.053401583
+  },
+  {
+   "op": "estimate",
+   "i": 234,
+   "spec": {
+    "activity": {
+     "include": [
+      "1801"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.23820549994707108,
+   "bytes": 1108,
+   "x_cache": "miss",
+   "request_id": "9e1f976dcd884b40",
+   "t_start": 528288.053454458,
+   "t_end": 528288.291659958
+  },
+  {
+   "op": "trend",
+   "i": 235,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "1201"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.0976084169233218,
+   "bytes": 8275,
+   "x_cache": "miss",
+   "request_id": "22ec257161b0470f",
+   "t_start": 528288.291713083,
+   "t_end": 528289.3893215
+  },
+  {
+   "op": "estimate",
+   "i": 236,
+   "spec": {
+    "activity": {
+     "include": [
+      "0101"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.4692879170179367,
+   "bytes": 1106,
+   "x_cache": "miss",
+   "request_id": "49d04dd0e38748ac",
+   "t_start": 528289.389397791,
+   "t_end": 528289.858685708
+  },
+  {
+   "op": "trend",
+   "i": 237,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0202"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.2420599170727655,
+   "bytes": 7964,
+   "x_cache": "miss",
+   "request_id": "2f2e872ccb7743fc",
+   "t_start": 528289.858830291,
+   "t_end": 528291.100890208
+  },
+  {
+   "op": "trend",
+   "i": 238,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "1301"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.122428167029284,
+   "bytes": 7981,
+   "x_cache": "miss",
+   "request_id": "a8866718f0b84559",
+   "t_start": 528291.100944291,
+   "t_end": 528292.223372458
+  },
+  {
+   "op": "trend",
+   "i": 239,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0401"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.0796337920473889,
+   "bytes": 7951,
+   "x_cache": "miss",
+   "request_id": "988e2033905e4019",
+   "t_start": 528292.223429541,
+   "t_end": 528293.303063333
+  },
+  {
+   "op": "compare",
+   "i": 240,
+   "spec": {
+    "activity": {
+     "include": [
+      "1805"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.18155883403960615,
+   "bytes": 2550,
+   "x_cache": "miss",
+   "request_id": "c58c7de4b5c64a16",
+   "t_start": 528293.303112416,
+   "t_end": 528293.48467125
+  },
+  {
+   "op": "estimate",
+   "i": 241,
+   "spec": {
+    "activity": {
+     "include": [
+      "11"
+     ]
+    },
+    "years": [
+     2008
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.21435091691091657,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "881ad43e0ff2480b",
+   "t_start": 528293.484723916,
+   "t_end": 528293.699074833
+  },
+  {
+   "op": "compare",
+   "i": 242,
+   "spec": {
+    "activity": {
+     "include": [
+      "0102"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.28570258407853544,
+   "bytes": 2542,
+   "x_cache": "miss",
+   "request_id": "0de5b9decf3e4358",
+   "t_start": 528293.699122291,
+   "t_end": 528293.984824875
+  },
+  {
+   "op": "trend",
+   "i": 243,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0501"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.1185415419749916,
+   "bytes": 7972,
+   "x_cache": "miss",
+   "request_id": "67947163ff484c16",
+   "t_start": 528293.984881208,
+   "t_end": 528295.10342275
+  },
+  {
+   "op": "estimate",
+   "i": 244,
+   "spec": {
+    "activity": {
+     "include": [
+      "01"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2791677910136059,
+   "bytes": 968,
+   "x_cache": "miss",
+   "request_id": "3ca9482008734673",
+   "t_start": 528295.103474375,
+   "t_end": 528295.382642166
+  },
+  {
+   "op": "estimate",
+   "i": 245,
+   "spec": {
+    "activity": {
+     "include": [
+      "05"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.10244050004985183,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "5308da5037524959",
+   "t_start": 528295.3826895,
+   "t_end": 528295.48513
+  },
+  {
+   "op": "compare",
+   "i": 246,
+   "spec": {
+    "activity": {
+     "include": [
+      "1203"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.3390076248906553,
+   "bytes": 2462,
+   "x_cache": "miss",
+   "request_id": "d629895f91bc48ad",
+   "t_start": 528295.485180458,
+   "t_end": 528295.824188083
+  },
+  {
+   "op": "trend",
+   "i": 247,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0104"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.0390226250747219,
+   "bytes": 8006,
+   "x_cache": "miss",
+   "request_id": "2767019fbec64971",
+   "t_start": 528295.824270875,
+   "t_end": 528296.8632935
+  },
+  {
+   "op": "estimate",
+   "i": 248,
+   "spec": {
+    "activity": {
+     "include": [
+      "11"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.25783604092430323,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "88984d3aef6646cd",
+   "t_start": 528296.86334675,
+   "t_end": 528297.121182791
+  },
+  {
+   "op": "estimate",
+   "i": 249,
+   "spec": {
+    "activity": {
+     "include": [
+      "03"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.12241695798002183,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "f1003a6eeaa947e3",
+   "t_start": 528297.12126625,
+   "t_end": 528297.243683208
+  },
+  {
+   "op": "trend",
+   "i": 250,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "1812"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.0934534589760005,
+   "bytes": 8313,
+   "x_cache": "miss",
+   "request_id": "8751cbbeb2a34f49",
+   "t_start": 528297.243751541,
+   "t_end": 528298.337205
+  },
+  {
+   "op": "estimate",
+   "i": 251,
+   "spec": {
+    "activity": {
+     "include": [
+      "05"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.17205837497022003,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "a2510eabfdf84bc7",
+   "t_start": 528298.337257,
+   "t_end": 528298.509315375
+  },
+  {
+   "op": "estimate",
+   "i": 252,
+   "spec": {
+    "activity": {
+     "include": [
+      "03"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.11347275006119162,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "5645560ea4934290",
+   "t_start": 528298.50937325,
+   "t_end": 528298.622846
+  },
+  {
+   "op": "estimate",
+   "i": 253,
+   "spec": {
+    "activity": {
+     "include": [
+      "10"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.08282600005622953,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "ee1a39ed6fd94d98",
+   "t_start": 528298.622907041,
+   "t_end": 528298.705733041
+  },
+  {
+   "op": "estimate",
+   "i": 254,
+   "spec": {
+    "activity": {
+     "include": [
+      "02"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.25876941706519574,
+   "bytes": 976,
+   "x_cache": "miss",
+   "request_id": "e926c31ca7b24ec9",
+   "t_start": 528298.705786541,
+   "t_end": 528298.964555958
+  },
+  {
+   "op": "compare",
+   "i": 255,
+   "spec": {
+    "activity": {
+     "include": [
+      "0103"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.12621949997264892,
+   "bytes": 2542,
+   "x_cache": "miss",
+   "request_id": "ed2d725b02784bcb",
+   "t_start": 528298.964655416,
+   "t_end": 528299.090874916
+  },
+  {
+   "op": "estimate",
+   "i": 256,
+   "spec": {
+    "activity": {
+     "include": [
+      "0502"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.18344875006005168,
+   "bytes": 1111,
+   "x_cache": "miss",
+   "request_id": "db60b37325084fe6",
+   "t_start": 528299.091110125,
+   "t_end": 528299.274558875
+  },
+  {
+   "op": "estimate",
+   "i": 257,
+   "spec": {
+    "activity": {
+     "include": [
+      "08"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.11340462497901171,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "e927b1d01a7247f3",
+   "t_start": 528300.36758225,
+   "t_end": 528300.480986875
+  },
+  {
+   "op": "trend",
+   "i": 258,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "1203"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.0248700419906527,
+   "bytes": 7989,
+   "x_cache": "miss",
+   "request_id": "259f21f97bd0400f",
+   "t_start": 528300.481115041,
+   "t_end": 528301.505985083
+  },
+  {
+   "op": "estimate",
+   "i": 259,
+   "spec": {
+    "activity": {
+     "include": [
+      "09"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.06656395900063217,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "973aebc864634dfc",
+   "t_start": 528301.506043666,
+   "t_end": 528301.572607625
+  },
+  {
+   "op": "trend",
+   "i": 260,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "1301"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.0057622919557616,
+   "bytes": 8310,
+   "x_cache": "miss",
+   "request_id": "52febb856fd64564",
+   "t_start": 528301.572668791,
+   "t_end": 528302.578431083
+  },
+  {
+   "op": "estimate",
+   "i": 261,
+   "spec": {
+    "activity": {
+     "include": [
+      "1101"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3626198749989271,
+   "bytes": 1107,
+   "x_cache": "miss",
+   "request_id": "e0085c06c0db4780",
+   "t_start": 528302.578483708,
+   "t_end": 528302.941103583
+  },
+  {
+   "op": "estimate",
+   "i": 262,
+   "spec": {
+    "activity": {
+     "include": [
+      "12"
+     ]
+    },
+    "years": [
+     2003
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2922737909248099,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "8a39ec3ff20949dd",
+   "t_start": 528302.94121425,
+   "t_end": 528303.233488041
+  },
+  {
+   "op": "compare",
+   "i": 263,
+   "spec": {
+    "activity": {
+     "include": [
+      "0103"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "sex": "male"
+    },
+    "group_b": {
+     "sex": "female"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.132045833976008,
+   "bytes": 2464,
+   "x_cache": "miss",
+   "request_id": "ad74b4f3b8d746b7",
+   "t_start": 528303.233540041,
+   "t_end": 528303.365585875
+  },
+  {
+   "op": "estimate",
+   "i": 264,
+   "spec": {
+    "activity": {
+     "include": [
+      "0701"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.2707017089705914,
+   "bytes": 1108,
+   "x_cache": "miss",
+   "request_id": "dd14a331e1e04f14",
+   "t_start": 528303.365641291,
+   "t_end": 528303.636343
+  },
+  {
+   "op": "estimate",
+   "i": 265,
+   "spec": {
+    "activity": {
+     "include": [
+      "0401"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.23265899997204542,
+   "bytes": 1110,
+   "x_cache": "miss",
+   "request_id": "8aa08827241d459d",
+   "t_start": 528303.636422625,
+   "t_end": 528303.869081625
+  },
+  {
+   "op": "estimate",
+   "i": 266,
+   "spec": {
+    "activity": {
+     "include": [
+      "1203"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.48435666610021144,
+   "bytes": 1111,
+   "x_cache": "miss",
+   "request_id": "1bb703451ea24462",
+   "t_start": 528303.869133625,
+   "t_end": 528304.353490291
+  },
+  {
+   "op": "estimate",
+   "i": 267,
+   "spec": {
+    "activity": {
+     "include": [
+      "05"
+     ]
+    },
+    "years": [
+     2018
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.11058895802125335,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "35300a3c4f034c90",
+   "t_start": 528304.353538708,
+   "t_end": 528304.464127666
+  },
+  {
+   "op": "estimate",
+   "i": 268,
+   "spec": {
+    "activity": {
+     "include": [
+      "1805"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3354367499705404,
+   "bytes": 1108,
+   "x_cache": "miss",
+   "request_id": "163e8530b2914bff",
+   "t_start": 528304.464178875,
+   "t_end": 528304.799615625
+  },
+  {
+   "op": "trend",
+   "i": 269,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "1301"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.091385249979794,
+   "bytes": 8293,
+   "x_cache": "miss",
+   "request_id": "36af49afdd314b51",
+   "t_start": 528304.79966975,
+   "t_end": 528305.891055
+  },
+  {
+   "op": "estimate",
+   "i": 270,
+   "spec": {
+    "activity": {
+     "include": [
+      "1301"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.22476045798975974,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "ab41c31e52054eeb",
+   "t_start": 528305.8911105,
+   "t_end": 528306.115870958
+  },
+  {
+   "op": "compare",
+   "i": 271,
+   "spec": {
+    "activity": {
+     "include": [
+      "1801"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.12105145794339478,
+   "bytes": 2548,
+   "x_cache": "miss",
+   "request_id": "5271a187e4a74c66",
+   "t_start": 528306.1159225,
+   "t_end": 528306.236973958
+  },
+  {
+   "op": "estimate",
+   "i": 272,
+   "spec": {
+    "activity": {
+     "include": [
+      "11"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.18665641592815518,
+   "bytes": 968,
+   "x_cache": "miss",
+   "request_id": "a9609c68128a4427",
+   "t_start": 528306.23703125,
+   "t_end": 528306.423687666
+  },
+  {
+   "op": "trend",
+   "i": 273,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0401"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.051019333070144,
+   "bytes": 8290,
+   "x_cache": "miss",
+   "request_id": "9a3023c9a53f48c7",
+   "t_start": 528306.423751083,
+   "t_end": 528307.474770416
+  },
+  {
+   "op": "compare",
+   "i": 274,
+   "spec": {
+    "activity": {
+     "include": [
+      "0601"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.16917504207231104,
+   "bytes": 2543,
+   "x_cache": "miss",
+   "request_id": "7a152e4a9cac4d62",
+   "t_start": 528307.474830166,
+   "t_end": 528307.644005208
+  },
+  {
+   "op": "compare",
+   "i": 275,
+   "spec": {
+    "activity": {
+     "include": [
+      "0104"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.11456224997527897,
+   "bytes": 2557,
+   "x_cache": "miss",
+   "request_id": "528e6adff2054892",
+   "t_start": 528307.64404275,
+   "t_end": 528307.758605
+  },
+  {
+   "op": "trend",
+   "i": 276,
+   "spec": {
+    "measure": "average_minutes_per_participant",
+    "activity": {
+     "include": [
+      "0301"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.081075208960101,
+   "bytes": 8349,
+   "x_cache": "miss",
+   "request_id": "d0a19a7d9a9048ab",
+   "t_start": 528307.758641166,
+   "t_end": 528308.839716375
+  },
+  {
+   "op": "estimate",
+   "i": 277,
+   "spec": {
+    "activity": {
+     "include": [
+      "06"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.07869666605256498,
+   "bytes": 969,
+   "x_cache": "miss",
+   "request_id": "75813af87cb34efb",
+   "t_start": 528308.83976725,
+   "t_end": 528308.918463916
+  },
+  {
+   "op": "estimate",
+   "i": 278,
+   "spec": {
+    "activity": {
+     "include": [
+      "09"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.0830663749948144,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "b9137691fa9247f0",
+   "t_start": 528308.918516083,
+   "t_end": 528309.001582458
+  },
+  {
+   "op": "estimate",
+   "i": 279,
+   "spec": {
+    "activity": {
+     "include": [
+      "02"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.23424104100558907,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "1eb4966029ff428a",
+   "t_start": 528309.001646625,
+   "t_end": 528309.235887666
+  },
+  {
+   "op": "estimate",
+   "i": 280,
+   "spec": {
+    "activity": {
+     "include": [
+      "03"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.11148108390625566,
+   "bytes": 973,
+   "x_cache": "miss",
+   "request_id": "e62019f8702e41af",
+   "t_start": 528309.235982791,
+   "t_end": 528309.347463875
+  },
+  {
+   "op": "estimate",
+   "i": 281,
+   "spec": {
+    "activity": {
+     "include": [
+      "08"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.07104620803147554,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "df48bda3de6d4130",
+   "t_start": 528309.347510375,
+   "t_end": 528309.418556583
+  },
+  {
+   "op": "estimate",
+   "i": 282,
+   "spec": {
+    "activity": {
+     "include": [
+      "11"
+     ]
+    },
+    "years": [
+     2024
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.18284958298318088,
+   "bytes": 967,
+   "x_cache": "miss",
+   "request_id": "988d759cbc6f47b6",
+   "t_start": 528309.418602875,
+   "t_end": 528309.601452458
+  },
+  {
+   "op": "estimate",
+   "i": 283,
+   "spec": {
+    "activity": {
+     "include": [
+      "0701"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3483670420246199,
+   "bytes": 1110,
+   "x_cache": "miss",
+   "request_id": "f2de4a1ea790431d",
+   "t_start": 528309.601505708,
+   "t_end": 528309.94987275
+  },
+  {
+   "op": "estimate",
+   "i": 284,
+   "spec": {
+    "activity": {
+     "include": [
+      "12"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.260883167036809,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "ca65840aa8244aad",
+   "t_start": 528309.949922666,
+   "t_end": 528310.210805833
+  },
+  {
+   "op": "estimate",
+   "i": 285,
+   "spec": {
+    "activity": {
+     "include": [
+      "05"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.11192979197949171,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "48f56cd486ca40ed",
+   "t_start": 528310.210855333,
+   "t_end": 528310.322785125
+  },
+  {
+   "op": "compare",
+   "i": 286,
+   "spec": {
+    "activity": {
+     "include": [
+      "1201"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "has_household_children": true
+    },
+    "group_b": {
+     "has_household_children": false
+    }
+   },
+   "status": 200,
+   "wall_s": 0.21490120911039412,
+   "bytes": 2538,
+   "x_cache": "miss",
+   "request_id": "77c136982553442f",
+   "t_start": 528310.322888166,
+   "t_end": 528310.537789375
+  },
+  {
+   "op": "trend",
+   "i": 287,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "0201"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.2452210830524564,
+   "bytes": 7958,
+   "x_cache": "miss",
+   "request_id": "18cff0a974a7470d",
+   "t_start": 528310.5378475,
+   "t_end": 528311.783068583
+  },
+  {
+   "op": "estimate",
+   "i": 288,
+   "spec": {
+    "activity": {
+     "include": [
+      "04"
+     ]
+    },
+    "years": [
+     2010
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.1279856669716537,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "e5398d3aed1c4817",
+   "t_start": 528311.783124833,
+   "t_end": 528311.9111105
+  },
+  {
+   "op": "estimate",
+   "i": 289,
+   "spec": {
+    "activity": {
+     "include": [
+      "11"
+     ]
+    },
+    "years": [
+     2012
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.20122549997176975,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "481aee117c6c49b4",
+   "t_start": 528311.9111625,
+   "t_end": 528312.112388
+  },
+  {
+   "op": "estimate",
+   "i": 290,
+   "spec": {
+    "activity": {
+     "include": [
+      "0401"
+     ]
+    },
+    "years": [
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.1950717909494415,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "9467792186f14660",
+   "t_start": 528312.112437375,
+   "t_end": 528312.307509166
+  },
+  {
+   "op": "trend",
+   "i": 291,
+   "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+     "include": [
+      "1801"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.0566329159773886,
+   "bytes": 8000,
+   "x_cache": "miss",
+   "request_id": "54f004cef51247e5",
+   "t_start": 528312.307562125,
+   "t_end": 528313.364195041
+  },
+  {
+   "op": "estimate",
+   "i": 292,
+   "spec": {
+    "activity": {
+     "include": [
+      "02"
+     ]
+    },
+    "years": [
+     2016
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.285027917008847,
+   "bytes": 975,
+   "x_cache": "miss",
+   "request_id": "dea3069a88bc451d",
+   "t_start": 528313.364250041,
+   "t_end": 528313.649277958
+  },
+  {
+   "op": "estimate",
+   "i": 293,
+   "spec": {
+    "activity": {
+     "include": [
+      "08"
+     ]
+    },
+    "years": [
+     2014
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.08375287498347461,
+   "bytes": 969,
+   "x_cache": "miss",
+   "request_id": "c2f4a410953c4db3",
+   "t_start": 528313.649334791,
+   "t_end": 528313.733087666
+  },
+  {
+   "op": "estimate",
+   "i": 294,
+   "spec": {
+    "activity": {
+     "include": [
+      "05"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.11614262498915195,
+   "bytes": 974,
+   "x_cache": "miss",
+   "request_id": "63b96ec4d98b4315",
+   "t_start": 528313.733134916,
+   "t_end": 528313.849277541
+  },
+  {
+   "op": "estimate",
+   "i": 295,
+   "spec": {
+    "activity": {
+     "include": [
+      "0203"
+     ]
+    },
+    "years": [
+     2015,
+     2016,
+     2017,
+     2018,
+     2019
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.23437375004868954,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "0579af3d252549bc",
+   "t_start": 528313.849327208,
+   "t_end": 528314.083700958
+  },
+  {
+   "op": "estimate",
+   "i": 296,
+   "spec": {
+    "activity": {
+     "include": [
+      "04"
+     ]
+    },
+    "years": [
+     2005
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.09723425004631281,
+   "bytes": 972,
+   "x_cache": "miss",
+   "request_id": "185afabd61e04e98",
+   "t_start": 528314.083751,
+   "t_end": 528314.18098525
+  },
+  {
+   "op": "estimate",
+   "i": 297,
+   "spec": {
+    "activity": {
+     "include": [
+      "0201"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.3506796669680625,
+   "bytes": 1109,
+   "x_cache": "miss",
+   "request_id": "3b28a34c11dd4799",
+   "t_start": 528314.181093291,
+   "t_end": 528314.531772958
+  },
+  {
+   "op": "estimate",
+   "i": 298,
+   "spec": {
+    "activity": {
+     "include": [
+      "11"
+     ]
+    },
+    "years": [
+     2022
+    ]
+   },
+   "status": 200,
+   "wall_s": 0.1813306249678135,
+   "bytes": 968,
+   "x_cache": "miss",
+   "request_id": "db4c0f9fa2a74f40",
+   "t_start": 528314.53182025,
+   "t_end": 528314.713150875
+  },
+  {
+   "op": "trend",
+   "i": 299,
+   "spec": {
+    "measure": "participation_rate",
+    "activity": {
+     "include": [
+      "1203"
+     ]
+    },
+    "years": [
+     2003,
+     2004,
+     2005,
+     2006,
+     2007,
+     2008,
+     2009,
+     2010,
+     2011,
+     2012,
+     2013,
+     2014,
+     2015,
+     2016,
+     2017,
+     2018,
+     2019,
+     2020,
+     2021,
+     2022,
+     2023,
+     2024,
+     2025
+    ]
+   },
+   "status": 200,
+   "wall_s": 1.275257584056817,
+   "bytes": 8251,
+   "x_cache": "miss",
+   "request_id": "31474c6b5c3346c3",
+   "t_start": 528314.713201916,
+   "t_end": 528315.9884595
+  },
+  {
+   "op": "compare",
+   "i": 300,
+   "spec": {
+    "activity": {
+     "include": [
+      "0103"
+     ]
+    },
+    "years": [
+     2024
+    ],
+    "group_a": {
+     "employment_status": "employed"
+    },
+    "group_b": {
+     "employment_status": "not_in_labor_force"
+    }
+   },
+   "status": 200,
+   "wall_s": 0.1447857500752434,
+   "bytes": 2550,
+   "x_cache": "miss",
+   "request_id": "430241334fb646f8",
+   "t_start": 528315.988513666,
+   "t_end": 528316.133299416
+  }
+ ],
+ "api_log_tail": "INFO:     172.17.0.1:59820 - \"POST /api/v1/analysis/trend HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:59824 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:59836 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:59844 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:59858 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:59872 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:59884 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:59888 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:59892 - \"POST /api/v1/analysis/trend HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:59894 - \"POST /api/v1/analysis/compare HTTP/1.1\" 200 OK\n18:09:14 INFO    atus.api: request_id=54f004cef51247e5 POST /api/v1/analysis/trend -> 200 in 1055.2ms cache=miss\n18:09:14 INFO    atus.api: request_id=dea3069a88bc451d POST /api/v1/analysis/estimate -> 200 in 230.8ms cache=miss\n18:09:14 INFO    atus.api: request_id=c2f4a410953c4db3 POST /api/v1/analysis/estimate -> 200 in 82.5ms cache=miss\n18:09:14 INFO    atus.api: request_id=63b96ec4d98b4315 POST /api/v1/analysis/estimate -> 200 in 114.8ms cache=miss\n18:09:14 INFO    atus.api: request_id=0579af3d252549bc POST /api/v1/analysis/estimate -> 200 in 233.0ms cache=miss\n18:09:15 INFO    atus.api: request_id=185afabd61e04e98 POST /api/v1/analysis/estimate -> 200 in 95.7ms cache=miss\n18:09:15 INFO    atus.api: request_id=3b28a34c11dd4799 POST /api/v1/analysis/estimate -> 200 in 349.2ms cache=miss\n18:09:15 INFO    atus.api: request_id=db4c0f9fa2a74f40 POST /api/v1/analysis/estimate -> 200 in 180.0ms cache=miss\n18:09:16 INFO    atus.api: request_id=31474c6b5c3346c3 POST /api/v1/analysis/trend -> 200 in 1273.9ms cache=miss\n18:09:17 INFO    atus.api: request_id=430241334fb646f8 POST /api/v1/analysis/compare -> 200 in 143.5ms cache=miss",
+ "date_end_utc": "2026-10-20T18:09:24.291451Z"
+}

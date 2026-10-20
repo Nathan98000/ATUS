@@ -1,0 +1,114 @@
+{
+  "measure": "average_minutes_per_day",
+  "label_a": "Household children present",
+  "label_b": "No household children",
+  "group_a": {
+    "measure": "average_minutes_per_day",
+    "estimate": {
+      "value": 112.31129417472813,
+      "unit": "minutes_per_day",
+      "standard_error": 3.313575620672283,
+      "confidence_level": 0.95,
+      "ci_lower": 105.8168052981605,
+      "ci_upper": 118.80578305129576
+    },
+    "years": [2025],
+    "activity": {
+      "label": "Household activities (BLS table A-1 definition)",
+      "include": ["02", "1802"],
+      "exclude": ["020903", "020904"],
+      "leaf_code_count": 31
+    },
+    "population": "household children under 18 present",
+    "n_respondents": 1699,
+    "n_participants": 1432,
+    "weighted_population_per_day": 96386457.99280559,
+    "days_in_period": 365,
+    "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+    },
+    "variance_method": "replicate",
+    "analytics_version": "0.2",
+    "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+        "include": ["02", "1802"],
+        "exclude": ["020903", "020904"],
+        "label": "Household activities (BLS table A-1 definition)"
+      },
+      "years": [2025],
+      "population": {
+        "has_household_children": true
+      },
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+    },
+    "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+    ]
+  },
+  "group_b": {
+    "measure": "average_minutes_per_day",
+    "estimate": {
+      "value": 123.40475795904268,
+      "unit": "minutes_per_day",
+      "standard_error": 2.3968345012653733,
+      "confidence_level": 0.95,
+      "ci_lower": 118.70704865965953,
+      "ci_upper": 128.10246725842583
+    },
+    "years": [2025],
+    "activity": {
+      "label": "Household activities (BLS table A-1 definition)",
+      "include": ["02", "1802"],
+      "exclude": ["020903", "020904"],
+      "leaf_code_count": 31
+    },
+    "population": "no household children under 18",
+    "n_respondents": 4447,
+    "n_participants": 3728,
+    "weighted_population_per_day": 181598199.49079138,
+    "days_in_period": 365,
+    "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+    },
+    "variance_method": "replicate",
+    "analytics_version": "0.2",
+    "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+        "include": ["02", "1802"],
+        "exclude": ["020903", "020904"],
+        "label": "Household activities (BLS table A-1 definition)"
+      },
+      "years": [2025],
+      "population": {
+        "has_household_children": false
+      },
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+    },
+    "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+    ]
+  },
+  "difference": {
+    "value": -11.093463784314551,
+    "unit": "minutes_per_day",
+    "standard_error": 4.2387468744604435,
+    "confidence_level": 0.95,
+    "ci_lower": -19.40125499783874,
+    "ci_upper": -2.7856725707903625
+  },
+  "analytics_version": "0.2",
+  "warnings": [
+    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+    "The difference's standard error uses per-replicate differences, which accounts for covariance between the group estimates."
+  ]
+}

@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/years_empty.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:43 GMT
+server: uvicorn
+content-length: 233
+content-type: application/json
+vary: Origin
+x-request-id: c1078eee29534555
+
+{"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","years"],"message":"List should have at least 1 item after validation, not 0","type":"too_short"}]}}}
+### status=422 time_total=0.003881s size_download=233 size_upload=111

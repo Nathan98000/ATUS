@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/include1000_badpattern.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:42 GMT
+server: uvicorn
+content-length: 250
+content-type: application/json
+vary: Origin
+x-request-id: 74741be1dd3c4323
+
+{"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","activity","include"],"message":"List should have at most 100 items after validation, not 1000","type":"too_long"}]}}}
+### status=422 time_total=0.003175s size_download=250 size_upload=8107

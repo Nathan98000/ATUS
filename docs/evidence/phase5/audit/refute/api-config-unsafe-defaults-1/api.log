@@ -1,0 +1,39 @@
+INFO:     Uvicorn running on http://127.0.0.1:8437 (Press CTRL+C to quit)
+INFO:     Started parent process [62207]
+INFO:     Started server process [62210]
+INFO:     Waiting for application startup.
+INFO:     Started server process [62211]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Application startup complete.
+15:14:09 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+15:14:09 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:10 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:10 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:12 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:12 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:14 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:15 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:16 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:16 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:17 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:21 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:23 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8499 failed: could not receive data from server: Connection refused
+15:14:24 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:14:24 INFO    atus.api: request_id=64a2214dd7e14e14 GET /ready -> 503 in 10011.9ms cache=-
+INFO:     127.0.0.1:52015 - "GET /ready HTTP/1.1" 503 Service Unavailable
+INFO:     Received SIGTERM, exiting.
+INFO:     Terminated child process [62210]
+INFO:     Terminated child process [62211]
+INFO:     Waiting for child process [62210]
+INFO:     Shutting down
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [62211]
+INFO:     Finished server process [62210]
+INFO:     Waiting for child process [62211]
+INFO:     Stopping parent process [62207]

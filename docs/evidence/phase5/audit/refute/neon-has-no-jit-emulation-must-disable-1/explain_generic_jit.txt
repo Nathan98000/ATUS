@@ -1,0 +1,35 @@
+BEGIN
+SET
+                                                                    QUERY PLAN                                                                     
+---------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize GroupAggregate  (cost=332033.98..332095.99 rows=23 width=210)
+   Group Key: r.data_year
+   ->  Gather Merge  (cost=332033.98..332039.35 rows=46 width=3954)
+         Workers Planned: 2
+         ->  Sort  (cost=331033.96..331034.02 rows=23 width=3954)
+               Sort Key: r.data_year
+               ->  Partial HashAggregate  (cost=331033.04..331033.44 rows=23 width=3954)
+                     Group Key: r.data_year
+                     ->  Hash Left Join  (cost=86791.47..150885.77 rows=37259 width=1620)
+                           Hash Cond: (r.tucaseid = m.tucaseid)
+                           ->  Hash Join  (cost=4454.03..68450.52 rows=37259 width=1620)
+                                 Hash Cond: (rw.tucaseid = r.tucaseid)
+                                 ->  Parallel Seq Scan on replicate_weights rw  (cost=0.00..63714.45 rows=107445 width=1608)
+                                 ->  Hash  (cost=3331.55..3331.55 rows=89798 width=20)
+                                       ->  Index Scan using idx_respondents_data_year on respondents r  (cost=0.29..3331.55 rows=89798 width=20)
+                                             Index Cond: (data_year = ANY ($2))
+                                             Filter: (final_weight > '0'::numeric)
+                           ->  Hash  (cost=81224.56..81224.56 rows=89031 width=16)
+                                 ->  Subquery Scan on m  (cost=77815.84..81224.56 rows=89031 width=16)
+                                       ->  HashAggregate  (cost=77815.84..80334.25 rows=89031 width=16)
+                                             Group Key: a.tucaseid
+                                             ->  Bitmap Heap Scan on activities a  (cost=1848.40..67135.54 rows=166717 width=10)
+                                                   Recheck Cond: (activity_code = ANY ($1))
+                                                   ->  Bitmap Index Scan on idx_activities_activity_code  (cost=0.00..1806.72 rows=166717 width=0)
+                                                         Index Cond: (activity_code = ANY ($1))
+ JIT:
+   Functions: 33
+   Options: Inlining false, Optimization false, Expressions true, Deforming true
+(28 rows)
+
+ROLLBACK

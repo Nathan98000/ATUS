@@ -1,0 +1,16 @@
+Ingestion run 2 failed; database unchanged. deadlock detected
+DETAIL:  Process 3542 waits for AccessExclusiveLock on relation 38358 of database 38276; blocked by process 3543.
+Process 3543 waits for AccessShareLock on relation 38401 of database 38276; blocked by process 3542.
+HINT:  See server log for query details.
+0 {'long': 'done t=3.03', 'loader': 'FAILED DeadlockDetected t=4.03', 'new': 'ok 75.0 t=4.05'}
+Ingestion run 3 failed; database unchanged. deadlock detected
+DETAIL:  Process 3573 waits for AccessExclusiveLock on relation 38358 of database 38276; blocked by process 3574.
+Process 3574 waits for AccessShareLock on relation 38401 of database 38276; blocked by process 3573.
+HINT:  See server log for query details.
+1 {'long': 'done t=3.04', 'loader': 'FAILED DeadlockDetected t=4.05', 'new': 'ok 75.0 t=4.07'}
+Ingestion run 4 failed; database unchanged. deadlock detected
+DETAIL:  Process 3576 waits for AccessExclusiveLock on relation 38358 of database 38276; blocked by process 3577.
+Process 3577 waits for AccessShareLock on relation 38401 of database 38276; blocked by process 3576.
+HINT:  See server log for query details.
+2 {'long': 'done t=3.03', 'loader': 'FAILED DeadlockDetected t=4.04', 'new': 'ok 75.0 t=4.06'}
+[(1, 'succeeded', None), (2, 'failed', 'DeadlockDetected: deadlock detected\nDETAIL:  Proce'), (3, 'failed', 'DeadlockDetected: deadlock detected\nDETAIL:  Proce'), (4, 'failed', 'DeadlockDetected: deadlock detected\nDETAIL:  Proce')]

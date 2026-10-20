@@ -1,0 +1,11 @@
+### curl http://127.0.0.1:8216/api/v1/activities (port 8216)
+HTTP/1.1 503 Service Unavailable
+date: Tue, 20 Oct 2026 17:11:15 GMT
+server: uvicorn
+content-length: 137
+content-type: application/json
+vary: Origin
+x-request-id: 9cfde3ed6c6144b3
+
+{"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+### status=503 time_total=10.007144s size_download=137 size_upload=0

@@ -1,0 +1,4 @@
+prototype validation_results rows before truncate: 24
+prototype content hash now: e8fa76a7c5b8f6e21d0d7f3309118f0b6aed230fe999e546e4c3cdffda293b23
+prototype data_version (read_data_version): 0325:run1
+full DB data_version (read_data_version): 0325:run1

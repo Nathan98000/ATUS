@@ -1,0 +1,19 @@
+=== build A_unset (-u VITE_API_BASE_URL)
+base-url-related strings in bundle:
+   1 /api/v1
+   1 http://localhost:8000
+=== build B_empty (VITE_API_BASE_URL=)
+base-url-related strings in bundle:
+   1 /api/v1
+   1 http://localhost:8000
+=== build C_slash (VITE_API_BASE_URL=/)
+base-url-related strings in bundle:
+   1 /api/v1
+=== build D_abs (VITE_API_BASE_URL=https://api.example.invalid/)
+base-url-related strings in bundle:
+   1 /api/v1
+   1 https://api.example.invalid
+=== build E_laptop_envlocal (-u VITE_API_BASE_URL)
+base-url-related strings in bundle:
+   1 /api/v1
+   1 http://localhost:8123

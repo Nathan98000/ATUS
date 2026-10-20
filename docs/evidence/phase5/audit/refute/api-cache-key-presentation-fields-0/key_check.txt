@@ -1,0 +1,2 @@
+label same key: False  conf same key: False
+{'measure': 'average_minutes_per_day', 'activity': {'include': ['0101'], 'exclude': [], 'label': 'Sleeping'}, 'years': [2019], 'population': {}, 'weights': 'multiyear', 'variance': 'replicate', 'confidence_level': 0.95}

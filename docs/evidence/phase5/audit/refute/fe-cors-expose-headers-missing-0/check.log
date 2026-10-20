@@ -1,0 +1,5 @@
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/datastructures.py", line 698, in __getattr__
+    raise AttributeError(message.format(self.__class__.__name__, key))
+AttributeError: 'State' object has no attribute 'pool'
+GET /health 200 {'access-control-allow-origin': 'https://fe.example', 'x-request-id': 'c6dfa601559d4ed5'}
+POST /api/v1/analysis/estimate 500 {'x-request-id': 'f76bf3d572eb48ca'}

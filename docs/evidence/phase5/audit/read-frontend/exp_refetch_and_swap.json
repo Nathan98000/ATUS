@@ -1,0 +1,38 @@
+{
+  "9a_explore_background_refetch_failure": {
+    "afterFailure": "The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details",
+    "builderStillMounted": 0,
+    "metaRequestsDuringOutage": 3,
+    "ageBefore": "30",
+    "ageAfterRecovery": ""
+  },
+  "9b_result_page_background_refetch_failure": {
+    "before": "ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 mi",
+    "after": "ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details The ",
+    "resultStillVisible": 0,
+    "alert": "The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details"
+  },
+  "10_data_swap": {
+    "initial": {
+      "meta": 1,
+      "estimatePOST": 1
+    },
+    "after_swap_back_navigation_within_5min": {
+      "meta": 0,
+      "estimatePOST": 0
+    },
+    "after_focus_refetch_real_time_lt_300s": {
+      "meta": 0,
+      "estimatePOST": 0
+    },
+    "after_reload": {
+      "meta": 0,
+      "estimatePOST": 1,
+      "population": 0,
+      "presets": 0
+    },
+    "new_tab_about": {
+      "meta": 0
+    }
+  }
+}

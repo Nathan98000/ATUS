@@ -1,0 +1,275 @@
+{
+  "scenario": "b_meta_delay60_503_always",
+  "page": "deep",
+  "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+  "t0_epoch": 1792517115.058,
+  "meta_request_times_s": [
+    0.044,
+    61.053,
+    123.058
+  ],
+  "meta_request_gaps_s": [
+    61.009,
+    62.005
+  ],
+  "api_requests": 4,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.052,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/deep_002s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "",
+        "Calculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant."
+      ],
+      "live": [
+        "Calculating estimate…"
+      ]
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.047,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/deep_005s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "",
+        "Calculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant."
+      ],
+      "live": [
+        "Calculating estimate…"
+      ]
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.053,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/deep_015s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "",
+        "Calculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant."
+      ],
+      "live": [
+        "Calculating estimate…"
+      ]
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.044,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/deep_030s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "",
+        "Calculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant."
+      ],
+      "live": [
+        "Calculating estimate…"
+      ]
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.04,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/deep_060s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "",
+        "Calculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant."
+      ],
+      "live": [
+        "Calculating estimate…"
+      ]
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.045,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/deep_075s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "",
+        "Calculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant."
+      ],
+      "live": [
+        "Calculating estimate…"
+      ]
+    },
+    {
+      "checkpoint_s": 120,
+      "actual_t": 120.046,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/deep_120s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "",
+        "Calculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant."
+      ],
+      "live": [
+        "Calculating estimate…"
+      ]
+    },
+    {
+      "checkpoint_s": 150,
+      "actual_t": 150.063,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/deep_150s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "",
+        "Calculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant."
+      ],
+      "live": [
+        "Calculating estimate…"
+      ]
+    },
+    {
+      "checkpoint_s": 185,
+      "actual_t": 185.048,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/deep_185s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    },
+    {
+      "checkpoint_s": 200,
+      "actual_t": 200.041,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/deep_200s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.02,
+      "main": ""
+    },
+    {
+      "t": 0.272,
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…"
+    },
+    {
+      "t": 183.219,
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed."
+    }
+  ],
+  "network": [
+    {
+      "t": 0.044,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.044,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities/presets"
+    },
+    {
+      "t": 0.055,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/activities/presets",
+      "status": 200
+    },
+    {
+      "t": 60.05,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    },
+    {
+      "t": 61.053,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 121.056,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    },
+    {
+      "t": 123.058,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 183.068,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    }
+  ],
+  "console": [
+    {
+      "t": 60.05,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 121.056,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 183.069,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    }
+  ]
+}

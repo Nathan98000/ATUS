@@ -1,0 +1,42 @@
+[
+  {
+    "t_start": 1792518421.378,
+    "t_end": 1792518421.378,
+    "scenario": "f_analysis_1027_html",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792518421.379,
+    "t_end": 1792518421.379,
+    "scenario": "f_analysis_1027_html",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792518421.391,
+    "t_end": 1792518421.391,
+    "scenario": "f_analysis_1027_html",
+    "origin": "http://[::1]:4182",
+    "method": "OPTIONS",
+    "path": "/api/v1/analysis/estimate",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792518421.391,
+    "t_end": 1792518421.391,
+    "scenario": "f_analysis_1027_html",
+    "origin": "http://[::1]:4182",
+    "method": "POST",
+    "path": "/api/v1/analysis/estimate",
+    "status": 429,
+    "note": ""
+  }
+]

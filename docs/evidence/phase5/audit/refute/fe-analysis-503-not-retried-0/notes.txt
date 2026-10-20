@@ -1,0 +1,10 @@
+Verified at 387fc2d:
+- frontend/src/api/queries.ts:119 useAnalysis retry:false (overrides QueryClient default; main.tsx:10 new QueryClient() no defaults)
+- queries.ts:27-33 retryInfrastructureOnly used for meta/metadata (retries 503 up to 2x), not analysis
+- queries.ts:114 analysis enabled only after meta resolved
+- api/errors.py:142-150 PoolTimeout/OperationalError/DatabaseUnavailableError -> 503 database_unavailable
+- api/app.py:62-68 ConnectionPool(min_size=1,max_size=10) no check= -> stale conns not validated
+- api/routes/meta.py:52-64 /meta uses a pooled DB connection (so on a fresh deep-link load it is the first DB request, and is retried)
+- presentError.ts:86-94 database_unavailable -> 'temporarily unavailable', retryable (manual Try again button, AnalysisPage.tsx:206)
+- psycopg_pool pool.py:833-855 shrinks one idle conn per max_idle (600s default) toward min_size
+- runs/f_analysis_503_pooltimeout/deep.json: mocked 503 on POST at 0.09s, single POST, alert shown by 2s

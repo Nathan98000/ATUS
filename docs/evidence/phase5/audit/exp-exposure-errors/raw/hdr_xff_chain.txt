@@ -1,0 +1,11 @@
+### curl -H X-Forwarded-For: 198.51.100.1, 203.0.113.77 http://127.0.0.1:8206/health (port 8206)
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:09:50 GMT
+server: uvicorn
+content-length: 15
+content-type: application/json
+vary: Origin
+x-request-id: 288488f2197647a0
+
+{"status":"ok"}
+### status=200 time_total=0.001159s size_download=15 size_upload=0

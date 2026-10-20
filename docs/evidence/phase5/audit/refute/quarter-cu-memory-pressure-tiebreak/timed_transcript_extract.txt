@@ -1,0 +1,93 @@
+SOURCE: agent-a743145676b1f3539.jsonl (timed agent transcript; jsonl line indexes 0-based)
+
+### line 213 2026-10-20T18:06:39.503Z TOOL_USE
+docker exec atus-emu-pg sh -c 'which fincore dd vmtouch; dd --version | head -1; ls /var/lib/postgresql/data/base | head; cat /sys/fs/cgroup/cpu.max /sys/fs/cgroup/memory.max'
+
+### line 214 2026-10-20T18:06:39.935Z TOOL_RESULT
+/usr/bin/dd
+dd (coreutils) 9.7
+1
+16384
+4
+5
+pgsql_tmp
+max 100000
+max
+
+### line 269 2026-10-20T18:09:41.931Z TOOL_USE
+D=docs/evidence/phase5/audit/timed; { date -u; docker update --cpus 0.25 --memory 1g --memory-swap 1g atus-emu-pg; docker inspect atus-emu-pg --format 'NanoCpus={{.HostConfig.NanoCpus}} Memory={{.HostConfig.Memory}} Swap={{.HostConfig.MemorySwap}}'; docker exec atus-emu-pg cat /sys/fs/cgroup/cpu.max /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory.current; } 2>&1 | tee $D/profile_a_apply.txt
+
+### line 270 2026-10-20T18:09:42.442Z TOOL_RESULT
+Tue Oct 20 18:09:42 UTC 2026
+atus-emu-pg
+NanoCpus=250000000 Memory=1073741824 Swap=1073741824
+25000 100000
+1073741824
+929128448
+
+### line 338 2026-10-20T18:27:29.276Z TOOL_USE
+D=docs/evidence/phase5/audit/timed; python3 -c "
+import json; m=json.load(open('$D/matrix_a_neon025_jitoff.json'))
+print(m['db_cpu_before']); print(m['db_cpu_after']); print(m['api_cpu_before']); print(m['api_cpu_after']); print(m['date_utc'], m['date_end_utc'])
+"; docker exec atus-emu-pg sh -c 'cat /sys/fs/cgroup/memory.current; grep -E "^(anon|file|active_file|inactive_file|workingset_refault_file|pgmajfault|shmem) " /sys/fs/cgroup/memory.stat; cat /sys/fs/cgroup/io.stat; cat /sys/fs/cgroup/memory.events'; uptime
+
+### line 339 2026-10-20T18:27:29.849Z TOOL_RESULT
+usage_usec 641878050
+user_usec 599466304
+system_usec 42411746
+nice_usec 0
+nr_periods 78
+nr_throttled 20
+throttled_usec 3277332
+nr_bursts 0
+burst_usec 0
+usage_usec 876770514
+user_usec 815802536
+system_usec 60967978
+nice_usec 0
+nr_periods 9598
+nr_throttled 9388
+throttled_usec 2420419181
+nr_bursts 0
+burst_usec 0
+usage_usec 846099
+user_usec 761776
+system_usec 84322
+nice_usec 0
+nr_periods 100
+nr_throttled 82
+throttled_usec 7374561
+nr_bursts 0
+burst_usec 0
+usage_usec 5405419
+user_usec 4839902
+system_usec 565517
+nice_usec 0
+nr_periods 5833
+nr_throttled 103
+throttled_usec 8881961
+nr_bursts 0
+burst_usec 0
+2026-10-20T18:10:56.763236Z 2026-10-20T18:27:10.827587Z
+637665280
+anon 5099520
+file 611700736
+shmem 146919424
+inactive_file 122597376
+active_file 342142976
+workingset_refault_file 315246
+pgmajfault 8
+254:0 rbytes=1293561856 wbytes=8187375616 rios=12386 wios=18450 dbytes=0 dios=0
+low 0
+high 0
+max 7017
+oom 0
+oom_kill 0
+oom_group_kill 0
+14:27  up 13 days, 22:35, 1 user, load averages: 2.16 2.63 3.11
+
+### line 366 2026-10-20T18:38:57.317Z TOOL_USE
+D=docs/evidence/phase5/audit/timed; docker run --rm --name atus-audit-pgcache -v atus-emu-pgdata:/pgdata:ro -v $D:/s:ro atus-audit-api:proto python /s/pgcache.py
+
+### line 367 2026-10-20T18:38:58.009Z TOOL_RESULT
+drop=False files_bytes=650458708 resident_bytes=344096768 resident_MB=328.2 of 620.3 MB (52.9%)

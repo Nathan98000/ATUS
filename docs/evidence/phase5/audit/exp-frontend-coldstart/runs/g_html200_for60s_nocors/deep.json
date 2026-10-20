@@ -1,0 +1,281 @@
+{
+  "scenario": "g_html200_for60s_nocors",
+  "page": "deep",
+  "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+  "t0_epoch": 1792518576.026,
+  "meta_request_times_s": [
+    0.055,
+    1.058,
+    3.06
+  ],
+  "meta_request_gaps_s": [
+    1.003,
+    2.002
+  ],
+  "api_requests": 6,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.041,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s_nocors/deep_002s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "",
+        "Calculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant."
+      ],
+      "live": [
+        "Calculating estimate…"
+      ]
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.037,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s_nocors/deep_005s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.045,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s_nocors/deep_015s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.04,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s_nocors/deep_030s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.056,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s_nocors/deep_060s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.064,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s_nocors/deep_075s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.024,
+      "main": ""
+    },
+    {
+      "t": 0.275,
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…"
+    },
+    {
+      "t": 3.299,
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed."
+    }
+  ],
+  "network": [
+    {
+      "t": 0.055,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.055,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities/presets"
+    },
+    {
+      "t": 0.058,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/activities/presets",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "t": 0.058,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "t": 1.058,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities/presets"
+    },
+    {
+      "t": 1.058,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 1.06,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "t": 1.06,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/activities/presets",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "t": 3.06,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 3.061,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities/presets"
+    },
+    {
+      "t": 3.061,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "t": 3.062,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/activities/presets",
+      "failure": "net::ERR_FAILED"
+    }
+  ],
+  "console": [
+    {
+      "t": 0.058,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/activities/presets' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 0.058,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "t": 0.058,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 0.058,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "t": 1.06,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 1.06,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "t": 1.06,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/activities/presets' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 1.06,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "t": 3.061,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 3.061,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "t": 3.062,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/activities/presets' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 3.062,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    }
+  ]
+}

@@ -1,0 +1,247 @@
+{
+  "DELAY": 60,
+  "snaps": [
+    {
+      "t": 1,
+      "home": {
+        "text": "Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0,
+        "starter": "Start from a question Loading starter examples…"
+      },
+      "explore": {
+        "text": "Loading the analysis builder… Fetching what the analytical service supports.",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0
+      },
+      "deeplink": {
+        "text": "ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0
+      }
+    },
+    {
+      "t": 5,
+      "home": {
+        "text": "Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0,
+        "starter": "Start from a question Loading starter examples…"
+      },
+      "explore": {
+        "text": "Loading the analysis builder… Fetching what the analytical service supports.",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0
+      },
+      "deeplink": {
+        "text": "ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0
+      }
+    },
+    {
+      "t": 15,
+      "home": {
+        "text": "Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0,
+        "starter": "Start from a question Loading starter examples…"
+      },
+      "explore": {
+        "text": "Loading the analysis builder… Fetching what the analytical service supports.",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0
+      },
+      "deeplink": {
+        "text": "ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0
+      }
+    },
+    {
+      "t": 30,
+      "home": {
+        "text": "Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0,
+        "starter": "Start from a question Loading starter examples…"
+      },
+      "explore": {
+        "text": "Loading the analysis builder… Fetching what the analytical service supports.",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0
+      },
+      "deeplink": {
+        "text": "ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0
+      }
+    },
+    {
+      "t": 55,
+      "home": {
+        "text": "Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0,
+        "starter": "Start from a question Loading starter examples…"
+      },
+      "explore": {
+        "text": "Loading the analysis builder… Fetching what the analytical service supports.",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0
+      },
+      "deeplink": {
+        "text": "ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…",
+        "footer": " to sampling uncertainty. An independent analytical project — not an official BLS product.",
+        "alerts": 0
+      }
+    },
+    {
+      "t": 63,
+      "home": {
+        "text": "Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p",
+        "footer": "ject — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+        "alerts": 0,
+        "starter": "Start from a question How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two grou"
+      },
+      "explore": {
+        "text": "Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? sleep — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty for all ages (15+). S",
+        "footer": "ject — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+        "alerts": 0
+      },
+      "deeplink": {
+        "text": "ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min People ages 25–54 spent an estimated 8h 49m per day o",
+        "footer": "ject — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+        "alerts": 0
+      }
+    },
+    {
+      "t": 70,
+      "home": {
+        "text": "Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p",
+        "footer": "ject — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+        "alerts": 0,
+        "starter": "Start from a question How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two grou"
+      },
+      "explore": {
+        "text": "Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? sleep — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty for all ages (15+). S",
+        "footer": "ject — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+        "alerts": 0
+      },
+      "deeplink": {
+        "text": "ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min People ages 25–54 spent an estimated 8h 49m per day o",
+        "footer": "ject — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+        "alerts": 0
+      }
+    }
+  ],
+  "serverLog": [
+    {
+      "t": 2.411,
+      "method": "GET",
+      "path": "/api/v1/meta",
+      "key": "meta",
+      "status": "recv",
+      "n": 1
+    },
+    {
+      "t": 2.412,
+      "method": "GET",
+      "path": "/api/v1/population/metadata",
+      "key": "population",
+      "status": "recv",
+      "n": 1
+    },
+    {
+      "t": 2.412,
+      "method": "GET",
+      "path": "/api/v1/meta",
+      "key": "meta",
+      "status": "recv",
+      "n": 2
+    },
+    {
+      "t": 2.412,
+      "method": "GET",
+      "path": "/api/v1/meta",
+      "key": "meta",
+      "status": "recv",
+      "n": 3
+    },
+    {
+      "t": 2.412,
+      "method": "GET",
+      "path": "/api/v1/activities/presets",
+      "key": "presets",
+      "status": "recv",
+      "n": 1
+    },
+    {
+      "t": 62.416,
+      "method": "GET",
+      "path": "/api/v1/meta",
+      "key": "meta",
+      "status": 200
+    },
+    {
+      "t": 62.416,
+      "method": "GET",
+      "path": "/api/v1/meta",
+      "key": "meta",
+      "status": 200
+    },
+    {
+      "t": 62.417,
+      "method": "GET",
+      "path": "/api/v1/population/metadata",
+      "key": "population",
+      "status": 200
+    },
+    {
+      "t": 62.417,
+      "method": "GET",
+      "path": "/api/v1/meta",
+      "key": "meta",
+      "status": 200
+    },
+    {
+      "t": 62.417,
+      "method": "GET",
+      "path": "/api/v1/activities/presets",
+      "key": "presets",
+      "status": 200
+    },
+    {
+      "t": 62.42,
+      "method": "POST",
+      "path": "/api/v1/analysis/estimate",
+      "key": "estimate",
+      "status": "recv",
+      "n": 1
+    },
+    {
+      "t": 62.42,
+      "method": "POST",
+      "path": "/api/v1/analysis/estimate",
+      "key": "estimate",
+      "status": 200
+    },
+    {
+      "t": 62.424,
+      "method": "GET",
+      "path": "/api/v1/activities",
+      "key": "activities",
+      "status": "recv",
+      "n": 1
+    },
+    {
+      "t": 62.424,
+      "method": "GET",
+      "path": "/api/v1/activities/presets",
+      "key": "presets",
+      "status": "recv",
+      "n": 2
+    }
+  ],
+  "console": []
+}

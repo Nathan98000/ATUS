@@ -1,0 +1,8 @@
+actions/checkout location: https://github.com/actions/checkout/releases/tag/v7.0.1
+actions/setup-node location: https://github.com/actions/setup-node/releases/tag/v7.1.0
+actions/setup-python location: https://github.com/actions/setup-python/releases/tag/v7.0.0
+actions/cache location: https://github.com/actions/cache/releases/tag/v6.1.0
+actions/upload-artifact location: https://github.com/actions/upload-artifact/releases/tag/v7.0.2
+docker/build-push-action location: https://github.com/docker/build-push-action/releases/tag/v7.4.0
+github/codeql-action location: https://github.com/github/codeql-action/releases/tag/codeql-bundle-v2.27.2
+Tue Oct 20 17:06:25 UTC 2026

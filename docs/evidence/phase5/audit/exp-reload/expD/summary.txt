@@ -1,0 +1,16 @@
+('1_before_load', 'est_cached', '200', 'hit', '75.0', '') 176
+('1_before_load', 'est_cached_probe', '200', 'hit', '75.0', '') 6
+('1_before_load', 'est_uncached', '200', 'miss', '75.0', '') 176
+('1_before_load', 'meta', '200', '', '6', '4') 176
+('2_during_hold_or_T2', 'est_cached', '200', 'hit', '75.0', '') 4
+('2_during_hold_or_T2', 'est_cached_probe', '200', 'hit', '75.0', '') 5
+('2_during_hold_or_T2', 'est_uncached', '200', 'miss', '90.0', '') 8
+('2_during_hold_or_T2', 'meta', '200', '', '6', '4') 4
+('3_T2_committed_version_not_bumped', 'est_cached', '200', 'hit', '75.0', '') 522
+('3_T2_committed_version_not_bumped', 'est_cached_probe', '200', 'hit', '75.0', '') 15
+('3_T2_committed_version_not_bumped', 'est_uncached', '200', 'miss', '90.0', '') 521
+('3_T2_committed_version_not_bumped', 'meta', '200', '', '6', '4') 524
+("4_after_loader_died(run stays 'running')", 'est_cached', '200', 'hit', '75.0', '') 1225
+("4_after_loader_died(run stays 'running')", 'est_cached_probe', '200', 'hit', '75.0', '') 34
+("4_after_loader_died(run stays 'running')", 'est_uncached', '200', 'miss', '90.0', '') 1214
+("4_after_loader_died(run stays 'running')", 'meta', '200', '', '6', '4') 1219

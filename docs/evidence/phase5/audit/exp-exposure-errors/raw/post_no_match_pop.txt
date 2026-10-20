@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/no_match_pop.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:43 GMT
+server: uvicorn
+content-length: 226
+content-type: application/json
+vary: Origin
+x-request-id: d81b92545d994288
+
+{"error":{"code":"insufficient_data","message":"No respondents match the population filters in year(s) [2023]; a pooled estimate would silently misrepresent the period. Narrow `years` or widen the population.","details":null}}
+### status=422 time_total=0.019449s size_download=226 size_upload=124

@@ -1,0 +1,14 @@
+Tiebreak notes: fe-analysis-503-not-retried (commit 387fc2d). No new experiments; code reads + existing raw outputs.
+- frontend/src/api/queries.ts:119 retry:false on useAnalysis; :107-115 enabled only when versions (from useMeta) non-null.
+- queries.ts:28-33 retryInfrastructureOnly; TanStack query-core 5.102.8 retryer.js:92 -> retry(0),retry(1) true, retry(2) false => 3 attempts, delays 1s,2s (retryer.js:6-7).
+- src/atus_pipeline/api/errors.py:142-150 -> PoolTimeout/OperationalError/DatabaseUnavailableError => 503 database_unavailable.
+- src/atus_pipeline/api/app.py:62-68 ConnectionPool(min_size=1,max_size=10), no check=.
+- dependencies.py:35-43,63-64 + routes/analysis.py:117-123: every analysis POST (cache hit too) checks out a connection and runs the data_version query.
+- psycopg_pool 3.3.3 pool.py:295 popleft (checkout), :784 append (return/new), :715-733 broken conn discarded + AddConnection (fresh appended at right).
+  => FIFO: all idle stale connections are handed out before any fresh one. Once /meta succeeds, every stale idle conn has already been checked out.
+- pool.py:833-845 shrink: at most one conn per max_idle period => pool size after use is not necessarily 1.
+- exp-statements/stale_terminate.out: 10 stale -> 10 DB requests 503 (#05 /health has no DB). stale_terminate_pool1.out: 1 stale -> /meta 503, POST 200. stale_terminate_repeats.out: 2 stale -> 2 failures; 3 stale -> 3 failures.
+- exp-frontend-coldstart/mock_api.py:280-286: d_503_firstN is per (origin,path) -> does NOT model the global FIFO pool; f_analysis_503_pooltimeout injects 503 only on POST. Both are mocks.
+- AnalysisPage.tsx:76 AnalysisRunner unkeyed; App.tsx:16 single route /analysis/:operation; AnalysisPage.tsx:170-180 'View trend' Link navigates within that route
+  => no remount, no /meta refetch (meta key unchanged), so the trend POST is the first DB request in an open tab (reasoned, not run).
+- presentError.ts:86-95 retryable:true; ErrorPanel.tsx:26-29 'Try again' button; AnalysisPage.tsx:206 onRetry=query.refetch.

@@ -1,0 +1,35 @@
+{"i": 0, "docker_run_cmd_s": 0.25755037495400757, "to_first_health_s": 7.6096917919348925, "to_first_meta_s": 7.727703458047472, "health_polls": 67, "meta_polls": 1, "second_meta_wall_s": 0.01212995802052319, "second_meta_status": 200, "memory_current": 47656960, "memory_peak": 48701440, "proc1": {"VmHWM": "64400 kB", "VmRSS": "64400 kB", "RssAnon": "41984 kB", "RssFile": "22416 kB", "Threads": "6"}}
+{"i": 1, "docker_run_cmd_s": 0.21653612493537366, "to_first_health_s": 8.289047333993949, "to_first_meta_s": 8.399939666967839, "health_polls": 77, "meta_polls": 1, "second_meta_wall_s": 0.01389245898462832, "second_meta_status": 200, "memory_current": 47681536, "memory_peak": 48726016, "proc1": {"VmHWM": "64404 kB", "VmRSS": "64404 kB", "RssAnon": "41988 kB", "RssFile": "22416 kB", "Threads": "6"}}
+{"i": 2, "docker_run_cmd_s": 0.1963594580302015, "to_first_health_s": 6.86840725003276, "to_first_meta_s": 6.900565874995664, "health_polls": 61, "meta_polls": 1, "second_meta_wall_s": 0.08877262508030981, "second_meta_status": 200, "memory_current": 47935488, "memory_peak": 48685056, "proc1": {"VmHWM": "64388 kB", "VmRSS": "64388 kB", "RssAnon": "41980 kB", "RssFile": "22408 kB", "Threads": "6"}}
+{"i": 3, "docker_run_cmd_s": 0.22192404104862362, "to_first_health_s": 7.886107916012406, "to_first_meta_s": 7.988710333011113, "health_polls": 71, "meta_polls": 1, "second_meta_wall_s": 0.012049582903273404, "second_meta_status": 200, "memory_current": 47390720, "memory_peak": 48685056, "proc1": {"VmHWM": "64396 kB", "VmRSS": "64396 kB", "RssAnon": "41980 kB", "RssFile": "22416 kB", "Threads": "6"}}
+{"i": 4, "docker_run_cmd_s": 0.177626125048846, "to_first_health_s": 7.645801999955438, "to_first_meta_s": 7.7424277500249445, "health_polls": 69, "meta_polls": 1, "second_meta_wall_s": 0.023164000012911856, "second_meta_status": 200, "memory_current": 47906816, "memory_peak": 48685056, "proc1": {"VmHWM": "64400 kB", "VmRSS": "64400 kB", "RssAnon": "41984 kB", "RssFile": "22416 kB", "Threads": "6"}}
+{
+ "summary_to_first_health_s": {
+  "n": 5,
+  "min": 6.86840725003276,
+  "p50": 7.645801999955438,
+  "p95": 8.20845945039764,
+  "max": 8.289047333993949
+ },
+ "summary_to_first_meta_s": {
+  "n": 5,
+  "min": 6.900565874995664,
+  "p50": 7.7424277500249445,
+  "p95": 8.317693800176494,
+  "max": 8.399939666967839
+ },
+ "summary_docker_run_cmd_s": {
+  "n": 5,
+  "min": 0.177626125048846,
+  "p50": 0.21653612493537366,
+  "p95": 0.2504251081729308,
+  "max": 0.25755037495400757
+ },
+ "summary_second_meta_wall_s": {
+  "n": 5,
+  "min": 0.012049582903273404,
+  "p50": 0.01389245898462832,
+  "p95": 0.0756509000668302,
+  "max": 0.08877262508030981
+ }
+}

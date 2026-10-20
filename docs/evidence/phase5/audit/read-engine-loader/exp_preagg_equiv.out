@@ -1,0 +1,5 @@
+baseline 5.1s
+pre-agg as smallint: 36.2s; n/sum_w/sum_wx/sum_wp exactly equal: True; worst replicate-sum relative diff: 8.078e-15
+pre-agg as integer: 46.1s; n/sum_w/sum_wx/sum_wp exactly equal: True; worst replicate-sum relative diff: 8.078e-15
+pre-agg as bigint: 45.4s; n/sum_w/sum_wx/sum_wp exactly equal: True; worst replicate-sum relative diff: 8.078e-15
+cases: 9 year-rows: 16

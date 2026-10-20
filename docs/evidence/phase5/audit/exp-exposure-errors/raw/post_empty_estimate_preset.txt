@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/pandemic_ok.json http://127.0.0.1:8216/api/v1/analysis/estimate (port 8216)
+HTTP/1.1 503 Service Unavailable
+date: Tue, 20 Oct 2026 17:12:35 GMT
+server: uvicorn
+content-length: 127
+content-type: application/json
+vary: Origin
+x-request-id: 5ddf45c3d2da458e
+
+{"error":{"code":"schema_not_initialized","message":"The analytical database schema has not been initialized.","details":null}}
+### status=503 time_total=0.003428s size_download=127 size_upload=111

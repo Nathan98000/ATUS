@@ -1,0 +1,7 @@
+01 personal care participation pooled 22y      value_same=True value=0.9996216266 SE=5.76029e-05 SE/value=5.76e-05 relSEdiff=3.60e-13 |dSE|/value=2.07e-17
+01 personal care avg minutes pooled 22y        value_same=True value=572.7838544 SE=0.377889 SE/value=6.60e-04 relSEdiff=1.11e-13 |dSE|/value=7.34e-17
+11 eating participation pooled 22y             value_same=True value=0.9577193339 SE=0.000551945 SE/value=5.76e-04 relSEdiff=4.14e-14 |dSE|/value=2.39e-17
+0101 sleep participation pooled 22y women      value_same=True value=0.9992969839 SE=8.82304e-05 SE/value=8.83e-05 relSEdiff=5.74e-14 |dSE|/value=5.07e-18
+0101 sleep min/participant pooled 22y          value_same=True value=527.5316346 SE=0.363782 SE/value=6.90e-04 relSEdiff=3.36e-15 |dSE|/value=2.32e-18
+01 personal care participation 2003-2019 (17y) value_same=True value=0.9997011727 SE=4.38123e-05 SE/value=4.38e-05 relSEdiff=2.82e-13 |dSE|/value=1.24e-17
+0101 sleep persons/day pooled 22y              value_same=True value=250617357.7 SE=19359.9 SE/value=7.72e-05 relSEdiff=6.28e-14 |dSE|/value=4.85e-18

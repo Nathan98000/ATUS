@@ -1,0 +1,1 @@
+ClickException migrations directory not found at docs/evidence/phase5/audit/refute/migrations-not-packaged-0/venv/lib/python3.12/migrations; run from the repository root

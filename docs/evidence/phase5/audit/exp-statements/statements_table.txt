@@ -1,0 +1,187 @@
+ 1. GET /health -> 200  x-cache=None STATEMENTS=0
+ 2. GET /ready -> 200  x-cache=None STATEMENTS=4
+       simple | BEGIN
+       simple | SELECT 1
+       simple | SELECT EXISTS (SELECT 1 FROM atus.respondents)
+       simple | COMMIT
+ 3. GET /api/v1/meta -> 200  x-cache=None STATEMENTS=5
+       simple | BEGIN
+       simple | SELECT id, release, finished_at FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1
+       simple | SELECT count(*) FROM atus.respondents
+       simple | COMMIT
+ 4. GET /api/v1/meta (repeat) -> 200  x-cache=None STATEMENTS=5
+       simple | BEGIN
+       simple | SELECT id, release, finished_at FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1
+       simple | SELECT count(*) FROM atus.respondents
+       simple | COMMIT
+ 5. GET /api/v1/activities -> 200  x-cache=None STATEMENTS=3
+       simple | BEGIN
+       simple | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent_code, NUL
+       simple | COMMIT
+ 6. GET /api/v1/activities?search=sleep&level=3 -> 200  x-cache=None STATEMENTS=3
+       simple | BEGIN
+       execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent_code, NUL
+       simple | COMMIT
+ 7. GET /api/v1/activities/010101 (6-digit) -> 200  x-cache=None STATEMENTS=7
+       simple | BEGIN
+       execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent_code, NUL
+       execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent_code, NUL
+       execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent_code, NUL
+       execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent_code, NUL
+       execute <unnamed> | SELECT count(*) FROM atus.activity_codes WHERE code LIKE $1
+       simple | COMMIT
+ 8. GET /api/v1/activities/01 (2-digit) -> 200  x-cache=None STATEMENTS=5
+       simple | BEGIN
+       execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent_code, NUL
+       execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent_code, NUL
+       execute <unnamed> | SELECT count(*) FROM atus.activity_codes WHERE code LIKE $1
+       simple | COMMIT
+ 9. GET /api/v1/activities/presets -> 200  x-cache=None STATEMENTS=0
+10. GET /api/v1/population/metadata -> 200  x-cache=None STATEMENTS=0
+11. POST estimate (cache miss) -> 200  x-cache=miss STATEMENTS=9
+       simple | BEGIN
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+       simple | SELECT code FROM atus.activity_tier1
+       simple | SELECT code FROM atus.activity_tier2
+       simple | SELECT code, name FROM atus.activity_codes
+       execute <unnamed> | WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duration_minutes) AS minutes FROM atus.activities a WHERE a.activity
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | COMMIT
+12. POST estimate (cache hit) -> 200  x-cache=hit STATEMENTS=3
+       simple | BEGIN
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | COMMIT
+13. POST trend (cache miss) -> 200  x-cache=miss STATEMENTS=9
+       simple | BEGIN
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+       simple | SELECT code FROM atus.activity_tier1
+       simple | SELECT code FROM atus.activity_tier2
+       simple | SELECT code, name FROM atus.activity_codes
+       execute <unnamed> | WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duration_minutes) AS minutes FROM atus.activities a WHERE a.activity
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | COMMIT
+14. POST trend (cache hit) -> 200  x-cache=hit STATEMENTS=3
+       simple | BEGIN
+       execute _pg3_0 | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | COMMIT
+15. POST compare (cache miss) -> 200  x-cache=miss STATEMENTS=10
+       simple | BEGIN
+       execute _pg3_0 | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+       simple | SELECT code FROM atus.activity_tier1
+       simple | SELECT code FROM atus.activity_tier2
+       simple | SELECT code, name FROM atus.activity_codes
+       execute <unnamed> | WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duration_minutes) AS minutes FROM atus.activities a WHERE a.activity
+       execute <unnamed> | WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duration_minutes) AS minutes FROM atus.activities a WHERE a.activity
+       execute _pg3_0 | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | COMMIT
+16. POST compare (cache hit) -> 200  x-cache=hit STATEMENTS=3
+       simple | BEGIN
+       execute _pg3_0 | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | COMMIT
+17. POST estimate variance=none, pandemic (cache miss) -> 200  x-cache=miss STATEMENTS=9
+       simple | BEGIN
+       execute _pg3_0 | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+       simple | SELECT code FROM atus.activity_tier1
+       simple | SELECT code FROM atus.activity_tier2
+       simple | SELECT code, name FROM atus.activity_codes
+       execute <unnamed> | WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duration_minutes) AS minutes FROM atus.activities a WHERE a.activity
+       execute _pg3_0 | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | COMMIT
+18. POST estimate 422 invalid_spec (age_min>age_max) -> 422 invalid_spec x-cache=None STATEMENTS=4
+       simple | BEGIN
+       execute _pg3_0 | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | ROLLBACK
+       simple | DEALLOCATE ALL
+19. POST estimate 422 invalid_spec (unknown preset) -> 422 invalid_spec x-cache=None STATEMENTS=3
+       simple | BEGIN
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | ROLLBACK
+20. POST estimate 422 unknown_activity (999999) -> 422 unknown_activity x-cache=None STATEMENTS=7
+       simple | BEGIN
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+       simple | SELECT code FROM atus.activity_tier1
+       simple | SELECT code FROM atus.activity_tier2
+       simple | SELECT code, name FROM atus.activity_codes
+       simple | ROLLBACK
+21. POST estimate 422 unsupported_analysis (2020 multiyear) -> 422 unsupported_analysis x-cache=None STATEMENTS=4
+       simple | BEGIN
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+       simple | ROLLBACK
+22. POST estimate 422 validation_error (schema) -> 422 validation_error x-cache=None STATEMENTS=3
+       simple | BEGIN
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | ROLLBACK
+23. POST estimate 400 malformed_json -> 400 malformed_json x-cache=None STATEMENTS=0
+24. GET 404 unknown route -> 404 not_found x-cache=None STATEMENTS=0
+25. GET 405 method_not_allowed (GET estimate) -> 405 method_not_allowed x-cache=None STATEMENTS=0
+26. GET /api/v1/activities/999999 404 activity_not_found -> 404 activity_not_found x-cache=None STATEMENTS=3
+       simple | BEGIN
+       execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent_code, NUL
+       simple | ROLLBACK
+27. GET /api/v1/activities/abc 404 activity_not_found (non-digit) -> 404 activity_not_found x-cache=None STATEMENTS=0
+28. GET /api/v1/activities?level=9 422 validation_error (query) -> 422 validation_error x-cache=None STATEMENTS=0
+29. GET /openapi.json -> 200  x-cache=None STATEMENTS=0
+30. GET /docs -> 200  x-cache=None STATEMENTS=0
+31. POST estimate (cache miss, extra #1, years=[2019], sex=female) -> 422 insufficient_data x-cache=None STATEMENTS=8
+       simple | BEGIN
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+       simple | SELECT code FROM atus.activity_tier1
+       simple | SELECT code FROM atus.activity_tier2
+       simple | SELECT code, name FROM atus.activity_codes
+       execute <unnamed> | WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duration_minutes) AS minutes FROM atus.activities a WHERE a.activity
+       simple | ROLLBACK
+32. POST estimate (cache miss, extra #2, years=[2019, 2023], sex=female) -> 422 insufficient_data x-cache=None STATEMENTS=8
+       simple | BEGIN
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+       simple | SELECT code FROM atus.activity_tier1
+       simple | SELECT code FROM atus.activity_tier2
+       simple | SELECT code, name FROM atus.activity_codes
+       execute <unnamed> | WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duration_minutes) AS minutes FROM atus.activities a WHERE a.activity
+       simple | ROLLBACK
+33. POST estimate (cache miss, extra #3, years=[2023], sex=female) -> 200  x-cache=miss STATEMENTS=9
+       simple | BEGIN
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+       simple | SELECT code FROM atus.activity_tier1
+       simple | SELECT code FROM atus.activity_tier2
+       simple | SELECT code, name FROM atus.activity_codes
+       execute <unnamed> | WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duration_minutes) AS minutes FROM atus.activities a WHERE a.activity
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | COMMIT
+34. POST estimate (cache hit extra #1 repeat) -> 422 insufficient_data x-cache=None STATEMENTS=8
+       simple | BEGIN
+       simple | SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+       simple | SELECT code FROM atus.activity_tier1
+       simple | SELECT code FROM atus.activity_tier2
+       simple | SELECT code, name FROM atus.activity_codes
+       execute <unnamed> | WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duration_minutes) AS minutes FROM atus.activities a WHERE a.activity
+       simple | ROLLBACK
+35. GET /api/v1/meta (repeat 2) -> 200  x-cache=None STATEMENTS=5
+       simple | BEGIN
+       simple | SELECT id, release, finished_at FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1
+       simple | SELECT count(*) FROM atus.respondents
+       simple | COMMIT
+36. GET /api/v1/meta (repeat 3) -> 200  x-cache=None STATEMENTS=5
+       simple | BEGIN
+       simple | SELECT id, release, finished_at FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1
+       simple | SELECT count(*) FROM atus.respondents
+       simple | COMMIT
+37. GET /api/v1/meta (repeat 4) -> 200  x-cache=None STATEMENTS=5
+       simple | BEGIN
+       simple | SELECT id, release, finished_at FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+       simple | SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1
+       simple | SELECT count(*) FROM atus.respondents
+       simple | COMMIT

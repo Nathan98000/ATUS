@@ -1,0 +1,45 @@
+=== expA: trunc_log=+0.027 hold_end=+60.061 last_copy=+60.083 succeeded_log=+60.091 loader_done=+60.091 (rel. to truncate log)
+   data commit lies in (+60.0829, +60.0909); version bump commit before +60.0909
+  started in load window (non-health): 86
+  started in window, completed after last COPY:
+    ('est_cached_probe', '200', '', 'hit', '90.0', '') x6  t_end-loader_done: +0.039..+0.046s  dur 0.12..5.12s
+    ('est_uncached', '200', '', 'bypass', '90.0', '') x4  t_end-loader_done: +0.019..+0.030s  dur 60.01..60.13s
+    ('est_cached_probe', '200', '', 'miss', '90.0', '') x4  t_end-loader_done: +0.040..+0.044s  dur 6.12..9.12s
+    ('meta', '200', '', '', '6', '1') x3  t_end-loader_done: +0.009..+0.015s  dur 60.05..60.11s
+    ('activities', '200', '', '', '556', '') x2  t_end-loader_done: +0.005..+0.014s  dur 60.04..60.10s
+    ('est_cached', '200', '', 'miss', '90.0', '') x2  t_end-loader_done: +0.037..+0.038s  dur 9.39..9.47s
+    ('ready', '200', '', '', '', '') x1  t_end-loader_done: -0.001..-0.001s  dur 60.01..60.01s
+  ALL bypass responses: 4 Counter({'90.0': 4}) t_end-loader_done: [0.019, 0.021, 0.024, 0.03] t_end-last_copy: [0.028, 0.03, 0.033, 0.039]
+  estimates with PRE-reload value 75.0 completing after last COPY: 0 []
+  estimates with PRE-reload value 75.0 completing after loader_done: 0
+  meta 200 completing after last COPY by run_id: Counter({'2': 530, '1': 3}) [('1', -0.008, 0.009), ('1', 0.017, 0.013), ('1', 0.058, 0.015)]
+  503s completing after last COPY: 0 Counter() dur: [] ... [] start rel trunc: [] .. []
+  est_uncached started in window: 8 Counter({('200', 'bypass'): 4, ('503', ''): 4})
+=== expC: trunc_log=+0.023 hold_end=+45.046 last_copy=+45.067 succeeded_log=+45.073 loader_done=+45.073 (rel. to truncate log)
+   data commit lies in (+45.0672, +45.0730); version bump commit before +45.0730
+  started in load window (non-health): 412
+  started in window, completed after last COPY:
+    ('popmeta_probe', '200', '', '', '', '') x34  t_end-loader_done: +0.007..+5.058s  dur 5.38..16.87s
+    ('activities', '200', '', '', '556', '') x11  t_end-loader_done: +5.011..+5.140s  dur 10.00..50.10s
+    ('est_uncached', '503', 'database_unavailable', '', '', '') x9  t_end-loader_done: +4.980..+5.021s  dur 19.89..19.93s
+    ('popmeta', '200', '', '', '', '') x9  t_end-loader_done: +0.010..+5.042s  dur 9.91..14.95s
+    ('est_cached_probe', '200', '', 'miss', '75.0', '') x8  t_end-loader_done: +5.089..+5.103s  dur 13.05..21.05s
+    ('presets', '200', '', '', '', '') x7  t_end-loader_done: +0.011..+5.031s  dur 9.94..14.95s
+    ('est_cached_probe', '200', '', 'hit', '75.0', '') x7  t_end-loader_done: +5.101..+5.146s  dur 6.08..12.05s
+    ('meta', '503', 'database_unavailable', '', '', '') x6  t_end-loader_done: +4.983..+5.040s  dur 19.89..19.95s
+    ('est_uncached', '200', '', 'miss', '75.0', '') x5  t_end-loader_done: +5.092..+5.153s  dur 10.03..19.93s
+    ('est_uncached', '200', '', 'bypass', '75.0', '') x4  t_end-loader_done: +5.079..+5.085s  dur 50.15..50.17s
+    ('activities', '503', 'database_unavailable', '', '', '') x2  t_end-loader_done: +5.003..+5.007s  dur 19.91..19.91s
+    ('est_cached', '200', '', 'hit', '75.0', '') x2  t_end-loader_done: +5.125..+5.126s  dur 10.00..10.00s
+    ('ready', '200', '', '', '', '') x1  t_end-loader_done: +0.003..+0.003s  dur 45.08..45.08s
+    ('meta', '200', '', '', '6', '2') x1  t_end-loader_done: +5.009..+5.009s  dur 50.08..50.08s
+    ('est_cached_probe', '503', 'database_unavailable', '', '', '') x1  t_end-loader_done: +4.982..+4.982s  dur 19.93..19.93s
+    ('ready', '503', 'database_unavailable', '', '', '') x1  t_end-loader_done: +4.984..+4.984s  dur 19.92..19.92s
+    ('meta', '200', '', '', '6', '4') x1  t_end-loader_done: +5.077..+5.077s  dur 20.01..20.01s
+    ('est_cached', '503', 'database_unavailable', '', '', '') x1  t_end-loader_done: +5.008..+5.008s  dur 19.93..19.93s
+  ALL bypass responses: 4 Counter({'75.0': 4}) t_end-loader_done: [5.079, 5.081, 5.083, 5.085] t_end-last_copy: [5.085, 5.087, 5.089, 5.091]
+  estimates with PRE-reload value 90.0 completing after last COPY: 0 []
+  estimates with PRE-reload value 90.0 completing after loader_done: 0
+  meta 200 completing after last COPY by run_id: Counter({'4': 1023, '2': 1}) [('2', 0.004, 5.009), ('4', 30.144, 5.077)]
+  503s completing after last COPY: 20 Counter({'est_uncached': 9, 'meta': 6, 'activities': 2, 'est_cached_probe': 1, 'ready': 1, 'est_cached': 1}) dur: [19.886, 19.895, 19.912] ... [19.935, 19.945, 19.948] start rel trunc: [30.12, 30.13, 30.13] .. [30.17, 30.19, 30.19]
+  est_uncached started in window: 54 Counter({('503', ''): 45, ('200', 'miss'): 5, ('200', 'bypass'): 4})

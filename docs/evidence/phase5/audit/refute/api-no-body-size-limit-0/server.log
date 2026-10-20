@@ -1,0 +1,40 @@
+INFO:     Started server process [76006]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8291 (Press CTRL+C to quit)
+15:26:22 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '5434', hostaddr: '::1': connection failed: connection to server at "::1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+- host: 'localhost', port: '5434', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+INFO:     127.0.0.1:52389 - "GET /healthz HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52390 - "POST /api/v1/estimate HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52391 - "POST /api/v1/estimate HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52392 - "POST /api/v1/estimate HTTP/1.1" 404 Not Found
+15:26:23 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '5434', hostaddr: '::1': connection failed: connection to server at "::1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+- host: 'localhost', port: '5434', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+15:26:25 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '5434', hostaddr: '::1': connection failed: connection to server at "::1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+- host: 'localhost', port: '5434', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+15:26:29 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '5434', hostaddr: '::1': connection failed: connection to server at "::1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+- host: 'localhost', port: '5434', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+15:26:38 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '5434', hostaddr: '::1': connection failed: connection to server at "::1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+- host: 'localhost', port: '5434', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+15:26:54 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '5434', hostaddr: '::1': connection failed: connection to server at "::1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+- host: 'localhost', port: '5434', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+15:27:28 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '5434', hostaddr: '::1': connection failed: connection to server at "::1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+- host: 'localhost', port: '5434', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 5434 failed: FATAL:  database "atus_audit_nonexistent" does not exist
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [76006]

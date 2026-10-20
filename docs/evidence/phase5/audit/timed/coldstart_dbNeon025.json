@@ -1,0 +1,240 @@
+{
+ "label": "coldstart-dbNeon025",
+ "date_utc": "2026-10-20T18:09:46.493440Z",
+ "ran_alone": "yes - sole ATUS audit workload; other projects' containers (supabase_*, timeblock-postgres) and host apps kept running (see env_snapshot_*.txt)",
+ "machine": "Apple M4, 10-core, 24 GB RAM, macOS 27.0.1; Docker Desktop VM 10 vCPU / 7.75 GiB",
+ "docker": "server 29.6.2 client 29.6.2",
+ "db_profile": "NanoCpus=250000000 Memory=1073741824",
+ "api_limits": "--cpus=0.1 --memory=512m --memory-swap=512m",
+ "runs": [
+  {
+   "i": 0,
+   "docker_run_cmd_s": 0.12338504195213318,
+   "to_first_health_s": 10.701177749899216,
+   "to_first_meta_s": 11.039509583963081,
+   "health_polls": 96,
+   "meta_polls": 1,
+   "second_meta_wall_s": 0.3023460829863325,
+   "second_meta_status": 200,
+   "memory_current": 47296512,
+   "memory_peak": 48721920,
+   "proc1": {
+    "VmHWM": "64388 kB",
+    "VmRSS": "64388 kB",
+    "RssAnon": "41984 kB",
+    "RssFile": "22404 kB",
+    "Threads": "6"
+   },
+   "cpu_stat": {
+    "usage_usec": 1107610,
+    "user_usec": 969278,
+    "system_usec": 138332,
+    "nice_usec": 0,
+    "nr_periods": 121,
+    "nr_throttled": 108,
+    "throttled_usec": 9694760,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "uvicorn_log_head": [
+    "INFO:     172.17.0.1:64212 - \"GET /health HTTP/1.1\" 200 OK",
+    "INFO:     172.17.0.1:64216 - \"GET /api/v1/meta HTTP/1.1\" 200 OK",
+    "INFO:     172.17.0.1:64226 - \"GET /api/v1/meta HTTP/1.1\" 200 OK",
+    "INFO:     Started server process [1]",
+    "INFO:     Waiting for application startup.",
+    "INFO:     Application startup complete.",
+    "INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)",
+    "18:09:57 INFO    atus.api: request_id=89f2b53f7c724a23 GET /health -> 200 in 194.5ms cache=-"
+   ]
+  },
+  {
+   "i": 1,
+   "docker_run_cmd_s": 0.16879862500354648,
+   "to_first_health_s": 8.94895766605623,
+   "to_first_meta_s": 8.990962708019651,
+   "health_polls": 80,
+   "meta_polls": 1,
+   "second_meta_wall_s": 0.20522683300077915,
+   "second_meta_status": 200,
+   "memory_current": 47853568,
+   "memory_peak": 48680960,
+   "proc1": {
+    "VmHWM": "64400 kB",
+    "VmRSS": "64400 kB",
+    "RssAnon": "41984 kB",
+    "RssFile": "22416 kB",
+    "Threads": "6"
+   },
+   "cpu_stat": {
+    "usage_usec": 922257,
+    "user_usec": 820314,
+    "system_usec": 101943,
+    "nice_usec": 0,
+    "nr_periods": 100,
+    "nr_throttled": 91,
+    "throttled_usec": 8130144,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "uvicorn_log_head": [
+    "INFO:     172.17.0.1:59170 - \"GET /health HTTP/1.1\" 200 OK",
+    "INFO:     172.17.0.1:59174 - \"GET /api/v1/meta HTTP/1.1\" 200 OK",
+    "INFO:     172.17.0.1:59188 - \"GET /api/v1/meta HTTP/1.1\" 200 OK",
+    "INFO:     Started server process [1]",
+    "INFO:     Waiting for application startup.",
+    "INFO:     Application startup complete.",
+    "INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)",
+    "18:10:10 INFO    atus.api: request_id=6066fb5af7f14493 GET /health -> 200 in 195.2ms cache=-"
+   ]
+  },
+  {
+   "i": 2,
+   "docker_run_cmd_s": 0.12454762507695705,
+   "to_first_health_s": 9.141242792014964,
+   "to_first_meta_s": 9.153561375103891,
+   "health_polls": 84,
+   "meta_polls": 1,
+   "second_meta_wall_s": 0.06754420802462846,
+   "second_meta_status": 200,
+   "memory_current": 47931392,
+   "memory_peak": 48726016,
+   "proc1": {
+    "VmHWM": "64380 kB",
+    "VmRSS": "64380 kB",
+    "RssAnon": "41984 kB",
+    "RssFile": "22396 kB",
+    "Threads": "6"
+   },
+   "cpu_stat": {
+    "usage_usec": 936350,
+    "user_usec": 831889,
+    "system_usec": 104461,
+    "nice_usec": 0,
+    "nr_periods": 97,
+    "nr_throttled": 93,
+    "throttled_usec": 8203892,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "uvicorn_log_head": [
+    "INFO:     172.17.0.1:62154 - \"GET /health HTTP/1.1\" 200 OK",
+    "INFO:     172.17.0.1:62170 - \"GET /api/v1/meta HTTP/1.1\" 200 OK",
+    "INFO:     172.17.0.1:62176 - \"GET /api/v1/meta HTTP/1.1\" 200 OK",
+    "INFO:     Started server process [1]",
+    "INFO:     Waiting for application startup.",
+    "INFO:     Application startup complete.",
+    "INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)",
+    "18:10:23 INFO    atus.api: request_id=01a2188ef0a54201 GET /health -> 200 in 3.8ms cache=-"
+   ]
+  },
+  {
+   "i": 3,
+   "docker_run_cmd_s": 0.13703066704329103,
+   "to_first_health_s": 8.925118000013754,
+   "to_first_meta_s": 9.238289500004612,
+   "health_polls": 81,
+   "meta_polls": 1,
+   "second_meta_wall_s": 0.29699750000145286,
+   "second_meta_status": 200,
+   "memory_current": 47988736,
+   "memory_peak": 48955392,
+   "proc1": {
+    "VmHWM": "64404 kB",
+    "VmRSS": "64404 kB",
+    "RssAnon": "41988 kB",
+    "RssFile": "22416 kB",
+    "Threads": "6"
+   },
+   "cpu_stat": {
+    "usage_usec": 926978,
+    "user_usec": 807429,
+    "system_usec": 119548,
+    "nice_usec": 0,
+    "nr_periods": 104,
+    "nr_throttled": 90,
+    "throttled_usec": 8010388,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "uvicorn_log_head": [
+    "INFO:     172.17.0.1:57474 - \"GET /health HTTP/1.1\" 200 OK",
+    "INFO:     172.17.0.1:57490 - \"GET /api/v1/meta HTTP/1.1\" 200 OK",
+    "INFO:     172.17.0.1:57496 - \"GET /api/v1/meta HTTP/1.1\" 200 OK",
+    "INFO:     Started server process [1]",
+    "INFO:     Waiting for application startup.",
+    "INFO:     Application startup complete.",
+    "INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)",
+    "18:10:35 INFO    atus.api: request_id=b0bd3595242d485a GET /health -> 200 in 196.4ms cache=-"
+   ]
+  },
+  {
+   "i": 4,
+   "docker_run_cmd_s": 0.12669254199136049,
+   "to_first_health_s": 8.27353912498802,
+   "to_first_meta_s": 8.467895334004425,
+   "health_polls": 76,
+   "meta_polls": 1,
+   "second_meta_wall_s": 0.38963187497574836,
+   "second_meta_status": 200,
+   "memory_current": 47128576,
+   "memory_peak": 48701440,
+   "proc1": {
+    "VmHWM": "64376 kB",
+    "VmRSS": "64376 kB",
+    "RssAnon": "41980 kB",
+    "RssFile": "22396 kB",
+    "Threads": "6"
+   },
+   "cpu_stat": {
+    "usage_usec": 863696,
+    "user_usec": 769526,
+    "system_usec": 94169,
+    "nice_usec": 0,
+    "nr_periods": 95,
+    "nr_throttled": 83,
+    "throttled_usec": 7333755,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "uvicorn_log_head": [
+    "INFO:     172.17.0.1:60768 - \"GET /health HTTP/1.1\" 200 OK",
+    "INFO:     172.17.0.1:60776 - \"GET /api/v1/meta HTTP/1.1\" 200 OK",
+    "INFO:     172.17.0.1:60792 - \"GET /api/v1/meta HTTP/1.1\" 200 OK",
+    "INFO:     Started server process [1]",
+    "INFO:     Waiting for application startup.",
+    "INFO:     Application startup complete.",
+    "INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)",
+    "18:10:48 INFO    atus.api: request_id=a9d6137e85b3475a GET /health -> 200 in 102.6ms cache=-"
+   ]
+  }
+ ],
+ "summary_to_first_health_s": {
+  "n": 5,
+  "min": 8.27353912498802,
+  "p50": 8.94895766605623,
+  "p95": 10.389190758322366,
+  "max": 10.701177749899216
+ },
+ "summary_to_first_meta_s": {
+  "n": 5,
+  "min": 8.467895334004425,
+  "p50": 9.153561375103891,
+  "p95": 10.679265567171386,
+  "max": 11.039509583963081
+ },
+ "summary_docker_run_cmd_s": {
+  "n": 5,
+  "min": 0.12338504195213318,
+  "p50": 0.12669254199136049,
+  "p95": 0.16244503341149538,
+  "max": 0.16879862500354648
+ },
+ "summary_second_meta_wall_s": {
+  "n": 5,
+  "min": 0.06754420802462846,
+  "p50": 0.29699750000145286,
+  "p95": 0.37217471657786516,
+  "max": 0.38963187497574836
+ },
+ "date_end_utc": "2026-10-20T18:10:52.071024Z"
+}

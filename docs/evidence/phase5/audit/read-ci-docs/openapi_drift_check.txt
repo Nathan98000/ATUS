@@ -1,0 +1,2 @@
+committed frontend/openapi.json equals live app.openapi(): True
+committed generated.ts == openapi-typescript --default-non-nullable false

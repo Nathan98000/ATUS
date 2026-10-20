@@ -1,0 +1,47 @@
+{
+  "pages": [
+    {
+      "path": "/",
+      "csp": [],
+      "text": "Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full "
+    },
+    {
+      "path": "/explore",
+      "csp": [],
+      "text": "Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curate"
+    },
+    {
+      "path": "/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwi",
+      "csp": [],
+      "text": "ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 mi"
+    },
+    {
+      "path": "/analysis/trend?spec=eyJhY3Rpdml0eSI6eyJwcmVzZXQiOiJsZWlzdXJ",
+      "csp": [],
+      "text": "TREND Leisure and sports (BLS table A-1 definition) — All respondents (age 15+) — 2003–2025 All respondents (age 15+) · 2003–2025 Share analysis Adjust analysis"
+    },
+    {
+      "path": "/analysis/compare?spec=eyJhY3Rpdml0eSI6eyJwcmVzZXQiOiJob3VzZ",
+      "csp": [],
+      "text": "COMPARISON Household activities (BLS table A-1 definition) — Household children present vs No household children — 2025 Share analysis Adjust analysis GROUP A H"
+    },
+    {
+      "path": "/about",
+      "csp": [],
+      "text": "About ATUS Explorer ATUS Explorer is an independent, open-source tool for exploring the American Time Use Survey (ATUS), conducted by the U.S. Census Bureau for"
+    },
+    {
+      "path": "/no-such-page",
+      "csp": [],
+      "text": "Page not found There is nothing at this address. Back to ATUS Explorer"
+    },
+    {
+      "path": "/analysis/estimate?spec=garbage",
+      "csp": [],
+      "text": "This analysis link cannot be opened The analysis link could not be decoded. Build an analysis instead"
+    }
+  ],
+  "policyHeaderSeen": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  "analysisKeyShown": 1,
+  "console": []
+}

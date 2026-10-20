@@ -1,0 +1,139 @@
+--- 13:10:36.001 client_backends_active=0 parallel_workers=0 client_backends_idle=5 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.0MiB/64MiB
+    573 |  | client backend | idle | 17:09:26.276 | 69.7 | Client | ClientRead | COMMIT
+    643 |  | client backend | idle | 17:09:52.545 | 43.4 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 25.3 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 40.3 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 2.0 | Client | ClientRead | COMMIT
+--- 13:10:37.004 client_backends_active=0 parallel_workers=0 client_backends_idle=5 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.0MiB/64MiB
+    573 |  | client backend | idle | 17:09:26.276 | 70.7 | Client | ClientRead | COMMIT
+    643 |  | client backend | idle | 17:09:52.545 | 44.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 26.3 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 41.3 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 3.0 | Client | ClientRead | COMMIT
+--- 13:10:38.006 client_backends_active=1 parallel_workers=0 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.0MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 0.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 45.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 27.3 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 42.3 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 4.0 | Client | ClientRead | COMMIT
+--- 13:10:39.011 client_backends_active=1 parallel_workers=0 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.0MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 1.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 46.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 28.3 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 43.3 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 5.0 | Client | ClientRead | COMMIT
+--- 13:10:40.013 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 2.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 2.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 2.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 47.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 29.3 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 44.3 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 6.0 | Client | ClientRead | COMMIT
+--- 13:10:41.018 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 3.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 3.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 3.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 48.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 30.3 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 45.3 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 7.0 | Client | ClientRead | COMMIT
+--- 13:10:42.018 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 4.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 4.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 4.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 49.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 31.3 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 46.3 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 8.0 | Client | ClientRead | COMMIT
+--- 13:10:43.019 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 5.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 5.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 5.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 50.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 32.3 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 47.3 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 9.0 | Client | ClientRead | COMMIT
+--- 13:10:44.024 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 6.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 6.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 6.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 51.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 33.3 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 48.3 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 10.0 | Client | ClientRead | COMMIT
+--- 13:10:45.024 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 7.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 7.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 7.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 52.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 34.3 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 49.3 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 11.0 | Client | ClientRead | COMMIT
+--- 13:10:46.030 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 8.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 8.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 8.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 53.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 35.4 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 50.3 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 12.0 | Client | ClientRead | COMMIT
+--- 13:10:47.034 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 9.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 9.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 9.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 54.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 36.4 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 51.4 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 13.0 | Client | ClientRead | COMMIT
+--- 13:10:48.040 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 10.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 10.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 10.8 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 55.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 37.4 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 52.4 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 14.0 | Client | ClientRead | COMMIT
+--- 13:10:49.044 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 11.9 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 11.9 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 11.9 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 56.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 38.4 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 53.4 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 15.0 | Client | ClientRead | COMMIT
+--- 13:10:50.050 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 12.9 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 12.9 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 12.9 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 57.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 39.4 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 54.4 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 16.0 | Client | ClientRead | COMMIT
+--- 13:10:51.051 client_backends_active=1 parallel_workers=2 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.2MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 13.9 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1148 | 573 | parallel worker | active | 17:10:37.192 | 13.9 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1149 | 573 | parallel worker | active | 17:10:37.192 | 13.9 | IPC | MessageQueueSend |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 58.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 40.4 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 55.4 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 17.0 | Client | ClientRead | COMMIT
+--- 13:10:52.056 client_backends_active=1 parallel_workers=0 client_backends_idle=4 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.0MiB/64MiB
+    573 |  | client backend | active | 17:10:37.192 | 14.9 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    643 |  | client backend | idle | 17:09:52.545 | 59.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 41.4 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 56.4 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 18.0 | Client | ClientRead | COMMIT
+--- 13:10:53.062 client_backends_active=0 parallel_workers=0 client_backends_idle=5 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.0MiB/64MiB
+    573 |  | client backend | idle | 17:10:52.105 | 1.0 | Client | ClientRead | COMMIT
+    643 |  | client backend | idle | 17:09:52.545 | 60.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 42.4 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 57.4 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 19.0 | Client | ClientRead | COMMIT
+--- 13:10:54.067 client_backends_active=0 parallel_workers=0 client_backends_idle=5 | OTHER sessions on server: active=11 workers=0 apps=<none>:atus_audit_reload,atus_loader:atus_audit_reload | /dev/shm used=2.0MiB/64MiB
+    573 |  | client backend | idle | 17:10:52.105 | 2.0 | Client | ClientRead | COMMIT
+    643 |  | client backend | idle | 17:09:52.545 | 61.5 | Client | ClientRead | COMMIT
+    648 |  | client backend | idle | 17:10:10.675 | 43.4 | Client | ClientRead | COMMIT
+    653 |  | client backend | idle | 17:09:55.678 | 58.4 | Client | ClientRead | COMMIT
+    656 |  | client backend | idle | 17:10:34.030 | 20.0 | Client | ClientRead | COMMIT
+--- 13:10:54.067 stopping: 2 consecutive polls with no active audit backend

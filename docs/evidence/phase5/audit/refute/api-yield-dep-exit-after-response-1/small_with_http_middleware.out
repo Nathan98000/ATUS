@@ -1,0 +1,5 @@
+t=1.5s not reading: idle|COMMIT
+t=3.0s not reading: idle|COMMIT
+t=4.5s not reading: idle|COMMIT
+t=6.0s not reading: idle|COMMIT
+after reading 137 bytes: idle|COMMIT

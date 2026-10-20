@@ -1,0 +1,13 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/pandemic_ok.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:08:43 GMT
+server: uvicorn
+content-length: 1087
+content-type: application/json
+x-analysis-key: 40f306d7169f536768414e7b8e042202ce707ccb12ba5fc4c5e4c2b98bdad185
+x-cache: hit
+vary: Origin
+x-request-id: 984db0bd65eb42f6
+
+{"measure":"average_minutes_per_day","estimate":{"value":240.0,"unit":"minutes_per_day","standard_error":0.0,"confidence_level":0.95,"ci_lower":240.0,"ci_upper":240.0},"years":[2020],"activity":{"label":"Sleeping","include":["0101"],"exclude":[],"leaf_code_count":3},"population":"civilian noninstitutional population age 15+","n_respondents":1,"n_participants":1,"weighted_population_per_day":0.003194888178913738,"days_in_period":313,"weight":{"scheme":"pandemic","bls_variable":"TU20FWGT","column":"respondents.pandemic_weight"},"variance_method":"replicate","analytics_version":"0.2","spec":{"measure":"average_minutes_per_day","activity":{"include":["0101"],"exclude":[],"label":"Sleeping"},"years":[2020],"population":{},"weights":"pandemic","variance":"replicate","confidence_level":0.95},"warnings":["Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).","Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible."]}
+### status=200 time_total=0.003049s size_download=1087 size_upload=111

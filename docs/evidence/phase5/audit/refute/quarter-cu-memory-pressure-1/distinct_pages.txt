@@ -1,0 +1,13 @@
+ n_rows | heap_pages | heap_mb | total_pages 
+--------+------------+---------+-------------
+ 667202 |       4252 |    33.2 |       18995
+(1 row)
+
+           relname            | relpages |  mb   
+------------------------------+----------+-------
+ respondents                  |     2166 |  16.9
+ idx_activities_activity_code |     2535 |  19.8
+ activities                   |    18995 | 148.4
+ replicate_weights            |    41696 | 325.8
+(4 rows)
+

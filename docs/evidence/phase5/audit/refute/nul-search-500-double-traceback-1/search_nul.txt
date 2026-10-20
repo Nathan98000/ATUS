@@ -1,0 +1,15 @@
+HTTP/1.1 500 Internal Server Error
+date: Tue, 20 Oct 2026 19:28:08 GMT
+server: uvicorn
+x-request-id: 9339450fd3f64944
+content-length: 101
+content-type: application/json
+
+{"error":{"code":"internal_error","message":"An unexpected internal error occurred.","details":null}}HTTP/1.1 500 Internal Server Error
+date: Tue, 20 Oct 2026 19:28:08 GMT
+server: uvicorn
+x-request-id: 944e4550cf4341a8
+content-length: 101
+content-type: application/json
+
+{"error":{"code":"internal_error","message":"An unexpected internal error occurred.","details":null}}

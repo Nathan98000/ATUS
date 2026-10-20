@@ -1,0 +1,1 @@
+Reviewed timed/neon_docs_notes.txt, timed/probe_parallel.{py,txt}, matrix/sat/coldstart json headers (api_limits cpus=0.1 via docker CFS; db NanoCpus=0.25e9). probe_parallel at 0.25 CU: default parallel 40.6/39.5s vs workers_per_gather=0 19.2/19.1s.

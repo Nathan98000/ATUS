@@ -1,0 +1,5 @@
+/api/v1/activities 70851 bytes
+/api/v1/meta 2255 bytes
+/api/v1/population/metadata 2675 bytes
+/api/v1/activities/presets 1039 bytes
+/openapi.json 32892 bytes

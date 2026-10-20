@@ -1,0 +1,56 @@
+410c410
+<       measure:
+---
+>       measure?:
+428c428
+<       weights: 'multiyear' | 'pandemic'
+---
+>       weights?: 'multiyear' | 'pandemic'
+435c435
+<       variance: 'replicate' | 'none'
+---
+>       variance?: 'replicate' | 'none'
+440c440
+<       confidence_level: number
+---
+>       confidence_level?: number
+447c447
+<       label_a: string
+---
+>       label_a?: string
+452c452
+<       label_b: string
+---
+>       label_b?: string
+578c578
+<       measure:
+---
+>       measure?:
+596c596
+<       weights: 'multiyear' | 'pandemic'
+---
+>       weights?: 'multiyear' | 'pandemic'
+603c603
+<       variance: 'replicate' | 'none'
+---
+>       variance?: 'replicate' | 'none'
+608c608
+<       confidence_level: number
+---
+>       confidence_level?: number
+906c906
+<       measure:
+---
+>       measure?:
+924c924
+<       weights: 'multiyear' | 'pandemic'
+---
+>       weights?: 'multiyear' | 'pandemic'
+931c931
+<       variance: 'replicate' | 'none'
+---
+>       variance?: 'replicate' | 'none'
+936c936
+<       confidence_level: number
+---
+>       confidence_level?: number

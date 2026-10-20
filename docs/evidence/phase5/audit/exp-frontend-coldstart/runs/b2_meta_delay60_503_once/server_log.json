@@ -1,0 +1,122 @@
+[
+  {
+    "t_start": 1792517039.408,
+    "t_end": 1792517039.408,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/population/metadata",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792517039.409,
+    "t_end": 1792517039.409,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792517039.408,
+    "t_end": 1792517099.413,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 503,
+    "note": "#1 delayed 60.0s then 503"
+  },
+  {
+    "t_start": 1792517039.408,
+    "t_end": 1792517099.413,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://127.0.0.1:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 503,
+    "note": "#1 delayed 60.0s then 503"
+  },
+  {
+    "t_start": 1792517039.408,
+    "t_end": 1792517099.414,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 503,
+    "note": "#1 delayed 60.0s then 503"
+  },
+  {
+    "t_start": 1792517100.421,
+    "t_end": 1792517100.422,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "#2"
+  },
+  {
+    "t_start": 1792517100.421,
+    "t_end": 1792517100.422,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "#2"
+  },
+  {
+    "t_start": 1792517100.421,
+    "t_end": 1792517100.422,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://127.0.0.1:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "#2"
+  },
+  {
+    "t_start": 1792517100.427,
+    "t_end": 1792517100.427,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://[::1]:4182",
+    "method": "OPTIONS",
+    "path": "/api/v1/analysis/estimate",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792517100.428,
+    "t_end": 1792517100.428,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://[::1]:4182",
+    "method": "POST",
+    "path": "/api/v1/analysis/estimate",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792517100.435,
+    "t_end": 1792517100.435,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792517100.434,
+    "t_end": 1792517100.435,
+    "scenario": "b2_meta_delay60_503_once",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/activities",
+    "status": 200,
+    "note": ""
+  }
+]

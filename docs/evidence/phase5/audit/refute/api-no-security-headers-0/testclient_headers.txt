@@ -1,0 +1,17 @@
+$REPO/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+15:26:20 INFO    atus.api: request_id=6e638d32b9f942dd GET /api/v1/meta -> 200 in 147.7ms cache=-
+15:26:20 INFO    httpx: HTTP Request: GET http://testserver/api/v1/meta "HTTP/1.1 200 OK"
+15:26:20 INFO    atus.api: request_id=33caeffaf33443bf GET /nope -> 404 in 23.6ms cache=-
+15:26:20 INFO    httpx: HTTP Request: GET http://testserver/nope "HTTP/1.1 404 Not Found"
+15:26:20 INFO    atus.api: request_id=32fc64d198094e95 GET /healthz -> 404 in 1.1ms cache=-
+15:26:20 INFO    httpx: HTTP Request: GET http://testserver/healthz "HTTP/1.1 404 Not Found"
+15:26:20 INFO    atus.api: request_id=e4fce81c39174565 GET /docs -> 200 in 0.5ms cache=-
+15:26:20 INFO    httpx: HTTP Request: GET http://testserver/docs "HTTP/1.1 200 OK"
+15:26:21 INFO    atus.api: request_id=a4c4ea46946845f3 GET /openapi.json -> 200 in 412.0ms cache=-
+15:26:21 INFO    httpx: HTTP Request: GET http://testserver/openapi.json "HTTP/1.1 200 OK"
+/api/v1/meta 200 {'content-length': '2360', 'content-type': 'application/json', 'cache-control': 'public, max-age=300', 'x-request-id': '6e638d32b9f942dd'}
+/nope 404 {'content-length': '67', 'content-type': 'application/json', 'x-request-id': '33caeffaf33443bf'}
+/healthz 404 {'content-length': '67', 'content-type': 'application/json', 'x-request-id': '32fc64d198094e95'}
+/docs 200 {'content-length': '1016', 'content-type': 'text/html; charset=utf-8', 'x-request-id': 'e4fce81c39174565'}
+/openapi.json 200 {'content-length': '32892', 'content-type': 'application/json', 'x-request-id': 'a4c4ea46946845f3'}

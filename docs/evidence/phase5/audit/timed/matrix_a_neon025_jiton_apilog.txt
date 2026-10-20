@@ -1,0 +1,30 @@
+INFO:     172.17.0.1:61326 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.17.0.1:56862 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:56870 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:64694 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:56038 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:56046 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55478 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:60268 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:60276 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:63720 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:56036 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:65048 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:58388 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+18:27:57 INFO    atus.api: request_id=6bc0bb34281f42e1 GET /health -> 200 in 102.8ms cache=-
+18:28:03 INFO    atus.api: request_id=b68538ec78c54819 POST /api/v1/analysis/estimate -> 200 in 3715.8ms cache=miss
+18:29:19 INFO    atus.api: request_id=29598e64c4344665 POST /api/v1/analysis/estimate -> 200 in 74797.4ms cache=miss
+18:30:18 INFO    atus.api: request_id=2c40090bc6444164 POST /api/v1/analysis/trend -> 200 in 59499.9ms cache=miss
+18:30:23 INFO    atus.api: request_id=d035de4b54a54d56 POST /api/v1/analysis/estimate -> 200 in 4277.1ms cache=miss
+18:31:21 INFO    atus.api: request_id=bb5abd21e1ae4837 POST /api/v1/analysis/estimate -> 200 in 57285.2ms cache=miss
+18:32:32 INFO    atus.api: request_id=54aa9906ace344fb POST /api/v1/analysis/trend -> 200 in 70701.9ms cache=miss
+18:32:36 INFO    atus.api: request_id=3960010b2892402c POST /api/v1/analysis/estimate -> 200 in 4067.9ms cache=miss
+18:33:41 INFO    atus.api: request_id=2aff6a89f8b14c62 POST /api/v1/analysis/estimate -> 200 in 64483.6ms cache=miss
+18:34:45 INFO    atus.api: request_id=432c69f9846e489e POST /api/v1/analysis/trend -> 200 in 64313.6ms cache=miss
+18:34:50 INFO    atus.api: request_id=def2af72edcb4d47 POST /api/v1/analysis/estimate -> 200 in 4160.8ms cache=miss
+18:36:01 INFO    atus.api: request_id=001afae71ac840d8 POST /api/v1/analysis/estimate -> 200 in 70703.7ms cache=miss
+18:37:00 INFO    atus.api: request_id=f1cf09358adb48fa POST /api/v1/analysis/trend -> 200 in 58504.2ms cache=miss

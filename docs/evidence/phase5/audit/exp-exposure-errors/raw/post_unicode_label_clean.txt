@@ -1,0 +1,13 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/unicode_label_clean.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:08:42 GMT
+server: uvicorn
+content-length: 978
+content-type: application/json
+x-analysis-key: 8a27206e64e6a05223be999f6e599e42cbdea769d4beb415e4e528023659981f
+x-cache: hit
+vary: Origin
+x-request-id: 7b483c066460424e
+
+{"measure":"average_minutes_per_day","estimate":{"value":75.0,"unit":"minutes_per_day","standard_error":5.5901699437494745,"confidence_level":0.95,"ci_lower":64.04346824279273,"ci_upper":85.95653175720727},"years":[2023],"activity":{"label":"Sleep ‮😴 é 中","include":["0101"],"exclude":[],"leaf_code_count":3},"population":"civilian noninstitutional population age 15+","n_respondents":3,"n_participants":2,"weighted_population_per_day":0.010958904109589041,"days_in_period":365,"weight":{"scheme":"multiyear","bls_variable":"TUFNWGTP","column":"respondents.final_weight"},"variance_method":"replicate","analytics_version":"0.2","spec":{"measure":"average_minutes_per_day","activity":{"include":["0101"],"exclude":[],"label":"Sleep ‮😴 é 中"},"years":[2023],"population":{},"weights":"multiyear","variance":"replicate","confidence_level":0.95},"warnings":["Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."]}
+### status=200 time_total=0.003387s size_download=978 size_upload=141

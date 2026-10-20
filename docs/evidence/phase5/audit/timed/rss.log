@@ -1,0 +1,12 @@
+S0_first_health mem.current 47951872 mem.peak 48730112 VmRSS 64188 kB VmHWM 64188 kB threads 5 | atus-audit-api-rss	0.16%	43.27MiB / 512MiB
+S1_idle_5s_pool_open mem.current 47460352 mem.peak 49332224 VmRSS 64188 kB VmHWM 64188 kB threads 5 | atus-audit-api-rss	0.17%	43.27MiB / 512MiB
+S2_after_metadata mem.current 48607232 mem.peak 49610752 VmRSS 65208 kB VmHWM 65208 kB threads 6 | atus-audit-api-rss	0.18%	44.17MiB / 512MiB
+after_50_analyses mem.current 50188288 mem.peak 50970624 VmRSS 66544 kB VmHWM 66544 kB threads 6 | atus-audit-api-rss	0.23%	45.47MiB / 512MiB
+after_100_analyses mem.current 51380224 mem.peak 52678656 VmRSS 68196 kB VmHWM 68196 kB threads 6 | atus-audit-api-rss	0.20%	47.1MiB / 512MiB
+after_150_analyses mem.current 52334592 mem.peak 53379072 VmRSS 68880 kB VmHWM 68880 kB threads 6 | atus-audit-api-rss	0.21%	47.92MiB / 512MiB
+after_200_analyses mem.current 53043200 mem.peak 54083584 VmRSS 69568 kB VmHWM 69568 kB threads 6 | atus-audit-api-rss	0.16%	48.45MiB / 512MiB
+after_256_analyses mem.current 54255616 mem.peak 54792192 VmRSS 70256 kB VmHWM 70256 kB threads 6 | atus-audit-api-rss	0.30%	49.13MiB / 512MiB
+after_300_analyses mem.current 54128640 mem.peak 55148544 VmRSS 70364 kB VmHWM 70364 kB threads 6 | atus-audit-api-rss	0.32%	49.22MiB / 512MiB
+final_idle_5s mem.current 53362688 mem.peak 55451648 VmRSS 70364 kB VmHWM 70364 kB threads 6 | atus-audit-api-rss	0.36%	49.29MiB / 512MiB
+analyses 300 wall summary {'n': 300, 'min': 0.06656395900063217, 'p50': 0.2853652505436912, 'p95': 1.6918005288986024, 'max': 2.9327227079775184}
+bytes per response summary {'n': 300, 'min': 967, 'p50': 1108.5, 'p95': 8317.1, 'max': 8383}

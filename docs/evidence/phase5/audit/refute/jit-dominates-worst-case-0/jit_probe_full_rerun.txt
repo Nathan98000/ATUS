@@ -1,0 +1,3 @@
+FULL {'jit': 'on', 'jit_above_cost': '100000', 'jit_inline_above_cost': '500000', 'jit_optimize_above_cost': '500000', 'max_parallel_workers_per_gather': '2', 'work_mem': '4MB'}
+FULL jit=on run1: EXPLAIN ANALYZE execution 34432 ms; JIT total 48539.665 ms; JIT options [Inlining true, Optimization true, Expressions true, Deforming true]; plain query wall 32956 ms (22 rows)
+FULL jit=off run1: EXPLAIN ANALYZE execution 9457 ms; JIT total n/a ms; JIT options [none]; plain query wall 7696 ms (22 rows)

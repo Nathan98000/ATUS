@@ -1,0 +1,52 @@
+[
+  {
+    "t_start": 1792517466.942,
+    "t_end": 1792517466.943,
+    "scenario": "c3_v1_removed_404",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 404,
+    "note": ""
+  },
+  {
+    "t_start": 1792517466.943,
+    "t_end": 1792517466.943,
+    "scenario": "c3_v1_removed_404",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/population/metadata",
+    "status": 404,
+    "note": ""
+  },
+  {
+    "t_start": 1792517466.943,
+    "t_end": 1792517466.944,
+    "scenario": "c3_v1_removed_404",
+    "origin": "http://127.0.0.1:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 404,
+    "note": ""
+  },
+  {
+    "t_start": 1792517466.944,
+    "t_end": 1792517466.944,
+    "scenario": "c3_v1_removed_404",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 404,
+    "note": ""
+  },
+  {
+    "t_start": 1792517466.944,
+    "t_end": 1792517466.945,
+    "scenario": "c3_v1_removed_404",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 404,
+    "note": ""
+  }
+]

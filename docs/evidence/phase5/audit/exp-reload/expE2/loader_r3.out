@@ -1,0 +1,18 @@
+INFO:atus_pipeline.loading.loader:Ingestion run 12 started (release 0325)
+INFO:atus_pipeline.loading.loader:Canonical tables truncated (atomic rebuild)
+INFO:atus_pipeline.loading.loader:Loaded activity lexicon: 18 tier-1, 107 tier-2, 431 activity codes
+INFO:atus_pipeline.loading.loader:respondents: loading from atusresp_0325.dat
+INFO:atus_pipeline.loading.loader:respondents: 6 rows loaded
+INFO:atus_pipeline.loading.loader:household_members: loading from atusrost_0325.dat
+INFO:atus_pipeline.loading.loader:household_members: 6 rows loaded
+INFO:atus_pipeline.loading.loader:activities: loading from atusact_0325.dat
+INFO:atus_pipeline.loading.loader:activities: 22 rows loaded
+INFO:atus_pipeline.loading.loader:activity_companions: loading from atuswho_0325.dat
+INFO:atus_pipeline.loading.loader:activity_companions: 22 rows loaded
+INFO:atus_pipeline.loading.loader:cps_persons: loading from atuscps_0325.dat
+INFO:atus_pipeline.loading.loader:cps_persons: 6 rows loaded
+INFO:atus_pipeline.loading.loader:replicate_weights: loading from atuswgts_0325.dat
+INFO:atus_pipeline.loading.loader:replicate_weights: 6 rows loaded
+INFO:atus_pipeline.loading.loader:pandemic_replicate_weights: loading from atuswgtspan_1920.dat
+INFO:atus_pipeline.loading.loader:pandemic_replicate_weights: 3 rows loaded
+INFO:atus_pipeline.loading.loader:Ingestion run 12 succeeded

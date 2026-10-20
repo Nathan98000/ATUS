@@ -1,0 +1,31 @@
+[    0.03s] migrations + serving schema
+[   13.36s] source assertions
+  copied activity_tier1: 18 rows, 0.0 MiB binary
+  copied activity_tier2: 107 rows, 0.0 MiB binary
+  copied activity_codes: 431 rows, 0.0 MiB binary
+  copied respondents: 258,954 rows, 17.4 MiB binary
+  copied household_members: 258,954 rows, 7.9 MiB binary
+  copied cps_persons: 258,954 rows, 9.4 MiB binary
+  copied activities: 2,982,182 rows, 85.3 MiB binary
+  copied replicate_weights: 250,172 rows, 461.4 MiB binary
+  copied pandemic_replicate_weights: 16,751 rows, 30.9 MiB binary
+[    2.33s] keys, indexes, FKs
+[    7.36s] target content hash
+[   13.56s] source-derived content hash
+[    3.72s] VACUUM (ANALYZE)
+{
+  "build_id": "proto-20261020T193356Z-d998a1ca",
+  "content_hash_match": true,
+  "content_hash_mismatched_tables": [],
+  "assertions": {
+    "dropped all-NULL replicate rows whose respondent has final_weight > 0": 0,
+    "kept replicate rows with any NULL cell (partial NULLs would change sums)": 0,
+    "dropped all-zero pandemic rows whose respondent has pandemic_weight > 0": 0,
+    "per-(tucaseid, code) summed minutes outside 0..1440": 0,
+    "replicate cells whose numeric -> float8 -> numeric round trip differs": 0,
+    "pandemic replicate cells whose numeric -> float8 -> numeric round trip differs": 0
+  },
+  "total_seconds": 81.04
+}
+target content hash: e8fa76a7c5b8f6e21d0d7f3309118f0b6aed230fe999e546e4c3cdffda293b23
+source content hash: e8fa76a7c5b8f6e21d0d7f3309118f0b6aed230fe999e546e4c3cdffda293b23

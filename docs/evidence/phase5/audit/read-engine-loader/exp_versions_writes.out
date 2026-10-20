@@ -1,0 +1,34 @@
+$REPO/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+=== 7.4: data_version reuse ===
+scratch fixture DB after first build : data_version=0325:run1 respondents=6 ingestion_runs=[(1, 'succeeded')]
+full DB (read-only)                 : data_version=0325:run1 respondents=258954 ingestion_runs=[(1, 'succeeded')]
+scratch after a 2nd `load`           : data_version=0325:run2 respondents=6 ingestion_runs=[(1, 'succeeded'), (2, 'succeeded')]
+scratch after rebuild (drop+migrate+load): data_version=0325:run1 respondents=6 ingestion_runs=[(1, 'succeeded')]
+
+=== 7.5: write paths ===
+atus validate-analytics (normal session): exit=1 validation_results 0 -> 24
+  last stdout line: 0 passed, 24 failed, 0 warnings
+atus validate-analytics (read-only session): exit=1 validation_results 24 -> 24
+  stderr tail:
+      File "$REPO/.venv/lib/python3.12/site-packages/psycopg/connection.py", line 304, in execute
+        raise ex.with_traceback(None)
+    psycopg.errors.ReadOnlySqlTransaction: cannot execute INSERT in a read-only transaction
+  stdout lines: 0
+test_analytics_benchmarks-style call: 24 results, tx status before close=INTRANS, validation_results 24 -> 24 (INSERTs rolled back on close)
+run_benchmarks on read-only session: ReadOnlySqlTransaction: cannot execute INSERT in a read-only transaction
+
+=== 7.5: API under default_transaction_read_only=on ===
+  GET /health -> 200 X-Cache=None 
+  GET /ready -> 200 X-Cache=None 
+  GET /api/v1/meta -> 200 X-Cache=None 
+  GET /api/v1/activities -> 200 X-Cache=None 
+  GET /api/v1/activities?search=sleep -> 200 X-Cache=None 
+  GET /api/v1/activities/01 -> 200 X-Cache=None 
+  GET /api/v1/activities/presets -> 200 X-Cache=None 
+  GET /api/v1/population/metadata -> 200 X-Cache=None 
+  POST /api/v1/analysis/estimate -> 200 X-Cache=miss 
+  POST /api/v1/analysis/estimate -> 200 X-Cache=hit 
+  POST /api/v1/analysis/trend -> 200 X-Cache=miss 
+  POST /api/v1/analysis/compare -> 200 X-Cache=miss 
+  POST /api/v1/analysis/estimate -> 422 X-Cache=None unsupported_analysis

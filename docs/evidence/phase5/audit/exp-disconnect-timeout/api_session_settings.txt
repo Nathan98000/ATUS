@@ -1,0 +1,16 @@
+current_user = atus
+in transaction after first statement: INTRANS
+client_connection_check_interval = 0ms (source: default)
+default_transaction_read_only = off (source: default)
+idle_in_transaction_session_timeout = 0ms (source: default)
+idle_session_timeout = 0ms (source: default)
+lock_timeout = 0ms (source: default)
+max_parallel_workers_per_gather = 2 (source: default)
+statement_timeout = 0ms (source: default)
+tcp_keepalives_count = 9 (source: default)
+tcp_keepalives_idle = 7200s (source: default)
+tcp_keepalives_interval = 75s (source: default)
+SHOW statement_timeout -> 0
+role config: [('atus', None, True)]
+db/role settings: []
+database config (pg_database.datconfig not in PG16; see pg_db_role_setting above)

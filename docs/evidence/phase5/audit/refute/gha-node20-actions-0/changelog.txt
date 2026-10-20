@@ -1,0 +1,17 @@
+ Deprecation of Node 20 on GitHub Actions runners - GitHub Changelog {"@context":"https:\/\/schema.
+org","headline":"Deprecation of Node 20 on GitHub Actions runners","author":{"@type":"Person","name":"Allison"},"datePublished":"2025-09-19T11:29:59-07:00","abstract":"Editor’s note (August 25, 2026): Updated the Node20 removal date to September 23rd, 2026.
+ Editor’s note (February 25, 2026): Updated the migration date to June of 2026.
+org","headline":"Deprecation of Node 20 on GitHub Actions runners","author":{"@type":"Person","name":"Allison"},"datePublished":"2025-09-19T11:29:59-07:00","abstract":"Editor’s note (August 25, 2026): Updated the Node20 removal date to September 23rd, 2026.
+ Editor’s note (February 25, 2026): Updated the migration date to June of 2026.
+blog\/changelog\/2025-09-19-deprecation-of-node-20-on-github-actions-runners\/","name":"Deprecation of Node 20 on GitHub Actions runners - The GitHub Blog","isPartOf":{"@id":"https:\/\/github.
+blog\/#website"},"datePublished":"2025-09-19T18:29:59+00:00","dateModified":"2026-08-26T00:05:16+00:00","breadcrumb":{"@id":"https:\/\/github.
+blog\/changelog\/"},{"@type":"ListItem","position":3,"name":"Deprecation of Node 20 on GitHub Actions runners"}]},{"@type":"WebSite","@id":"https:\/\/github.
+is-typography-preset-body-small{font:var(--text-body-shorthand-small);} /*# sourceURL=wp-style-engine-github-typography-presets-inline-css */ Skip to content Skip to sidebar / Blog Changelog Docs Customer stories Try GitHub Copilot app Attend GitHub Universe Search Changelog Docs Customer stories Attend GitHub Universe Try GitHub Copilot app Back to changelog Retired September 19, 2025 • 1 minute read Deprecation of Node 20 on GitHub Actions runners Table of Contents Removal of operating system support with Node24 What you need to do Menu.
+ Currently selected: Removal of operating system support with Node24 Removal of operating system support with Node24 What you need to do Editor’s note (August 25, 2026): Updated the Node20 removal date to September 23rd, 2026.
+ Editor’s note (February 25, 2026): Updated the migration date to June of 2026.
+ Editor’s note (May 19, 2026): Updated the migration date to June 16th, 2026.
+ Node20 will reach end-of-life (EOL) in April of 2026.
+ Beginning on June 16th, 2026, runners will begin using Node24 by default.
+ This will only work until we upgrade the runner and remove Node20 on September 23rd, 2026.
+ Node 24 does not have official support for ARM32, so self-hosted runners on ARM32 will no longer be supported after Node 20 deprecation.
+ Back to top Site-wide Links Product Features Security Enterprise Customer Stories Pricing Resources Platform Developer API Partners Atom Electron GitHub Desktop Support Docs Community Forum Training Status Contact Company About Blog Careers Press Shop © 2026 GitHub, Inc.

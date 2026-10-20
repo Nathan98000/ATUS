@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/age_float.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:43 GMT
+server: uvicorn
+content-length: 265
+content-type: application/json
+vary: Origin
+x-request-id: 060823d1e04c4269
+
+{"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","population","age_min"],"message":"Input should be a valid integer, got a number with a fractional part","type":"int_from_float"}]}}}
+### status=422 time_total=0.003256s size_download=265 size_upload=148

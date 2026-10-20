@@ -1,0 +1,6 @@
+False analytics: first (lock_timeout) | LockNotAvailable: canceling statement due to lock timeout
+LINE 4:     FROM atus.activities a
+                 ^
+False analytics: later #0 | InFailedSqlTransaction: current transaction is aborted, commands ignored until end of transaction block
+False analytics: later #1 | InFailedSqlTransaction: current transaction is aborted, commands ignored until end of transaction block
+False analytics: later #2 | InFailedSqlTransaction: current transaction is aborted, commands ignored until end of transaction block

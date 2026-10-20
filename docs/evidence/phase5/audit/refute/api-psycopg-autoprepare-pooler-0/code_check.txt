@@ -1,0 +1,58 @@
+
+    @classmethod
+    def connect(
+        cls,
+        conninfo: str = "",
+        *,
+        autocommit: bool = False,
+        prepare_threshold: int | None = 5,
+        context: AdaptContext | None = None,
+        row_factory: RowFactory[Row] | None = None,
+        cursor_factory: type[Cursor[Row]] | None = None,
+    def _deallocate(self, name: bytes | None) -> PQGen[None]:
+        """
+        Deallocate one, or all, prepared statement in the session.
+
+        ``name == None`` stands for DEALLOCATE ALL.
+
+        If possible, use protocol-level commands; otherwise use SQL statements.
+
+        Note that PgBouncer doesn't support DEALLOCATE name, but it supports
+        protocol-level Close from 1.21 and DEALLOCATE ALL from 1.22.
+        """
+        if name is None or not _HAS_SEND_CLOSE:
+            stmt = b"DEALLOCATE " + name if name is not None else b"DEALLOCATE ALL"
+            yield from self._exec_command(stmt)
+            return
+
+    def _rollback_gen(self) -> PQGen[None]:
+        """Generator implementing `Connection.rollback()`."""
+        if self._num_transactions:
+            raise e.ProgrammingError(
+                "Explicit rollback() forbidden within a Transaction "
+                "context. (Either raise Rollback() or allow "
+                "an exception to propagate out of the context.)"
+            )
+        if self._tpc:
+            raise e.ProgrammingError(
+                "rollback() cannot be used during a two-phase transaction"
+            )
+
+        # Get out of a "pipeline aborted" state
+        if self._pipeline:
+            yield from self._pipeline._sync_gen()
+
+        if self.pgconn.transaction_status == IDLE:
+            return
+
+        yield from self._exec_command(b"ROLLBACK")
+        self._prepared.clear()
+        yield from self._prepared.maintain_gen(self)
+
+62:        pool = ConnectionPool(
+63-            conninfo=settings.database_url,
+64-            min_size=1,
+65-            max_size=10,
+66-            open=False,
+67-            name="atus-api",
+68-        )

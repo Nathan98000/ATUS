@@ -1,0 +1,1 @@
+{'inflight': 'committed', 'loader': "DeadlockDetected('deadlock detected\\nDETAIL:  Process 4053 waits for AccessExclusiveLock on relation 40698 of database 40688; blocked by process 4054.\\nProcess 4054 waits for AccessShareLock on relation 40692 of database 40688; blocked by process 4053.\\nHINT:  See server log for query details.')", 'request': 'ok'}

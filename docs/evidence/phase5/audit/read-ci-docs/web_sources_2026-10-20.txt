@@ -1,0 +1,9 @@
+Fetched 2026-10-20 (public pages, no sign-in):
+- https://github.com/actions/checkout/releases  -> latest v7.0.1 (20 Jul); v7.0.0 (18 Jun): ESM, refuses fork-PR checkout for pull_request_target/workflow_run by default (allow-unsafe-pr-checkout)
+- https://github.com/actions/checkout/blob/main/README.md -> recommends actions/checkout@v7; v5 "Updated to the node24 runtime" (min runner v2.327.1); v6 persist-credentials stored under $RUNNER_TEMP
+- https://github.com/actions/setup-node/releases -> latest v7.1.0 (08 Oct); v7.0.0 (14 Jul) ESM, removed dummy NODE_AUTH_TOKEN export; v6.0.0 limits automatic caching to npm; v5.0.0 node24 + auto-cache when packageManager present
+- https://github.com/actions/setup-python/releases -> latest v7.0.0 (20 Jul): ESM, removed pip-install input, removed EOL Pythons; v6.0.0 "Upgrade to node 24" (min runner v2.327.1)
+- https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/ -> Node 24 default from June 16, 2026; ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION opt-out works only until Node20 removal on September 23, 2026 (editor's notes Feb 25, May 19, Aug 25 2026)
+- raw action.yml runtimes: see gha_action_runtimes.txt ; latest tags via releases/latest redirects: gha_latest_releases.txt
+- OSV querybatch (api.osv.dev) for local venv packages: osv_python_venv.txt
+- npm audit (registry.npmjs.org): npm_audit_omit_dev.json, npm_audit_all.json

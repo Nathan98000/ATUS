@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/code_trailing_newline.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:42 GMT
+server: uvicorn
+content-length: 270
+content-type: application/json
+vary: Origin
+x-request-id: c8c300e6155a4846
+
+{"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","activity","include","0"],"message":"String should match pattern '^[0-9]{2}([0-9]{2})?([0-9]{2})?$'","type":"string_pattern_mismatch"}]}}}
+### status=422 time_total=0.002955s size_download=270 size_upload=115

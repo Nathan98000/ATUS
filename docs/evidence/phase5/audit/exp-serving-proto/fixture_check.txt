@@ -1,0 +1,36 @@
+[    0.04s] migrations + serving schema
+[    0.01s] source assertions
+  copied activity_tier1: 18 rows, 0.0 MiB binary
+  copied activity_tier2: 107 rows, 0.0 MiB binary
+  copied activity_codes: 431 rows, 0.0 MiB binary
+  copied respondents: 6 rows, 0.0 MiB binary
+  copied household_members: 6 rows, 0.0 MiB binary
+  copied cps_persons: 6 rows, 0.0 MiB binary
+  copied activities: 12 rows, 0.0 MiB binary
+  copied replicate_weights: 5 rows, 0.0 MiB binary
+  copied pandemic_replicate_weights: 2 rows, 0.0 MiB binary
+[    0.01s] keys, indexes, FKs
+[    0.00s] target content hash
+[    0.01s] source-derived content hash
+[    0.05s] VACUUM (ANALYZE)
+{
+  "build_id": "proto-20261020T173727Z-48c3ba1f",
+  "content_hash_match": true,
+  "content_hash_mismatched_tables": [],
+  "assertions": {
+    "dropped all-NULL replicate rows whose respondent has final_weight > 0": 0,
+    "kept replicate rows with any NULL cell (partial NULLs would change sums)": 0,
+    "dropped all-zero pandemic rows whose respondent has pandemic_weight > 0": 0,
+    "per-(tucaseid, code) summed minutes outside 0..1440": 0,
+    "replicate cells whose numeric -> float8 -> numeric round trip differs": 0,
+    "pandemic replicate cells whose numeric -> float8 -> numeric round trip differs": 0
+  },
+  "total_seconds": 0.18
+}
+target content hash: 6bd5c5329a8d499bbf413801909f85e08c411ece3f27b2a16dc25771ac00ea59
+source content hash: 6bd5c5329a8d499bbf413801909f85e08c411ece3f27b2a16dc25771ac00ea59
+  builder exit 0
+serving fixture rows: {'respondents': 6, 'activities': 12, 'replicate_weights': 5, 'pandemic_replicate_weights': 2, 'household_members': 6, 'cps_persons': 6}
+serving activities rows: [(20190101000008, '010101', 360), (20190101000009, '010101', 120), (20200101000010, '010101', 240), (20230101000001, '010101', 100), (20230101000002, '010101', 200), (20230101000003, '010101', 0), (20190101000008, '120303', 1080), (20190101000009, '120303', 1320), (20200101000010, '120303', 1200), (20230101000001, '120303', 1340), (20230101000002, '120303', 1240), (20230101000003, '120303', 1440)]
+fixture specs: 281; byte-identical JSON results (incl. errors): 281; different: 0
+dropped scratch DBs

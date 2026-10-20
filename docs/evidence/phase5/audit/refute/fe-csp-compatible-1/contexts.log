@@ -1,0 +1,61 @@
+=== js 'data:' count=22
+    'INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE,we={pending:!1,data:null,method:null,action:null},Te=[],Ee=-1;function De(e){return{c'
+    'oardData`in e?e.clipboardData:window.clipboardData}})),ar=Gn(w({},Kn,{data:0})),or={Esc:`Escape`,Spacebar:` `,Left:`ArrowLeft`,Up:`ArrowUp`,'
+    '!1}}function Er(e){return e=e.detail,typeof e==`object`&&`data`in e?e.data:null}var Dr=!1;function Or(e,t){switch(e){case`compositionend`:re'
+    'entValue2:null,_threadCount:0};function Ia(){return{controller:new Na,data:new Map,refCount:0}}function La(e){e.refCount--,e.refCount===0&&P'
+    'nate;r!==null&&(r=r.updateQueue,r!==null&&(r=r.memoCache,r!=null&&(t={data:r.data.map(function(e){return e.slice()}),index:0})))}if(t??={dat'
+    't={data:r.data.map(function(e){return e.slice()}),index:0})))}if(t??={data:[],index:0},n===null&&(n=us(),R.updateQueue=n),n.memoCache=t,n=t.'
+    'defaultPrevented){if(Tf!==0){var e=new FormData(i,o);rc(n,{pending:!0,data:e,method:i.method,action:a},null,e)}}else typeof a==`function`&&('
+    '=`function`&&(s.preventDefault(),e=new FormData(i,o),rc(n,{pending:!0,data:e,method:i.method,action:a},a,e))},currentTarget:i}]})}}for(var L'
+    'inue;break}var a=Vt(n);a!==null&&(e.splice(t,3),t-=3,rc(a,{pending:!0,data:i,method:n.method,action:r},r,i))}}))}function Hh(e){function t(t'
+    'setData(e,t){let n=ve(this.state.data,e,this.options);return this.#c({data:n,type:`success`,dataUpdatedAt:t?.updatedAt,manual:t?.manual}),n}'
+    '...e===void 0&&{error:null,status:`pending`}}}function Be(e,t){return{data:e,dataUpdatedAt:t??Date.now(),error:null,isInvalidated:!1,status:'
+    '==`function`?e.initialDataUpdatedAt():e.initialDataUpdatedAt:0;return{data:t,dataUpdateCount:0,dataUpdatedAt:n?r??Date.now():0,error:null,er'
+    'ng:_,isSuccess:m===`success`,isError:v,isInitialLoading:y,isLoading:y,data:d,dataUpdatedAt:l.dataUpdatedAt,error:f,errorUpdatedAt:p,failureC'
+    'ns.onSettled?.(o,null,e,this.state.context,n),this.#i({type:`success`,data:o}),o}catch(t){try{await this.#n.config.onError?.(t,e,this.state.'
+    ':return{...t,isPaused:!1};case`pending`:return{...t,context:e.context,data:void 0,failureCount:0,failureReason:null,error:null,isPaused:e.is'
+    'riables:e.variables,submittedAt:Date.now()};case`success`:return{...t,data:e.data,failureCount:0,failureReason:null,error:null,status:`succe'
+    'null,error:null,status:`success`,isPaused:!1};case`error`:return{...t,data:void 0,error:e.error,failureCount:t.failureCount+1,failureReason:'
+    'his,type:`updated`,action:e})})}};function Ye(){return{context:void 0,data:void 0,error:null,failureCount:0,failureReason:null,isPaused:!1,s'
+    'n);var bn=[`about:`,`blob:`,`chrome:`,`chrome-untrusted:`,`content:`,`data:`,`devtools:`,`file:`,`filesystem:`,`javascript:`];function xn(e)'
+    'eturned a response that could not be read as JSON.`,{cause:e})}return{data:c,analysisKey:s.headers.get(`X-Analysis-Key`),cache:s.headers.get'
+    '):(0,b.jsx)(xo,{metaYears:e.data.data.years,meta:e.data,populationMetadata:t.data})}function xo({metaYears:e,meta:t,populationMetadata:n}){l'
+    'lationMetadata:t.data})}function xo({metaYears:e,meta:t,populationMetadata:n}){let r=Hn(),[i]=ui(),[a,o]=(0,y.useState)(()=>{let t=i.get(`op'
+=== js 'blob:' count=1
+    'LETE`];new Set(vn);var yn=[`GET`,...vn];new Set(yn);var bn=[`about:`,`blob:`,`chrome:`,`chrome-untrusted:`,`content:`,`data:`,`devtools:`,`f'
+=== js 'createElement(`style`)' count=1
+    '.precedence,href:null,precedence:null});return r=(e.ownerDocument||e).createElement(`style`),Wt(r),np(r,`style`,a),Vm(r,n.precedence,e),t.in'
+=== js 'innerHTML' count=5
+    'rg/1998/Math/MathML`,a);break;case`script`:o=s.createElement(`div`),o.innerHTML=`<script><\\/script>`,o=o.removeChild(o.firstChild);break;cas'
+    'tml,n!=null){if(a.children!=null)throw Error(i(60));o?.__html!==n&&(e.innerHTML=n)}}break;case`multiple`:e.multiple=r&&typeof r!=`function`&'
+    'uppressHydrationWarning`:case`defaultValue`:case`defaultChecked`:case`innerHTML`:case`ref`:break;case`autoFocus`:break;case`xlinkHref`:if(r='
+    'tml,n!=null){if(a.children!=null)throw Error(i(60));o?.__html!==n&&(e.innerHTML=n)}}break;case`children`:if(typeof r==`string`)vn(e,r);else '
+    'e`suppressContentEditableWarning`:case`suppressHydrationWarning`:case`innerHTML`:case`ref`:return;case`innerText`:case`textContent`:return;d'
+=== js 'eval(' count=0
+=== js 'new Function' count=0
+=== js 'url(' count=0
+=== js '@import' count=0
+=== js 'createObjectURL' count=0
+=== js '.style.' count=12
+    'zedProps.style,o=a!=null&&a.hasOwnProperty(`display`)?a.display:null;i.style.display=o==null||typeof o==`boolean`?``:(``+o).trim()}}catch(t)'
+    'Type===9?e.documentElement:e.ownerDocument.documentElement,e!==null&&e.style.viewTransitionName===``&&(e.style.viewTransitionName=`none`,e.a'
+    'Document.documentElement,e!==null&&e.style.viewTransitionName===``&&(e.style.viewTransitionName=`none`,e.animate({opacity:[0,0],pointerEvent'
+    'o,e=e.nodeType===9?e.body:e.nodeName===`HTML`?e.ownerDocument.body:e,e.style.viewTransitionName===`root`&&(e.style.viewTransitionName=``),e='
+    '=`HTML`?e.ownerDocument.body:e,e.style.viewTransitionName===`root`&&(e.style.viewTransitionName=``),e=e.ownerDocument.documentElement,e!==nu'
+    'e.viewTransitionName=``),e=e.ownerDocument.documentElement,e!==null&&e.style.viewTransitionName===`none`&&(e.style.viewTransitionName=``)),a'
+    'ment.documentElement,e!==null&&e.style.viewTransitionName===`none`&&(e.style.viewTransitionName=``)),a&2048&&(a=null,t.alternate!==null&&(a='
+    '=e;e=0;do{var r=n.nextSibling;if(n.nodeType===1?t?(n._stashedDisplay=n.style.display,n.style.display=`none`):(n.style.display=n._stashedDisp'
+    'n.nextSibling;if(n.nodeType===1?t?(n._stashedDisplay=n.style.display,n.style.display=`none`):(n.style.display=n._stashedDisplay||``,n.getAtt'
+    'pe===1?t?(n._stashedDisplay=n.style.display,n.style.display=`none`):(n.style.display=n._stashedDisplay||``,n.getAttribute(`style`)===``&&n.r'
+    'ion Tp(e,t,n){if(t=CSS.escape(t)===t?t:`r-`+btoa(t).replace(/=/g,``),e.style.viewTransitionName=t,n!=null&&(e.style.viewTransitionClass=n),n'
+    '`r-`+btoa(t).replace(/=/g,``),e.style.viewTransitionName=t,n!=null&&(e.style.viewTransitionClass=n),n=getComputedStyle(e),n.display===`inlin'
+=== css 'data:' count=0
+=== css 'blob:' count=0
+=== css 'createElement(`style`)' count=0
+=== css 'innerHTML' count=0
+=== css 'eval(' count=0
+=== css 'new Function' count=0
+=== css 'url(' count=0
+=== css '@import' count=0
+=== css 'createObjectURL' count=0
+=== css '.style.' count=0

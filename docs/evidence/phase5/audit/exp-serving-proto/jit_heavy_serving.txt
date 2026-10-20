@@ -1,0 +1,6 @@
+SERVING | leisure (BLS A-1) pooled 22y                            | est. cost     487936 | jit=on  exec    1620 ms | JIT total 798.690 ms [Inlining false, Optimization false, Expressions true, Deforming true]
+SERVING | leisure (BLS A-1) pooled 22y                            | est. cost     487936 | jit=off exec     935 ms | JIT total - ms [-]
+SERVING | all 18 tier-1 codes pooled 22y                          | est. cost    1099033 | jit=on  exec    3904 ms | JIT total 2172.945 ms [Inlining true, Optimization true, Expressions true, Deforming true]
+SERVING | all 18 tier-1 codes pooled 22y                          | est. cost    1099033 | jit=off exec    2440 ms | JIT total - ms [-]
+SERVING | sleep pooled 22y, women 25-54 bachelor+ (roster+CPS)    | est. cost     116711 | jit=on  exec     729 ms | JIT total 523.686 ms [Inlining false, Optimization false, Expressions true, Deforming true]
+SERVING | sleep pooled 22y, women 25-54 bachelor+ (roster+CPS)    | est. cost     116711 | jit=off exec     334 ms | JIT total - ms [-]

@@ -1,0 +1,251 @@
+{
+  "scenario": "d_503_first3_plain",
+  "page": "deep",
+  "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+  "t0_epoch": 1792517618.079,
+  "meta_request_times_s": [
+    0.06,
+    1.062,
+    3.065
+  ],
+  "meta_request_gaps_s": [
+    1.002,
+    2.003
+  ],
+  "api_requests": 6,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.051,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/deep_002s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "",
+        "Calculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant."
+      ],
+      "live": [
+        "Calculating estimate…"
+      ]
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.056,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/deep_005s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.052,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/deep_015s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.042,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/deep_030s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.045,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/deep_060s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.049,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/deep_075s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [
+        ""
+      ],
+      "live": [
+        "The analysis could not be completed."
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.042,
+      "main": ""
+    },
+    {
+      "t": 0.294,
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\n\nCalculating estimate…\n\nStandard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.\n\nCalculating estimate…"
+    },
+    {
+      "t": 3.077,
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nThe analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details\n\nThe analysis could not be completed."
+    }
+  ],
+  "network": [
+    {
+      "t": 0.06,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.06,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities/presets"
+    },
+    {
+      "t": 0.06,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    },
+    {
+      "t": 0.061,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/activities/presets",
+      "status": 503
+    },
+    {
+      "t": 1.062,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 1.062,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities/presets"
+    },
+    {
+      "t": 1.064,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/activities/presets",
+      "status": 503
+    },
+    {
+      "t": 1.064,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    },
+    {
+      "t": 3.065,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities/presets"
+    },
+    {
+      "t": 3.065,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 3.067,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/activities/presets",
+      "status": 503
+    },
+    {
+      "t": 3.067,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    }
+  ],
+  "console": [
+    {
+      "t": 0.06,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 0.061,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 1.064,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 1.064,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 3.067,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 3.067,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    }
+  ]
+}

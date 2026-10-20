@@ -1,0 +1,89 @@
+loader_start=-0.023s  truncate_done(L0)=0  release(C)=+45.073s  loader_ok=True
+  event hold_start               t=  +0.005s {'hold': 45.0, 'backend_pid': 1965}
+  event hold_end                 t= +45.046s 
+  event loader_done              t= +45.073s {'ok': True}
+
+phase                     kind                  n      p50     p95     max  outcomes(status/error/x-cache/value -> n)
+1_before_load             activities          399    0.007   0.467   2.559  200/-/-/556 x399
+1_before_load             est_cached          397    0.006   0.475   1.099  200/-/hit/90.0 x397
+1_before_load             est_cached_probe     10    0.068   0.191   0.191  200/-/hit/90.0 x10
+1_before_load             est_uncached        788    0.015   0.484   1.647  200/-/miss/90.0 x788
+1_before_load             health_probe         39    0.059   0.718   0.755  200/-/-/- x39
+1_before_load             meta                403    0.006   0.460   1.318  200/-/-/6/run2 x403
+1_before_load             popmeta             395    0.004   0.320   1.725  200/-/-/- x395
+1_before_load             popmeta_probe        20    0.107   0.502   1.186  200/-/-/- x20
+1_before_load             presets             395    0.004   0.504   2.304  200/-/-/- x395
+1_before_load             ready               398    0.005   0.512   1.021  200/-/-/- x398
+1_before_load             threads_probe        20    0.068   0.247   0.315  200/-/-/b0/w0/pa10/pw0 x7; 200/-/-/b1/w0/pa9/pw0 x3; 200/-/-/b2/w0/pa8/pw0 x2; 200/-/-/b0/w0/pa9/pw0 x2; 200/-/-/b27/w0/pa0/pw11 x1; 200/-/-/b3/w0/pa8/pw0 x1; 200/-/-/b1/w0/pa7/pw0 x1; 200/-/-/b4/w0/pa3/pw0 x1; 200/-/-/b4/w0/pa6/pw0 x1; 200/-/-/b2/w0/pa7/pw0 x1
+2_inflight_at_load_start  activities            1    0.005   0.005   0.005  200/-/-/556 x1
+2_inflight_at_load_start  est_uncached          2    0.011   0.011   0.011  200/-/miss/90.0 x2
+3_started_during_load     activities           24   10.017  50.085  50.103  200/-/-/556 x13; 503/database_unavailable/-/- x11
+3_started_during_load     est_cached           22   10.012  19.946  19.992  503/database_unavailable/-/- x16; 200/-/hit/90.0 x4; 200/-/hit/75.0 x2
+3_started_during_load     est_cached_probe     45   15.980  21.936  23.937  503/database_unavailable/-/- x30; 200/-/miss/75.0 x8; 200/-/hit/75.0 x7
+3_started_during_load     est_uncached         54   19.904  50.149  50.174  503/database_unavailable/-/- x45; 200/-/miss/75.0 x5; 200/-/bypass/75.0 x4
+3_started_during_load     health_probe        180    0.003   0.007   0.060  200/-/-/- x180
+3_started_during_load     meta                 21   19.941  20.006  50.078  503/database_unavailable/-/- x19; 200/-/-/6/run2 x1; 200/-/-/6/run4 x1
+3_started_during_load     popmeta              24    9.938  19.903  19.925  200/-/-/- x24
+3_started_during_load     popmeta_probe        90   12.875  22.865  24.861  200/-/-/- x90
+3_started_during_load     presets              22    9.939  14.951  19.789  200/-/-/- x22
+3_started_during_load     ready                20   19.878  19.942  45.083  503/database_unavailable/-/- x19; 200/-/-/- x1
+3_started_during_load     threads_probe        90    0.003   0.015   0.126  200/-/-/b40/w16/pa0/pw30 x1; 200/-/-/b40/w22/pa0/pw30 x1; 200/-/-/b40/w24/pa0/pw30 x1; 200/-/-/b40/w25/pa0/pw30 x1; 200/-/-/b40/w27/pa0/pw30 x1; 200/-/-/b40/w28/pa0/pw30 x1; 200/-/-/b40/w30/pa0/pw30 x1; 200/-/-/b40/w31/pa0/pw30 x1; 200/-/-/b40/w33/pa0/pw30 x1; 200/-/-/b40/w34/pa0/pw30 x1; 200/-/-/b40/w36/pa0/pw30 x1; 200/-/-/b40/w37/pa0/pw30 x1; 200/-/-/b40/w39/pa0/pw30 x1; 200/-/-/b40/w40/pa0/pw30 x1; 200/-/-/b40/w42/pa0/pw30 x1; 200/-/-/b40/w43/pa0/pw30 x1; 200/-/-/b40/w45/pa0/pw30 x1; 200/-/-/b40/w46/pa0/pw30 x1; 200/-/-/b40/w48/pa0/pw30 x1; 200/-/-/b40/w49/pa0/pw30 x1; 200/-/-/b40/w18/pa0/pw60 x1; 200/-/-/b40/w31/pa0/pw60 x1; 200/-/-/b40/w33/pa0/pw60 x1; 200/-/-/b40/w34/pa0/pw60 x1; 200/-/-/b40/w36/pa0/pw60 x1; 200/-/-/b40/w37/pa0/pw60 x1; 200/-/-/b40/w39/pa0/pw60 x1; 200/-/-/b40/w40/pa0/pw60 x1; 200/-/-/b40/w42/pa0/pw60 x1; 200/-/-/b40/w43/pa0/pw60 x1; 200/-/-/b40/w45/pa0/pw60 x1; 200/-/-/b40/w46/pa0/pw60 x1; 200/-/-/b40/w48/pa0/pw60 x1; 200/-/-/b40/w49/pa0/pw60 x1; 200/-/-/b40/w51/pa0/pw60 x1; 200/-/-/b40/w53/pa0/pw60 x1; 200/-/-/b40/w54/pa0/pw60 x1; 200/-/-/b40/w55/pa0/pw60 x1; 200/-/-/b40/w57/pa0/pw60 x1; 200/-/-/b40/w58/pa0/pw60 x1; 200/-/-/b40/w44/pa0/pw90 x1; 200/-/-/b40/w51/pa0/pw90 x1; 200/-/-/b40/w53/pa0/pw90 x1; 200/-/-/b40/w54/pa0/pw90 x1; 200/-/-/b40/w56/pa0/pw90 x1; 200/-/-/b40/w57/pa0/pw90 x1; 200/-/-/b40/w59/pa0/pw90 x1; 200/-/-/b40/w60/pa0/pw90 x1; 200/-/-/b40/w62/pa0/pw90 x1; 200/-/-/b40/w63/pa0/pw90 x1; 200/-/-/b40/w65/pa0/pw90 x1; 200/-/-/b40/w66/pa0/pw90 x1; 200/-/-/b40/w68/pa0/pw90 x1; 200/-/-/b40/w69/pa0/pw90 x1; 200/-/-/b40/w71/pa0/pw90 x1; 200/-/-/b40/w72/pa0/pw90 x1; 200/-/-/b40/w74/pa0/pw90 x1; 200/-/-/b40/w75/pa0/pw90 x1; 200/-/-/b40/w77/pa0/pw90 x1; 200/-/-/b40/w78/pa0/pw90 x1; 200/-/-/b40/w62/pa0/pw120 x1; 200/-/-/b40/w66/pa0/pw120 x1; 200/-/-/b40/w68/pa0/pw120 x1; 200/-/-/b40/w69/pa0/pw120 x1; 200/-/-/b40/w71/pa0/pw120 x1; 200/-/-/b40/w72/pa0/pw120 x1; 200/-/-/b40/w74/pa0/pw120 x1; 200/-/-/b40/w75/pa0/pw120 x1; 200/-/-/b40/w77/pa0/pw120 x1; 200/-/-/b40/w78/pa0/pw120 x1; 200/-/-/b40/w80/pa0/pw120 x1; 200/-/-/b40/w81/pa0/pw120 x1; 200/-/-/b40/w83/pa0/pw120 x1; 200/-/-/b40/w84/pa0/pw120 x1; 200/-/-/b40/w86/pa0/pw120 x1; 200/-/-/b40/w87/pa0/pw120 x1; 200/-/-/b40/w89/pa0/pw120 x1; 200/-/-/b40/w90/pa0/pw120 x1; 200/-/-/b40/w92/pa0/pw120 x1; 200/-/-/b40/w93/pa0/pw120 x1; 200/-/-/b40/w56/pa0/pw150 x1; 200/-/-/b40/w57/pa0/pw150 x1; 200/-/-/b40/w59/pa0/pw150 x1; 200/-/-/b40/w60/pa0/pw150 x1; 200/-/-/b40/w62/pa0/pw150 x1; 200/-/-/b40/w63/pa0/pw150 x1; 200/-/-/b40/w65/pa0/pw150 x1; 200/-/-/b40/w66/pa0/pw150 x1; 200/-/-/b40/w68/pa0/pw150 x1; 200/-/-/b40/w69/pa0/pw150 x1
+4_started_after_release   activities         1018    0.005   0.108   2.301  200/-/-/556 x1018
+4_started_after_release   est_cached         1023    0.005   0.172   2.282  200/-/hit/75.0 x1023
+4_started_after_release   est_cached_probe     25    0.006   4.091   5.145  200/-/hit/75.0 x25
+4_started_after_release   est_uncached       2046    0.011   0.130   2.017  200/-/miss/75.0 x2046
+4_started_after_release   health_probe         96    0.004   0.517   1.329  200/-/-/- x96
+4_started_after_release   meta               1022    0.004   0.112   5.039  200/-/-/6/run4 x1022
+4_started_after_release   popmeta            1026    0.003   0.117   2.762  200/-/-/- x1026
+4_started_after_release   popmeta_probe        49    0.043   3.889   4.890  200/-/-/- x49
+4_started_after_release   presets            1029    0.003   0.133   4.949  200/-/-/- x1029
+4_started_after_release   ready              1026    0.004   0.121   5.040  200/-/-/- x1026
+4_started_after_release   threads_probe        49    0.008   0.388   0.972  200/-/-/b0/w0/pa10/pw0 x22; 200/-/-/b1/w0/pa9/pw0 x6; 200/-/-/b4/w0/pa5/pw0 x3; 200/-/-/b2/w0/pa8/pw0 x2; 200/-/-/b40/w55/pa0/pw40 x1; 200/-/-/b40/w56/pa0/pw40 x1; 200/-/-/b40/w58/pa0/pw40 x1; 200/-/-/b40/w59/pa0/pw40 x1; 200/-/-/b40/w61/pa0/pw40 x1; 200/-/-/b40/w62/pa0/pw40 x1; 200/-/-/b40/w64/pa0/pw40 x1; 200/-/-/b40/w65/pa0/pw40 x1; 200/-/-/b40/w67/pa0/pw40 x1; 200/-/-/b40/w68/pa0/pw40 x1; 200/-/-/b2/w0/pa5/pw0 x1; 200/-/-/b3/w0/pa6/pw0 x1; 200/-/-/b6/w0/pa0/pw0 x1; 200/-/-/b6/w0/pa4/pw0 x1; 200/-/-/b4/w0/pa6/pw0 x1; 200/-/-/b0/w0/pa9/pw0 x1
+
+Requests started during the load window and completed after release:
+  ('popmeta_probe', '200', '-', '-', '-', '-') x34
+  ('activities', '200', '-', '-', '556', '-') x11
+  ('est_uncached', '503', 'database_unavailable', '-', '-', '-') x9
+  ('popmeta', '200', '-', '-', '-', '-') x9
+  ('est_cached_probe', '200', '-', 'miss', '75.0', '-') x8
+  ('presets', '200', '-', '-', '-', '-') x7
+  ('est_cached_probe', '200', '-', 'hit', '75.0', '-') x7
+  ('meta', '503', 'database_unavailable', '-', '-', '-') x6
+  ('est_uncached', '200', '-', 'miss', '75.0', '-') x5
+  ('est_uncached', '200', '-', 'bypass', '75.0', '-') x4
+  ('activities', '503', 'database_unavailable', '-', '-', '-') x2
+  ('est_cached', '200', '-', 'hit', '75.0', '-') x2
+  ('ready', '200', '-', '-', '-', '-') x1
+  ('meta', '200', '-', '-', '6', '2') x1
+  ('est_cached_probe', '503', 'database_unavailable', '-', '-', '-') x1
+  ('ready', '503', 'database_unavailable', '-', '-', '-') x1
+  ('meta', '200', '-', '-', '6', '4') x1
+  ('est_cached', '503', 'database_unavailable', '-', '-', '-') x1
+  wait: min 5.38s max 50.17s; completed +0.003..+5.153s after release
+
+503s: n=140 codes=Counter({'database_unavailable': 140}) first at start+0.02s/end+10.03s; dur p50 19.86s min 10.00s max 23.94s
+  by kind: {'est_uncached': 45, 'est_cached': 16, 'meta': 19, 'ready': 19, 'activities': 11, 'est_cached_probe': 30}
+
+/health during load window: n=180 status=Counter({'200': 180}) p50 3.0ms p99 10.0ms max 60.0ms
+
+completions per 5 s bucket (relative to L0): bucket: ok200 / 503 / other  [non-health]
+  -15:1/0/0  -10:681/0/0  -5:2551/0/0  +0:25/0/0  +5:10/0/0  +10:38/30/0  +15:10/0/0  +20:10/30/0  +25:10/0/0  +30:25/30/0  +35:10/0/0  +40:39/30/0  +45:35/0/0  +50:418/20/0  +55:2636/0/0  +60:2651/0/0  +65:2663/0/0
+
+estimate values by (phase, x_cache, value):
+  ('1_before_load', 'est_cached', 'hit', '90.0') x397
+  ('1_before_load', 'est_cached_probe', 'hit', '90.0') x10
+  ('1_before_load', 'est_uncached', 'miss', '90.0') x788
+  ('2_inflight_at_load_start', 'est_uncached', 'miss', '90.0') x2
+  ('3_started_during_load', 'est_cached', 'hit', '75.0') x2
+  ('3_started_during_load', 'est_cached', 'hit', '90.0') x4
+  ('3_started_during_load', 'est_cached_probe', 'hit', '75.0') x7
+  ('3_started_during_load', 'est_cached_probe', 'miss', '75.0') x8
+  ('3_started_during_load', 'est_uncached', 'bypass', '75.0') x4
+  ('3_started_during_load', 'est_uncached', 'miss', '75.0') x5
+  ('4_started_after_release', 'est_cached', 'hit', '75.0') x1023
+  ('4_started_after_release', 'est_cached_probe', 'hit', '75.0') x25
+  ('4_started_after_release', 'est_uncached', 'miss', '75.0') x2046
+
+lock sampler: 179 samples; max API backends 10; max API backends waiting on a Lock 10
+  API lock waits by relation (sample-count): {('respondents:AccessShareLock',): 540, ('activity_tier1:AccessShareLock',): 360}
+  loader AE-held sample at +0.02s: ['activities', 'activity_codes', 'activity_companions', 'activity_tier1', 'activity_tier2', 'cps_persons', 'household_members', 'pandemic_replicate_weights', 'replicate_weights', 'respondents'] waiting_for=None

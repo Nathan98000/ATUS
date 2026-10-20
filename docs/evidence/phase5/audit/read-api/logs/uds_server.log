@@ -1,0 +1,798 @@
+INFO:     Started server process [62134]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on unix socket api.sock (Press CTRL+C to quit)
+13:12:19 INFO    atus.api: request_id=f78b26f3a10545c8 GET /health -> 200 in 4.6ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:12:19 INFO    atus.api: request_id=0f65c85042b04bc1 GET /ready -> 200 in 2.3ms cache=-
+INFO:      - "GET /ready HTTP/1.1" 200 OK
+13:12:36 INFO    atus.api: request_id=844df55824224f4b POST /api/v1/analysis/estimate -> 200 in 5043.8ms cache=miss
+13:12:38 INFO    atus.api: request_id=4be271dd4b2d4c9b POST /api/v1/analysis/estimate -> 200 in 2.4ms cache=hit
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:53 INFO    atus.api: request_id=3ede410331bc4e36 GET /health -> 200 in 0.4ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:12:54 INFO    atus.api: request_id=9cdf9d2fd3f44ea4 GET /health -> 200 in 0.6ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:12:55 INFO    atus.api: request_id=ce0c6210677f4fc8 GET /health -> 200 in 0.6ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:12:56 INFO    atus.api: request_id=27f777b0f81549d6 POST /api/v1/analysis/estimate -> 200 in 3073.0ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:56 INFO    atus.api: request_id=32eb6eccfb324740 POST /api/v1/analysis/estimate -> 200 in 3074.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:56 INFO    atus.api: request_id=6586bd67613b40af POST /api/v1/analysis/estimate -> 200 in 3075.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:56 INFO    atus.api: request_id=48478a648f8444ea POST /api/v1/analysis/estimate -> 200 in 3076.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:56 INFO    atus.api: request_id=86ff120053b8407b GET /api/v1/population/metadata -> 200 in 2080.3ms cache=-
+INFO:      - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+13:12:56 INFO    atus.api: request_id=39834c969433425b POST /api/v1/analysis/estimate -> 200 in 3080.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:58 INFO    atus.api: request_id=f966dc1c6f70414c GET /health -> 200 in 1.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:12:59 INFO    atus.api: request_id=768623eb380a47b5 POST /api/v1/analysis/estimate -> 200 in 6074.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:59 INFO    atus.api: request_id=552668207a93483a GET /api/v1/population/metadata -> 200 in 1074.8ms cache=-
+INFO:      - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+13:12:59 INFO    atus.api: request_id=e52f224adf884844 POST /api/v1/analysis/estimate -> 200 in 6085.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:59 INFO    atus.api: request_id=e077a904e05a41d8 POST /api/v1/analysis/estimate -> 200 in 6088.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:59 INFO    atus.api: request_id=3dab96319b634938 POST /api/v1/analysis/estimate -> 200 in 6091.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:59 INFO    atus.api: request_id=f20a0e5bfa3c4098 POST /api/v1/analysis/estimate -> 200 in 6092.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:59 INFO    atus.api: request_id=76a80bf19a2f4a6a POST /api/v1/analysis/estimate -> 200 in 6092.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:59 INFO    atus.api: request_id=3c2d2484712540af POST /api/v1/analysis/estimate -> 200 in 6092.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:59 INFO    atus.api: request_id=fe460753451d45fa POST /api/v1/analysis/estimate -> 200 in 6092.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:12:59 INFO    atus.api: request_id=1d1339778212427e POST /api/v1/analysis/estimate -> 200 in 6092.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:02 INFO    atus.api: request_id=ac72efc1142d4f18 POST /api/v1/analysis/estimate -> 200 in 9084.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:02 INFO    atus.api: request_id=d7097a617ed747f2 POST /api/v1/analysis/estimate -> 200 in 9085.4ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:02 INFO    atus.api: request_id=9992e2c79ea24072 POST /api/v1/analysis/estimate -> 200 in 9100.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:02 INFO    atus.api: request_id=24a627fb4d1148b5 POST /api/v1/analysis/estimate -> 200 in 9105.4ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:02 INFO    atus.api: request_id=96245a8259dd4fd4 POST /api/v1/analysis/estimate -> 200 in 9107.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:02 INFO    atus.api: request_id=c0a92694066d48a9 POST /api/v1/analysis/estimate -> 200 in 9108.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:02 INFO    atus.api: request_id=5642ffa896254f1b POST /api/v1/analysis/estimate -> 200 in 9106.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:02 INFO    atus.api: request_id=061087e35770424c POST /api/v1/analysis/estimate -> 200 in 9109.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:02 INFO    atus.api: request_id=15ea9a1e6d9b47ad POST /api/v1/analysis/estimate -> 200 in 9108.4ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:02 INFO    atus.api: request_id=f029578728c841d2 POST /api/v1/analysis/estimate -> 200 in 9109.0ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:03 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:03 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:03 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:03 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:03 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:03 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:03 INFO    atus.api: request_id=17421348f8ae481e POST /api/v1/analysis/estimate -> 503 in 10012.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:03 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:03 INFO    atus.api: request_id=d7535676649f44bd POST /api/v1/analysis/estimate -> 503 in 10013.1ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:03 INFO    atus.api: request_id=e72c74b4f9b04feb POST /api/v1/analysis/estimate -> 503 in 10013.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:03 INFO    atus.api: request_id=0299b56735c84cc6 POST /api/v1/analysis/estimate -> 503 in 10013.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:03 INFO    atus.api: request_id=736ebf56feed4471 POST /api/v1/analysis/estimate -> 503 in 10014.4ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:03 INFO    atus.api: request_id=c05c07878e0e49ae POST /api/v1/analysis/estimate -> 503 in 10014.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:03 INFO    atus.api: request_id=0252517ac66245f8 POST /api/v1/analysis/estimate -> 503 in 10014.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:03 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:03 INFO    atus.api: request_id=82bcd63346b34479 POST /api/v1/analysis/estimate -> 503 in 10015.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:03 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:03 INFO    atus.api: request_id=ef3391a604204ec5 POST /api/v1/analysis/estimate -> 503 in 10021.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:03 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:03 INFO    atus.api: request_id=4f3f166b672c4dd0 POST /api/v1/analysis/estimate -> 503 in 10029.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:03 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:03 INFO    atus.api: request_id=b3f57c5497cc4bcf POST /api/v1/analysis/estimate -> 503 in 10035.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:05 INFO    atus.api: request_id=86b2d2cc747c4aa8 POST /api/v1/analysis/estimate -> 200 in 12094.4ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:05 INFO    atus.api: request_id=c6437f1482cc47e9 POST /api/v1/analysis/estimate -> 200 in 12095.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:05 INFO    atus.api: request_id=4b4f723af15b459a GET /ready -> 200 in 11101.0ms cache=-
+INFO:      - "GET /ready HTTP/1.1" 200 OK
+13:13:05 INFO    atus.api: request_id=a96ce96568ca4460 POST /api/v1/analysis/estimate -> 200 in 12121.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:05 INFO    atus.api: request_id=3f02807150ef4316 POST /api/v1/analysis/estimate -> 200 in 12122.0ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:05 INFO    atus.api: request_id=38efcc6e12b24948 POST /api/v1/analysis/estimate -> 200 in 12122.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:05 INFO    atus.api: request_id=356d22a363d24bf0 POST /api/v1/analysis/estimate -> 200 in 12123.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:05 INFO    atus.api: request_id=3a5ba91e25db4f87 POST /api/v1/analysis/estimate -> 200 in 12123.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:05 INFO    atus.api: request_id=399d8090e9c7470f POST /api/v1/analysis/estimate -> 200 in 12124.0ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:05 INFO    atus.api: request_id=e526eebb20854d4e POST /api/v1/analysis/estimate -> 200 in 12124.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:05 INFO    atus.api: request_id=8c7564902d3c4a7c POST /api/v1/analysis/estimate -> 200 in 12124.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:13 INFO    atus.api: request_id=d5478f398fee49f5 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:13 INFO    atus.api: request_id=4ed12b094c0f49b6 GET /health -> 200 in 0.5ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:14 INFO    atus.api: request_id=f3eacae47fa84993 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:17 INFO    atus.api: request_id=2183fe7080ad42de GET /health -> 200 in 0.4ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 INFO    atus.api: request_id=6a8ffaf284c448c0 POST /api/v1/analysis/estimate -> 503 in 10012.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 INFO    atus.api: request_id=c1dd4450c0a14684 POST /api/v1/analysis/estimate -> 503 in 10015.1ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 INFO    atus.api: request_id=6f216b71de61443d POST /api/v1/analysis/estimate -> 503 in 10015.4ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=f4a744a69f544538 POST /api/v1/analysis/estimate -> 503 in 10016.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=07352aea27fa48d2 POST /api/v1/analysis/estimate -> 503 in 10015.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 INFO    atus.api: request_id=c7a37b817452460e POST /api/v1/analysis/estimate -> 503 in 10017.1ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=718d5c3138804bfc POST /api/v1/analysis/estimate -> 503 in 10016.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=f6cfbdc45e0b49ab POST /api/v1/analysis/estimate -> 503 in 10018.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=9643fbf46bba42e0 POST /api/v1/analysis/estimate -> 503 in 10019.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=7938fa44a5684c10 POST /api/v1/analysis/estimate -> 503 in 10018.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=427151dd575f470d POST /api/v1/analysis/estimate -> 503 in 10018.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:22 INFO    atus.api: request_id=c58b3b7731c6481f POST /api/v1/analysis/estimate -> 503 in 10020.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=4a77e507c97144c3 POST /api/v1/analysis/estimate -> 503 in 10020.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=bf6bd7c8c1a340d9 POST /api/v1/analysis/estimate -> 503 in 10021.2ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=1d380eb3d84b4f72 POST /api/v1/analysis/estimate -> 503 in 10021.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=b08af789ad774ad6 POST /api/v1/analysis/estimate -> 503 in 10023.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=fa6f16cd1c6145fd POST /api/v1/analysis/estimate -> 503 in 10023.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=a0743723b1394544 POST /api/v1/analysis/estimate -> 503 in 10023.2ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=861389a11841407e POST /api/v1/analysis/estimate -> 503 in 10023.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=f6776843151e47b0 POST /api/v1/analysis/estimate -> 503 in 10022.2ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=b3600a434954430d POST /api/v1/analysis/estimate -> 503 in 10022.2ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=f60a89d259e445ce POST /api/v1/analysis/estimate -> 503 in 10023.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=e0301d71b06f402e POST /api/v1/analysis/estimate -> 503 in 10023.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=f766cd79cf814013 POST /api/v1/analysis/estimate -> 503 in 10023.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=174e155cbcaa416d POST /api/v1/analysis/estimate -> 503 in 10023.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=02e400e2b054420c POST /api/v1/analysis/estimate -> 503 in 10023.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=cf12824c7f2f43b8 POST /api/v1/analysis/estimate -> 503 in 10024.2ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=d04bc9c3f10948fe POST /api/v1/analysis/estimate -> 503 in 10024.4ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=7edfd1827a794161 POST /api/v1/analysis/estimate -> 503 in 10024.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=b6a7cf82d53345d5 POST /api/v1/analysis/estimate -> 503 in 10023.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=8504f132471a49e2 POST /api/v1/analysis/estimate -> 503 in 10023.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=bbe9eca136d5489e POST /api/v1/analysis/estimate -> 503 in 10023.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=8002fdeb49014e15 POST /api/v1/analysis/estimate -> 503 in 10023.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=a66f982be9584430 POST /api/v1/analysis/estimate -> 503 in 10023.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=d2ee4c5cce614567 POST /api/v1/analysis/estimate -> 503 in 10024.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=24a4c1e413c942a3 POST /api/v1/analysis/estimate -> 503 in 10024.2ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=96bfe1267f6b4e2e POST /api/v1/analysis/estimate -> 503 in 10024.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=ddac3eea40c94493 POST /api/v1/analysis/estimate -> 503 in 10024.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=a40cad84eb29475f POST /api/v1/analysis/estimate -> 503 in 10024.2ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=ca06a8bfbc2c4f7e POST /api/v1/analysis/estimate -> 503 in 10024.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:22 INFO    atus.api: request_id=42c03dcac211425a GET /api/v1/population/metadata -> 200 in 9036.8ms cache=-
+INFO:      - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+13:13:22 INFO    atus.api: request_id=67d07e57e336451a GET /api/v1/population/metadata -> 200 in 5037.1ms cache=-
+INFO:      - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+13:13:25 INFO    atus.api: request_id=3884b1150a3145a2 POST /api/v1/analysis/estimate -> 200 in 13045.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:25 INFO    atus.api: request_id=29bb998513964ece POST /api/v1/analysis/estimate -> 200 in 13045.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:25 INFO    atus.api: request_id=570a445f54414a7b POST /api/v1/analysis/estimate -> 200 in 13046.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:25 INFO    atus.api: request_id=961ccd2580d74f4f POST /api/v1/analysis/estimate -> 200 in 13043.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:25 INFO    atus.api: request_id=e412f71efa134f44 POST /api/v1/analysis/estimate -> 200 in 13046.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:25 INFO    atus.api: request_id=1212542fdf9243ce POST /api/v1/analysis/estimate -> 200 in 13047.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:25 INFO    atus.api: request_id=87b202750b3e49d0 POST /api/v1/analysis/estimate -> 200 in 13047.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:25 INFO    atus.api: request_id=e02738324a8c4f81 POST /api/v1/analysis/estimate -> 200 in 13044.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:25 INFO    atus.api: request_id=96d84abc5a224fb6 POST /api/v1/analysis/estimate -> 200 in 13045.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:25 INFO    atus.api: request_id=65c2f66c144f439e POST /api/v1/analysis/estimate -> 200 in 13049.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:28 INFO    atus.api: request_id=cca9efe3ba164cda POST /api/v1/analysis/estimate -> 200 in 16063.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:28 INFO    atus.api: request_id=b5ce38e1959b4d51 POST /api/v1/analysis/estimate -> 200 in 16065.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:28 INFO    atus.api: request_id=0e219afc508f447c POST /api/v1/analysis/estimate -> 200 in 16065.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:28 INFO    atus.api: request_id=b46079988f064f24 POST /api/v1/analysis/estimate -> 200 in 16066.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:28 INFO    atus.api: request_id=084c7d0cfea14379 POST /api/v1/analysis/estimate -> 200 in 16066.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:28 INFO    atus.api: request_id=ec9357eb1aad4a2b POST /api/v1/analysis/estimate -> 200 in 16067.0ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:28 INFO    atus.api: request_id=b0ae37a5fca7462f POST /api/v1/analysis/estimate -> 200 in 16067.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:28 INFO    atus.api: request_id=87fbbfd5457642d9 POST /api/v1/analysis/estimate -> 200 in 16070.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:28 INFO    atus.api: request_id=b4d129ccf55246dc POST /api/v1/analysis/estimate -> 200 in 16068.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:28 INFO    atus.api: request_id=972f61b198d544ad POST /api/v1/analysis/estimate -> 200 in 16070.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:28 INFO    atus.api: request_id=83bf17388b014596 GET /ready -> 200 in 15081.8ms cache=-
+INFO:      - "GET /ready HTTP/1.1" 200 OK
+13:13:29 INFO    atus.api: request_id=e78af12499fa4bea GET /health -> 200 in 1.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:30 INFO    atus.api: request_id=1af580e33ade495f GET /health -> 200 in 0.5ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:31 INFO    atus.api: request_id=55cf5fb9f06e47d5 GET /health -> 200 in 0.3ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:34 INFO    atus.api: request_id=7f9a0c6e6921417d GET /health -> 200 in 0.9ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 INFO    atus.api: request_id=cdcb5d9114d74a37 POST /api/v1/analysis/estimate -> 503 in 10015.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 INFO    atus.api: request_id=ce49953e94e04cd3 POST /api/v1/analysis/estimate -> 503 in 10013.2ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 INFO    atus.api: request_id=14e6b054958544c0 POST /api/v1/analysis/estimate -> 503 in 10015.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=8255571558784457 POST /api/v1/analysis/estimate -> 503 in 10014.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=69f50e41603e4699 POST /api/v1/analysis/estimate -> 503 in 10014.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=5dc27afe34e54e1a POST /api/v1/analysis/estimate -> 503 in 10016.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=98c22c8b8c434eb7 POST /api/v1/analysis/estimate -> 503 in 10016.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=b3c5e0b2279540b1 POST /api/v1/analysis/estimate -> 503 in 10014.4ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=8e6322ee789347b0 POST /api/v1/analysis/estimate -> 503 in 10016.4ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=e7f6befd7cd648dd POST /api/v1/analysis/estimate -> 503 in 10014.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=a242a01e594645f2 POST /api/v1/analysis/estimate -> 503 in 10014.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=145c2194417b46c9 POST /api/v1/analysis/estimate -> 503 in 10014.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=ebc182546de94282 POST /api/v1/analysis/estimate -> 503 in 10014.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=c7b53b44fa674035 POST /api/v1/analysis/estimate -> 503 in 10016.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=7dffa27a40634072 POST /api/v1/analysis/estimate -> 503 in 10017.1ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=054035ef7f6149fd POST /api/v1/analysis/estimate -> 503 in 10017.1ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 INFO    atus.api: request_id=edac8ca040d74e25 POST /api/v1/analysis/estimate -> 503 in 10015.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=942d4009cb8a43b8 POST /api/v1/analysis/estimate -> 503 in 10017.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=fc71ce9a2dc44dbb POST /api/v1/analysis/estimate -> 503 in 10017.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 INFO    atus.api: request_id=c6dafa11c1cc4e15 POST /api/v1/analysis/estimate -> 503 in 10017.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=1448689fddb24dce POST /api/v1/analysis/estimate -> 503 in 10016.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=70499eebe81e4c5b POST /api/v1/analysis/estimate -> 503 in 10015.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=f6b1c248da6b413d POST /api/v1/analysis/estimate -> 503 in 10018.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=92749b510f954b49 POST /api/v1/analysis/estimate -> 503 in 10018.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=6ed4c4aa78834ce4 POST /api/v1/analysis/estimate -> 503 in 10016.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=87c3c99bcc7f44f5 POST /api/v1/analysis/estimate -> 503 in 10016.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=f045f9f96ae04f6e POST /api/v1/analysis/estimate -> 503 in 10016.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 INFO    atus.api: request_id=2418e76dd2994cf3 POST /api/v1/analysis/estimate -> 503 in 10016.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 INFO    atus.api: request_id=c6a451cce51c4607 POST /api/v1/analysis/estimate -> 503 in 10017.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=c52931216ed44c57 POST /api/v1/analysis/estimate -> 503 in 10017.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=4eb817af208d4c9f POST /api/v1/analysis/estimate -> 503 in 10017.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 INFO    atus.api: request_id=b3e372b3bca44926 POST /api/v1/analysis/estimate -> 503 in 10020.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:39 INFO    atus.api: request_id=ac21a44430974956 GET /api/v1/population/metadata -> 200 in 9022.2ms cache=-
+INFO:      - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=b65f487d57cb4573 POST /api/v1/analysis/estimate -> 503 in 10017.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=3fa537fc89a9470f POST /api/v1/analysis/estimate -> 503 in 10017.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=e6e1e49b60c446c4 POST /api/v1/analysis/estimate -> 503 in 10020.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=e96c4cf311d24015 POST /api/v1/analysis/estimate -> 503 in 10020.4ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=a5877c96c5054f49 POST /api/v1/analysis/estimate -> 503 in 10018.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=67548cd198df4027 GET /api/v1/population/metadata -> 200 in 5021.8ms cache=-
+INFO:      - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=ea4c2bc7804d490f POST /api/v1/analysis/estimate -> 503 in 10018.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=885063faf225485b POST /api/v1/analysis/estimate -> 503 in 10021.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=fac38aeaf1e4433b POST /api/v1/analysis/estimate -> 503 in 10019.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:39 INFO    atus.api: request_id=986e17c4db794b7c POST /api/v1/analysis/estimate -> 200 in 10033.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=2c688dcc7da94590 POST /api/v1/analysis/estimate -> 200 in 10033.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=40cb7f7916ea4e80 POST /api/v1/analysis/estimate -> 200 in 10034.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=d6bb63973bd94e8e POST /api/v1/analysis/estimate -> 200 in 10034.4ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=f2c4d26895324dc7 POST /api/v1/analysis/estimate -> 200 in 10037.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=4b0a6fe4c38f4831 POST /api/v1/analysis/estimate -> 200 in 10037.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=6ac7202097db4437 POST /api/v1/analysis/estimate -> 200 in 10038.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=48d533d92e2548b8 POST /api/v1/analysis/estimate -> 200 in 10039.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=0115788484c14c2b POST /api/v1/analysis/estimate -> 200 in 10040.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=ebb6ebd4c154446b POST /api/v1/analysis/estimate -> 200 in 10041.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=70452ebec40d4a9b GET /ready -> 200 in 9047.5ms cache=-
+INFO:      - "GET /ready HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=e96c464e9edb4101 POST /api/v1/analysis/estimate -> 200 in 10044.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=c8656a47977b4c38 POST /api/v1/analysis/estimate -> 200 in 10046.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=69086cce0c794d7f POST /api/v1/analysis/estimate -> 200 in 10047.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=730d265509604fbf POST /api/v1/analysis/estimate -> 200 in 10047.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=f2e4f53ba2b34559 POST /api/v1/analysis/estimate -> 200 in 10048.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=91c2943a3ee94bd5 POST /api/v1/analysis/estimate -> 200 in 10048.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=feff6076ce364891 POST /api/v1/analysis/estimate -> 200 in 10049.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=63128cceaf0541ae POST /api/v1/analysis/estimate -> 200 in 10050.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=b1fab172c9f743d0 POST /api/v1/analysis/estimate -> 200 in 10052.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:39 INFO    atus.api: request_id=8d2fa017ec144d8b POST /api/v1/analysis/estimate -> 200 in 10054.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:48 INFO    atus.api: request_id=317abed66601472e GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:48 INFO    atus.api: request_id=905be778c1b64718 GET /health -> 200 in 0.6ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:49 INFO    atus.api: request_id=8fee99f5fc5742ff GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:52 INFO    atus.api: request_id=c1100818ee3141d4 GET /health -> 200 in 0.4ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 INFO    atus.api: request_id=6cc1b5034d434e21 POST /api/v1/analysis/estimate -> 503 in 10015.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=7a314db32b274b01 POST /api/v1/analysis/estimate -> 503 in 10019.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=860b625d72c14ca0 POST /api/v1/analysis/estimate -> 503 in 10018.1ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=ab2003d547914450 POST /api/v1/analysis/estimate -> 503 in 10018.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 INFO    atus.api: request_id=4443c8fa45994f8b POST /api/v1/analysis/estimate -> 503 in 10022.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=c66b1338d9d34440 POST /api/v1/analysis/estimate -> 503 in 10023.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=edd6660f94024546 POST /api/v1/analysis/estimate -> 503 in 10025.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 INFO    atus.api: request_id=d4fad846387b402a POST /api/v1/analysis/estimate -> 503 in 10023.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 INFO    atus.api: request_id=18f413c0e75b4a32 POST /api/v1/analysis/estimate -> 503 in 10024.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 INFO    atus.api: request_id=139113cec296483c POST /api/v1/analysis/estimate -> 503 in 10029.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=eb68aff4d89f4beb POST /api/v1/analysis/estimate -> 503 in 10026.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 INFO    atus.api: request_id=0d9309c81238496c POST /api/v1/analysis/estimate -> 503 in 10027.2ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 INFO    atus.api: request_id=fc56b27159934eab POST /api/v1/analysis/estimate -> 503 in 10027.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=f39fcebc1a274de8 POST /api/v1/analysis/estimate -> 503 in 10030.4ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=ade59c33b7414773 POST /api/v1/analysis/estimate -> 503 in 10030.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=756080b236af40a9 POST /api/v1/analysis/estimate -> 503 in 10028.1ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=fae136199a7b40ea POST /api/v1/analysis/estimate -> 503 in 10030.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=20af64f0085a434b POST /api/v1/analysis/estimate -> 503 in 10028.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 INFO    atus.api: request_id=b0050c5543274bfc POST /api/v1/analysis/estimate -> 503 in 10031.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:13:57 INFO    atus.api: request_id=ca81355b40fc40f9 POST /api/v1/analysis/estimate -> 503 in 10029.1ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=70df94c7651b4cd1 POST /api/v1/analysis/estimate -> 503 in 10029.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=a9a775c7a7d4436f POST /api/v1/analysis/estimate -> 503 in 10029.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=b0ac2c4c62064820 POST /api/v1/analysis/estimate -> 503 in 10032.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=b2fd87a465bb4564 POST /api/v1/analysis/estimate -> 503 in 10032.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=b505c24adf5f40c4 POST /api/v1/analysis/estimate -> 503 in 10031.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=99e6ecd1dc6b43da POST /api/v1/analysis/estimate -> 503 in 10032.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=6750dea17e5c48b5 POST /api/v1/analysis/estimate -> 503 in 10032.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=1b669aae3a76412a POST /api/v1/analysis/estimate -> 503 in 10032.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=cdb1ed9ea4904d28 POST /api/v1/analysis/estimate -> 503 in 10033.1ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=ed604f4d1b8745ab POST /api/v1/analysis/estimate -> 503 in 10033.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=2f106d4ee8f149ed POST /api/v1/analysis/estimate -> 503 in 10036.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=0ac5e25cd65c4cb8 POST /api/v1/analysis/estimate -> 503 in 10034.2ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=8f3986d45a174508 POST /api/v1/analysis/estimate -> 503 in 10036.9ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=9dad8c3756e6410e POST /api/v1/analysis/estimate -> 503 in 10037.4ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=75bee87e92134661 POST /api/v1/analysis/estimate -> 503 in 10037.7ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=292ef99ad00e4d94 POST /api/v1/analysis/estimate -> 503 in 10035.5ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=ef9a3ba765d74fa0 POST /api/v1/analysis/estimate -> 503 in 10035.3ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=13dc38d0fbb446c1 GET /api/v1/population/metadata -> 200 in 5040.8ms cache=-
+INFO:      - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=dbc8fd7c41ef40ae POST /api/v1/analysis/estimate -> 503 in 10036.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=d5353d3ed2c54969 POST /api/v1/analysis/estimate -> 503 in 10036.8ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=3710dd7851f148bd POST /api/v1/analysis/estimate -> 503 in 10037.4ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:13:57 INFO    atus.api: request_id=3cad1dcd46e24955 GET /api/v1/population/metadata -> 200 in 9043.2ms cache=-
+INFO:      - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=43b50eab568b4288 POST /api/v1/analysis/estimate -> 200 in 10053.0ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=0acdbcc2ae4e47fe POST /api/v1/analysis/estimate -> 200 in 10057.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=43305363982e4840 POST /api/v1/analysis/estimate -> 200 in 10062.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=bd120a8211be4119 POST /api/v1/analysis/estimate -> 200 in 10064.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=dfa81e90d5c947e6 POST /api/v1/analysis/estimate -> 200 in 10065.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=b781964bc7534ef7 POST /api/v1/analysis/estimate -> 200 in 10065.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=24529d50cef946e3 POST /api/v1/analysis/estimate -> 200 in 10066.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=347c3ed02e90417b POST /api/v1/analysis/estimate -> 200 in 10067.4ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=ce66ba8d2a87410c POST /api/v1/analysis/estimate -> 200 in 10068.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=60efa57f1a77470e GET /ready -> 200 in 9071.6ms cache=-
+INFO:      - "GET /ready HTTP/1.1" 200 OK
+13:13:57 INFO    atus.api: request_id=2ac2b5031a12466d POST /api/v1/analysis/estimate -> 200 in 10069.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=283c43a157364b3a POST /api/v1/analysis/estimate -> 200 in 31.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=7491a36d038b4c7f POST /api/v1/analysis/estimate -> 200 in 31.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=caa55471f5e24106 POST /api/v1/analysis/estimate -> 200 in 31.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=cef908a880cd4d81 POST /api/v1/analysis/estimate -> 200 in 34.0ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=755cdf79f6ce4077 POST /api/v1/analysis/estimate -> 200 in 32.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=a9f9875d8d2b49b1 POST /api/v1/analysis/estimate -> 200 in 32.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=c23b43b5642444a3 POST /api/v1/analysis/estimate -> 200 in 32.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=8c24dedd30c9442e POST /api/v1/analysis/estimate -> 200 in 34.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=50c427dac98d42a8 POST /api/v1/analysis/estimate -> 200 in 34.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=3d8f12251642422f POST /api/v1/analysis/estimate -> 200 in 38.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=ca02f8fe280b473b POST /api/v1/analysis/estimate -> 200 in 56.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=71eec189c4704738 POST /api/v1/analysis/estimate -> 200 in 57.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=c0a148bfc09447c1 POST /api/v1/analysis/estimate -> 200 in 57.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=0e788bed012a4421 POST /api/v1/analysis/estimate -> 200 in 57.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=678649d67a974bec POST /api/v1/analysis/estimate -> 200 in 58.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=61633d6dc87841c1 POST /api/v1/analysis/estimate -> 200 in 59.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=0488224e121048bc POST /api/v1/analysis/estimate -> 200 in 61.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=9ea57b4faee445f0 POST /api/v1/analysis/estimate -> 200 in 61.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=0bd5e2f561664c20 POST /api/v1/analysis/estimate -> 200 in 62.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=692496455b9a439e POST /api/v1/analysis/estimate -> 200 in 64.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=0fd5b8fe3f9a4030 POST /api/v1/analysis/estimate -> 200 in 84.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=f533cee84e924bb4 POST /api/v1/analysis/estimate -> 200 in 86.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=96bfee9711054f2a POST /api/v1/analysis/estimate -> 200 in 88.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=0edce929bb874a32 POST /api/v1/analysis/estimate -> 200 in 89.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=f26d5025d20d4bee POST /api/v1/analysis/estimate -> 200 in 90.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=19a44c4479f048c9 POST /api/v1/analysis/estimate -> 200 in 92.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=38d06de06bd14682 POST /api/v1/analysis/estimate -> 200 in 92.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=1ba22b96d6dd4b0e POST /api/v1/analysis/estimate -> 200 in 92.4ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=6a14a6d507384277 POST /api/v1/analysis/estimate -> 200 in 93.3ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=80e05efe76fb4709 POST /api/v1/analysis/estimate -> 200 in 93.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=8a10dc607365497c POST /api/v1/analysis/estimate -> 200 in 113.0ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=daf4a2206b1045fe POST /api/v1/analysis/estimate -> 200 in 111.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=e473a3bc648c4892 POST /api/v1/analysis/estimate -> 200 in 114.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=77544c569fe14c97 POST /api/v1/analysis/estimate -> 200 in 114.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=440400d1ceb14b78 POST /api/v1/analysis/estimate -> 200 in 115.1ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=c732998bc54c4bbd POST /api/v1/analysis/estimate -> 200 in 120.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=468ef80260284f82 POST /api/v1/analysis/estimate -> 200 in 115.5ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=d67783aadd134a1b POST /api/v1/analysis/estimate -> 200 in 118.9ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=96bbb9e5b5d049a1 POST /api/v1/analysis/estimate -> 200 in 115.6ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=e8176c40a6824725 POST /api/v1/analysis/estimate -> 200 in 116.7ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=9ebf11815c154942 POST /api/v1/analysis/estimate -> 200 in 122.8ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:13:58 INFO    atus.api: request_id=6a1301c434d342a4 GET /health -> 200 in 0.4ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:59 INFO    atus.api: request_id=677cbcfec3754aa3 GET /health -> 200 in 0.4ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:13:59 INFO    atus.api: request_id=e9cf6a481ea24b13 GET /api/v1/population/metadata -> 200 in 1.2ms cache=-
+INFO:      - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+13:13:59 INFO    atus.api: request_id=e00b66452a3d43a0 GET /ready -> 200 in 2.3ms cache=-
+INFO:      - "GET /ready HTTP/1.1" 200 OK
+13:14:00 INFO    atus.api: request_id=a025ed779b004812 GET /health -> 200 in 0.4ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:03 INFO    atus.api: request_id=1606bdd6b8b54c00 GET /health -> 200 in 0.3ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:03 INFO    atus.api: request_id=437405fdf47a4987 GET /api/v1/population/metadata -> 200 in 0.6ms cache=-
+INFO:      - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+13:14:03 INFO    atus.api: request_id=a59ed049148b4aaf GET /api/v1/meta -> 200 in 3.2ms cache=-
+INFO:      - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=b0e076c12cf94018 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=5659b47021f64b95 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=b369845648124457 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=5d4860af7be34a7c GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=5304b13f7dcf4e14 GET /health -> 200 in 0.7ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=34bc40235dba4140 GET /health -> 200 in 0.3ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=226e68b1f75e4b95 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=dd3166257e0b4607 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=62d3d3d907d541e0 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=6e83fe83179e461e GET /health -> 200 in 1.6ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=a8c9bf36f61d42d8 POST /api/v1/analysis/estimate -> 422 in 627.6ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+13:14:18 INFO    atus.api: request_id=bd856e3a52924beb GET /health -> 200 in 0.3ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=f4cf2f6f46774d05 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:18 INFO    atus.api: request_id=8fd16b983997499a GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:19 INFO    atus.api: request_id=463cb13187ac4d00 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:14:19 INFO    atus.api: request_id=e305f0e90e3f4074 GET /health -> 200 in 0.4ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:15:27 INFO    atus.api: request_id=dd02d145cece4501 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:15:27 INFO    atus.api: request_id=86ed61581f384806 GET /ready -> 200 in 1.7ms cache=-
+INFO:      - "GET /ready HTTP/1.1" 200 OK
+13:15:27 INFO    atus.api: request_id=4a1764bc89f14c9d GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:      - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:15:27 INFO    atus.api: request_id=6a821f437c3643c4 GET /docs -> 200 in 0.2ms cache=-
+INFO:      - "GET /docs HTTP/1.1" 200 OK
+13:15:27 INFO    atus.api: request_id=11462802668847e3 GET /redoc -> 200 in 0.1ms cache=-
+INFO:      - "GET /redoc HTTP/1.1" 200 OK
+13:15:27 INFO    atus.api: request_id=6f3d01a09aea49dd GET /openapi.json -> 200 in 26.8ms cache=-
+INFO:      - "GET /openapi.json HTTP/1.1" 200 OK
+13:15:27 INFO    atus.api: request_id=c619240e3e0c4406 GET /nope -> 404 in 0.2ms cache=-
+INFO:      - "GET /nope HTTP/1.1" 404 Not Found
+13:15:27 INFO    atus.api: request_id=5a3493dc8bdb4bc7 POST /api/v1/analysis/estimate -> 200 in 10.2ms cache=miss
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:15:27 INFO    atus.api: request_id=b6f1d3611c634c82 POST /api/v1/analysis/estimate -> 422 in 2.0ms cache=-
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+13:15:27 INFO    atus.api: request_id=5b543d79e5894a58 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+13:15:27 INFO    atus.api: request_id=7a0ffce248464c75 GET /docs -> 200 in 0.1ms cache=-
+INFO:      - "GET /docs HTTP/1.1" 200 OK
+13:15:27 INFO    atus.api: request_id=8cbf048f3129468e GET /redoc -> 200 in 0.1ms cache=-
+INFO:      - "GET /redoc HTTP/1.1" 200 OK
+13:15:27 INFO    atus.api: request_id=eab3ad353898406a GET /openapi.json -> 200 in 0.3ms cache=-
+INFO:      - "GET /openapi.json HTTP/1.1" 200 OK
+13:17:25 INFO    atus.api: request_id=36d49be7c2754b54 GET /api/v1/activities -> 200 in 6.8ms cache=-
+INFO:      - "GET /api/v1/activities HTTP/1.1" 200 OK
+13:17:25 INFO    atus.api: request_id=78dcc2b5dd9f4d42 GET /api/v1/meta -> 200 in 4.3ms cache=-
+INFO:      - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:17:25 INFO    atus.api: request_id=247aa5eafaa1410a GET /api/v1/population/metadata -> 200 in 0.4ms cache=-
+INFO:      - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+13:17:25 INFO    atus.api: request_id=145af90cee314f1f GET /api/v1/activities/presets -> 200 in 0.5ms cache=-
+INFO:      - "GET /api/v1/activities/presets HTTP/1.1" 200 OK
+13:17:25 INFO    atus.api: request_id=5a2904cd914945ba GET /openapi.json -> 200 in 0.3ms cache=-
+INFO:      - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [62134]

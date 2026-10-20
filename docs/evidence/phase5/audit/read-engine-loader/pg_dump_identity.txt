@@ -1,0 +1,11 @@
+47:ALTER TABLE atus.ingestion_runs ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+61:COPY atus.ingestion_runs (id, release, pipeline_version, started_at, finished_at, status, notes) FROM stdin;
+77:SELECT pg_catalog.setval('atus.ingestion_runs_id_seq', 8, true);
+1|succeeded
+2|succeeded
+3|succeeded
+4|failed
+5|succeeded
+6|failed
+7|failed
+8|failed

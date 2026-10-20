@@ -1,0 +1,7 @@
+
+> atus-explorer@0.1.0 generate:api-types
+> openapi-typescript openapi.json -o src/api/generated.ts && prettier --write src/api/generated.ts
+
+✨ openapi-typescript 7.13.0
+🚀 openapi.json → src/api/generated.ts [152.1ms]
+src/api/generated.ts 247ms

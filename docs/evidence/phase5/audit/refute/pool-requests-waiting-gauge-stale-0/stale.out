@@ -1,0 +1,4 @@
+after 3 timeouts: ['PoolTimeout', 'PoolTimeout', 'PoolTimeout'] requests_waiting= 3 pool_available= 0
+4th immediate: TooManyRequests the pool 'pool-1' has already 3 requests waiting
+after return: requests_waiting= 0 pool_available= 1
+now getconn OK

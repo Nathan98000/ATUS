@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: text/plain;charset=UTF-8 --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/valid.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:17:35 GMT
+server: uvicorn
+content-length: 248
+content-type: application/json
+vary: Origin
+x-request-id: 3d19a4afdcd340ad
+
+{"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body"],"message":"Input should be a valid dictionary or object to extract fields from","type":"model_attributes_type"}]}}}
+### status=422 time_total=0.003861s size_download=248 size_upload=115

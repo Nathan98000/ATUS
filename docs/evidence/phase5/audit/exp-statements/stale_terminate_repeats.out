@@ -1,0 +1,80 @@
+======================================================================
+mode terminate 0 at 2026-10-20T13:23:11
+warm /meta: (200, 'ok', 9.3) warm estimate (cached): (200, 'ok', 2.5, 'hit')
+API backends before event: 2 [186, 187]
+terminated: [(186, True), (187, True)]
+API backends right after event: []
+  #01 GET /api/v1/meta -> 503 database_unavailable 4.5ms x-cache=None
+       body: {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+  #02 POST /api/v1/analysis/estimate (miss) -> 503 database_unavailable 3.4ms x-cache=None
+       body: {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+  #03 POST /api/v1/analysis/estimate (cached) -> 200 ok 8.3ms x-cache=hit
+  #04 GET /ready -> 200 ok 3.1ms x-cache=None
+  #05 GET /health -> 200 ok 0.9ms x-cache=None
+  #06 GET /api/v1/meta -> 200 ok 5.4ms x-cache=None
+  #07 GET /api/v1/meta -> 200 ok 4.9ms x-cache=None
+  #08 GET /api/v1/meta -> 200 ok 3.3ms x-cache=None
+  #09 GET /api/v1/meta -> 200 ok 3.4ms x-cache=None
+  #10 GET /api/v1/meta -> 200 ok 4.1ms x-cache=None
+  #11 GET /api/v1/meta -> 200 ok 3.0ms x-cache=None
+  #12 GET /api/v1/meta -> 200 ok 2.8ms x-cache=None
+  #13 GET /api/v1/meta -> 200 ok 2.6ms x-cache=None
+  #14 GET /api/v1/meta -> 200 ok 2.8ms x-cache=None
+  #15 GET /api/v1/meta -> 200 ok 2.9ms x-cache=None
+  #16 GET /api/v1/meta -> 200 ok 2.9ms x-cache=None
+  #17 GET /api/v1/meta -> 200 ok 3.0ms x-cache=None
+API backends at end: [190, 191, 192]
+======================================================================
+mode terminate 0 at 2026-10-20T13:23:11
+warm /meta: (200, 'ok', 8.0) warm estimate (cached): (200, 'ok', 2.0, 'hit')
+API backends before event: 3 [190, 191, 192]
+terminated: [(190, True), (191, True), (192, True)]
+API backends right after event: []
+  #01 GET /api/v1/meta -> 503 database_unavailable 1.8ms x-cache=None
+       body: {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+  #02 POST /api/v1/analysis/estimate (miss) -> 503 database_unavailable 1.7ms x-cache=None
+       body: {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+  #03 POST /api/v1/analysis/estimate (cached) -> 503 database_unavailable 1.8ms x-cache=None
+       body: {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+  #04 GET /ready -> 200 ok 2.3ms x-cache=None
+  #05 GET /health -> 200 ok 0.7ms x-cache=None
+  #06 GET /api/v1/meta -> 200 ok 2.2ms x-cache=None
+  #07 GET /api/v1/meta -> 200 ok 2.1ms x-cache=None
+  #08 GET /api/v1/meta -> 200 ok 2.7ms x-cache=None
+  #09 GET /api/v1/meta -> 200 ok 1.7ms x-cache=None
+  #10 GET /api/v1/meta -> 200 ok 1.5ms x-cache=None
+  #11 GET /api/v1/meta -> 200 ok 1.5ms x-cache=None
+  #12 GET /api/v1/meta -> 200 ok 1.6ms x-cache=None
+  #13 GET /api/v1/meta -> 200 ok 1.7ms x-cache=None
+  #14 GET /api/v1/meta -> 200 ok 1.6ms x-cache=None
+  #15 GET /api/v1/meta -> 200 ok 1.5ms x-cache=None
+  #16 GET /api/v1/meta -> 200 ok 1.7ms x-cache=None
+  #17 GET /api/v1/meta -> 200 ok 1.9ms x-cache=None
+API backends at end: [194, 195, 196]
+======================================================================
+mode terminate 0 at 2026-10-20T13:23:12
+warm /meta: (200, 'ok', 7.6) warm estimate (cached): (200, 'ok', 1.9, 'hit')
+API backends before event: 3 [194, 195, 196]
+terminated: [(194, True), (195, True), (196, True)]
+API backends right after event: []
+  #01 GET /api/v1/meta -> 503 database_unavailable 2.0ms x-cache=None
+       body: {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+  #02 POST /api/v1/analysis/estimate (miss) -> 503 database_unavailable 1.6ms x-cache=None
+       body: {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+  #03 POST /api/v1/analysis/estimate (cached) -> 503 database_unavailable 1.7ms x-cache=None
+       body: {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+  #04 GET /ready -> 200 ok 5.9ms x-cache=None
+  #05 GET /health -> 200 ok 0.6ms x-cache=None
+  #06 GET /api/v1/meta -> 200 ok 3.5ms x-cache=None
+  #07 GET /api/v1/meta -> 200 ok 3.3ms x-cache=None
+  #08 GET /api/v1/meta -> 200 ok 3.1ms x-cache=None
+  #09 GET /api/v1/meta -> 200 ok 3.6ms x-cache=None
+  #10 GET /api/v1/meta -> 200 ok 2.3ms x-cache=None
+  #11 GET /api/v1/meta -> 200 ok 2.0ms x-cache=None
+  #12 GET /api/v1/meta -> 200 ok 2.1ms x-cache=None
+  #13 GET /api/v1/meta -> 200 ok 2.0ms x-cache=None
+  #14 GET /api/v1/meta -> 200 ok 1.9ms x-cache=None
+  #15 GET /api/v1/meta -> 200 ok 1.9ms x-cache=None
+  #16 GET /api/v1/meta -> 200 ok 2.1ms x-cache=None
+  #17 GET /api/v1/meta -> 200 ok 2.2ms x-cache=None
+API backends at end: [198, 199, 200, 201]

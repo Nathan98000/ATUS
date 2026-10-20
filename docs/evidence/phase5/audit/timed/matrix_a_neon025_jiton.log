@@ -1,0 +1,15 @@
+est_1y_010101_2025#0#1                        status=200 wall=3.718s cache=miss 
+pooled22_leisure_bls#0#2                      status=200 wall=74.802s cache=miss 
+trend23_tier1_12#0#3                          status=200 wall=59.504s cache=miss 
+est_1y_010101_2025#1#4                        status=200 wall=4.281s cache=miss 
+pooled22_leisure_bls#1#5                      status=200 wall=57.299s cache=miss 
+trend23_tier1_12#1#6                          status=200 wall=70.798s cache=miss 
+est_1y_010101_2025#2#7                        status=200 wall=4.074s cache=miss 
+pooled22_leisure_bls#2#8                      status=200 wall=64.487s cache=miss 
+trend23_tier1_12#2#9                          status=200 wall=64.317s cache=miss 
+est_1y_010101_2025#3#10                       status=200 wall=4.164s cache=miss 
+pooled22_leisure_bls#3#11                     status=200 wall=70.706s cache=miss 
+trend23_tier1_12#3#12                         status=200 wall=58.509s cache=miss 
+est_1y_010101_2025           n=3 st=['200'] cache=['miss'] wall_s[p50=4.2 p95=4.3 max=4.3] db_ms[p50=4072.4 p95=4247.9 max=4267.4] api_ms[p50=16.9 p95=83.9 max=91.3] stmts=[9]
+pooled22_leisure_bls         n=3 st=['200'] cache=['miss'] wall_s[p50=64.5 p95=70.1 max=70.7] db_ms[p50=64474.2 p95=70069.1 max=70690.8] api_ms[p50=15.1 p95=106.5 max=116.7] stmts=[9]
+trend23_tier1_12             n=3 st=['200'] cache=['miss'] wall_s[p50=64.3 p95=70.1 max=70.8] db_ms[p50=64279.2 p95=70028.4 max=70667.2] api_ms[p50=130.6 p95=220.7 max=230.7] stmts=[9]

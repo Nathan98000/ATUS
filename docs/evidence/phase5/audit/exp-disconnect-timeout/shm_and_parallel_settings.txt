@@ -1,0 +1,11 @@
+Filesystem      Size  Used Avail Use% Mounted on
+shm              64M  2.0M   63M   4% /dev/shm
+HostConfig.ShmSize=67108864 Memory=0 NanoCpus=0
+dynamic_shared_memory_type|posix
+hash_mem_multiplier|2
+max_parallel_workers|8
+max_parallel_workers_per_gather|2
+max_worker_processes|8
+min_dynamic_shared_memory|0
+shared_buffers|16384
+work_mem|4096

@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/date_inverted.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:43 GMT
+server: uvicorn
+content-length: 99
+content-type: application/json
+vary: Origin
+x-request-id: 86f5d313f269460c
+
+{"error":{"code":"invalid_spec","message":"diary_date_min is after diary_date_max","details":null}}
+### status=422 time_total=0.003673s size_download=99 size_upload=195

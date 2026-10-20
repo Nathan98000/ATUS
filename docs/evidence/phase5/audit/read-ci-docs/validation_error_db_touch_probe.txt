@@ -1,0 +1,4 @@
+unknown field (schema violation): HTTP 422 validation_error; app-level SQL executed: ["SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'"]
+years out of range: HTTP 422 validation_error; app-level SQL executed: ["SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'"]
+51 years (over limit): HTTP 422 validation_error; app-level SQL executed: ["SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'"]
+malformed JSON: HTTP 400 malformed_json; app-level SQL executed: []

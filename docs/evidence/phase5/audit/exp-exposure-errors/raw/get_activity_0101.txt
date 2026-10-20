@@ -1,0 +1,12 @@
+### curl http://127.0.0.1:8206/api/v1/activities/0101 (port 8206)
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:07:50 GMT
+server: uvicorn
+content-length: 516
+content-type: application/json
+cache-control: public, max-age=300
+vary: Origin
+x-request-id: 7dc232ceb74c4f4e
+
+{"code":"0101","name":"Sleeping","level":2,"parents":[{"code":"01","name":"Personal Care Activities","level":1,"parent_code":null,"harmonization_note":null}],"children":[{"code":"010101","name":"Sleeping","level":3,"parent_code":"0101","harmonization_note":null},{"code":"010102","name":"Sleeplessness","level":3,"parent_code":"0101","harmonization_note":null},{"code":"010199","name":"Sleeping, n.e.c.*","level":3,"parent_code":"0101","harmonization_note":null}],"harmonization_note":null,"descendant_leaf_count":3}
+### status=200 time_total=0.014293s size_download=516 size_upload=0

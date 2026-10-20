@@ -1,0 +1,15 @@
+deadlock_timeout: 1s
+t=0.01 API txn holds locks after data_version=0325:run1 + _prepare
+t=0.31 loader TRUNCATE started; API now runs the sufficient-statistics query
+t=1.03 API query returned: OK [2023]
+t=1.03 loader: psycopg.errors.DeadlockDetected: deadlock detected
+deadlock_timeout: 1s
+t=0.01 API txn holds locks after data_version=0325:run1 + _prepare
+t=0.31 loader TRUNCATE started; API now runs the sufficient-statistics query
+t=1.03 API query returned: OK [2023]
+t=1.03 loader: psycopg.errors.DeadlockDetected: deadlock detected
+deadlock_timeout: 1s
+t=0.01 API txn holds locks after data_version=0325:run1 + _prepare
+t=0.31 loader TRUNCATE started; API now runs the sufficient-statistics query
+t=1.03 API query returned: OK [2023]
+t=1.03 loader: psycopg.errors.DeadlockDetected: deadlock detected

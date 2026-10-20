@@ -1,0 +1,29 @@
+$REPO/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+15:28:11 INFO    atus.api: request_id=41e30c3953ac4e0d HEAD /health -> 405 in 11.8ms cache=-
+15:28:11 INFO    httpx: HTTP Request: HEAD http://testserver/health "HTTP/1.1 405 Method Not Allowed"
+15:28:11 INFO    atus.api: request_id=ff7e647ae18d4845 HEAD /ready -> 405 in 0.5ms cache=-
+15:28:11 INFO    httpx: HTTP Request: HEAD http://testserver/ready "HTTP/1.1 405 Method Not Allowed"
+15:28:11 INFO    atus.api: request_id=49c9d122239b4050 HEAD /api/v1/meta -> 405 in 0.3ms cache=-
+15:28:11 INFO    httpx: HTTP Request: HEAD http://testserver/api/v1/meta "HTTP/1.1 405 Method Not Allowed"
+15:28:11 INFO    atus.api: request_id=377b6fd62e1e4d3d HEAD /docs -> 200 in 0.6ms cache=-
+15:28:11 INFO    httpx: HTTP Request: HEAD http://testserver/docs "HTTP/1.1 200 OK"
+15:28:11 INFO    atus.api: request_id=43786807dd854355 HEAD /openapi.json -> 200 in 71.4ms cache=-
+15:28:11 INFO    httpx: HTTP Request: HEAD http://testserver/openapi.json "HTTP/1.1 200 OK"
+15:28:11 INFO    atus.api: request_id=737a7e5457874539 GET /health -> 200 in 1.0ms cache=-
+15:28:11 INFO    httpx: HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+HEAD /health 405 None
+HEAD /ready 405 None
+HEAD /api/v1/meta 405 None
+HEAD /docs 200 None
+HEAD /openapi.json 200 None
+GET /health 200
+Route /openapi.json ['GET', 'HEAD']
+Route /docs ['GET', 'HEAD']
+Route /docs/oauth2-redirect ['GET', 'HEAD']
+Route /redoc ['GET', 'HEAD']
+_IncludedRouter None []
+_IncludedRouter None []
+_IncludedRouter None []
+_IncludedRouter None []
+_IncludedRouter None []

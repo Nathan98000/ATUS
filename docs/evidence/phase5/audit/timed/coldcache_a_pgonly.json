@@ -1,0 +1,73 @@
+{
+ "label": "coldcache-a_pgonly",
+ "date_utc": "2026-10-20T18:43:51.532428Z",
+ "ran_alone": "yes - sole ATUS audit workload; other projects' containers (supabase_*, timeblock-postgres) and host apps kept running (see env_snapshot_*.txt)",
+ "machine": "Apple M4, 10-core, 24 GB RAM, macOS 27.0.1; Docker Desktop VM 10 vCPU / 7.75 GiB",
+ "docker": "server 29.6.2 client 29.6.2",
+ "db_limits": "NanoCpus=250000000 Memory=1073741824",
+ "variant": "pgonly",
+ "type": "pooled22_leisure_bls",
+ "reps": [
+  {
+   "i": 0,
+   "db_restart_s": 0.22822770907077938,
+   "page_cache_at_start": "drop=False files_bytes=650134084 resident_bytes=406192128 resident_MB=387.4 of 620.0 MB (62.5%)",
+   "cold": {
+    "status": 200,
+    "wall_s": 40.433019959018566,
+    "bytes": 1387,
+    "x_cache": "miss",
+    "request_id": "18b0853019104a8f",
+    "t_start": 530403.556284791,
+    "t_end": 530443.98930475,
+    "db_ms": 40408.115,
+    "analysis_sql_ms": 40300.719000000005,
+    "db_errors": []
+   },
+   "warm": {
+    "status": 200,
+    "wall_s": 38.48413062503096,
+    "bytes": 1387,
+    "x_cache": "miss",
+    "request_id": "88e2e12095d547bd",
+    "t_start": 530443.991365333,
+    "t_end": 530482.475495958,
+    "db_ms": 38435.147,
+    "analysis_sql_ms": 38298.229999999996,
+    "db_errors": []
+   },
+   "page_cache_after_requests": "drop=False files_bytes=650458708 resident_bytes=406519808 resident_MB=387.7 of 620.3 MB (62.5%)"
+  },
+  {
+   "i": 1,
+   "db_restart_s": 0.19816599995829165,
+   "page_cache_at_start": "drop=False files_bytes=650134084 resident_bytes=406192128 resident_MB=387.4 of 620.0 MB (62.5%)",
+   "cold": {
+    "status": 200,
+    "wall_s": 39.876967334072106,
+    "bytes": 1391,
+    "x_cache": "miss",
+    "request_id": "c9a2cbe7652a423e",
+    "t_start": 530495.989963666,
+    "t_end": 530535.866931,
+    "db_ms": 39855.122,
+    "analysis_sql_ms": 39789.674,
+    "db_errors": []
+   },
+   "warm": {
+    "status": 200,
+    "wall_s": 38.8975093329791,
+    "bytes": 1390,
+    "x_cache": "miss",
+    "request_id": "6b532d4f5b4647c6",
+    "t_start": 530535.868601208,
+    "t_end": 530574.766110541,
+    "db_ms": 38880.121999999996,
+    "analysis_sql_ms": 38696.047999999995,
+    "db_errors": []
+   },
+   "page_cache_after_requests": "drop=False files_bytes=650458708 resident_bytes=406519808 resident_MB=387.7 of 620.3 MB (62.5%)"
+  }
+ ],
+ "date_end_utc": "2026-10-20T18:46:57.200045Z"
+}

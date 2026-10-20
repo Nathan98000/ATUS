@@ -1,0 +1,16 @@
+Ingestion run 4 failed; database unchanged. deadlock detected
+DETAIL:  Process 1525 waits for AccessExclusiveLock on relation 35239 of database 34853; blocked by process 1524.
+Process 1524 waits for AccessShareLock on relation 35282 of database 34853; blocked by process 1525.
+HINT:  See server log for query details.
+deadlock_timeout = 1s
+gap=0.3s -> request: ok value=75.0 at t=1.04s
+           loader : FAILED DeadlockDetected at t=1.03s: deadlock detected
+DETAIL:  Process 1525 waits for AccessExclusiveLock on relation 35239 of database 34853; blocked by process 1524.
+Process 1524 waits for Acces
+           latest run: (4, 'failed', 'DeadlockDetected: deadlock detected\nDETAIL:  Process 1525 waits for AccessExclusiveLock on'); respondents now 6
+gap=1.6s -> request: FAILED DeadlockDetected at t=2.62s: deadlock detected
+LINE 4:     FROM atus.activities a
+                 ^
+DETAIL:  Process 1527 waits for AccessShareLock on relation 35282 of database 34853; blo
+           loader : succeeded at t=2.68s
+           latest run: (5, 'succeeded', None); respondents now 6

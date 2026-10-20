@@ -1,0 +1,5 @@
+SERVING {'jit': 'on', 'jit_above_cost': '100000', 'jit_inline_above_cost': '500000', 'jit_optimize_above_cost': '500000', 'max_parallel_workers_per_gather': '2', 'work_mem': '4MB'}
+SERVING jit=on run1: EXPLAIN ANALYZE execution 1580 ms; JIT total 888.064 ms; JIT options [Inlining false, Optimization false, Expressions true, Deforming true]; plain query wall 1468 ms (22 rows)
+SERVING jit=on run2: EXPLAIN ANALYZE execution 1497 ms; JIT total 777.390 ms; JIT options [Inlining false, Optimization false, Expressions true, Deforming true]; plain query wall 1495 ms (22 rows)
+SERVING jit=off run1: EXPLAIN ANALYZE execution 949 ms; JIT total n/a ms; JIT options [none]; plain query wall 880 ms (22 rows)
+SERVING jit=off run2: EXPLAIN ANALYZE execution 881 ms; JIT total n/a ms; JIT options [none]; plain query wall 856 ms (22 rows)

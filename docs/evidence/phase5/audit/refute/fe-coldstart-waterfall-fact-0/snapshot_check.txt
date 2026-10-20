@@ -1,0 +1,6 @@
+2 False False
+5 True False
+15 False True
+30 False True
+60 False True
+75 False True

@@ -1,0 +1,8 @@
+15:28:12 INFO    httpx: HTTP Request: GET http://testserver/openapi.json "HTTP/1.1 200 OK"
+15:28:12 INFO    atus.api: request_id=03ab5ff165d14a4f HEAD /openapi.json -> 200 in 0.7ms cache=-
+15:28:12 INFO    httpx: HTTP Request: HEAD http://testserver/openapi.json "HTTP/1.1 200 OK"
+/health GET 200 HEAD 405 None
+/ready GET 200 HEAD 405 None
+/api/v1/meta GET 200 HEAD 405 None
+/docs GET 200 HEAD 200 None
+/openapi.json GET 200 HEAD 200 None

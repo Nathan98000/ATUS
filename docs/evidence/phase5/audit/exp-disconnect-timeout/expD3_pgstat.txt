@@ -1,0 +1,52 @@
+--- 13:13:05.031 client_backends_active=0 parallel_workers=0 client_backends_idle=1 | OTHER sessions on server: active=12 workers=0 apps=<none>:atus_audit_readapi,audit-dl2-loader:atus_audit_rel_engine,audit-dl2-new:atus_audit_rel_engine | /dev/shm used=1.0MiB/64MiB
+    1648 |  | client backend | idle | 17:13:04.906 | 0.1 | Client | ClientRead | COMMIT
+--- 13:13:06.034 client_backends_active=0 parallel_workers=0 client_backends_idle=1 | OTHER sessions on server: active=2 workers=0 apps=audit-dl2-loader:atus_audit_rel_engine,audit-dl2-new:atus_audit_rel_engine | /dev/shm used=1.0MiB/64MiB
+    1648 |  | client backend | idle | 17:13:04.906 | 1.1 | Client | ClientRead | COMMIT
+--- 13:13:07.037 client_backends_active=1 parallel_workers=2 client_backends_idle=0 | OTHER sessions on server: active=2 workers=0 apps=audit-dl2-loader:atus_audit_rel_engine,audit-dl2-new:atus_audit_rel_engine | /dev/shm used=5.3MiB/64MiB
+    1648 |  | client backend | active | 17:13:06.258 | 0.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1671 | 1648 | parallel worker | active | 17:13:06.258 | 0.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1672 | 1648 | parallel worker | active | 17:13:06.258 | 0.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:13:08.039 client_backends_active=1 parallel_workers=2 client_backends_idle=0 | OTHER sessions on server: active=1 workers=0 apps=audit-dl2-loader:atus_audit_rel_engine | /dev/shm used=5.3MiB/64MiB
+    1648 |  | client backend | active | 17:13:06.258 | 1.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1671 | 1648 | parallel worker | active | 17:13:06.258 | 1.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1672 | 1648 | parallel worker | active | 17:13:06.258 | 1.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:13:09.041 client_backends_active=1 parallel_workers=2 client_backends_idle=0 | OTHER sessions on server: active=2 workers=0 apps=audit-dl2-loader:atus_audit_rel_engine,audit-dl2-new:atus_audit_rel_engine | /dev/shm used=5.3MiB/64MiB
+    1648 |  | client backend | active | 17:13:06.258 | 2.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1671 | 1648 | parallel worker | active | 17:13:06.258 | 2.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1672 | 1648 | parallel worker | active | 17:13:06.258 | 2.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:13:10.047 client_backends_active=1 parallel_workers=2 client_backends_idle=0 | OTHER sessions on server: active=2 workers=0 apps=audit-dl2-loader:atus_audit_rel_engine,audit-dl2-new:atus_audit_rel_engine | /dev/shm used=5.3MiB/64MiB
+    1648 |  | client backend | active | 17:13:06.258 | 3.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1671 | 1648 | parallel worker | active | 17:13:06.258 | 3.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1672 | 1648 | parallel worker | active | 17:13:06.258 | 3.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:13:11.051 client_backends_active=1 parallel_workers=2 client_backends_idle=0 | OTHER sessions on server: active=2 workers=0 apps=audit-dl2-loader:atus_audit_rel_engine,audit-dl2-new:atus_audit_rel_engine | /dev/shm used=5.3MiB/64MiB
+    1648 |  | client backend | active | 17:13:06.258 | 4.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1671 | 1648 | parallel worker | active | 17:13:06.258 | 4.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1672 | 1648 | parallel worker | active | 17:13:06.258 | 4.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:13:12.055 client_backends_active=1 parallel_workers=2 client_backends_idle=0 | OTHER sessions on server: active=0 workers=0 apps=None | /dev/shm used=23.3MiB/64MiB
+    1648 |  | client backend | active | 17:13:06.258 | 5.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1671 | 1648 | parallel worker | active | 17:13:06.258 | 5.8 | IPC | HashBuildHashInner |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1672 | 1648 | parallel worker | active | 17:13:06.258 | 5.8 | IPC | HashBuildHashInner |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:13:13.060 client_backends_active=1 parallel_workers=2 client_backends_idle=0 | OTHER sessions on server: active=0 workers=0 apps=None | /dev/shm used=23.3MiB/64MiB
+    1648 |  | client backend | active | 17:13:06.258 | 6.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1671 | 1648 | parallel worker | active | 17:13:06.258 | 6.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1672 | 1648 | parallel worker | active | 17:13:06.258 | 6.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:13:14.061 client_backends_active=1 parallel_workers=2 client_backends_idle=0 | OTHER sessions on server: active=0 workers=0 apps=None | /dev/shm used=23.3MiB/64MiB
+    1648 |  | client backend | active | 17:13:06.258 | 7.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1671 | 1648 | parallel worker | active | 17:13:06.258 | 7.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1672 | 1648 | parallel worker | active | 17:13:06.258 | 7.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:13:15.062 client_backends_active=1 parallel_workers=2 client_backends_idle=0 | OTHER sessions on server: active=0 workers=0 apps=None | /dev/shm used=23.3MiB/64MiB
+    1648 |  | client backend | active | 17:13:06.258 | 8.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1671 | 1648 | parallel worker | active | 17:13:06.258 | 8.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1672 | 1648 | parallel worker | active | 17:13:06.258 | 8.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:13:16.066 client_backends_active=1 parallel_workers=2 client_backends_idle=0 | OTHER sessions on server: active=0 workers=0 apps=None | /dev/shm used=23.3MiB/64MiB
+    1648 |  | client backend | active | 17:13:06.258 | 9.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1671 | 1648 | parallel worker | active | 17:13:06.258 | 9.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1672 | 1648 | parallel worker | active | 17:13:06.258 | 9.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:13:17.067 client_backends_active=1 parallel_workers=2 client_backends_idle=0 | OTHER sessions on server: active=0 workers=0 apps=None | /dev/shm used=23.3MiB/64MiB
+    1648 |  | client backend | active | 17:13:06.258 | 10.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1671 | 1648 | parallel worker | active | 17:13:06.258 | 10.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    1672 | 1648 | parallel worker | active | 17:13:06.258 | 10.8 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:13:18.072 client_backends_active=0 parallel_workers=0 client_backends_idle=0 | OTHER sessions on server: active=0 workers=0 apps=None | /dev/shm used=1.0MiB/64MiB
+--- 13:13:19.073 client_backends_active=0 parallel_workers=0 client_backends_idle=0 | OTHER sessions on server: active=0 workers=0 apps=None | /dev/shm used=1.0MiB/64MiB
+--- 13:13:20.077 client_backends_active=0 parallel_workers=0 client_backends_idle=0 | OTHER sessions on server: active=5 workers=0 apps=<none>:atus_audit_reload,inflight_emul:atus_audit_reload | /dev/shm used=1.0MiB/64MiB
+--- 13:13:20.077 stopping: 3 consecutive polls with no active audit backend

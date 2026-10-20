@@ -1,0 +1,46 @@
+{
+  "measure": "participation_rate",
+  "estimate": {
+    "value": 0.7277615612849326,
+    "unit": "proportion_of_population",
+    "standard_error": 0.007284430145221207,
+    "confidence_level": 0.95,
+    "ci_lower": 0.7134843405524012,
+    "ci_upper": 0.7420387820174641
+  },
+  "years": [2024],
+  "activity": {
+    "label": "Watching TV",
+    "include": ["120303", "120304"],
+    "exclude": [],
+    "leaf_code_count": 2
+  },
+  "population": "civilian noninstitutional population age 15+",
+  "n_respondents": 7669,
+  "n_participants": 5917,
+  "weighted_population_per_day": 272912483.3776282,
+  "days_in_period": 366,
+  "weight": {
+    "scheme": "multiyear",
+    "bls_variable": "TUFNWGTP",
+    "column": "respondents.final_weight"
+  },
+  "variance_method": "replicate",
+  "analytics_version": "0.2",
+  "spec": {
+    "measure": "participation_rate",
+    "activity": {
+      "include": ["120303", "120304"],
+      "exclude": [],
+      "label": "Watching TV"
+    },
+    "years": [2024],
+    "population": {},
+    "weights": "multiyear",
+    "variance": "replicate",
+    "confidence_level": 0.95
+  },
+  "warnings": [
+    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+  ]
+}

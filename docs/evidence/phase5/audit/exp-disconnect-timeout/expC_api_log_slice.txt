@@ -1,0 +1,6 @@
+13:10:34 INFO    atus.api: request_id=2c7ce620d7bf42c6 POST /api/v1/analysis/trend -> 200 in 12204.1ms cache=miss
+INFO:     127.0.0.1:62315 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+13:10:52 INFO    atus.api: request_id=35fd65fefc0c4693 POST /api/v1/analysis/trend -> 200 in 14981.9ms cache=miss
+INFO:     127.0.0.1:62349 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+13:11:26 INFO    atus.api: request_id=9f05cb516e2e440b POST /api/v1/analysis/compare -> 200 in 31285.1ms cache=miss
+INFO:     127.0.0.1:62368 - "POST /api/v1/analysis/compare HTTP/1.1" 200 OK

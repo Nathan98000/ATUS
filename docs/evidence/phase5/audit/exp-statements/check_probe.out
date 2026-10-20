@@ -1,0 +1,16 @@
+1st checkout -> ('probe-q1',)
+terminate: [(True,)]
+2nd checkout after terminate -> ('probe-q2',) 11.2ms
+stats {'connections_num': 3, 'connections_lost': 1, 'requests_num': 2}
+2026-10-20 17:37:15.828 UTC [42] check-probe atus@atus LOG:  statement: 
+2026-10-20 17:37:15.828 UTC [42] check-probe atus@atus LOG:  statement: BEGIN
+2026-10-20 17:37:15.829 UTC [42] check-probe atus@atus LOG:  statement: SELECT 'probe-q1'
+2026-10-20 17:37:15.829 UTC [42] check-probe atus@atus LOG:  statement: COMMIT
+2026-10-20 17:37:15.832 UTC [42] check-probe atus@atus FATAL:  terminating connection due to administrator command
+2026-10-20 17:37:15.832 UTC [42] check-probe atus@atus LOG:  disconnection: session time: 0:00:00.018 user=atus database=atus host=192.168.65.1 port=37499
+2026-10-20 17:37:16.147 UTC [44] check-probe atus@atus LOG:  statement: 
+2026-10-20 17:37:16.148 UTC [44] check-probe atus@atus LOG:  statement: BEGIN
+2026-10-20 17:37:16.148 UTC [44] check-probe atus@atus LOG:  statement: SELECT 'probe-q2'
+2026-10-20 17:37:16.149 UTC [44] check-probe atus@atus LOG:  statement: COMMIT
+2026-10-20 17:37:16.149 UTC [45] check-probe atus@atus LOG:  disconnection: session time: 0:00:00.008 user=atus database=atus host=192.168.65.1 port=25426
+2026-10-20 17:37:16.149 UTC [44] check-probe atus@atus LOG:  disconnection: session time: 0:00:00.009 user=atus database=atus host=192.168.65.1 port=27410

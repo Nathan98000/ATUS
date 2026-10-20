@@ -1,0 +1,7 @@
+discarding closed connection: <psycopg.Connection [BAD] at 0x10b3a5d90>
+check= False req 0 AdminShutdown terminating connection due to administrator command
+check= False req 1 (1,)
+{'connections_num': 3, 'connections_ms': 21, 'requests_num': 3, 'usage_ms': 1, 'returns_bad': 1, 'requests_queued': 1, 'requests_wait_ms': 8, 'pool_min': 1, 'pool_max': 10, 'pool_size': 2, 'pool_available': 2, 'requests_waiting': 0}
+check= True req 0 (1,)
+check= True req 1 (1,)
+{'connections_num': 3, 'connections_ms': 24, 'requests_num': 3, 'usage_ms': 2, 'connections_lost': 1, 'requests_queued': 1, 'requests_wait_ms': 9, 'pool_min': 1, 'pool_max': 10, 'pool_size': 2, 'pool_available': 2, 'requests_waiting': 0}

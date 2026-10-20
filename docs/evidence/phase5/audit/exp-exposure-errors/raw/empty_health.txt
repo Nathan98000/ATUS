@@ -1,0 +1,11 @@
+### curl http://127.0.0.1:8216/health (port 8216)
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:12:35 GMT
+server: uvicorn
+content-length: 15
+content-type: application/json
+vary: Origin
+x-request-id: 4a23b3aca8d1415a
+
+{"status":"ok"}
+### status=200 time_total=0.001037s size_download=15 size_upload=0

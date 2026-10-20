@@ -1,0 +1,168 @@
+{
+  "build_id": "proto-20261020T172359Z-e5748e84",
+  "steps": {
+    "migrations + serving schema": 0.04,
+    "source assertions": 9.16,
+    "keys, indexes, FKs": 1.37,
+    "target content hash": 5.56,
+    "source-derived content hash": 9.34,
+    "VACUUM (ANALYZE)": 1.28
+  },
+  "migrations_applied": [
+    "0001_core_schema.sql",
+    "0002_indexes.sql"
+  ],
+  "source_run": {
+    "id": 1,
+    "release": "0325",
+    "pipeline_version": "0.1.0",
+    "finished_at": "2026-09-09T02:07:25.530494+00:00"
+  },
+  "assertions": {
+    "dropped all-NULL replicate rows whose respondent has final_weight > 0": 0,
+    "kept replicate rows with any NULL cell (partial NULLs would change sums)": 0,
+    "dropped all-zero pandemic rows whose respondent has pandemic_weight > 0": 0,
+    "per-(tucaseid, code) summed minutes outside 0..1440": 0,
+    "replicate cells whose numeric -> float8 -> numeric round trip differs": 0,
+    "pandemic replicate cells whose numeric -> float8 -> numeric round trip differs": 0
+  },
+  "copy": {
+    "activity_tier1": {
+      "rows": 18,
+      "binary_bytes": 695,
+      "seconds": 0.0
+    },
+    "activity_tier2": {
+      "rows": 107,
+      "binary_bytes": 5966,
+      "seconds": 0.0
+    },
+    "activity_codes": {
+      "rows": 431,
+      "binary_bytes": 32065,
+      "seconds": 0.0
+    },
+    "respondents": {
+      "rows": 258954,
+      "binary_bytes": 18260665,
+      "seconds": 0.91
+    },
+    "household_members": {
+      "rows": 258954,
+      "binary_bytes": 8286549,
+      "seconds": 0.87
+    },
+    "cps_persons": {
+      "rows": 258954,
+      "binary_bytes": 9840273,
+      "seconds": 1.64
+    },
+    "activities": {
+      "rows": 2982182,
+      "binary_bytes": 89465481,
+      "seconds": 13.36
+    },
+    "replicate_weights": {
+      "rows": 250172,
+      "binary_bytes": 483832669,
+      "seconds": 5.35
+    },
+    "pandemic_replicate_weights": {
+      "rows": 16751,
+      "binary_bytes": 32396455,
+      "seconds": 0.23
+    }
+  },
+  "content_hash_target": {
+    "content_hash": "e8fa76a7c5b8f6e21d0d7f3309118f0b6aed230fe999e546e4c3cdffda293b23",
+    "tables": {
+      "activity_tier1": {
+        "sha256": "d748a01886c1cb668c78c54335875628aa01a3c2e5da3232b26b1e8db6d3cef8",
+        "rows": 18
+      },
+      "activity_tier2": {
+        "sha256": "fdb166a8e70f302bfed3636be6d4af29a1ecb75b04533ab9773e5fcb081147b6",
+        "rows": 107
+      },
+      "activity_codes": {
+        "sha256": "957244a35ea85deec422cb205b4ca77d9826db4d38a393df4951167b3e1667b2",
+        "rows": 431
+      },
+      "respondents": {
+        "sha256": "48769049fdd3d0c5dae934affa6367b43ca60019af4628874224d1b51f9f271d",
+        "rows": 258954
+      },
+      "household_members": {
+        "sha256": "d7db603b4058b029f5836a41e5f4a5908f828afdfc44d8604cbba02fc6479961",
+        "rows": 258954
+      },
+      "cps_persons": {
+        "sha256": "a7fa1f3db31b1d49cbff28a5c8a557b1a96f91229b3af44279edb768cef57f44",
+        "rows": 258954
+      },
+      "activities": {
+        "sha256": "41cf3a90613e004509130bbc7030e2fd4fe10c97eeb67e05bdd4e64d935bb1b4",
+        "rows": 2982182
+      },
+      "replicate_weights": {
+        "sha256": "bf6b88e6c2446131aae44a8e341d0227b87688ff34162cbe906192e4c78b41d4",
+        "rows": 250172
+      },
+      "pandemic_replicate_weights": {
+        "sha256": "40fcee56988c8160aca58f04f74ef6e527ba393754f07e3abb736618dcd51ad8",
+        "rows": 16751
+      }
+    }
+  },
+  "content_hash_source": {
+    "content_hash": "e8fa76a7c5b8f6e21d0d7f3309118f0b6aed230fe999e546e4c3cdffda293b23",
+    "tables": {
+      "activity_tier1": {
+        "sha256": "d748a01886c1cb668c78c54335875628aa01a3c2e5da3232b26b1e8db6d3cef8",
+        "rows": 18
+      },
+      "activity_tier2": {
+        "sha256": "fdb166a8e70f302bfed3636be6d4af29a1ecb75b04533ab9773e5fcb081147b6",
+        "rows": 107
+      },
+      "activity_codes": {
+        "sha256": "957244a35ea85deec422cb205b4ca77d9826db4d38a393df4951167b3e1667b2",
+        "rows": 431
+      },
+      "respondents": {
+        "sha256": "48769049fdd3d0c5dae934affa6367b43ca60019af4628874224d1b51f9f271d",
+        "rows": 258954
+      },
+      "household_members": {
+        "sha256": "d7db603b4058b029f5836a41e5f4a5908f828afdfc44d8604cbba02fc6479961",
+        "rows": 258954
+      },
+      "cps_persons": {
+        "sha256": "a7fa1f3db31b1d49cbff28a5c8a557b1a96f91229b3af44279edb768cef57f44",
+        "rows": 258954
+      },
+      "activities": {
+        "sha256": "41cf3a90613e004509130bbc7030e2fd4fe10c97eeb67e05bdd4e64d935bb1b4",
+        "rows": 2982182
+      },
+      "replicate_weights": {
+        "sha256": "bf6b88e6c2446131aae44a8e341d0227b87688ff34162cbe906192e4c78b41d4",
+        "rows": 250172
+      },
+      "pandemic_replicate_weights": {
+        "sha256": "40fcee56988c8160aca58f04f74ef6e527ba393754f07e3abb736618dcd51ad8",
+        "rows": 16751
+      }
+    }
+  },
+  "content_hash_match": true,
+  "content_hash_mismatched_tables": [],
+  "ingestion_run": [
+    [
+      1,
+      "0325",
+      "succeeded"
+    ]
+  ],
+  "total_seconds": 49.22
+}

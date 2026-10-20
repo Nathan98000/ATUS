@@ -1,0 +1,55 @@
+INFO:atus_pipeline.database.migrate:Applying migration 0001_core_schema.sql
+INFO:atus_pipeline.database.migrate:Applying migration 0002_indexes.sql
+INFO:atus_pipeline.loading.loader:Ingestion run 1 started (release 0325)
+INFO:atus_pipeline.loading.loader:Canonical tables truncated (atomic rebuild)
+INFO:atus_pipeline.loading.loader:Loaded activity lexicon: 18 tier-1, 107 tier-2, 431 activity codes
+INFO:atus_pipeline.loading.loader:respondents: loading from atusresp_0325.dat
+INFO:atus_pipeline.loading.loader:respondents: 6 rows loaded
+INFO:atus_pipeline.loading.loader:household_members: loading from atusrost_0325.dat
+INFO:atus_pipeline.loading.loader:household_members: 6 rows loaded
+INFO:atus_pipeline.loading.loader:activities: loading from atusact_0325.dat
+INFO:atus_pipeline.loading.loader:activities: 22 rows loaded
+INFO:atus_pipeline.loading.loader:activity_companions: loading from atuswho_0325.dat
+INFO:atus_pipeline.loading.loader:activity_companions: 22 rows loaded
+INFO:atus_pipeline.loading.loader:cps_persons: loading from atuscps_0325.dat
+INFO:atus_pipeline.loading.loader:cps_persons: 6 rows loaded
+INFO:atus_pipeline.loading.loader:replicate_weights: loading from atuswgts_0325.dat
+INFO:atus_pipeline.loading.loader:replicate_weights: 6 rows loaded
+INFO:atus_pipeline.loading.loader:pandemic_replicate_weights: loading from atuswgtspan_1920.dat
+INFO:atus_pipeline.loading.loader:pandemic_replicate_weights: 3 rows loaded
+INFO:atus_pipeline.loading.loader:Ingestion run 1 succeeded
+INFO:atus_pipeline.database.migrate:Schema is up to date (2 migrations applied)
+INFO:atus_pipeline.loading.loader:Ingestion run 2 started (release 0325)
+ERROR:atus_pipeline.loading.loader:Ingestion run 2 failed; database unchanged. relation "atus.activity_companions" does not exist
+INFO:atus_pipeline.validation.db_checks:check row count: respondents                                  FAIL
+INFO:atus_pipeline.validation.db_checks:check row count: household_members                            FAIL
+INFO:atus_pipeline.validation.db_checks:check row count: activities                                   FAIL
+builder exit 0 proto-20261020T193421Z-640376fa",
+  "content_hash_match": true,
+  "content_hash_mismatched_tables": [],
+  "assertions": {
+    "dropped all-NULL replicate rows whose respondent has final_weight > 0": 0,
+    "kept replicate rows with any NULL cell (partial NULLs would change sums)": 0,
+    "dropped all-zero pandemic rows whose respondent has pandemic_weight > 0": 0,
+    "per-(tucaseid, code) summed minutes outside 0..1440": 0,
+    "replicate cells whose numeric -> float8 -> numeric round trip differs": 0,
+    "pandemic replicate cells whose numeric -> float8 -> numeric round trip differs": 0
+  },
+  "total_seconds": 0.73
+}
+target content hash: 6bd5c5329a8d499bbf413801909f85e08c411ece3f27b2a16dc25771ac00ea59
+source content hash: 6bd5c5329a8d499bbf413801909f85e08c411ece3f27b2a16dc25771ac00ea59
+ 
+schema_migrations: [('0001',), ('0002',)]
+BEFORE: {'respondents': 6, 'activities': 12, 'replicate_weights': 5, 'household_members': 6, 'cps_persons': 6, 'activity_codes': 431, 'ingestion_runs': 1}
+== migrate
+applied: []
+== load
+load FAILED: UndefinedTable relation "atus.activity_companions" does not exist
+AFTER load: {'respondents': 6, 'activities': 12, 'replicate_weights': 5, 'household_members': 6, 'cps_persons': 6, 'activity_codes': 431, 'ingestion_runs': 2}
+ingestion_runs: [(1, 'succeeded', '{"kind": "serving-prototype", "build_id": "proto-20261020T193421Z-640376fa", "content_hash": "6bd5c5329a8d499bbf413801909f85e08c411ece3f27b2a16dc25771ac00ea59", "source_run_id": 1}'), (2, 'failed', 'UndefinedTable: relation "atus.activity_companions" does not exist')]
+== validate-db
+validate-db RAISED: UndefinedTable relation "atus.activity_companions" does not exist
+LINE 1: SELECT count(*) FROM atus.activity_companions
+                             ^
+dropped

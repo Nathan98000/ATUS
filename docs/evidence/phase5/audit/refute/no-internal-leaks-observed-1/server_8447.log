@@ -1,0 +1,43 @@
+INFO:     Started server process [87523]
+INFO:     Waiting for application startup.
+15:30:05 WARNING psycopg.pool: error connecting in 'atus-api': invalid percent-encoded token: "Sup3r%zzSecretPW"
+
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8447 (Press CTRL+C to quit)
+15:30:06 INFO    atus.api: request_id=f92b761804e04cbf GET /health -> 200 in 5.1ms cache=-
+INFO:     127.0.0.1:52733 - "GET /health HTTP/1.1" 200 OK
+15:30:06 INFO    atus.api: request_id=614198b9682e4a96 GET /health -> 200 in 0.2ms cache=-
+INFO:     127.0.0.1:52734 - "GET /health HTTP/1.1" 200 OK
+15:30:06 WARNING psycopg.pool: error connecting in 'atus-api': invalid percent-encoded token: "Sup3r%zzSecretPW"
+
+15:30:06 WARNING psycopg.pool: error connecting in 'atus-api': invalid percent-encoded token: "Sup3r%zzSecretPW"
+
+15:30:07 WARNING psycopg.pool: error connecting in 'atus-api': invalid percent-encoded token: "Sup3r%zzSecretPW"
+
+15:30:08 WARNING psycopg.pool: error connecting in 'atus-api': invalid percent-encoded token: "Sup3r%zzSecretPW"
+
+15:30:09 WARNING psycopg.pool: error connecting in 'atus-api': invalid percent-encoded token: "Sup3r%zzSecretPW"
+
+15:30:12 WARNING psycopg.pool: error connecting in 'atus-api': invalid percent-encoded token: "Sup3r%zzSecretPW"
+
+15:30:13 WARNING psycopg.pool: error connecting in 'atus-api': invalid percent-encoded token: "Sup3r%zzSecretPW"
+
+15:30:16 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:30:16 INFO    atus.api: request_id=010fe6c756984ad5 GET /ready -> 503 in 10006.6ms cache=-
+INFO:     127.0.0.1:52735 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:30:19 WARNING psycopg.pool: error connecting in 'atus-api': invalid percent-encoded token: "Sup3r%zzSecretPW"
+
+15:30:21 WARNING psycopg.pool: error connecting in 'atus-api': invalid percent-encoded token: "Sup3r%zzSecretPW"
+
+15:30:26 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:30:26 INFO    atus.api: request_id=4f131c46fb5749ab GET /api/v1/activities -> 503 in 10005.4ms cache=-
+INFO:     127.0.0.1:52738 - "GET /api/v1/activities HTTP/1.1" 503 Service Unavailable
+15:30:34 WARNING psycopg.pool: error connecting in 'atus-api': invalid percent-encoded token: "Sup3r%zzSecretPW"
+
+15:30:36 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:30:36 INFO    atus.api: request_id=bd245ddcb1e04ed3 GET /api/v1/meta -> 503 in 10008.1ms cache=-
+INFO:     127.0.0.1:52755 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [87523]

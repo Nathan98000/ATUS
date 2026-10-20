@@ -1,0 +1,13 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/conf_str.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:08:42 GMT
+server: uvicorn
+content-length: 954
+content-type: application/json
+x-analysis-key: 7ec9e78c0ddd6a8ed2c3b5f8c1dee1ee3d897659259a5d940ec03c420e886a6d
+x-cache: hit
+vary: Origin
+x-request-id: 38e2668267554307
+
+{"measure":"average_minutes_per_day","estimate":{"value":75.0,"unit":"minutes_per_day","standard_error":5.5901699437494745,"confidence_level":0.9,"ci_lower":65.80498869274857,"ci_upper":84.19501130725143},"years":[2023],"activity":{"label":"3 activity codes","include":["0101"],"exclude":[],"leaf_code_count":3},"population":"civilian noninstitutional population age 15+","n_respondents":3,"n_participants":2,"weighted_population_per_day":0.010958904109589041,"days_in_period":365,"weight":{"scheme":"multiyear","bls_variable":"TUFNWGTP","column":"respondents.final_weight"},"variance_method":"replicate","analytics_version":"0.2","spec":{"measure":"average_minutes_per_day","activity":{"include":["0101"],"exclude":[],"label":null},"years":[2023],"population":{},"weights":"multiyear","variance":"replicate","confidence_level":0.9},"warnings":["Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."]}
+### status=200 time_total=0.003429s size_download=954 size_upload=142

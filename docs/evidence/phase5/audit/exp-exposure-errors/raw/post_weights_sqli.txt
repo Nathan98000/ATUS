@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/weights_sqli.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:43 GMT
+server: uvicorn
+content-length: 224
+content-type: application/json
+vary: Origin
+x-request-id: 8e3d21aa28304558
+
+{"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","weights"],"message":"Input should be 'multiyear' or 'pandemic'","type":"literal_error"}]}}}
+### status=422 time_total=0.003603s size_download=224 size_upload=171

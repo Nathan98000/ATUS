@@ -1,0 +1,9 @@
+5df5be75c8b37980 {'activity': {'include': ['0101']}, 'years': [2023]}
+772174d479894e1c {'activity': {'include': ['0101'], 'label': 'a'}, 'years': [2023]}
+50f364e41379e02e {'activity': {'include': ['0101'], 'label': 'b'}, 'years': [2023]}
+fdf5013c57884ad9 {'activity': {'include': ['0101', '0101']}, 'years': [2023]}
+16e83a344942feb6 {'activity': {'include': ['0101', '0101', '0101']}, 'years': [2023]}
+803cf92b7f60be98 {'activity': {'include': ['0101']}, 'years': [2023], 'confidence_level': 0.9500001}
+3dc77ba8b1a86be8 {'activity': {'include': ['0101']}, 'years': [2023], 'confidence_level': 0.95000000001}
+f5c8b7d8288b3739 {'activity': {'include': ['010101', '010102', '010199']}, 'years': [2023]}
+941aa3ab60c2a625 {'activity': {'include': ['0101']}, 'years': [2023], 'variance': 'none'}

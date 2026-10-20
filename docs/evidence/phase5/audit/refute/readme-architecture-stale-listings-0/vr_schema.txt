@@ -1,0 +1,15 @@
+                               Table "atus.validation_results"
+   Column   |           Type           | Collation | Nullable |           Default            
+------------+--------------------------+-----------+----------+------------------------------
+ id         | bigint                   |           | not null | generated always as identity
+ run_at     | timestamp with time zone |           | not null | now()
+ check_name | text                     |           | not null | 
+ severity   | text                     |           | not null | 
+ passed     | boolean                  |           | not null | 
+ observed   | text                     |           |          | 
+ detail     | text                     |           |          | 
+Indexes:
+    "validation_results_pkey" PRIMARY KEY, btree (id)
+Check constraints:
+    "validation_results_severity_check" CHECK (severity = ANY (ARRAY['error'::text, 'warning'::text]))
+

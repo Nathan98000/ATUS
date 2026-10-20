@@ -1,0 +1,5 @@
+atus_refute_dv_a after first load: 0325:run1
+atus_refute_dv_a after reload same db: 0325:run2
+atus_refute_dv_b after first load: 0325:run1
+full db atus: 0325:run1
+dropped

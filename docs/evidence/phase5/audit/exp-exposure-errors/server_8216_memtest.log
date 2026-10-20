@@ -1,0 +1,18 @@
+INFO:     Started server process [80842]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8216 (Press CTRL+C to quit)
+INFO:     127.0.0.1:63075 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63076 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63077 - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:63078 - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:63079 - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:63081 - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:63080 - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:63082 - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:63084 - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:63083 - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [80842]

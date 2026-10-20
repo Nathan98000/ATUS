@@ -1,0 +1,23 @@
+22590:2026-10-20 13:24:01,945.945 atus.api INFO GET /__audit/threads -> 200 in 0.6ms cache=-
+22591:2026-10-20 13:24:06,933.933 atus.api ERROR database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+22592:2026-10-20 13:24:06,933.933 atus.api ERROR database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+22593:2026-10-20 13:24:06,933.933 atus.api INFO POST /api/v1/analysis/estimate -> 503 in 10016.9ms cache=-
+22594:2026-10-20 13:24:06,933.933 atus.api INFO POST /api/v1/analysis/estimate -> 503 in 10017.1ms cache=-
+22595:2026-10-20 13:24:12,063.063 atus.api ERROR database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+22596:2026-10-20 13:24:12,064.064 atus.api INFO POST /api/v1/analysis/estimate -> 503 in 10002.3ms cache=-
+22597:2026-10-20 13:24:20,075.075 atus.api WARNING data version changed during estimate computation; result returned uncached
+22598:2026-10-20 13:24:20,075.075 atus.api WARNING data version changed during estimate computation; result returned uncached
+22599:2026-10-20 13:24:20,077.077 atus.api INFO POST /api/v1/analysis/estimate -> 200 in 23163.7ms cache=miss
+22600:2026-10-20 13:24:20,077.077 atus.api INFO POST /api/v1/analysis/estimate -> 200 in 23168.3ms cache=miss
+22601:2026-10-20 13:24:20,077.077 atus.api WARNING data version changed during estimate computation; result returned uncached
+22602:2026-10-20 13:24:20,077.077 atus.api WARNING data version changed during estimate computation; result returned uncached
+22603:2026-10-20 13:24:20,078.078 atus.api INFO POST /api/v1/analysis/estimate -> 200 in 23162.8ms cache=miss
+22604:2026-10-20 13:24:20,078.078 atus.api INFO POST /api/v1/analysis/estimate -> 200 in 23166.1ms cache=miss
+22605:2026-10-20 13:24:20,078.078 atus.api INFO POST /api/v1/analysis/estimate -> 200 in 23167.7ms cache=miss
+22606:2026-10-20 13:24:20,078.078 atus.api INFO POST /api/v1/analysis/estimate -> 200 in 23165.2ms cache=bypass
+22607:2026-10-20 13:24:20,079.079 atus.api INFO POST /api/v1/analysis/estimate -> 200 in 23169.2ms cache=bypass
+22608:2026-10-20 13:24:20,079.079 atus.api INFO POST /api/v1/analysis/estimate -> 200 in 23167.4ms cache=bypass
+22609:2026-10-20 13:24:20,079.079 atus.api INFO POST /api/v1/analysis/estimate -> 200 in 23163.5ms cache=bypass
+22610:2026-10-20 13:24:20,108.108 atus.api WARNING data version changed during estimate computation; result returned uncached
+22611:2026-10-20 13:24:20,109.109 atus.api INFO POST /api/v1/analysis/estimate -> 200 in 23193.7ms cache=bypass
+22612:2026-10-20 13:24:21,107.107 atus.api INFO GET /__audit/threads -> 200 in 0.5ms cache=-

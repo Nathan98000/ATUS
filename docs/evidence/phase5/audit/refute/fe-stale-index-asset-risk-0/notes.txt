@@ -1,0 +1,6 @@
+- frontend/index.html: single module entry /src/main.tsx; vite.config.ts no build options (no manualChunks)
+- grep 'lazy(|import(|preloadError' frontend/src -> none (no dynamic chunks, no vite:preloadError handler)
+- ErrorBoundary in main.tsx only catches render errors, not entry module load failure
+- API (src/atus_pipeline/api) has no StaticFiles/index.html serving; host not yet chosen
+- CF docs workers/static-assets/routing/single-page-application: SPA fallback serves /index.html 200 for any unmatched request (non-navigation goes to Worker if a Worker script exists)
+- CF docs workers/static-assets/headers: default "Cache-Control: public, max-age=0, must-revalidate"

@@ -1,0 +1,16 @@
+GET /api/v1/activities/0101 -> 200  COUNT=6
+     simple | BEGIN
+     execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent
+     execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent
+     execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent
+     execute <unnamed> | SELECT count(*) FROM atus.activity_codes WHERE code LIKE $1
+     simple | COMMIT
+GET /api/v1/activities?parent=01 -> 200  COUNT=3
+     simple | BEGIN
+     execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent
+     simple | COMMIT
+GET /api/v1/activities/1 -> 404  COUNT=0
+GET /api/v1/activities/9999 -> 404  COUNT=3
+     simple | BEGIN
+     execute <unnamed> | SELECT code, name, level, parent_code, harmonization_note FROM ( SELECT code, name, 1 AS level, NULL AS parent
+     simple | ROLLBACK

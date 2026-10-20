@@ -1,0 +1,168 @@
+{
+  "build_id": "proto-20261020T193421Z-640376fa",
+  "steps": {
+    "migrations + serving schema": 0.16,
+    "source assertions": 0.02,
+    "keys, indexes, FKs": 0.05,
+    "target content hash": 0.04,
+    "source-derived content hash": 0.06,
+    "VACUUM (ANALYZE)": 0.14
+  },
+  "migrations_applied": [
+    "0001_core_schema.sql",
+    "0002_indexes.sql"
+  ],
+  "source_run": {
+    "id": 1,
+    "release": "0325",
+    "pipeline_version": "0.1.0",
+    "finished_at": "2026-10-20T19:34:20.835167+00:00"
+  },
+  "assertions": {
+    "dropped all-NULL replicate rows whose respondent has final_weight > 0": 0,
+    "kept replicate rows with any NULL cell (partial NULLs would change sums)": 0,
+    "dropped all-zero pandemic rows whose respondent has pandemic_weight > 0": 0,
+    "per-(tucaseid, code) summed minutes outside 0..1440": 0,
+    "replicate cells whose numeric -> float8 -> numeric round trip differs": 0,
+    "pandemic replicate cells whose numeric -> float8 -> numeric round trip differs": 0
+  },
+  "copy": {
+    "activity_tier1": {
+      "rows": 18,
+      "binary_bytes": 695,
+      "seconds": 0.01
+    },
+    "activity_tier2": {
+      "rows": 107,
+      "binary_bytes": 5966,
+      "seconds": 0.01
+    },
+    "activity_codes": {
+      "rows": 431,
+      "binary_bytes": 32065,
+      "seconds": 0.01
+    },
+    "respondents": {
+      "rows": 6,
+      "binary_bytes": 417,
+      "seconds": 0.01
+    },
+    "household_members": {
+      "rows": 6,
+      "binary_bytes": 213,
+      "seconds": 0.01
+    },
+    "cps_persons": {
+      "rows": 6,
+      "binary_bytes": 247,
+      "seconds": 0.0
+    },
+    "activities": {
+      "rows": 12,
+      "binary_bytes": 381,
+      "seconds": 0.0
+    },
+    "replicate_weights": {
+      "rows": 5,
+      "binary_bytes": 9691,
+      "seconds": 0.01
+    },
+    "pandemic_replicate_weights": {
+      "rows": 2,
+      "binary_bytes": 3889,
+      "seconds": 0.01
+    }
+  },
+  "content_hash_target": {
+    "content_hash": "6bd5c5329a8d499bbf413801909f85e08c411ece3f27b2a16dc25771ac00ea59",
+    "tables": {
+      "activity_tier1": {
+        "sha256": "d748a01886c1cb668c78c54335875628aa01a3c2e5da3232b26b1e8db6d3cef8",
+        "rows": 18
+      },
+      "activity_tier2": {
+        "sha256": "fdb166a8e70f302bfed3636be6d4af29a1ecb75b04533ab9773e5fcb081147b6",
+        "rows": 107
+      },
+      "activity_codes": {
+        "sha256": "957244a35ea85deec422cb205b4ca77d9826db4d38a393df4951167b3e1667b2",
+        "rows": 431
+      },
+      "respondents": {
+        "sha256": "9ae7fd23392eb6e373a1d2cdf517f7de0e9713e86d1ba64bf91d0cab86b01dc4",
+        "rows": 6
+      },
+      "household_members": {
+        "sha256": "05f5bc2105717d35c79e8dfe4e5e8f82995c56adb7e99e0d0c61fef3de2b5a18",
+        "rows": 6
+      },
+      "cps_persons": {
+        "sha256": "58f1af8e67b1db82dc1668added51e14ffe702bd30aac8920e68cc95d2db1f6a",
+        "rows": 6
+      },
+      "activities": {
+        "sha256": "5a3198e28fce87a117189b9690c706f5866ad72eeacb46ba1de868a4461f80bd",
+        "rows": 12
+      },
+      "replicate_weights": {
+        "sha256": "96f808b353b22147650a51c070d6a8cd0b14ff15617249ac5f6d45d2e11634ba",
+        "rows": 5
+      },
+      "pandemic_replicate_weights": {
+        "sha256": "21e89b37eb5525c5021b96260b663804d125b0e954ab714e9f6a2d254c6c3540",
+        "rows": 2
+      }
+    }
+  },
+  "content_hash_source": {
+    "content_hash": "6bd5c5329a8d499bbf413801909f85e08c411ece3f27b2a16dc25771ac00ea59",
+    "tables": {
+      "activity_tier1": {
+        "sha256": "d748a01886c1cb668c78c54335875628aa01a3c2e5da3232b26b1e8db6d3cef8",
+        "rows": 18
+      },
+      "activity_tier2": {
+        "sha256": "fdb166a8e70f302bfed3636be6d4af29a1ecb75b04533ab9773e5fcb081147b6",
+        "rows": 107
+      },
+      "activity_codes": {
+        "sha256": "957244a35ea85deec422cb205b4ca77d9826db4d38a393df4951167b3e1667b2",
+        "rows": 431
+      },
+      "respondents": {
+        "sha256": "9ae7fd23392eb6e373a1d2cdf517f7de0e9713e86d1ba64bf91d0cab86b01dc4",
+        "rows": 6
+      },
+      "household_members": {
+        "sha256": "05f5bc2105717d35c79e8dfe4e5e8f82995c56adb7e99e0d0c61fef3de2b5a18",
+        "rows": 6
+      },
+      "cps_persons": {
+        "sha256": "58f1af8e67b1db82dc1668added51e14ffe702bd30aac8920e68cc95d2db1f6a",
+        "rows": 6
+      },
+      "activities": {
+        "sha256": "5a3198e28fce87a117189b9690c706f5866ad72eeacb46ba1de868a4461f80bd",
+        "rows": 12
+      },
+      "replicate_weights": {
+        "sha256": "96f808b353b22147650a51c070d6a8cd0b14ff15617249ac5f6d45d2e11634ba",
+        "rows": 5
+      },
+      "pandemic_replicate_weights": {
+        "sha256": "21e89b37eb5525c5021b96260b663804d125b0e954ab714e9f6a2d254c6c3540",
+        "rows": 2
+      }
+    }
+  },
+  "content_hash_match": true,
+  "content_hash_mismatched_tables": [],
+  "ingestion_run": [
+    [
+      1,
+      "0325",
+      "succeeded"
+    ]
+  ],
+  "total_seconds": 0.73
+}

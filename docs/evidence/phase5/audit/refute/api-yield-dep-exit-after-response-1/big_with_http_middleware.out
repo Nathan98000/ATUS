@@ -1,0 +1,5 @@
+t=1.5s not reading: idle in transaction|select 1 /*marker*/
+t=3.0s not reading: idle in transaction|select 1 /*marker*/
+t=4.5s not reading: idle in transaction|select 1 /*marker*/
+t=6.0s not reading: idle in transaction|select 1 /*marker*/
+after reading 20000142 bytes: idle|COMMIT

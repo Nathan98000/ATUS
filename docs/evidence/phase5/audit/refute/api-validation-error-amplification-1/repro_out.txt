@@ -1,0 +1,5 @@
+    raise AttributeError(message.format(self.__class__.__name__, key))
+AttributeError: 'State' object has no attribute 'pool'
+15:26:36 INFO    httpx: HTTP Request: POST http://testserver/api/v1/analysis/estimate "HTTP/1.1 500 Internal Server Error"
+(settings: 'Settings | None' = None, *, open_pool: 'bool' = True) -> 'FastAPI'
+extrakeys 500 930178 101 None {"error":{"code":"internal_error","message":"An unexpected internal error occurred.","details":null}}

@@ -1,0 +1,2 @@
+run_benchmarks raised: InFailedSqlTransaction current transaction is aborted, commands ignored until end of transaction block
+control: [(True, '75.0000 (published 150.0000, |Δ|=75.0000'), (True, '75.0000 (published 150.0000, |Δ|=75.0000'), (True, '75.0000 (published 150.0000, |Δ|=75.0000'), (True, '75.0000 (published 150.0000, |Δ|=75.0000')]

@@ -1,0 +1,3 @@
+13:07:20 INFO    atus.api: request_id=557839e046fd46c0 POST /api/v1/analysis/trend -> 200 in 11589.5ms cache=miss
+13:07:23 INFO    atus.api: request_id=e564469b76a14f82 POST /api/v1/analysis/trend -> 200 in 2.3ms cache=hit
+INFO:     127.0.0.1:61750 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK

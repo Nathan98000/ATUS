@@ -1,0 +1,11 @@
+CREATE INDEX
+ optional_pk_index_size |  bytes   
+------------------------+----------
+ 90 MB                  | 94068736
+(1 row)
+
+DROP DATABASE
+atus
+postgres
+template0
+template1

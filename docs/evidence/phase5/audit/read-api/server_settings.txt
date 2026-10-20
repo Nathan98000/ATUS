@@ -1,0 +1,17 @@
+atus
+atus_audit_empty
+atus_audit_probe
+atus_audit_reload
+atus_e2e
+atus_test
+postgres
+template0
+template1
+100
+
+none
+%m [%p] 
+1s
+0
+0
+14

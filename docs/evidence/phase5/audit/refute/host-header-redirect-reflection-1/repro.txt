@@ -1,0 +1,33 @@
+HTTP/1.1 307 Temporary Redirect
+date: Tue, 20 Oct 2026 19:28:25 GMT
+server: uvicorn
+content-length: 0
+location: http://evil.example/api/v1/meta
+x-request-id: c8456c3c7f7640e5
+
+
+---
+HTTP/1.1 307 Temporary Redirect
+date: Tue, 20 Oct 2026 19:28:25 GMT
+server: uvicorn
+content-length: 0
+location: https://evil.example:443/api/v1/meta
+x-request-id: 71d093df9a9b4092
+
+---
+HTTP/1.1 307 Temporary Redirect
+date: Tue, 20 Oct 2026 19:28:25 GMT
+server: uvicorn
+content-length: 0
+location: http://127.0.0.1:8437/api/v1/meta
+x-request-id: 6c444587538d4e09
+
+---
+HTTP/1.1 404 Not Found
+date: Tue, 20 Oct 2026 19:28:25 GMT
+server: uvicorn
+content-length: 67
+content-type: application/json
+x-request-id: 80240b459cb340eb
+
+{"error":{"code":"not_found","message":"Not Found","details":null}}

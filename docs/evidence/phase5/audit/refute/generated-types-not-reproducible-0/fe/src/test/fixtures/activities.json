@@ -1,0 +1,3897 @@
+{
+  "activities": [
+    {
+      "code": "01",
+      "name": "Personal Care Activities",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "0101",
+      "name": "Sleeping",
+      "level": 2,
+      "parent_code": "01",
+      "harmonization_note": null
+    },
+    {
+      "code": "010101",
+      "name": "Sleeping",
+      "level": 3,
+      "parent_code": "0101",
+      "harmonization_note": null
+    },
+    {
+      "code": "010102",
+      "name": "Sleeplessness",
+      "level": 3,
+      "parent_code": "0101",
+      "harmonization_note": null
+    },
+    {
+      "code": "010199",
+      "name": "Sleeping, n.e.c.*",
+      "level": 3,
+      "parent_code": "0101",
+      "harmonization_note": null
+    },
+    {
+      "code": "0102",
+      "name": "Grooming",
+      "level": 2,
+      "parent_code": "01",
+      "harmonization_note": null
+    },
+    {
+      "code": "010201",
+      "name": "Washing, dressing and grooming oneself",
+      "level": 3,
+      "parent_code": "0102",
+      "harmonization_note": null
+    },
+    {
+      "code": "010299",
+      "name": "Grooming, n.e.c.*",
+      "level": 3,
+      "parent_code": "0102",
+      "harmonization_note": null
+    },
+    {
+      "code": "0103",
+      "name": "Health-related self care",
+      "level": 2,
+      "parent_code": "01",
+      "harmonization_note": null
+    },
+    {
+      "code": "010301",
+      "name": "Health-related self care",
+      "level": 3,
+      "parent_code": "0103",
+      "harmonization_note": null
+    },
+    {
+      "code": "010399",
+      "name": "Self care, n.e.c.*",
+      "level": 3,
+      "parent_code": "0103",
+      "harmonization_note": null
+    },
+    {
+      "code": "0104",
+      "name": "Personal Activities",
+      "level": 2,
+      "parent_code": "01",
+      "harmonization_note": null
+    },
+    {
+      "code": "010401",
+      "name": "Personal/Private activities",
+      "level": 3,
+      "parent_code": "0104",
+      "harmonization_note": null
+    },
+    {
+      "code": "010499",
+      "name": "Personal activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "0104",
+      "harmonization_note": null
+    },
+    {
+      "code": "0105",
+      "name": "Personal Care Emergencies",
+      "level": 2,
+      "parent_code": "01",
+      "harmonization_note": null
+    },
+    {
+      "code": "010501",
+      "name": "Personal emergencies",
+      "level": 3,
+      "parent_code": "0105",
+      "harmonization_note": null
+    },
+    {
+      "code": "010599",
+      "name": "Personal care emergencies, n.e.c.*",
+      "level": 3,
+      "parent_code": "0105",
+      "harmonization_note": null
+    },
+    {
+      "code": "0199",
+      "name": "Personal care, n.e.c.*",
+      "level": 2,
+      "parent_code": "01",
+      "harmonization_note": null
+    },
+    {
+      "code": "019999",
+      "name": "Personal care, n.e.c.*",
+      "level": 3,
+      "parent_code": "0199",
+      "harmonization_note": null
+    },
+    {
+      "code": "02",
+      "name": "Household Activities",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "0201",
+      "name": "Housework",
+      "level": 2,
+      "parent_code": "02",
+      "harmonization_note": null
+    },
+    {
+      "code": "020101",
+      "name": "Interior cleaning",
+      "level": 3,
+      "parent_code": "0201",
+      "harmonization_note": null
+    },
+    {
+      "code": "020102",
+      "name": "Laundry",
+      "level": 3,
+      "parent_code": "0201",
+      "harmonization_note": null
+    },
+    {
+      "code": "020103",
+      "name": "Sewing, repairing, & maintaining textiles",
+      "level": 3,
+      "parent_code": "0201",
+      "harmonization_note": null
+    },
+    {
+      "code": "020104",
+      "name": "Storing interior hh items, inc. food",
+      "level": 3,
+      "parent_code": "0201",
+      "harmonization_note": null
+    },
+    {
+      "code": "020199",
+      "name": "Housework, n.e.c.*",
+      "level": 3,
+      "parent_code": "0201",
+      "harmonization_note": null
+    },
+    {
+      "code": "0202",
+      "name": "Food & Drink Preparation, Presentation, & Clean-up",
+      "level": 2,
+      "parent_code": "02",
+      "harmonization_note": null
+    },
+    {
+      "code": "020201",
+      "name": "Food and drink preparation",
+      "level": 3,
+      "parent_code": "0202",
+      "harmonization_note": null
+    },
+    {
+      "code": "020202",
+      "name": "Food presentation",
+      "level": 3,
+      "parent_code": "0202",
+      "harmonization_note": null
+    },
+    {
+      "code": "020203",
+      "name": "Kitchen and food clean-up",
+      "level": 3,
+      "parent_code": "0202",
+      "harmonization_note": null
+    },
+    {
+      "code": "020299",
+      "name": "Food & drink prep, presentation, & clean-up, n.e.c.*",
+      "level": 3,
+      "parent_code": "0202",
+      "harmonization_note": null
+    },
+    {
+      "code": "0203",
+      "name": "Interior Maintenance, Repair & Decoration",
+      "level": 2,
+      "parent_code": "02",
+      "harmonization_note": null
+    },
+    {
+      "code": "020301",
+      "name": "Interior arrangement, decoration, & repairs",
+      "level": 3,
+      "parent_code": "0203",
+      "harmonization_note": null
+    },
+    {
+      "code": "020302",
+      "name": "Building and repairing furniture",
+      "level": 3,
+      "parent_code": "0203",
+      "harmonization_note": null
+    },
+    {
+      "code": "020303",
+      "name": "Heating and cooling",
+      "level": 3,
+      "parent_code": "0203",
+      "harmonization_note": null
+    },
+    {
+      "code": "020399",
+      "name": "Interior maintenance, repair, & decoration, n.e.c.*",
+      "level": 3,
+      "parent_code": "0203",
+      "harmonization_note": null
+    },
+    {
+      "code": "0204",
+      "name": "Exterior Maintenance, Repair & Decoration",
+      "level": 2,
+      "parent_code": "02",
+      "harmonization_note": null
+    },
+    {
+      "code": "020401",
+      "name": "Exterior cleaning",
+      "level": 3,
+      "parent_code": "0204",
+      "harmonization_note": null
+    },
+    {
+      "code": "020402",
+      "name": "Exterior repair, improvements, & decoration",
+      "level": 3,
+      "parent_code": "0204",
+      "harmonization_note": null
+    },
+    {
+      "code": "020499",
+      "name": "Exterior maintenance, repair & decoration, n.e.c.*",
+      "level": 3,
+      "parent_code": "0204",
+      "harmonization_note": null
+    },
+    {
+      "code": "0205",
+      "name": "Lawn, Garden, and Houseplants",
+      "level": 2,
+      "parent_code": "02",
+      "harmonization_note": null
+    },
+    {
+      "code": "020501",
+      "name": "Lawn, garden, and houseplant care",
+      "level": 3,
+      "parent_code": "0205",
+      "harmonization_note": null
+    },
+    {
+      "code": "020502",
+      "name": "Ponds, pools, and hot tubs",
+      "level": 3,
+      "parent_code": "0205",
+      "harmonization_note": null
+    },
+    {
+      "code": "020599",
+      "name": "Lawn and garden, n.e.c.*",
+      "level": 3,
+      "parent_code": "0205",
+      "harmonization_note": null
+    },
+    {
+      "code": "0206",
+      "name": "Animals and Pets",
+      "level": 2,
+      "parent_code": "02",
+      "harmonization_note": null
+    },
+    {
+      "code": "020681",
+      "name": "Care for animals and pets (not veterinary care)",
+      "level": 3,
+      "parent_code": "0206",
+      "harmonization_note": "includes 020601 (all years), 020602 (2008 and later years)"
+    },
+    {
+      "code": "020699",
+      "name": "Pet and animal care, n.e.c.*",
+      "level": 3,
+      "parent_code": "0206",
+      "harmonization_note": null
+    },
+    {
+      "code": "0207",
+      "name": "Vehicles",
+      "level": 2,
+      "parent_code": "02",
+      "harmonization_note": null
+    },
+    {
+      "code": "020701",
+      "name": "Vehicle repair and maintenance (by self)",
+      "level": 3,
+      "parent_code": "0207",
+      "harmonization_note": null
+    },
+    {
+      "code": "020799",
+      "name": "Vehicles, n.e.c.*",
+      "level": 3,
+      "parent_code": "0207",
+      "harmonization_note": null
+    },
+    {
+      "code": "0208",
+      "name": "Appliances, Tools, and Toys",
+      "level": 2,
+      "parent_code": "02",
+      "harmonization_note": null
+    },
+    {
+      "code": "020801",
+      "name": "Appliance, tool, and toy set-up, repair, & maintenance (by self)",
+      "level": 3,
+      "parent_code": "0208",
+      "harmonization_note": null
+    },
+    {
+      "code": "020899",
+      "name": "Appliances and tools, n.e.c.*",
+      "level": 3,
+      "parent_code": "0208",
+      "harmonization_note": null
+    },
+    {
+      "code": "0209",
+      "name": "Household Management",
+      "level": 2,
+      "parent_code": "02",
+      "harmonization_note": null
+    },
+    {
+      "code": "020901",
+      "name": "Financial management",
+      "level": 3,
+      "parent_code": "0209",
+      "harmonization_note": null
+    },
+    {
+      "code": "020902",
+      "name": "Household & personal organization and planning",
+      "level": 3,
+      "parent_code": "0209",
+      "harmonization_note": null
+    },
+    {
+      "code": "020903",
+      "name": "HH & personal mail & messages (except e-mail)",
+      "level": 3,
+      "parent_code": "0209",
+      "harmonization_note": null
+    },
+    {
+      "code": "020904",
+      "name": "HH & personal e-mail and messages",
+      "level": 3,
+      "parent_code": "0209",
+      "harmonization_note": null
+    },
+    {
+      "code": "020905",
+      "name": "Home security",
+      "level": 3,
+      "parent_code": "0209",
+      "harmonization_note": null
+    },
+    {
+      "code": "020999",
+      "name": "Household management, n.e.c.*",
+      "level": 3,
+      "parent_code": "0209",
+      "harmonization_note": null
+    },
+    {
+      "code": "0299",
+      "name": "Household activities, n.e.c.*",
+      "level": 2,
+      "parent_code": "02",
+      "harmonization_note": null
+    },
+    {
+      "code": "029999",
+      "name": "Household activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "0299",
+      "harmonization_note": null
+    },
+    {
+      "code": "03",
+      "name": "Caring For & Helping Household (HH) Members",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "0301",
+      "name": "Caring For & Helping HH Children",
+      "level": 2,
+      "parent_code": "03",
+      "harmonization_note": null
+    },
+    {
+      "code": "030101",
+      "name": "Physical care for hh children",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": null
+    },
+    {
+      "code": "030102",
+      "name": "Reading to/with hh children",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": null
+    },
+    {
+      "code": "030103",
+      "name": "Playing with hh children, not sports",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": null
+    },
+    {
+      "code": "030104",
+      "name": "Arts and crafts with hh children",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": null
+    },
+    {
+      "code": "030105",
+      "name": "Playing sports with hh children",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": null
+    },
+    {
+      "code": "030108",
+      "name": "Organization & planning for hh children",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": null
+    },
+    {
+      "code": "030109",
+      "name": "Looking after hh children (as a primary activity)",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": null
+    },
+    {
+      "code": "030110",
+      "name": "Attending hh children's events",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": null
+    },
+    {
+      "code": "030111",
+      "name": "Waiting for/with hh children",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": null
+    },
+    {
+      "code": "030112",
+      "name": "Picking up/dropping off hh children",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": null
+    },
+    {
+      "code": "030186",
+      "name": "Talking with/listening to hh children",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": "includes 030106 (all years), 030107 (2003)"
+    },
+    {
+      "code": "030199",
+      "name": "Caring for & helping hh children, n.e.c.*",
+      "level": 3,
+      "parent_code": "0301",
+      "harmonization_note": null
+    },
+    {
+      "code": "0302",
+      "name": "Activities Related to HH Children's Education",
+      "level": 2,
+      "parent_code": "03",
+      "harmonization_note": null
+    },
+    {
+      "code": "030201",
+      "name": "Homework (hh children)",
+      "level": 3,
+      "parent_code": "0302",
+      "harmonization_note": null
+    },
+    {
+      "code": "030202",
+      "name": "Meetings and school conferences (hh children)",
+      "level": 3,
+      "parent_code": "0302",
+      "harmonization_note": null
+    },
+    {
+      "code": "030203",
+      "name": "Home schooling of hh children",
+      "level": 3,
+      "parent_code": "0302",
+      "harmonization_note": null
+    },
+    {
+      "code": "030204",
+      "name": "Waiting associated with hh children's education",
+      "level": 3,
+      "parent_code": "0302",
+      "harmonization_note": null
+    },
+    {
+      "code": "030299",
+      "name": "Activities related to hh child's education, n.e.c.*",
+      "level": 3,
+      "parent_code": "0302",
+      "harmonization_note": null
+    },
+    {
+      "code": "0303",
+      "name": "Activities Related to HH Children's Health",
+      "level": 2,
+      "parent_code": "03",
+      "harmonization_note": null
+    },
+    {
+      "code": "030301",
+      "name": "Providing medical care to hh children",
+      "level": 3,
+      "parent_code": "0303",
+      "harmonization_note": null
+    },
+    {
+      "code": "030302",
+      "name": "Obtaining medical care for hh children",
+      "level": 3,
+      "parent_code": "0303",
+      "harmonization_note": null
+    },
+    {
+      "code": "030303",
+      "name": "Waiting associated with hh children's health",
+      "level": 3,
+      "parent_code": "0303",
+      "harmonization_note": null
+    },
+    {
+      "code": "030399",
+      "name": "Activities related to hh child's health, n.e.c.*",
+      "level": 3,
+      "parent_code": "0303",
+      "harmonization_note": null
+    },
+    {
+      "code": "0304",
+      "name": "Caring for Household Adults",
+      "level": 2,
+      "parent_code": "03",
+      "harmonization_note": null
+    },
+    {
+      "code": "030401",
+      "name": "Physical care for hh adults",
+      "level": 3,
+      "parent_code": "0304",
+      "harmonization_note": null
+    },
+    {
+      "code": "030402",
+      "name": "Looking after hh adult (as a primary activity)",
+      "level": 3,
+      "parent_code": "0304",
+      "harmonization_note": null
+    },
+    {
+      "code": "030403",
+      "name": "Providing medical care to hh adult",
+      "level": 3,
+      "parent_code": "0304",
+      "harmonization_note": null
+    },
+    {
+      "code": "030404",
+      "name": "Obtaining medical and care services for hh adult",
+      "level": 3,
+      "parent_code": "0304",
+      "harmonization_note": null
+    },
+    {
+      "code": "030405",
+      "name": "Waiting associated with caring for household adults",
+      "level": 3,
+      "parent_code": "0304",
+      "harmonization_note": null
+    },
+    {
+      "code": "030499",
+      "name": "Caring for household adults, n.e.c.*",
+      "level": 3,
+      "parent_code": "0304",
+      "harmonization_note": null
+    },
+    {
+      "code": "0305",
+      "name": "Helping Household Adults",
+      "level": 2,
+      "parent_code": "03",
+      "harmonization_note": null
+    },
+    {
+      "code": "030501",
+      "name": "Helping hh adults",
+      "level": 3,
+      "parent_code": "0305",
+      "harmonization_note": null
+    },
+    {
+      "code": "030502",
+      "name": "Organization & planning for hh adults",
+      "level": 3,
+      "parent_code": "0305",
+      "harmonization_note": null
+    },
+    {
+      "code": "030503",
+      "name": "Picking up/dropping off hh adult",
+      "level": 3,
+      "parent_code": "0305",
+      "harmonization_note": null
+    },
+    {
+      "code": "030504",
+      "name": "Waiting associated with helping hh adults",
+      "level": 3,
+      "parent_code": "0305",
+      "harmonization_note": null
+    },
+    {
+      "code": "030599",
+      "name": "Helping household adults, n.e.c.*",
+      "level": 3,
+      "parent_code": "0305",
+      "harmonization_note": null
+    },
+    {
+      "code": "0399",
+      "name": "Caring For & Helping NonHH Members",
+      "level": 2,
+      "parent_code": "03",
+      "harmonization_note": null
+    },
+    {
+      "code": "039999",
+      "name": "Caring for & helping hh members, n.e.c.*",
+      "level": 3,
+      "parent_code": "0399",
+      "harmonization_note": null
+    },
+    {
+      "code": "04",
+      "name": "Caring For & Helping Nonhousehold (NonHH) Members",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "0401",
+      "name": "Caring for & Helping Nonhousehold Children",
+      "level": 2,
+      "parent_code": "04",
+      "harmonization_note": null
+    },
+    {
+      "code": "040101",
+      "name": "Physical care for nonhh children",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": null
+    },
+    {
+      "code": "040102",
+      "name": "Reading to/with nonhh children",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": null
+    },
+    {
+      "code": "040103",
+      "name": "Playing with nonhh children, not sports",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": null
+    },
+    {
+      "code": "040104",
+      "name": "Arts and crafts with nonhh children",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": null
+    },
+    {
+      "code": "040105",
+      "name": "Playing sports with nonhh children",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": null
+    },
+    {
+      "code": "040108",
+      "name": "Organization & planning for nonhh children",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": null
+    },
+    {
+      "code": "040109",
+      "name": "Looking after nonhh children (as primary activity)",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": null
+    },
+    {
+      "code": "040110",
+      "name": "Attending nonhh children's events",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": null
+    },
+    {
+      "code": "040111",
+      "name": "Waiting for/with nonhh children",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": null
+    },
+    {
+      "code": "040112",
+      "name": "Dropping off/picking up nonhh children",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": null
+    },
+    {
+      "code": "040186",
+      "name": "Talking with/listening to nonhh children",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": "Includes 040106 (all years), 040107 (2003)"
+    },
+    {
+      "code": "040199",
+      "name": "Caring for and helping nonhh children, n.e.c.*",
+      "level": 3,
+      "parent_code": "0401",
+      "harmonization_note": null
+    },
+    {
+      "code": "0402",
+      "name": "Activities Related to Nonhh Children's Education",
+      "level": 2,
+      "parent_code": "04",
+      "harmonization_note": null
+    },
+    {
+      "code": "040201",
+      "name": "Homework (nonhh children)",
+      "level": 3,
+      "parent_code": "0402",
+      "harmonization_note": null
+    },
+    {
+      "code": "040202",
+      "name": "Meetings and school conferences (nonhh children)",
+      "level": 3,
+      "parent_code": "0402",
+      "harmonization_note": null
+    },
+    {
+      "code": "040203",
+      "name": "Home schooling of nonhh children",
+      "level": 3,
+      "parent_code": "0402",
+      "harmonization_note": null
+    },
+    {
+      "code": "040204",
+      "name": "Waiting associated with nonhh children's education",
+      "level": 3,
+      "parent_code": "0402",
+      "harmonization_note": null
+    },
+    {
+      "code": "040299",
+      "name": "Activities related to nonhh child's educ., n.e.c.*",
+      "level": 3,
+      "parent_code": "0402",
+      "harmonization_note": null
+    },
+    {
+      "code": "0403",
+      "name": "Activities Related to Nonhh Children's Health",
+      "level": 2,
+      "parent_code": "04",
+      "harmonization_note": null
+    },
+    {
+      "code": "040301",
+      "name": "Providing medical care to nonhh children",
+      "level": 3,
+      "parent_code": "0403",
+      "harmonization_note": null
+    },
+    {
+      "code": "040302",
+      "name": "Obtaining medical care for nonhh children",
+      "level": 3,
+      "parent_code": "0403",
+      "harmonization_note": null
+    },
+    {
+      "code": "040303",
+      "name": "Waiting associated with nonhh children's health",
+      "level": 3,
+      "parent_code": "0403",
+      "harmonization_note": null
+    },
+    {
+      "code": "040399",
+      "name": "Activities related to nonhh child's health, n.e.c.*",
+      "level": 3,
+      "parent_code": "0403",
+      "harmonization_note": null
+    },
+    {
+      "code": "0404",
+      "name": "Caring For Nonhousehold Adults",
+      "level": 2,
+      "parent_code": "04",
+      "harmonization_note": null
+    },
+    {
+      "code": "040401",
+      "name": "Physical care for nonhh adults",
+      "level": 3,
+      "parent_code": "0404",
+      "harmonization_note": null
+    },
+    {
+      "code": "040402",
+      "name": "Looking after nonhh adult (as a primary activity)",
+      "level": 3,
+      "parent_code": "0404",
+      "harmonization_note": null
+    },
+    {
+      "code": "040403",
+      "name": "Providing medical care to nonhh adult",
+      "level": 3,
+      "parent_code": "0404",
+      "harmonization_note": null
+    },
+    {
+      "code": "040404",
+      "name": "Obtaining medical and care services for nonhh adult",
+      "level": 3,
+      "parent_code": "0404",
+      "harmonization_note": null
+    },
+    {
+      "code": "040405",
+      "name": "Waiting associated with caring for nonhh adults",
+      "level": 3,
+      "parent_code": "0404",
+      "harmonization_note": null
+    },
+    {
+      "code": "040499",
+      "name": "Caring for nonhh adults, n.e.c.*",
+      "level": 3,
+      "parent_code": "0404",
+      "harmonization_note": null
+    },
+    {
+      "code": "0405",
+      "name": "Helping Nonhousehold Adults",
+      "level": 2,
+      "parent_code": "04",
+      "harmonization_note": null
+    },
+    {
+      "code": "040501",
+      "name": "Housework, cooking, & shopping assistance for nonhh adults",
+      "level": 3,
+      "parent_code": "0405",
+      "harmonization_note": null
+    },
+    {
+      "code": "040502",
+      "name": "House & lawn maintenance & repair assistance for nonhh adults",
+      "level": 3,
+      "parent_code": "0405",
+      "harmonization_note": null
+    },
+    {
+      "code": "040503",
+      "name": "Animal & pet care assistance for nonhh adults",
+      "level": 3,
+      "parent_code": "0405",
+      "harmonization_note": null
+    },
+    {
+      "code": "040504",
+      "name": "Vehicle & appliance maintenance/repair assistance for nonhh adults",
+      "level": 3,
+      "parent_code": "0405",
+      "harmonization_note": null
+    },
+    {
+      "code": "040505",
+      "name": "Financial management assistance for nonhh adults",
+      "level": 3,
+      "parent_code": "0405",
+      "harmonization_note": null
+    },
+    {
+      "code": "040506",
+      "name": "Household management & paperwork assistance for nonhh adults",
+      "level": 3,
+      "parent_code": "0405",
+      "harmonization_note": null
+    },
+    {
+      "code": "040507",
+      "name": "Picking up/dropping off nonhh adult",
+      "level": 3,
+      "parent_code": "0405",
+      "harmonization_note": null
+    },
+    {
+      "code": "040508",
+      "name": "Waiting associated with helping nonhh adults",
+      "level": 3,
+      "parent_code": "0405",
+      "harmonization_note": null
+    },
+    {
+      "code": "040599",
+      "name": "Helping nonhh adults, n.e.c.*",
+      "level": 3,
+      "parent_code": "0405",
+      "harmonization_note": null
+    },
+    {
+      "code": "0499",
+      "name": "Caring For & Helping Nonhousehold Adults, n.e.c.*",
+      "level": 2,
+      "parent_code": "04",
+      "harmonization_note": null
+    },
+    {
+      "code": "049999",
+      "name": "Caring for & helping nonhh members, n.e.c.*",
+      "level": 3,
+      "parent_code": "0499",
+      "harmonization_note": null
+    },
+    {
+      "code": "05",
+      "name": "Work & Work-Related Activities",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "0501",
+      "name": "Working",
+      "level": 2,
+      "parent_code": "05",
+      "harmonization_note": null
+    },
+    {
+      "code": "050101",
+      "name": "Work, main job",
+      "level": 3,
+      "parent_code": "0501",
+      "harmonization_note": null
+    },
+    {
+      "code": "050102",
+      "name": "Work, other job(s)",
+      "level": 3,
+      "parent_code": "0501",
+      "harmonization_note": null
+    },
+    {
+      "code": "050103",
+      "name": "Security procedures related to work",
+      "level": 3,
+      "parent_code": "0501",
+      "harmonization_note": null
+    },
+    {
+      "code": "050189",
+      "name": "Working, n.e.c.*",
+      "level": 3,
+      "parent_code": "0501",
+      "harmonization_note": "Includes 050104 (2004 and later years); 050199 (all years)"
+    },
+    {
+      "code": "0502",
+      "name": "Work-Related Activities",
+      "level": 2,
+      "parent_code": "05",
+      "harmonization_note": null
+    },
+    {
+      "code": "050201",
+      "name": "Socializing, relaxing, and leisure as part of job",
+      "level": 3,
+      "parent_code": "0502",
+      "harmonization_note": null
+    },
+    {
+      "code": "050202",
+      "name": "Eating and drinking as part of job",
+      "level": 3,
+      "parent_code": "0502",
+      "harmonization_note": null
+    },
+    {
+      "code": "050203",
+      "name": "Sports and exercise as part of job",
+      "level": 3,
+      "parent_code": "0502",
+      "harmonization_note": null
+    },
+    {
+      "code": "050204",
+      "name": "Security procedures as part of job",
+      "level": 3,
+      "parent_code": "0502",
+      "harmonization_note": null
+    },
+    {
+      "code": "050289",
+      "name": "Work-related activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "0502",
+      "harmonization_note": "Includes 050205 (2004 and later years); 050299 (all years)"
+    },
+    {
+      "code": "0503",
+      "name": "Other Income-Generating Activities",
+      "level": 2,
+      "parent_code": "05",
+      "harmonization_note": null
+    },
+    {
+      "code": "050301",
+      "name": "Income-generating hobbies, crafts, and food",
+      "level": 3,
+      "parent_code": "0503",
+      "harmonization_note": null
+    },
+    {
+      "code": "050302",
+      "name": "Income-generating performances",
+      "level": 3,
+      "parent_code": "0503",
+      "harmonization_note": null
+    },
+    {
+      "code": "050303",
+      "name": "Income-generating services",
+      "level": 3,
+      "parent_code": "0503",
+      "harmonization_note": null
+    },
+    {
+      "code": "050304",
+      "name": "Income-generating rental property activities",
+      "level": 3,
+      "parent_code": "0503",
+      "harmonization_note": null
+    },
+    {
+      "code": "050389",
+      "name": "Other income-generating activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "0503",
+      "harmonization_note": "Includes 050305 (2004 and later years); 050399 (All years)"
+    },
+    {
+      "code": "0504",
+      "name": "Job Search and Interviewing",
+      "level": 2,
+      "parent_code": "05",
+      "harmonization_note": null
+    },
+    {
+      "code": "050403",
+      "name": "Job interviewing",
+      "level": 3,
+      "parent_code": "0504",
+      "harmonization_note": null
+    },
+    {
+      "code": "050404",
+      "name": "Waiting associated with job search or interview",
+      "level": 3,
+      "parent_code": "0504",
+      "harmonization_note": null
+    },
+    {
+      "code": "050405",
+      "name": "Security procedures rel. to job search/interviewing",
+      "level": 3,
+      "parent_code": "0504",
+      "harmonization_note": null
+    },
+    {
+      "code": "050481",
+      "name": "Job search activities",
+      "level": 3,
+      "parent_code": "0504",
+      "harmonization_note": "Includes 050401 (All years); 050402 (2003-2004)"
+    },
+    {
+      "code": "050499",
+      "name": "Job search and Interviewing, n.e.c.*",
+      "level": 3,
+      "parent_code": "0504",
+      "harmonization_note": null
+    },
+    {
+      "code": "0599",
+      "name": "Work and Work-Related Activities, n.e.c.*",
+      "level": 2,
+      "parent_code": "05",
+      "harmonization_note": null
+    },
+    {
+      "code": "059999",
+      "name": "Work and work-related activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "0599",
+      "harmonization_note": null
+    },
+    {
+      "code": "06",
+      "name": "Education",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "0601",
+      "name": "Taking Class",
+      "level": 2,
+      "parent_code": "06",
+      "harmonization_note": null
+    },
+    {
+      "code": "060101",
+      "name": "Taking class for degree, certification, or licensure",
+      "level": 3,
+      "parent_code": "0601",
+      "harmonization_note": null
+    },
+    {
+      "code": "060102",
+      "name": "Taking class for personal interest",
+      "level": 3,
+      "parent_code": "0601",
+      "harmonization_note": null
+    },
+    {
+      "code": "060103",
+      "name": "Waiting associated with taking classes",
+      "level": 3,
+      "parent_code": "0601",
+      "harmonization_note": null
+    },
+    {
+      "code": "060104",
+      "name": "Security procedures rel. to taking classes",
+      "level": 3,
+      "parent_code": "0601",
+      "harmonization_note": null
+    },
+    {
+      "code": "060199",
+      "name": "Taking class, n.e.c.*",
+      "level": 3,
+      "parent_code": "0601",
+      "harmonization_note": null
+    },
+    {
+      "code": "0602",
+      "name": "Extracurricular School Activities (Except Sports)",
+      "level": 2,
+      "parent_code": "06",
+      "harmonization_note": null
+    },
+    {
+      "code": "060201",
+      "name": "Extracurricular club activities",
+      "level": 3,
+      "parent_code": "0602",
+      "harmonization_note": null
+    },
+    {
+      "code": "060202",
+      "name": "Extracurricular music & performance activities",
+      "level": 3,
+      "parent_code": "0602",
+      "harmonization_note": null
+    },
+    {
+      "code": "060203",
+      "name": "Extracurricular student government activities",
+      "level": 3,
+      "parent_code": "0602",
+      "harmonization_note": null
+    },
+    {
+      "code": "060289",
+      "name": "Education-related extracurricular activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "0602",
+      "harmonization_note": "Includes 060204 (2004 and later years); 060299 (all years)"
+    },
+    {
+      "code": "0603",
+      "name": "Research/Homework",
+      "level": 2,
+      "parent_code": "06",
+      "harmonization_note": null
+    },
+    {
+      "code": "060301",
+      "name": "Research/homework for class for degree, certification, or licensure",
+      "level": 3,
+      "parent_code": "0603",
+      "harmonization_note": null
+    },
+    {
+      "code": "060302",
+      "name": "Research/homework for class for pers. interest",
+      "level": 3,
+      "parent_code": "0603",
+      "harmonization_note": null
+    },
+    {
+      "code": "060303",
+      "name": "Waiting associated with research/homework",
+      "level": 3,
+      "parent_code": "0603",
+      "harmonization_note": null
+    },
+    {
+      "code": "060399",
+      "name": "Research/homework n.e.c.*",
+      "level": 3,
+      "parent_code": "0603",
+      "harmonization_note": null
+    },
+    {
+      "code": "0604",
+      "name": "Registration/Administrative activities",
+      "level": 2,
+      "parent_code": "06",
+      "harmonization_note": null
+    },
+    {
+      "code": "060401",
+      "name": "Administrative activities: class for degree, certification, or licensure",
+      "level": 3,
+      "parent_code": "0604",
+      "harmonization_note": null
+    },
+    {
+      "code": "060402",
+      "name": "Administrative activities: class for personal interest",
+      "level": 3,
+      "parent_code": "0604",
+      "harmonization_note": null
+    },
+    {
+      "code": "060403",
+      "name": "Waiting associated w/admin. activities (education)",
+      "level": 3,
+      "parent_code": "0604",
+      "harmonization_note": null
+    },
+    {
+      "code": "060499",
+      "name": "Administrative for education, n.e.c.*",
+      "level": 3,
+      "parent_code": "0604",
+      "harmonization_note": null
+    },
+    {
+      "code": "0699",
+      "name": "Education, n.e.c.*",
+      "level": 2,
+      "parent_code": "06",
+      "harmonization_note": null
+    },
+    {
+      "code": "069999",
+      "name": "Education, n.e.c.*",
+      "level": 3,
+      "parent_code": "0699",
+      "harmonization_note": null
+    },
+    {
+      "code": "07",
+      "name": "Consumer Purchases",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "0701",
+      "name": "Shopping (Store, Telephone, Internet)",
+      "level": 2,
+      "parent_code": "07",
+      "harmonization_note": null
+    },
+    {
+      "code": "070101",
+      "name": "Grocery shopping",
+      "level": 3,
+      "parent_code": "0701",
+      "harmonization_note": null
+    },
+    {
+      "code": "070102",
+      "name": "Purchasing gas",
+      "level": 3,
+      "parent_code": "0701",
+      "harmonization_note": null
+    },
+    {
+      "code": "070103",
+      "name": "Purchasing food (not groceries)",
+      "level": 3,
+      "parent_code": "0701",
+      "harmonization_note": null
+    },
+    {
+      "code": "070104",
+      "name": "Shopping, except groceries, food and gas",
+      "level": 3,
+      "parent_code": "0701",
+      "harmonization_note": null
+    },
+    {
+      "code": "070105",
+      "name": "Waiting associated with shopping",
+      "level": 3,
+      "parent_code": "0701",
+      "harmonization_note": null
+    },
+    {
+      "code": "070199",
+      "name": "Shopping, n.e.c.*",
+      "level": 3,
+      "parent_code": "0701",
+      "harmonization_note": null
+    },
+    {
+      "code": "0702",
+      "name": "Researching Purchases",
+      "level": 2,
+      "parent_code": "07",
+      "harmonization_note": null
+    },
+    {
+      "code": "070201",
+      "name": "Comparison shopping",
+      "level": 3,
+      "parent_code": "0702",
+      "harmonization_note": null
+    },
+    {
+      "code": "070299",
+      "name": "Researching purchases, n.e.c.*",
+      "level": 3,
+      "parent_code": "0702",
+      "harmonization_note": null
+    },
+    {
+      "code": "0703",
+      "name": "Security Procedures Related to Consumer Purchases",
+      "level": 2,
+      "parent_code": "07",
+      "harmonization_note": null
+    },
+    {
+      "code": "070301",
+      "name": "Security procedures rel. to consumer purchases",
+      "level": 3,
+      "parent_code": "0703",
+      "harmonization_note": null
+    },
+    {
+      "code": "070399",
+      "name": "Security procedures rel. to consumer purchases, n.e.c.*",
+      "level": 3,
+      "parent_code": "0703",
+      "harmonization_note": null
+    },
+    {
+      "code": "0799",
+      "name": "Consumer Purchases, n.e.c.*",
+      "level": 2,
+      "parent_code": "07",
+      "harmonization_note": null
+    },
+    {
+      "code": "079999",
+      "name": "Consumer purchases, n.e.c.*",
+      "level": 3,
+      "parent_code": "0799",
+      "harmonization_note": null
+    },
+    {
+      "code": "08",
+      "name": "Professional & Personal Care Services",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "0801",
+      "name": "Professional & Personal Care Services",
+      "level": 2,
+      "parent_code": "08",
+      "harmonization_note": null
+    },
+    {
+      "code": "080101",
+      "name": "Using paid childcare services",
+      "level": 3,
+      "parent_code": "0801",
+      "harmonization_note": null
+    },
+    {
+      "code": "080102",
+      "name": "Waiting associated w/purchasing childcare svcs",
+      "level": 3,
+      "parent_code": "0801",
+      "harmonization_note": null
+    },
+    {
+      "code": "080199",
+      "name": "Using paid childcare services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0801",
+      "harmonization_note": null
+    },
+    {
+      "code": "0802",
+      "name": "Financial Services and Banking",
+      "level": 2,
+      "parent_code": "08",
+      "harmonization_note": null
+    },
+    {
+      "code": "080201",
+      "name": "Banking",
+      "level": 3,
+      "parent_code": "0802",
+      "harmonization_note": null
+    },
+    {
+      "code": "080202",
+      "name": "Using other financial services",
+      "level": 3,
+      "parent_code": "0802",
+      "harmonization_note": null
+    },
+    {
+      "code": "080203",
+      "name": "Waiting associated w/banking/financial services",
+      "level": 3,
+      "parent_code": "0802",
+      "harmonization_note": null
+    },
+    {
+      "code": "080299",
+      "name": "Using financial services and banking, n.e.c.*",
+      "level": 3,
+      "parent_code": "0802",
+      "harmonization_note": null
+    },
+    {
+      "code": "0803",
+      "name": "Legal Services",
+      "level": 2,
+      "parent_code": "08",
+      "harmonization_note": null
+    },
+    {
+      "code": "080301",
+      "name": "Using legal services",
+      "level": 3,
+      "parent_code": "0803",
+      "harmonization_note": null
+    },
+    {
+      "code": "080302",
+      "name": "Waiting associated with legal services",
+      "level": 3,
+      "parent_code": "0803",
+      "harmonization_note": null
+    },
+    {
+      "code": "080399",
+      "name": "Using legal services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0803",
+      "harmonization_note": null
+    },
+    {
+      "code": "0804",
+      "name": "Medical and Care Services",
+      "level": 2,
+      "parent_code": "08",
+      "harmonization_note": null
+    },
+    {
+      "code": "080401",
+      "name": "Using health and care services outside the home",
+      "level": 3,
+      "parent_code": "0804",
+      "harmonization_note": null
+    },
+    {
+      "code": "080402",
+      "name": "Using in-home health and care services",
+      "level": 3,
+      "parent_code": "0804",
+      "harmonization_note": null
+    },
+    {
+      "code": "080403",
+      "name": "Waiting associated with medical services",
+      "level": 3,
+      "parent_code": "0804",
+      "harmonization_note": null
+    },
+    {
+      "code": "080499",
+      "name": "Using medical services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0804",
+      "harmonization_note": null
+    },
+    {
+      "code": "0805",
+      "name": "Personal Care Services",
+      "level": 2,
+      "parent_code": "08",
+      "harmonization_note": null
+    },
+    {
+      "code": "080501",
+      "name": "Using personal care services",
+      "level": 3,
+      "parent_code": "0805",
+      "harmonization_note": null
+    },
+    {
+      "code": "080502",
+      "name": "Waiting associated w/personal care services",
+      "level": 3,
+      "parent_code": "0805",
+      "harmonization_note": null
+    },
+    {
+      "code": "080599",
+      "name": "Using personal care services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0805",
+      "harmonization_note": null
+    },
+    {
+      "code": "0806",
+      "name": "Real Estate",
+      "level": 2,
+      "parent_code": "08",
+      "harmonization_note": null
+    },
+    {
+      "code": "080601",
+      "name": "Activities rel. to purchasing/selling real estate",
+      "level": 3,
+      "parent_code": "0806",
+      "harmonization_note": null
+    },
+    {
+      "code": "080602",
+      "name": "Waiting associated w/purchasing/selling real estate",
+      "level": 3,
+      "parent_code": "0806",
+      "harmonization_note": null
+    },
+    {
+      "code": "080699",
+      "name": "Using real estate services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0806",
+      "harmonization_note": null
+    },
+    {
+      "code": "0807",
+      "name": "Veterinary Services (excluding grooming)",
+      "level": 2,
+      "parent_code": "08",
+      "harmonization_note": null
+    },
+    {
+      "code": "080701",
+      "name": "Using veterinary services",
+      "level": 3,
+      "parent_code": "0807",
+      "harmonization_note": null
+    },
+    {
+      "code": "080702",
+      "name": "Waiting associated with veterinary services",
+      "level": 3,
+      "parent_code": "0807",
+      "harmonization_note": null
+    },
+    {
+      "code": "080799",
+      "name": "Using veterinary services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0807",
+      "harmonization_note": null
+    },
+    {
+      "code": "0808",
+      "name": "Security Procedures Related to Professional/Personal Services",
+      "level": 2,
+      "parent_code": "08",
+      "harmonization_note": null
+    },
+    {
+      "code": "080801",
+      "name": "Security procedures rel. to professional/personal svcs.",
+      "level": 3,
+      "parent_code": "0808",
+      "harmonization_note": null
+    },
+    {
+      "code": "080899",
+      "name": "Security procedures rel. to professional/personal svcs n.e.c.*",
+      "level": 3,
+      "parent_code": "0808",
+      "harmonization_note": null
+    },
+    {
+      "code": "0899",
+      "name": "Professional and Personal Services, n.e.c.*",
+      "level": 2,
+      "parent_code": "08",
+      "harmonization_note": null
+    },
+    {
+      "code": "089999",
+      "name": "Professional and personal services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0899",
+      "harmonization_note": null
+    },
+    {
+      "code": "09",
+      "name": "Household Services",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "0901",
+      "name": "Household Services (not done by self)",
+      "level": 2,
+      "parent_code": "09",
+      "harmonization_note": null
+    },
+    {
+      "code": "090101",
+      "name": "Using interior cleaning services",
+      "level": 3,
+      "parent_code": "0901",
+      "harmonization_note": null
+    },
+    {
+      "code": "090102",
+      "name": "Using meal preparation services",
+      "level": 3,
+      "parent_code": "0901",
+      "harmonization_note": null
+    },
+    {
+      "code": "090103",
+      "name": "Using clothing repair and cleaning services",
+      "level": 3,
+      "parent_code": "0901",
+      "harmonization_note": null
+    },
+    {
+      "code": "090104",
+      "name": "Waiting associated with using household services",
+      "level": 3,
+      "parent_code": "0901",
+      "harmonization_note": null
+    },
+    {
+      "code": "090199",
+      "name": "Using household services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0901",
+      "harmonization_note": null
+    },
+    {
+      "code": "0902",
+      "name": "Home Maintenance/Repair/D\u00e9cor/Construction (not done by self)",
+      "level": 2,
+      "parent_code": "09",
+      "harmonization_note": null
+    },
+    {
+      "code": "090201",
+      "name": "Using home maint/repair/d\u00e9cor/construction svcs",
+      "level": 3,
+      "parent_code": "0902",
+      "harmonization_note": null
+    },
+    {
+      "code": "090202",
+      "name": "Waiting associated w/ home main/repair/d\u00e9cor/constr",
+      "level": 3,
+      "parent_code": "0902",
+      "harmonization_note": null
+    },
+    {
+      "code": "090299",
+      "name": "Using home maint/repair/d\u00e9cor/constr services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0902",
+      "harmonization_note": null
+    },
+    {
+      "code": "0903",
+      "name": "Pet Services (not done by self, not vet)",
+      "level": 2,
+      "parent_code": "09",
+      "harmonization_note": null
+    },
+    {
+      "code": "090301",
+      "name": "Using pet services",
+      "level": 3,
+      "parent_code": "0903",
+      "harmonization_note": null
+    },
+    {
+      "code": "090302",
+      "name": "Waiting associated with pet services",
+      "level": 3,
+      "parent_code": "0903",
+      "harmonization_note": null
+    },
+    {
+      "code": "090399",
+      "name": "Using pet services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0903",
+      "harmonization_note": null
+    },
+    {
+      "code": "0904",
+      "name": "Lawn & Garden Services (not done by self)",
+      "level": 2,
+      "parent_code": "09",
+      "harmonization_note": null
+    },
+    {
+      "code": "090401",
+      "name": "Using lawn and garden services",
+      "level": 3,
+      "parent_code": "0904",
+      "harmonization_note": null
+    },
+    {
+      "code": "090402",
+      "name": "Waiting associated with using lawn & garden services",
+      "level": 3,
+      "parent_code": "0904",
+      "harmonization_note": null
+    },
+    {
+      "code": "090499",
+      "name": "Using lawn and garden services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0904",
+      "harmonization_note": null
+    },
+    {
+      "code": "0905",
+      "name": "Vehicle Maintenance & Repair Services (not done by self)",
+      "level": 2,
+      "parent_code": "09",
+      "harmonization_note": null
+    },
+    {
+      "code": "090501",
+      "name": "Using vehicle maintenance or repair services",
+      "level": 3,
+      "parent_code": "0905",
+      "harmonization_note": null
+    },
+    {
+      "code": "090502",
+      "name": "Waiting associated with vehicle main. or repair svcs",
+      "level": 3,
+      "parent_code": "0905",
+      "harmonization_note": null
+    },
+    {
+      "code": "090599",
+      "name": "Using vehicle maint. & repair svcs, n.e.c.*",
+      "level": 3,
+      "parent_code": "0905",
+      "harmonization_note": null
+    },
+    {
+      "code": "0999",
+      "name": "Household Services, n.e.c.*",
+      "level": 2,
+      "parent_code": "09",
+      "harmonization_note": null
+    },
+    {
+      "code": "099999",
+      "name": "Using household services, n.e.c.*",
+      "level": 3,
+      "parent_code": "0999",
+      "harmonization_note": null
+    },
+    {
+      "code": "10",
+      "name": "Government Services & Civic Obligations",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "1001",
+      "name": "Using Government Services",
+      "level": 2,
+      "parent_code": "10",
+      "harmonization_note": null
+    },
+    {
+      "code": "100101",
+      "name": "Using police and fire services",
+      "level": 3,
+      "parent_code": "1001",
+      "harmonization_note": null
+    },
+    {
+      "code": "100102",
+      "name": "Using social services",
+      "level": 3,
+      "parent_code": "1001",
+      "harmonization_note": null
+    },
+    {
+      "code": "100103",
+      "name": "Obtaining licenses & paying fines, fees, taxes",
+      "level": 3,
+      "parent_code": "1001",
+      "harmonization_note": null
+    },
+    {
+      "code": "100199",
+      "name": "Using government services, n.e.c.*",
+      "level": 3,
+      "parent_code": "1001",
+      "harmonization_note": null
+    },
+    {
+      "code": "1002",
+      "name": "Civic Obligations & Participation",
+      "level": 2,
+      "parent_code": "10",
+      "harmonization_note": null
+    },
+    {
+      "code": "100201",
+      "name": "Civic obligations & participation",
+      "level": 3,
+      "parent_code": "1002",
+      "harmonization_note": null
+    },
+    {
+      "code": "100299",
+      "name": "Civic obligations & participation, n.e.c.*",
+      "level": 3,
+      "parent_code": "1002",
+      "harmonization_note": null
+    },
+    {
+      "code": "1003",
+      "name": "Waiting Associated w/ Government Services or Civic Obligations",
+      "level": 2,
+      "parent_code": "10",
+      "harmonization_note": null
+    },
+    {
+      "code": "100381",
+      "name": "Waiting associated with using government services",
+      "level": 3,
+      "parent_code": "1003",
+      "harmonization_note": "Includes 100301 (2003-2007), 100302 (2003-2007), 100304 (2008 and later years)."
+    },
+    {
+      "code": "100383",
+      "name": "Waiting associated w/civic obligations & participation",
+      "level": 3,
+      "parent_code": "1003",
+      "harmonization_note": "Includes 100303 (2003-2007), 100305 (2008 and later years)"
+    },
+    {
+      "code": "100399",
+      "name": "Waiting assoc. w/govt svcs or civic obligations, n.e.c.*",
+      "level": 3,
+      "parent_code": "1003",
+      "harmonization_note": null
+    },
+    {
+      "code": "1004",
+      "name": "Security Procedures Related to Government Services or Civic Obligations",
+      "level": 2,
+      "parent_code": "10",
+      "harmonization_note": null
+    },
+    {
+      "code": "100401",
+      "name": "Security procedures rel. to govt svcs/civic obligations",
+      "level": 3,
+      "parent_code": "1004",
+      "harmonization_note": null
+    },
+    {
+      "code": "100499",
+      "name": "Security procedures rel. to govt svcs/civic obligations, n.e.c.*",
+      "level": 3,
+      "parent_code": "1004",
+      "harmonization_note": null
+    },
+    {
+      "code": "1099",
+      "name": "Government services, n.e.c.*",
+      "level": 2,
+      "parent_code": "10",
+      "harmonization_note": null
+    },
+    {
+      "code": "109999",
+      "name": "Government services, n.e.c.*",
+      "level": 3,
+      "parent_code": "1099",
+      "harmonization_note": null
+    },
+    {
+      "code": "11",
+      "name": "Eating and Drinking",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "1101",
+      "name": "Eating and Drinking",
+      "level": 2,
+      "parent_code": "11",
+      "harmonization_note": null
+    },
+    {
+      "code": "110101",
+      "name": "Eating and drinking",
+      "level": 3,
+      "parent_code": "1101",
+      "harmonization_note": null
+    },
+    {
+      "code": "110199",
+      "name": "Eating and drinking, n.e.c.*",
+      "level": 3,
+      "parent_code": "1101",
+      "harmonization_note": null
+    },
+    {
+      "code": "1102",
+      "name": "Waiting associated with Eating & Drinking",
+      "level": 2,
+      "parent_code": "11",
+      "harmonization_note": null
+    },
+    {
+      "code": "110281",
+      "name": "Waiting associated w/eating & drinking",
+      "level": 3,
+      "parent_code": "1102",
+      "harmonization_note": "Includes 110201 (All years); 110202, 110203 (2003)"
+    },
+    {
+      "code": "110289",
+      "name": "Waiting associated with eating & drinking, n.e.c.*",
+      "level": 3,
+      "parent_code": "1102",
+      "harmonization_note": "Includes 110204 (2003); 110299 (All years)"
+    },
+    {
+      "code": "1199",
+      "name": "Eating and Drinking, n.e.c.*",
+      "level": 2,
+      "parent_code": "11",
+      "harmonization_note": null
+    },
+    {
+      "code": "119999",
+      "name": "Eating and drinking, n.e.c.*",
+      "level": 3,
+      "parent_code": "1199",
+      "harmonization_note": null
+    },
+    {
+      "code": "12",
+      "name": "Socializing, Relaxing, and Leisure",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "1201",
+      "name": "Socializing and Communicating",
+      "level": 2,
+      "parent_code": "12",
+      "harmonization_note": null
+    },
+    {
+      "code": "120101",
+      "name": "Socializing and communicating with others",
+      "level": 3,
+      "parent_code": "1201",
+      "harmonization_note": null
+    },
+    {
+      "code": "120199",
+      "name": "Socializing and communicating, n.e.c.*",
+      "level": 3,
+      "parent_code": "1201",
+      "harmonization_note": null
+    },
+    {
+      "code": "1202",
+      "name": "Attending or Hosting Social Events",
+      "level": 2,
+      "parent_code": "12",
+      "harmonization_note": null
+    },
+    {
+      "code": "120201",
+      "name": "Attending or hosting parties/receptions/ceremonies",
+      "level": 3,
+      "parent_code": "1202",
+      "harmonization_note": null
+    },
+    {
+      "code": "120202",
+      "name": "Attending meetings for personal interest (not volunteering)",
+      "level": 3,
+      "parent_code": "1202",
+      "harmonization_note": null
+    },
+    {
+      "code": "120299",
+      "name": "Attending/hosting social events, n.e.c.*",
+      "level": 3,
+      "parent_code": "1202",
+      "harmonization_note": null
+    },
+    {
+      "code": "1203",
+      "name": "Relaxing and Leisure",
+      "level": 2,
+      "parent_code": "12",
+      "harmonization_note": null
+    },
+    {
+      "code": "120301",
+      "name": "Relaxing, thinking",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120302",
+      "name": "Tobacco and drug use",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120303",
+      "name": "Television and movies (not religious)",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120304",
+      "name": "Television (religious)",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120305",
+      "name": "Listening to the radio",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120306",
+      "name": "Listening to/playing music (not radio)",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120307",
+      "name": "Playing games",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120308",
+      "name": "Computer use for leisure (exc. Games)",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120309",
+      "name": "Arts and crafts as a hobby",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120310",
+      "name": "Collecting as a hobby",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120311",
+      "name": "Hobbies, except arts & crafts and collecting",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120312",
+      "name": "Reading for personal interest",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120313",
+      "name": "Writing for personal interest",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "120399",
+      "name": "Relaxing and leisure, n.e.c.*",
+      "level": 3,
+      "parent_code": "1203",
+      "harmonization_note": null
+    },
+    {
+      "code": "1204",
+      "name": "Arts and Entertainment (other than sports)",
+      "level": 2,
+      "parent_code": "12",
+      "harmonization_note": null
+    },
+    {
+      "code": "120401",
+      "name": "Attending performing arts",
+      "level": 3,
+      "parent_code": "1204",
+      "harmonization_note": null
+    },
+    {
+      "code": "120402",
+      "name": "Attending museums",
+      "level": 3,
+      "parent_code": "1204",
+      "harmonization_note": null
+    },
+    {
+      "code": "120403",
+      "name": "Attending movies/film",
+      "level": 3,
+      "parent_code": "1204",
+      "harmonization_note": null
+    },
+    {
+      "code": "120404",
+      "name": "Attending gambling establishments",
+      "level": 3,
+      "parent_code": "1204",
+      "harmonization_note": null
+    },
+    {
+      "code": "120405",
+      "name": "Security procedures rel. to arts & entertainment",
+      "level": 3,
+      "parent_code": "1204",
+      "harmonization_note": null
+    },
+    {
+      "code": "120499",
+      "name": "Arts and entertainment, n.e.c.*",
+      "level": 3,
+      "parent_code": "1204",
+      "harmonization_note": null
+    },
+    {
+      "code": "1205",
+      "name": "Waiting associated with Socializing, Relaxing, and Leisure",
+      "level": 2,
+      "parent_code": "12",
+      "harmonization_note": null
+    },
+    {
+      "code": "120501",
+      "name": "Waiting assoc. w/socializing & communicating",
+      "level": 3,
+      "parent_code": "1205",
+      "harmonization_note": null
+    },
+    {
+      "code": "120502",
+      "name": "Waiting assoc. w/attending/hosting social events",
+      "level": 3,
+      "parent_code": "1205",
+      "harmonization_note": null
+    },
+    {
+      "code": "120503",
+      "name": "Waiting associated with relaxing/leisure",
+      "level": 3,
+      "parent_code": "1205",
+      "harmonization_note": null
+    },
+    {
+      "code": "120504",
+      "name": "Waiting associated with arts & entertainment",
+      "level": 3,
+      "parent_code": "1205",
+      "harmonization_note": null
+    },
+    {
+      "code": "120599",
+      "name": "Waiting associated with socializing, n.e.c.*",
+      "level": 3,
+      "parent_code": "1205",
+      "harmonization_note": null
+    },
+    {
+      "code": "1299",
+      "name": "Socializing, Relaxing, and Leisure, n.e.c.*",
+      "level": 2,
+      "parent_code": "12",
+      "harmonization_note": null
+    },
+    {
+      "code": "129999",
+      "name": "Socializing, relaxing, and leisure, n.e.c.*",
+      "level": 3,
+      "parent_code": "1299",
+      "harmonization_note": null
+    },
+    {
+      "code": "13",
+      "name": "Sports, Exercise, & Recreation",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "1301",
+      "name": "Participating in Sports, Exercise, and Recreation",
+      "level": 2,
+      "parent_code": "13",
+      "harmonization_note": null
+    },
+    {
+      "code": "130101",
+      "name": "Doing aerobics",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130102",
+      "name": "Playing baseball",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130103",
+      "name": "Playing basketball",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130104",
+      "name": "Biking",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130105",
+      "name": "Playing billiards",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130106",
+      "name": "Boating",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130107",
+      "name": "Bowling",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130108",
+      "name": "Climbing, spelunking, caving",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130109",
+      "name": "Dancing",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130110",
+      "name": "Participating in equestrian sports",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130111",
+      "name": "Fencing",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130112",
+      "name": "Fishing",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130113",
+      "name": "Playing football",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130114",
+      "name": "Golfing",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130115",
+      "name": "Doing gymnastics",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130116",
+      "name": "Hiking",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130117",
+      "name": "Playing hockey",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130118",
+      "name": "Hunting",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130119",
+      "name": "Participating in martial arts",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130120",
+      "name": "Playing racquet sports",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130121",
+      "name": "Participating in rodeo competitions",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": "The activity category \"Rollerblading\" (2003-2023) was renamed to \"Roller skating, inline"
+    },
+    {
+      "code": "130122",
+      "name": "Roller skating, inline skating, skateboarding",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": "skating, skateboarding\" in 2024."
+    },
+    {
+      "code": "130123",
+      "name": "Playing rugby",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130124",
+      "name": "Running",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130125",
+      "name": "Skiing, ice skating, snowboarding",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130126",
+      "name": "Playing soccer",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130127",
+      "name": "Softball",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130128",
+      "name": "Using cardiovascular equipment",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130129",
+      "name": "Vehicle touring/racing",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130130",
+      "name": "Playing volleyball",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130131",
+      "name": "Walking",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130132",
+      "name": "Participating in water sports",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130133",
+      "name": "Weightlifting/strength training",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130134",
+      "name": "Working out, unspecified",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130135",
+      "name": "Wrestling",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130136",
+      "name": "Doing yoga",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "130199",
+      "name": "Playing sports n.e.c.*",
+      "level": 3,
+      "parent_code": "1301",
+      "harmonization_note": null
+    },
+    {
+      "code": "1302",
+      "name": "Attending Sports/Recreational Events",
+      "level": 2,
+      "parent_code": "13",
+      "harmonization_note": null
+    },
+    {
+      "code": "130201",
+      "name": "Watching aerobics",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130202",
+      "name": "Watching baseball",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130203",
+      "name": "Watching basketball",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130204",
+      "name": "Watching biking",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130205",
+      "name": "Watching billiards",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130206",
+      "name": "Watching boating",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130207",
+      "name": "Watching bowling",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130208",
+      "name": "Watching climbing, spelunking, caving",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130209",
+      "name": "Watching dancing",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130210",
+      "name": "Watching equestrian sports",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130211",
+      "name": "Watching fencing",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130212",
+      "name": "Watching fishing",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130213",
+      "name": "Watching football",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130214",
+      "name": "Watching golfing",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130215",
+      "name": "Watching gymnastics",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130216",
+      "name": "Watching hockey",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130217",
+      "name": "Watching martial arts",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130218",
+      "name": "Watching racquet sports",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130219",
+      "name": "Watching rodeo competitions",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": "The activity category \"Watching rollerblading\" (2003-2023) was renamed to \"Watching roller"
+    },
+    {
+      "code": "130220",
+      "name": "Watching roller skating, inline skating, skateboarding",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": "skating, inline skating, skateboarding\" in 2024."
+    },
+    {
+      "code": "130221",
+      "name": "Watching rugby",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130222",
+      "name": "Watching running",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130223",
+      "name": "Watching skiing, ice skating, snowboarding",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130224",
+      "name": "Watching soccer",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130225",
+      "name": "Watching softball",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130226",
+      "name": "Watching vehicle touring/racing",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130227",
+      "name": "Watching volleyball",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130228",
+      "name": "Watching walking",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130229",
+      "name": "Watching water sports",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130230",
+      "name": "Watching weightlifting/strength training",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130231",
+      "name": "Watching people working out, unspecified",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130232",
+      "name": "Watching wrestling",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "130299",
+      "name": "Attending sporting events, n.e.c.*",
+      "level": 3,
+      "parent_code": "1302",
+      "harmonization_note": null
+    },
+    {
+      "code": "1303",
+      "name": "Waiting Associated with Sports, Exercise, & Recreation",
+      "level": 2,
+      "parent_code": "13",
+      "harmonization_note": null
+    },
+    {
+      "code": "130301",
+      "name": "Waiting related to playing sports or exercising",
+      "level": 3,
+      "parent_code": "1303",
+      "harmonization_note": null
+    },
+    {
+      "code": "130302",
+      "name": "Waiting related to attending sporting events",
+      "level": 3,
+      "parent_code": "1303",
+      "harmonization_note": null
+    },
+    {
+      "code": "130399",
+      "name": "Waiting associated with sports, exercise, & recreation, n.e.c.*",
+      "level": 3,
+      "parent_code": "1303",
+      "harmonization_note": null
+    },
+    {
+      "code": "1304",
+      "name": "Security Procedures Related to Sports, Exercise, & Recreation",
+      "level": 2,
+      "parent_code": "13",
+      "harmonization_note": null
+    },
+    {
+      "code": "130401",
+      "name": "Security related to playing sports or exercising",
+      "level": 3,
+      "parent_code": "1304",
+      "harmonization_note": null
+    },
+    {
+      "code": "130402",
+      "name": "Security related to attending sporting events",
+      "level": 3,
+      "parent_code": "1304",
+      "harmonization_note": null
+    },
+    {
+      "code": "130499",
+      "name": "Security related to sports, exercise, & recreation, n.e.c.*",
+      "level": 3,
+      "parent_code": "1304",
+      "harmonization_note": null
+    },
+    {
+      "code": "1399",
+      "name": "Sports, Exercise, and Recreation, n.e.c.*",
+      "level": 2,
+      "parent_code": "13",
+      "harmonization_note": null
+    },
+    {
+      "code": "139999",
+      "name": "Sports, exercise, & recreation, n.e.c.*",
+      "level": 3,
+      "parent_code": "1399",
+      "harmonization_note": null
+    },
+    {
+      "code": "14",
+      "name": "Religious and Spiritual Activities",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "1401",
+      "name": "Religious/Spiritual Practices",
+      "level": 2,
+      "parent_code": "14",
+      "harmonization_note": null
+    },
+    {
+      "code": "140101",
+      "name": "Attending religious services",
+      "level": 3,
+      "parent_code": "1401",
+      "harmonization_note": null
+    },
+    {
+      "code": "140102",
+      "name": "Participation in religious practices",
+      "level": 3,
+      "parent_code": "1401",
+      "harmonization_note": null
+    },
+    {
+      "code": "140103",
+      "name": "Waiting associated w/religious & spiritual activities",
+      "level": 3,
+      "parent_code": "1401",
+      "harmonization_note": null
+    },
+    {
+      "code": "140104",
+      "name": "Security procedures rel. to religious & spiritual activities",
+      "level": 3,
+      "parent_code": "1401",
+      "harmonization_note": "The activity category \"Religious education activities\" (140105) was added to the lexicon in 2007. Examples previously classified as \"Taking class for personal interest\" (060102) were moved to 140105. This re-classification had a small impact on the ATUS estimates for these"
+    },
+    {
+      "code": "140105",
+      "name": "Religious education activities",
+      "level": 3,
+      "parent_code": "1401",
+      "harmonization_note": "categories."
+    },
+    {
+      "code": "1499",
+      "name": "Religious and Spiritual Practices, n.e.c.*",
+      "level": 2,
+      "parent_code": "14",
+      "harmonization_note": null
+    },
+    {
+      "code": "149999",
+      "name": "Religious and spiritual activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "1499",
+      "harmonization_note": null
+    },
+    {
+      "code": "15",
+      "name": "Volunteer Activities",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "1501",
+      "name": "Administrative & Support Activities",
+      "level": 2,
+      "parent_code": "15",
+      "harmonization_note": null
+    },
+    {
+      "code": "150101",
+      "name": "Computer use",
+      "level": 3,
+      "parent_code": "1501",
+      "harmonization_note": null
+    },
+    {
+      "code": "150102",
+      "name": "Organizing and preparing",
+      "level": 3,
+      "parent_code": "1501",
+      "harmonization_note": null
+    },
+    {
+      "code": "150103",
+      "name": "Reading",
+      "level": 3,
+      "parent_code": "1501",
+      "harmonization_note": null
+    },
+    {
+      "code": "150104",
+      "name": "Telephone calls (except hotline counseling)",
+      "level": 3,
+      "parent_code": "1501",
+      "harmonization_note": null
+    },
+    {
+      "code": "150105",
+      "name": "Writing",
+      "level": 3,
+      "parent_code": "1501",
+      "harmonization_note": null
+    },
+    {
+      "code": "150106",
+      "name": "Fundraising",
+      "level": 3,
+      "parent_code": "1501",
+      "harmonization_note": null
+    },
+    {
+      "code": "150199",
+      "name": "Administrative & support activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "1501",
+      "harmonization_note": null
+    },
+    {
+      "code": "1502",
+      "name": "Social Service & Care Activities (Except Medical)",
+      "level": 2,
+      "parent_code": "15",
+      "harmonization_note": null
+    },
+    {
+      "code": "150201",
+      "name": "Food preparation, presentation, clean-up",
+      "level": 3,
+      "parent_code": "1502",
+      "harmonization_note": null
+    },
+    {
+      "code": "150202",
+      "name": "Collecting & delivering clothing & other goods",
+      "level": 3,
+      "parent_code": "1502",
+      "harmonization_note": null
+    },
+    {
+      "code": "150203",
+      "name": "Providing care",
+      "level": 3,
+      "parent_code": "1502",
+      "harmonization_note": null
+    },
+    {
+      "code": "150204",
+      "name": "Teaching, leading, counseling, mentoring",
+      "level": 3,
+      "parent_code": "1502",
+      "harmonization_note": null
+    },
+    {
+      "code": "150299",
+      "name": "Social service & care activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "1502",
+      "harmonization_note": null
+    },
+    {
+      "code": "1503",
+      "name": "Indoor & Outdoor Maintenance, Building, & Clean-up Activities",
+      "level": 2,
+      "parent_code": "15",
+      "harmonization_note": null
+    },
+    {
+      "code": "150301",
+      "name": "Building houses, wildlife sites, & other structures",
+      "level": 3,
+      "parent_code": "1503",
+      "harmonization_note": null
+    },
+    {
+      "code": "150302",
+      "name": "Indoor & outdoor maintenance, repair, & clean-up",
+      "level": 3,
+      "parent_code": "1503",
+      "harmonization_note": null
+    },
+    {
+      "code": "150399",
+      "name": "Indoor & outdoor maintenance, building & clean-up activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "1503",
+      "harmonization_note": null
+    },
+    {
+      "code": "1504",
+      "name": "Participating in Performance & Cultural Activities",
+      "level": 2,
+      "parent_code": "15",
+      "harmonization_note": null
+    },
+    {
+      "code": "150401",
+      "name": "Performing",
+      "level": 3,
+      "parent_code": "1504",
+      "harmonization_note": null
+    },
+    {
+      "code": "150402",
+      "name": "Serving at volunteer events & cultural activities",
+      "level": 3,
+      "parent_code": "1504",
+      "harmonization_note": null
+    },
+    {
+      "code": "150499",
+      "name": "Participating in performance & cultural activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "1504",
+      "harmonization_note": null
+    },
+    {
+      "code": "1505",
+      "name": "Attending Meetings, Conferences, & Training",
+      "level": 2,
+      "parent_code": "15",
+      "harmonization_note": null
+    },
+    {
+      "code": "150501",
+      "name": "Attending meetings, conferences, & training",
+      "level": 3,
+      "parent_code": "1505",
+      "harmonization_note": null
+    },
+    {
+      "code": "150599",
+      "name": "Attending meetings, conferences, & training, n.e.c.*",
+      "level": 3,
+      "parent_code": "1505",
+      "harmonization_note": null
+    },
+    {
+      "code": "1506",
+      "name": "Public Health & Safety Activities",
+      "level": 2,
+      "parent_code": "15",
+      "harmonization_note": null
+    },
+    {
+      "code": "150601",
+      "name": "Public health activities",
+      "level": 3,
+      "parent_code": "1506",
+      "harmonization_note": null
+    },
+    {
+      "code": "150602",
+      "name": "Public safety activities",
+      "level": 3,
+      "parent_code": "1506",
+      "harmonization_note": null
+    },
+    {
+      "code": "150699",
+      "name": "Public health & safety activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "1506",
+      "harmonization_note": "Includes Waiting Associated with Volunteer Activities; Security Procedures Associated with Volunteer Activities;"
+    },
+    {
+      "code": "1599",
+      "name": "Volunteer Activities, n.e.c.* Volunteer activities, n.e.c.*",
+      "level": 2,
+      "parent_code": "15",
+      "harmonization_note": null
+    },
+    {
+      "code": "159989",
+      "name": "Volunteer activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "1599",
+      "harmonization_note": "150801, 150899 (2007 and later years); 159999 (All years)"
+    },
+    {
+      "code": "16",
+      "name": "Telephone Calls",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "1601",
+      "name": "Telephone Calls (to or from)",
+      "level": 2,
+      "parent_code": "16",
+      "harmonization_note": null
+    },
+    {
+      "code": "160101",
+      "name": "Telephone calls to/from family members",
+      "level": 3,
+      "parent_code": "1601",
+      "harmonization_note": null
+    },
+    {
+      "code": "160102",
+      "name": "Telephone calls to/from friends, neighbors, or acquaintances",
+      "level": 3,
+      "parent_code": "1601",
+      "harmonization_note": null
+    },
+    {
+      "code": "160103",
+      "name": "Telephone calls to/from education services providers",
+      "level": 3,
+      "parent_code": "1601",
+      "harmonization_note": null
+    },
+    {
+      "code": "160104",
+      "name": "Telephone calls to/from salespeople",
+      "level": 3,
+      "parent_code": "1601",
+      "harmonization_note": null
+    },
+    {
+      "code": "160105",
+      "name": "Telephone calls to/from professional or personal care svcs providers",
+      "level": 3,
+      "parent_code": "1601",
+      "harmonization_note": null
+    },
+    {
+      "code": "160106",
+      "name": "Telephone calls to/from household services providers",
+      "level": 3,
+      "parent_code": "1601",
+      "harmonization_note": null
+    },
+    {
+      "code": "160107",
+      "name": "Telephone calls to/from paid child or adult care providers",
+      "level": 3,
+      "parent_code": "1601",
+      "harmonization_note": null
+    },
+    {
+      "code": "160108",
+      "name": "Telephone calls to/from government officials",
+      "level": 3,
+      "parent_code": "1601",
+      "harmonization_note": "Includes Waiting Associated with telephone calls; Telephone calls (to or from), n.e.c.*;"
+    },
+    {
+      "code": "1699",
+      "name": "Telephone Calls, n.e.c.* Telephone calls, n.e.c.*",
+      "level": 2,
+      "parent_code": "16",
+      "harmonization_note": null
+    },
+    {
+      "code": "169989",
+      "name": "Telephone calls, n.e.c.*",
+      "level": 3,
+      "parent_code": "1699",
+      "harmonization_note": "Includes 160199, 160201, 160299 (2004 and later years); 169999 (All years)"
+    },
+    {
+      "code": "18",
+      "name": "Traveling",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "1801",
+      "name": "Travel Related to Personal Care",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "180101",
+      "name": "Travel related to personal care",
+      "level": 3,
+      "parent_code": "1801",
+      "harmonization_note": "includes 170101 (2003-2004), 180101 (2005 and later years)"
+    },
+    {
+      "code": "180199",
+      "name": "Travel related to personal care, n.e.c.*",
+      "level": 3,
+      "parent_code": "1801",
+      "harmonization_note": "includes 170199 (2003-2004), 180199 (2005 and later years)"
+    },
+    {
+      "code": "1802",
+      "name": "Travel Related to Household Activities",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "180280",
+      "name": "Travel related to household activities",
+      "level": 3,
+      "parent_code": "1802",
+      "harmonization_note": "and later years)"
+    },
+    {
+      "code": "1803",
+      "name": "Travel Related to Caring For & Helping Household Members",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "180381",
+      "name": "Travel related to caring for and helping hh children",
+      "level": 3,
+      "parent_code": "1803",
+      "harmonization_note": "Includes 170301 (2003, 2004); 180301, 180302, 180303 (2005 and later years)"
+    },
+    {
+      "code": "180382",
+      "name": "Travel related to caring for and helping hh adults",
+      "level": 3,
+      "parent_code": "1803",
+      "harmonization_note": "Includes 170302 (2003, 2004); 180304, 180305 (2005 and later years)"
+    },
+    {
+      "code": "180399",
+      "name": "Travel rel. to caring for & helping hh members, n.e.c.*",
+      "level": 3,
+      "parent_code": "1803",
+      "harmonization_note": "Includes 170399 (2003-2004); 180399 (2005 and later years)"
+    },
+    {
+      "code": "1804",
+      "name": "Travel Related to Caring For & Helping Nonhousehold Members",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "180481",
+      "name": "Travel related to caring for and helping nonhh children",
+      "level": 3,
+      "parent_code": "1804",
+      "harmonization_note": "Includes 170401 (2003-2004); 180401, 180402, 180403 (2005 and later years)"
+    },
+    {
+      "code": "180482",
+      "name": "Travel related to caring for and helping nonhh adults",
+      "level": 3,
+      "parent_code": "1804",
+      "harmonization_note": "Includes 170402 (2003-2004); 180404, 180405 (2005 and later years)"
+    },
+    {
+      "code": "180499",
+      "name": "Travel rel. to caring for & helping nonhh members, n.e.c.*",
+      "level": 3,
+      "parent_code": "1804",
+      "harmonization_note": "includes 170499 (2003-2004); 180499 (2005 and later years)"
+    },
+    {
+      "code": "1805",
+      "name": "Travel Related to Work",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "180501",
+      "name": "Travel related to working",
+      "level": 3,
+      "parent_code": "1805",
+      "harmonization_note": "includes 170501 (2003-2004); 180501 (2005 and later years)"
+    },
+    {
+      "code": "180502",
+      "name": "Travel related to work-related activities",
+      "level": 3,
+      "parent_code": "1805",
+      "harmonization_note": "includes 170502 (2003-2004); 180502 (2005 and later years) Includes 170503, 170504 (2004); 170599 (2003-2004);"
+    },
+    {
+      "code": "180589",
+      "name": "Travel related to work, n.e.c.*",
+      "level": 3,
+      "parent_code": "1805",
+      "harmonization_note": "180503, 180504, 180599 (2005 and later years)"
+    },
+    {
+      "code": "1806",
+      "name": "Travel Related to Education",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "180601",
+      "name": "Travel related to taking class",
+      "level": 3,
+      "parent_code": "1806",
+      "harmonization_note": "includes 170601 (2003-2004); 180601 (2005 and later years)"
+    },
+    {
+      "code": "180682",
+      "name": "Travel related to education (except taking class)",
+      "level": 3,
+      "parent_code": "1806",
+      "harmonization_note": "Includes 170602 (2003, 2004); 180602, 180603, 180604 (2005 and later years)"
+    },
+    {
+      "code": "180699",
+      "name": "Travel related to education, n.e.c.*",
+      "level": 3,
+      "parent_code": "1806",
+      "harmonization_note": "includes 170699 (2003-2004); 180699 (2005 and later years)"
+    },
+    {
+      "code": "1807",
+      "name": "Travel Related to Consumer Purchases",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "180701",
+      "name": "Travel related to grocery shopping",
+      "level": 3,
+      "parent_code": "1807",
+      "harmonization_note": "includes 170701 (2003-2004); 180701 (2005 and later years) Includes 170702, 170799 (2003-2004); 170703 (2004);"
+    },
+    {
+      "code": "180782",
+      "name": "Travel related to shopping (except grocery shopping)",
+      "level": 3,
+      "parent_code": "1807",
+      "harmonization_note": "180702, 180703, 180704, 180799 (2005 and later years)"
+    },
+    {
+      "code": "1808",
+      "name": "Travel Related to Using Professional and Personal Care Services",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "180801",
+      "name": "Travel related to using childcare services",
+      "level": 3,
+      "parent_code": "1808",
+      "harmonization_note": "includes 170801 (2003-2004); 180801 (2005 and later years)"
+    },
+    {
+      "code": "180802",
+      "name": "Travel related to using financial services and banking",
+      "level": 3,
+      "parent_code": "1808",
+      "harmonization_note": "includes 170802 (2003-2004); 180802 (2005 and later years)"
+    },
+    {
+      "code": "180803",
+      "name": "Travel related to using legal services",
+      "level": 3,
+      "parent_code": "1808",
+      "harmonization_note": "includes 170803 (2003-2004); 180803 (2005 and later years)"
+    },
+    {
+      "code": "180804",
+      "name": "Travel related to using medical services",
+      "level": 3,
+      "parent_code": "1808",
+      "harmonization_note": "includes 170804 (2003-2004); 180804 (2005 and later years)"
+    },
+    {
+      "code": "180805",
+      "name": "Travel related to using personal care services",
+      "level": 3,
+      "parent_code": "1808",
+      "harmonization_note": "includes 170805 (2003-2004); 180805 (2005 and later years)"
+    },
+    {
+      "code": "180806",
+      "name": "Travel related to using real estate services",
+      "level": 3,
+      "parent_code": "1808",
+      "harmonization_note": "includes 170806 (2003-2004); 180806 (2005 and later years)"
+    },
+    {
+      "code": "180807",
+      "name": "Travel related to using veterinary services",
+      "level": 3,
+      "parent_code": "1808",
+      "harmonization_note": "includes 170807 (2003-2004); 180807 (2005 and later years)"
+    },
+    {
+      "code": "180899",
+      "name": "Travel rel. to using prof. & personal care services, n.e.c.*",
+      "level": 3,
+      "parent_code": "1808",
+      "harmonization_note": "includes 170899 (2003-2004); 180899 (2005 and later years)"
+    },
+    {
+      "code": "1809",
+      "name": "Travel Related to Using Household Services",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "180901",
+      "name": "Travel related to using household services",
+      "level": 3,
+      "parent_code": "1809",
+      "harmonization_note": "includes 170901 (2003-2004); 180901 (2005 and later years)"
+    },
+    {
+      "code": "180902",
+      "name": "Travel related to using home main./repair/d\u00e9cor./construction svcs",
+      "level": 3,
+      "parent_code": "1809",
+      "harmonization_note": "includes 170902 (2003-2004); 180902 (2005 and later years)"
+    },
+    {
+      "code": "180903",
+      "name": "Travel related to using pet services (not vet)",
+      "level": 3,
+      "parent_code": "1809",
+      "harmonization_note": "includes 170903 (2003-2004); 180903 (2005 and later years)"
+    },
+    {
+      "code": "180904",
+      "name": "Travel related to using lawn and garden services",
+      "level": 3,
+      "parent_code": "1809",
+      "harmonization_note": "includes 170904 (2003-2004); 180904 (2005 and later years)"
+    },
+    {
+      "code": "180905",
+      "name": "Travel related to using vehicle maintenance & repair services",
+      "level": 3,
+      "parent_code": "1809",
+      "harmonization_note": "includes 170905 (2003-2004); 180905 (2005 and later years)"
+    },
+    {
+      "code": "180999",
+      "name": "Travel related to using household services, n.e.c.*",
+      "level": 3,
+      "parent_code": "1809",
+      "harmonization_note": "includes 170999 (2003-2004); 180999 (2005 and later years)"
+    },
+    {
+      "code": "1810",
+      "name": "Travel Related to Using Government Services & Civic Obligations",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "181002",
+      "name": "Travel related to civic obligations & participation",
+      "level": 3,
+      "parent_code": "1810",
+      "harmonization_note": "includes 171004 (2003-2004); 181002 (2005 and later years)"
+    },
+    {
+      "code": "181081",
+      "name": "Travel related to using government services",
+      "level": 3,
+      "parent_code": "1810",
+      "harmonization_note": "includes 171001, 171002, 171003 (2003-2004); 181001 (2005 and later years)"
+    },
+    {
+      "code": "181099",
+      "name": "Travel rel. to govt svcs & civic obligations, n.e.c.*",
+      "level": 3,
+      "parent_code": "1810",
+      "harmonization_note": "includes 171099 (2003-2004); 181099 (2005 and later years)"
+    },
+    {
+      "code": "1811",
+      "name": "Travel Related to Eating and Drinking",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "181101",
+      "name": "Travel related to eating and drinking",
+      "level": 3,
+      "parent_code": "1811",
+      "harmonization_note": "includes 171101 (2003-2004); 181101 (2005 and later years)"
+    },
+    {
+      "code": "181199",
+      "name": "Travel related to eating and drinking, n.e.c.*",
+      "level": 3,
+      "parent_code": "1811",
+      "harmonization_note": "includes 171199 (2003-2004); 181199 (2005 and later years)"
+    },
+    {
+      "code": "1812",
+      "name": "Travel Related to Socializing, Relaxing, and Leisure",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "181201",
+      "name": "Travel related to socializing and communicating",
+      "level": 3,
+      "parent_code": "1812",
+      "harmonization_note": "includes 171201 (2003-2004); 181201 (2005 and later years)"
+    },
+    {
+      "code": "181202",
+      "name": "Travel related to attending or hosting social events",
+      "level": 3,
+      "parent_code": "1812",
+      "harmonization_note": "includes 171202 (2003-2004); 181202 (2005 and later years)"
+    },
+    {
+      "code": "181204",
+      "name": "Travel related to arts and entertainment",
+      "level": 3,
+      "parent_code": "1812",
+      "harmonization_note": "includes 171204 (2003-2004); 181204 (2005 and later years)"
+    },
+    {
+      "code": "181283",
+      "name": "Travel related to relaxing and leisure",
+      "level": 3,
+      "parent_code": "1812",
+      "harmonization_note": "Includes 171203 (2003-2004); 181203, 181205 (2005 and later years)"
+    },
+    {
+      "code": "181299",
+      "name": "Travel rel. to socializing, relaxing, & leisure, n.e.c.*",
+      "level": 3,
+      "parent_code": "1812",
+      "harmonization_note": "includes 171299 (2003-2004); 181299 (2005 and later years)"
+    },
+    {
+      "code": "1813",
+      "name": "Travel Related to Sports, Exercise, and Recreation",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "181301",
+      "name": "Travel related to participating in sports/exercise/recreation",
+      "level": 3,
+      "parent_code": "1813",
+      "harmonization_note": "includes 171301 (2003-2004); 181301 (2005 and later years)"
+    },
+    {
+      "code": "181302",
+      "name": "Travel related to attending sporting/recreational events",
+      "level": 3,
+      "parent_code": "1813",
+      "harmonization_note": "includes 171302 (2003-2004); 181302 (2005 and later years)"
+    },
+    {
+      "code": "181399",
+      "name": "Travel related to sports, exercise, & recreation, n.e.c.*",
+      "level": 3,
+      "parent_code": "1813",
+      "harmonization_note": "includes 171399 (2003-2004); 181399 (2005 and later years)"
+    },
+    {
+      "code": "1814",
+      "name": "Travel Related to Religious/Spiritual Activities",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "181401",
+      "name": "Travel related to religious/spiritual practices",
+      "level": 3,
+      "parent_code": "1814",
+      "harmonization_note": "includes 171401 (2003-2004); 181401 (2005 and later years)"
+    },
+    {
+      "code": "181499",
+      "name": "Travel rel. to religious/spiritual activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "1814",
+      "harmonization_note": "includes 171499 (2003-2004); 181499 (2005 and later years)"
+    },
+    {
+      "code": "1815",
+      "name": "Travel Related to Volunteer Activities",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "181501",
+      "name": "Travel related to volunteering",
+      "level": 3,
+      "parent_code": "1815",
+      "harmonization_note": "includes 171501 (2003-2004); 181501 (2005 and later years)"
+    },
+    {
+      "code": "181599",
+      "name": "Travel related to volunteer activities, n.e.c.*",
+      "level": 3,
+      "parent_code": "1815",
+      "harmonization_note": "includes 171599 (2003-2004); 181599 (2005 and later years)"
+    },
+    {
+      "code": "1816",
+      "name": "Travel Related to Telephone Calls",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "181601",
+      "name": "Travel related to phone calls",
+      "level": 3,
+      "parent_code": "1816",
+      "harmonization_note": "includes 171601 (2003-2004); 181601 (2005 and later years)"
+    },
+    {
+      "code": "181699",
+      "name": "Travel rel. to phone calls, n.e.c.*",
+      "level": 3,
+      "parent_code": "1816",
+      "harmonization_note": "includes 171699 (2003-2004); 181699 (2005 and later years)"
+    },
+    {
+      "code": "1818",
+      "name": "Security Procedures Related to Traveling",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "181801",
+      "name": "Security procedures related to traveling",
+      "level": 3,
+      "parent_code": "1818",
+      "harmonization_note": "includes 171701 (2003-2004); 181801 (2005 and later years)"
+    },
+    {
+      "code": "181899",
+      "name": "Security procedures related to traveling, n.e.c.*",
+      "level": 3,
+      "parent_code": "1818",
+      "harmonization_note": "includes 171799 (2003-2004); 181899 (2005 and later years)"
+    },
+    {
+      "code": "1899",
+      "name": "Traveling, n.e.c.*",
+      "level": 2,
+      "parent_code": "18",
+      "harmonization_note": null
+    },
+    {
+      "code": "189999",
+      "name": "Traveling, n.e.c.*",
+      "level": 3,
+      "parent_code": "1899",
+      "harmonization_note": "includes 179999 (2003-2004); 189999 (2005 and later years)"
+    },
+    {
+      "code": "50",
+      "name": "Data Codes",
+      "level": 1,
+      "parent_code": null,
+      "harmonization_note": null
+    },
+    {
+      "code": "5001",
+      "name": "Unable to Code",
+      "level": 2,
+      "parent_code": "50",
+      "harmonization_note": null
+    },
+    {
+      "code": "500101",
+      "name": "Insufficient detail in verbatim",
+      "level": 3,
+      "parent_code": "5001",
+      "harmonization_note": null
+    },
+    {
+      "code": "500103",
+      "name": "Missing travel or destination",
+      "level": 3,
+      "parent_code": "5001",
+      "harmonization_note": null
+    },
+    {
+      "code": "500104",
+      "name": "Recorded simultaneous activities incorrectly",
+      "level": 3,
+      "parent_code": "5001",
+      "harmonization_note": "code was used in 2003-2012 only"
+    },
+    {
+      "code": "500105",
+      "name": "Respondent refused to provide information/\"none of your business\"",
+      "level": 3,
+      "parent_code": "5001",
+      "harmonization_note": null
+    },
+    {
+      "code": "500106",
+      "name": "Gap/can't remember",
+      "level": 3,
+      "parent_code": "5001",
+      "harmonization_note": null
+    },
+    {
+      "code": "500107",
+      "name": "Unable to code activity at 1st tier",
+      "level": 3,
+      "parent_code": "5001",
+      "harmonization_note": null
+    },
+    {
+      "code": "5099",
+      "name": "Data codes, n.e.c.*",
+      "level": 2,
+      "parent_code": "50",
+      "harmonization_note": null
+    },
+    {
+      "code": "509989",
+      "name": "Data codes, n.e.c.* * Not elsewhere classified",
+      "level": 3,
+      "parent_code": "5099",
+      "harmonization_note": "includes 500102 (2003); 509999 (All years)"
+    }
+  ],
+  "total": 556
+}

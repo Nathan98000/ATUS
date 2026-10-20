@@ -1,0 +1,152 @@
+[
+  {
+    "t_start": 1792517920.395,
+    "t_end": 1792517920.395,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/population/metadata",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517920.394,
+    "t_end": 1792517920.395,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517920.397,
+    "t_end": 1792517920.398,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://127.0.0.1:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517920.398,
+    "t_end": 1792517920.398,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517920.398,
+    "t_end": 1792517920.398,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517921.398,
+    "t_end": 1792517921.399,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/population/metadata",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517921.399,
+    "t_end": 1792517921.399,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517921.408,
+    "t_end": 1792517921.408,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517921.408,
+    "t_end": 1792517921.408,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://127.0.0.1:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517921.409,
+    "t_end": 1792517921.409,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517923.401,
+    "t_end": 1792517923.401,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/population/metadata",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517923.401,
+    "t_end": 1792517923.401,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517923.41,
+    "t_end": 1792517923.41,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517923.41,
+    "t_end": 1792517923.41,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 502,
+    "note": ""
+  },
+  {
+    "t_start": 1792517923.411,
+    "t_end": 1792517923.411,
+    "scenario": "e_502_html_nocors",
+    "origin": "http://127.0.0.1:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 502,
+    "note": ""
+  }
+]

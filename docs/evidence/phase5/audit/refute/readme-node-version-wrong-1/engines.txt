@@ -1,0 +1,4 @@
+node_modules/jsdom 30.0.1 ^22.22.2 || ^24.15.0 || >=26.0.0 dev
+node_modules/react-router 8.3.1 >=22.22.0 prod
+node_modules/vite 8.2.2 ^20.19.0 || >=22.12.0 dev
+node_modules/vitest 5.0.0 ^22.12.0 || ^24.0.0 || >=26.0.0 dev

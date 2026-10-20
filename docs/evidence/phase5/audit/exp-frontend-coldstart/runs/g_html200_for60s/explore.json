@@ -1,0 +1,197 @@
+{
+  "scenario": "g_html200_for60s",
+  "page": "explore",
+  "url": "http://localhost:4182/explore",
+  "t0_epoch": 1792518500.349,
+  "meta_request_times_s": [
+    0.06,
+    1.063,
+    3.066
+  ],
+  "meta_request_gaps_s": [
+    1.003,
+    2.003
+  ],
+  "api_requests": 6,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.055,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s/explore_002s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.034,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s/explore_005s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.026,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s/explore_015s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.042,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s/explore_030s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.023,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s/explore_060s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.039,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/g_html200_for60s/explore_075s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.032,
+      "main": ""
+    },
+    {
+      "t": 0.285,
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports."
+    },
+    {
+      "t": 3.313,
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+    }
+  ],
+  "network": [
+    {
+      "t": 0.06,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.06,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 0.061,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 200
+    },
+    {
+      "t": 0.061,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "status": 200
+    },
+    {
+      "t": 1.063,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 1.063,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 1.065,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 200
+    },
+    {
+      "t": 1.065,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "status": 200
+    },
+    {
+      "t": 3.066,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 3.066,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 3.066,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 200
+    },
+    {
+      "t": 3.068,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "status": 200
+    }
+  ],
+  "console": []
+}

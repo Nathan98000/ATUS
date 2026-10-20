@@ -1,0 +1,6 @@
+DiskFull 53100 OperationalError ['DiskFull', 'OperationalError', 'DatabaseError', 'Error']
+QueryCanceled 57014 OperationalError ['QueryCanceled', 'OperationalError', 'DatabaseError', 'Error']
+AdminShutdown 57P01 OperationalError ['AdminShutdown', 'OperationalError', 'DatabaseError', 'Error']
+OutOfMemory 53200 OperationalError ['OutOfMemory', 'OperationalError', 'DatabaseError', 'Error']
+InsufficientResources 53000 OperationalError ['InsufficientResources', 'OperationalError', 'DatabaseError', 'Error']
+ConfigurationLimitExceeded 53400 OperationalError ['ConfigurationLimitExceeded', 'OperationalError', 'DatabaseError', 'Error']

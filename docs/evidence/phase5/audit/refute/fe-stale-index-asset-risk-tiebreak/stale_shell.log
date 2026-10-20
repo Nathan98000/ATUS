@@ -1,0 +1,34 @@
+=== A fresh shell, current bundle
+requests:
+  200 /explore (shell)
+  200 /assets/index-zZ8NhHEV.js (asset)
+  200 /assets/index-iJKMLZcZ.css (asset)
+  ABORT http://127.0.0.1:8137/api/v1/meta
+  ABORT http://127.0.0.1:8137/api/v1/population/metadata
+  ABORT http://127.0.0.1:8137/api/v1/meta
+  ABORT http://127.0.0.1:8137/api/v1/population/metadata
+console:
+  [error] Failed to load resource: net::ERR_FAILED
+  [error] Failed to load resource: net::ERR_FAILED
+  [error] Failed to load resource: net::ERR_FAILED
+  [error] Failed to load resource: net::ERR_FAILED
+#root innerHTML length: 1041
+visible body text: "Skip to content\nATUS\nExplorer\nExplore\nAbout & methodology\n\nLoading the analysis builder…\n\nFetching what the analytical service supports.\n\nData source: U.S. Bureau of Labor Statistics, American Time Us"
+=== B stale shell, bundle missing, SPA fallback (index.html 200)
+requests:
+  200 /explore (shell)
+  200 /assets/index-OLDHASH0.js (SPA fallback -> index.html, text/html)
+  200 /assets/index-iJKMLZcZ.css (asset)
+console:
+  [error] Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "text/html". Strict MIME type checking is enforced for module scripts per HTML spec.
+#root innerHTML length: 0
+visible body text: ""
+=== C stale shell, bundle missing, 404
+requests:
+  200 /explore (shell)
+  404 /assets/index-OLDHASH0.js
+  200 /assets/index-iJKMLZcZ.css (asset)
+console:
+  [error] Failed to load resource: the server responded with a status of 404 (Not Found)
+#root innerHTML length: 0
+visible body text: ""

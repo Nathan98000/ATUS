@@ -1,0 +1,4 @@
+before click 1: alert = The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the servic
+before click 2: alert = The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the servic
+after 2 click(s): builder shown = true
+requests: 0.03s /api/v1/meta | 0.03s /api/v1/population/metadata | 1.04s /api/v1/meta | 1.04s /api/v1/population/metadata | 3.04s /api/v1/population/metadata | 3.04s /api/v1/meta | 12.04s /api/v1/meta | 13.58s /api/v1/population/metadata | 13.61s /api/v1/activities | 13.61s /api/v1/activities/presets

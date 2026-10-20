@@ -1,0 +1,15 @@
+$REPO/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+15:20:46 INFO    atus.api: request_id=c0899a49826b4564 GET /docs -> 200 in 0.2ms cache=-
+15:20:46 INFO    httpx: HTTP Request: GET http://testserver/docs "HTTP/1.1 200 OK"
+15:20:46 INFO    atus.api: request_id=38e8bd9a9ae34f70 GET /redoc -> 200 in 0.1ms cache=-
+15:20:46 INFO    httpx: HTTP Request: GET http://testserver/redoc "HTTP/1.1 200 OK"
+15:20:46 INFO    atus.api: request_id=cc4e122f3873434d GET /openapi.json -> 200 in 31.6ms cache=-
+15:20:46 INFO    httpx: HTTP Request: GET http://testserver/openapi.json "HTTP/1.1 200 OK"
+15:20:46 INFO    atus.api: request_id=b1e9f3b6d78b4aa6 GET /docs/oauth2-redirect -> 200 in 0.1ms cache=-
+15:20:46 INFO    httpx: HTTP Request: GET http://testserver/docs/oauth2-redirect "HTTP/1.1 200 OK"
+(settings: 'Settings | None' = None, *, open_pool: 'bool' = True) -> 'FastAPI'
+/docs 200 ['https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css', 'https://fastapi.tiangolo.com/img/favicon.png', 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js']
+/redoc 200 ['https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700', 'https://fastapi.tiangolo.com/img/favicon.png', 'https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js']
+/openapi.json 200 
+/docs/oauth2-redirect 200 []

@@ -1,0 +1,228 @@
+{
+  "scenario": "d_503_first3_json",
+  "page": "explore",
+  "url": "http://localhost:4182/explore",
+  "t0_epoch": 1792517693.65,
+  "meta_request_times_s": [
+    0.047,
+    1.058,
+    3.062
+  ],
+  "meta_request_gaps_s": [
+    1.011,
+    2.004
+  ],
+  "api_requests": 6,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.043,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_json/explore_002s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.066,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_json/explore_005s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.041,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_json/explore_015s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.049,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_json/explore_030s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.057,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_json/explore_060s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.04,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_json/explore_075s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.027,
+      "main": ""
+    },
+    {
+      "t": 0.282,
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports."
+    },
+    {
+      "t": 3.071,
+      "main": "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details"
+    }
+  ],
+  "network": [
+    {
+      "t": 0.047,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.047,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 0.058,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    },
+    {
+      "t": 0.06,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "status": 503
+    },
+    {
+      "t": 1.058,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 1.059,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 1.063,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    },
+    {
+      "t": 1.063,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "status": 503
+    },
+    {
+      "t": 3.062,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 3.062,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 3.063,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "status": 503
+    },
+    {
+      "t": 3.063,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    }
+  ],
+  "console": [
+    {
+      "t": 0.058,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 0.06,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 1.063,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 1.063,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 3.063,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 3.063,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    }
+  ]
+}

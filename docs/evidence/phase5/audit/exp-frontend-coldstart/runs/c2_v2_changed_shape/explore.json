@@ -1,0 +1,147 @@
+{
+  "scenario": "c2_v2_changed_shape",
+  "page": "explore",
+  "url": "http://localhost:4182/explore",
+  "t0_epoch": 1792517391.336,
+  "meta_request_times_s": [
+    0.121
+  ],
+  "meta_request_gaps_s": [],
+  "api_requests": 2,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.031,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/explore_002s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.026,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/explore_005s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.03,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/explore_015s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.045,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/explore_030s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.028,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/explore_060s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.031,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c2_v2_changed_shape/explore_075s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "ATUS Explorer",
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer",
+      "footer": "",
+      "alerts": [
+        "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+      ],
+      "status": [],
+      "live": []
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.136,
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports."
+    },
+    {
+      "t": 0.389,
+      "main": "Something went wrong in the application\n\nThis is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it.\n\nReload ATUS Explorer"
+    }
+  ],
+  "network": [
+    {
+      "t": 0.121,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.121,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 0.136,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 200
+    },
+    {
+      "t": 0.136,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "status": 200
+    }
+  ],
+  "console": [
+    {
+      "t": 0.137,
+      "type": "error",
+      "text": "TypeError: Cannot read properties of undefined (reading '0')\n    at zi (http://localhost:4182/assets/index-DehE4oRV.js:9:125410)\n    at ts (http://localhost:4182/assets/index-DehE4oRV.js:8:49206)\n    at Jc (http://localhost:4182/assets/index-DehE4oRV.js:8:71910)\n    at hl (http://localhost:4182/assets/index-DehE4oRV.js:8:82814)\n    at Zd (http://localhost:4182/assets/index-DehE4oRV.js:8:127984)\n    at Jd (http://localhost:4182/assets/index-DehE4oRV.js:8:127067)\n    at qd (http://localhost:4182/assets/index-DehE4oRV.js:8:126906)\n    at Fd (http://localhost:4182/assets/index-DehE4oRV.js:8:123634)\n    at Mf (http://localhost:4182/assets/index-DehE4oRV.js:8:136037)\n    at Df (http://localhost:4182/assets/index-DehE4oRV.js:8:134601)"
+    },
+    {
+      "t": 0.138,
+      "type": "error",
+      "text": "Unhandled application error TypeError: Cannot read properties of undefined (reading '0')\n    at zi (http://localhost:4182/assets/index-DehE4oRV.js:9:125410)\n    at ts (http://localhost:4182/assets/index-DehE4oRV.js:8:49206)\n    at Jc (http://localhost:4182/assets/index-DehE4oRV.js:8:71910)\n    at hl (http://localhost:4182/assets/index-DehE4oRV.js:8:82814)\n    at Zd (http://localhost:4182/assets/index-DehE4oRV.js:8:127984)\n    at Jd (http://localhost:4182/assets/index-DehE4oRV.js:8:127067)\n    at qd (http://localhost:4182/assets/index-DehE4oRV.js:8:126906)\n    at Fd (http://localhost:4182/assets/index-DehE4oRV.js:8:123634)\n    at Mf (http://localhost:4182/assets/index-DehE4oRV.js:8:136037)\n    at Df (http://localhost:4182/assets/index-DehE4oRV.js:8:134601) \n    at zi (http://localhost:4182/assets/index-DehE4oRV.js:9:124247)\n    at To (<anonymous>)\n    at pr (http://localhost:4182/assets/index-DehE4oRV.js:9:104248)\n    at ri (http://localhost:4182/assets/index-DehE4oRV.js:9:115114)\n    at te (http://localhost:4182/assets/index-DehE4oRV.js:9:51237)\n    at Eo (http://localhost:4182/assets/index-DehE4oRV.js:9:194955)"
+    }
+  ]
+}

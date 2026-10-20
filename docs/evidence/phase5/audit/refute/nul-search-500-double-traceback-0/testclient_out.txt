@@ -1,0 +1,155 @@
+$REPO/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+ERROR:atus.api:request_id=f61aa450b7354c27 GET /api/v1/activities -> 500 in 24.4ms (unhandled)
+ERROR:atus.api:unhandled error on GET /api/v1/activities
+Traceback (most recent call last):
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/src/atus_pipeline/api/app.py", line 99, in request_context
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/routing.py", line 678, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 1865, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 1328, in handle
+    await effective_context.app(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 166, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 152, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 745, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 374, in run_endpoint_function
+    return await run_in_threadpool(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/anyio/to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2706, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 1100, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py", line 244, in _run_sync_endpoint
+    return function(**arguments)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/src/atus_pipeline/api/routes/activities.py", line 84, in list_activities
+    rows = conn.execute(sql, params).fetchall()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/psycopg/connection.py", line 304, in execute
+    raise ex.with_traceback(None)
+psycopg.DataError: PostgreSQL text fields cannot contain NUL (0x00) bytes
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/activities?search=%00%00 "HTTP/1.1 500 Internal Server Error"
+ERROR:atus.api:request_id=496ae5528d8840e9 GET /api/v1/activities -> 500 in 2.2ms (unhandled)
+ERROR:atus.api:unhandled error on GET /api/v1/activities
+Traceback (most recent call last):
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/telemetry/_asgi.py", line 151, in __call__
+    await self.app(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 203, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/src/atus_pipeline/api/app.py", line 99, in request_context
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 179, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/middleware/base.py", line 149, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/routing.py", line 678, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 2811, in app
+    await route.handle(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 1839, in handle
+    await self.original_router.handle(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 2894, in handle
+    await included_router._handle_selected(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 1865, in _handle_selected
+    await original_route.handle(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 1328, in handle
+    await effective_context.app(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 166, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 152, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 745, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/routing.py", line 374, in run_endpoint_function
+    return await run_in_threadpool(
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/starlette/concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/anyio/to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2706, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 1100, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/fastapi/telemetry/_api.py", line 244, in _run_sync_endpoint
+    return function(**arguments)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/src/atus_pipeline/api/routes/activities.py", line 84, in list_activities
+    rows = conn.execute(sql, params).fetchall()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/psycopg/connection.py", line 304, in execute
+    raise ex.with_traceback(None)
+psycopg.DataError: PostgreSQL text fields cannot contain NUL (0x00) bytes
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/activities?search=ab%00 "HTTP/1.1 500 Internal Server Error"
+INFO:atus.api:request_id=7f8d3054ab1e46c6 GET /api/v1/activities -> 200 in 7.1ms cache=-
+INFO:httpx:HTTP Request: GET http://testserver/api/v1/activities?search=ab "HTTP/1.1 200 OK"
+RESULT %00%00 500 {"error":{"code":"internal_error","message":"An unexpected internal error occurred.","details":null}}
+RESULT ab%00 500 {"error":{"code":"internal_error","message":"An unexpected internal error occurred.","details":null}}
+RESULT ab 200 {"activities":[{"code":"120404","name":"Attending gambling establishments","level":3,"parent_code":"1204","harmonization_note":null},{"code":"5001","n

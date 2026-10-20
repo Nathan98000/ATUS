@@ -1,0 +1,540 @@
+-- 0001_core_schema.sql
+-- Canonical ATUS schema: metadata, activity-code reference tables, and the
+-- seven canonical data tables. Grain, keys, and sources are documented in
+-- docs/database.md; column-level lineage in docs/data-lineage.md.
+
+CREATE SCHEMA IF NOT EXISTS atus;
+
+-- --------------------------------------------------------------------------
+-- Pipeline metadata
+-- --------------------------------------------------------------------------
+
+CREATE TABLE atus.ingestion_runs (
+    id               bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    release          text NOT NULL,
+    pipeline_version text NOT NULL,
+    started_at       timestamptz NOT NULL DEFAULT now(),
+    finished_at      timestamptz,
+    status           text NOT NULL DEFAULT 'running'
+                     CHECK (status IN ('running', 'succeeded', 'failed')),
+    notes            text
+);
+
+-- Provenance: the exact source files behind the currently loaded data.
+CREATE TABLE atus.source_files (
+    id               bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    ingestion_run_id bigint NOT NULL REFERENCES atus.ingestion_runs (id),
+    release          text NOT NULL,
+    file_key         text NOT NULL,
+    url              text NOT NULL,
+    zip_name         text NOT NULL,
+    zip_sha256       text NOT NULL,
+    zip_size_bytes   bigint NOT NULL,
+    downloaded_at    timestamptz,
+    data_file_name   text NOT NULL,
+    source_row_count bigint NOT NULL,
+    loaded_table     text,
+    loaded_row_count bigint,
+    UNIQUE (ingestion_run_id, file_key)
+);
+
+-- Results of `atus validate-db` runs.
+CREATE TABLE atus.validation_results (
+    id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    run_at       timestamptz NOT NULL DEFAULT now(),
+    check_name   text NOT NULL,
+    severity     text NOT NULL CHECK (severity IN ('error', 'warning')),
+    passed       boolean NOT NULL,
+    observed     text,
+    detail       text
+);
+
+-- --------------------------------------------------------------------------
+-- Activity coding lexicon (reference data, from the BLS 2003-25 lexicon)
+-- --------------------------------------------------------------------------
+
+CREATE TABLE atus.activity_tier1 (
+    code char(2) PRIMARY KEY CHECK (code ~ '^[0-9]{2}$'),
+    name text NOT NULL
+);
+
+CREATE TABLE atus.activity_tier2 (
+    code       char(4) PRIMARY KEY CHECK (code ~ '^[0-9]{4}$'),
+    tier1_code char(2) NOT NULL REFERENCES atus.activity_tier1 (code),
+    name       text NOT NULL,
+    CONSTRAINT tier2_prefix CHECK (left(code, 2) = tier1_code)
+);
+
+CREATE TABLE atus.activity_codes (
+    code               char(6) PRIMARY KEY CHECK (code ~ '^[0-9]{6}$'),
+    tier2_code         char(4) NOT NULL REFERENCES atus.activity_tier2 (code),
+    name               text NOT NULL,
+    harmonization_note text,
+    CONSTRAINT code_prefix CHECK (left(code, 4) = tier2_code)
+);
+
+-- --------------------------------------------------------------------------
+-- Canonical survey data
+-- --------------------------------------------------------------------------
+
+-- One row per ATUS respondent (= one completed diary day).
+CREATE TABLE atus.respondents (
+    tucaseid                        bigint PRIMARY KEY,
+    data_year                       smallint NOT NULL CHECK (data_year >= 2003),
+    diary_date                      date NOT NULL,
+    diary_day_of_week               smallint NOT NULL CHECK (diary_day_of_week BETWEEN 1 AND 7),
+    is_holiday                      boolean NOT NULL,
+    labor_force_status              smallint NOT NULL CHECK (labor_force_status BETWEEN 1 AND 5),
+    has_multiple_jobs               boolean,
+    full_or_part_time               smallint CHECK (full_or_part_time IN (1, 2)),
+    usual_weekly_hours              smallint CHECK (usual_weekly_hours BETWEEN 0 AND 999),
+    usual_hours_vary                boolean NOT NULL DEFAULT false,
+    class_of_worker                 smallint CHECK (class_of_worker BETWEEN 1 AND 8),
+    major_industry                  smallint CHECK (major_industry BETWEEN 1 AND 13),
+    major_occupation                smallint CHECK (major_occupation BETWEEN 1 AND 10),
+    -- earnings have "2 implied decimals" in the source; allocated values can
+    -- carry fractional cents, hence the extra scale on hourly_earnings
+    weekly_earnings                 numeric(8,2) CHECK (weekly_earnings >= 0),
+    hourly_earnings                 numeric(10,5) CHECK (hourly_earnings >= 0),
+    school_enrolled                 boolean,
+    school_level                    smallint CHECK (school_level IN (1, 2)),
+    spouse_or_partner_present       smallint CHECK (spouse_or_partner_present IN (1, 2, 3)),
+    spouse_or_partner_employed      boolean,
+    household_size                  smallint CHECK (household_size BETWEEN 1 AND 30),
+    household_children              smallint CHECK (household_children BETWEEN 0 AND 30),
+    youngest_child_age              smallint CHECK (youngest_child_age BETWEEN 0 AND 17),
+    provided_eldercare_on_diary_day boolean,
+    eldercare_minutes               smallint CHECK (eldercare_minutes BETWEEN 0 AND 1440),
+    secondary_childcare_minutes     smallint CHECK (secondary_childcare_minutes BETWEEN 0 AND 1440),
+    time_alone_minutes              smallint CHECK (time_alone_minutes BETWEEN 0 AND 1440),
+    time_with_family_minutes        smallint CHECK (time_with_family_minutes BETWEEN 0 AND 1440),
+    final_weight                    numeric(18,6) CHECK (final_weight >= 0),
+    pandemic_weight                 numeric(18,6) CHECK (pandemic_weight >= 0),
+    -- TUFNWGTP is defined for every year except 2020 (see docs/methodology.md)
+    CONSTRAINT final_weight_2020_rule CHECK ((data_year = 2020) = (final_weight IS NULL)),
+    -- TU20FWGT exists only for 2019 and 2020
+    CONSTRAINT pandemic_weight_years CHECK (pandemic_weight IS NULL OR data_year IN (2019, 2020))
+);
+
+-- One row per person on the household roster (respondent = lineno 1, household
+-- members, and the respondent's own nonhousehold children under 18).
+CREATE TABLE atus.household_members (
+    tucaseid     bigint NOT NULL REFERENCES atus.respondents (tucaseid),
+    lineno       smallint NOT NULL CHECK (lineno >= 1),
+    relationship smallint CHECK (relationship BETWEEN 18 AND 40),
+    age          smallint CHECK (age BETWEEN 0 AND 85),
+    sex          smallint NOT NULL CHECK (sex IN (1, 2)),
+    PRIMARY KEY (tucaseid, lineno)
+);
+
+-- One row per diary-day activity episode. The ATUS diary runs from 04:00 on
+-- the diary day to 04:00 the next day; episodes may cross midnight, and the
+-- final episode's stop_time may run past 04:00 (duration_minutes is capped at
+-- the 04:00 boundary, duration_uncapped_minutes is not).
+CREATE TABLE atus.activities (
+    tucaseid                    bigint NOT NULL REFERENCES atus.respondents (tucaseid),
+    activity_number             integer NOT NULL CHECK (activity_number >= 1),
+    activity_code               char(6) NOT NULL REFERENCES atus.activity_codes (code),
+    tier1_code                  char(2) NOT NULL REFERENCES atus.activity_tier1 (code),
+    tier2_code                  char(4) NOT NULL REFERENCES atus.activity_tier2 (code),
+    start_time                  time NOT NULL,
+    stop_time                   time NOT NULL,
+    duration_minutes            smallint NOT NULL CHECK (duration_minutes BETWEEN 0 AND 1440),
+    duration_uncapped_minutes   integer NOT NULL CHECK (duration_uncapped_minutes >= 0),
+    cumulative_minutes          smallint NOT NULL CHECK (cumulative_minutes BETWEEN 1 AND 1440),
+    location_code               smallint,
+    secondary_childcare_minutes smallint CHECK (secondary_childcare_minutes BETWEEN 0 AND 1440),
+    eldercare_minutes           smallint CHECK (eldercare_minutes BETWEEN 0 AND 1440),
+    PRIMARY KEY (tucaseid, activity_number),
+    CONSTRAINT tier1_matches_code CHECK (left(activity_code, 2) = tier1_code),
+    CONSTRAINT tier2_matches_code CHECK (left(activity_code, 4) = tier2_code)
+);
+
+-- One row per "who was present" record per episode, mirroring the Who file.
+-- Sentinels are structural here (both columns are part of the key, mirroring
+-- BLS coding) and are therefore kept rather than converted to NULL:
+--   who_lineno = -1 : companion is not a household roster member, or who info
+--                     is missing/not collected for the episode
+--   who_code   = -1 : who info not collected (who_not_asked; sleeping/grooming
+--                     in all years, working episodes in 2003-2009) — or, on a
+--                     small number of asked episodes, blank
+--   who_code -2/-3  : asked, but the respondent didn't know / refused
+CREATE TABLE atus.activity_companions (
+    tucaseid        bigint NOT NULL,
+    activity_number integer NOT NULL,
+    who_lineno      smallint NOT NULL CHECK (who_lineno = -1 OR who_lineno >= 1),
+    who_code        smallint NOT NULL
+                    CHECK (who_code IN (-1, -2, -3) OR who_code BETWEEN 18 AND 62),
+    who_not_asked   boolean NOT NULL,
+    PRIMARY KEY (tucaseid, activity_number, who_lineno, who_code),
+    FOREIGN KEY (tucaseid, activity_number)
+        REFERENCES atus.activities (tucaseid, activity_number),
+    -- 'not asked' rows are always the (-1, -1) placeholder
+    CONSTRAINT not_asked_is_placeholder
+        CHECK (NOT who_not_asked OR (who_code = -1 AND who_lineno = -1))
+);
+
+-- One row per person in the CPS household of an ATUS respondent, measured at
+-- the final CPS interview 2-5 months before the ATUS interview. Curated
+-- column subset of the 265-variable ATUS-CPS file; only households of ATUS
+-- respondents are loaded (the source file also covers nonrespondents).
+CREATE TABLE atus.cps_persons (
+    tucaseid               bigint NOT NULL REFERENCES atus.respondents (tucaseid),
+    lineno                 smallint NOT NULL CHECK (lineno >= 1),
+    cps_year               smallint CHECK (cps_year BETWEEN 2002 AND 2100),
+    cps_month              smallint CHECK (cps_month BETWEEN 1 AND 12),
+    region                 smallint CHECK (region BETWEEN 1 AND 4),
+    division               smallint CHECK (division BETWEEN 1 AND 9),
+    state_fips             char(2) CHECK (state_fips ~ '^[0-9]{2}$'),
+    gemetsta               smallint CHECK (gemetsta BETWEEN 1 AND 3),
+    gtmetsta               smallint CHECK (gtmetsta BETWEEN 1 AND 3),
+    household_size         smallint CHECK (household_size BETWEEN 0 AND 30),
+    household_type         smallint,
+    tenure                 smallint CHECK (tenure BETWEEN 1 AND 3),
+    hufaminc               smallint CHECK (hufaminc BETWEEN 1 AND 16),
+    hefaminc               smallint CHECK (hefaminc BETWEEN 1 AND 16),
+    relationship           smallint,
+    age                    smallint CHECK (age BETWEEN 0 AND 90),
+    sex                    smallint CHECK (sex IN (1, 2)),
+    education              smallint CHECK (education BETWEEN 31 AND 46),
+    race                   smallint CHECK (race >= 1),
+    is_hispanic            boolean,
+    marital_status         smallint CHECK (marital_status BETWEEN 1 AND 6),
+    citizenship            smallint CHECK (citizenship BETWEEN 1 AND 5),
+    cps_labor_force_status smallint CHECK (cps_labor_force_status BETWEEN 1 AND 7),
+    PRIMARY KEY (tucaseid, lineno)
+);
+
+-- 160 successive-difference replicate weights for TUFNWGTP (2006 weighting
+-- method), one row per respondent. Kept wide, mirroring the BLS file: variance
+-- estimation uses all 160 replicates of a row together. NULL for 2020
+-- respondents (TUFNWGTP is undefined in 2020).
+CREATE TABLE atus.replicate_weights (
+    tucaseid            bigint PRIMARY KEY REFERENCES atus.respondents (tucaseid),
+    tufnwgtp001       numeric(18,6),
+    tufnwgtp002       numeric(18,6),
+    tufnwgtp003       numeric(18,6),
+    tufnwgtp004       numeric(18,6),
+    tufnwgtp005       numeric(18,6),
+    tufnwgtp006       numeric(18,6),
+    tufnwgtp007       numeric(18,6),
+    tufnwgtp008       numeric(18,6),
+    tufnwgtp009       numeric(18,6),
+    tufnwgtp010       numeric(18,6),
+    tufnwgtp011       numeric(18,6),
+    tufnwgtp012       numeric(18,6),
+    tufnwgtp013       numeric(18,6),
+    tufnwgtp014       numeric(18,6),
+    tufnwgtp015       numeric(18,6),
+    tufnwgtp016       numeric(18,6),
+    tufnwgtp017       numeric(18,6),
+    tufnwgtp018       numeric(18,6),
+    tufnwgtp019       numeric(18,6),
+    tufnwgtp020       numeric(18,6),
+    tufnwgtp021       numeric(18,6),
+    tufnwgtp022       numeric(18,6),
+    tufnwgtp023       numeric(18,6),
+    tufnwgtp024       numeric(18,6),
+    tufnwgtp025       numeric(18,6),
+    tufnwgtp026       numeric(18,6),
+    tufnwgtp027       numeric(18,6),
+    tufnwgtp028       numeric(18,6),
+    tufnwgtp029       numeric(18,6),
+    tufnwgtp030       numeric(18,6),
+    tufnwgtp031       numeric(18,6),
+    tufnwgtp032       numeric(18,6),
+    tufnwgtp033       numeric(18,6),
+    tufnwgtp034       numeric(18,6),
+    tufnwgtp035       numeric(18,6),
+    tufnwgtp036       numeric(18,6),
+    tufnwgtp037       numeric(18,6),
+    tufnwgtp038       numeric(18,6),
+    tufnwgtp039       numeric(18,6),
+    tufnwgtp040       numeric(18,6),
+    tufnwgtp041       numeric(18,6),
+    tufnwgtp042       numeric(18,6),
+    tufnwgtp043       numeric(18,6),
+    tufnwgtp044       numeric(18,6),
+    tufnwgtp045       numeric(18,6),
+    tufnwgtp046       numeric(18,6),
+    tufnwgtp047       numeric(18,6),
+    tufnwgtp048       numeric(18,6),
+    tufnwgtp049       numeric(18,6),
+    tufnwgtp050       numeric(18,6),
+    tufnwgtp051       numeric(18,6),
+    tufnwgtp052       numeric(18,6),
+    tufnwgtp053       numeric(18,6),
+    tufnwgtp054       numeric(18,6),
+    tufnwgtp055       numeric(18,6),
+    tufnwgtp056       numeric(18,6),
+    tufnwgtp057       numeric(18,6),
+    tufnwgtp058       numeric(18,6),
+    tufnwgtp059       numeric(18,6),
+    tufnwgtp060       numeric(18,6),
+    tufnwgtp061       numeric(18,6),
+    tufnwgtp062       numeric(18,6),
+    tufnwgtp063       numeric(18,6),
+    tufnwgtp064       numeric(18,6),
+    tufnwgtp065       numeric(18,6),
+    tufnwgtp066       numeric(18,6),
+    tufnwgtp067       numeric(18,6),
+    tufnwgtp068       numeric(18,6),
+    tufnwgtp069       numeric(18,6),
+    tufnwgtp070       numeric(18,6),
+    tufnwgtp071       numeric(18,6),
+    tufnwgtp072       numeric(18,6),
+    tufnwgtp073       numeric(18,6),
+    tufnwgtp074       numeric(18,6),
+    tufnwgtp075       numeric(18,6),
+    tufnwgtp076       numeric(18,6),
+    tufnwgtp077       numeric(18,6),
+    tufnwgtp078       numeric(18,6),
+    tufnwgtp079       numeric(18,6),
+    tufnwgtp080       numeric(18,6),
+    tufnwgtp081       numeric(18,6),
+    tufnwgtp082       numeric(18,6),
+    tufnwgtp083       numeric(18,6),
+    tufnwgtp084       numeric(18,6),
+    tufnwgtp085       numeric(18,6),
+    tufnwgtp086       numeric(18,6),
+    tufnwgtp087       numeric(18,6),
+    tufnwgtp088       numeric(18,6),
+    tufnwgtp089       numeric(18,6),
+    tufnwgtp090       numeric(18,6),
+    tufnwgtp091       numeric(18,6),
+    tufnwgtp092       numeric(18,6),
+    tufnwgtp093       numeric(18,6),
+    tufnwgtp094       numeric(18,6),
+    tufnwgtp095       numeric(18,6),
+    tufnwgtp096       numeric(18,6),
+    tufnwgtp097       numeric(18,6),
+    tufnwgtp098       numeric(18,6),
+    tufnwgtp099       numeric(18,6),
+    tufnwgtp100       numeric(18,6),
+    tufnwgtp101       numeric(18,6),
+    tufnwgtp102       numeric(18,6),
+    tufnwgtp103       numeric(18,6),
+    tufnwgtp104       numeric(18,6),
+    tufnwgtp105       numeric(18,6),
+    tufnwgtp106       numeric(18,6),
+    tufnwgtp107       numeric(18,6),
+    tufnwgtp108       numeric(18,6),
+    tufnwgtp109       numeric(18,6),
+    tufnwgtp110       numeric(18,6),
+    tufnwgtp111       numeric(18,6),
+    tufnwgtp112       numeric(18,6),
+    tufnwgtp113       numeric(18,6),
+    tufnwgtp114       numeric(18,6),
+    tufnwgtp115       numeric(18,6),
+    tufnwgtp116       numeric(18,6),
+    tufnwgtp117       numeric(18,6),
+    tufnwgtp118       numeric(18,6),
+    tufnwgtp119       numeric(18,6),
+    tufnwgtp120       numeric(18,6),
+    tufnwgtp121       numeric(18,6),
+    tufnwgtp122       numeric(18,6),
+    tufnwgtp123       numeric(18,6),
+    tufnwgtp124       numeric(18,6),
+    tufnwgtp125       numeric(18,6),
+    tufnwgtp126       numeric(18,6),
+    tufnwgtp127       numeric(18,6),
+    tufnwgtp128       numeric(18,6),
+    tufnwgtp129       numeric(18,6),
+    tufnwgtp130       numeric(18,6),
+    tufnwgtp131       numeric(18,6),
+    tufnwgtp132       numeric(18,6),
+    tufnwgtp133       numeric(18,6),
+    tufnwgtp134       numeric(18,6),
+    tufnwgtp135       numeric(18,6),
+    tufnwgtp136       numeric(18,6),
+    tufnwgtp137       numeric(18,6),
+    tufnwgtp138       numeric(18,6),
+    tufnwgtp139       numeric(18,6),
+    tufnwgtp140       numeric(18,6),
+    tufnwgtp141       numeric(18,6),
+    tufnwgtp142       numeric(18,6),
+    tufnwgtp143       numeric(18,6),
+    tufnwgtp144       numeric(18,6),
+    tufnwgtp145       numeric(18,6),
+    tufnwgtp146       numeric(18,6),
+    tufnwgtp147       numeric(18,6),
+    tufnwgtp148       numeric(18,6),
+    tufnwgtp149       numeric(18,6),
+    tufnwgtp150       numeric(18,6),
+    tufnwgtp151       numeric(18,6),
+    tufnwgtp152       numeric(18,6),
+    tufnwgtp153       numeric(18,6),
+    tufnwgtp154       numeric(18,6),
+    tufnwgtp155       numeric(18,6),
+    tufnwgtp156       numeric(18,6),
+    tufnwgtp157       numeric(18,6),
+    tufnwgtp158       numeric(18,6),
+    tufnwgtp159       numeric(18,6),
+    tufnwgtp160       numeric(18,6)
+);
+
+-- 160 replicate weights for TU20FWGT (2020 pandemic-adjusted method), one row
+-- per 2019/2020 respondent.
+CREATE TABLE atus.pandemic_replicate_weights (
+    tucaseid            bigint PRIMARY KEY REFERENCES atus.respondents (tucaseid),
+    tu20fwgt001       numeric(18,6),
+    tu20fwgt002       numeric(18,6),
+    tu20fwgt003       numeric(18,6),
+    tu20fwgt004       numeric(18,6),
+    tu20fwgt005       numeric(18,6),
+    tu20fwgt006       numeric(18,6),
+    tu20fwgt007       numeric(18,6),
+    tu20fwgt008       numeric(18,6),
+    tu20fwgt009       numeric(18,6),
+    tu20fwgt010       numeric(18,6),
+    tu20fwgt011       numeric(18,6),
+    tu20fwgt012       numeric(18,6),
+    tu20fwgt013       numeric(18,6),
+    tu20fwgt014       numeric(18,6),
+    tu20fwgt015       numeric(18,6),
+    tu20fwgt016       numeric(18,6),
+    tu20fwgt017       numeric(18,6),
+    tu20fwgt018       numeric(18,6),
+    tu20fwgt019       numeric(18,6),
+    tu20fwgt020       numeric(18,6),
+    tu20fwgt021       numeric(18,6),
+    tu20fwgt022       numeric(18,6),
+    tu20fwgt023       numeric(18,6),
+    tu20fwgt024       numeric(18,6),
+    tu20fwgt025       numeric(18,6),
+    tu20fwgt026       numeric(18,6),
+    tu20fwgt027       numeric(18,6),
+    tu20fwgt028       numeric(18,6),
+    tu20fwgt029       numeric(18,6),
+    tu20fwgt030       numeric(18,6),
+    tu20fwgt031       numeric(18,6),
+    tu20fwgt032       numeric(18,6),
+    tu20fwgt033       numeric(18,6),
+    tu20fwgt034       numeric(18,6),
+    tu20fwgt035       numeric(18,6),
+    tu20fwgt036       numeric(18,6),
+    tu20fwgt037       numeric(18,6),
+    tu20fwgt038       numeric(18,6),
+    tu20fwgt039       numeric(18,6),
+    tu20fwgt040       numeric(18,6),
+    tu20fwgt041       numeric(18,6),
+    tu20fwgt042       numeric(18,6),
+    tu20fwgt043       numeric(18,6),
+    tu20fwgt044       numeric(18,6),
+    tu20fwgt045       numeric(18,6),
+    tu20fwgt046       numeric(18,6),
+    tu20fwgt047       numeric(18,6),
+    tu20fwgt048       numeric(18,6),
+    tu20fwgt049       numeric(18,6),
+    tu20fwgt050       numeric(18,6),
+    tu20fwgt051       numeric(18,6),
+    tu20fwgt052       numeric(18,6),
+    tu20fwgt053       numeric(18,6),
+    tu20fwgt054       numeric(18,6),
+    tu20fwgt055       numeric(18,6),
+    tu20fwgt056       numeric(18,6),
+    tu20fwgt057       numeric(18,6),
+    tu20fwgt058       numeric(18,6),
+    tu20fwgt059       numeric(18,6),
+    tu20fwgt060       numeric(18,6),
+    tu20fwgt061       numeric(18,6),
+    tu20fwgt062       numeric(18,6),
+    tu20fwgt063       numeric(18,6),
+    tu20fwgt064       numeric(18,6),
+    tu20fwgt065       numeric(18,6),
+    tu20fwgt066       numeric(18,6),
+    tu20fwgt067       numeric(18,6),
+    tu20fwgt068       numeric(18,6),
+    tu20fwgt069       numeric(18,6),
+    tu20fwgt070       numeric(18,6),
+    tu20fwgt071       numeric(18,6),
+    tu20fwgt072       numeric(18,6),
+    tu20fwgt073       numeric(18,6),
+    tu20fwgt074       numeric(18,6),
+    tu20fwgt075       numeric(18,6),
+    tu20fwgt076       numeric(18,6),
+    tu20fwgt077       numeric(18,6),
+    tu20fwgt078       numeric(18,6),
+    tu20fwgt079       numeric(18,6),
+    tu20fwgt080       numeric(18,6),
+    tu20fwgt081       numeric(18,6),
+    tu20fwgt082       numeric(18,6),
+    tu20fwgt083       numeric(18,6),
+    tu20fwgt084       numeric(18,6),
+    tu20fwgt085       numeric(18,6),
+    tu20fwgt086       numeric(18,6),
+    tu20fwgt087       numeric(18,6),
+    tu20fwgt088       numeric(18,6),
+    tu20fwgt089       numeric(18,6),
+    tu20fwgt090       numeric(18,6),
+    tu20fwgt091       numeric(18,6),
+    tu20fwgt092       numeric(18,6),
+    tu20fwgt093       numeric(18,6),
+    tu20fwgt094       numeric(18,6),
+    tu20fwgt095       numeric(18,6),
+    tu20fwgt096       numeric(18,6),
+    tu20fwgt097       numeric(18,6),
+    tu20fwgt098       numeric(18,6),
+    tu20fwgt099       numeric(18,6),
+    tu20fwgt100       numeric(18,6),
+    tu20fwgt101       numeric(18,6),
+    tu20fwgt102       numeric(18,6),
+    tu20fwgt103       numeric(18,6),
+    tu20fwgt104       numeric(18,6),
+    tu20fwgt105       numeric(18,6),
+    tu20fwgt106       numeric(18,6),
+    tu20fwgt107       numeric(18,6),
+    tu20fwgt108       numeric(18,6),
+    tu20fwgt109       numeric(18,6),
+    tu20fwgt110       numeric(18,6),
+    tu20fwgt111       numeric(18,6),
+    tu20fwgt112       numeric(18,6),
+    tu20fwgt113       numeric(18,6),
+    tu20fwgt114       numeric(18,6),
+    tu20fwgt115       numeric(18,6),
+    tu20fwgt116       numeric(18,6),
+    tu20fwgt117       numeric(18,6),
+    tu20fwgt118       numeric(18,6),
+    tu20fwgt119       numeric(18,6),
+    tu20fwgt120       numeric(18,6),
+    tu20fwgt121       numeric(18,6),
+    tu20fwgt122       numeric(18,6),
+    tu20fwgt123       numeric(18,6),
+    tu20fwgt124       numeric(18,6),
+    tu20fwgt125       numeric(18,6),
+    tu20fwgt126       numeric(18,6),
+    tu20fwgt127       numeric(18,6),
+    tu20fwgt128       numeric(18,6),
+    tu20fwgt129       numeric(18,6),
+    tu20fwgt130       numeric(18,6),
+    tu20fwgt131       numeric(18,6),
+    tu20fwgt132       numeric(18,6),
+    tu20fwgt133       numeric(18,6),
+    tu20fwgt134       numeric(18,6),
+    tu20fwgt135       numeric(18,6),
+    tu20fwgt136       numeric(18,6),
+    tu20fwgt137       numeric(18,6),
+    tu20fwgt138       numeric(18,6),
+    tu20fwgt139       numeric(18,6),
+    tu20fwgt140       numeric(18,6),
+    tu20fwgt141       numeric(18,6),
+    tu20fwgt142       numeric(18,6),
+    tu20fwgt143       numeric(18,6),
+    tu20fwgt144       numeric(18,6),
+    tu20fwgt145       numeric(18,6),
+    tu20fwgt146       numeric(18,6),
+    tu20fwgt147       numeric(18,6),
+    tu20fwgt148       numeric(18,6),
+    tu20fwgt149       numeric(18,6),
+    tu20fwgt150       numeric(18,6),
+    tu20fwgt151       numeric(18,6),
+    tu20fwgt152       numeric(18,6),
+    tu20fwgt153       numeric(18,6),
+    tu20fwgt154       numeric(18,6),
+    tu20fwgt155       numeric(18,6),
+    tu20fwgt156       numeric(18,6),
+    tu20fwgt157       numeric(18,6),
+    tu20fwgt158       numeric(18,6),
+    tu20fwgt159       numeric(18,6),
+    tu20fwgt160       numeric(18,6)
+);

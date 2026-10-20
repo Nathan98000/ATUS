@@ -1,0 +1,32 @@
+== data:
+_OR_WARN_USERS_THEY_CANNOT_UPGRADE,we={pending:!1,data:null,method:null,action:null},Te=[],Ee=-1;function
+boardData:window.clipboardData}})),ar=Gn(w({},Kn,{data:0})),or={Esc:`Escape`,Spacebar:` `,Left:`ArrowLeft
+eturn e=e.detail,typeof e==`object`&&`data`in e?e.data:null}var Dr=!1;function Or(e,t){switch(e){case`com
+adCount:0};function Ia(){return{controller:new Na,data:new Map,refCount:0}}function La(e){e.refCount--,e.
+updateQueue,r!==null&&(r=r.memoCache,r!=null&&(t={data:r.data.map(function(e){return e.slice()}),index:0}
+(Tf!==0){var e=new FormData(i,o);rc(n,{pending:!0,data:e,method:i.method,action:a},null,e)}}else typeof a
+entDefault(),e=new FormData(i,o),rc(n,{pending:!0,data:e,method:i.method,action:a},a,e))},currentTarget:i
+n);a!==null&&(e.splice(t,3),t-=3,rc(a,{pending:!0,data:i,method:n.method,action:r},r,i))}}))}function Hh(
+e(this.state.data,e,this.options);return this.#c({data:n,type:`success`,dataUpdatedAt:t?.updatedAt,manual
+r:null,status:`pending`}}}function Be(e,t){return{data:e,dataUpdatedAt:t??Date.now(),error:null,isInvalid
+alDataUpdatedAt():e.initialDataUpdatedAt:0;return{data:t,dataUpdateCount:0,dataUpdatedAt:n?r??Date.now():
+success`,isError:v,isInitialLoading:y,isLoading:y,data:d,dataUpdatedAt:l.dataUpdatedAt,error:f,errorUpdat
+l,e,this.state.context,n),this.#i({type:`success`,data:o}),o}catch(t){try{await this.#n.config.onError?.(
+d:!1};case`pending`:return{...t,context:e.context,data:void 0,failureCount:0,failureReason:null,error:nul
+submittedAt:Date.now()};case`success`:return{...t,data:e.data,failureCount:0,failureReason:null,error:nul
+us:`success`,isPaused:!1};case`error`:return{...t,data:void 0,error:e.error,failureCount:t.failureCount+1
+ction:e})})}};function Ye(){return{context:void 0,data:void 0,error:null,failureCount:0,failureReason:nul
+`blob:`,`chrome:`,`chrome-untrusted:`,`content:`,`data:`,`devtools:`,`file:`,`filesystem:`,`javascript:`]
+hat could not be read as JSON.`,{cause:e})}return{data:c,analysisKey:s.headers.get(`X-Analysis-Key`),cach
+Years:e.data.data.years,meta:e.data,populationMetadata:t.data})}function xo({metaYears:e,meta:t,populatio
+== blob:
+ar yn=[`GET`,...vn];new Set(yn);var bn=[`about:`,`blob:`,`chrome:`,`chrome-untrusted:`,`content:`,`data:`
+== createElement(`style`)
+l,precedence:null});return r=(e.ownerDocument||e).createElement(`style`),Wt(r),np(r,`style`,a),Vm(r,n.precedence,e),t.inst
+== innerHTML
+,a);break;case`script`:o=s.createElement(`div`),o.innerHTML=`<script><\/script>`,o=o.removeChild(o.firstChild
+ildren!=null)throw Error(i(60));o?.__html!==n&&(e.innerHTML=n)}}break;case`multiple`:e.multiple=r&&typeof r!=
+ing`:case`defaultValue`:case`defaultChecked`:case`innerHTML`:case`ref`:break;case`autoFocus`:break;case`xlink
+ildren!=null)throw Error(i(60));o?.__html!==n&&(e.innerHTML=n)}}break;case`children`:if(typeof r==`string`)vn
+tableWarning`:case`suppressHydrationWarning`:case`innerHTML`:case`ref`:return;case`innerText`:case`textConten
+== style=

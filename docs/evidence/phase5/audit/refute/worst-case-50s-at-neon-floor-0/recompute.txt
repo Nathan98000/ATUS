@@ -1,0 +1,184 @@
+== matrix_a_neon025_jitoff.json ['label', 'date_utc', 'ran_alone', 'machine', 'docker', 'db_container', 'db_limits', 'api_limits', 'session_jit', 'read_only_session', 'db_cpu_before', 'api_cpu_before', 'db_cpu_after', 'api_cpu_after', 'api_mem_after', 'summary', 'date_end_utc']
+meta                           n=11 p50=0.17 min=0.06 max=0.29 rounds=[0.3, 0.2, 0.3, 0.2, 0.1, 0.2, 0.1, 0.2, 0.1, 0.2, 0.1] dbfrac_min=None status={200}
+activities                     n=11 p50=0.01 min=0.01 max=0.07 rounds=[0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0] dbfrac_min=None status={200}
+cached_estimate                n=11 p50=0.01 min=0.01 max=0.01 rounds=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] dbfrac_min=None status={200}
+est_1y_010101_2025             n=8 p50=6.88 min=3.06 max=7.38 rounds=[3.1, 3.6, 3.7, 7.0, 7.1, 6.8, 7.4, 7.3] dbfrac_min=0.9958390147253633 status={200}
+cmp_1y_sex_010101_2025         n=8 p50=6.34 min=5.80 max=7.60 rounds=[6.3, 7.4, 7.6, 6.3, 5.8, 6.4, 6.2, 6.5] dbfrac_min=0.9838572241947795 status={200}
+pooled22_leisure_bls           n=6 p50=50.49 min=38.50 max=52.51 rounds=[38.5, 40.5, 51.8, 49.3, 51.7, 52.5] dbfrac_min=0.9994672778030502 status={200}
+trend23_tier1_12               n=6 p50=46.67 min=37.98 max=51.98 rounds=[38.0, 38.3, 46.9, 46.5, 52.0, 48.5] dbfrac_min=0.9950656221422194 status={200}
+trend23_6digit_010101          n=6 p50=42.51 min=35.41 max=50.80 rounds=[36.1, 35.4, 50.8, 36.5, 49.0, 48.5] dbfrac_min=0.9943262208475225 status={200}
+pandemic_2019_2020_sleep       n=8 p50=2.95 min=2.22 max=3.51 rounds=[3.5, 3.1, 2.2, 2.5, 3.0, 3.1, 2.6, 2.9] dbfrac_min=0.9943993103086973 status={200}
+label matrix-a_neon025_jitoff
+date_utc 2026-10-20T18:10:56.763236Z
+ran_alone yes - sole ATUS audit workload; other projects' containers (supabase_*, timeblock-postgres) and host apps kept running (see env_snapshot_*.txt)
+machine Apple M4, 10-core, 24 GB RAM, macOS 27.0.1; Docker Desktop VM 10 vCPU / 7.75 GiB
+docker server 29.6.2 client 29.6.2
+db_container atus-emu-pg
+db_limits NanoCpus=250000000 Memory=1073741824
+api_limits cpus=0.1 mem=512m
+session_jit off
+read_only_session False
+db_cpu_before usage_usec 641878050
+user_usec 599466304
+system_usec 42411746
+nice_usec 0
+nr_periods 78
+nr_throttled 20
+throttled_usec 3277332
+nr_bursts 0
+burst_usec 0
+api_cpu_before usage_usec 846099
+user_usec 761776
+system_usec 84322
+nice_usec 0
+nr_periods 100
+nr_throttled 82
+throttled_usec 7374561
+nr_bursts 0
+burst_usec 0
+db_cpu_after usage_usec 876770514
+user_usec 815802536
+system_usec 60967978
+nice_usec 0
+nr_periods 9598
+nr_throttled 9388
+throttled_usec 2420419181
+nr_bursts 0
+burst_usec 0
+api_cpu_after usage_usec 5405419
+user_usec 4839902
+system_usec 565517
+nice_usec 0
+nr_periods 5833
+nr_throttled 103
+throttled_usec 8881961
+nr_bursts 0
+burst_usec 0
+api_mem_after {'raw': '51515392\n===\n52531200\n===\nanon 47042560\nfile 933888\nkernel 2854912\nsock 0\nshmem 0\n===\nVmHWM:\t   68092 kB\nVmRSS:\t   68092 kB\nRssAnon:\t   45676 kB\nRssFile:\t   22416 kB\nThreads:\t6\n===\n    1 68092 457032    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 5414737\nuser_usec 4844881\nsystem_usec 569856\nnice_usec 0\nnr_periods 5834\nnr_throttled 104\nthrottled_usec 8936719\nnr_bursts 0\nburst_usec 0', 'memory_current': 51515392, 'memory_peak': 52531200, 'memory_stat': {'anon': 4704
+summary {'meta': {'n': 10, 'statuses': ['200'], 'x_cache': ['None'], 'wall_s': {'n': 10, 'min': 0.05931345804128796, 'p50': 0.1690100834821351, 'p95': 0.237599335896084, 'max': 0.2745895420666784}, 'server_ms': {'n': 10, 'min': 55.9, 'p50': 164.8, 'p95': 233.4199999999999, 'max': 270.5}, 'db_ms': {'n': 10, 'min': 52.559000000000005, 'p50': 160.9955, 'p95': 229.44469999999987, 'max': 266.53099999999995}, 'analysis_sql_ms': {'n': 10, 'min': 0.0, 'p50': 0.0, 'p95': 0.0, 'max': 0.0}, 'api_ms_total_minus_db': {'n': 10, 'min': 2.6367079453244884, 'p50': 6.88629154256358, 'p95': 8.438504616264263, 'max': 8.5
+date_end_utc 2026-10-20T18:27:10.827587Z
+== matrix_a_neon025_jiton.json ['label', 'date_utc', 'ran_alone', 'machine', 'docker', 'db_container', 'db_limits', 'api_limits', 'session_jit', 'read_only_session', 'db_cpu_before', 'api_cpu_before', 'db_cpu_after', 'api_cpu_after', 'api_mem_after', 'summary', 'date_end_utc']
+est_1y_010101_2025             n=4 p50=4.12 min=3.72 max=4.28 rounds=[3.7, 4.3, 4.1, 4.2] dbfrac_min=0.9780714464996753 status={200}
+pooled22_leisure_bls           n=4 p50=67.60 min=57.30 max=74.80 rounds=[74.8, 57.3, 64.5, 70.7] dbfrac_min=0.997963288283696 status={200}
+trend23_tier1_12               n=4 p50=61.91 min=58.51 max=70.80 rounds=[59.5, 70.8, 64.3, 58.5] dbfrac_min=0.996057193030392 status={200}
+label matrix-a_neon025_jiton
+date_utc 2026-10-20T18:27:48.340229Z
+ran_alone yes - sole ATUS audit workload; other projects' containers (supabase_*, timeblock-postgres) and host apps kept running (see env_snapshot_*.txt)
+machine Apple M4, 10-core, 24 GB RAM, macOS 27.0.1; Docker Desktop VM 10 vCPU / 7.75 GiB
+docker server 29.6.2 client 29.6.2
+db_container atus-emu-pg
+db_limits NanoCpus=250000000 Memory=1073741824
+api_limits cpus=0.1 mem=512m
+session_jit on
+read_only_session False
+db_cpu_before usage_usec 876814931
+user_usec 815826809
+system_usec 60988121
+nice_usec 0
+nr_periods 9617
+nr_throttled 9388
+throttled_usec 2420419181
+nr_bursts 0
+burst_usec 0
+api_cpu_before usage_usec 883435
+user_usec 783369
+system_usec 100065
+nice_usec 0
+nr_periods 105
+nr_throttled 86
+throttled_usec 7548724
+nr_bursts 0
+burst_usec 0
+db_cpu_after usage_usec 1011073162
+user_usec 944206119
+system_usec 66867043
+nice_usec 0
+nr_periods 15011
+nr_throttled 14752
+throttled_usec 3853945111
+nr_bursts 0
+burst_usec 0
+api_cpu_after usage_usec 2755019
+user_usec 2447951
+system_usec 307067
+nice_usec 0
+nr_periods 2779
+nr_throttled 96
+throttled_usec 7882387
+nr_bursts 0
+burst_usec 0
+api_mem_after {'raw': '49475584\n===\n50229248\n===\nanon 44765184\nfile 909312\nkernel 2834432\nsock 0\nshmem 0\n===\nVmHWM:\t   65872 kB\nVmRSS:\t   65872 kB\nRssAnon:\t   43452 kB\nRssFile:\t   22420 kB\nThreads:\t6\n===\n    1 65872 456008    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 2765953\nuser_usec 2453495\nsystem_usec 312458\nnice_usec 0\nnr_periods 2780\nnr_throttled 97\nthrottled_usec 7899321\nnr_bursts 0\nburst_usec 0', 'memory_current': 49475584, 'memory_peak': 50229248, 'memory_stat': {'anon': 44765
+summary {'est_1y_010101_2025': {'n': 3, 'statuses': ['200'], 'x_cache': ['miss'], 'wall_s': {'n': 3, 'min': 4.074430292006582, 'p50': 4.163660041987896, 'p95': 4.269449567317497, 'max': 4.281203959020786}, 'server_ms': {'n': 3, 'min': 4067.9, 'p50': 4160.8, 'p95': 4265.47, 'max': 4277.1}, 'db_ms': {'n': 3, 'min': 4057.4979999999996, 'p50': 4072.3570000000004, 'p95': 4247.8552, 'max': 4267.355}, 'analysis_sql_ms': {'n': 3, 'min': 3900.481, 'p50': 4003.81, 'p95': 4008.7807000000003, 'max': 4009.333}, 'api_ms_total_minus_db': {'n': 3, 'min': 13.848959020786424, 'p50': 16.93229200658243, 'p95': 83.8659669
+date_end_utc 2026-10-20T18:37:02.119496Z
+== matrix_b_neon2cu_jitoff.json ['label', 'date_utc', 'ran_alone', 'machine', 'docker', 'db_container', 'db_limits', 'api_limits', 'session_jit', 'read_only_session', 'db_cpu_before', 'api_cpu_before', 'db_cpu_after', 'api_cpu_after', 'api_mem_after', 'summary', 'date_end_utc']
+meta                           n=11 p50=0.03 min=0.02 max=0.13 rounds=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0] dbfrac_min=None status={200}
+activities                     n=11 p50=0.01 min=0.01 max=0.02 rounds=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] dbfrac_min=None status={200}
+cached_estimate                n=11 p50=0.01 min=0.00 max=0.11 rounds=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0] dbfrac_min=None status={200}
+est_1y_010101_2025             n=8 p50=0.38 min=0.26 max=0.46 rounds=[0.3, 0.3, 0.3, 0.4, 0.5, 0.4, 0.4, 0.4] dbfrac_min=None status={200}
+cmp_1y_sex_010101_2025         n=8 p50=0.45 min=0.43 max=0.49 rounds=[0.5, 0.4, 0.4, 0.4, 0.4, 0.5, 0.5, 0.5] dbfrac_min=None status={200}
+pooled22_leisure_bls           n=6 p50=2.75 min=2.14 max=3.44 rounds=[2.2, 2.1, 2.8, 2.7, 3.4, 3.0] dbfrac_min=0.992872755447016 status={200}
+trend23_tier1_12               n=6 p50=2.86 min=2.27 max=3.06 rounds=[2.3, 2.4, 3.0, 2.8, 3.0, 3.1] dbfrac_min=0.9601106752501144 status={200}
+trend23_6digit_010101          n=6 p50=2.64 min=2.09 max=2.90 rounds=[2.1, 2.1, 2.7, 2.6, 2.9, 2.9] dbfrac_min=0.9575281220637556 status={200}
+pandemic_2019_2020_sleep       n=8 p50=0.56 min=0.52 max=0.63 rounds=[0.5, 0.5, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6] dbfrac_min=None status={200}
+label matrix-b_neon2cu_jitoff
+date_utc 2026-10-20T18:53:00.985751Z
+ran_alone yes - sole ATUS audit workload; other projects' containers (supabase_*, timeblock-postgres) and host apps kept running (see env_snapshot_*.txt)
+machine Apple M4, 10-core, 24 GB RAM, macOS 27.0.1; Docker Desktop VM 10 vCPU / 7.75 GiB
+docker server 29.6.2 client 29.6.2
+db_container atus-emu-pg
+db_limits NanoCpus=2000000000 Memory=8589934592
+api_limits cpus=0.1 mem=512m
+session_jit off
+read_only_session False
+db_cpu_before usage_usec 80192600
+user_usec 74231442
+system_usec 5961158
+nice_usec 0
+nr_periods 3335
+nr_throttled 3196
+throttled_usec 1271630553
+nr_bursts 0
+burst_usec 0
+api_cpu_before usage_usec 969271
+user_usec 857617
+system_usec 111653
+nice_usec 0
+nr_periods 112
+nr_throttled 95
+throttled_usec 8486955
+nr_bursts 0
+burst_usec 0
+db_cpu_after usage_usec 191621179
+user_usec 178399511
+system_usec 13221667
+nice_usec 0
+nr_periods 4076
+nr_throttled 3662
+throttled_usec 1316914365
+nr_bursts 0
+burst_usec 0
+api_cpu_after usage_usec 1986413
+user_usec 1780228
+system_usec 206184
+nice_usec 0
+nr_periods 583
+nr_throttled 110
+throttled_usec 9301058
+nr_bursts 0
+burst_usec 0
+api_mem_after {'raw': '50888704\n===\n51916800\n===\nanon 46710784\nfile 921600\nkernel 2854912\nsock 0\nshmem 0\n===\nVmHWM:\t   67752 kB\nVmRSS:\t   67752 kB\nRssAnon:\t   45352 kB\nRssFile:\t   22400 kB\nThreads:\t6\n===\n    1 67752 457032    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 2001686\nuser_usec 1792359\nsystem_usec 209326\nnice_usec 0\nnr_periods 585\nnr_throttled 111\nthrottled_usec 9461019\nnr_bursts 0\nburst_usec 0', 'memory_current': 50888704, 'memory_peak': 51916800, 'memory_stat': {'anon': 46710
+summary {'meta': {'n': 10, 'statuses': ['200'], 'x_cache': ['None'], 'wall_s': {'n': 10, 'min': 0.03060179203748703, 'p50': 0.03238514601252973, 'p95': 0.08853217717842189, 'max': 0.1285745829809457}, 'server_ms': {'n': 10, 'min': 27.3, 'p50': 28.4, 'p95': 83.09499999999991, 'max': 124.9}, 'db_ms': {'n': 10, 'min': 23.687, 'p50': 25.2035, 'p95': 74.68879999999992, 'max': 112.55}, 'analysis_sql_ms': {'n': 10, 'min': 0.0, 'p50': 0.0, 'p95': 0.0, 'max': 0.0}, 'api_ms_total_minus_db': {'n': 10, 'min': 6.010792037487025, 'p50': 7.108646003384141, 'p95': 15.97052717842199, 'max': 16.02458298094571}, 'db_sta
+date_end_utc 2026-10-20T18:54:38.685373Z
+matrix_a_neon025_jitoff.json est_1y_010101_2025 7 {'n': 7, 'min': 3.65, 'p50': 6.95, 'p95': 7.35, 'max': 7.38}
+matrix_a_neon025_jitoff.json cmp_1y_sex_010101_2025 7 {'n': 7, 'min': 5.8, 'p50': 6.38, 'p95': 7.54, 'max': 7.6}
+matrix_a_neon025_jitoff.json pooled22_leisure_bls 5 {'n': 5, 'min': 40.48, 'p50': 51.69, 'p95': 52.37, 'max': 52.51}
+matrix_a_neon025_jitoff.json trend23_tier1_12 5 {'n': 5, 'min': 38.27, 'p50': 46.87, 'p95': 51.28, 'max': 51.98}
+matrix_a_neon025_jitoff.json trend23_6digit_010101 5 {'n': 5, 'min': 35.41, 'p50': 48.53, 'p95': 50.44, 'max': 50.8}
+matrix_a_neon025_jiton.json est_1y_010101_2025 3 {'n': 3, 'min': 4.07, 'p50': 4.16, 'p95': 4.27, 'max': 4.28}
+matrix_a_neon025_jiton.json pooled22_leisure_bls 3 {'n': 3, 'min': 57.3, 'p50': 64.49, 'p95': 70.08, 'max': 70.71}
+matrix_a_neon025_jiton.json trend23_tier1_12 3 {'n': 3, 'min': 58.51, 'p50': 64.32, 'p95': 70.15, 'max': 70.8}
+matrix_b_neon2cu_jitoff.json est_1y_010101_2025 7 {'n': 7, 'min': 0.26, 'p50': 0.38, 'p95': 0.45, 'max': 0.46}
+matrix_b_neon2cu_jitoff.json cmp_1y_sex_010101_2025 7 {'n': 7, 'min': 0.43, 'p50': 0.44, 'p95': 0.48, 'max': 0.48}
+matrix_b_neon2cu_jitoff.json pooled22_leisure_bls 5 {'n': 5, 'min': 2.14, 'p50': 2.8, 'p95': 3.35, 'max': 3.44}
+matrix_b_neon2cu_jitoff.json trend23_tier1_12 5 {'n': 5, 'min': 2.35, 'p50': 2.96, 'p95': 3.04, 'max': 3.06}
+matrix_b_neon2cu_jitoff.json trend23_6digit_010101 5 {'n': 5, 'min': 2.09, 'p50': 2.69, 'p95': 2.9, 'max': 2.9}

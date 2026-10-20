@@ -1,0 +1,28 @@
+SET
+          relname           | reltuples | last_analyze | last_autoanalyze | last_vacuum | last_autovacuum 
+----------------------------+-----------+--------------+------------------+-------------+-----------------
+ activities                 |   4993651 |              |                  |             | 
+ activity_codes             |       431 |              |                  |             | 
+ activity_companions        |   6357961 |              |                  |             | 
+ activity_tier1             |        -1 |              |                  |             | 
+ activity_tier2             |       107 |              |                  |             | 
+ cps_persons                |    681624 |              |                  |             | 
+ household_members          |    702409 |              |                  |             | 
+ ingestion_runs             |        -1 |              |                  |             | 
+ pandemic_replicate_weights |     18217 |              |                  |             | 
+ replicate_weights          |    257868 |              |                  |             | 
+ respondents                |    258954 |              |                  |             | 
+ source_files               |        -1 |              |                  |             | 
+ validation_results         |       148 |              |                  |             | 
+(13 rows)
+
+ stats_reset 
+-------------
+ 
+(1 row)
+
+   pg_postmaster_start_time    
+-------------------------------
+ 2026-10-20 15:08:11.699365+00
+(1 row)
+

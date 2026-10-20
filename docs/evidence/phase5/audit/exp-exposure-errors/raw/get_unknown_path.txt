@@ -1,0 +1,11 @@
+### curl http://127.0.0.1:8206/does-not-exist (port 8206)
+HTTP/1.1 404 Not Found
+date: Tue, 20 Oct 2026 17:07:51 GMT
+server: uvicorn
+content-length: 67
+content-type: application/json
+vary: Origin
+x-request-id: a311afc760594f78
+
+{"error":{"code":"not_found","message":"Not Found","details":null}}
+### status=404 time_total=0.001756s size_download=67 size_upload=0

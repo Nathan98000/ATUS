@@ -1,0 +1,15 @@
+long request : finished t=3.04s
+loader       : FAILED DeadlockDetected t=4.05s
+new request  : ok value=75.0 t=4.07s
+latest ingestion run: (6, 'failed', 'DeadlockDetected: deadlock detected\nDETAIL:  Process 1649 wa')
+-- trial 1 done
+long request : finished t=3.04s
+loader       : FAILED DeadlockDetected t=4.05s
+new request  : ok value=75.0 t=4.05s
+latest ingestion run: (7, 'failed', 'DeadlockDetected: deadlock detected\nDETAIL:  Process 1654 wa')
+-- trial 2 done
+long request : finished t=3.03s
+loader       : FAILED DeadlockDetected t=4.03s
+new request  : ok value=75.0 t=4.04s
+latest ingestion run: (8, 'failed', 'DeadlockDetected: deadlock detected\nDETAIL:  Process 1681 wa')
+-- trial 3 done

@@ -1,0 +1,91 @@
+=== GET /health
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:15:26 GMT
+server: uvicorn
+content-length: 15
+content-type: application/json
+x-request-id: dd02d145cece4501
+
+=== GET /ready
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:15:26 GMT
+server: uvicorn
+content-length: 53
+content-type: application/json
+x-request-id: 86ed61581f384806
+
+=== GET /api/v1/meta
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:15:26 GMT
+server: uvicorn
+content-length: 2255
+content-type: application/json
+cache-control: public, max-age=300
+x-request-id: 4a1764bc89f14c9d
+
+=== GET /docs
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:15:26 GMT
+server: uvicorn
+content-length: 1016
+content-type: text/html; charset=utf-8
+x-request-id: 6a821f437c3643c4
+
+=== GET /redoc
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:15:26 GMT
+server: uvicorn
+content-length: 898
+content-type: text/html; charset=utf-8
+x-request-id: 11462802668847e3
+
+=== GET /openapi.json
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:15:27 GMT
+server: uvicorn
+content-length: 32892
+content-type: application/json
+x-request-id: 6f3d01a09aea49dd
+
+=== GET /nope
+HTTP/1.1 404 Not Found
+date: Tue, 20 Oct 2026 17:15:27 GMT
+server: uvicorn
+content-length: 67
+content-type: application/json
+x-request-id: c619240e3e0c4406
+
+=== POST estimate (200)
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:15:27 GMT
+server: uvicorn
+content-length: 952
+content-type: application/json
+x-analysis-key: f926a40aa40e7df0531bb7ba4ba0272f5208ef6ef56abe47cca918f8f526c88d
+x-cache: miss
+x-request-id: 5a3493dc8bdb4bc7
+
+=== POST estimate (422)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:15:27 GMT
+server: uvicorn
+content-length: 93
+content-type: application/json
+x-request-id: b6f1d3611c634c82
+
+{"error":{"code":"invalid_spec","message":"Year 2023 appears more than once","details":null}}
+=== X-Forwarded-For spoof (uvicorn default trusts only 127.0.0.1/::1; UDS client)
+200
+13:15:27 INFO    atus.api: request_id=5b543d79e5894a58 GET /health -> 200 in 0.2ms cache=-
+INFO:      - "GET /health HTTP/1.1" 200 OK
+=== docs html third-party refs
+https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css
+https://fastapi.tiangolo.com/img/favicon.png
+https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js
+https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700
+https://fastapi.tiangolo.com/img/favicon.png
+https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js
+=== openapi size/paths
+34994 bytes
+['/api/v1/activities', '/api/v1/activities/presets', '/api/v1/activities/{code}', '/api/v1/analysis/compare', '/api/v1/analysis/estimate', '/api/v1/analysis/trend', '/api/v1/meta', '/api/v1/population/metadata', '/health', '/ready']
+{'title': 'ATUS Analysis API', 'description': "Read-only analytical API over the American Time Use Survey (ATUS) 2003-2025\nmulti-year microdata.\n\nAll estimates are **survey-weighted population statistics** computed by the\nproject's validated analytical engine (ATUS User's Guide ch. 7 estimators;\nreplicate-weight standard errors per ch. 7.5) — never unweighted sample\nmeans. 2020 has special weighting rules the engine enforces explicitly.\nMethodology: see docs/analytics.md and docs/methodology.md in the repository;\nthe engine reproduces 24 official BLS published values in its benchmark suite.\n\nResponses embed the exact canonical analysis `spec`; resubmitting it (same\n`analytics_version` and data release, see GET /api/v1/meta) reproduces the\nresult.\n", 'version': 'v1 (contract)'}

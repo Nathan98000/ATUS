@@ -1,0 +1,92 @@
+[
+  {
+    "t_start": 1792517315.747,
+    "t_end": 1792517315.747,
+    "scenario": "c_v2_same_shape",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "api_version=v2"
+  },
+  {
+    "t_start": 1792517315.748,
+    "t_end": 1792517315.749,
+    "scenario": "c_v2_same_shape",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/population/metadata",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792517315.749,
+    "t_end": 1792517315.749,
+    "scenario": "c_v2_same_shape",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "api_version=v2"
+  },
+  {
+    "t_start": 1792517315.75,
+    "t_end": 1792517315.75,
+    "scenario": "c_v2_same_shape",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792517315.751,
+    "t_end": 1792517315.751,
+    "scenario": "c_v2_same_shape",
+    "origin": "http://127.0.0.1:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "api_version=v2"
+  },
+  {
+    "t_start": 1792517315.753,
+    "t_end": 1792517315.753,
+    "scenario": "c_v2_same_shape",
+    "origin": "http://[::1]:4182",
+    "method": "OPTIONS",
+    "path": "/api/v1/analysis/estimate",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792517315.754,
+    "t_end": 1792517315.755,
+    "scenario": "c_v2_same_shape",
+    "origin": "http://[::1]:4182",
+    "method": "POST",
+    "path": "/api/v1/analysis/estimate",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792517315.757,
+    "t_end": 1792517315.757,
+    "scenario": "c_v2_same_shape",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792517315.755,
+    "t_end": 1792517315.757,
+    "scenario": "c_v2_same_shape",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/activities",
+    "status": 200,
+    "note": ""
+  }
+]

@@ -1,0 +1,11 @@
+N=50 sleep=0.0s: outcomes {(200, 'miss'): 10, (503, 'database_unavailable'): 40}
+  status 200: n=10 finished at t= min 10.08s  median 10.09s  max 10.10s
+  status 503: n=40 finished at t= min 10.04s  median 10.06s  max 10.07s
+  completion histogram (1s buckets, status): [((10, 200), 10), ((10, 503), 40)]
+   probe /health sent t=0.52s -> 200 done t=0.52s latency=0.002s
+   probe /health sent t=1.02s -> 200 done t=1.04s latency=0.024s
+   probe /health sent t=2.02s -> 200 done t=2.02s latency=0.002s
+   probe /health sent t=5.02s -> 200 done t=5.02s latency=0.002s
+   probe /api/v1/population/metadata sent t=1.02s -> 200 done t=10.07s latency=9.053s
+   probe /api/v1/population/metadata sent t=5.02s -> 200 done t=10.07s latency=5.049s
+   probe /ready sent t=1.02s -> 200 done t=10.1s latency=9.079s

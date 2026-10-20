@@ -1,0 +1,6 @@
+max_waiting 0 round1 ['timeout', 'timeout', 'timeout'] stats {'pool_available': 0, 'requests_waiting': 3}
+  after all timed out, new single request -> ['timeout'] requests_waiting 4
+  after putconn requests_waiting 0 available 1
+max_waiting 3 round1 ['timeout', 'timeout', 'timeout'] stats {'pool_available': 0, 'requests_waiting': 3}
+  after all timed out, new single request -> ['TooMany'] requests_waiting 3
+  after putconn requests_waiting 0 available 1

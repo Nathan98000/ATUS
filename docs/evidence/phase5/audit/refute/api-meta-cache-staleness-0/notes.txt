@@ -1,0 +1,1 @@
+Code-read only; refs: meta.py:56-66, dependencies.py:50-60, analysis.py:77-100, loader.py:192-229, queries.ts:25,35-42,83-120, client.ts:111, main.tsx:10

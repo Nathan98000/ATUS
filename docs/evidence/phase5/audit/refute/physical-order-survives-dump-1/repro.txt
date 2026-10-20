@@ -1,0 +1,23 @@
+== source correlation
+tucaseid|0.005004177
+activity_code|1
+duration_minutes|-0.001341535
+-rw-r--r-- 1 root root 9534011 Oct 20 19:34 /tmp/x.dump
+restore=0
+== restored correlation
+tucaseid|0.014107203
+activity_code|1
+duration_minutes|-0.0029704922
+                                                   QUERY PLAN                                                    
+-----------------------------------------------------------------------------------------------------------------
+ Aggregate (actual time=3.363..3.364 rows=1 loops=1)
+   Buffers: shared hit=8 read=113
+   ->  Index Scan using activities_activity_code_idx on activities (actual time=0.113..2.312 rows=15160 loops=1)
+         Index Cond: (activity_code = ANY ('{000010,000011,000012}'::bpchar[]))
+         Buffers: shared hit=8 read=113
+ Planning:
+   Buffers: shared hit=97
+ Planning Time: 0.343 ms
+ Execution Time: 3.409 ms
+(9 rows)
+

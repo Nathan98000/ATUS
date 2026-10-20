@@ -1,0 +1,15 @@
+== A_unset
+.nextLocation.pathname,r)||n.nextLocation.pathname;return Gt(i.pathname,o)!=null||Gt(i.pathname,a)!=null}var gi=g(),_i=`/api/v1`;function
+function vi(){return`http://localhost:8000`.replace(/\/+$/
+== B_empty
+.nextLocation.pathname,r)||n.nextLocation.pathname;return Gt(i.pathname,o)!=null||Gt(i.pathname,a)!=null}var gi=g(),_i=`/api/v1`;function
+function vi(){return`http://localhost:8000`.replace(/\/+$/
+== C_slash
+.nextLocation.pathname,r)||n.nextLocation.pathname;return Gt(i.pathname,o)!=null||Gt(i.pathname,a)!=null}var gi=g(),_i=`/api/v1`;function
+function vi(){return`/`.replace(/\/+$/
+== D_abs
+.nextLocation.pathname,r)||n.nextLocation.pathname;return Gt(i.pathname,o)!=null||Gt(i.pathname,a)!=null}var gi=g(),_i=`/api/v1`;function
+function vi(){return`https://api.example.invalid/`.replace(/\/+$/
+== E_laptop_envlocal
+.nextLocation.pathname,r)||n.nextLocation.pathname;return Gt(i.pathname,o)!=null||Gt(i.pathname,a)!=null}var gi=g(),_i=`/api/v1`;function
+function vi(){return`http://localhost:8123`.replace(/\/+$/

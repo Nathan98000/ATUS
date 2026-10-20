@@ -1,0 +1,80 @@
+     1	# Python
+     2	__pycache__/
+     3	*.py[cod]
+     4	*.egg-info/
+     5	.venv/
+     6	venv/
+     7	build/
+     8	dist/
+     9	.pytest_cache/
+    10	.ruff_cache/
+    11	
+    12	# Environment / secrets
+    13	.env
+    14	
+    15	# ATUS data: raw and staged files are large and are re-downloadable from BLS.
+    16	# Only the acquisition manifest and small committed reference data live in Git.
+    17	data/raw/
+    18	data/staging/
+    19	data/docs/
+    20	data/manifest.json
+    21	
+    22	# Frontend (Phase 4)
+    23	frontend/node_modules/
+    24	frontend/dist/
+    25	frontend/.env.local
+    26	frontend/test-results/
+    27	frontend/playwright-report/
+    28	frontend/node_modules/.tmp/
+    29	
+    30	# OS noise
+    31	.DS_Store
+    32	.claude/
+---
+     1	# Logs
+     2	logs
+     3	*.log
+     4	npm-debug.log*
+     5	yarn-debug.log*
+     6	yarn-error.log*
+     7	pnpm-debug.log*
+     8	lerna-debug.log*
+     9	
+    10	node_modules
+    11	dist
+    12	dist-ssr
+    13	*.local
+    14	
+    15	# Editor directories and files
+    16	.vscode/*
+    17	!.vscode/extensions.json
+    18	.idea
+    19	.DS_Store
+    20	*.suo
+    21	*.ntvs*
+    22	*.njsproj
+    23	*.sln
+    24	*.sw?
+---
+387fc2d29919ade9620c0ca23d2b72f89e0de8f8
+?? docs/evidence/
+---
+.env => .gitignore:13:.env	.env
+.env.production => NOT IGNORED
+.env.production.local => NOT IGNORED
+.env.local => NOT IGNORED
+.env.prod => NOT IGNORED
+secrets.env => NOT IGNORED
+.env.production.example => NOT IGNORED
+frontend/.env => .gitignore:13:.env	frontend/.env
+frontend/.env.local => frontend/.gitignore:13:*.local	frontend/.env.local
+frontend/.env.production => NOT IGNORED
+frontend/.env.production.local => frontend/.gitignore:13:*.local	frontend/.env.production.local
+backend/.env.production => NOT IGNORED
+---
+.env.example
+frontend/.env.example
+.env.example
+.venv
+.env.example
+.env.local

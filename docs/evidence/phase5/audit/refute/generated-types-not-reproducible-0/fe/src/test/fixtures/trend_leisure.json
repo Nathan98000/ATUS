@@ -1,0 +1,376 @@
+{
+  "measure": "average_minutes_per_day",
+  "points": [
+    {
+      "year": 2003,
+      "estimate": {
+        "value": 306.60859912480686,
+        "unit": "minutes_per_day",
+        "standard_error": 1.5917107338555245,
+        "confidence_level": 0.95,
+        "ci_lower": 303.4889034126442,
+        "ci_upper": 309.7282948369695
+      },
+      "n_respondents": 20720,
+      "n_participants": 19871,
+      "weighted_population_per_day": 225290906.57729694,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2004,
+      "estimate": {
+        "value": 311.2137267170941,
+        "unit": "minutes_per_day",
+        "standard_error": 1.8791472491648957,
+        "confidence_level": 0.95,
+        "ci_lower": 307.5306657870834,
+        "ci_upper": 314.8967876471048
+      },
+      "n_respondents": 13973,
+      "n_participants": 13504,
+      "weighted_population_per_day": 227481690.36628637,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2005,
+      "estimate": {
+        "value": 307.87219679868804,
+        "unit": "minutes_per_day",
+        "standard_error": 2.3893304154494714,
+        "confidence_level": 0.95,
+        "ci_lower": 303.18919523724094,
+        "ci_upper": 312.55519836013514
+      },
+      "n_respondents": 13038,
+      "n_participants": 12582,
+      "weighted_population_per_day": 230427482.34397337,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2006,
+      "estimate": {
+        "value": 305.14394884632014,
+        "unit": "minutes_per_day",
+        "standard_error": 2.3092181761239265,
+        "confidence_level": 0.95,
+        "ci_lower": 300.61796438867196,
+        "ci_upper": 309.6699333039683
+      },
+      "n_respondents": 12943,
+      "n_participants": 12505,
+      "weighted_population_per_day": 233122400.31982487,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2007,
+      "estimate": {
+        "value": 306.579273581842,
+        "unit": "minutes_per_day",
+        "standard_error": 2.2182904372988808,
+        "confidence_level": 0.95,
+        "ci_lower": 302.2315042174866,
+        "ci_upper": 310.92704294619745
+      },
+      "n_respondents": 12248,
+      "n_participants": 11738,
+      "weighted_population_per_day": 236105785.1782806,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2008,
+      "estimate": {
+        "value": 310.6955889107406,
+        "unit": "minutes_per_day",
+        "standard_error": 2.4024032692397568,
+        "confidence_level": 0.95,
+        "ci_lower": 305.9869650266894,
+        "ci_upper": 315.40421279479176
+      },
+      "n_respondents": 12723,
+      "n_participants": 12261,
+      "weighted_population_per_day": 238007117.8346863,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2009,
+      "estimate": {
+        "value": 314.9532194873455,
+        "unit": "minutes_per_day",
+        "standard_error": 2.4175579391743542,
+        "confidence_level": 0.95,
+        "ci_lower": 310.2148929960249,
+        "ci_upper": 319.6915459786661
+      },
+      "n_respondents": 13133,
+      "n_participants": 12659,
+      "weighted_population_per_day": 239898189.76348066,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2010,
+      "estimate": {
+        "value": 310.84020459089476,
+        "unit": "minutes_per_day",
+        "standard_error": 2.5715872989382476,
+        "confidence_level": 0.95,
+        "ci_lower": 305.79998610187516,
+        "ci_upper": 315.88042307991435
+      },
+      "n_respondents": 13260,
+      "n_participants": 12703,
+      "weighted_population_per_day": 241913480.40825018,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2011,
+      "estimate": {
+        "value": 312.6386326031745,
+        "unit": "minutes_per_day",
+        "standard_error": 2.2500693494846793,
+        "confidence_level": 0.95,
+        "ci_lower": 308.2285777154671,
+        "ci_upper": 317.04868749088195
+      },
+      "n_respondents": 12479,
+      "n_participants": 11939,
+      "weighted_population_per_day": 243651203.13918173,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2012,
+      "estimate": {
+        "value": 321.94891251940055,
+        "unit": "minutes_per_day",
+        "standard_error": 2.3038753516864396,
+        "confidence_level": 0.95,
+        "ci_lower": 317.4333998052256,
+        "ci_upper": 326.4644252335755
+      },
+      "n_respondents": 12443,
+      "n_participants": 11959,
+      "weighted_population_per_day": 247385526.91834423,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2013,
+      "estimate": {
+        "value": 315.56037697243397,
+        "unit": "minutes_per_day",
+        "standard_error": 2.3729220615141746,
+        "confidence_level": 0.95,
+        "ci_lower": 310.9095351937456,
+        "ci_upper": 320.2112187511223
+      },
+      "n_respondents": 11385,
+      "n_participants": 10879,
+      "weighted_population_per_day": 249810847.61846536,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2014,
+      "estimate": {
+        "value": 318.2385640159448,
+        "unit": "minutes_per_day",
+        "standard_error": 2.894765012176436,
+        "confidence_level": 0.95,
+        "ci_lower": 312.56492884837235,
+        "ci_upper": 323.91219918351726
+      },
+      "n_respondents": 11592,
+      "n_participants": 11144,
+      "weighted_population_per_day": 252086923.151403,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2015,
+      "estimate": {
+        "value": 312.5354591489493,
+        "unit": "minutes_per_day",
+        "standard_error": 2.3870884636550014,
+        "confidence_level": 0.95,
+        "ci_lower": 307.85685173227444,
+        "ci_upper": 317.2140665656242
+      },
+      "n_respondents": 10905,
+      "n_participants": 10498,
+      "weighted_population_per_day": 255023486.0216686,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2016,
+      "estimate": {
+        "value": 307.6382042266753,
+        "unit": "minutes_per_day",
+        "standard_error": 2.3955598197478545,
+        "confidence_level": 0.95,
+        "ci_lower": 302.94299325715826,
+        "ci_upper": 312.3334151961924
+      },
+      "n_respondents": 10493,
+      "n_participants": 10100,
+      "weighted_population_per_day": 257745877.55759296,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2017,
+      "estimate": {
+        "value": 314.5863485537021,
+        "unit": "minutes_per_day",
+        "standard_error": 2.772408403221937,
+        "confidence_level": 0.95,
+        "ci_lower": 309.15252793295093,
+        "ci_upper": 320.0201691744533
+      },
+      "n_respondents": 10223,
+      "n_participants": 9798,
+      "weighted_population_per_day": 259204264.39967412,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2018,
+      "estimate": {
+        "value": 316.00909199183957,
+        "unit": "minutes_per_day",
+        "standard_error": 2.590129570571852,
+        "confidence_level": 0.95,
+        "ci_lower": 310.93253131822655,
+        "ci_upper": 321.0856526654526
+      },
+      "n_respondents": 9593,
+      "n_participants": 9232,
+      "weighted_population_per_day": 261895319.49253744,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2019,
+      "estimate": {
+        "value": 311.1453425824142,
+        "unit": "minutes_per_day",
+        "standard_error": 2.687868154217369,
+        "confidence_level": 0.95,
+        "ci_lower": 305.877217804956,
+        "ci_upper": 316.41346735987236
+      },
+      "n_respondents": 9435,
+      "n_participants": 9059,
+      "weighted_population_per_day": 263362365.19553494,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2020,
+      "estimate": null,
+      "n_respondents": null,
+      "n_participants": null,
+      "weighted_population_per_day": null,
+      "unavailable_reason": "TUFNWGTP is undefined for 2020 (pandemic collection suspension); estimate 2020 separately with weights='pandemic'."
+    },
+    {
+      "year": 2021,
+      "estimate": {
+        "value": 316.0627180800258,
+        "unit": "minutes_per_day",
+        "standard_error": 2.3286174377664692,
+        "confidence_level": 0.95,
+        "ci_lower": 311.49871176823154,
+        "ci_upper": 320.62672439182
+      },
+      "n_respondents": 9087,
+      "n_participants": 8745,
+      "weighted_population_per_day": 265629665.57447377,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2022,
+      "estimate": {
+        "value": 311.9504962810989,
+        "unit": "minutes_per_day",
+        "standard_error": 2.9596864173600537,
+        "confidence_level": 0.95,
+        "ci_lower": 306.1496174975408,
+        "ci_upper": 317.75137506465694
+      },
+      "n_respondents": 8136,
+      "n_participants": 7788,
+      "weighted_population_per_day": 268366501.58752683,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2023,
+      "estimate": {
+        "value": 309.1048107070381,
+        "unit": "minutes_per_day",
+        "standard_error": 3.092261221672722,
+        "confidence_level": 0.95,
+        "ci_lower": 303.04409008176975,
+        "ci_upper": 315.16553133230644
+      },
+      "n_respondents": 8548,
+      "n_participants": 8138,
+      "weighted_population_per_day": 271336907.19774604,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2024,
+      "estimate": {
+        "value": 303.9143076923338,
+        "unit": "minutes_per_day",
+        "standard_error": 3.010816148571534,
+        "confidence_level": 0.95,
+        "ci_lower": 298.01321647706203,
+        "ci_upper": 309.8153989076056
+      },
+      "n_respondents": 7669,
+      "n_participants": 7339,
+      "weighted_population_per_day": 272912483.3776282,
+      "unavailable_reason": null
+    },
+    {
+      "year": 2025,
+      "estimate": {
+        "value": 309.64009095814663,
+        "unit": "minutes_per_day",
+        "standard_error": 3.4038746972937344,
+        "confidence_level": 0.95,
+        "ci_lower": 302.9686191435637,
+        "ci_upper": 316.31156277272953
+      },
+      "n_respondents": 6146,
+      "n_participants": 5897,
+      "weighted_population_per_day": 277984657.483597,
+      "unavailable_reason": null
+    }
+  ],
+  "activity": {
+    "label": "Leisure and sports (BLS table A-1 definition)",
+    "include": ["12", "13", "1812", "1813"],
+    "exclude": [],
+    "leaf_code_count": 116
+  },
+  "population": "civilian noninstitutional population age 15+",
+  "weight": {
+    "scheme": "multiyear",
+    "bls_variable": "TUFNWGTP",
+    "column": "respondents.final_weight"
+  },
+  "variance_method": "replicate",
+  "analytics_version": "0.2",
+  "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+      "include": ["12", "13", "1812", "1813"],
+      "exclude": [],
+      "label": "Leisure and sports (BLS table A-1 definition)"
+    },
+    "years": [
+      2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017,
+      2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025
+    ],
+    "population": {},
+    "weights": "multiyear",
+    "variance": "replicate",
+    "confidence_level": 0.95
+  },
+  "warnings": [
+    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+  ]
+}

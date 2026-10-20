@@ -1,0 +1,37 @@
+Tue Oct 20 19:06:08 UTC 2026
+atus-emu-pg	postgres:16	Up 9 minutes
+atus-postgres	postgres:16	Up 4 hours
+supabase_db_dogtrax-dev	public.ecr.aws/supabase/postgres:17.6.1.156	Up 12 days (healthy)
+supabase_studio_dogtrax-dev	public.ecr.aws/supabase/studio:2026.07.27-sha-cbb076d	Up 12 days (healthy)
+supabase_pg_meta_dogtrax-dev	public.ecr.aws/supabase/postgres-meta:v0.96.6	Up 12 days (healthy)
+supabase_storage_dogtrax-dev	public.ecr.aws/supabase/storage-api:v1.67.20	Up 12 days (healthy)
+supabase_rest_dogtrax-dev	public.ecr.aws/supabase/postgrest:v14.15	Up 12 days
+supabase_realtime_dogtrax-dev	public.ecr.aws/supabase/realtime:v2.120.3	Up 12 days (healthy)
+supabase_inbucket_dogtrax-dev	public.ecr.aws/supabase/mailpit:v1.30.2	Up 12 days (healthy)
+supabase_auth_dogtrax-dev	public.ecr.aws/supabase/gotrue:v2.194.0	Up 12 days (healthy)
+supabase_kong_dogtrax-dev	public.ecr.aws/supabase/kong:2.8.1	Up 12 days (healthy)
+timeblock-postgres	postgres:16-alpine	Up 12 days (healthy)
+
+CONTAINER ID   NAME                            CPU %     MEM USAGE / LIMIT    MEM %     NET I/O           BLOCK I/O         PIDS
+66990f3d0df6   atus-emu-pg                     0.04%     146MiB / 7.75GiB     1.84%     449kB / 5.62MB    65.5kB / 348MB    6
+ca327d3eff57   atus-postgres                   0.01%     257.1MiB / 7.75GiB   3.24%     55.8MB / 1.97GB   2.13GB / 3.5GB    6
+fbb703b5e7af   supabase_db_dogtrax-dev         0.15%     121.6MiB / 7.75GiB   1.53%     246MB / 155MB     61.2MB / 981MB    18
+fb13f80bb5c4   supabase_studio_dogtrax-dev     0.00%     288.7MiB / 7.75GiB   3.64%     5.69kB / 126B     123MB / 0B        13
+50d3948b9b30   supabase_pg_meta_dogtrax-dev    1.05%     144.5MiB / 7.75GiB   1.82%     6.2kB / 126B      68.8MB / 0B       21
+27eff6f45a6f   supabase_storage_dogtrax-dev    0.00%     239.4MiB / 7.75GiB   3.02%     2.63MB / 2.95MB   151MB / 0B        12
+c65a6eed7c52   supabase_rest_dogtrax-dev       0.17%     191.7MiB / 7.75GiB   2.42%     210kB / 74.3kB    51.1MB / 0B       34
+66bc318febd2   supabase_realtime_dogtrax-dev   1.62%     316.7MiB / 7.75GiB   3.99%     153MB / 243MB     57.9MB / 0B       44
+00f796281fa8   supabase_inbucket_dogtrax-dev   0.00%     30.54MiB / 7.75GiB   0.38%     6.16kB / 126B     19.4MB / 500kB    12
+35c6986818bd   supabase_auth_dogtrax-dev       0.00%     17.06MiB / 7.75GiB   0.22%     19.2kB / 12.8kB   1.35MB / 0B       13
+068580fcb447   supabase_kong_dogtrax-dev       0.01%     161.3MiB / 7.75GiB   2.03%     628kB / 165kB     17.1MB / 77.8kB   3
+4e163584f1e4   timeblock-postgres              0.01%     44.79MiB / 7.75GiB   0.56%     1.75kB / 126B     29.8MB / 315kB    6
+
+15:06  up 13 days, 23:13, 1 user, load averages: 4.73 5.02 4.26
+ %CPU    RSS COMM
+ 38.1  79232 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 24.1 326480 /Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/155.1.97.56/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)
+ 21.3 131616 /Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/155.1.97.56/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper
+ 11.6 209200 /Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/155.1.97.56/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)
+ 11.4  24848 /usr/sbin/coreaudiod
+  7.8 1033936 /Applications/Claude.app/Contents/Frameworks/Claude Helper (Renderer).app/Contents/MacOS/Claude Helper (Renderer)
+  7.1  67840 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper

@@ -1,0 +1,6 @@
+as_shipped: 1.83s rows=1
+year_pushdown: 0.75s rows=1
+as_shipped: 2.50s rows=1
+year_pushdown: 0.92s rows=1
+identical result rows: False
+year,n,n_part identical: True | numeric point sums identical: True | max relative diff over all 486 values: 7.368896521328966e-15

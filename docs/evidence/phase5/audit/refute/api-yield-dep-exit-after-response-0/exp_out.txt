@@ -1,0 +1,6 @@
+15:14:25 INFO    atus.api: request_id=b0d720da80624ea7 GET /ready -> 200 in 8.1ms cache=-
+15:14:26 INFO    httpx: HTTP Request: GET http://t/ready "HTTP/1.1 200 OK"
+body_sent                                +0.0ms
+send_returned                            +501.1ms
+putconn status=IDLE                      +502.7ms
+client_got_200                           +503.7ms

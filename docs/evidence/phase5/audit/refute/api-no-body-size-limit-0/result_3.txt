@@ -1,0 +1,9 @@
+code=503 t=10.620357 up=52428930
+code=503 t=10.886425 up=52428930
+code=503 t=10.888885 up=52428930
+concurrent=3 before_kb= 62880 peak_kb=587136 after_kb=587136
+{"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+docs/evidence/phase5/audit/refute/api-no-body-size-limit-0/run.sh: line 13: 85204 Terminated: 15          ATUS_DATABASE_URL=postgresql://atus:atus@localhost:5434/atus_audit_nonexistent ATUS_LOG_LEVEL=WARNING $REPO/.venv/bin/atus api --port 8291 > $S/server_$N.log 2>&1
+docs/evidence/phase5/audit/refute/api-no-body-size-limit-0/run.sh: line 13: 85230 Terminated: 15          ( while kill -0 $SPID 2> /dev/null; do
+    ps -o rss= -p $SPID; sleep 0.02;
+done ) > $S/samples_$N.txt

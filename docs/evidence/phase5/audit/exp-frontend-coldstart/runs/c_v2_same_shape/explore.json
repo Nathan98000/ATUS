@@ -1,0 +1,150 @@
+{
+  "scenario": "c_v2_same_shape",
+  "page": "explore",
+  "url": "http://localhost:4182/explore",
+  "t0_epoch": 1792517315.686,
+  "meta_request_times_s": [
+    0.062
+  ],
+  "meta_request_gaps_s": [],
+  "api_requests": 4,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.048,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c_v2_same_shape/explore_002s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Build an analysis\n\nDoing what · for whom · when · measured how — then Analyze.\n\nSingle estimate\nTrend over time\nCompare two groups\n1\nDoing what?\nSleeping — curated selection\nChange activity\n2\nFor whom?\nAge\nMinimum age\n–\nMaximum age\n\nLeave empty for all ages (15+).\n\nSex\nAny\nFemale\nMale\nEmployment\nAny\nEmployed\nNot in the labor force\nUnemployed\nChildren in household\nAny\nYes\nNo\n\nAny household child under 18 present. Household children, not necessarily own children.\n\nEducation\nAny\nBachelor's degree or higher\nHigh school\nLess than high school\nSome college or associate degree\nDay of week\nAny\nWeekdays\nWeekends\nMore filters\n\nFiltering on a dimension excludes respondents whose value is missing for that dimension (from numerator and denominator alike); missing is never treated as 'no'. Unfiltered dimensions include everyone.\n\n3\nWhen?\nSingle year\nPooled years\nYear\n2025\n2024\n2023\n2022\n2021\n2020\n2019\n2018\n2017\n2016\n2015\n2014\n2013\n2012\n2011\n2010\n2009\n2008\n2007\n2006\n2005\n2004\n2003\n4\nMeasured how?\nAverage time per day\nAcross everyone in the population, including people who did not do the activity that day.\nParticipation rate\nShare of the population doing the activity on an average day.\nTime among participants\nAverage time among only those who did the activity that day.\nPeople per day\nNumber of people doing the activity on an average day.\nAdvanced methodology\nAnalyze\n\nRunning an analysis creates a shareable link.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v2",
+      "alerts": [],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.06,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c_v2_same_shape/explore_005s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Build an analysis\n\nDoing what · for whom · when · measured how — then Analyze.\n\nSingle estimate\nTrend over time\nCompare two groups\n1\nDoing what?\nSleeping — curated selection\nChange activity\n2\nFor whom?\nAge\nMinimum age\n–\nMaximum age\n\nLeave empty for all ages (15+).\n\nSex\nAny\nFemale\nMale\nEmployment\nAny\nEmployed\nNot in the labor force\nUnemployed\nChildren in household\nAny\nYes\nNo\n\nAny household child under 18 present. Household children, not necessarily own children.\n\nEducation\nAny\nBachelor's degree or higher\nHigh school\nLess than high school\nSome college or associate degree\nDay of week\nAny\nWeekdays\nWeekends\nMore filters\n\nFiltering on a dimension excludes respondents whose value is missing for that dimension (from numerator and denominator alike); missing is never treated as 'no'. Unfiltered dimensions include everyone.\n\n3\nWhen?\nSingle year\nPooled years\nYear\n2025\n2024\n2023\n2022\n2021\n2020\n2019\n2018\n2017\n2016\n2015\n2014\n2013\n2012\n2011\n2010\n2009\n2008\n2007\n2006\n2005\n2004\n2003\n4\nMeasured how?\nAverage time per day\nAcross everyone in the population, including people who did not do the activity that day.\nParticipation rate\nShare of the population doing the activity on an average day.\nTime among participants\nAverage time among only those who did the activity that day.\nPeople per day\nNumber of people doing the activity on an average day.\nAdvanced methodology\nAnalyze\n\nRunning an analysis creates a shareable link.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v2",
+      "alerts": [],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.058,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c_v2_same_shape/explore_015s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Build an analysis\n\nDoing what · for whom · when · measured how — then Analyze.\n\nSingle estimate\nTrend over time\nCompare two groups\n1\nDoing what?\nSleeping — curated selection\nChange activity\n2\nFor whom?\nAge\nMinimum age\n–\nMaximum age\n\nLeave empty for all ages (15+).\n\nSex\nAny\nFemale\nMale\nEmployment\nAny\nEmployed\nNot in the labor force\nUnemployed\nChildren in household\nAny\nYes\nNo\n\nAny household child under 18 present. Household children, not necessarily own children.\n\nEducation\nAny\nBachelor's degree or higher\nHigh school\nLess than high school\nSome college or associate degree\nDay of week\nAny\nWeekdays\nWeekends\nMore filters\n\nFiltering on a dimension excludes respondents whose value is missing for that dimension (from numerator and denominator alike); missing is never treated as 'no'. Unfiltered dimensions include everyone.\n\n3\nWhen?\nSingle year\nPooled years\nYear\n2025\n2024\n2023\n2022\n2021\n2020\n2019\n2018\n2017\n2016\n2015\n2014\n2013\n2012\n2011\n2010\n2009\n2008\n2007\n2006\n2005\n2004\n2003\n4\nMeasured how?\nAverage time per day\nAcross everyone in the population, including people who did not do the activity that day.\nParticipation rate\nShare of the population doing the activity on an average day.\nTime among participants\nAverage time among only those who did the activity that day.\nPeople per day\nNumber of people doing the activity on an average day.\nAdvanced methodology\nAnalyze\n\nRunning an analysis creates a shareable link.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v2",
+      "alerts": [],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.062,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c_v2_same_shape/explore_030s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Build an analysis\n\nDoing what · for whom · when · measured how — then Analyze.\n\nSingle estimate\nTrend over time\nCompare two groups\n1\nDoing what?\nSleeping — curated selection\nChange activity\n2\nFor whom?\nAge\nMinimum age\n–\nMaximum age\n\nLeave empty for all ages (15+).\n\nSex\nAny\nFemale\nMale\nEmployment\nAny\nEmployed\nNot in the labor force\nUnemployed\nChildren in household\nAny\nYes\nNo\n\nAny household child under 18 present. Household children, not necessarily own children.\n\nEducation\nAny\nBachelor's degree or higher\nHigh school\nLess than high school\nSome college or associate degree\nDay of week\nAny\nWeekdays\nWeekends\nMore filters\n\nFiltering on a dimension excludes respondents whose value is missing for that dimension (from numerator and denominator alike); missing is never treated as 'no'. Unfiltered dimensions include everyone.\n\n3\nWhen?\nSingle year\nPooled years\nYear\n2025\n2024\n2023\n2022\n2021\n2020\n2019\n2018\n2017\n2016\n2015\n2014\n2013\n2012\n2011\n2010\n2009\n2008\n2007\n2006\n2005\n2004\n2003\n4\nMeasured how?\nAverage time per day\nAcross everyone in the population, including people who did not do the activity that day.\nParticipation rate\nShare of the population doing the activity on an average day.\nTime among participants\nAverage time among only those who did the activity that day.\nPeople per day\nNumber of people doing the activity on an average day.\nAdvanced methodology\nAnalyze\n\nRunning an analysis creates a shareable link.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v2",
+      "alerts": [],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.061,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c_v2_same_shape/explore_060s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Build an analysis\n\nDoing what · for whom · when · measured how — then Analyze.\n\nSingle estimate\nTrend over time\nCompare two groups\n1\nDoing what?\nSleeping — curated selection\nChange activity\n2\nFor whom?\nAge\nMinimum age\n–\nMaximum age\n\nLeave empty for all ages (15+).\n\nSex\nAny\nFemale\nMale\nEmployment\nAny\nEmployed\nNot in the labor force\nUnemployed\nChildren in household\nAny\nYes\nNo\n\nAny household child under 18 present. Household children, not necessarily own children.\n\nEducation\nAny\nBachelor's degree or higher\nHigh school\nLess than high school\nSome college or associate degree\nDay of week\nAny\nWeekdays\nWeekends\nMore filters\n\nFiltering on a dimension excludes respondents whose value is missing for that dimension (from numerator and denominator alike); missing is never treated as 'no'. Unfiltered dimensions include everyone.\n\n3\nWhen?\nSingle year\nPooled years\nYear\n2025\n2024\n2023\n2022\n2021\n2020\n2019\n2018\n2017\n2016\n2015\n2014\n2013\n2012\n2011\n2010\n2009\n2008\n2007\n2006\n2005\n2004\n2003\n4\nMeasured how?\nAverage time per day\nAcross everyone in the population, including people who did not do the activity that day.\nParticipation rate\nShare of the population doing the activity on an average day.\nTime among participants\nAverage time among only those who did the activity that day.\nPeople per day\nNumber of people doing the activity on an average day.\nAdvanced methodology\nAnalyze\n\nRunning an analysis creates a shareable link.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v2",
+      "alerts": [],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.054,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/c_v2_same_shape/explore_075s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Build an analysis\n\nDoing what · for whom · when · measured how — then Analyze.\n\nSingle estimate\nTrend over time\nCompare two groups\n1\nDoing what?\nSleeping — curated selection\nChange activity\n2\nFor whom?\nAge\nMinimum age\n–\nMaximum age\n\nLeave empty for all ages (15+).\n\nSex\nAny\nFemale\nMale\nEmployment\nAny\nEmployed\nNot in the labor force\nUnemployed\nChildren in household\nAny\nYes\nNo\n\nAny household child under 18 present. Household children, not necessarily own children.\n\nEducation\nAny\nBachelor's degree or higher\nHigh school\nLess than high school\nSome college or associate degree\nDay of week\nAny\nWeekdays\nWeekends\nMore filters\n\nFiltering on a dimension excludes respondents whose value is missing for that dimension (from numerator and denominator alike); missing is never treated as 'no'. Unfiltered dimensions include everyone.\n\n3\nWhen?\nSingle year\nPooled years\nYear\n2025\n2024\n2023\n2022\n2021\n2020\n2019\n2018\n2017\n2016\n2015\n2014\n2013\n2012\n2011\n2010\n2009\n2008\n2007\n2006\n2005\n2004\n2003\n4\nMeasured how?\nAverage time per day\nAcross everyone in the population, including people who did not do the activity that day.\nParticipation rate\nShare of the population doing the activity on an average day.\nTime among participants\nAverage time among only those who did the activity that day.\nPeople per day\nNumber of people doing the activity on an average day.\nAdvanced methodology\nAnalyze\n\nRunning an analysis creates a shareable link.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v2",
+      "alerts": [],
+      "status": [],
+      "live": []
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.021,
+      "main": ""
+    },
+    {
+      "t": 0.272,
+      "main": "Build an analysis\n\nDoing what · for whom · when · measured how — then Analyze.\n\nSingle estimate\nTrend over time\nCompare two groups\n1\nDoing what?\nSleeping — curated selection\nChange activity\n2\nFor whom?\nAge\nMinimum age\n–\nMaximum age\n\nLeave empty for all ages (15+).\n\nSex\nAny\nFemale\nMale\nEmployment\nAny\nEmployed\nNot in the labor force\nUnemployed\nChildren in household\nAny\nYes\nNo\n\nAny household child under 18 present. Household children, not necessarily own children.\n\nEducation\nAny\nBachelor's degree or higher\nHigh school\nLess than high school\nSome college or associate degree\nDay of week\nAny\nWeekdays"
+    }
+  ],
+  "network": [
+    {
+      "t": 0.062,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.062,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 0.063,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 200
+    },
+    {
+      "t": 0.064,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "status": 200
+    },
+    {
+      "t": 0.069,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities"
+    },
+    {
+      "t": 0.069,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities/presets"
+    },
+    {
+      "t": 0.074,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/activities",
+      "status": 200
+    },
+    {
+      "t": 0.074,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/activities/presets",
+      "status": 200
+    }
+  ],
+  "console": []
+}

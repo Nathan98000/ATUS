@@ -1,0 +1,5 @@
+ pid | application_name | state |  backend_type  |  left  
+-----+------------------+-------+----------------+--------
+ 573 | atus_audit_disc  | idle  | client backend | COMMIT
+(1 row)
+

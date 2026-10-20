@@ -1,0 +1,8 @@
+http://127.0.0.1:4182/
+  before focus (12s): Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full 
+  after focus: Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full 
+  requests: 0.03s GET /api/v1/meta | 1.04s GET /api/v1/meta | 3.04s GET /api/v1/meta | 12.06s GET /api/v1/meta
+http://127.0.0.1:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI
+  before focus (12s): ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service reported an unexpected problem The analysis could no
+  after focus: ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 mi
+  requests: 0.03s GET /api/v1/meta | 0.03s GET /api/v1/activities/presets | 1.04s GET /api/v1/meta | 1.04s GET /api/v1/activities/presets | 3.04s GET /api/v1/activities/presets | 3.04s GET /api/v1/meta | 12.05s GET /api/v1/meta | 12.05s GET /api/v1/activities/presets | 12.05s POST /api/v1/analysis/estimate

@@ -1,0 +1,14 @@
+[t=  0.01s] warm (200, 'ok', 10.7) (200, 'ok', 2.1)
+[t=  0.01s] docker kill
+[t=  0.37s] docker start
+[t=  0.66s] DB accepting connections; sending requests
+[t=  0.66s]    GET /api/v1/meta -> (503, 'database_unavailable', 2.0)
+[t=  0.66s]    POST /api/v1/analysis/estimate -> (503, 'database_unavailable', 1.8)
+[t=  0.66s]    GET /api/v1/meta -> (503, 'database_unavailable', 1.7)
+[t=  0.66s]    GET /api/v1/meta -> (503, 'database_unavailable', 1.4)
+[t=  0.67s]    GET /api/v1/meta -> (503, 'database_unavailable', 1.7)
+[t=  0.67s]    GET /api/v1/meta -> (503, 'database_unavailable', 1.5)
+[t=  0.67s]    GET /api/v1/meta -> (200, 'ok', 3.1)
+[t=  0.67s]    GET /api/v1/meta -> (200, 'ok', 2.2)
+[t=  0.68s]    GET /api/v1/meta -> (200, 'ok', 1.9)
+[t=  0.68s]    GET /api/v1/meta -> (200, 'ok', 2.3)
