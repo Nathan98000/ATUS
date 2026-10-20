@@ -4,9 +4,9 @@
  */
 import { expect, test } from '@playwright/test'
 
-import { analyze, pickSleepBySearch, setAge } from './helpers'
+import { CORE, analyze, pickSleepBySearch, setAge } from './helpers'
 
-test('a first-time user completes an estimate from the home page', async ({ page }) => {
+test('a first-time user completes an estimate from the home page', CORE, async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveTitle('ATUS Explorer')
   await expect(

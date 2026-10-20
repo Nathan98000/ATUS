@@ -59,19 +59,28 @@ describe('vite.config.ts', () => {
       isPreview: boolean
     }) => {
       envDir?: string | false
+      plugins?: unknown[]
       server?: { proxy?: Record<string, unknown> }
       preview?: { proxy?: Record<string, unknown>; headers?: Record<string, string> }
     }
     return factory({ command, mode, isSsrBuild: false, isPreview: false })
   }
 
-  it('previews (and so E2E-tests) the build under the strict production CSP', async () => {
-    const config = await resolveConfig('serve', 'production')
-    const policy = config.preview?.headers?.['Content-Security-Policy'] ?? ''
+  it('previews (and so E2E-tests) the build under the deployed _headers rules', async () => {
+    const module = await import('../../vite.config')
+    const policy = module.siteContentSecurityPolicy('public')
     expect(policy).toContain("default-src 'none'")
     expect(policy).toContain("script-src 'self'")
     expect(policy).toContain("connect-src 'self'")
     expect(policy).not.toContain('unsafe-inline')
+
+    const config = await resolveConfig('serve', 'production')
+    const names = (config.plugins ?? [])
+      .flat(Infinity)
+      .map((plugin) => (plugin as { name?: string } | null)?.name)
+    expect(names).toContain('atus-preview-static-headers')
+    expect(names).toContain('atus-meta-csp')
+    expect(config.preview?.headers).toBeUndefined()
     expect(config.preview?.proxy).toHaveProperty('/api')
   })
 

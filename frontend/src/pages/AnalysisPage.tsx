@@ -16,6 +16,7 @@ import {
   analysisQueryKey,
   useAnalysis,
   useActivityPresets,
+  useLoadedDataVersion,
   useMeta,
   useVersionTag,
 } from '../api/queries'
@@ -44,6 +45,7 @@ import {
 import { formatYears } from '../utils/format'
 import { CompareView } from '../features/results/CompareView'
 import { EstimateView } from '../features/results/EstimateView'
+import { ResultDownloads } from '../features/results/ResultDownloads'
 import { ShareButton } from '../features/results/ShareButton'
 import { TrendView } from '../features/results/TrendView'
 
@@ -111,6 +113,7 @@ const WAKING_LOADING_MESSAGE = 'Waiting for the analysis service to wake up…'
 function AnalysisRunner({ operation, spec }: { operation: Operation; spec: AnalysisRequest }) {
   const meta = useMeta()
   const versions = useVersionTag()
+  const loadedDataVersion = useLoadedDataVersion()
   const presets = useActivityPresets()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -233,11 +236,23 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
           adjustHref={adjustHref}
         />
       ) : (
-        <ResultBody
-          operation={operation}
-          result={query.data.data}
-          analysisKey={query.data.analysisKey}
-        />
+        <>
+          <ResultBody
+            operation={operation}
+            result={query.data.data}
+            analysisKey={query.data.analysisKey}
+          />
+          <ResultDownloads
+            operation={operation}
+            requestSpec={spec}
+            result={query.data.data}
+            analysisKey={query.data.analysisKey}
+            // The release that produced this response; the page's own if it did not say.
+            dataVersion={query.data.dataVersion ?? loadedDataVersion}
+            apiVersion={meta.data.api_version}
+            dataRelease={meta.data.data.release}
+          />
+        </>
       )}
       {/* Persistent live region: reliably announces the start and end of a
           potentially ~10 s computation (content mounted with its text

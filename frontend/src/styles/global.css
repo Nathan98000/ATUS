@@ -1036,6 +1036,27 @@ details.panel > .panel__body {
   gap: 0.9rem;
 }
 
+.result-downloads {
+  margin-top: 0.9rem;
+}
+
+.result-downloads h2 {
+  font-size: 1.02rem;
+}
+
+.result-downloads__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.result-downloads__status {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
 .sample-lines {
   margin-top: 0.9rem;
   border-top: 1px solid var(--border);

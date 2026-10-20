@@ -1,28 +1,83 @@
 /// <reference types="vitest/config" />
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import react from '@vitejs/plugin-react'
-import { defineConfig, loadEnv } from 'vite'
+import { type Plugin, defineConfig, loadEnv } from 'vite'
 
 import { apiBaseConfigError } from './src/api/apiBase.ts'
+import {
+  type HeaderRule,
+  headersForPath,
+  metaContentSecurityPolicy,
+  parseHeadersFile,
+} from './src/deploy/staticHeaders.ts'
+
+function readHeaderRules(file: string): HeaderRule[] {
+  return parseHeadersFile(readFileSync(file, 'utf8'))
+}
 
 /**
- * The SPA's Content-Security-Policy: everything from its own origin, nothing
+ * The SPA's Content-Security-Policy, from `<publicDir>/_headers` (the
+ * deployed response-header rules): everything from its own origin, nothing
  * inline, no third parties (audit I06 measured 0 violations under it).
- * `vite preview` — and therefore every E2E run — serves the production build
- * under it, so a change that needs a weaker policy fails a test. The dev
- * server does not: Vite injects inline scripts there.
  */
-export const CONTENT_SECURITY_POLICY = [
-  "default-src 'none'",
-  "script-src 'self'",
-  "style-src 'self'",
-  "img-src 'self'",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "manifest-src 'self'",
-  "base-uri 'none'",
-  "form-action 'none'",
-  "frame-ancestors 'none'",
-].join('; ')
+export function siteContentSecurityPolicy(publicDir: string): string {
+  const policy = headersForPath(readHeaderRules(resolve(publicDir, '_headers')), '/').get(
+    'content-security-policy',
+  )
+  if (!policy) throw new Error(`${publicDir}/_headers sets no Content-Security-Policy for /`)
+  return policy
+}
+
+/**
+ * Builds carry the same policy in a `<meta>` element as a backstop, in case
+ * the host does not apply `_headers` to the SPA-fallback `index.html`
+ * (ADR-011, an unverified detail). Build only: the dev server injects inline
+ * scripts that the policy forbids.
+ */
+function metaCspPlugin(): Plugin {
+  let policy = ''
+  return {
+    name: 'atus-meta-csp',
+    apply: 'build',
+    configResolved(config) {
+      policy = metaContentSecurityPolicy(siteContentSecurityPolicy(config.publicDir))
+    },
+    transformIndexHtml: () => [
+      {
+        tag: 'meta',
+        attrs: { 'http-equiv': 'Content-Security-Policy', content: policy },
+        injectTo: 'head-prepend',
+      },
+    ],
+  }
+}
+
+/**
+ * `vite preview` serves the build with the headers of the built `_headers`
+ * file, as the static host does — so every E2E run checks the deployed CSP,
+ * HSTS, Permissions-Policy and cache rules. `/api` is the edge Worker's (and
+ * here the proxy's) and gets none of them.
+ */
+function previewStaticHeadersPlugin(): Plugin {
+  return {
+    name: 'atus-preview-static-headers',
+    configurePreviewServer(server) {
+      const outDir = resolve(server.config.root, server.config.build.outDir)
+      const rules = readHeaderRules(resolve(outDir, '_headers'))
+      server.middlewares.use((request, response, next) => {
+        const pathname = new URL(request.url ?? '/', 'http://preview.invalid').pathname
+        if (pathname !== '/api' && !pathname.startsWith('/api/')) {
+          for (const [name, value] of headersForPath(rules, pathname)) {
+            response.setHeader(name, value)
+          }
+        }
+        next()
+      })
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
@@ -46,12 +101,9 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     envDir,
-    plugins: [react()],
+    plugins: [react(), metaCspPlugin(), previewStaticHeadersPlugin()],
     server: { proxy: apiProxy },
-    preview: {
-      proxy: apiProxy,
-      headers: { 'Content-Security-Policy': CONTENT_SECURITY_POLICY },
-    },
+    preview: { proxy: apiProxy },
     test: {
       environment: 'jsdom',
       setupFiles: ['src/test/setup.ts'],

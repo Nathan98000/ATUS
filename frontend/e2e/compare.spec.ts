@@ -4,7 +4,9 @@
  */
 import { expect, test } from '@playwright/test'
 
-test('configure, run, understand and reshare a comparison', async ({ page }) => {
+import { CORE } from './helpers'
+
+test('configure, run, understand and reshare a comparison', CORE, async ({ page }) => {
   await page.goto('/explore')
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
 

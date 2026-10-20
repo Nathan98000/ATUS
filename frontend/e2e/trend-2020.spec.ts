@@ -4,7 +4,9 @@
  */
 import { expect, test } from '@playwright/test'
 
-test('2020 renders as an explicit, explained gap in trends', async ({ page }) => {
+import { CORE } from './helpers'
+
+test('2020 renders as an explicit, explained gap in trends', CORE, async ({ page }) => {
   await page.goto('/explore')
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
 
@@ -39,20 +41,24 @@ test('2020 renders as an explicit, explained gap in trends', async ({ page }) =>
   await expect(page.getByRole('table')).toContainText('75.0 min')
 })
 
-test('the chart is keyboard-inspectable, including the unavailable year', async ({ page }) => {
-  await page.goto('/explore')
-  await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
-  await page.getByRole('radio', { name: 'Trend over time' }).click()
-  await page.getByLabel('From', { exact: true }).selectOption('2019')
-  await page.getByLabel('To', { exact: true }).selectOption('2023')
-  await page.getByRole('button', { name: 'Analyze' }).click()
+test(
+  'the chart is keyboard-inspectable, including the unavailable year',
+  CORE,
+  async ({ page }) => {
+    await page.goto('/explore')
+    await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+    await page.getByRole('radio', { name: 'Trend over time' }).click()
+    await page.getByLabel('From', { exact: true }).selectOption('2019')
+    await page.getByLabel('To', { exact: true }).selectOption('2023')
+    await page.getByRole('button', { name: 'Analyze' }).click()
 
-  const chart = page.getByRole('application', { name: /Average time per day by year/ })
-  await expect(chart).toBeVisible({ timeout: 15_000 })
-  await chart.focus()
-  await page.keyboard.press('ArrowRight')
-  await expect(chart).toContainText('2019')
-  await expect(chart).toContainText('240.0 min')
-  await page.keyboard.press('ArrowRight')
-  await expect(chart).toContainText(/2020.*[Uu]navailable|Unavailable/)
-})
+    const chart = page.getByRole('application', { name: /Average time per day by year/ })
+    await expect(chart).toBeVisible({ timeout: 15_000 })
+    await chart.focus()
+    await page.keyboard.press('ArrowRight')
+    await expect(chart).toContainText('2019')
+    await expect(chart).toContainText('240.0 min')
+    await page.keyboard.press('ArrowRight')
+    await expect(chart).toContainText(/2020.*[Uu]navailable|Unavailable/)
+  },
+)

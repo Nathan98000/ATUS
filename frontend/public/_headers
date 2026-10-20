@@ -1,0 +1,42 @@
+# Response headers of the static site (the SPA, its bundles and the static
+# result snapshot), applied by Cloudflare Workers static assets (ADR-011).
+# They do not apply to /api: the edge Worker sets the API's headers itself.
+#
+# A request that matches several rules gets all of their headers, and a header
+# set twice is joined with a comma, so no two rules below set the same header
+# for one path. This file is the single source of these rules: `vite preview`
+# (and so every E2E run) serves the build under it, the build derives the
+# <meta> CSP backstop in index.html from it, and `npm run check:bundle` checks
+# the copy in dist/ (src/deploy/staticHeaders.ts reads it).
+
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: accelerometer=(), autoplay=(), camera=(), clipboard-read=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()
+  Cross-Origin-Opener-Policy: same-origin
+
+# Hashed bundles: a new build gets new file names.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The HTML entry point and the SPA's routes: always revalidated, so the next
+# page load after a deploy gets the new index.html (and its new bundles).
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/explore
+  Cache-Control: no-cache
+/about
+  Cache-Control: no-cache
+/analysis/*
+  Cache-Control: no-cache
+
+# Static snapshot: the pointer names the current snapshot and is always
+# revalidated; a snapshot directory is written once and never changes.
+/snap/current.json
+  Cache-Control: no-cache
+/snap/:snapshot/*
+  Cache-Control: public, max-age=31536000, immutable

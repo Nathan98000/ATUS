@@ -76,6 +76,21 @@ export function useVersionTag(): string | null {
   return query.data ?? null
 }
 
+function selectDataVersion(loaded: LoadedMeta): string {
+  return loaded.dataVersion
+}
+
+/** The data version the page's metadata came from (`LoadedMeta.dataVersion`), or null. */
+export function useLoadedDataVersion(): string | null {
+  const query = useQuery({
+    queryKey: META_QUERY_KEY,
+    queryFn: fetchLoadedMeta,
+    select: selectDataVersion,
+    ...METADATA_QUERY,
+  })
+  return query.data ?? null
+}
+
 export function usePopulationMetadata() {
   return useQuery({
     queryKey: ['population-metadata'],
