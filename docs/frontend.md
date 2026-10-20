@@ -49,33 +49,45 @@ frontend/src/
               endpoints.ts, queries.ts
   domain/     urlSpec.ts (shareable-URL encoding), describe.ts (titles,
               labels, plain-language interpretation), presentError.ts,
-              prewarm.ts (starter examples + prewarmed snapshot specs)
+              prewarm.ts (starter examples + prewarmed snapshot specs),
+              exports.ts (CSV and JSON downloads of a result)
+  deploy/     staticHeaders.ts (reads the _headers rules of the static host)
   features/
     activities/  lexicon.ts (client index), ActivityPicker
     builder/     state.ts (builder ⇄ request spec), BuilderControls
     population/  PopulationFields (generated from population metadata)
     results/     EstimateView, TrendView + TrendChart, CompareView +
-                 ComparisonChart, MethodologyPanel, ShareButton, chartScale
+                 ComparisonChart, MethodologyPanel, ShareButton,
+                 ResultDownloads, chartScale
   components/ AppShell, ErrorBoundary, LoadingPanel, ErrorPanel, WarningBanner,
               ServiceNotice (waking / reload notices), ServiceInterruption
               (full-page paused-quota and incompatible-API states)
   pages/      Home, Explore (builder), Analysis (result), About, NotFound
-  utils/      format.ts (precision policy), stableStringify.ts
+  utils/      format.ts (precision policy), stableStringify.ts, download.ts
   test/       MSW server (+ snapshot publisher), captured fixtures, render helpers
 frontend/scripts/
   snapshot-requests.mjs  prints the prewarmed analysis requests for the snapshot
-  check-bundle.mjs       fails if a build still points at a development API
-frontend/public/boot.css  styles the boot shell in index.html
+  check-bundle.mjs       the deploy guard on dist/ (API address, inline code,
+                         <meta> CSP, _headers)
+  api-types.mjs          generates / checks src/api/generated.ts
+frontend/public/
+  _headers               response headers of the static site (CSP, HSTS, cache rules)
+  boot.css               styles the boot shell in index.html
 ```
 
 ## API integration
 
 - **Types are generated from the backend's own OpenAPI schema.**
   `python scripts/export_openapi.py` writes `frontend/openapi.json`;
-  `npm run generate:api-types` regenerates `src/api/generated.ts`.
-  Both artifacts are committed; regenerate and commit after any API schema
-  change. `src/api/types.ts` re-exports friendly aliases — the only names
-  the app imports.
+  `npm run generate:api-types` regenerates `src/api/generated.ts`
+  (`scripts/api-types.mjs`: openapi-typescript with
+  `--default-non-nullable false`, so request properties that have a server
+  default stay optional, then Prettier). Both artifacts are committed;
+  regenerate and commit after any API schema change.
+  `npm run check:api-types` fails when the committed file is not exactly what
+  generation produces (audit F30: the old one-line script lacked the flag, and
+  its output broke `tsc`). `src/api/types.ts` re-exports friendly aliases —
+  the only names the app imports.
 - **One client.** `apiRequest` owns the base URL, JSON handling, protocol
   headers and error translation.
   - **Base URL.** Empty by default: the app calls `/api/v1/...` on its own
@@ -278,6 +290,63 @@ stateless. The URL encodes exactly that:
   `Access-Control-Expose-Headers`) or the panel omits it.
 - “Adjust analysis” opens `/explore?op=…&spec=…`, which rebuilds builder
   state from the spec (`features/builder/state.ts: fromRequest`).
+- **No short links** ([ADR-016](adr/ADR-016-short-share-links.md)): they
+  would need server-side state — a store the edge Worker must reach to
+  resolve every link, written from the same 1,000-writes/day KV quota as the
+  result cache — whereas a long link keeps working on static files alone.
+  Deferred; stateless compression of the spec is the first step if length
+  ever matters.
+
+## Exports
+
+Every result page offers **Download CSV** and **Download JSON**
+(`features/results/ResultDownloads.tsx`, built by `domain/exports.ts`). Both
+files are made in the browser from the response already on screen: no
+request, and no statistic is computed, rounded or derived. The file is a Blob
+behind an object URL, opened through a temporary `<a download>`, so it needs
+no CSP exception (no inline script, no `data:` URL, no connection).
+
+**CSV** — the result table (RFC 4180: one header row, comma separators,
+CRLF line endings, quotes only where needed, quotes doubled; UTF-8 with a
+byte-order mark so spreadsheet programs read non-ASCII labels correctly):
+
+| Operation | Rows | Columns |
+| --- | --- | --- |
+| estimate | one | activity (label, included and excluded codes), population, years, measure, `unit`, `estimate`, `standard_error`, `ci_lower`, `ci_upper`, `confidence_level`, respondents, participants, weighted population per day, days in period |
+| trend | one per year | `year`, activity, population, measure, `unit`, the estimate columns, sample columns, `unavailable_reason` |
+| compare | group A, group B, difference (A − B) | `series`, `label`, population, activity, years, measure, `unit`, the estimate columns, sample columns (`NA` on the difference row) |
+
+Every row ends with its provenance: `weights` (scheme), `weight_variable`
+(e.g. `TUFNWGTP`), `variance_method`, `analytics_version`, `data_version`,
+`warnings` (the API's warnings, joined with ` | `) and `source` (the BLS
+attribution), so a row stays interpretable on its own. Numbers are the API's
+own values in JavaScript's shortest round-trip form — the digits JSON uses —
+so parsing a cell gives back exactly the API's double. A value the API did
+not or could not provide — the 2020 point of a multi-year trend, a standard
+error that was not requested, a difference's sample size — is the literal
+`NA`, never `0` or blank. Lists (years, codes) are joined with `;`. A text
+cell that a spreadsheet would run as a formula (leading `=`, `+`, `-`, `@`,
+tab or carriage return; group labels come from share links, so they are
+untrusted) gets a leading apostrophe.
+
+**JSON** — the whole analysis, `format: "atus-explorer/analysis-export"`,
+`format_version: 1`:
+
+```text
+exported_at, operation, link (the page's canonical share link),
+spec + spec_source ("api_canonical" for estimate/trend; "request" for compare,
+  which has no single canonical spec — each group's is inside the response),
+analysis_key, api_version, analytics_version, data_version, data_release,
+unit, warnings, attribution {source, source_url, notice, tool_url},
+response (the API's response, unchanged: every estimate, SE and CI)
+```
+
+`data_version` is the response's `X-Data-Version` (or the static
+snapshot's), else the version the page's metadata reported — the legacy
+`<release>:run<id>` tag for an API that reports none. Unknown facts are
+`null`, never guessed. File names are
+`atus-<operation>-<activity>-<years>.<csv|json>`, e.g.
+`atus-trend-sleeping-2019-2023.csv`.
 
 ## Statistical presentation rules
 
@@ -318,15 +387,24 @@ stateless. The URL encodes exactly that:
   `<output>` regions, so text added later is announced politely; nothing
   moves focus. A `Retry-After` countdown is visual only (`aria-hidden`); the
   alert's text states the wait once.
-- Playwright runs axe checks on the five main screens, the waking state, the
-  incompatible-API and paused-quota pages and the edge-limit page, plus
-  keyboard checks of the primary workflow and of the new pages' actions.
+- The download buttons are ordinary buttons; a persistent `<output>` says
+  which file was started, and focus stays on the button.
+- Playwright runs axe checks (no serious or critical violations) on the five
+  main screens, the About page, the waking state, the incompatible-API, paused-quota and
+  edge-limit pages, the data-release reload notice, the
+  `data_version_mismatch` and rate-limit panels and the downloads, plus
+  keyboard checks of the primary workflow and of every new state's action.
+  WebKit on macOS follows Safari's default of tabbing only between text
+  fields, so Tab-order checks are skipped there (`tabReachesAllControls`);
+  the controls are still operated from the keyboard.
 
 ## Testing
 
 ```bash
-npm test          # 274 unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 29 Playwright tests (27 desktop + 2 mobile)
+npm test          # 335 unit/component tests (Vitest + Testing Library + MSW)
+npm run test:e2e  # 62 Playwright runs: 34 Chromium desktop + 2 mobile,
+                  # and the 13 @core journeys again in Firefox and in WebKit
+npx playwright install firefox webkit   # once, for the cross-browser projects
 ```
 
 - Unit: formatters, URL spec round-trips (including non-ASCII labels and
@@ -337,8 +415,15 @@ npm run test:e2e  # 29 Playwright tests (27 desktop + 2 mobile)
   clock), the waking and data-version stores, every error code's
   presentation, the snapshot (hit, miss, SPA-fallback, unsafe manifest, key
   equal to Node's sha256), the prewarm list (equal to the builder's own
-  output), `snapshot-requests.mjs` and `check-bundle.mjs` run as scripts,
-  and the boot shell (no inline script/style; replaced by React).
+  output), `snapshot-requests.mjs`, `check-bundle.mjs` and `api-types.mjs`
+  run as scripts (the last also against a real production build: no inline
+  code, the `<meta>` CSP first, `_headers` shipped; and `generated.ts`
+  reproduced byte for byte), the `_headers` reader (Cloudflare matching,
+  joining and detaching rules), the site's actual header and cache rules and
+  `vite preview` applying them, the exports (exact CSV text, quoting, `NA`,
+  formula guard, every number equal to the API's, the JSON record), the
+  About page's logging statement, and the boot shell (no inline
+  script/style; replaced by React).
 - Component: ActivityPicker (search/keyboard/presets/browse), warning and
   error panels (incl. the `Retry-After` countdown), TrendChart 2020-gap
   rendering and keyboard access.
@@ -353,7 +438,9 @@ npm run test:e2e  # 29 Playwright tests (27 desktop + 2 mobile)
   one-retry transient 503s, timeouts, the data-release reload notice,
   no metadata refetch on focus or reconnect after 30 minutes, background
   refetch failures, "Try again" for every failed query, prewake, and
-  snapshot-served metadata.
+  snapshot-served metadata, and the downloads (the saved file is built from
+  the response on screen, through a Blob URL, with the page's analysis key,
+  data version and canonical link).
 - E2E (real API + fixture database via `scripts/e2e_backend.py`; every
   expected number hand-computable; production build served same-origin
   under the production CSP): the full first-time-user scenario, the
@@ -361,13 +448,24 @@ npm run test:e2e  # 29 Playwright tests (27 desktop + 2 mobile)
   refresh, the 2020 gap, error handling incl. backend-down recovery after the
   cold-start budget (page clock), axe checks, keyboard operation, mobile
   viewport; and the Phase 5 states with page.route: delayed `/meta`,
-  incompatible API, paused database, edge daily limit, rate-limit countdown,
-  the boot fallback with the bundle blocked, and zero CSP violations with
-  every API request on the page's own origin.
+  incompatible API, a data release switch (reload notice), a
+  `data_version_mismatch` 503, paused database, edge daily limit, rate-limit
+  countdown, the boot fallback with the bundle blocked; downloads read back
+  from disk (CSV values equal to the JSON response's, `NA` for 2020, keyboard
+  operation); and the deployed headers: every page carries the `_headers`
+  rules and the `<meta>` CSP, bundles are served immutable, and the core
+  journeys (including a download) produce no CSP violation or
+  Permissions-Policy error, with every API request on the page's own origin.
+- Cross-browser: tests tagged `@core` — the first-time-user estimate, the
+  comparison, share links (copy, refresh, invalid), the 2020 gap and chart
+  keyboard access, the exports, the waking notice, and the headers/CSP
+  journey — also run in Firefox and WebKit (`playwright.config.ts`).
 
 E2E ports default to 4173 (frontend) and 8137 (backend);
-`E2E_FRONTEND_PORT` / `E2E_BACKEND_PORT` override them, and
-`ATUS_E2E_DATABASE_URL` selects the disposable database.
+`E2E_FRONTEND_PORT` / `E2E_BACKEND_PORT` override them,
+`ATUS_E2E_DATABASE_URL` selects the disposable database, and
+`E2E_BACKEND_PYTHON` the backend's Python (default `../.venv/bin/python`).
+`npx playwright test --project=desktop` runs Chromium only.
 - An adversarial review fleet (96 agents: 8 code-dimension reviewers,
   3 live browser probes, an aggregator, and two independent refuters per
   finding) audited the implementation; 37 confirmed findings — including
@@ -399,31 +497,70 @@ security.
 ## Production build and deployment shape
 
 `npm run build` type-checks and emits static assets into `frontend/dist/`
-(Oct 2026, Phase 5: 381.6 kB JS / 117.1 kB gzip, 15.6 kB CSS / 3.9 kB gzip —
-one chunk, no SSR, no server runtime; Sept 2026, Phase 4: 365.0 / 110.8 kB
-JS). The deployment (ADR-011) serves `dist/` as Cloudflare Workers static
-assets on one origin, whose Worker proxies `/api/*` to the API — so the
-build calls `/api/v1` on its own origin:
+(Oct 2026, Phase 5 with exports: 389.8 kB JS / 119.8 kB gzip, 15.8 kB CSS /
+4.0 kB gzip — one chunk, no SSR, no server runtime; Sept 2026, Phase 4:
+365.0 / 110.8 kB JS). The deployment (ADR-011) serves `dist/` as Cloudflare
+Workers static assets on one origin, whose Worker proxies `/api/*` to the
+API — so the build calls `/api/v1` on its own origin:
 
 - **Configuration.** Builds read `VITE_*` variables from the process
   environment only; no `.env` file (not even `.env.local`) reaches a
   deployable bundle. A `VITE_API_BASE_URL` that is not an absolute http(s)
-  URL fails the build. `npm run check:bundle` fails if `dist/` still
-  contains a development API address (`localhost:<port>`, `127.0.0.1:<port>`,
-  `[::1]:<port>`); react-router's internal portless `http://localhost` URL
-  base is not one.
-- **CSP.** The app needs nothing inline and nothing third-party.
-  `vite preview` serves the build under the production policy
-  (`CONTENT_SECURITY_POLICY` in `vite.config.ts`: `default-src 'none';
-  script-src 'self'; style-src 'self'; … connect-src 'self'; frame-ancestors
-  'none'`), so every E2E run checks it.
+  URL fails the build.
+- **Response headers: `public/_headers`.** The static host applies this file
+  (copied into `dist/`) to every static file; it does not apply to `/api`,
+  whose headers the edge Worker sets. It is the single source of the site's
+  header rules (`src/deploy/staticHeaders.ts` reads it):
+
+  | Path | Headers |
+  | --- | --- |
+  | every static file | `Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`, `Strict-Transport-Security: max-age=31536000`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy` denying every powerful feature the site does not use (camera, microphone, geolocation, payment, USB, clipboard reads, …), `Cross-Origin-Opener-Policy: same-origin` |
+  | `/assets/*` (hashed bundles) | `Cache-Control: public, max-age=31536000, immutable` |
+  | `/`, `/index.html`, `/explore`, `/about`, `/analysis/*` | `Cache-Control: no-cache` |
+  | `/snap/current.json` | `Cache-Control: no-cache` |
+  | `/snap/:snapshot/*` (a snapshot directory) | `Cache-Control: public, max-age=31536000, immutable` |
+
+  The host joins a header set by two matching rules with a comma, so no two
+  rules set the same header for one path (`/snap/*` would have joined
+  `immutable` onto the pointer's `no-cache`). Other unhashed files
+  (`boot.css`, icons) keep the host's default `max-age=0, must-revalidate`.
+  The app needs nothing inline, no `data:` URL and nothing third-party;
+  clipboard writes (the Share button) stay allowed for the page itself.
+- **`<meta>` CSP backstop.** The build injects the same policy, minus
+  `frame-ancestors` (which a `<meta>` CSP cannot carry; the header enforces
+  it), as the first element of `index.html`, in case the host does not apply
+  `_headers` to the SPA-fallback `index.html` (an unverified detail of
+  ADR-011; check a deep link with curl after deploying). The dev server does
+  not get it: Vite injects inline scripts there.
+- **Every E2E run uses the deployed headers.** `vite preview` applies the
+  built `dist/_headers` to every non-`/api` response (a plugin in
+  `vite.config.ts`), so the browser tests run under the exact CSP,
+  Permissions-Policy and cache rules that will be deployed.
+- **`npm run check:bundle`** (run on the deploy build) fails if `dist/`:
+  still contains a development API address (`localhost:<port>`,
+  `127.0.0.1:<port>`, `[::1]:<port>`; react-router's internal portless
+  `http://localhost` URL base is not one); has an inline script, `<style>`,
+  `style` attribute, inline event handler or `javascript:` URL in its HTML;
+  lacks the `<meta>` CSP, or has one that differs from `_headers` or comes
+  after a script or stylesheet; or lacks `_headers`, a security header on
+  any HTML route, a strict CSP (`'none'` default, `'self'` scripts and
+  connections, no `unsafe-*`, `data:` or wildcard, `frame-ancestors 'none'`),
+  HSTS of at least a year, or the cache rules above.
 - **Deploys.** Hashed bundles may disappear after a new deploy while an old
   `index.html` is still open or cached; the boot shell then explains instead
-  of showing a blank page, and a reload fetches the new `index.html`. A data
-  release switch shows the reload notice described above.
+  of showing a blank page, and a reload fetches the new `index.html` (never
+  cached without revalidation). A data release switch shows the reload
+  notice described above.
 - **Static snapshot.** The deploy places `snap/` (generated by
   `scripts/build_snapshot.py`) next to the SPA's files; the SPA works
   without it.
+- **Privacy.** No cookies, no browser storage, no third-party analytics or
+  trackers. The About page ("Privacy and logs") states what the service
+  logs per request — request ID, route, status, timing, cache status,
+  analysis key, the client IP shortened to /24 (IPv4) or /48 (IPv6), never
+  request bodies — and the retention of the providers' free plans (Render
+  7 days; Cloudflare Workers Logs 3 days, 7 days from 1 December 2026), per
+  ADR-011 and ADR-014.
 
 ## Performance (measured, production build, Sept 2026)
 

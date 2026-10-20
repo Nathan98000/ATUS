@@ -19,6 +19,14 @@ test('explorer has no serious axe violations', async ({ page }) => {
   await expectNoSeriousViolations(page)
 })
 
+test('the About page, with its privacy and logging statement, has no serious axe violations', async ({
+  page,
+}) => {
+  await page.goto('/about')
+  await expect(page.getByRole('heading', { name: 'Privacy and logs' })).toBeVisible()
+  await expectNoSeriousViolations(page)
+})
+
 test('estimate, trend and compare results have no serious axe violations', async ({ page }) => {
   await page.goto('/explore')
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
