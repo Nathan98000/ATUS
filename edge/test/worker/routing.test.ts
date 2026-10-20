@@ -113,11 +113,13 @@ describe('everything else under /api is a 404 without an origin call', () => {
   })
 
   it('normalizes dot segments before matching (never reaching /ready or /docs)', async () => {
-    const calls = mockOrigin(() => apiJson('{}'))
+    const calls = mockOrigin(() => apiJson('{"status":"ready"}'))
     const response = await callWorker('/api/v1/../../ready')
-    // The URL parser resolves this to /ready, which is not an /api path.
+    // The URL parser resolves this to /ready, which is not an /api path: the
+    // static assets answer it (404, or the SPA's index.html once a frontend
+    // build exists), never the origin.
     expect(calls).toHaveLength(0)
-    expect(response.status).not.toBe(200)
+    expect(await response.text()).not.toContain('"status":"ready"')
   })
 })
 
