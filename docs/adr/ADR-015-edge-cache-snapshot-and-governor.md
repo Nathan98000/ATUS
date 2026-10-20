@@ -73,7 +73,7 @@ snap/<SNAPSHOT_ID>/post/<k>.json     exact analysis bodies
 
 - calls a running API with the edge secret (sent only as `X-ATUS-Edge-Auth`, never printed; plain HTTP only to loopback hosts; no redirects followed; no proxies);
 - takes the analysis list from `--requests` files or runs the SPA's own generator (`frontend/scripts/snapshot-requests.mjs`) in both of its passes: the prewarm list, then the canonical `spec` of each response, so share links copied from a prewarmed result hit too;
-- refuses any answer that is not a 200 with a JSON body. 429 and 503 answers with `Retry-After` are retried within a total wait budget (`--max-wait`, default 600 s), so the build API should run with generous per-client limits;
+- refuses any answer that is not a 200 with a JSON body, and any analysis computed during a data reload (`X-Cache: bypass`, which the KV gate refuses too). 429 and 503 answers with `Retry-After` are retried within a total wait budget (`--max-wait`, default 600 s), so the build API should run with generous per-client limits;
 - requires one data version, analytics version and response format across all responses (from the response headers, or the `--data-version` / `--response-format` expectations);
 - writes into a temporary directory, verifies every file's sha256 and size against the manifest, then moves the snapshot into place and writes `current.json` last. `--verify DIR` re-checks a published tree.
 

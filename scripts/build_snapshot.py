@@ -41,7 +41,8 @@ variable; it is sent only as ``X-ATUS-Edge-Auth``, never printed, and plain
 HTTP is refused except to loopback hosts. Redirects are never followed.
 
 Every response must be a 200 with a JSON body; anything else (an error
-envelope, an HTML page) fails the build, except that 429/503 answers with
+envelope, an HTML page, an analysis computed during a data reload, i.e.
+``X-Cache: bypass``) fails the build, except that 429/503 answers with
 ``Retry-After`` are retried within ``--max-wait`` seconds in total. Run the
 API with generous rate limits for the build (for example
 ``ATUS_API_RATE_ANALYSIS=1000/60 ATUS_API_RATE_REQUESTS=10000/60``). All
@@ -201,10 +202,17 @@ def load_request_file(path: Path) -> list[AnalysisRequest]:
 
 
 def run_request_script(script: Path, args: list[str], workdir: Path) -> list[AnalysisRequest]:
-    """Run the SPA's request generator (``node <script> <args>``) and parse its list."""
+    """Run the SPA's request generator (``node <script> <args>``) and parse its list.
+
+    It runs in ``workdir`` (the build's temporary directory), so a relative
+    ``script`` is resolved against the caller's working directory first.
+    """
     node = shutil.which("node")
     if node is None:
         raise SnapshotError("--requests-script needs node on PATH")
+    script = script.resolve()
+    if not script.is_file():
+        raise SnapshotError(f"--requests-script {script} is not a file")
     completed = subprocess.run(
         [node, str(script), *args],
         cwd=workdir,
@@ -213,8 +221,12 @@ def run_request_script(script: Path, args: list[str], workdir: Path) -> list[Ana
         check=False,
     )
     if completed.returncode != 0:
-        detail = completed.stderr.strip().splitlines()[-1:] or ["no output"]
-        raise SnapshotError(f"{script.name} {args[0]} failed: {detail[0]}")
+        # The last line that is neither a stack frame nor Node's own
+        # "Node.js v<version>" trailer: the error message.
+        lines = [line for line in completed.stderr.strip().splitlines()
+                 if line.strip() and not line.lstrip().startswith("at ")
+                 and not line.startswith("Node.js v")]
+        raise SnapshotError(f"{script.name} {args[0]} failed: {(lines or ['no output'])[-1]}")
     try:
         payload = json.loads(completed.stdout)
     except ValueError as exc:
@@ -406,6 +418,12 @@ def collect(
             if request.key in collected.post:
                 continue
             response = client.fetch("POST", request.path, request.body)
+            if response.headers.get("x-cache") == "bypass":
+                # Computed while the data changed under the API: not tied to
+                # one data version (the edge's KV store gate refuses it too).
+                raise SnapshotError(
+                    f"POST {request.path}: computed during a data reload (X-Cache: bypass)"
+                )
             collected.note_versions(response, analysis=True)
             file = f"post/{request.key}.json"
             collected.files[file] = response.body

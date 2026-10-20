@@ -310,6 +310,24 @@ class TestRefusals:
         assert code in err and ESTIMATE in err
         self.assert_nothing_published(tmp_path)
 
+    def test_refuses_an_analysis_computed_during_a_data_reload(self, api, tmp_path,
+                                                                secret_file, capsys):
+        # X-Cache: bypass is the API's answer computed while the data changed
+        # under it: not tied to one data version (the edge cache refuses it too).
+        api.routes[("POST", ESTIMATE)] = analysis(**{"X-Cache": "bypass"})
+        requests = request_list(tmp_path, {"path": ESTIMATE, "body": BODY_A})
+        assert run(api, tmp_path, secret_file, "--requests", str(requests)) == 1
+        err = capsys.readouterr().err
+        assert "X-Cache: bypass" in err and ESTIMATE in err
+        self.assert_nothing_published(tmp_path)
+
+    @pytest.mark.parametrize("x_cache", ["miss", "hit", "join"])
+    def test_accepts_computed_cached_and_joined_analyses(self, api, tmp_path, secret_file,
+                                                         x_cache):
+        api.routes[("POST", ESTIMATE)] = analysis(**{"X-Cache": x_cache})
+        requests = request_list(tmp_path, {"path": ESTIMATE, "body": BODY_A})
+        assert run(api, tmp_path, secret_file, "--requests", str(requests)) == 0
+
     def test_refuses_an_html_page(self, api, tmp_path, secret_file, capsys):
         api.routes[("GET", "/api/v1/population/metadata")] = (
             200, {"Content-Type": "text/html"}, b"<!doctype html><title>SPA</title>")
@@ -492,6 +510,36 @@ class TestRequestScript:
         manifest = json.loads(
             (tmp_path / "snap" / EXPECTED_ID / "manifest.json").read_text())
         assert sorted(manifest["post"]) == sorted(key(path, body) for path, body in posts)
+
+    def test_accepts_a_script_path_relative_to_the_working_directory(
+        self, api, tmp_path, secret_file, monkeypatch
+    ):
+        # The documented CI call passes frontend/scripts/snapshot-requests.mjs
+        # relative to the repository root, while the generator runs in the
+        # build's temporary directory.
+        scripts = tmp_path / "frontend" / "scripts"
+        scripts.mkdir(parents=True)
+        (scripts / "generator.mjs").write_text(FAKE_GENERATOR)
+        monkeypatch.chdir(tmp_path)
+        assert run(api, tmp_path, secret_file, "--requests-script",
+                   "frontend/scripts/generator.mjs") == 0
+        assert [call["path"] for call in api.calls if call["method"] == "POST"] == [
+            ESTIMATE, TREND, ESTIMATE,
+        ]
+
+    def test_refuses_a_missing_script(self, api, tmp_path, secret_file, capsys):
+        missing = tmp_path / "no-such-generator.mjs"
+        assert run(api, tmp_path, secret_file, "--requests-script", str(missing)) == 1
+        assert "no-such-generator.mjs is not a file" in capsys.readouterr().err
+
+    def test_reports_the_error_of_a_generator_that_throws(self, api, tmp_path, secret_file,
+                                                          capsys):
+        # Node ends an uncaught error's output with its own version line.
+        script = tmp_path / "throws.mjs"
+        script.write_text("throw new Error('meta has no years')\n")
+        assert run(api, tmp_path, secret_file, "--requests-script", str(script)) == 1
+        err = capsys.readouterr().err
+        assert "throws.mjs --meta failed: Error: meta has no years" in err
 
     def test_fails_when_the_generator_fails(self, api, tmp_path, secret_file, capsys):
         script = tmp_path / "broken.mjs"
