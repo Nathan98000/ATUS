@@ -68,14 +68,21 @@ Every `*.jsonl` (or `*.ndjson`) file in `--specs` holds one JSON object per line
 ```
 
 - `id`: unique across all files.
-- `endpoint`: `estimate`, `trend` or `compare`.
+- `endpoint`: `estimate`, `trend` or `compare`, or the full path, for example
+  `/api/v1/analysis/estimate`.
 - `body`: serialized compactly with key order kept. A string body is sent verbatim, for
   malformed JSON.
-- `expect`: what `b` should answer: `ok` (2xx), `error`, or `any` (not asserted).
+- `expect`: what `b` should answer. It takes one of these forms:
+  - `ok` (2xx), `error`, or `any` (not asserted);
+  - `error:<code>`;
+  - `{"outcome": "ok"|"error"|"any", "status": 422, "code": "..."}`, where `status` and
+    `code` are optional and other keys are ignored.
+
   A miss is listed in the report and is not an equivalence failure, unless
   `--fail-on-unexpected` is set.
 - `content_type` (optional): replaces `application/json`.
 - `category` (optional): groups results in the report.
+- `note` (optional): copied into the report.
 - Any other key is ignored.
 
 Spec sources:

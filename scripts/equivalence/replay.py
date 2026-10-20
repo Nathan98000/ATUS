@@ -28,9 +28,11 @@ Specs: every ``*.jsonl`` file in ``--specs``; one JSON object per line:
      "expect": "ok", "body": {"measure": "average_minutes_per_day",
      "activity": {"include": ["0101"]}, "years": [2024]}}
 
-``endpoint`` is estimate, trend or compare; ``body`` is serialized compactly
-(or sent verbatim when it is a string); ``expect`` is ok (2xx) or error, as
-answered by b; an optional ``content_type`` overrides application/json.
+``endpoint`` is estimate, trend or compare (or its /api/v1/analysis/ path);
+``body`` is serialized compactly (or sent verbatim when it is a string);
+``expect`` is what b should answer: ok (2xx), error, any, error:<code>, or
+{"outcome", "status"?, "code"?}; an optional ``content_type`` overrides
+application/json (details: httpdiff.Spec, README.md).
 
 Databases (connection strings are never accepted on the command line, never
 printed and never written; reports name ``user@host:port/dbname``):
@@ -504,7 +506,7 @@ def run(args: argparse.Namespace) -> int:
                 except Exception as exc:  # a harness bug must not lose the run
                     entry = httpdiff.harness_error_entry(
                         {"id": spec.id, "source": spec.source, "endpoint": spec.endpoint,
-                         "category": spec.category, "expect": spec.expect,
+                         "category": spec.category, "expect": spec.expectation(),
                          "expect_met": None}, answers, exc)
                 spec_results[index] = entry
                 if args.save_responses == "all" or (

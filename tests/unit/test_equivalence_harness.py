@@ -548,6 +548,48 @@ def test_specs_load_in_file_and_line_order(tmp_path):
     assert specs[2].category == "uncategorized" and specs[2].path == "/api/v1/analysis/trend"
 
 
+def test_endpoint_paths_and_detailed_expectations_are_accepted(tmp_path):
+    body = {"activity": {"preset": "sleep"}, "years": [2024]}
+    _write(tmp_path, "gen.jsonl", [
+        {"id": "p", "endpoint": "/api/v1/analysis/compare", "expect": "ok", "body": body,
+         "note": "why this spec exists"},
+        {"id": "e", "endpoint": "trend", "expect": "error:invalid_spec", "body": body},
+        {"id": "d", "endpoint": "estimate", "body": body,
+         "expect": {"outcome": "error", "status": 422, "code": "insufficient_data"}},
+        {"id": "o", "endpoint": "estimate", "body": body,
+         "expect": {"outcome": "ok", "status": 200, "unavailable_years": [2020]}},
+    ])
+    specs = {s.id: s for s in httpdiff.load_specs(tmp_path)[0]}
+    assert specs["p"].endpoint == "compare" and specs["p"].note == "why this spec exists"
+    assert specs["e"].expectation() == {"outcome": "error", "code": "invalid_spec"}
+    assert specs["d"].expectation() == {"outcome": "error", "status": 422,
+                                        "code": "insufficient_data"}
+    assert specs["o"].expectation() == {"outcome": "ok", "status": 200}
+    refused = response(422, envelope("insufficient_data", "none"))
+    other = response(422, envelope("invalid_spec", "bad"))
+    assert specs["d"].expectation_met(refused) is True
+    assert specs["d"].expectation_met(other) is False          # wrong code
+    assert specs["e"].expectation_met(other) is True
+    assert specs["o"].expectation_met(ok(estimate_body())) is True
+    assert specs["o"].expectation_met(response(201, {})) is False   # wrong status
+    assert specs["o"].expectation_met(Response(None)) is None
+    entry = httpdiff.evaluate_spec(specs["d"], {"b": other, "c": other})
+    assert entry["expect_met"] is False and entry["passed"]
+    assert entry["expect"] == {"outcome": "error", "status": 422, "code": "insufficient_data"}
+    assert httpdiff.evaluate_spec(specs["p"], {"b": refused, "c": refused})["note"]
+
+
+@pytest.mark.parametrize("expect", ["ok:200", "maybe", "error:", {"outcome": "nope"},
+                                    {"outcome": "error", "status": "422"},
+                                    {"outcome": "error", "code": 5}, {"status": 200}, None])
+def test_malformed_expectations_are_refused(tmp_path, expect):
+    _write(tmp_path, "a.jsonl", [{"id": "x", "endpoint": "/api/v1/analysis/nope",
+                                  "expect": expect, "body": {}}])
+    with pytest.raises(httpdiff.SpecError) as raised:
+        httpdiff.load_specs(tmp_path)
+    assert "'expect' must be" in str(raised.value) and "'endpoint' must be" in str(raised.value)
+
+
 def test_non_ascii_bodies_are_sent_as_utf8():
     spec = httpdiff.Spec("u", "estimate", {"activity": {"label": "Café"}}, "c", "ok", "f:1")
     assert spec.body_bytes() == '{"activity":{"label":"Café"}}'.encode()

@@ -112,22 +112,46 @@ class SpecError(ValueError):
 @dataclass(frozen=True)
 class Spec:
     """One request to replay: a JSON line ``{id, endpoint, body, category,
-    expect[, content_type]}``.
+    expect[, content_type, note]}``.
 
-    ``body`` is a JSON value serialized compactly (key order kept), or a
-    string sent verbatim (for malformed-JSON cases). ``expect`` is what the
-    spec's author expects the Phase 5 API on the full database to answer
-    (``ok`` = 2xx, ``error`` = anything else, ``any`` = not asserted, for
-    generated specs); a miss is reported, not an equivalence failure.
+    ``endpoint`` is ``estimate``/``trend``/``compare`` or the full path
+    (``/api/v1/analysis/estimate``). ``body`` is a JSON value serialized
+    compactly (key order kept), or a string sent verbatim (for malformed-JSON
+    cases). ``expect`` is what the spec's author expects the Phase 5 API on
+    the full database to answer: ``ok`` (2xx), ``error`` (anything else),
+    ``any`` (not asserted; generated specs), ``error:<code>``, or an object
+    ``{"outcome": "ok"|"error"|"any", "status": 422, "code": "..."}`` whose
+    ``status`` and ``code`` are optional (other keys are ignored). A miss is
+    reported, not an equivalence failure.
     """
 
     id: str
     endpoint: str
     body: Any
     category: str
-    expect: str
+    expect: str                      # the outcome: ok, error or any
     source: str
     content_type: str = JSON_MEDIA_TYPE
+    expect_status: int | None = None
+    expect_code: str | None = None
+    note: str | None = None
+
+    def expectation(self) -> dict:
+        out: dict = {"outcome": self.expect}
+        if self.expect_status is not None:
+            out["status"] = self.expect_status
+        if self.expect_code is not None:
+            out["code"] = self.expect_code
+        return out
+
+    def expectation_met(self, answer: Response) -> bool | None:
+        """Whether ``answer`` is what the spec expects (None: not asserted,
+        or no answer)."""
+        if self.expect == "any" or answer.status is None:
+            return None
+        return (answer.ok == (self.expect == "ok")
+                and self.expect_status in (None, answer.status)
+                and self.expect_code in (None, answer.error_code))
 
     @property
     def path(self) -> str:
@@ -144,6 +168,24 @@ class Spec:
 
 
 SPEC_SUFFIXES = (".jsonl", ".ndjson")
+_ENDPOINT_NAMES = {path: name for name, path in ENDPOINTS.items()}
+
+
+def parse_expectation(value: Any) -> tuple[str, int | None, str | None] | None:
+    """``(outcome, status, code)`` of an ``expect`` value, or None if invalid."""
+    if isinstance(value, str):
+        outcome, colon, code = value.partition(":")
+        if outcome in EXPECTATIONS and not colon:
+            return outcome, None, None
+        if outcome == "error" and code:
+            return outcome, None, code
+        return None
+    if isinstance(value, dict) and value.get("outcome") in EXPECTATIONS:
+        status, code = value.get("status"), value.get("code")
+        if (status is None or (isinstance(status, int) and not isinstance(status, bool))) and (
+                code is None or isinstance(code, str)):
+            return value["outcome"], status, code
+    return None
 _SPEC_KEYS = ("id", "endpoint", "body", "expect")
 
 
@@ -158,10 +200,18 @@ def _spec_from_line(line: str, source: str) -> tuple[Spec | None, list[str]]:
     spec_id = raw.get("id")
     if isinstance(spec_id, bool) or not isinstance(spec_id, (str, int)) or str(spec_id) == "":
         problems.append(f"{source}: 'id' must be a non-empty string or integer")
-    if raw.get("endpoint") not in ENDPOINTS:
-        problems.append(f"{source}: 'endpoint' must be one of {', '.join(ENDPOINTS)}")
-    if raw.get("expect") not in EXPECTATIONS:
-        problems.append(f"{source}: 'expect' must be one of {', '.join(EXPECTATIONS)}")
+    endpoint = raw.get("endpoint")
+    endpoint = _ENDPOINT_NAMES.get(endpoint, endpoint) if isinstance(endpoint, str) else None
+    if endpoint not in ENDPOINTS:
+        problems.append(f"{source}: 'endpoint' must be one of {', '.join(ENDPOINTS)} "
+                        "(or its /api/v1/analysis/... path)")
+    expectation = parse_expectation(raw.get("expect"))
+    if "expect" in raw and expectation is None:
+        problems.append(f"{source}: 'expect' must be one of {', '.join(EXPECTATIONS)}, "
+                        "error:<code>, or {\"outcome\", \"status\"?, \"code\"?}")
+    note = raw.get("note")
+    if note is not None and not isinstance(note, str):
+        problems.append(f"{source}: 'note' must be a string")
     category = raw.get("category", "uncategorized")
     if not isinstance(category, str) or not category:
         problems.append(f"{source}: 'category' must be a non-empty string")
@@ -175,8 +225,10 @@ def _spec_from_line(line: str, source: str) -> tuple[Spec | None, list[str]]:
             problems.append(f"{source}: 'body' holds a non-finite number; send it as a string")
     if problems:
         return None, problems
-    return Spec(id=str(spec_id), endpoint=raw["endpoint"], body=raw["body"], category=category,
-                expect=raw["expect"], source=source, content_type=content_type), []
+    outcome, status, code = expectation
+    return Spec(id=str(spec_id), endpoint=endpoint, body=raw["body"], category=category,
+                expect=outcome, source=source, content_type=content_type,
+                expect_status=status, expect_code=code, note=note), []
 
 
 def load_specs(directory: Path) -> tuple[list[Spec], list[dict]]:
@@ -778,21 +830,21 @@ def evaluate_spec(spec: Spec, responses: dict[str, Response], *, max_body_bytes:
     request = spec.request(max_body_bytes)
     status, pairs = compare_all(responses, request, expected_versions=expected_versions)
     reference = responses.get("b") or next(iter(responses.values()))
-    expect_met = None
-    if reference.status is not None and spec.expect != "any":
-        expect_met = reference.ok == (spec.expect == "ok")
-    return {
+    entry = {
         "id": spec.id,
         "source": spec.source,
         "endpoint": spec.endpoint,
         "category": spec.category,
-        "expect": spec.expect,
-        "expect_met": expect_met,
+        "expect": spec.expectation(),
+        "expect_met": spec.expectation_met(reference),
         "status": status,
         "passed": status in PASSING,
         "targets": {key: _target_summary(r) for key, r in responses.items()},
         "pairs": {pair: result.as_dict() for pair, result in pairs.items()},
     }
+    if spec.note:
+        entry["note"] = spec.note
+    return entry
 
 
 def harness_error_entry(identity: dict, responses: dict[str, Response],
