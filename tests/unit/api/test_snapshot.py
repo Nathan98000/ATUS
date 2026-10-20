@@ -138,6 +138,31 @@ class TestSnapshotStore:
         run(scenario())
         assert db.reads == 2
 
+    def test_invalidate_during_a_read_does_not_keep_that_read_fresh(self):
+        """Regression: a computation that saw the data version change calls
+        invalidate() from its worker thread; a snapshot read already in
+        progress (which may have seen the old data) then stored itself as
+        fresh for a whole TTL, and invalidate() was lost."""
+        db = CountingDatabase()
+        db.gate = threading.Event()
+        store = SnapshotStore(600.0)
+
+        async def scenario():
+            waiting = asyncio.ensure_future(store.get(db))
+            await asyncio.sleep(0.05)  # the read is in progress
+            store.invalidate()
+            db.gate.set()
+            during = await waiting
+            fresh = store.is_fresh()
+            after = await store.get(db)
+            return during, fresh, after
+
+        during, fresh, after = run(scenario())
+        assert during.data_version == "0325:run1"  # its waiters still get it
+        assert not fresh
+        assert db.reads == 2 and after is not during
+        assert store.is_fresh()  # an uninterrupted read is kept
+
     def test_expected_version_mismatch(self):
         db = CountingDatabase("0325:serving-new:abc")
         store = SnapshotStore(600.0, expected_version="0325:serving-old:def")

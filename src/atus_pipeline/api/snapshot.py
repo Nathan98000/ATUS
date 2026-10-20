@@ -265,6 +265,7 @@ class SnapshotStore:
         self._snapshot: DataSnapshot | None = None
         self._fresh_until = -math.inf
         self._loaded_at = -math.inf
+        self._generation = 0  # bumped by invalidate()
         self._pending: asyncio.Future | None = None
         self.refreshes = 0
         self.refresh_failures = 0
@@ -284,9 +285,13 @@ class SnapshotStore:
             return self._snapshot is not None and self._clock() < self._fresh_until
 
     def invalidate(self) -> None:
-        """Make the next request read a new snapshot (thread-safe)."""
+        """Make the next request read a new snapshot (thread-safe). A read
+        already in progress may predate the change that prompted this, so
+        its result is used by the requests waiting for it but not kept as
+        fresh."""
         with self._lock:
             self._fresh_until = -math.inf
+            self._generation += 1
 
     def check_expected(self, snapshot: DataSnapshot) -> None:
         if self.expected_version is not None and snapshot.data_version != self.expected_version:
@@ -321,12 +326,18 @@ class SnapshotStore:
         return await asyncio.shield(self._pending)
 
     async def _load(self, db) -> DataSnapshot:
+        with self._lock:
+            generation = self._generation
         snapshot = await anyio.to_thread.run_sync(db.read_snapshot)
         now = self._clock()
         with self._lock:
             self._snapshot = snapshot
             self._loaded_at = now
-            self._fresh_until = now + self.ttl_s
+            # Invalidated while reading (a computation saw the data version
+            # change): this read may have seen the old data, so the next
+            # request reads again instead of trusting it for a whole TTL.
+            if self._generation == generation:
+                self._fresh_until = now + self.ttl_s
         self.refreshes += 1
         if self.expected_version is not None and snapshot.data_version != self.expected_version:
             log.error(
