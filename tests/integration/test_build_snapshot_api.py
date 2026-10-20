@@ -103,10 +103,11 @@ def test_snapshots_every_response_byte_for_byte(live_api, tmp_path, monkeypatch,
     base, data_version = live_api
     monkeypatch.delenv("EDGE_AUTH_SECRET", raising=False)
     out = tmp_path / "snap"
+    # No --data-version: the API's own X-Data-Version headers decide it.
     code = snap.main([
         "--api-base", base, "--out", str(out),
         "--requests", str(write_requests(tmp_path, REQUESTS)),
-        "--api-build", BUILD, "--data-version", data_version,
+        "--api-build", BUILD,
     ])
     captured = capsys.readouterr()
     assert code == 0, captured.err
@@ -118,6 +119,7 @@ def test_snapshots_every_response_byte_for_byte(live_api, tmp_path, monkeypatch,
     manifest = json.loads((root / "manifest.json").read_text())
     assert manifest["data_version"] == data_version
     assert manifest["api_version"] == "v1"
+    assert manifest["response_format"] == "1"
 
     # Every lexicon code has its detail file.
     activities = json.loads(fetch(base, "/api/v1/activities")[0])
@@ -154,3 +156,21 @@ def test_refuses_an_analysis_the_api_rejects(live_api, tmp_path, capsys):
     assert code == 1
     assert "HTTP 422" in capsys.readouterr().err
     assert list(out.iterdir()) == []
+
+
+def test_skip_refused_leaves_out_what_the_api_rejects(live_api, tmp_path, capsys):
+    """The local stack's fixture cannot answer every prewarmed spec: with
+    --skip-refused those are left out (the SPA asks the API instead)."""
+    base, _ = live_api
+    out = tmp_path / "snap"
+    bad = (ESTIMATE, '{"activity":{"include":["999999"]},"years":[2023]}')
+    code = snap.main([
+        "--api-base", base, "--out", str(out),
+        "--requests", str(write_requests(tmp_path, [REQUESTS[0], bad])),
+        "--api-build", BUILD, "--skip-refused",
+    ])
+    captured = capsys.readouterr()
+    assert code == 0, captured.err
+    assert "unknown_activity" in captured.err
+    manifest = json.loads((out / captured.out.strip() / "manifest.json").read_text())
+    assert [entry["path"] for entry in manifest["post"].values()] == [ESTIMATE]

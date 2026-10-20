@@ -364,13 +364,50 @@ class TestRefusals:
         assert "disagree on data_version" in capsys.readouterr().err
         self.assert_nothing_published(tmp_path)
 
-    def test_needs_the_data_version_flag_when_the_api_sends_none(self, api, tmp_path,
-                                                                  secret_file, capsys):
+    def test_refuses_a_metadata_response_without_a_data_version(self, api, tmp_path,
+                                                                 secret_file, capsys):
+        """The API sends X-Data-Version on /meta, /activities and every detail:
+        a snapshot never falls back to a version it was told on the command line."""
         for route, (status, headers, body) in list(api.routes.items()):
             api.routes[route] = (status, {k: v for k, v in headers.items()
                                           if k != "X-Data-Version"}, body)
+        for extra in ((), ("--data-version", DV)):
+            assert run(api, tmp_path, secret_file, *extra) == 1
+            assert "GET /api/v1/meta: the API sent no X-Data-Version" in capsys.readouterr().err
+            self.assert_nothing_published(tmp_path)
+
+    def test_refuses_an_activity_detail_without_a_data_version(self, api, tmp_path,
+                                                                secret_file, capsys):
+        status, headers, body = api.routes[("GET", "/api/v1/activities/0101")]
+        api.routes[("GET", "/api/v1/activities/0101")] = (
+            status, {k: v for k, v in headers.items() if k != "X-Data-Version"}, body)
         assert run(api, tmp_path, secret_file) == 1
-        assert "--data-version" in capsys.readouterr().err
+        assert "/api/v1/activities/0101: the API sent no X-Data-Version" in (
+            capsys.readouterr().err)
+
+    def test_vocabularies_need_no_data_version(self, api, tmp_path, secret_file, capsys):
+        for path in ("/api/v1/activities/presets", "/api/v1/population/metadata"):
+            status, headers, body = api.routes[("GET", path)]
+            api.routes[("GET", path)] = (
+                status, {k: v for k, v in headers.items() if k != "X-Data-Version"}, body)
+        assert run(api, tmp_path, secret_file) == 0
+        assert capsys.readouterr().out.strip() == EXPECTED_ID
+
+    @pytest.mark.parametrize("header", ["X-Data-Version", "X-Analytics-Version",
+                                        "X-Response-Format"])
+    def test_refuses_an_analysis_without_its_version_headers(self, api, tmp_path, secret_file,
+                                                             capsys, header):
+        status, headers, body = analysis()
+        api.routes[("POST", ESTIMATE)] = (
+            status, {k: v for k, v in headers.items() if k != header}, body)
+        requests = request_list(tmp_path, {"path": ESTIMATE, "body": BODY_A})
+        assert run(api, tmp_path, secret_file, "--requests", str(requests),
+                   "--data-version", DV) == 1
+        assert f"POST {ESTIMATE}: the API sent no {header}" in capsys.readouterr().err
+        self.assert_nothing_published(tmp_path)
+
+    def test_a_matching_data_version_flag_is_an_expectation_only(self, api, tmp_path,
+                                                                 secret_file, capsys):
         assert run(api, tmp_path, secret_file, "--data-version", DV) == 0
         assert capsys.readouterr().out.strip() == EXPECTED_ID
 
@@ -384,6 +421,39 @@ class TestRefusals:
         requests = request_list(tmp_path, {"path": ESTIMATE, "body": BODY_A})
         assert run(api, tmp_path, secret_file, "--requests", str(requests)) == 1
         assert "response_format" in capsys.readouterr().err
+
+    def test_a_refused_analysis_fails_the_build_by_default(self, api, tmp_path, secret_file,
+                                                           capsys):
+        api.routes[("POST", TREND)] = error(422, "insufficient_data")
+        requests = request_list(tmp_path, {"path": ESTIMATE, "body": BODY_A},
+                                {"path": TREND, "body": BODY_B})
+        assert run(api, tmp_path, secret_file, "--requests", str(requests)) == 1
+        assert "insufficient_data" in capsys.readouterr().err
+        self.assert_nothing_published(tmp_path)
+
+    def test_skip_refused_leaves_out_422_answers_only(self, api, tmp_path, secret_file,
+                                                     capsys):
+        api.routes[("POST", TREND)] = error(422, "insufficient_data")
+        requests = request_list(tmp_path, {"path": ESTIMATE, "body": BODY_A},
+                                {"path": TREND, "body": BODY_B})
+        assert run(api, tmp_path, secret_file, "--requests", str(requests),
+                   "--skip-refused") == 0
+        captured = capsys.readouterr()
+        assert "skipped" in captured.err and "insufficient_data" in captured.err
+        manifest = json.loads(
+            (tmp_path / "snap" / EXPECTED_ID / "manifest.json").read_text())
+        assert list(manifest["post"]) == [key(ESTIMATE, BODY_A)]
+        assert snap.main(["--verify", str(tmp_path / "snap")]) == 0
+
+    @pytest.mark.parametrize("reply", [error(500, "internal_error"), error(404, "not_found"),
+                                       (422, {"Content-Type": "text/html"}, b"<html>")])
+    def test_skip_refused_never_skips_anything_but_a_422_envelope(self, api, tmp_path,
+                                                                  secret_file, capsys, reply):
+        api.routes[("POST", TREND)] = reply
+        requests = request_list(tmp_path, {"path": TREND, "body": BODY_B})
+        assert run(api, tmp_path, secret_file, "--requests", str(requests),
+                   "--skip-refused") == 1
+        self.assert_nothing_published(tmp_path)
 
     def test_never_follows_a_redirect(self, api, tmp_path, secret_file, capsys):
         api.routes[("GET", "/api/v1/meta")] = (

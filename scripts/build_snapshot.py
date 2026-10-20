@@ -45,9 +45,22 @@ envelope, an HTML page, an analysis computed during a data reload, i.e.
 ``X-Cache: bypass``) fails the build, except that 429/503 answers with
 ``Retry-After`` are retried within ``--max-wait`` seconds in total. Run the
 API with generous rate limits for the build (for example
-``ATUS_API_RATE_ANALYSIS=1000/60 ATUS_API_RATE_REQUESTS=10000/60``). All
-responses must report one data version, analytics version and response
-format. Files are written to a temporary directory, every file's sha256 is
+``ATUS_API_RATE_ANALYSIS=1000/60 ATUS_API_RATE_REQUESTS=10000/60``).
+
+Every analysis response must carry ``X-Data-Version``, ``X-Analytics-Version``
+and ``X-Response-Format``, and ``/api/v1/meta``, ``/api/v1/activities`` and
+every activity detail must carry ``X-Data-Version`` (the API sends them on
+all of these); a response without them fails the build, so a snapshot is
+always tied to the versions the API itself reported. All responses must
+report one data version, analytics version and response format;
+``--data-version`` and ``--response-format`` only add an expectation the API
+must meet.
+
+``--skip-refused`` leaves out analyses the API refuses with a 422 domain
+error (``insufficient_data`` on the small fixture dataset, for example)
+instead of failing; the SPA then asks the API, which answers the same. It
+exists for the local stack's fixture data only: a release snapshot must
+answer every prewarmed spec. Files are written to a temporary directory, every file's sha256 is
 verified against the manifest, and only then is the snapshot moved into place
 and ``current.json`` written. Prints the snapshot id on stdout (progress goes
 to stderr).
@@ -81,6 +94,10 @@ from urllib.parse import urlsplit
 ANALYSIS_PATHS = frozenset(
     {"/api/v1/analysis/estimate", "/api/v1/analysis/trend", "/api/v1/analysis/compare"}
 )
+# The data-independent vocabularies (presets, population metadata) carry no
+# X-Data-Version; every other response must.
+VERSIONED_GET_PATHS = frozenset({"/api/v1/meta", "/api/v1/activities"})
+ANALYSIS_VERSION_HEADERS = ("x-data-version", "x-analytics-version", "x-response-format")
 METADATA_PATHS = (
     ("/api/v1/meta", "get/meta.json"),
     ("/api/v1/activities", "get/activities.json"),
@@ -289,11 +306,16 @@ class ApiClient:
             reason = getattr(exc, "reason", exc)
             raise SnapshotError(f"{method} {path}: cannot reach the API ({reason})") from None
 
-    def fetch(self, method: str, path: str, body: bytes | None = None) -> ApiResponse:
-        """A 200 JSON response, retrying 429/503 with Retry-After within the wait budget."""
+    def fetch(
+        self, method: str, path: str, body: bytes | None = None, *, allow_refusal: bool = False
+    ) -> ApiResponse:
+        """A 200 JSON response, retrying 429/503 with Retry-After within the wait budget.
+        With ``allow_refusal``, a 422 error envelope is returned instead of failing."""
         while True:
             response = self._send(method, path, body)
             if response.status == 200 and _is_json(response.headers.get("content-type")):
+                return response
+            if allow_refusal and response.status == 422 and _error_code(response):
                 return response
             retry = _retry_after(response)
             # At least a second per retry, so the wait budget also bounds the attempts.
@@ -329,15 +351,21 @@ def _retry_after(response: ApiResponse) -> int | None:
     return int(value) if value.isdigit() else None
 
 
+def _error_code(response: ApiResponse) -> str | None:
+    """The ``error.code`` of an API error envelope, else ``None``."""
+    if not _is_json(response.headers.get("content-type")):
+        return None
+    try:
+        payload = json.loads(response.body)
+        code = payload.get("error", {}).get("code") if isinstance(payload, dict) else None
+    except (ValueError, AttributeError):
+        return None
+    return code if isinstance(code, str) else None
+
+
 def _describe(response: ApiResponse) -> str:
     """Status plus the API error code (never the body, which may echo the request)."""
-    code = None
-    if _is_json(response.headers.get("content-type")):
-        try:
-            payload = json.loads(response.body)
-            code = payload.get("error", {}).get("code") if isinstance(payload, dict) else None
-        except (ValueError, AttributeError):
-            code = None
+    code = _error_code(response)
     kind = f"error code {code!r}" if isinstance(code, str) else (
         f"Content-Type {response.headers.get('content-type')!r}"
     )
@@ -356,6 +384,7 @@ class Collected:
     files: dict[str, bytes] = field(default_factory=dict)
     get: dict[str, str] = field(default_factory=dict)
     post: dict[str, dict[str, object]] = field(default_factory=dict)
+    refused: dict[str, str] = field(default_factory=dict)  # request key -> error code
     seen: dict[str, set[str]] = field(
         default_factory=lambda: {"data_version": set(), "analytics_version": set(),
                                  "response_format": set()}
@@ -368,6 +397,26 @@ class Collected:
                 self.seen[name].add(response.headers[header])
         if analysis and response.headers.get("x-response-format"):
             self.seen["response_format"].add(response.headers["x-response-format"])
+
+
+def require_version_headers(response: ApiResponse, method: str, path: str,
+                            names: tuple[str, ...]) -> None:
+    """Fail unless ``response`` carries every header in ``names`` (non-empty)."""
+    missing = [name for name in names if not response.headers.get(name, "").strip()]
+    if missing:
+        listed = ", ".join("-".join(part.capitalize() for part in name.split("-"))
+                           for name in missing)
+        raise SnapshotError(
+            f"{method} {path}: the API sent no {listed}; a snapshot entry must carry the "
+            "versions the API reported (is this an API that predates the Phase 5 contract?)"
+        )
+
+
+def _versioned_get(path: str) -> bool:
+    """``/meta``, ``/activities`` and every activity detail carry X-Data-Version."""
+    if path in VERSIONED_GET_PATHS:
+        return True
+    return path.startswith("/api/v1/activities/") and path != "/api/v1/activities/presets"
 
 
 def _log(message: str) -> None:
@@ -391,10 +440,14 @@ def collect(
     requests: list[AnalysisRequest],
     request_script: Path | None,
     workdir: Path,
+    *,
+    skip_refused: bool = False,
 ) -> tuple[Collected, dict]:
     collected = Collected()
     for path, file in METADATA_PATHS:
         response = client.fetch("GET", path)
+        if _versioned_get(path):
+            require_version_headers(response, "GET", path, ("x-data-version",))
         collected.note_versions(response, analysis=False)
         collected.files[file] = response.body
         collected.get[path] = file
@@ -407,6 +460,7 @@ def collect(
     for code in codes:
         path, file = f"/api/v1/activities/{code}", f"get/activities/{code}.json"
         response = client.fetch("GET", path)
+        require_version_headers(response, "GET", path, ("x-data-version",))
         collected.note_versions(response, analysis=False)
         collected.files[file] = response.body
         collected.get[path] = file
@@ -415,9 +469,17 @@ def collect(
     def run_analyses(batch: list[AnalysisRequest]) -> list[dict]:
         responses = []
         for request in batch:
-            if request.key in collected.post:
+            if request.key in collected.post or request.key in collected.refused:
                 continue
-            response = client.fetch("POST", request.path, request.body)
+            response = client.fetch("POST", request.path, request.body,
+                                    allow_refusal=skip_refused)
+            if response.status == 422:
+                # Only with --skip-refused: left out, the SPA asks the API.
+                collected.refused[request.key] = _error_code(response) or "unknown"
+                _log(f"snapshot: skipped {request.name}: HTTP 422 "
+                     f"({collected.refused[request.key]})")
+                continue
+            require_version_headers(response, "POST", request.path, ANALYSIS_VERSION_HEADERS)
             if response.headers.get("x-cache") == "bypass":
                 # Computed while the data changed under the API: not tied to
                 # one data version (the edge's KV store gate refuses it too).
@@ -452,7 +514,8 @@ def collect(
         run_analyses(run_request_script(
             request_script, ["--canonical", str(workdir / "responses.json")], workdir
         ))
-    _log(f"snapshot: {len(collected.post)} analyses")
+    skipped = f", {len(collected.refused)} refused and left out" if collected.refused else ""
+    _log(f"snapshot: {len(collected.post)} analyses{skipped}")
     return collected, meta
 
 
@@ -475,7 +538,8 @@ def build(args: argparse.Namespace) -> str:
     out.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".snapshot-", dir=out) as tmp:
         work = Path(tmp)
-        collected, meta = collect(client, requests, args.requests_script, work)
+        collected, meta = collect(client, requests, args.requests_script, work,
+                                  skip_refused=args.skip_refused)
         data_version = _one(collected.seen["data_version"], args.data_version,
                             "data_version", "--data-version")
         analytics_version = _one(
@@ -614,9 +678,13 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--edge-secret-file", type=Path,
                         help="file holding EDGE_AUTH_SECRET (else the environment variable)")
     parser.add_argument("--api-build", help="the API image's git SHA (else /health 'build')")
-    parser.add_argument("--data-version", help="expected data version (else X-Data-Version)")
+    parser.add_argument("--data-version",
+                        help="data version the API must report in X-Data-Version")
     parser.add_argument("--response-format", default="1",
-                        help="expected X-Response-Format (default 1)")
+                        help="X-Response-Format the API must report (default 1)")
+    parser.add_argument("--skip-refused", action="store_true",
+                        help="leave out analyses the API refuses with a 422 domain error "
+                             "(fixture data only; a release snapshot must answer every spec)")
     parser.add_argument("--timeout", type=float, default=300.0, help="per-request timeout, s")
     parser.add_argument("--max-wait", type=float, default=600.0,
                         help="total seconds to wait on 429/503 Retry-After")
