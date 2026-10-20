@@ -203,6 +203,13 @@ async function dispatch(
   // Only uncached analyses reach Render and Neon: the governor admits them.
   let leaseId: string | null = null
   if (route.analysis && body !== undefined) {
+    if (!env.IP_HMAC_KEY) {
+      // Without the key no client can be charged (wrangler normally refuses such a deploy).
+      log.governor = 'unavailable'
+      log.outcome = 'denied'
+      log.error = 'ip_hmac_key_not_configured'
+      return capacityUnavailable(requestId)
+    }
     const prefix = await prefixHmac(
       env.IP_HMAC_KEY,
       Date.now(),

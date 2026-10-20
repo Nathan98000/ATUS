@@ -240,6 +240,15 @@ describe('failing closed', () => {
     },
   )
 
+  it('fails closed when IP_HMAC_KEY is not configured', async () => {
+    const calls = mockOrigin(() => apiJson('{}'))
+    const response = await callWorker(...post(), { IP_HMAC_KEY: '' })
+    expect(response.status).toBe(503)
+    expect((await readEnvelope(response)).code).toBe('capacity_unavailable')
+    expect(calls).toHaveLength(0)
+    expect((await report()).analyses.admitted).toBe(0)
+  })
+
   it('treats a malformed governor answer as unavailable', async () => {
     mockOrigin(() => apiJson('{}'))
     const governor = brokenGovernor(() => Promise.resolve({ ok: 'yes' }))
