@@ -3,9 +3,16 @@
 #   docker compose up -d        # from the repository root
 #
 # The project name is fixed so the data volume resolves to `atus_atus_pgdata`
-# from any checkout directory (worktrees, CI, a renamed clone). Never rename
-# the project or the volume key: that would start an empty database and orphan
-# the ~2 GB loaded one.
+# from any checkout directory (worktrees, CI, a renamed clone), the name the
+# original `ATUS/` checkout gave it. Never rename the project or the volume
+# key: compose would start an empty database beside the loaded one.
+#
+# Before `up`, check where your loaded database actually lives:
+#   docker inspect atus-postgres --format '{{range .Mounts}}{{.Name}} {{end}}'
+# An `atus-postgres` started with `docker run` (no compose labels) keeps its
+# data in an anonymous volume, not in atus_atus_pgdata, and `up` stops with a
+# container-name conflict. Leave that container as it is; never `docker rm -v`
+# it, because -v deletes the anonymous volume and the loaded data with it.
 #
 # This is not the production stack: see docker-compose.prod.yml (API, edge and
 # a serving-shaped database) and docker-compose.emulation.yml (free-tier

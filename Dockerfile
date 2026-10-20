@@ -53,7 +53,8 @@ COPY src ./src
 # pip compiles every module to bytecode on install, so the runtime image
 # never compiles at start-up. The import check fails the build if the API
 # needs a package the lock left out; the curl_cffi check proves the
-# pipeline-only dependency stayed out (requirements/api.in).
+# pipeline-only dependency stayed out (requirements/api.in), which is also
+# why `pip check` in the image reports curl-cffi as missing: expected.
 RUN /opt/buildenv/bin/pip wheel --no-deps --no-build-isolation --wheel-dir /dist . \
  && /opt/venv/bin/pip install --no-deps --no-index /dist/atus_pipeline-*.whl \
  && /opt/venv/bin/python -c "import atus_pipeline.api.app, atus_pipeline.cli" \

@@ -179,6 +179,35 @@ def test_production_example_documents_every_contract_variable():
         assert re.search(rf"^#? ?{name}=", text, re.MULTILINE), name
 
 
+def test_production_example_values_match_the_contract():
+    """Active lines carry the contract's production values (CONTRACT.md "Configuration");
+    settings without a fixed production value are commented out."""
+    values = _assignments(_read(".env.production.example"))
+    assert values == {
+        "ATUS_ENV": "production",
+        # required or per-release: set on Render, never in this file
+        "ATUS_DATABASE_URL": "", "ATUS_EDGE_SECRETS": "", "ATUS_EXPECTED_DATA_VERSION": "",
+        "ATUS_OPS_TOKEN": "",
+        "WEB_CONCURRENCY": "1",
+        "ATUS_LOG_LEVEL": "INFO", "ATUS_LOG_FORMAT": "json", "ATUS_API_DOCS": "off",
+        "ATUS_API_CORS_ORIGINS": "", "ATUS_API_CACHE_SIZE": "256",
+        "ATUS_API_POOL_MAX_SIZE": "4", "ATUS_API_POOL_MAX_IDLE_S": "240",
+        "ATUS_API_POOL_TIMEOUT_S": "5", "ATUS_API_CONNECT_TIMEOUT_S": "10",
+        "ATUS_API_STATEMENT_TIMEOUT_MS": "85000", "ATUS_API_META_STATEMENT_TIMEOUT_MS": "10000",
+        "ATUS_API_JIT": "off", "ATUS_API_MAX_INFLIGHT": "2", "ATUS_API_MAX_INFLIGHT_HEAVY": "1",
+        "ATUS_API_ADMISSION_WAIT_S": "5", "ATUS_API_RATE_ANALYSIS": "6/60",
+        "ATUS_API_RATE_REQUESTS": "120/60", "ATUS_API_DAILY_ANALYSIS_CAP": "600",
+        "ATUS_API_MAX_BODY_BYTES": "65536", "ATUS_API_THREADS": "16",
+        "ATUS_API_SNAPSHOT_TTL_S": "600",
+    }
+    commented = dict(re.findall(r"^# ([A-Z][A-Z0-9_]*)=(\S*)$", _read(".env.production.example"),
+                                re.MULTILINE))
+    # decided by the load tests; set by Render; baked in at build time
+    assert commented["ATUS_API_MAX_PARALLEL_WORKERS"] == ""
+    assert commented["PORT"] == "10000"
+    assert commented["ATUS_BUILD_SHA"] == "dev"
+
+
 def test_production_example_documents_every_variable_the_code_reads():
     """Any ATUS_* name in src/ must be documented (catches new settings)."""
     names = set()
