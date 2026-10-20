@@ -82,8 +82,9 @@ interface LogRecord {
 export default {
   async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url)
-    // Non-navigation requests that match no asset also reach the Worker:
-    // the assets binding applies the SPA fallback to them.
+    // Only /api paths should arrive (run_worker_first); locally, wrangler
+    // serves the SPA fallback for every other unmatched path without invoking
+    // the Worker. Should one arrive anyway, the assets binding answers it.
     if (!isApiPath(url.pathname)) return env.ASSETS.fetch(request)
     return handleApi(request, url, env, ctx)
   },
