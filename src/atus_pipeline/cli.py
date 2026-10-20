@@ -269,6 +269,3 @@ from .serving_cli import COMMANDS as SERVING_COMMANDS  # noqa: E402
 for _command in SERVING_COMMANDS:
     cli.add_command(_command)
 
-
-if __name__ == "__main__":
-    cli()

@@ -98,6 +98,7 @@ def statement_db(tmp_path_factory):
         settings = analytics_settings(tmp_path_factory.mktemp("stmt"), URL)
         with psycopg.connect(URL) as conn:
             apply_migrations(conn, MIGRATIONS_DIR)
+            conn.commit()  # load_all commits its own transactions
             load_all(conn, settings)
         yield settings
     finally:

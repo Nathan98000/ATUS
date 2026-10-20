@@ -247,7 +247,7 @@ class TestProductionProcess:
             "PORT": str(port),
         }
         process = subprocess.Popen(
-            [sys.executable, "-m", "atus_pipeline.cli", "api", "--host", "127.0.0.1"], env=env,
+            [sys.executable, "-m", "atus_pipeline", "api", "--host", "127.0.0.1"], env=env,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         )
         base = f"http://127.0.0.1:{port}"

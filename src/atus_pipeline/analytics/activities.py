@@ -43,7 +43,11 @@ class ResolvedActivity:
 class ActivityResolver:
     """Validates selectors against the lexicon (loaded once per resolver)."""
 
-    def __init__(self, conn: psycopg.Connection):
+    _READ_RELEASE = object()
+
+    def __init__(self, conn: psycopg.Connection, *, release: str | None | object = _READ_RELEASE):
+        """``release``: the loaded release code when the caller already knows
+        it (the API's data snapshot), saving the statement that reads it."""
         self._tier1 = {row[0] for row in conn.execute("SELECT code FROM atus.activity_tier1")}
         self._tier2 = {row[0] for row in conn.execute("SELECT code FROM atus.activity_tier2")}
         rows = conn.execute("SELECT code, name FROM atus.activity_codes").fetchall()
@@ -55,7 +59,9 @@ class ActivityResolver:
             )
         # Year span of the loaded release's lexicon, e.g. "2003-25" (None when
         # the release is unknown; text then names "the harmonized lexicon").
-        self.lexicon_label: str | None = lexicon_label(read_release(conn))
+        if release is ActivityResolver._READ_RELEASE:
+            release = read_release(conn)
+        self.lexicon_label: str | None = lexicon_label(release)
 
     def _check_code(self, code: str) -> None:
         table = {2: self._tier1, 4: self._tier2, 6: set(self._codes)}[len(code)]

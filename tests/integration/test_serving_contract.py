@@ -143,19 +143,23 @@ def test_the_engine_reads_only_contract_columns(contract):
 
 def test_every_endpoint_works_within_the_contract(contract):
     url, role, settings = contract
+    ops_token = "ops-" + "x" * 40
     restricted = type(settings)(
         database_url=as_role(url, role), data_dir=settings.data_dir,
-        release=settings.release, log_level="WARNING",
+        release=settings.release, log_level="WARNING", ops_token=ops_token,
     )
     analysis = {"activity": {"include": ["010101"]}, "years": [2023]}
     with TestClient(create_app(restricted)) as client:
         for path in (
-            "/health", "/ready", "/api/v1/meta", "/api/v1/activities",
+            "/health", "/api/v1/meta", "/api/v1/activities",
             "/api/v1/activities?search=sleep", "/api/v1/activities/presets",
             "/api/v1/activities/01", "/api/v1/activities/010101",
             "/api/v1/population/metadata",
         ):
             assert client.get(path).status_code == 200, path
+        # /ready is operator-only (ADR-012): it answers with the ops bearer.
+        ready = client.get("/ready", headers={"Authorization": f"Bearer {ops_token}"})
+        assert ready.status_code == 200, ready.text
         for path, body in (
             ("estimate", analysis),
             ("trend", {**analysis, "years": [2019, 2023]}),

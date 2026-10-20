@@ -52,7 +52,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
-import re
 import threading
 import time
 from collections.abc import Callable
@@ -64,6 +63,7 @@ import psycopg
 
 from ..analytics.activities import ActivityResolver
 from ..database import versions
+from ..sources import lexicon_label
 from .errors import DataVersionMismatchError
 
 log = logging.getLogger("atus.api")
@@ -106,19 +106,6 @@ _LOWER_SQL = "SELECT lower(%s)"
 ASCII_PROBE = "".join(chr(c) for c in range(0x20, 0x7F))
 """Every printable ASCII character: the database must lower these exactly
 as Python does before a search term is lowered in Python."""
-
-_RELEASE_PATTERN = re.compile(r"^(\d{2})(\d{2})$")
-
-
-def lexicon_label(release: str | None) -> str | None:
-    """``'0325'`` -> ``'2003-25'``: the year span a BLS multi-year release
-    code names (ATUS began in 2003, so both years are 20xx). ``None`` for an
-    unknown format."""
-    match = _RELEASE_PATTERN.match(release or "")
-    if match is None:
-        return None
-    return f"20{match.group(1)}-{match.group(2)}"
-
 
 @dataclass(frozen=True)
 class LexiconEntry:
@@ -235,7 +222,10 @@ def load_snapshot(conn: psycopg.Connection) -> DataSnapshot:
     probe = conn.execute(_LOWER_SQL, (ASCII_PROBE,)).fetchone()[0]
     # The resolver's own lexicon reads; an empty lexicon leaves it to the
     # engine, which reports the unloaded database exactly as before.
-    resolver = ActivityResolver(conn) if any(e.level == 3 for e in lexicon) else None
+    resolver = (
+        ActivityResolver(conn, release=run_row[1] if run_row else None)
+        if any(e.level == 3 for e in lexicon) else None
+    )
     return DataSnapshot(
         data_version=data_version,
         run=IngestionRun(*run_row) if run_row else None,
