@@ -7,10 +7,15 @@
  * from test/global-setup.ts (`RENDER_ORIGIN` overridden per call).
  */
 
-import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test'
+import {
+  createExecutionContext,
+  runInDurableObject,
+  waitOnExecutionContext,
+} from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { expect, vi } from 'vitest'
 import worker from '../../src/index'
+import { GOVERNOR_NAME, type Governor } from '../../src/governor'
 import { SECURITY_HEADERS } from '../../src/http'
 import { originBreaker } from '../../src/upstream'
 import { resetWakeState } from '../../src/wake'
@@ -20,10 +25,58 @@ export const BASE = 'https://atus.example.workers.dev'
 /** The fake edge secret configured for the tests. */
 export const EDGE_SECRET = env.EDGE_AUTH_SECRET
 
-/** Clear per-isolate state (circuit breaker, last wake) between tests. */
-export function resetEdgeState(): void {
+/**
+ * Clear state between tests: the per-isolate circuit breaker and last wake,
+ * the governor's storage and alarm, and every KV entry.
+ */
+export async function resetEdgeState(): Promise<void> {
   originBreaker.recordSuccess()
   resetWakeState()
+  await runInDurableObject(governorStub(), async (_instance, state) => {
+    state.storage.sql.exec(
+      'DELETE FROM days; DELETE FROM prefixes; DELETE FROM leases; DELETE FROM state;',
+    )
+    await state.storage.deleteAlarm()
+  })
+  const { keys } = await env.RESULT_CACHE.list()
+  await Promise.all(keys.map((key) => env.RESULT_CACHE.delete(key.name)))
+}
+
+/** The governor instance the Worker talks to. */
+export function governorStub(): DurableObjectStub<Governor> {
+  return env.GOVERNOR.get(env.GOVERNOR.idFromName(GOVERNOR_NAME))
+}
+
+/** Run SQL inside the governor (seed or inspect its tables). */
+export async function governorSql<T extends Record<string, SqlStorageValue>>(
+  query: string,
+  ...bindings: SqlStorageValue[]
+): Promise<T[]> {
+  return runInDurableObject(governorStub(), (_instance, state) =>
+    state.storage.sql.exec<T>(query, ...bindings).toArray(),
+  )
+}
+
+/**
+ * Freeze `Date.now()` (Worker and governor alike) at a controllable instant.
+ * The default is in the future, so governor alarms never fire by themselves.
+ */
+export function controlClock(start = Date.UTC(2036, 9, 20, 12, 0, 0)): {
+  now(): number
+  advance(ms: number): void
+  set(ms: number): void
+} {
+  let now = start
+  vi.spyOn(Date, 'now').mockImplementation(() => now)
+  return {
+    now: () => now,
+    advance(ms: number) {
+      now += ms
+    },
+    set(ms: number) {
+      now = ms
+    },
+  }
 }
 
 /** Invoke the Worker and wait for its `waitUntil` work. */

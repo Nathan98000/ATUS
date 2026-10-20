@@ -189,6 +189,8 @@ describe('GET /api/_edge/health', () => {
       data_version: '2025:serving-20261020T000000Z-0a1b2c3d:0123456789ab',
       response_format: '1',
       snapshot_id: 'abcdef012345-0123456789abcdef',
+      // sha256("1|v1|0.2|<data_version>|1")[:16], computed independently.
+      cache_scope: 'f1b5106ca9aa7e30',
     })
   })
 
@@ -200,6 +202,8 @@ describe('GET /api/_edge/health', () => {
     const body = (await response.json()) as Record<string, unknown>
     expect(body.data_version).toBeNull()
     expect(body.snapshot_id).toBeNull()
+    // No release vars: the edge result cache is off.
+    expect(body.cache_scope).toBeNull()
   })
 })
 

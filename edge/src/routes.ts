@@ -5,6 +5,10 @@
  * envelope without an origin call, so `/ready`, `/docs`, `/redoc`,
  * `/openapi.json` and `/metrics` are never reachable through the Worker.
  * Paths are matched exactly as sent (no trailing-slash or case folding).
+ *
+ * `/api/_ops/budget` exists only for a valid bearer token: a wrong method
+ * gets the same 404 as an unknown path, and so does a missing or wrong
+ * token (checked by the handler), so the route is never revealed.
  */
 
 export type RouteKind =
@@ -16,6 +20,8 @@ export type RouteKind =
   | 'wake'
   /** Answered by the Worker without any origin call. */
   | 'edge-health'
+  /** Answered by the Worker from the governor, behind the ops bearer token. */
+  | 'ops-budget'
 
 export interface Route {
   /** Stable name used in logs. */
@@ -24,8 +30,10 @@ export interface Route {
   kind: RouteKind
   /** Origin path when it differs from the request path. */
   upstreamPath?: string
-  /** Analysis POSTs: JSON-only bodies, edge cache and governor (stage 2). */
+  /** Analysis POSTs: JSON-only bodies, the edge cache and the governor. */
   analysis?: boolean
+  /** Not revealed: a wrong method is a 404, not a 405. */
+  hidden?: boolean
 }
 
 export type RouteMatch =
@@ -59,6 +67,7 @@ const ROUTES: ReadonlyMap<string, Route> = new Map<string, Route>([
   ],
   ['/api/v1/wake', { name: 'wake', method: 'GET', kind: 'wake', upstreamPath: '/health' }],
   ['/api/_edge/health', { name: 'edge.health', method: 'GET', kind: 'edge-health' }],
+  ['/api/_ops/budget', { name: 'ops.budget', method: 'GET', kind: 'ops-budget', hidden: true }],
 ])
 
 /**
@@ -80,7 +89,11 @@ export function matchRoute(method: string, pathname: string): RouteMatch {
   const route =
     ROUTES.get(pathname) ?? (ACTIVITY_DETAIL.test(pathname) ? ACTIVITY_DETAIL_ROUTE : undefined)
   if (route === undefined) return { error: 'not_found' }
-  if (method !== route.method) return { error: 'method_not_allowed', allow: route.method }
+  if (method !== route.method) {
+    return route.hidden
+      ? { error: 'not_found' }
+      : { error: 'method_not_allowed', allow: route.method }
+  }
   return { route }
 }
 

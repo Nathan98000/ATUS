@@ -24,6 +24,7 @@ import {
   isHtmlContentType,
   isJsonContentType,
   readCapped,
+  readUpTo,
 } from './http'
 
 /** Client request headers copied upstream (the body's Content-Type only when there is a body). */
@@ -85,19 +86,42 @@ export type RelayOutcome = 'pass' | 'waking' | 'unavailable'
 export interface Relayed {
   response: Response
   outcome: RelayOutcome
+  /** The API's error code, when an error envelope was passed through. */
+  errorCode?: string
+  /** The complete body of a passed-through 2xx, when it was buffered (`bufferUpTo`). */
+  body?: Uint8Array
+}
+
+export interface RelayOptions {
+  /**
+   * Read a 2xx JSON body before answering, if it is at most this many bytes,
+   * so the caller can store it. A longer body is streamed on unchanged.
+   */
+  bufferUpTo?: number
 }
 
 /**
  * Turn an origin response into the client response.
  *
- * Passed through unchanged: 2xx JSON (streamed), 304, and 4xx/5xx whose body
- * is the API's error envelope. Converted: everything else, to 503
- * `service_waking` (the origin is starting) or 502 `upstream_unavailable`.
+ * Passed through unchanged: 2xx JSON (streamed, or buffered when asked),
+ * 304, and 4xx/5xx whose body is the API's error envelope. Converted:
+ * everything else, to 503 `service_waking` (the origin is starting) or 502
+ * `upstream_unavailable`.
  */
-export async function relayResponse(upstream: Response, requestId: string): Promise<Relayed> {
-  const verdict = await judge(upstream)
+export async function relayResponse(
+  upstream: Response,
+  requestId: string,
+  options: RelayOptions = {},
+): Promise<Relayed> {
+  const verdict = await judge(upstream, options)
   if (typeof verdict === 'object') {
-    return { response: passThrough(upstream, verdict.body, requestId), outcome: 'pass' }
+    const relayed: Relayed = {
+      response: passThrough(upstream, verdict.body, requestId),
+      outcome: 'pass',
+    }
+    if (verdict.errorCode !== undefined) relayed.errorCode = verdict.errorCode
+    if (verdict.complete !== undefined) relayed.body = verdict.complete
+    return relayed
   }
   // Free the origin connection; the body is not ours to show.
   if (!upstream.bodyUsed) {
@@ -112,9 +136,15 @@ export async function relayResponse(upstream: Response, requestId: string): Prom
 }
 
 type Verdict =
-  { body: ReadableStream<Uint8Array> | Uint8Array | null } | 'waking' | 'unavailable'
+  | {
+      body: ReadableStream<Uint8Array> | Uint8Array | null
+      errorCode?: string
+      complete?: Uint8Array
+    }
+  | 'waking'
+  | 'unavailable'
 
-async function judge(upstream: Response): Promise<Verdict> {
+async function judge(upstream: Response, options: RelayOptions): Promise<Verdict> {
   const { status, headers } = upstream
   const contentType = headers.get('content-type')
   // Cloudflare's own error pages from Render's zone (52x, 530): never the API.
@@ -123,7 +153,17 @@ async function judge(upstream: Response): Promise<Verdict> {
   if ((headers.get('x-render-routing') ?? '').includes('hibernate')) return 'waking'
   if (status === 304) return { body: null }
   if (status >= 200 && status < 300) {
-    if (isJsonContentType(contentType)) return { body: upstream.body }
+    if (isJsonContentType(contentType)) {
+      if (options.bufferUpTo === undefined) return { body: upstream.body }
+      try {
+        const read = await readUpTo(upstream.body, options.bufferUpTo)
+        return read.complete
+          ? { body: read.bytes, complete: read.bytes }
+          : { body: read.stream }
+      } catch {
+        return 'unavailable' // The connection dropped mid-body.
+      }
+    }
     // An HTML 200 for an API path is a platform loading page.
     return isHtmlContentType(contentType) ? 'waking' : 'unavailable'
   }
@@ -134,7 +174,8 @@ async function judge(upstream: Response): Promise<Verdict> {
     } catch {
       return 'unavailable' // The connection dropped mid-body.
     }
-    if (bytes !== null && isErrorEnvelope(bytes)) return { body: bytes }
+    const code = bytes === null ? null : errorEnvelopeCode(bytes)
+    if (bytes !== null && code !== null) return { body: bytes, errorCode: code }
   }
   // Redirects (never followed) and non-API errors.
   return status === 503 ? 'waking' : 'unavailable'
@@ -181,19 +222,19 @@ export function upstreamUnavailable(
   )
 }
 
-/** True when `bytes` are a JSON object of the API's error-envelope shape. */
-export function isErrorEnvelope(bytes: Uint8Array): boolean {
+/** The `error.code` of an API error envelope, or null when `bytes` are not one. */
+export function errorEnvelopeCode(bytes: Uint8Array): string | null {
   let payload: unknown
   try {
     payload = JSON.parse(
       new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes),
     )
   } catch {
-    return false
+    return null
   }
-  if (typeof payload !== 'object' || payload === null) return false
+  if (typeof payload !== 'object' || payload === null) return null
   const error = (payload as { error?: unknown }).error
-  if (typeof error !== 'object' || error === null) return false
+  if (typeof error !== 'object' || error === null) return null
   const { code, message } = error as { code?: unknown; message?: unknown }
-  return typeof code === 'string' && typeof message === 'string'
+  return typeof code === 'string' && typeof message === 'string' ? code : null
 }

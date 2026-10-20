@@ -56,6 +56,7 @@ describe('wrangler.jsonc', () => {
       SNAPSHOT_ID: '',
       EPOCH: '1',
       PREWAKE: 'on',
+      NEON_PROJECT_ID: '',
     })
   })
 

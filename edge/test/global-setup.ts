@@ -17,8 +17,11 @@
  *   html            200 text/html loading page
  *   reset&key=K     drops the connection before any response (counted per K)
  *   reset-once&key=K  drops the first connection for K, answers the second
+ *   cacheable&dv=V&key=K  200 gzip-encoded JSON (FIXED_BODY) with the headers
+ *                   the edge store gate needs (X-Cache: miss, X-Data-Version: V,
+ *                   X-Analytics-Version: 0.2, X-Response-Format: 1); counted per K
  *
- * GET /_count?key=K reports how many connections a reset scenario saw.
+ * GET /_count?key=K reports how many requests a reset or cacheable scenario saw.
  * Listens on an ephemeral 127.0.0.1 port (no fixed port to collide with).
  */
 
@@ -57,6 +60,7 @@ export default async function setup(project: TestProject): Promise<() => Promise
       res.end(JSON.stringify({ count: counts.get(key) ?? 0 }))
       return
     }
+    if (scenario === 'cacheable') counts.set(key, (counts.get(key) ?? 0) + 1)
     if (scenario === 'reset' || scenario === 'reset-once') {
       const seen = (counts.get(key) ?? 0) + 1
       counts.set(key, seen)
@@ -81,6 +85,20 @@ export default async function setup(project: TestProject): Promise<() => Promise
           'Content-Type': 'application/json',
           'Content-Encoding': 'gzip',
           Vary: 'Accept-Encoding',
+        })
+        res.end(gzipSync(Buffer.from(FIXED_BODY, 'utf8')))
+        return
+      }
+      case 'cacheable': {
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Content-Encoding': 'gzip',
+          'X-Cache': 'miss',
+          'X-Data-Version': url.searchParams.get('dv') ?? '',
+          'X-Analytics-Version': '0.2',
+          'X-Response-Format': '1',
+          'X-Analysis-Key': 'e'.repeat(64),
+          'Server-Timing': 'db;dur=3.2, app;dur=0.4',
         })
         res.end(gzipSync(Buffer.from(FIXED_BODY, 'utf8')))
         return

@@ -95,25 +95,81 @@ export async function readCapped(
   body: ReadableStream<Uint8Array> | null,
   limit: number,
 ): Promise<Uint8Array | null> {
-  if (body === null) return new Uint8Array(0)
+  const read = await readUpTo(body, limit)
+  if (read.complete) return read.bytes
+  await read.stream.cancel()
+  return null
+}
+
+export type ReadUpTo =
+  | { complete: true; bytes: Uint8Array }
+  | { complete: false; stream: ReadableStream<Uint8Array> }
+
+/**
+ * Read a body stream to its end if it is at most `limit` bytes. A longer
+ * body is not lost: the result is a stream of the bytes already read
+ * followed by the rest as it arrives. Rejects if the stream fails while the
+ * first `limit + 1` bytes are being read.
+ */
+export async function readUpTo(
+  body: ReadableStream<Uint8Array> | null,
+  limit: number,
+): Promise<ReadUpTo> {
+  if (body === null) return { complete: true, bytes: new Uint8Array(0) }
   const reader = body.getReader()
   const chunks: Uint8Array[] = []
   let total = 0
   for (;;) {
     const { done, value } = await reader.read()
-    if (done) break
+    if (done) return { complete: true, bytes: concatBytes(chunks, total) }
+    chunks.push(value)
     total += value.byteLength
     if (total > limit) {
-      await reader.cancel()
-      return null
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          for (const chunk of chunks) controller.enqueue(chunk)
+        },
+        async pull(controller) {
+          const next = await reader.read()
+          if (next.done) controller.close()
+          else controller.enqueue(next.value)
+        },
+        cancel(reason) {
+          return reader.cancel(reason)
+        },
+      })
+      return { complete: false, stream }
     }
-    chunks.push(value)
   }
-  const bytes = new Uint8Array(total)
+}
+
+/** Concatenate `chunks` (`total` bytes in all). */
+export function concatBytes(chunks: readonly Uint8Array[], total?: number): Uint8Array {
+  const bytes = new Uint8Array(
+    total ?? chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0),
+  )
   let offset = 0
   for (const chunk of chunks) {
     bytes.set(chunk, offset)
     offset += chunk.byteLength
   }
   return bytes
+}
+
+/** Lowercase hex of `bytes`. */
+export function toHex(bytes: ArrayBuffer | Uint8Array): string {
+  return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join(
+    '',
+  )
+}
+
+/** SHA-256 of `data` (UTF-8 for strings) as lowercase hex. */
+export async function sha256Hex(data: string | Uint8Array): Promise<string> {
+  const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data
+  return toHex(await crypto.subtle.digest('SHA-256', bytes))
+}
+
+/** The 404 for anything outside the allowlist (and for ops routes without the bearer token). */
+export function notFoundResponse(requestId: string): Response {
+  return errorResponse(404, 'not_found', 'The requested API route does not exist.', requestId)
 }

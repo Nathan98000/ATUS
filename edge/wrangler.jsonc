@@ -44,7 +44,11 @@
     // Bump by hand to orphan every edge-cached result at once.
     "EPOCH": "1",
     // "off" disables the /api/v1/wake prewake call.
-    "PREWAKE": "on"
+    "PREWAKE": "on",
+    // Neon project id (not secret). With the optional NEON_API_KEY secret the
+    // governor paces against Neon's own month-to-date usage (ADR-015);
+    // empty = conservative mode.
+    "NEON_PROJECT_ID": ""
   },
   // Secrets are never in this file. Generate them with
   // scripts/ops/gen_edge_secrets.sh (writes ~/.config/atus/edge.env, chmod 600)
@@ -68,8 +72,8 @@
       "id": "00000000000000000000000000000000"
     }
   ],
-  // Quota governor: one SQLite-backed Durable Object named "global" (Workers
-  // Free offers only the SQLite backend).
+  // Quota governor (ADR-015): one SQLite-backed Durable Object named "global"
+  // admits uncached analyses (Workers Free offers only the SQLite backend).
   "durable_objects": {
     "bindings": [{ "name": "GOVERNOR", "class_name": "Governor" }]
   },

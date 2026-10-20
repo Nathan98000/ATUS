@@ -1,0 +1,332 @@
+/**
+ * Governor admission as the Worker applies it (ADR-011 step 3.5): which
+ * requests are admitted, the client prefix they are charged to, the 429/503
+ * envelopes of a denial (no origin call), failing closed when the governor
+ * is unreachable, and how each origin outcome is settled.
+ */
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { prefixHmac } from '../../src/admission'
+import { nextUtcMidnight, utcDay } from '../../src/budget'
+import {
+  EDGE_SECRET,
+  apiJson,
+  callWorker,
+  controlClock,
+  expectSecurityHeaders,
+  governorSql,
+  governorStub,
+  mockOrigin,
+  readEnvelope,
+  resetEdgeState,
+} from './helpers'
+
+beforeEach(resetEdgeState)
+
+const T = Date.UTC(2036, 9, 20, 12, 0, 0)
+const MIDNIGHT = nextUtcMidnight(T)
+const IP_KEY = 'test-ip-hmac-key'
+const PATH = '/api/v1/analysis/estimate'
+const COMPUTED = { 'x-cache': 'miss', 'server-timing': 'db;dur=4, app;dur=1' }
+
+function post(
+  ip: string | null = '203.0.113.7',
+  body = '{"years":[2024]}',
+  path = PATH,
+): [string, RequestInit] {
+  const headers: Record<string, string> = { 'content-type': 'application/json' }
+  if (ip !== null) headers['cf-connecting-ip'] = ip
+  return [path, { method: 'POST', headers, body }]
+}
+
+async function report(): Promise<
+  Awaited<ReturnType<ReturnType<typeof governorStub>['budget']>>
+> {
+  return governorStub().budget()
+}
+
+function brokenGovernor(admit: () => Promise<unknown>, settle?: () => Promise<unknown>) {
+  return {
+    idFromName: () => ({}),
+    get: () => ({ admit, settle: settle ?? (() => Promise.resolve()) }),
+  } as unknown as Env['GOVERNOR']
+}
+
+describe('admission', () => {
+  it('admits an uncached analysis, then settles it once the response is sent', async () => {
+    controlClock(T)
+    const calls = mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    const response = await callWorker(...post())
+    expect(response.status).toBe(200)
+    expect(calls).toHaveLength(1)
+    const budget = await report()
+    expect(budget.analyses).toMatchObject({ admitted: 1, in_flight: 0, refunded: 0 })
+    expect(budget.compute_today.settled_cu_hours).toBeGreaterThan(0)
+  })
+
+  it('charges the /24 under the daily HMAC, never the address', async () => {
+    controlClock(T)
+    mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    await callWorker(...post('203.0.113.7'))
+    await callWorker(...post('203.0.113.200'))
+    await callWorker(...post('198.51.100.1'))
+    await callWorker(...post('2001:db8:abcd:1::5'))
+    await callWorker(...post('2001:db8:abcd:ffff::9'))
+    const rows = await governorSql<{ prefix: string; count: number }>(
+      'SELECT prefix, count FROM prefixes ORDER BY count DESC, prefix',
+    )
+    const expected = new Map([
+      [await prefixHmac(IP_KEY, T, '203.0.113.0/24'), 2],
+      [await prefixHmac(IP_KEY, T, '2001:0db8:abcd::/48'), 2],
+      [await prefixHmac(IP_KEY, T, '198.51.100.0/24'), 1],
+    ])
+    expect(new Map(rows.map((row) => [row.prefix, row.count]))).toEqual(expected)
+    const stored = JSON.stringify(await governorSql('SELECT * FROM prefixes'))
+    for (const fragment of ['203.0.113', '198.51', '2001:db8', 'db8']) {
+      expect(stored).not.toContain(fragment)
+    }
+  })
+
+  it('charges requests without a usable client address to one shared bucket', async () => {
+    controlClock(T)
+    mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    await callWorker(...post(null))
+    await callWorker(...post('not-an-ip'))
+    const rows = await governorSql<{ prefix: string; count: number }>(
+      'SELECT prefix, count FROM prefixes',
+    )
+    expect(rows).toEqual([{ prefix: await prefixHmac(IP_KEY, T, 'unknown'), count: 2 }])
+  })
+
+  it('classifies a 23-year trend as heavy and a one-year estimate as light', async () => {
+    controlClock(T)
+    mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    const years = JSON.stringify({ years: Array.from({ length: 23 }, (_, i) => 2003 + i) })
+    await callWorker(...post('203.0.113.7', years, '/api/v1/analysis/trend'))
+    await callWorker(...post())
+    expect((await report()).analyses).toMatchObject({ admitted: 2, heavy: 1 })
+  })
+
+  it('never calls the governor for GET routes', async () => {
+    mockOrigin(() => apiJson('{"api_version":"v1"}'))
+    await callWorker('/api/v1/meta')
+    await callWorker('/api/v1/activities')
+    expect((await report()).analyses.admitted).toBe(0)
+  })
+
+  it('logs the governor and cache results without the client address or prefix hash', async () => {
+    controlClock(T)
+    mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    const lines: string[] = []
+    vi.spyOn(console, 'log').mockImplementation((line: unknown) => {
+      lines.push(String(line))
+    })
+    await callWorker(...post('203.0.113.7'))
+    const record = JSON.parse(lines.find((line) => line.includes('"event":"api"'))!) as Record<
+      string,
+      unknown
+    >
+    expect(record).toMatchObject({ governor: 'admitted', cache: 'off', status: 200 })
+    const text = lines.join('\n')
+    expect(text).not.toContain('203.0.113')
+    expect(text).not.toContain(await prefixHmac(IP_KEY, T, '203.0.113.0/24'))
+    expect(text).not.toContain(EDGE_SECRET)
+  })
+})
+
+describe('denials (no origin call)', () => {
+  it('answers 429 rate_limited once the network has used its 60 for the day', async () => {
+    controlClock(T)
+    const prefix = await prefixHmac(IP_KEY, T, '203.0.113.0/24')
+    await governorSql(
+      'INSERT INTO prefixes (day, prefix, count) VALUES (?, ?, 60)',
+      utcDay(T),
+      prefix,
+    )
+    const calls = mockOrigin(() => apiJson('{}'))
+    const response = await callWorker(...post('203.0.113.99'))
+    expect(calls).toHaveLength(0)
+    expect(response.status).toBe(429)
+    const seconds = (MIDNIGHT - T) / 1000
+    expect(response.headers.get('retry-after')).toBe(String(seconds))
+    expectSecurityHeaders(response)
+    const error = await readEnvelope(response)
+    expect(error.code).toBe('rate_limited')
+    expect(error.details).toEqual({
+      scope: 'client',
+      budget: 'prefix',
+      resumes_at: new Date(MIDNIGHT).toISOString(),
+      retry_after_seconds: seconds,
+    })
+    // Another network is still admitted.
+    mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    expect((await callWorker(...post('198.51.100.1'))).status).toBe(200)
+  })
+
+  it('answers 503 daily_capacity_reached when the global daily budget is spent', async () => {
+    controlClock(T)
+    await governorSql('INSERT INTO days (day, admitted) VALUES (?, 600)', utcDay(T))
+    const calls = mockOrigin(() => apiJson('{}'))
+    const response = await callWorker(...post())
+    expect(calls).toHaveLength(0)
+    expect(response.status).toBe(503)
+    expect(response.headers.get('retry-after')).toBe(String((MIDNIGHT - T) / 1000))
+    const error = await readEnvelope(response)
+    expect(error.code).toBe('daily_capacity_reached')
+    expect(error.details).toMatchObject({ scope: 'global', budget: 'global' })
+  })
+
+  it('answers 503 capacity_paused until the Neon period ends past the monthly hard stop', async () => {
+    controlClock(T)
+    const periodEnd = Date.UTC(2036, 10, 1)
+    const neon = {
+      polledAt: T,
+      computeTimeSeconds: 85 * 3600,
+      dataTransferBytes: 0,
+      periodStart: Date.UTC(2036, 9, 1),
+      periodEnd,
+      cuBaseS: 0,
+      egressBase: 0,
+      cuAtPollS: 0,
+      egressAtPoll: 0,
+    }
+    await governorSql('INSERT INTO state (id, value) VALUES (1, ?)', JSON.stringify({ neon }))
+    const calls = mockOrigin(() => apiJson('{}'))
+    const response = await callWorker(...post())
+    expect(calls).toHaveLength(0)
+    expect(response.status).toBe(503)
+    expect(response.headers.get('retry-after')).toBe(String((periodEnd - T) / 1000))
+    const error = await readEnvelope(response)
+    expect(error.code).toBe('capacity_paused')
+    expect(error.details).toMatchObject({
+      scope: 'monthly',
+      budget: 'cu_month',
+      resumes_at: new Date(periodEnd).toISOString(),
+    })
+  })
+})
+
+describe('failing closed', () => {
+  it('answers 503 capacity_unavailable when the governor errors, and nothing else is affected', async () => {
+    const calls = mockOrigin(() => apiJson('{"api_version":"v1"}'))
+    const governor = brokenGovernor(() => Promise.reject(new Error('Durable Object reset')))
+    const response = await callWorker(...post(), { GOVERNOR: governor })
+    expect(response.status).toBe(503)
+    expect(response.headers.get('retry-after')).toBe('60')
+    expectSecurityHeaders(response)
+    const error = await readEnvelope(response)
+    expect(error.code).toBe('capacity_unavailable')
+    expect(error.details).toEqual({ retry_after_seconds: 60 })
+    expect(calls).toHaveLength(0)
+    // Metadata and health still go through.
+    expect((await callWorker('/api/v1/meta', undefined, { GOVERNOR: governor })).status).toBe(
+      200,
+    )
+    expect(
+      (await callWorker('/api/_edge/health', undefined, { GOVERNOR: governor })).status,
+    ).toBe(200)
+  })
+
+  it(
+    'fails closed when the governor does not answer within 5 s',
+    { timeout: 15_000 },
+    async () => {
+      const calls = mockOrigin(() => apiJson('{}'))
+      const governor = brokenGovernor(() => new Promise(() => {}))
+      const response = await callWorker(...post(), { GOVERNOR: governor })
+      expect(response.status).toBe(503)
+      expect((await readEnvelope(response)).code).toBe('capacity_unavailable')
+      expect(calls).toHaveLength(0)
+    },
+  )
+
+  it('treats a malformed governor answer as unavailable', async () => {
+    mockOrigin(() => apiJson('{}'))
+    const governor = brokenGovernor(() => Promise.resolve({ ok: 'yes' }))
+    const response = await callWorker(...post(), { GOVERNOR: governor })
+    expect((await readEnvelope(response)).code).toBe('capacity_unavailable')
+  })
+
+  it('never fails a request because settling failed', async () => {
+    mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    const governor = brokenGovernor(
+      () => Promise.resolve({ ok: true, leaseId: 'lease-1' }),
+      () => Promise.reject(new Error('Durable Object reset')),
+    )
+    const response = await callWorker(...post(), { GOVERNOR: governor })
+    expect(response.status).toBe(200)
+    expect(await response.text()).toBe('{"ok":true}')
+  })
+})
+
+describe('settling each origin outcome', () => {
+  async function settledAfter(origin: () => Response): Promise<{
+    status: number
+    admitted: number
+    refunded: number
+    prefix: number
+  }> {
+    controlClock(T)
+    mockOrigin(origin)
+    const response = await callWorker(...post())
+    const budget = await report()
+    const rows = await governorSql<{ count: number }>('SELECT count FROM prefixes')
+    return {
+      status: response.status,
+      admitted: budget.analyses.admitted,
+      refunded: budget.analyses.refunded,
+      prefix: rows[0]?.count ?? 0,
+    }
+  }
+  const envelope = (code: string): string =>
+    JSON.stringify({ error: { code, message: 'x', details: null } })
+
+  it('refunds everything when Render is waking (the API never answered)', async () => {
+    const outcome = await settledAfter(
+      () =>
+        new Response(null, {
+          status: 503,
+          headers: { 'x-render-routing': 'dynamic-hibernate-error-503' },
+        }),
+    )
+    expect(outcome).toEqual({ status: 503, admitted: 0, refunded: 1, prefix: 0 })
+  })
+
+  it('refunds everything after a connection failure', async () => {
+    const outcome = await settledAfter(() => {
+      throw new TypeError('Network connection lost.')
+    })
+    expect(outcome).toEqual({ status: 502, admitted: 0, refunded: 1, prefix: 0 })
+  })
+
+  it('refunds everything when the API sheds the request (overloaded)', async () => {
+    const outcome = await settledAfter(() => apiJson(envelope('overloaded'), 503))
+    expect(outcome).toEqual({ status: 503, admitted: 0, refunded: 1, prefix: 0 })
+  })
+
+  it('refunds the day but keeps the network charge for a validation error', async () => {
+    const outcome = await settledAfter(() => apiJson(envelope('validation_error'), 422))
+    expect(outcome).toEqual({ status: 422, admitted: 0, refunded: 1, prefix: 1 })
+  })
+
+  it('refunds the day for a result the API served from its cache', async () => {
+    const outcome = await settledAfter(() => apiJson('{"ok":true}', 200, { 'x-cache': 'hit' }))
+    expect(outcome).toEqual({ status: 200, admitted: 0, refunded: 1, prefix: 1 })
+  })
+
+  it('keeps the charge for a computed result and for an analysis timeout', async () => {
+    expect(await settledAfter(() => apiJson('{"ok":true}', 200, COMPUTED))).toEqual({
+      status: 200,
+      admitted: 1,
+      refunded: 0,
+      prefix: 1,
+    })
+    await resetEdgeState()
+    expect(await settledAfter(() => apiJson(envelope('analysis_timeout'), 503))).toEqual({
+      status: 503,
+      admitted: 1,
+      refunded: 0,
+      prefix: 1,
+    })
+  })
+})

@@ -1,5 +1,5 @@
 /**
- * ATUS edge Worker (ADR-011).
+ * ATUS edge Worker (ADR-011, ADR-015).
  *
  * Static assets (the SPA and the result snapshot) never reach this code:
  * Cloudflare serves them directly, and `run_worker_first` sends only `/api`
@@ -7,25 +7,52 @@
  *
  * 1. the allowlist (routes.ts): anything else is a 404 envelope, wrong
  *    methods a 405, with no origin call;
- * 2. Worker-answered routes: `/api/_edge/health` and `/api/v1/wake`;
+ * 2. Worker-answered routes: `/api/_edge/health`, `/api/v1/wake` and the
+ *    bearer-gated `/api/_ops/budget`;
  * 3. limits on analysis POSTs: `application/json` only (415), 64 KiB (413);
- * 4. the origin call (upstream.ts) with a fresh header set (proxy.ts);
- * 5. the response: API envelopes byte for byte, platform pages converted,
- *    security headers on everything.
+ * 4. analysis POSTs: the KV result cache (cache.ts) — a hit is answered
+ *    here — then admission by the quota governor (admission.ts), which can
+ *    refuse with 429/503 or, when unreachable, fail closed;
+ * 5. the origin call (upstream.ts) with a fresh header set (proxy.ts);
+ * 6. the response: API envelopes byte for byte, platform pages converted,
+ *    security headers on everything; then, through `waitUntil`, the KV
+ *    store (when the store gate allows) and the governor settle.
  *
- * One structured log line per /api request: route, status, outcome, origin
- * status and attempts, the origin's Server-Timing and the edge duration.
- * Never bodies, client IPs, secrets or the origin hostname.
+ * One structured log line per /api request: route, status, outcome, cache
+ * and governor results, origin status and attempts, the origin's
+ * Server-Timing and the edge duration. Never bodies, client IPs, prefix
+ * hashes, secrets or the origin hostname.
  */
 
-import { EDGE_VERSION, MAX_BODY_BYTES } from './constants'
+import {
+  NOT_REACHED,
+  admitAnalysis,
+  costClass,
+  ipPrefix,
+  prefixHmac,
+  settleAnalysis,
+  settleReportFor,
+} from './admission'
+import {
+  cacheScope,
+  cachedMeta,
+  kvKey,
+  readCached,
+  requestHash,
+  storeCached,
+  storeHeadersAllow,
+} from './cache'
+import { EDGE_VERSION, KV_MAX_VALUE_BYTES, MAX_BODY_BYTES } from './constants'
+import type { Denied, SettleReport } from './governor'
 import {
   errorResponse,
   isJsonContentType,
   jsonResponse,
   newRequestId,
+  notFoundResponse,
   readCapped,
 } from './http'
+import { capacityUnavailable, handleBudget } from './ops'
 import { buildUpstreamHeaders, relayResponse, upstreamUnavailable } from './proxy'
 import { isApiPath, matchRoute, upstreamPathFor, type Route } from './routes'
 import { fetchOrigin, originUrl } from './upstream'
@@ -39,8 +66,12 @@ interface LogRecord {
   method: string
   route: string | null
   status?: number
-  /** edge | pass | waking | unavailable | circuit_open | connect_failed | rejected | error */
+  /** edge | pass | waking | unavailable | circuit_open | connect_failed | rejected | denied | error */
   outcome?: string
+  /** Analysis POSTs: edge (KV hit) | miss | error (KV read failed) | off (no release vars) */
+  cache?: string
+  /** Analysis POSTs: admitted | denied:<budget> | unavailable */
+  governor?: string
   upstream_status?: number
   attempts?: number
   server_timing?: string
@@ -102,14 +133,7 @@ async function dispatch(
   const match = matchRoute(request.method, url.pathname)
   if ('error' in match) {
     log.outcome = 'rejected'
-    if (match.error === 'not_found') {
-      return errorResponse(
-        404,
-        'not_found',
-        'The requested API route does not exist.',
-        requestId,
-      )
-    }
+    if (match.error === 'not_found') return notFoundResponse(requestId)
     return errorResponse(
       405,
       'method_not_allowed',
@@ -125,6 +149,10 @@ async function dispatch(
     log.outcome = 'edge'
     return edgeHealth(env, requestId)
   }
+  if (route.kind === 'ops-budget') {
+    log.outcome = 'edge'
+    return handleBudget(request, env, requestId)
+  }
 
   let body: Uint8Array | undefined
   if (route.method === 'POST') {
@@ -134,6 +162,24 @@ async function dispatch(
       return limited
     }
     body = limited
+  }
+
+  // Tier L1: this exact request already answered for this release.
+  let cacheKey: string | null = null
+  if (route.analysis && body !== undefined) {
+    const scope = await cacheScope(env)
+    if (scope === null) {
+      log.cache = 'off'
+    } else {
+      cacheKey = kvKey(scope, await requestHash(url.pathname, url.search.slice(1), body))
+      const cached = await readCached(env.RESULT_CACHE, cacheKey, env, requestId)
+      if (cached instanceof Response) {
+        log.cache = 'edge'
+        log.outcome = 'edge'
+        return cached
+      }
+      log.cache = cached
+    }
   }
 
   const target = originUrl(
@@ -153,7 +199,39 @@ async function dispatch(
     return handleWake(request, env, ctx, requestId, target, env.EDGE_AUTH_SECRET)
   }
 
-  return forward(request, route, target, body, env.EDGE_AUTH_SECRET, requestId, log)
+  // Only uncached analyses reach Render and Neon: the governor admits them.
+  let leaseId: string | null = null
+  if (route.analysis && body !== undefined) {
+    const prefix = await prefixHmac(
+      env.IP_HMAC_KEY,
+      Date.now(),
+      ipPrefix(request.headers.get('cf-connecting-ip')),
+    )
+    const admission = await admitAnalysis(env, {
+      prefix,
+      costClass: costClass(route.name, body),
+    })
+    if (admission.kind === 'unavailable') {
+      log.governor = 'unavailable'
+      log.outcome = 'denied'
+      return capacityUnavailable(requestId)
+    }
+    if (admission.kind === 'denied') {
+      log.governor = `denied:${admission.denial.budget}`
+      log.outcome = 'denied'
+      return denialResponse(admission.denial, requestId)
+    }
+    log.governor = 'admitted'
+    leaseId = admission.leaseId
+  }
+
+  const forwarded = await forward(request, route, target, body, env, requestId, log, cacheKey)
+  const { store } = forwarded
+  if (store !== undefined) {
+    ctx.waitUntil(storeCached(env.RESULT_CACHE, store.key, store.body, store.meta))
+  }
+  if (leaseId !== null) ctx.waitUntil(settleAnalysis(env, leaseId, forwarded.settle))
+  return forwarded.response
 }
 
 /**
@@ -186,44 +264,97 @@ async function readJsonBody(
   return bytes ?? tooLarge()
 }
 
+interface Forwarded {
+  response: Response
+  /** How the origin call ended, for the governor (admitted analyses only). */
+  settle: SettleReport
+  /** A response that passed the whole store gate. */
+  store?: { key: string; body: Uint8Array; meta: ReturnType<typeof cachedMeta> }
+}
+
 async function forward(
   request: Request,
   route: Route,
   target: string,
   body: Uint8Array | undefined,
-  edgeSecret: string,
+  env: Env,
   requestId: string,
   log: LogRecord,
-): Promise<Response> {
+  cacheKey: string | null,
+): Promise<Forwarded> {
   const outcome = await fetchOrigin(target, {
     method: route.method,
-    headers: buildUpstreamHeaders(request, requestId, edgeSecret, body !== undefined),
+    headers: buildUpstreamHeaders(request, requestId, env.EDGE_AUTH_SECRET, body !== undefined),
     body,
     // Never follow: a redirect would resend the edge secret wherever it points.
     redirect: 'manual',
   })
   if (outcome.kind === 'circuit-open') {
     log.outcome = 'circuit_open'
-    return upstreamUnavailable(requestId, 503, outcome.retryAfterMs / 1000)
+    return {
+      response: upstreamUnavailable(requestId, 503, outcome.retryAfterMs / 1000),
+      settle: NOT_REACHED,
+    }
   }
   if (outcome.kind === 'connect-failed') {
     log.outcome = 'connect_failed'
     log.attempts = outcome.attempts
     log.error = outcome.error
-    return upstreamUnavailable(requestId, 502)
+    return { response: upstreamUnavailable(requestId, 502), settle: NOT_REACHED }
   }
   const { response: upstream, attempts } = outcome
   log.attempts = attempts
   log.upstream_status = upstream.status
   const timing = upstream.headers.get('server-timing')
   if (timing !== null) log.server_timing = timing
-  const relayed = await relayResponse(upstream, requestId)
+
+  // Store gate, header half: only then is the body buffered (<= 16 KiB) to keep a copy.
+  const storable = cacheKey !== null && storeHeadersAllow(upstream, env)
+  const relayed = await relayResponse(
+    upstream,
+    requestId,
+    storable ? { bufferUpTo: KV_MAX_VALUE_BYTES } : {},
+  )
   log.outcome = relayed.outcome
-  return relayed.response
+  const forwarded: Forwarded = {
+    response: relayed.response,
+    settle: settleReportFor(upstream, relayed),
+  }
+  if (storable && relayed.outcome === 'pass' && relayed.body !== undefined) {
+    forwarded.store = {
+      key: cacheKey,
+      body: relayed.body,
+      meta: cachedMeta(upstream, Date.now()),
+    }
+  }
+  return forwarded
+}
+
+/** A governor denial as the API's envelope: 429 for a client's budget, 503 for shared ones. */
+function denialResponse(denial: Denied, requestId: string): Response {
+  const messages: Record<Denied['code'], string> = {
+    rate_limited:
+      'Your network has started as many new analyses today as this free service allows. ' +
+      'Saved and prewarmed results still work; the limit resets at 00:00 UTC.',
+    daily_capacity_reached:
+      "Today's free capacity for new analyses is used up. It resets at 00:00 UTC.",
+    capacity_paused:
+      "New analyses are paused until this month's free database allowance allows more.",
+  }
+  return errorResponse(
+    denial.code === 'rate_limited' ? 429 : 503,
+    denial.code,
+    messages[denial.code],
+    requestId,
+    {
+      retryAfterSeconds: denial.retryAfterSeconds,
+      details: { scope: denial.scope, budget: denial.budget, resumes_at: denial.resumesAt },
+    },
+  )
 }
 
 /** GET /api/_edge/health: answered here, never touching Render or Neon. */
-function edgeHealth(env: Env, requestId: string): Response {
+async function edgeHealth(env: Env, requestId: string): Promise<Response> {
   return jsonResponse(
     200,
     {
@@ -234,6 +365,7 @@ function edgeHealth(env: Env, requestId: string): Response {
       data_version: env.DATA_VERSION || null,
       response_format: env.RESPONSE_FORMAT,
       snapshot_id: env.SNAPSHOT_ID || null,
+      cache_scope: await cacheScope(env),
     },
     requestId,
   )

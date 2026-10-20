@@ -1,6 +1,7 @@
 # ATUS edge Worker
 
-The Cloudflare Worker in front of the API (decision and request flow: [ADR-011](../docs/adr/ADR-011-hosting.md)).
+The Cloudflare Worker in front of the API (decision and request flow: [ADR-011](../docs/adr/ADR-011-hosting.md);
+result cache, snapshot and quota governor: [ADR-015](../docs/adr/ADR-015-edge-cache-snapshot-and-governor.md)).
 One `workers.dev` origin serves the SPA build (`../frontend/dist`) as static assets; only `/api` and
 `/api/*` run this Worker, which:
 
@@ -15,7 +16,17 @@ One `workers.dev` origin serves the SPA build (`../frontend/dist`) as static ass
   `service_waking` (503) or `upstream_unavailable` (502/503) envelopes with `Retry-After`;
 - sets the security headers on every `/api` response and drops `server`, `x-render-*`, `rndr-id`
   and every other origin header not on its allowlist;
-- answers `GET /api/_edge/health` itself and handles the `GET /api/v1/wake` prewake.
+- answers `GET /api/_edge/health` itself and handles the `GET /api/v1/wake` prewake;
+- answers analysis POSTs from Workers KV when the exact request bytes were answered before for the same
+  release (`X-Cache: edge`; key `r1/<CACHE_SCOPE>/<k>`, `src/cache.ts`), and stores new 200 results
+  that pass the store gate (≤ 16 KiB, 30-day TTL);
+- admits every other analysis through the quota governor, a SQLite Durable Object (`src/governor.ts`):
+  60 per client /24 or /48 per UTC day (429 `rate_limited`), 600 per day and 300 heavy per day
+  (503 `daily_capacity_reached`), a daily Neon CU-hour ceiling and, with the optional Neon key, monthly
+  pacing and an egress stop (503 `capacity_paused`). If the governor cannot be reached, uncached
+  analyses get 503 `capacity_unavailable`; everything else keeps working;
+- answers `GET /api/_ops/budget` with the governor's budget state for `Authorization: Bearer <OPS_TOKEN>`
+  (404 for anything else).
 
 ## Commands
 
@@ -38,6 +49,13 @@ ephemeral loopback port (`test/global-setup.ts`). `test/node/config.test.ts` ass
 Copy `.dev.vars.example` to `.dev.vars` (gitignored), point `RENDER_ORIGIN` at a local API (plain
 HTTP is accepted only for loopback hosts) and start that API with `ATUS_EDGE_SECRETS` set to the same
 `EDGE_AUTH_SECRET`. Build the frontend (`npm run build` in `../frontend`), then run `npm run dev`.
+`wrangler dev` runs fully locally (KV and the Durable Object are simulated under `.wrangler/`); no
+account is needed. To exercise the edge cache, pass the release vars, e.g.
+`npx wrangler dev --var DATA_VERSION:<x-data-version of the local API> --var ANALYTICS_VERSION:<its
+analytics version>`.
+
+The static result snapshot (`/snap/...`, tier L0) is written into the SPA build by
+`scripts/build_snapshot.py` from a running API; see ADR-015.
 
 ## Secrets
 

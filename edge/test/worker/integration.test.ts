@@ -188,6 +188,28 @@ describe('against a local origin', () => {
     expect(await response.json()).toEqual({ origin: 'warm', wake: 'sent' })
   })
 
+  it('stores a gzip-encoded analysis decoded, then answers it from KV without the origin', async () => {
+    const key = `cacheable-${crypto.randomUUID()}`
+    const dataVersion = '0325:serving-20361020T000000Z-0a1b2c3d:0123456789ab'
+    const release = { ...local, DATA_VERSION: dataVersion, ANALYTICS_VERSION: '0.2' }
+    const path = `/api/v1/analysis/estimate?scenario=cacheable&dv=${encodeURIComponent(dataVersion)}&key=${key}`
+    const init = (): RequestInit => ({
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'accept-encoding': 'gzip' },
+      body: '{"years":[2024]}',
+    })
+    const first = await callWorker(path, init(), release)
+    expect(first.status).toBe(200)
+    expect(first.headers.get('x-cache')).toBe('miss')
+    expect(await first.text()).toBe(FIXED_BODY)
+
+    const second = await callWorker(path, init(), release)
+    expect(second.headers.get('x-cache')).toBe('edge')
+    expect(second.headers.get('x-data-version')).toBe(dataVersion)
+    expect(await second.text()).toBe(FIXED_BODY)
+    expect(await connections(key)).toBe(1)
+  })
+
   it('forwards /api/health to origin /health', async () => {
     const response = await callWorker('/api/health', undefined, local)
     expect(((await response.json()) as Echo).path).toBe('/health')
