@@ -8,6 +8,10 @@
     atus validate-db         data-quality checks against the loaded database
     atus analyze ...         run analyses with the Phase 2 statistical engine
     atus validate-analytics  reproduce official BLS estimates (benchmark suite)
+    atus build-serving-db    build the reduced serving database (+ release artifact)
+    atus verify-serving-db   check a built or restored serving database
+    atus restore-serving-db  restore a release artifact (scripts/ops/restore_serving_db.sh)
+    atus compare-serving-db  randomized full-vs-serving equivalence diff
     atus status              show manifest and database state
 """
 
@@ -255,6 +259,12 @@ from .analytics_cli import analyze, validate_analytics  # noqa: E402
 
 cli.add_command(analyze)
 cli.add_command(validate_analytics)
+
+# Serving-database commands (docs/adr/ADR-013), registered the same way.
+from .serving_cli import COMMANDS as SERVING_COMMANDS  # noqa: E402
+
+for _command in SERVING_COMMANDS:
+    cli.add_command(_command)
 
 
 if __name__ == "__main__":
