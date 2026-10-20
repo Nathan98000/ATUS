@@ -1,0 +1,227 @@
+# ADR-015: Edge result cache, static snapshot and quota governor
+
+**Status:** Accepted (2026-10-20) · Phase 5 · implemented and tested locally; not deployed
+
+**Related:** [ADR-011](ADR-011-hosting.md) (hosting and request flow; this ADR finalizes its "Edge tiers" and "Quota governor" sections), [ADR-012](ADR-012-load-and-quota-protection.md) (the API's own, second layer of protection), [ADR-009](ADR-009-shareable-urls.md) (the stable request serialization), [`../deployment.md`](../deployment.md) (traffic model and free-tier budget).
+
+**Scope and honesty.** Nothing here is deployed. Numbers are one of three kinds:
+
+- **measured** in local tests or the local end-to-end run (counts and sizes only; no timings were taken);
+- **PROJECTION**, from the traffic model in [`../deployment.md`](../deployment.md), labelled as such;
+- **cited** free-tier terms, read on the official pages on 2026-10-20 (see "Cited terms").
+
+Code: `edge/src/cache.ts`, `edge/src/governor.ts`, `edge/src/budget.ts`, `edge/src/admission.ts`, `edge/src/ops.ts`, `scripts/build_snapshot.py`. Tests: `edge/test/worker/{cache,governor,governor-flow,budget,admission,ops,integration}.test.ts`, `tests/unit/test_build_snapshot.py`, `tests/integration/test_build_snapshot_api.py`.
+
+## Context
+
+The brief's §13 allows a persistent result cache only with an ADR covering write privileges, versioning by `data_version`, size bounds and quota cost. ADR-011 chose three cache tiers in front of a sleeping Render instance and a Neon database whose month-to-date compute is the scarcest resource, and a Durable Object governor that admits the analyses that would reach them. It left the details to this ADR.
+
+What drives the design:
+
+- **Every avoided origin call avoids a Render spin-up (~1 min, documented) and possibly a Neon wake.** A Neon wake session costs at least 2 CU × 300 s = 600 CU-s (0.167 CU-h) under the conservative autoscaler assumption (scenario C in `deployment.md`).
+- **Statistics must not change.** A cache may only replay bytes the origin produced for the same data, analytics version and response format.
+- **Free tiers fail closed, never bill** (ADR-011). Each tier must stay inside its own free quota and fail toward the next tier.
+
+## Decision
+
+### Tiers
+
+| Tier | Holds | Key | Written by | Read by | Survives |
+|---|---|---|---|---|---|
+| **L0 static snapshot** `/snap/<SNAPSHOT_ID>/` | every metadata response (meta, activities, presets, population metadata, all 556 activity details) and the prewarmed analyses, byte for byte | GET: the API path; POST: the request hash `k` | the deploy workflow only, through `scripts/build_snapshot.py`, from the exact deployed image read-only against the restored release dump | the SPA, through the manifest | everything, including the Worker's daily limit and Render or Neon pauses |
+| **L1 Workers KV** | analysis responses (≤ 16 KiB) | `r1/<CACHE_SCOPE>/<k>` | the Worker only, through its `RESULT_CACHE` binding, under the store gate | the Worker, before the governor | Render spin-down and Render/Neon monthly pauses; not the Worker's daily limit |
+| **L2 API in-process LRU** | recent results | the resolved computation (ADR-012) | the API | the API | nothing (lost on spin-down) |
+
+### Keys and version scope
+
+- **Request hash** `k = sha256_hex(path + "?" + query + "\n" + body)`: `path` as sent (e.g. `/api/v1/analysis/estimate`), `query` the raw query string without `?` (empty from the SPA), `body` the exact UTF-8 bytes. The SPA, the Worker and the snapshot builder compute the same value; a shared test vector is pinned in the Worker and builder tests.
+- **`CACHE_SCOPE = sha256_hex(EPOCH|API_VERSION|ANALYTICS_VERSION|DATA_VERSION|RESPONSE_FORMAT)[:16]`**, from the Worker vars the deploy sets. The git SHA is deliberately not in it, so a code-only deploy keeps the keyspace. `EPOCH` (a Worker var, `"1"`) is the manual lever that orphans every entry at once. The scope is reported by `/api/_edge/health` and `/api/_ops/budget`.
+- **`SNAPSHOT_ID = <api_build[:12]>-<sha256_hex(DATA_VERSION)[:16]>`**: a new image or a new data release gives a new snapshot directory.
+- **Cache off without release vars.** With an empty `DATA_VERSION` or `ANALYTICS_VERSION` (any deploy that did not pass them) the Worker neither reads nor writes KV.
+
+### KV store gate
+
+The Worker stores a response only when all of these hold (`storeHeadersAllow` plus the body check):
+
+1. a POST to `/api/v1/analysis/{estimate,trend,compare}`;
+2. status exactly 200, `Content-Type: application/json`;
+3. origin `X-Cache` is `miss` or `hit` (never `bypass`, computed during a data reload, nor `join`);
+4. `X-Data-Version` equals the Worker's `DATA_VERSION`;
+5. `X-Analytics-Version` equals the Worker's `ANALYTICS_VERSION` (stricter than ADR-011's list: the scope includes it, so a mismatch would mislabel the entry);
+6. `X-Response-Format` equals the Worker's `RESPONSE_FORMAT`;
+7. the body arrived complete and is at most 16 KiB (measured maximum 8,383 B, ADR-011).
+
+Only when conditions 2–6 hold does the Worker buffer the body (up to 16 KiB + 1 byte) before answering; a longer body is streamed on unchanged. A body that breaks mid-read becomes a 502 `upstream_unavailable` and is not stored. The entry holds the body bytes and, as KV metadata (≤ 1,024 B), the content type, the three version values, the `X-Analysis-Key` and the store time. TTL 30 days. The write runs through `waitUntil` after the response; a failed write is ignored. A failed read, an entry whose metadata does not match the deployment, or an empty or oversized value is a miss.
+
+A hit returns the stored bytes with status 200, `X-Cache: edge`, the stored version headers and analysis key, a new `X-Request-ID` and the security headers. It touches neither the governor nor the origin.
+
+### Static snapshot (L0)
+
+Layout (all static assets under the SPA's `dist`, so they never invoke the Worker):
+
+```text
+snap/current.json                    pointer (no-cache): snapshot_id, data_version, analytics_version,
+                                     api_version, response_format, generated_at
+snap/<SNAPSHOT_ID>/manifest.json     the same fields, api_build, "get": {path: file},
+                                     "post": {k: {path, file, analysis_key, x_cache}},
+                                     "files": {file: {sha256, bytes}}
+snap/<SNAPSHOT_ID>/get/...           exact GET bodies
+snap/<SNAPSHOT_ID>/post/<k>.json     exact analysis bodies
+```
+
+`scripts/build_snapshot.py`:
+
+- calls a running API with the edge secret (sent only as `X-ATUS-Edge-Auth`, never printed; plain HTTP only to loopback hosts; no redirects followed; no proxies);
+- takes the analysis list from `--requests` files or runs the SPA's own generator (`frontend/scripts/snapshot-requests.mjs`) in both of its passes: the prewarm list, then the canonical `spec` of each response, so share links copied from a prewarmed result hit too;
+- refuses any answer that is not a 200 with a JSON body. 429 and 503 answers with `Retry-After` are retried within a total wait budget (`--max-wait`, default 600 s), so the build API should run with generous per-client limits;
+- requires one data version, analytics version and response format across all responses (from the response headers, or the `--data-version` / `--response-format` expectations);
+- writes into a temporary directory, verifies every file's sha256 and size against the manifest, then moves the snapshot into place and writes `current.json` last. `--verify DIR` re-checks a published tree.
+
+Measured on the fixture database with the real 0325 lexicon (local run): 560 metadata responses (4 + 556 activity details), 564 files with two analyses, 2.4 MB on disk; the largest files were the manifest (110,715 B) and `/api/v1/activities` (70,851 B). Workers static assets allow 20,000 files and 25 MiB per file (ADR-011).
+
+The SPA reads the manifest and never probes for a file, because the SPA fallback answers a missing path with `index.html` and a 200.
+
+### Quota governor
+
+One SQLite-backed Durable Object named `global`. The Worker calls it only for analysis POSTs that missed KV (static files, KV hits and GET routes never do).
+
+**Who is charged.** An HMAC of the client network: IPv4 `/24` (also for IPv4-mapped IPv6), IPv6 `/48`, from `CF-Connecting-IP`; requests without a parseable address share one `unknown` bucket. The HMAC is `HMAC-SHA256(HMAC-SHA256(IP_HMAC_KEY, "atus-ip-prefix|<UTC date>"), prefix)` truncated to 128 bits, computed in the Worker. The governor never sees an address, the key rotates every UTC day, and prefix rows are deleted at the first event after 00:00 UTC (a midnight alarm makes sure that happens without traffic).
+
+**Cost class.** Heavy when `len(years) × (2 for a compare, else 1) ≥ 8`, the API's lane rule (ADR-012); also heavy when the body is not JSON with a `years` list (the API rejects those, and they are then refunded).
+
+**Budgets, in the order they are checked:**
+
+| # | Budget | Limit | Denial | `details.scope` | `Retry-After` / `resumes_at` |
+|---|---|---|---|---|---|
+| 1 | per client network | 60 uncached analyses per UTC day | 429 `rate_limited` | `client` | next 00:00 UTC |
+| 2 | global | 600 per UTC day | 503 `daily_capacity_reached` | `global` | next 00:00 UTC |
+| 3 | heavy | 300 heavy per UTC day | 503 `daily_capacity_reached` | `daily` | next 00:00 UTC |
+| 4 | Neon compute today (charged by the model below) | 10 CU-h with fresh ground truth, else (100 × 0.9) / 31 = 2.903 CU-h | 503 `daily_capacity_reached` | `daily` | next 00:00 UTC |
+| 5 | Neon egress month to date (ground truth only) | stop at 4.5 GB (4.5 × 10⁹ B) | 503 `capacity_paused` | `monthly` | end of Neon's consumption period |
+| 6 | Neon compute month to date (ground truth only) | below `min(85, 10 + 75 × elapsed share)` CU-h | 503 `capacity_paused` | `monthly` | when the line reaches the need; the period end above 85 |
+
+Every denial also carries `details.budget` (`prefix`, `global`, `heavy`, `cu_day`, `egress`, `cu_month`) and `details.retry_after_seconds`. Checks 4–6 include the candidate's own provisional charge, so a budget is never overshot by the request that crosses it.
+
+**Compute charge model** (the conservative bridge of ADR-011; `budget.ts`). The compute is assumed to run at its maximum, 2 CU, from the moment DB work starts until 300 s after it ends. The charge is 2 CU × the length of the union of those windows:
+
+- **Provisional, at admission:** each in-flight analysis is assumed to occupy `[admitted, admitted + 90 s + 300 s]` (90 s is the API's deadline), 780 CU-s for a fresh session. Only the part of the union beyond the already-charged window counts, so concurrent admissions share one window instead of costing a session each.
+- **At settle:** the DB work is taken to span `[max(admitted, end − db − 5 s), end]`, where `db` is the API's `Server-Timing: db;dur=` and 5 s covers the connect and a Neon wake. Without `Server-Timing` it starts at admission, which also charges a Render spin-up: an over-charge, never an under-charge. The charge is the extension of `[start, end + 300 s]` beyond the charged window, at 2 CU.
+- **Never settled** (the Worker invocation died): after 10 minutes the lease is charged in full (780 CU-s) and its counts are kept.
+
+**Settling and refunds.** The Worker reports how the origin call ended:
+
+| Outcome | Examples | Day and heavy counts | Network count | Compute and egress |
+|---|---|---|---|---|
+| `not_reached` | Render waking, platform error page, connection failure, open breaker | refunded | refunded | not charged |
+| `shed` | API `overloaded`, `rate_limited`, `daily_capacity_reached` | refunded | refunded | charged unless `db;dur=0` |
+| `rejected` | API 400, 413, 415, 422 | refunded | kept (bounds invalid-request floods) | charged unless `db;dur=0` |
+| `reused` | 2xx with `X-Cache: hit` or `join` | refunded | kept | charged unless `db;dur=0` |
+| `computed` | 2xx `miss`/`bypass`, `analysis_timeout`, DB errors | kept | kept | charged |
+
+Refunding waking and shed outcomes matters because the SPA retries during a cold start for up to 150 s.
+
+**Ground truth (optional).** With the `NEON_API_KEY` secret (a project-scoped key) and the `NEON_PROJECT_ID` var, an alarm reads `GET https://console.neon.tech/api/v2/projects/{id}` (`compute_time_seconds` / 3600 = CU-h month to date, `data_transfer_bytes`, `consumption_period_start` and `_end`). It polls at most every 5 minutes and only while analyses arrived in the last 5 minutes, so the compute is awake anyway. Between polls, usage is bridged with the same conservative charges, counted from the *previous* successful poll (Neon's figures lag), plus the in-flight provisional window. Ground truth earns the 10 CU-h daily ceiling while it is at most 24 h old; the monthly checks apply whenever ground truth for the current period exists. A failed poll keeps the last ground truth and records only a status or error name (`http_401`, `TimeoutError`); the key goes only into the `Authorization` header.
+
+**Fail closed.** If the governor errors or does not answer within 5 s, uncached analyses get 503 `capacity_unavailable` (`Retry-After: 60`). KV hits, metadata, health, wake and static files are unaffected. A failed settle never fails a request.
+
+**Ops.** `GET /api/_ops/budget` with `Authorization: Bearer <OPS_TOKEN>` (constant-time comparison) returns the edge's versions and cache scope and the governor's report: mode, today's counts and refunds, active prefixes and the largest prefix count (no prefixes or addresses), compute today (settled, provisional, ceiling), a rolling 31-day sum, month-to-date figures with the last poll error, and a used/limit ratio per budget for the daily quota-report workflow. Any other request to that path, including a wrong method, gets the same 404 as an unknown route.
+
+### Write privileges
+
+- **L0:** only the deploy workflow, by publishing static assets. Files are immutable per `SNAPSHOT_ID`.
+- **L1:** only the Worker, through its binding, and only under the gate. No runtime holds a KV API token. The API cannot write. The Cloudflare API token that deploys the Worker may also be able to write KV; if it leaks, rotate it and bump `EPOCH`.
+- **Governor:** only the Worker, through its binding. The ops endpoint only reads.
+- **L2:** the API process.
+
+### Quota cost
+
+Workers KV (Free; cited terms below):
+
+| Operation | Free limit per day | Use | Bound |
+|---|---|---|---|
+| reads | 100,000 (failed and missing-key reads count) | one per analysis POST that reaches the Worker with release vars set. PROJECTION 45/day typical, 450 on the spike day | ≤ Worker requests, whose limit is also 100,000: reads cannot run out first |
+| writes | 1,000 (different keys); 1 write/s per key | at most one per admitted analysis whose response passes the gate. PROJECTION 30/day typical, 300 spike | ≤ 600 by the governor's global cap (60% of the limit) |
+| deletes, lists | 1,000 each | none (entries expire by TTL) | 0 |
+| storage | 1 GB | ≤ 16 KiB value + ≤ 1 KiB metadata per entry, 30-day TTL | 600 × 30 × 17 KiB ≈ 0.31 GB (31%). PROJECTION 1.3–10 MB |
+
+Durable Objects on Workers Free (SQLite backend only; cited terms below). Row counts are **measured** from the SQLite cursors in `governor.test.ts` (index rows included, as billed):
+
+| Quantity | Free limit per day | Use | Bound |
+|---|---|---|---|
+| requests (incl. alarm invocations) | 100,000 | 2 per admitted analysis (admit, settle), 1 per denial, ≤ 1 midnight alarm, ≤ 288 polls only while traffic is active (with a Neon key), ops reads. PROJECTION ~95/day typical | ≤ analysis POSTs that miss KV + ~900. It can pass 100,000 only on a day the Worker's own 100,000 requests are spent, when `/api` is down anyway |
+| rows written | 100,000; each `setAlarm` is one row; deletes count | admission ≤ 8, settle ≤ 4, denial 0 (measured); plus the midnight purge and ≤ 2 per poll | ≤ ~10,000 at the 600 cap (≤ 10%) |
+| rows read | 5,000,000 | denial ≤ 2 (measured); admission ≤ ~15 plus the in-flight leases | ≤ ~1.5M even if all 100,000 Worker requests were uncached analyses |
+| duration | 13,000 GB-s | active only while handling calls | 0.125 GB × 86,400 s = 10,800 GB-s even if never idle |
+| storage | 5 GB per account | 40 day rows, ≤ one row per active prefix, in-flight leases, one state row | < 1 MB |
+
+Static snapshot: free and unmetered requests; about 600–900 files per version (fixture: 564 with two analyses; ~130 prewarmed analyses plus their canonical twins in production), under the 20,000-file limit.
+
+### Staleness across releases
+
+- **Data release** (ADR-013): the deploy sets a new `DATA_VERSION`, so `CACHE_SCOPE` and `SNAPSHOT_ID` change. Old KV entries are never read again and expire within 30 days (the storage bound includes them). The old snapshot directory disappears with the deploy; a tab still holding the old manifest gets `index.html` for a missing file and falls back to the API.
+- **Mixed window** (API switched, Worker not yet deployed): the API reports the new `X-Data-Version`, the Worker still holds the old one, so the gate stores nothing. Existing old-version entries are still served, labelled with their own (old) version; the SPA shows its reload banner on a version mismatch.
+- **Code-only deploy**: the scope is unchanged, so entries survive. Any change to analysis response bytes must bump the API's `RESPONSE_FORMAT` (it is part of both the gate and the scope). `EPOCH` is the manual purge.
+- **Neon project per release**: each release has its own project, so `NEON_PROJECT_ID` and the project-scoped `NEON_API_KEY` must be switched with the release. Until then the governor reads the old project's usage.
+
+### Why no canonicalization at the edge
+
+A JSON round trip is lossy (`1e400` becomes `null`, and `1.0` becomes `1`), so two different requests could map to one key and a malformed request could receive another spec's 200. Keying on exact bytes is always safe. The SPA sends the stable sorted-keys serialization (ADR-009), so starters, presets and share links hit. Semantic deduplication stays in the API (ADR-012, F15).
+
+### Rejected alternatives
+
+- **Cache API.** Its contents "do not replicate outside of the originating data center", and `put` resolves "regardless of whether the cache successfully stored the response". A per-colo cache would mostly miss on a site with a few dozen visits a day.
+- **Workers Cache** (`[cache]`). Turning it on bills requests that are otherwise free, static assets included (ADR-011). CI asserts there is no `cache` block.
+- **A cache table in Neon.** Every hit would spin up Render and wake Neon (≥ 600 CU-s per session under scenario C), cost Render outbound bandwidth, and need a write privilege that breaks the read-only `atus_api` role.
+- **Metadata in KV.** The static snapshot serves it with no quota at all and survives the Worker's daily limit.
+- **The Rate Limiting binding as the governor.** It is "local to the Cloudflare location", so it cannot enforce global daily caps (ADR-011).
+- **Governor state in KV.** KV is eventually consistent (60 s or more) and allows one write per second per key, so concurrent admissions would race.
+
+## Consequences
+
+- **Statistics are unchanged.** An L1 hit is a byte-identical copy of an earlier origin response for the same globally unique data version, analytics version and response format (tested byte for byte, including gzip-encoded origins). L0 entries are the exact bytes of the deployed image on the release data.
+- **Conservative mode is tight. PROJECTION.** Without a Neon key the daily ceiling is 2.903 CU-h = 10,452 CU-s, about 17 fresh wake sessions at the 600 CU-s minimum. Under `deployment.md`'s traffic model (16 Neon sessions a day, ~1.9 analyses 60 s apart, about 2 × 360 = 720 CU-s each) a typical day needs about 3.2 CU-h. So in conservative mode the last one or two sessions of a typical day would get `daily_capacity_reached`, while static and KV-cached results keep working. That is the price of charging every second at 2 CU without evidence. The remedies are the project-scoped Neon key (ground truth: 10 CU-h a day, paced monthly) or ADR-011's calibration lever (a lower maximum CU, with the `NEON_MAX_CU` constant in `edge/src/constants.ts` changed to match).
+- **`Server-Timing` matters.** Until the API sends `db;dur=` on every response (and `db;dur=0` when it touched no DB), each settled analysis is charged from admission, including any Render spin-up. In the local run against the API branch of 2026-10-20 the header was absent.
+- **Operations.** One more secret (`IP_HMAC_KEY`) and one optional secret (`NEON_API_KEY`), one var (`NEON_PROJECT_ID`), and `/api/_ops/budget` for the owner and the daily quota report.
+
+## Failure modes
+
+| Failure | What happens | Visitors see |
+|---|---|---|
+| KV read fails or KV reads exhausted | treated as a miss; the governor decides | slower answer, or a governor denial |
+| KV write fails or writes exhausted | ignored | nothing; the result is not edge-cached |
+| KV eventual consistency (60 s or more between locations) | an extra miss, one more governed analysis | nothing; never a wrong result (keys are version-scoped) |
+| Two identical requests miss at once | both are admitted; the API's single-flight joins them (`join` is refunded); the second write to the same key may fail (1/s) and is ignored | nothing |
+| Governor errors, times out (5 s) or its quota is spent | uncached analyses fail closed | 503 `capacity_unavailable`; everything else works |
+| Settle lost | the lease expires after 10 minutes and is charged in full | nothing |
+| Neon poll fails | last ground truth kept; after 24 h the conservative ceiling applies; the error name shows in `/api/_ops/budget` | possibly earlier `daily_capacity_reached` |
+| Snapshot build hits an error response | the build fails; nothing is published | the previous deploy stays live |
+| Mid-body failure while buffering for KV | 502 `upstream_unavailable`; nothing stored; the analysis is charged as computed | a retryable error |
+
+## What this does not protect against
+
+- **The Worker's account-wide 100,000 requests per day.** Replaying KV hits (5 req/s for ~5.6 h) spends them without touching the governor; `/api` is then down until 00:00 UTC. Only static files survive. On `workers.dev` at $0 nothing can rate-limit before the Worker runs.
+- **Distributed abuse within the global caps.** Many networks can use up the day's 600 uncached analyses (or the compute ceiling); real visitors then get `daily_capacity_reached` until 00:00 UTC.
+- **Shared networks.** Everyone behind one IPv4 `/24` (a campus, a carrier NAT) shares 60 analyses a day; an attacker with many `/48`s gets 60 each.
+- **Direct-origin traffic.** Requests to the onrender.com host bypass the Worker; ADR-012's layer in the API answers them (403 without the edge secret).
+- **Model error.** The charge model is an upper bound only while the compute's maximum is at most `NEON_MAX_CU` (2 CU, a constant in `edge/src/constants.ts`) and every DB-touching request goes through the governor. Neon's availability-check wakes are not counted (ground truth catches them). Egress between polls uses estimates (32 KiB light, 256 KiB heavy per analysis) that are not measured.
+- **Cost-class blind spots.** Single-year broad selectors (F66) are "light" for the heavy count, though their real compute time is still charged.
+
+## Verification
+
+- Worker tests (Vitest in workerd, 385 tests across the edge suite): the KV key format against independent hash vectors, every gate condition, byte-exact replay, cache-off and KV-failure paths; every governor budget and denial envelope, refunds per outcome, the compute model, lease expiry, ground truth polling cadence, pacing and egress stops, the midnight purge, failing closed (including a 5 s timeout), the hidden ops endpoint; real-socket integration from a gzip-encoding origin through KV. The row counts above come from `governor.test.ts`.
+- Snapshot builder: 42 unit tests against a fake API, and 2 integration tests against the real API on the fixture database (every file byte-identical to a fresh API response; an API 422 refuses the build).
+- Local end-to-end, 2026-10-20: `wrangler dev` (local mode, no account) with the built SPA and a snapshot, and the API from the WS-A branch on the fixture database. Checked: SPA fallback for deep links; static assets and `/snap/**` served without invoking the Worker (a probe Worker answering 418 saw only `/api` and `/api/*`); `/api` proxying with security headers and no `server` header; KV miss then a byte-identical `X-Cache: edge` hit; the 61st uncached analysis from one network (60 admitted) refused with 429 `rate_limited` and `Retry-After` to midnight without an origin call; a KV hit still served after that; 404 for `/api/_ops/budget` without the bearer token. Wrangler's telemetry stayed off ("Dispatching disabled"); its only external request was its own npm update check.
+- Not verifiable locally: real KV propagation, the Durable Object's behaviour under Cloudflare's eviction and quotas, the Neon endpoint's real responses and lag, Workers CPU per request.
+
+## Cited terms (accessed 2026-10-20)
+
+| Term | URL | Quote or value |
+|---|---|---|
+| KV Free: 100,000 reads, 1,000 writes, 1,000 deletes, 1,000 lists per day; 1 GB; failures, not billing; missing-key reads count | https://developers.cloudflare.com/kv/platform/pricing/ | "All operations incur charges, including fetches for non-existent keys." |
+| KV: 1 write per second to the same key; key 512 B; value 25 MiB; metadata 1,024 B; minimum `cacheTtl` 30 s | https://developers.cloudflare.com/kv/platform/limits/ | "1 per second" |
+| KV is eventually consistent | https://developers.cloudflare.com/kv/concepts/how-kv-works/ | "may take up to 60 seconds or more to be visible" (ADR-011) |
+| Durable Objects Free: 100,000 requests, 13,000 GB-s, 5 million rows read, 100,000 rows written per day, 5 GB; alarms count as requests; `setAlarm` is a row written; deletes are rows written | https://developers.cloudflare.com/durable-objects/platform/pricing/ | "Includes HTTP requests, RPC sessions, WebSocket messages, and alarm invocations." |
+| Durable Objects Free: SQLite backend only; 5 GB per account; per-object storage stated as 10 GB in the table and 1 GB in the FAQ (we use < 1 MB) | https://developers.cloudflare.com/durable-objects/platform/limits/ | "Only Durable Objects with SQLite storage backend are available." |
+| Cache API is per data center; `put` resolves either way | https://developers.cloudflare.com/workers/runtime-apis/cache/ | "the contents of the cache do not replicate outside of the originating data center" |
+| Neon project endpoint: `compute_time_seconds`, `data_transfer_bytes`, `consumption_period_start` / `_end`; Bearer API key | https://api-docs.neon.tech/reference/getproject | "Egress traffic from the Neon cloud to the client for given project over the billing period." |
+| `compute_time_seconds` is CU-seconds; divide by 3600 for CU-hours; Free plans read usage from the project endpoint | https://neon.com/docs/introduction/usage-calculations | "Divide by 3600 for CU-hours." |
