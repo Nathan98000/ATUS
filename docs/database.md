@@ -159,7 +159,10 @@ episodes.
   produced the data currently in this database?"
 - `validation_results` — every `atus validate-db` and `atus
   validate-analytics` check outcome with severity, observed value, and
-  detail, timestamped.
+  detail, timestamped. Both commands write here, so they need the
+  owner/loader role; the read-only API role cannot. A serving database ships
+  it empty (see below), and `atus build-serving-db` reads it on the full
+  database as evidence that the loaded data was validated.
 
 ## Loading and reloading
 
@@ -201,7 +204,55 @@ Operational notes:
 - A serving database (a reduced copy for hosting, marked by an `atus-serving`
   schema comment or a serving `data_version`) is never migrated, loaded or
   checked with `validate-db`: the CLI refuses. The tables and columns it must
-  keep are listed in `atus_pipeline.serving.contract`.
+  keep are listed in `atus_pipeline.serving.contract`; see the next section.
+
+## The serving database
+
+The hosted API reads a reduced copy of this database, built by
+`atus build-serving-db` from the validated full database (which it only
+reads) and published as a checksummed `pg_dump` release artifact
+([ADR-013](adr/ADR-013-data-releases-and-serving-db.md), Decisions 6-8). It
+keeps schema `atus` and every table and column name the engine, the API and
+`atus validate-analytics` use, so the engine runs on it unchanged and serves
+the same numbers (the equivalence criterion in
+[operations.md](operations.md)). Release 0325: 629,365,783 bytes
+(600.2 MiB) against 1,980.1 MiB.
+
+| Table | In the serving database |
+| --- | --- |
+| `respondents` | every row; the 8 columns the engine and API read (`tucaseid`, `data_year`, `diary_date`, `diary_day_of_week`, `labor_force_status`, `household_children`, `final_weight`, `pandemic_weight`) with their NULL rules and CHECKs |
+| `household_members` | line 1 only (the respondent): `tucaseid`, `lineno`, `age`, `sex`; `CHECK (lineno = 1)` |
+| `cps_persons` | line 1 only: `tucaseid`, `lineno`, `region`, `state_fips`, `education`; `CHECK (lineno = 1)` |
+| `activities` | one row per (`tucaseid`, `activity_code`), `duration_minutes` = the sum of that code's episode minutes (`smallint`, so `sum()` is still `bigint`); 2,982,182 rows stored in `activity_code` order behind `idx_activities_activity_code`; no `activity_number`, times, tiers or episode key |
+| `replicate_weights` | `float8` columns (the value the engine casts to); the 8,782 all-NULL 2020 rows omitted |
+| `pandemic_replicate_weights` | `float8` columns; the 1,466 all-zero rows (diaries in the 2019 gap window) omitted |
+| `activity_companions` | absent |
+| lexicon tables | complete |
+| `ingestion_runs` | one `succeeded` row: the source run's id, release, pipeline version and timestamps, and the serving `data_version` `<release>:serving-<build id>:<content hash prefix>` |
+| `source_files` | the source run's provenance rows |
+| `validation_results` | empty in the artifact; `atus validate-analytics` (owner role) records here |
+
+Omitted rows are exactly those every estimate already excludes (`weight > 0`
+filters, line-1 inner joins); the builder asserts that on every build. The
+column types, NULL rules, CHECK constraints, keys and index names are derived
+from the canonical tables the migrations create, so they cannot drift from
+them. Two roles use it: the owner/loader (the role that restored it) and
+`atus_api`, which can only `SELECT` the ten served tables
+(`scripts/ops/roles.sql`). `atus validate-db` and
+`tests/data_quality/test_full_database.py` check the full database and fail on
+a serving database by design; run them on the full database before a build.
+
+## Migrations
+
+| Migration | Adds |
+| --- | --- |
+| `0001_core_schema.sql` | schema `atus`: metadata, lexicon and canonical data tables |
+| `0002_indexes.sql` | the secondary indexes below |
+| `0003_data_version.sql` | `ingestion_runs.data_version` (nullable for older rows, `UNIQUE`, only on `succeeded` runs, never blank) |
+
+`atus migrate` applies pending migrations; `atus load` refuses to run on a
+schema that is behind. The migrations are not packaged with the library: data
+commands need a checkout or `ATUS_MIGRATIONS_DIR` (the API never needs them).
 
 ## Indexes (migration 0002)
 

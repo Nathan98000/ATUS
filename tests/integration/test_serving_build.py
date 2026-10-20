@@ -467,3 +467,55 @@ def test_the_build_requires_recorded_validation_by_default(mutable_full, target)
     report = build_serving_database(mutable_full, target)
     assert report.validation["validate_db"]["checks"] == 1
     assert report.validation["validate_analytics"]["failed_errors"] == 0
+
+
+# --------------------------------------------------------------------------- #
+# the commands                                                                 #
+# --------------------------------------------------------------------------- #
+
+def _cli(*args: str):
+    return CliRunner().invoke(cli, list(args), env={"ATUS_LOG_LEVEL": "WARNING"})
+
+
+def test_the_commands_build_verify_and_compare(full, target, tmp_path):
+    report_path = tmp_path / "report.json"
+    built = _cli("build-serving-db", "--source", full, "--target", target,
+                 "--allow-unvalidated", "--report", str(report_path))
+    assert built.exit_code == 0, built.output
+    report = json.loads(report_path.read_text())
+    assert f"Data version:  {report['data_version']}" in built.output
+    assert "Omitted rows (excluded by every estimate): replicate_weights 60" in built.output
+    assert "postgresql://" not in built.output
+
+    verified = _cli("verify-serving-db", "--database-url", target, "--content-hash", "--explain")
+    assert verified.exit_code == 0, verified.output
+    assert "[PASS] serving: content hash" in verified.output
+    assert "[PASS] serving: plan: sleep (010101) pooled" in verified.output
+
+    compared = _cli("compare-serving-db", "--full", full, "--serving", target, "--specs", "25",
+                    "--report", str(tmp_path / "diff.json"))
+    assert compared.exit_code == 0, compared.output
+    assert " equivalent, 0 not" in compared.output
+    diff = json.loads((tmp_path / "diff.json").read_text())
+    assert diff["specs"] >= 25 and all(r["equivalent"] for r in diff["results"])
+
+
+def test_verify_reports_a_database_that_does_not_match_its_manifest(builds, tmp_path):
+    (serving, report), _ = builds
+    manifest = {"kind": "atus-serving-db", "data_version": report.data_version,
+                "content_hash": report.content_hash, "release": "0325",
+                "build_id": report.build_id, "artifact": {},
+                "tables": {t: {"rows": v["rows"] + (t == "activities")}
+                           for t, v in report.tables.items() if "rows" in v}}
+    path = tmp_path / "m.manifest.json"
+    path.write_text(json.dumps(manifest))
+    result = _cli("verify-serving-db", "--database-url", serving, "--manifest", str(path))
+    assert result.exit_code == 1
+    assert "[FAIL] serving: rows in activities" in result.output
+
+
+def test_the_build_command_explains_a_refusal_without_a_traceback(full, target):
+    result = _cli("build-serving-db", "--source", full, "--target", target)
+    assert result.exit_code != 0
+    assert "the source database is not validated" in result.output
+    assert "Traceback" not in result.output

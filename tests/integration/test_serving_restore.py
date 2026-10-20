@@ -21,20 +21,22 @@ import shutil
 import stat
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import urlsplit, urlunsplit
 
 import psycopg
 import pytest
+from click.testing import CliRunner
 from fastapi.testclient import TestClient
 
 from atus_pipeline.analytics import AnalysisEngine
 from atus_pipeline.api.app import create_app
+from atus_pipeline.cli import cli
 from atus_pipeline.config import Settings
 from atus_pipeline.database.versions import read_data_version
 from atus_pipeline.loading.loader import load_all
 from atus_pipeline.serving import pgtools
-from atus_pipeline.serving.artifact import read_manifest, sha256_file, write_artifact
-from atus_pipeline.serving.builder import build_serving_database
+from atus_pipeline.serving.artifact import read_manifest, sha256_file
 from atus_pipeline.serving.contract import READ
 from atus_pipeline.serving.equivalence import compare_results, run, seed_specs
 from atus_pipeline.serving.restore import EXPECTED_ROLE_SETTINGS
@@ -116,14 +118,23 @@ def cluster(test_db_url):
 
 @pytest.fixture(scope="module")
 def artifact(test_db_url, tmp_path_factory):
+    """Built and dumped through the CLI: ``atus build-serving-db --artifact-dir``."""
     full = create_scratch_database(test_db_url, "srvr_full")
     serving = create_scratch_database(test_db_url, "srvr_built")
     try:
         with psycopg.connect(full) as conn:
             load_all(conn, random_settings(tmp_path_factory.mktemp("srvr"), full))
-        report = build_serving_database(full, serving, require_validated=False)
         out = tmp_path_factory.mktemp("artifact")
-        manifest_path = write_artifact(serving, out, report)
+        report_path = out / "build-report.json"
+        result = CliRunner().invoke(cli, [
+            "build-serving-db", "--source", full, "--target", serving, "--allow-unvalidated",
+            "--artifact-dir", str(out), "--report", str(report_path),
+        ], env={"ATUS_LOG_LEVEL": "WARNING"})
+        assert result.exit_code == 0, result.output
+        assert "postgresql://" not in result.output
+        report = SimpleNamespace(**json.loads(report_path.read_text()))
+        assert f"Data version:  {report.data_version}" in result.output
+        manifest_path = out / f"atus-serving-0325-{report.build_id}.manifest.json"
         yield manifest_path, report, serving
     finally:
         drop_scratch_database(full)
