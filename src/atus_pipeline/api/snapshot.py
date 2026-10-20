@@ -14,15 +14,32 @@ database. The API now keeps in memory:
 
 All of it is read in one REPEATABLE READ metadata transaction, so the parts
 describe the same committed data. The snapshot is read when a request needs
-it and it is older than ``ATUS_API_SNAPSHOT_TTL_S``; there is no background
-refresh, so an idle API never touches the database (I08). Concurrent
-requests that find it stale share one refresh.
+it; there is no background refresh, so an idle API never touches the database
+(I08). Concurrent requests that need a read share one refresh.
 
-While the snapshot is fresh, analysis cache hits, every 4xx, ``/meta``,
+While the snapshot is usable, analysis cache hits, every 4xx, ``/meta``,
 ``/activities*`` and ``/population/metadata`` cost no database statement.
 Uncached analyses still re-read the data version inside their own
 transaction after computing (the concurrent-reload guard in
 ``analysis_runner``); a changed version invalidates the snapshot.
+
+**When it is read again** (ADR-012, "Metadata reads and the quota"):
+
+* **Pinned.** With ``ATUS_EXPECTED_DATA_VERSION`` set (production), a
+  snapshot of exactly that version never expires: the deployment is bound to
+  that data, and data only changes with a release switch, which redeploys
+  the API. Metadata requests, however many, therefore cost no statement
+  after the first read of each process, and cannot keep a scale-to-zero
+  database awake. Only ``invalidate()`` (an analysis saw the version change)
+  forces a new read.
+* **Otherwise** it is read again once it is older than
+  ``ATUS_API_SNAPSHOT_TTL_S``.
+* **Stale if error.** If a read fails (the database is down, suspended or
+  paused) while a previous, never-invalidated snapshot exists, requests are
+  served from that snapshot instead of failing, and the database is tried
+  again only after ``min(STALE_IF_ERROR_RETRY_S, TTL)``. Cache hits and
+  metadata keep working; uncached analyses still need the database and fail
+  as before. ``/ready`` (``strict``) uses neither pinning nor staleness.
 
 **Deployment binding.** With ``ATUS_EXPECTED_DATA_VERSION`` set, a snapshot
 of any other version makes every data route answer 503
@@ -39,17 +56,25 @@ between ``lower(name)`` and ``lower(pattern)`` under the column's collation
 leaves the escape characters alone, so the condition is exactly "``lower(term)``
 is a substring of ``lower(name)``" (a byte-wise substring of valid UTF-8 is a
 character-wise one). The snapshot therefore stores each name lowered *by the
-database*, and lowers the search term in Python only when that is provably
-the database's own result: the term is ASCII and the database lowers every
-printable ASCII character exactly as Python does (checked at every refresh;
-a Turkish locale, for instance, would fail it). Any other term is searched
-with the original SQL. An integration test compares both paths on the
-fixture database.
+database*, and lowers the search term with the *database's own* lowering,
+read once per snapshot: ``lower(chr(c))`` for every code point ``c`` of every
+Unicode block that has case mappings (:data:`CASED_RANGES`; every other code
+point lowers to itself, which a unit test proves for Python's Unicode data
+and an integration test for the database's). Applying that table character
+by character equals the database's ``lower(term)`` when the database lowers
+text one character at a time, as libc collations (Neon's and the stack's)
+and PostgreSQL's builtin provider do. A probe checks this at every read
+(:data:`CONTEXT_PROBE`: an ICU collation lowers a final capital sigma by its
+context); if it fails, every search term goes to the original SQL. So
+non-ASCII terms ("décor") cost no statement either, and a flood of search
+requests cannot wake the database. An integration test compares both paths
+on the real lexicon for thousands of terms, ASCII and not.
 """
 
 from __future__ import annotations
 
 import asyncio
+import functools
 import logging
 import math
 import threading
@@ -101,11 +126,94 @@ _LATEST_RUN_SQL = (
 # handed to engines are exactly the ones it would have read itself.
 _YEARS_SQL = "SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year"
 _RESPONDENTS_SQL = "SELECT count(*) FROM atus.respondents"
-_LOWER_SQL = "SELECT lower(%s)"
+CASED_RANGES: tuple[tuple[int, int], ...] = (
+    (0x0020, 0x007E),     # Basic Latin (printable; a Turkish locale lowers I differently)
+    (0x00A0, 0x058F),     # Latin-1 .. Latin Extended-B, IPA, Greek and Coptic, Cyrillic, Armenian
+    (0x10A0, 0x10FF),     # Georgian
+    (0x13A0, 0x13FF),     # Cherokee
+    (0x1C80, 0x1CBF),     # Cyrillic Extended-C, Georgian Extended
+    (0x1D00, 0x1FFF),     # Phonetic Extensions .. Latin Extended Additional, Greek Extended
+    (0x2100, 0x218F),     # Letterlike Symbols (Kelvin, Angstrom), Number Forms (Roman numerals)
+    (0x24B6, 0x24E9),     # circled Latin letters
+    (0x2C00, 0x2D2F),     # Glagolitic, Latin Extended-C, Coptic, Georgian Supplement
+    (0xA640, 0xA69F),     # Cyrillic Extended-B
+    (0xA720, 0xA7FF),     # Latin Extended-D
+    (0xAB30, 0xABBF),     # Latin Extended-E, Cherokee Supplement
+    (0xFF21, 0xFF5A),     # fullwidth Latin letters
+    (0x10400, 0x1044F),   # Deseret
+    (0x104B0, 0x104FF),   # Osage
+    (0x10570, 0x105BF),   # Vithkuqi
+    (0x10C80, 0x10CFF),   # Old Hungarian
+    (0x10D40, 0x10D8F),   # Garay (Unicode 16; newer than Python 3.12's data)
+    (0x118A0, 0x118FF),   # Warang Citi
+    (0x16E40, 0x16E9F),   # Medefaidrin
+    (0x1E900, 0x1E95F),   # Adlam
+)
+"""Every Unicode block with characters whose lowercase differs from
+themselves (block-aligned, so characters added to these blocks later are
+covered), up to Unicode 16. Every code point outside them lowers to itself
+(tests: Python's Unicode data, and the database's own collation). A cased
+script added in a later Unicode version lowers into its own new letters,
+which no lexicon name contains, so missing it cannot change a result."""
 
-ASCII_PROBE = "".join(chr(c) for c in range(0x20, 0x7F))
-"""Every printable ASCII character: the database must lower these exactly
-as Python does before a search term is lowered in Python."""
+CONTEXT_PROBE = "ΑΣ ΣΑ ΑΣΑ. İI Kİ ǅǄ"
+"""Lowered whole and character by character, these agree only when the
+database lowers text one character at a time (a final capital sigma is
+lowered by its context under ICU)."""
+
+_LOWERING_SQL = """
+    SELECT lower(%(probe)s),
+           coalesce(array_agg(cp ORDER BY cp), '{}'),
+           coalesce(array_agg(lowered ORDER BY cp), '{}')
+    FROM (
+        SELECT cp, lower(chr(cp)) AS lowered
+        FROM unnest(%(lo)s::int[], %(hi)s::int[]) AS r (lo, hi),
+             generate_series(r.lo, r.hi) AS cp
+    ) chars
+    WHERE lowered <> chr(cp)
+"""
+"""One statement: the probe lowered whole, and the database's lowering of
+every code point in :data:`CASED_RANGES` that does not lower to itself."""
+
+STALE_IF_ERROR_RETRY_S = 30.0
+"""After a failed read, how long the previous snapshot is served before the
+database is tried again (never longer than the TTL)."""
+
+
+def lowering_table(conn: psycopg.Connection) -> dict[str, str] | None:
+    """The database's ``lower()`` of every character that it does not lower
+    to itself, or ``None`` when it lowers text context-sensitively (then a
+    character table cannot reproduce it). Runs one statement on ``conn``."""
+    probe_lower, cps, lowered = conn.execute(_LOWERING_SQL, {
+        "probe": CONTEXT_PROBE,
+        "lo": [lo for lo, _ in CASED_RANGES],
+        "hi": [hi for _, hi in CASED_RANGES],
+    }).fetchone()
+    table = {chr(cp): low for cp, low in zip(cps, lowered, strict=True)}
+    if lower_with(table, CONTEXT_PROBE) != probe_lower:
+        log.warning("lexicon search: the database lowers text by context (an ICU "
+                    "collation?); search terms are answered by SQL")
+        return None
+    return table
+
+
+def lower_with(table: dict[str, str], text: str) -> str:
+    """``text`` lowered character by character with ``table`` (characters
+    it does not list lower to themselves)."""
+    return "".join(table.get(ch, ch) for ch in text)
+
+
+@functools.cache
+def python_lowering() -> dict[str, str]:
+    """The table Python's own ``str.lower`` gives for :data:`CASED_RANGES`:
+    the lowering of DB-less test snapshots, never of a real one."""
+    table = {}
+    for lo, hi in CASED_RANGES:
+        for cp in range(lo, hi + 1):
+            ch = chr(cp)
+            if ch.lower() != ch:
+                table[ch] = ch.lower()
+    return table
 
 @dataclass(frozen=True)
 class LexiconEntry:
@@ -146,7 +254,9 @@ class DataSnapshot:
     respondents: int
     lexicon: tuple[LexiconEntry, ...]       # ORDER BY code, level, as the database sorted it
     resolver: ActivityResolver | None = None
-    ascii_lowering_matches: bool = True     # the database lowers ASCII as Python does
+    # The database's character lowering (``lowering_table``); ``None``: the
+    # database lowers by context, so searches go to SQL.
+    lowering: dict[str, str] | None = field(default_factory=python_lowering, repr=False)
     _by_code: dict[str, LexiconEntry] = field(init=False, repr=False)
     _children: dict[str, tuple[LexiconEntry, ...]] = field(init=False, repr=False)
 
@@ -179,9 +289,12 @@ class DataSnapshot:
     ) -> list[LexiconEntry] | None:
         """The listing endpoint's rows, in its order; ``None`` when the search
         term must go to the database (see module docstring)."""
-        if search is not None and not (self.ascii_lowering_matches and search.isascii()):
+        if search is None:
+            needle = None
+        elif self.lowering is None:
             return None
-        needle = search.lower() if search is not None else None
+        else:
+            needle = lower_with(self.lowering, search)
         return [
             entry for entry in self.lexicon
             if (level is None or entry.level == level)
@@ -219,7 +332,7 @@ def load_snapshot(conn: psycopg.Connection) -> DataSnapshot:
         LexiconEntry(code, name, level, parent, note, lowered)
         for code, name, level, parent, note, lowered in conn.execute(_SNAPSHOT_LEXICON_SQL)
     )
-    probe = conn.execute(_LOWER_SQL, (ASCII_PROBE,)).fetchone()[0]
+    lowering = lowering_table(conn)
     # The resolver's own lexicon reads; an empty lexicon leaves it to the
     # engine, which reports the unloaded database exactly as before.
     resolver = (
@@ -233,12 +346,13 @@ def load_snapshot(conn: psycopg.Connection) -> DataSnapshot:
         respondents=respondents,
         lexicon=lexicon,
         resolver=resolver,
-        ascii_lowering_matches=probe == ASCII_PROBE.lower(),
+        lowering=lowering,
     )
 
 
 class SnapshotStore:
-    """Holds the current snapshot and refreshes it when a request needs it.
+    """Holds the current snapshot and reads it again when a request needs it
+    (see the module docstring: pinned, TTL, stale if error).
 
     Built once per application lifespan (inside the event loop). ``get`` is
     the only way routes and the analysis runner obtain data facts.
@@ -247,18 +361,25 @@ class SnapshotStore:
     def __init__(
         self, ttl_s: float, expected_version: str | None = None,
         *, clock: Callable[[], float] = time.monotonic,
+        stale_retry_s: float = STALE_IF_ERROR_RETRY_S,
     ):
         self.ttl_s = ttl_s
         self.expected_version = expected_version
+        self.stale_retry_s = min(stale_retry_s, ttl_s)
         self._clock = clock
         self._lock = threading.Lock()  # invalidate() is called from worker threads
         self._snapshot: DataSnapshot | None = None
+        # The snapshot was read without an invalidate() since it started:
+        # only then may it be pinned or served stale.
+        self._trusted = False
         self._fresh_until = -math.inf
+        self._stale_until = -math.inf  # after a failed read: serve the old one until then
         self._loaded_at = -math.inf
         self._generation = 0  # bumped by invalidate()
         self._pending: asyncio.Future | None = None
         self.refreshes = 0
         self.refresh_failures = 0
+        self.stale_serves = 0
 
     @property
     def current(self) -> DataSnapshot | None:
@@ -271,16 +392,33 @@ class SnapshotStore:
         return max(0.0, self._clock() - self._loaded_at)
 
     def is_fresh(self) -> bool:
+        """Read within the TTL and not invalidated since."""
         with self._lock:
             return self._snapshot is not None and self._clock() < self._fresh_until
+
+    def is_pinned(self) -> bool:
+        """The snapshot is of exactly the version the deployment expects and
+        was never invalidated: it is used without reading again."""
+        with self._lock:
+            return self._pinned()
+
+    def _pinned(self) -> bool:
+        return (
+            self._trusted
+            and self.expected_version is not None
+            and self._snapshot is not None
+            and self._snapshot.data_version == self.expected_version
+        )
 
     def invalidate(self) -> None:
         """Make the next request read a new snapshot (thread-safe). A read
         already in progress may predate the change that prompted this, so
         its result is used by the requests waiting for it but not kept as
-        fresh."""
+        fresh, pinned or a stale fallback."""
         with self._lock:
             self._fresh_until = -math.inf
+            self._stale_until = -math.inf
+            self._trusted = False
             self._generation += 1
 
     def check_expected(self, snapshot: DataSnapshot) -> None:
@@ -290,22 +428,55 @@ class SnapshotStore:
                 f"deployment expects {self.expected_version!r}"
             )
 
-    async def get(self, db, *, check_expected: bool = True) -> DataSnapshot:
-        """The current snapshot, read first if it is older than the TTL.
+    async def get(
+        self, db, *, check_expected: bool = True, strict: bool = False
+    ) -> DataSnapshot:
+        """The current snapshot, read first when it is not usable as is.
 
-        ``db`` is the request's database (anything with ``read_snapshot()``);
-        its errors propagate unchanged. Raises
-        :class:`~atus_pipeline.api.errors.DataVersionMismatchError` when the
-        deployment expects another data version, unless ``check_expected``
-        is false (readiness reports the mismatch itself).
+        ``db`` is the request's database (anything with ``read_snapshot()``).
+        Raises :class:`~atus_pipeline.api.errors.DataVersionMismatchError`
+        when the deployment expects another data version, unless
+        ``check_expected`` is false (readiness reports the mismatch itself).
+        A failed read raises the database's error unchanged, unless a
+        previous trusted snapshot can be served instead (stale if error).
+        ``strict`` (readiness) uses the TTL alone: no pinning, no stale
+        snapshot, so the answer reflects the database now.
         """
-        if self.is_fresh():
-            snapshot = self._snapshot
-        else:
-            snapshot = await self._refresh(db)
+        snapshot = self._usable(strict)
+        if snapshot is None:
+            try:
+                snapshot = await self._refresh(db)
+            except Exception:
+                snapshot = None if strict else self._stale_fallback()
+                if snapshot is None:
+                    raise
         if check_expected:
             self.check_expected(snapshot)
         return snapshot
+
+    def _usable(self, strict: bool) -> DataSnapshot | None:
+        with self._lock:
+            snapshot = self._snapshot
+            if snapshot is None:
+                return None
+            now = self._clock()
+            if now < self._fresh_until:
+                return snapshot
+            if strict or not self._trusted:
+                return None
+            if self._pinned():
+                return snapshot
+            if now < self._stale_until:  # a read failed recently: do not retry yet
+                self.stale_serves += 1
+                return snapshot
+            return None
+
+    def _stale_fallback(self) -> DataSnapshot | None:
+        with self._lock:
+            if self._snapshot is None or not self._trusted:
+                return None
+            self.stale_serves += 1
+            return self._snapshot
 
     async def _refresh(self, db) -> DataSnapshot:
         if self._pending is None:
@@ -323,10 +494,12 @@ class SnapshotStore:
         with self._lock:
             self._snapshot = snapshot
             self._loaded_at = now
+            self._stale_until = -math.inf
             # Invalidated while reading (a computation saw the data version
             # change): this read may have seen the old data, so the next
-            # request reads again instead of trusting it for a whole TTL.
-            if self._generation == generation:
+            # request reads again instead of trusting it.
+            self._trusted = self._generation == generation
+            if self._trusted:
                 self._fresh_until = now + self.ttl_s
         self.refreshes += 1
         if self.expected_version is not None and snapshot.data_version != self.expected_version:
@@ -340,5 +513,15 @@ class SnapshotStore:
         self._pending = None
         if future.cancelled():
             return
-        if future.exception() is not None:  # retrieved here; each waiter re-raises it
-            self.refresh_failures += 1
+        error = future.exception()  # retrieved here; each waiter re-raises it
+        if error is None:
+            return
+        self.refresh_failures += 1
+        with self._lock:
+            if self._snapshot is not None and self._trusted:
+                self._stale_until = self._clock() + self.stale_retry_s
+                log.warning(
+                    "data snapshot read failed (%s); serving the snapshot read %.0f s ago "
+                    "and retrying in %.0f s", type(error).__name__,
+                    max(0.0, self._clock() - self._loaded_at), self.stale_retry_s,
+                )

@@ -1,13 +1,16 @@
-"""The in-process data snapshot: TTL, shared refreshes, invalidation, the
-expected data version, the lexicon views, and the zero-statement paths it
-enables (audit F14), including the engine dry run that answers domain 422s
-without touching the database. No database: ``FakeDatabase`` records every
-transaction, so "no database work" means an unchanged transaction list."""
+"""The in-process data snapshot: TTL, shared refreshes, invalidation,
+pinning to the expected data version, stale-if-error, the lexicon views and
+the database-lowering search, and the zero-statement paths it enables (audit
+F14), including the engine dry run that answers domain 422s without touching
+the database. No database: ``FakeDatabase`` records every transaction, so "no
+database work" means an unchanged transaction list."""
 
 from __future__ import annotations
 
 import asyncio
+import sys
 import threading
+import unicodedata
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,13 +18,16 @@ from fastapi.testclient import TestClient
 from atus_pipeline.analytics.activities import ActivityResolver
 from atus_pipeline.api.errors import DataVersionMismatchError
 from atus_pipeline.api.snapshot import (
-    ASCII_PROBE,
+    CASED_RANGES,
+    CONTEXT_PROBE,
     DataSnapshot,
     IngestionRun,
     LexiconEntry,
     SnapshotStore,
     lexicon_label,
     load_snapshot,
+    lower_with,
+    python_lowering,
 )
 from atus_pipeline.database import versions
 from tests.unit.api.conftest import (
@@ -187,6 +193,175 @@ class TestSnapshotStore:
         assert store.current.data_version == "0325:run1"
 
 
+class TestPinnedSnapshot:
+    """With ATUS_EXPECTED_DATA_VERSION set, a snapshot of that version is
+    never read again for its age: a flood of metadata or cache-hit requests
+    cannot keep a scale-to-zero database awake (D2's quota note)."""
+
+    def test_a_matching_snapshot_never_expires(self):
+        clock, db = Clock(), CountingDatabase("0325:serving-x:abc")
+        store = SnapshotStore(600.0, expected_version="0325:serving-x:abc", clock=clock)
+
+        async def scenario():
+            first = await store.get(db)
+            for _ in range(50):
+                clock.now += 3600  # days of requests, one an hour
+                assert await store.get(db) is first
+
+        run(scenario())
+        assert db.reads == 1 and store.is_pinned() and not store.is_fresh()
+
+    def test_invalidate_unpins(self):
+        clock, db = Clock(), CountingDatabase("v1")
+        store = SnapshotStore(600.0, expected_version="v1", clock=clock)
+
+        async def scenario():
+            await store.get(db)
+            store.invalidate()
+            assert not store.is_pinned()
+            await store.get(db)
+            clock.now += 10_000
+            await store.get(db)
+
+        run(scenario())
+        assert db.reads == 2  # re-read after the invalidation, then pinned again
+
+    def test_a_mismatched_snapshot_is_reread_after_its_ttl(self):
+        clock, db = Clock(), CountingDatabase("v-old")
+        store = SnapshotStore(600.0, expected_version="v-new", clock=clock)
+
+        async def scenario():
+            with pytest.raises(DataVersionMismatchError):
+                await store.get(db)
+            clock.now += 599
+            with pytest.raises(DataVersionMismatchError):
+                await store.get(db)
+            db.version = "v-new"
+            clock.now += 2
+            return await store.get(db)
+
+        assert run(scenario()).data_version == "v-new"
+        assert db.reads == 2 and store.is_pinned()
+
+    def test_without_an_expected_version_the_ttl_applies(self):
+        clock, db = Clock(), CountingDatabase()
+        store = SnapshotStore(600.0, clock=clock)
+
+        async def scenario():
+            await store.get(db)
+            clock.now += 601
+            await store.get(db)
+
+        run(scenario())
+        assert db.reads == 2 and not store.is_pinned()
+
+    def test_strict_reads_ignore_the_pin(self):
+        clock, db = Clock(), CountingDatabase("v1")
+        store = SnapshotStore(600.0, expected_version="v1", clock=clock)
+
+        async def scenario():
+            await store.get(db)
+            clock.now += 601
+            await store.get(db, strict=True)
+
+        run(scenario())
+        assert db.reads == 2
+
+
+class TestStaleIfError:
+    """A failed read serves the previous trusted snapshot (A's wave-1 note:
+    cache hits and metadata keep working while the database is down) and
+    waits before trying the database again."""
+
+    def test_a_failed_read_serves_the_previous_snapshot(self):
+        clock, db = Clock(), CountingDatabase()
+        store = SnapshotStore(60.0, clock=clock, stale_retry_s=30.0)
+
+        async def scenario():
+            first = await store.get(db)
+            clock.now += 61
+            db.fail = RuntimeError("database down")
+            again = await store.get(db)            # read fails: the old one
+            clock.now += 29
+            during = await store.get(db)           # within the retry wait: no read
+            clock.now += 2
+            db.fail = None
+            recovered = await store.get(db)        # tried again, and it works
+            return first, again, during, recovered
+
+        first, again, during, recovered = run(scenario())
+        assert again is first and during is first and recovered is not first
+        assert db.reads == 3 and store.refresh_failures == 1
+        assert store.stale_serves == 2
+        assert store.is_fresh()
+
+    def test_the_retry_wait_is_never_longer_than_the_ttl(self):
+        clock, db = Clock(), CountingDatabase()
+        store = SnapshotStore(2.0, clock=clock, stale_retry_s=30.0)
+
+        async def scenario():
+            await store.get(db)
+            clock.now += 3
+            db.fail = RuntimeError("down")
+            await store.get(db)
+            clock.now += 2.1
+            await store.get(db)
+
+        run(scenario())
+        assert store.stale_retry_s == 2.0 and db.reads == 3
+
+    def test_no_previous_snapshot_means_the_error(self):
+        db = CountingDatabase()
+        db.fail = RuntimeError("database down")
+        store = SnapshotStore(60.0)
+        with pytest.raises(RuntimeError):
+            run(store.get(db))
+        assert store.stale_serves == 0
+
+    def test_an_invalidated_snapshot_is_never_served_stale(self):
+        """invalidate() means the data changed: the old snapshot's version
+        would key cache hits to results of the old data."""
+        db = CountingDatabase()
+        store = SnapshotStore(60.0)
+
+        async def scenario():
+            await store.get(db)
+            store.invalidate()
+            db.fail = RuntimeError("database down")
+            await store.get(db)
+
+        with pytest.raises(RuntimeError):
+            run(scenario())
+
+    def test_strict_reads_never_serve_stale(self):
+        clock, db = Clock(), CountingDatabase()
+        store = SnapshotStore(60.0, clock=clock)
+
+        async def scenario():
+            await store.get(db)
+            clock.now += 61
+            db.fail = RuntimeError("database down")
+            with pytest.raises(RuntimeError):
+                await store.get(db, strict=True)
+            return await store.get(db)  # the ordinary path still falls back
+
+        assert run(scenario()).data_version == "0325:run1"
+
+    def test_a_stale_snapshot_still_checks_the_expected_version(self):
+        clock, db = Clock(), CountingDatabase("v-old")
+        store = SnapshotStore(60.0, expected_version="v-new", clock=clock)
+
+        async def scenario():
+            with pytest.raises(DataVersionMismatchError):
+                await store.get(db)
+            clock.now += 61
+            db.fail = RuntimeError("down")
+            with pytest.raises(DataVersionMismatchError):
+                await store.get(db)
+
+        run(scenario())
+
+
 class TestDataSnapshot:
     def snapshot(self, **overrides) -> DataSnapshot:
         return fake_snapshot(**overrides)
@@ -224,15 +399,42 @@ class TestDataSnapshot:
         found = snapshot.search_lexicon(level=None, parent=None, search="AS-THE-DB")
         assert [e.code for e in found] == ["10"]
 
-    def test_non_ascii_terms_go_to_the_database(self):
-        snapshot = self.snapshot()
-        assert snapshot.search_lexicon(level=None, parent=None, search="décor") is None
-        assert snapshot.search_lexicon(level=None, parent=None, search="İs") is None
+    def test_non_ascii_terms_are_lowered_with_the_database_table(self):
+        lexicon = (
+            LexiconEntry("09", "Home Décor", 1, None, None, "home décor"),
+            LexiconEntry("10", "Islands", 1, None, None, "islands"),
+        )
+        # A libc collation lowers İ to i (Python: i + combining dot).
+        libc = {**python_lowering(), "\u0130": "i"}
+        snapshot = DataSnapshot(data_version="v", run=None, years=(), respondents=0,
+                                lexicon=lexicon, lowering=libc)
+        for term in ("décor", "DÉCOR", "e D\u00c9"):
+            assert [e.code for e in snapshot.search_lexicon(
+                level=None, parent=None, search=term)] == ["09"], term
+        assert [e.code for e in snapshot.search_lexicon(
+            level=None, parent=None, search="\u0130SLAND")] == ["10"]
+        # The same term under Python's lowering ("i̇") matches nothing: the
+        # table decides, not Python.
+        python = DataSnapshot(data_version="v", run=None, years=(), respondents=0,
+                              lexicon=lexicon)
+        assert python.search_lexicon(level=None, parent=None, search="\u0130SLAND") == []
+        assert snapshot.search_lexicon(level=None, parent=None, search="ΣΑ") == []
 
-    def test_unusual_database_lowering_sends_every_search_to_the_database(self):
-        snapshot = self.snapshot(ascii_lowering_matches=False)
+    def test_a_turkish_style_table_is_followed_exactly(self):
+        lexicon = (LexiconEntry("01", "Ice", 1, None, None, "ıce"),)
+        turkish = {**python_lowering(), "I": "ı"}
+        snapshot = DataSnapshot(data_version="v", run=None, years=(), respondents=0,
+                                lexicon=lexicon, lowering=turkish)
+        assert [e.code for e in snapshot.search_lexicon(
+            level=None, parent=None, search="ICE")] == ["01"]
+        assert snapshot.search_lexicon(level=None, parent=None, search="ice") == []
+
+    def test_context_sensitive_lowering_sends_every_search_to_the_database(self):
+        snapshot = self.snapshot(lowering=None)
         assert snapshot.search_lexicon(level=None, parent=None, search="sleep") is None
+        assert snapshot.search_lexicon(level=None, parent=None, search="décor") is None
         assert snapshot.search_lexicon(level=1, parent=None, search=None) is not None
+
 
     def test_detail(self):
         snapshot = self.snapshot()
@@ -258,12 +460,46 @@ class TestDataSnapshot:
         assert not empty.is_loaded
 
 
+class TestCasedRanges:
+    """Every code point outside CASED_RANGES lowers to itself (here: in
+    Python's Unicode data; the integration suite checks the database's)."""
+
+    def test_python_lowers_nothing_outside_the_ranges(self):
+        def inside(cp):
+            return any(lo <= cp <= hi for lo, hi in CASED_RANGES)
+
+        outside = [
+            cp for cp in range(sys.maxunicode + 1)
+            if not 0xD800 <= cp <= 0xDFFF and not inside(cp) and chr(cp).lower() != chr(cp)
+        ]
+        assert outside == [], (unicodedata.unidata_version, [hex(cp) for cp in outside[:5]])
+
+    def test_ranges_are_sorted_disjoint_and_valid(self):
+        flat = [bound for pair in CASED_RANGES for bound in pair]
+        assert flat == sorted(flat) and len(set(flat)) == len(flat)
+        assert all(0 < lo <= hi <= sys.maxunicode for lo, hi in CASED_RANGES)
+        assert not any(lo <= 0xDFFF and hi >= 0xD800 for lo, hi in CASED_RANGES)
+
+    def test_lower_with(self):
+        assert lower_with({"A": "a", "\u0130": "i"}, "A\u0130b") == "aib"
+        assert lower_with(python_lowering(), "Home DÉCOR") == "home décor"
+
+    def test_the_context_probe_tells_icu_from_libc(self):
+        table = python_lowering()
+        per_character = lower_with(table, CONTEXT_PROBE)
+        # Python's str.lower applies Final_Sigma, as ICU does: they differ.
+        assert per_character != CONTEXT_PROBE.lower()
+        assert "\u03c2" in CONTEXT_PROBE.lower() and "\u03c2" not in per_character
+
+
 class LexiconConnection:
     """Answers exactly the statements ``load_snapshot`` sends."""
 
-    def __init__(self, *, leaves=True, lower=str.lower):
+    def __init__(self, *, leaves=True, lower=str.lower, whole=None):
         self.leaves = leaves
-        self.lower = lower
+        self.lower = lower  # the "database's" lowering of one character
+        # ... and of a whole string: character by character (libc) by default
+        self.whole = whole or (lambda text: "".join(self.lower(ch) for ch in text))
         self.statements: list[str] = []
 
     def execute(self, sql, params=None):
@@ -280,8 +516,17 @@ class LexiconConnection:
         elif "lower(name)" in sql:
             rows = [(*e.row(), e.name.lower()) for e in FAKE_LEXICON
                     if self.leaves or e.level < 3]
-        elif sql == "SELECT lower(%s)":
-            rows = [(self.lower(params[0]),)]
+        elif "generate_series" in sql:
+            table = {}
+            for lo, hi in zip(params["lo"], params["hi"], strict=True):
+                for cp in range(lo, hi + 1):
+                    if 0xD800 <= cp <= 0xDFFF:
+                        continue
+                    lowered = self.lower(chr(cp))
+                    if lowered != chr(cp):
+                        table[cp] = lowered
+            rows = [(self.whole(params["probe"]), sorted(table),
+                     [table[cp] for cp in sorted(table)])]
         elif sql == "SELECT code FROM atus.activity_tier1":
             rows = [(e.code,) for e in FAKE_LEXICON if e.level == 1]
         elif sql == "SELECT code FROM atus.activity_tier2":
@@ -309,7 +554,7 @@ class TestLoadSnapshot:
         assert snapshot.run == IngestionRun(3, "0325", None)
         assert snapshot.years == (2023, 2024) and snapshot.respondents == 42
         assert len(snapshot.lexicon) == len(FAKE_LEXICON)
-        assert snapshot.ascii_lowering_matches
+        assert snapshot.lowering == python_lowering()
         assert isinstance(snapshot.resolver, ActivityResolver)
         assert len(conn.statements) == 9  # 6 snapshot reads + the resolver's 3
 
@@ -317,10 +562,15 @@ class TestLoadSnapshot:
         snapshot = load_snapshot(LexiconConnection(leaves=False))
         assert snapshot.resolver is None
 
-    def test_a_turkish_style_lowering_disables_python_search(self):
+    def test_a_turkish_style_lowering_is_read_into_the_table(self):
         snapshot = load_snapshot(LexiconConnection(lower=lambda s: s.replace("I", "ı").lower()))
-        assert not snapshot.ascii_lowering_matches
-        assert ASCII_PROBE.isascii() and len(ASCII_PROBE) == 95
+        assert snapshot.lowering["I"] == "ı"
+        hits = snapshot.search_lexicon(level=None, parent=None, search="SLEEP")
+        assert [e.code for e in hits] == ["0101", "010101", "010102"]
+
+    def test_context_sensitive_lowering_disables_the_table(self):
+        snapshot = load_snapshot(LexiconConnection(whole=str.lower))  # Final_Sigma, like ICU
+        assert snapshot.lowering is None
 
 
 # --------------------------------------------------------------------------- #
@@ -389,18 +639,52 @@ class TestZeroStatementPaths:
         client.get("/api/v1/activities")
         assert fake_db.transactions == ["metadata", "metadata"]
 
-    def test_non_ascii_search_runs_the_sql(self, build):
+    def test_non_ascii_search_costs_nothing(self, build):
+        lexicon = (*FAKE_LEXICON, LexiconEntry("0902", "Home Décor", 2, "09", None))
+        fake_db = FakeDatabase(data_version="0325:run1", lexicon=lexicon)
+        client, fake_db, _ = build(fake_db=fake_db)
+        client.get("/api/v1/meta")
+        for term in ("décor", "DÉCOR", "İs", "ΣΑ", "Kelvin\u212a"):
+            response = client.get("/api/v1/activities", params={"search": term})
+            assert response.status_code == 200, term
+        response = client.get("/api/v1/activities", params={"search": "DÉCOR"})
+        assert [a["code"] for a in response.json()["activities"]] == ["0902"]
+        assert fake_db.transactions == ["metadata"]
+
+    def test_context_sensitive_database_lowering_runs_the_sql(self, build):
         class LexiconSql(FakeVersionConnection):
             def execute(self, sql, params=None):
                 if "ILIKE" in sql:
                     return _Rows([("0902", "Home Décor", 2, "09", None)])
                 return super().execute(sql, params)
 
-        client, fake_db, _ = build(fake_db=FakeDatabase(LexiconSql, data_version="0325:run1"))
+        client, fake_db, _ = build(fake_db=FakeDatabase(
+            LexiconSql, data_version="0325:run1", lowering=None))
         client.get("/api/v1/meta")
         response = client.get("/api/v1/activities", params={"search": "décor"})
         assert response.json()["activities"][0]["code"] == "0902"
         assert fake_db.transactions == ["metadata", "metadata"]
+
+    def test_metadata_survives_a_database_outage_after_the_first_read(self, build):
+        """Stale if error, through HTTP: the snapshot's TTL has passed and
+        the database is down, yet metadata and cache hits are answered."""
+        client, fake_db, app = build(api_snapshot_ttl_s=0.0)
+        assert client.post(ESTIMATE, json=BODY).headers["X-Cache"] == "miss"
+        fake_db.snapshot_error = RuntimeError("database down")
+        assert client.get("/api/v1/meta").status_code == 200
+        hit = client.post(ESTIMATE, json=BODY)
+        assert hit.status_code == 200 and hit.headers["X-Cache"] == "hit"
+        assert app.state.snapshots.stale_serves >= 2
+
+    def test_pinned_snapshot_reads_the_database_once(self, build):
+        client, fake_db, app = build(api_snapshot_ttl_s=0.0,
+                                     expected_data_version="0325:run1")
+        for _ in range(5):
+            assert client.get("/api/v1/meta").status_code == 200
+            assert client.get("/api/v1/activities",
+                              params={"search": "décor"}).status_code == 200
+        assert fake_db.transactions == ["metadata"]
+        assert app.state.snapshots.is_pinned()
 
     def test_metadata_carries_the_data_version(self, build):
         client, _, _ = build()
@@ -510,3 +794,19 @@ class TestExpectedDataVersion:
         count = fake_db.transactions.count("metadata")
         client.get("/api/v1/meta")
         assert fake_db.transactions.count("metadata") == count + 1
+
+
+class TestProductionWithoutAnExpectedVersion:
+    SECRET = "s" * 40
+
+    def test_warns_that_the_snapshot_will_be_reread(self, build, caplog):
+        with caplog.at_level("WARNING", logger="atus.api"):
+            build(env="production", edge_secrets=(self.SECRET,), api_docs=False)
+        assert any("ATUS_EXPECTED_DATA_VERSION is not set" in r.getMessage()
+                   for r in caplog.records)
+
+    def test_no_warning_when_the_version_is_bound(self, build, caplog):
+        with caplog.at_level("WARNING", logger="atus.api"):
+            build(env="production", edge_secrets=(self.SECRET,), api_docs=False,
+                  expected_data_version="0325:run1")
+        assert not any("ATUS_EXPECTED_DATA_VERSION" in r.getMessage() for r in caplog.records)

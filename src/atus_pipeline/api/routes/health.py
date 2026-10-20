@@ -67,10 +67,11 @@ async def ready(
 ) -> dict:
     """Whether the API can answer analyses: the database is reachable (or
     was within the snapshot TTL), data is loaded, and it is the data version
-    the deployment expects. Failures are the ordinary 503 envelopes; the
-    remediation hints go to the log only."""
+    the deployment expects. Strict: neither a pinned nor a stale snapshot
+    stands in for the database. Failures are the ordinary 503 envelopes;
+    the remediation hints go to the log only."""
     _require_ops_token(request, settings)
-    snapshot = await snapshots.get(db, check_expected=False)
+    snapshot = await snapshots.get(db, check_expected=False, strict=True)
     if not snapshot.is_loaded:
         log.warning("readiness: no succeeded ingestion run; load data with `atus load`")
         raise DataNotLoadedError("readiness: no succeeded ingestion run")

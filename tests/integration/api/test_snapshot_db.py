@@ -1,8 +1,10 @@
 """The in-process data snapshot against a real PostgreSQL (audit F14).
 
 * The lexicon answered from memory is identical to the SQL it replaced:
-  the Python search against ``ILIKE`` for thousands of terms, the detail
-  view for every code, ``/meta`` against its old queries.
+  the Python search against ``ILIKE`` for thousands of terms, ASCII and not
+  (the database's own character lowering, and a scan of every code point
+  proving none outside ``CASED_RANGES`` lowers to anything else), the
+  detail view for every code, ``/meta`` against its old queries.
 * Statistics are unchanged: engines given the snapshot's resolver and years
   return exactly what engines that read them return.
 * The snapshot is read in one REPEATABLE READ, read-only transaction, and no
@@ -19,6 +21,7 @@ import json
 import logging
 import random
 import re
+import time
 from contextlib import contextmanager
 from dataclasses import replace
 
@@ -31,7 +34,8 @@ from atus_pipeline.analytics.spec import ActivitySelector, AnalysisSpec, Compari
 from atus_pipeline.api import database as dbmod
 from atus_pipeline.api.app import create_app
 from atus_pipeline.api.routes.activities import lexicon_query
-from atus_pipeline.api.snapshot import LEXICON_SQL, load_snapshot
+from atus_pipeline.api.snapshot import CASED_RANGES, LEXICON_SQL, load_snapshot
+from atus_pipeline.database.versions import read_data_version
 from atus_pipeline.loading.loader import load_all
 from tests.integration.analytics_dataset import analytics_settings
 
@@ -85,25 +89,69 @@ def _search_terms(snapshot) -> list[str]:
         "  ", "e,", "*", "self)", "décor", "DÉCOR", "Décor", "Ü", "İs", "KELVIN",
         "sleep", "SLEEP", "sLeEp", "tv", "01", "12",
     })
+    # Non-ASCII terms: every non-ASCII character of the lexicon in each case,
+    # alone and inside words; the characters a database may lower into ASCII
+    # (dotted capital I, Kelvin and Angstrom signs, capital sharp s); scripts
+    # with context-sensitive or special lowering; decomposed accents.
+    specials = ["\u0130", "\u0131", "\u212a", "\u212b", "\u1e9e", "ß", "\u03a3", "\u03c2",
+                "\u01c5", "\u2160", "\uff33", "e\u0301", "\u0307"]
+    accented = sorted({ch for name in names for ch in name if not ch.isascii()})
+    for ch in accented + specials:
+        for variant in {ch, ch.upper(), ch.lower(), ch.casefold()}:
+            terms.update({variant * 2, f"d{variant}cor", f"D{variant}COR", f"{variant}s",
+                          f"{variant}SLAND", f"sl{variant}{variant}p", f"x{variant}"})
+    terms.update({"\u0130SLAND", "\u0130s", "\u212aELVIN", "STRA\u1e9eE", "ΣΑ", "ΑΣ",
+                  "décor svcs", "maint/repair/DÉCOR", "\u2160\u2161"})
+    for _ in range(200):  # random non-ASCII substrings of the names that have one
+        name = rng.choice([n for n in names if not n.isascii()])
+        start = rng.randrange(max(1, len(name) - 2))
+        piece = name[start:start + rng.randint(2, 12)]
+        terms.update({piece, piece.upper(), piece.swapcase()})
     return sorted(t for t in terms if 2 <= len(t) <= 80)
 
 
 class TestLexiconEquivalence:
     def test_python_search_returns_exactly_the_sql_rows(self, snapshot, loaded_settings):
         terms = _search_terms(snapshot)
-        assert len(terms) > 500
-        python_answered = 0
+        non_ascii = [t for t in terms if not t.isascii()]
+        assert len(terms) > 800 and len(non_ascii) > 200
+        assert snapshot.lowering is not None  # a libc collation: lowered per character
+        matched_non_ascii = 0
         with psycopg.connect(loaded_settings.database_url) as conn:
             for search in terms:
                 for level, parent in ((None, None), (3, None), (None, "0101"), (2, "18")):
                     entries = snapshot.search_lexicon(level=level, parent=parent, search=search)
                     sql_rows = conn.execute(*lexicon_query(level, parent, search)).fetchall()
-                    if entries is None:  # answered by the same SQL at runtime
-                        assert not search.isascii(), search
-                        continue
-                    python_answered += 1
+                    assert entries is not None, search
                     assert [e.row() for e in entries] == sql_rows, (search, level, parent)
-        assert python_answered > 2000
+                    if sql_rows and not search.isascii():
+                        matched_non_ascii += 1
+        assert matched_non_ascii > 50  # "décor" and friends really match
+
+    def test_no_code_point_outside_the_cased_ranges_changes_when_lowered(self, loaded_settings,
+                                                                          snapshot):
+        """The search's premise, on this database's own collation (every valid
+        code point; 0 and the surrogates cannot be text): a code point outside
+        CASED_RANGES lowers to itself. The search stays exact as long as none
+        lowers into a character of the lowered lexicon, which is asserted
+        separately, so a cased script newer than this list fails the first
+        assertion here before it could ever change a result."""
+        inside = " OR ".join(f"cp BETWEEN {lo} AND {hi}" for lo, hi in CASED_RANGES)
+        with psycopg.connect(loaded_settings.database_url) as conn:
+            changed = conn.execute(
+                "SELECT cp, lower(chr(cp)) FROM generate_series(1, 1114111) AS cp "
+                f"WHERE cp NOT BETWEEN 55296 AND 57343 AND NOT ({inside}) "
+                "AND lower(chr(cp)) <> chr(cp)"
+            ).fetchall()
+        lexicon_chars = {ch for entry in snapshot.lexicon for ch in entry.name_lower}
+        assert [cp for cp, lowered in changed if set(lowered) <= lexicon_chars] == []
+        assert [hex(cp) for cp, _ in changed] == []
+
+    def test_the_table_is_the_databases_lowering(self, snapshot, loaded_settings):
+        with psycopg.connect(loaded_settings.database_url) as conn:
+            for ch in ("\u0130", "\u212a", "É", "Σ", "I", "\u1e9e", "\u2160"):
+                assert snapshot.lowering.get(ch, ch) == conn.execute(
+                    "SELECT lower(%s)", (ch,)).fetchone()[0], ch
 
     def test_unfiltered_and_filtered_listings(self, snapshot, loaded_settings):
         with psycopg.connect(loaded_settings.database_url) as conn:
@@ -122,10 +170,10 @@ class TestLexiconEquivalence:
     def test_routes_answer_from_memory_identically(self, loaded_settings, snapshot):
         with psycopg.connect(loaded_settings.database_url) as conn:
             expected = [list(r) for r in conn.execute(*lexicon_query(3, None, "sleep")).fetchall()]
-            non_ascii = [list(r) for r in conn.execute(*lexicon_query(None, None, "décor"))]
+            non_ascii = [list(r) for r in conn.execute(*lexicon_query(None, None, "DÉCOR"))]
         with api(loaded_settings) as (client, _):
             listing = client.get("/api/v1/activities", params={"level": 3, "search": "sleep"})
-            fallback = client.get("/api/v1/activities", params={"search": "décor"})
+            fallback = client.get("/api/v1/activities", params={"search": "DÉCOR"})
         keys = ("code", "name", "level", "parent_code", "harmonization_note")
         assert [[a[k] for k in keys] for a in listing.json()["activities"]] == expected
         assert [[a[k] for k in keys] for a in fallback.json()["activities"]] == non_ascii
@@ -277,7 +325,7 @@ class TestTransactions:
 # --------------------------------------------------------------------------- #
 
 SNAPSHOT_READ = 11  # check, limits, version, run, years, respondents, lexicon,
-#                     lowering probe, the resolver's 3 lexicon reads
+#                     lowering table, the resolver's 3 lexicon reads
 ANALYSIS_TXN = 2    # the pool's connection check and the limits
 
 
@@ -325,7 +373,7 @@ class TestStatementCounts:
             "meta (fresh snapshot)": (200, 0),
             "activities": (200, 0),
             "activities search": (200, 0),
-            "activities non-ASCII search": (200, 3),  # check, limits, the ILIKE query
+            "activities non-ASCII search": (200, 0),  # the database's lowering, in memory
             "activity detail": (200, 0),
             "unknown activity 404": (404, 0),
             # check, limits, the statistics query, the data-version recheck
@@ -365,3 +413,77 @@ class TestStatementCounts:
         assert any(line.startswith("atus_db_pool_requests_num_total ") for line in lines)
         assert ('atus_db_statements_per_request_bucket{route="/api/v1/meta",le="13"} 1'
                 in lines)
+
+
+# --------------------------------------------------------------------------- #
+# a real outage: stale if error, and pinning                                  #
+# --------------------------------------------------------------------------- #
+
+
+def _allow_connections(url: str, allowed: bool) -> None:
+    """Open or close a scratch database to new connections (a real outage
+    as the API sees one: every connect is refused by the server), and drop
+    the connections it already has."""
+    from urllib.parse import urlsplit
+
+    from tests.integration.conftest import _admin_url
+
+    name = urlsplit(url).path.lstrip("/")
+    with psycopg.connect(_admin_url(url), autocommit=True) as conn:
+        conn.execute(f'ALTER DATABASE "{name}" ALLOW_CONNECTIONS {str(allowed).lower()}')
+        if not allowed:
+            conn.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                         "WHERE datname = %s AND pid <> pg_backend_pid()", (name,))
+
+
+@pytest.fixture
+def outage_settings(tmp_path, scratch_database):
+    url = scratch_database("outage")
+    settings = analytics_settings(tmp_path, url)
+    with psycopg.connect(url) as conn:
+        load_all(conn, settings)
+    yield settings
+    _allow_connections(url, True)  # so the fixture can drop it
+
+
+class TestDatabaseOutage:
+    def test_cache_hits_and_metadata_survive_while_analyses_fail_honestly(
+        self, outage_settings
+    ):
+        sleep = {"activity": {"include": ["010101"]}, "years": [2023]}
+        auth = {"Authorization": f"Bearer {OPS_TOKEN}"}
+        with api(outage_settings, api_snapshot_ttl_s=0.5, ops_token=OPS_TOKEN) as (client, app):
+            assert client.post(ESTIMATE, json=sleep).headers["X-Cache"] == "miss"
+            before = client.get("/api/v1/meta").json()
+            _allow_connections(outage_settings.database_url, False)
+            time.sleep(0.6)  # the snapshot is past its TTL
+            meta = client.get("/api/v1/meta")
+            hit = client.post(ESTIMATE, json=sleep)
+            new = client.post(ESTIMATE, json={**sleep, "years": [2019]})
+            ready = client.get("/ready", headers=auth)
+            search = client.get("/api/v1/activities", params={"search": "DÉCOR"})
+            assert (meta.status_code, meta.json()) == (200, before)
+            assert hit.status_code == 200 and hit.headers["X-Cache"] == "hit"
+            assert search.status_code == 200 and search.json()["total"] >= 5
+            assert new.status_code == 503
+            assert new.json()["error"]["code"] == "database_unavailable"
+            assert ready.status_code == 503  # readiness is never answered from memory
+            assert app.state.snapshots.stale_serves >= 3
+
+            _allow_connections(outage_settings.database_url, True)
+            time.sleep(0.6)  # past the retry wait (min(30 s, TTL))
+            assert client.post(ESTIMATE, json={**sleep, "years": [2019]}).status_code == 200
+            assert app.state.snapshots.is_fresh()
+
+    def test_a_pinned_snapshot_never_needs_the_database(self, outage_settings):
+        with psycopg.connect(outage_settings.database_url) as conn:
+            version = read_data_version(conn)
+        with api(outage_settings, api_snapshot_ttl_s=0.0,
+                 expected_data_version=version) as (client, app):
+            assert client.get("/api/v1/meta").status_code == 200
+            _allow_connections(outage_settings.database_url, False)
+            for _ in range(3):
+                assert client.get("/api/v1/meta").status_code == 200
+                assert client.get("/api/v1/activities/0101").status_code == 200
+            assert app.state.snapshots.refreshes == 1
+            assert app.state.snapshots.refresh_failures == 0

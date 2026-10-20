@@ -335,6 +335,12 @@ def _snapshot_lines(snapshots) -> list[str]:
                  "Data snapshot reads.", snapshots.refreshes),
         *_sample("atus_snapshot_refresh_failures_total", "counter",
                  "Data snapshot reads that failed.", snapshots.refresh_failures),
+        *_sample("atus_snapshot_stale_serves_total", "counter",
+                 "Requests served from the previous snapshot after a failed read.",
+                 getattr(snapshots, "stale_serves", 0)),
+        *_sample("atus_snapshot_pinned", "gauge",
+                 "1 while the snapshot is pinned to ATUS_EXPECTED_DATA_VERSION.",
+                 int(snapshots.is_pinned()) if hasattr(snapshots, "is_pinned") else 0),
     ]
     if age is not None:
         lines += _sample("atus_snapshot_age_seconds", "gauge",

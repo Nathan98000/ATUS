@@ -145,14 +145,14 @@ COMPARE = {**SLEEP, "group_a": {"sex": "male"}, "group_b": {"sex": "female"}}
 # (name, request, expected statements in PostgreSQL's log)
 DOCUMENTED = [
     # the first data request reads the snapshot: BEGIN, check, limits,
-    # version, run, years, respondents, lexicon, lowering probe, the
+    # version, run, years, respondents, lexicon, lowering table, the
     # resolver's 3 lexicon reads, COMMIT
     ("meta, snapshot read", lambda c: c.get("/api/v1/meta"), 13),
     ("meta, fresh snapshot", lambda c: c.get("/api/v1/meta"), 0),
     ("activities", lambda c: c.get("/api/v1/activities", params={"search": "sleep"}), 0),
-    # a non-ASCII term runs the original ILIKE query: BEGIN, check, limits, query, COMMIT
+    # a non-ASCII term too: lowered with the database's table, in memory
     ("activities, non-ASCII search", lambda c: c.get("/api/v1/activities",
-                                                     params={"search": "décor"}), 5),
+                                                     params={"search": "DÉCOR"}), 0),
     ("activity detail", lambda c: c.get("/api/v1/activities/0101"), 0),
     # BEGIN, check, limits, statistics query, data-version recheck, COMMIT
     ("estimate, uncached", lambda c: c.post(ESTIMATE, json=SLEEP), 6),

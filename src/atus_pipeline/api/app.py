@@ -100,6 +100,12 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
     check_api_settings(settings)
     configure_logging(settings.log_level, settings.log_format)
     set_redacted_secrets(_secrets_to_redact(settings))
+    if settings.is_production and settings.expected_data_version is None:
+        log.warning(
+            "ATUS_EXPECTED_DATA_VERSION is not set: the data snapshot is re-read every "
+            "%.0f s when requests need it, and each read wakes the database (ADR-012)",
+            settings.api_snapshot_ttl_s,
+        )
     # Replaced by the access line of RequestContextMiddleware, which never
     # logs a full client address (uvicorn's would).
     logging.getLogger("uvicorn.access").disabled = True

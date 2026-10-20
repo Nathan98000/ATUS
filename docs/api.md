@@ -321,7 +321,15 @@ floor), bounded by the statement timeout and the request deadline (ADR-012).
 The API keeps the data version, the latest ingestion run, the loaded years,
 the respondent count and the activity lexicon in memory, read in one
 consistent (`REPEATABLE READ`) transaction when a request needs them and they
-are older than `ATUS_API_SNAPSHOT_TTL_S`. While the snapshot is fresh:
+are older than `ATUS_API_SNAPSHOT_TTL_S`. With `ATUS_EXPECTED_DATA_VERSION`
+set (production), a snapshot of exactly that version is **pinned**: it is
+never read again for its age, so metadata requests cost no statement after
+the first read of each process (only an analysis that sees the version
+change forces a new read). If a read fails while an earlier snapshot exists,
+that snapshot keeps answering (**stale if error**), and the database is tried
+again after at most 30 s; uncached analyses still need the database and fail
+with the usual 503. `/ready` never uses a pinned or stale snapshot. While the
+snapshot is usable:
 
 - `/meta`, `/activities`, `/activities/{code}` and `/population/metadata`
   answer from memory;
@@ -329,8 +337,11 @@ are older than `ATUS_API_SNAPSHOT_TTL_S`. While the snapshot is fresh:
 - uncached analyses reuse its activity resolver and years, so they run only
   their statistics queries and the version recheck.
 
-The lexicon search returns exactly what the SQL `ILIKE` returned (proved by
-an integration test over thousands of terms); a non-ASCII term runs that SQL.
+The lexicon search returns exactly what the SQL `ILIKE` returned, for ASCII
+and non-ASCII terms alike (proved by an integration test over thousands of
+terms): the term is lowered with the database's own `lower()` of every cased
+character, read with the snapshot. Only a database that lowers by context
+(an ICU collation) sends search terms to that SQL.
 Details: [ADR-012](adr/ADR-012-load-and-quota-protection.md#in-process-data-snapshot-answers-that-cost-nothing-f14).
 
 ## Versioning
@@ -401,9 +412,8 @@ psycopg sends around each transaction.
 
 | Request (snapshot fresh unless noted) | API count | PostgreSQL log |
 | --- | --- | --- |
-| first data request after the TTL: reads the snapshot (check, limits, version, run, years, respondents, lexicon, lowering probe, the resolver's 3 lexicon reads) | +11 | +13 |
-| `/meta`, `/activities`, `/activities/{code}` (also 404), `/activities/presets`, `/population/metadata` | 0 | 0 |
-| `/activities?search=` with a non-ASCII term (the `ILIKE` query) | 3 | 5 |
+| first data request after the TTL (never again while pinned): reads the snapshot (check, limits, version, run, years, respondents, lexicon, lowering table, the resolver's 3 lexicon reads) | +11 | +13 |
+| `/meta`, `/activities` (any search term), `/activities/{code}` (also 404), `/activities/presets`, `/population/metadata` | 0 | 0 |
 | analysis cache hit, or single-flight join | 0 | 0 |
 | any 400, 403, 404, 405, 413, 415, 422 or 429 | 0 | 0 |
 | uncached estimate or trend: check, limits, statistics query, version recheck | 4 | 6 |

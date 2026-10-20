@@ -2,13 +2,13 @@
 
 Answered from the lexicon in the in-process data snapshot, which is read from
 the Phase 1 lexicon tables (``atus.activity_tier1/2``, ``atus.activity_codes``)
-with the same SQL these endpoints used to run per request; a fresh snapshot
-answers with no database statement (audit F14). The one exception is a
-search term the snapshot cannot match exactly as PostgreSQL's ``ILIKE``
-would (a non-ASCII term; see ``snapshot.py``), which runs the original
-query. The lexicon has a few hundred entries, so listings are bounded and
-unpaginated. Responses are version-stable between data loads and carry a
-modest public Cache-Control.
+with the same SQL these endpoints used to run per request; the snapshot
+answers with no database statement (audit F14), search terms included: they
+are lowered with the database's own character lowering, read with the
+snapshot (``snapshot.py``). Only a database that lowers text by context (an
+ICU collation) sends search terms to the original query. The lexicon has a
+few hundred entries, so listings are bounded and unpaginated. Responses are
+version-stable between data loads and carry a modest public Cache-Control.
 """
 
 from __future__ import annotations

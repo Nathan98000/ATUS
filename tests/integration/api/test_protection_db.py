@@ -159,22 +159,27 @@ class TestPoolExhaustion:
         def held(conn, **snapshot_parts):
             return SlowEngine(conn, gate=gate, **snapshot_parts)
 
-        # TTL 0: /meta reads the snapshot every time, so it needs the pool
+        # TTL 0: every data request wants a new snapshot read. /ready is
+        # strict (no stale snapshot stands in for the database), so it needs
+        # the pool; /meta is served from the previous snapshot instead.
+        auth = {"Authorization": f"Bearer {'o' * 40}"}
         with api(loaded_settings, held, api_pool_max_size=1, api_pool_timeout_s=0.3,
                  api_max_inflight=1, api_max_inflight_heavy=1,
-                 api_snapshot_ttl_s=0) as (client, _):
+                 api_snapshot_ttl_s=0, ops_token="o" * 40) as (client, _):
             with ThreadPoolExecutor(1) as pool:
                 analysis = pool.submit(client.post, ESTIMATE, json=body())
                 assert gate.entered.wait(10)
                 started = time.monotonic()
-                meta = client.get("/api/v1/meta")
+                ready = client.get("/ready", headers=auth)
                 waited = time.monotonic() - started
+                meta = client.get("/api/v1/meta")
                 gate.release.set()
                 assert analysis.result(10).status_code == 200
-        assert meta.status_code == 503
-        assert meta.json()["error"]["code"] == "overloaded"
-        assert meta.headers["Retry-After"] == "10"
+        assert ready.status_code == 503
+        assert ready.json()["error"]["code"] == "overloaded"
+        assert ready.headers["Retry-After"] == "10"
         assert 0.25 <= waited < 3.0
+        assert meta.status_code == 200  # stale if error: the snapshot read a moment ago
 
     def test_lane_is_taken_before_a_pool_connection(self, loaded_settings):
         """With the only analysis lane busy, a second uncached analysis is

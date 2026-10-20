@@ -424,11 +424,29 @@ class TestMetrics:
             "atus_admission_shed_total 0",
             "atus_query_timeouts_total 0",
             "atus_snapshot_refreshes_total 1",
+            "atus_snapshot_stale_serves_total 0",
+            "atus_snapshot_pinned 0",
             "atus_analysis_cache_entries 1",
         ]
         lines = set(text.splitlines())
         for line in expected:
             assert line in lines, line
+
+    def test_snapshot_pinning_and_stale_serves(self, build):
+        client, _ = build(ops_token=OPS_TOKEN, expected_data_version="0325:run1",
+                          api_snapshot_ttl_s=0.0)
+        client.get("/api/v1/meta")
+        lines = set(self.scrape(client).splitlines())
+        assert "atus_snapshot_pinned 1" in lines
+
+        fake_db = FakeDatabase()
+        client, _ = build(ops_token=OPS_TOKEN, api_snapshot_ttl_s=0.0, fake_db=fake_db)
+        client.get("/api/v1/meta")
+        fake_db.snapshot_error = RuntimeError("database down")
+        client.get("/api/v1/meta")
+        lines = set(self.scrape(client).splitlines())
+        assert "atus_snapshot_stale_serves_total 1" in lines
+        assert "atus_snapshot_refresh_failures_total 1" in lines
 
     def test_counter_and_histogram_rendering(self):
         counter = Counter("c_total", "help", ("a",))

@@ -106,13 +106,15 @@ class FakeDatabase:
     ``read_snapshot`` (one "metadata" transaction) returns
     :func:`fake_snapshot` for ``data_version``, or for the version the
     connection reports when ``data_version`` is None; ``snapshot_overrides``
-    change its other fields."""
+    change its other fields. Setting ``snapshot_error`` makes the read fail
+    with it (a database outage)."""
 
     def __init__(self, connection_factory=FakeVersionConnection, data_version: str | None = None,
                  **snapshot_overrides):
         self.connection_factory = connection_factory
         self.data_version = data_version  # None: ask the connection
         self.snapshot_overrides = snapshot_overrides
+        self.snapshot_error: BaseException | None = None
         self.transactions: list[str] = []
 
     @contextmanager
@@ -129,6 +131,9 @@ class FakeDatabase:
             return versions.read_data_version(conn)
 
     def read_snapshot(self) -> DataSnapshot:
+        if self.snapshot_error is not None:
+            self.transactions.append("metadata")
+            raise self.snapshot_error
         if self.data_version is not None:
             with self.transaction("metadata"):
                 version = self.data_version
