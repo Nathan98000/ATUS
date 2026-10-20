@@ -55,7 +55,7 @@ import {
 import { capacityUnavailable, handleBudget } from './ops'
 import { buildUpstreamHeaders, relayResponse, upstreamUnavailable } from './proxy'
 import { isApiPath, matchRoute, upstreamPathFor, type Route } from './routes'
-import { fetchOrigin, originUrl } from './upstream'
+import { fetchOrigin, originBreaker, originUrl } from './upstream'
 import { handleWake } from './wake'
 
 export { Governor } from './governor'
@@ -203,6 +203,13 @@ async function dispatch(
   // Only uncached analyses reach Render and Neon: the governor admits them.
   let leaseId: string | null = null
   if (route.analysis && body !== undefined) {
+    // While the breaker skips the origin, an admission could only be refunded:
+    // answer now and spend no governor call.
+    const openMs = originBreaker.remainingOpenMs(Date.now())
+    if (openMs > 0) {
+      log.outcome = 'circuit_open'
+      return upstreamUnavailable(requestId, 503, openMs / 1000)
+    }
     if (!env.IP_HMAC_KEY) {
       // Without the key no client can be charged (wrangler normally refuses such a deploy).
       log.governor = 'unavailable'

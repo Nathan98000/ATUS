@@ -3,17 +3,20 @@
 import { describe, expect, it } from 'vitest'
 import {
   DAY_MS,
+  addCharged,
+  chargeWindow,
   cuSeconds,
   dbStart,
   elapsedShare,
-  extendWindow,
+  mergeIntervals,
   nextUtcMidnight,
   pacingAllowance,
   pacingResumesAt,
   provisionalInterval,
   secondsUntil,
-  unionLengthAfter,
+  uncoveredLength,
   utcDay,
+  type Interval,
 } from '../../src/budget'
 import { DAILY_CU_HOURS_CONSERVATIVE } from '../../src/constants'
 
@@ -46,51 +49,99 @@ describe('compute charge model', () => {
     expect(provisionalInterval(T)).toEqual([T, T + 390 * S])
   })
 
-  it('measures the union of overlapping and disjoint intervals', () => {
-    expect(unionLengthAfter([], 0)).toBe(0)
+  it('merges overlapping and touching intervals, drops empty ones', () => {
     expect(
-      unionLengthAfter(
+      mergeIntervals([
+        [T + 30 * S, T + 40 * S],
+        [T, T + 10 * S],
+        [T + 5 * S, T + 20 * S],
+        [T + 40 * S, T + 45 * S],
+        [T + 50 * S, T + 50 * S],
+      ]),
+    ).toEqual([
+      [T, T + 20 * S],
+      [T + 30 * S, T + 45 * S],
+    ])
+  })
+
+  it('measures the union of overlapping and disjoint intervals', () => {
+    expect(uncoveredLength([], [])).toBe(0)
+    expect(
+      uncoveredLength(
         [
           [T, T + 10 * S],
           [T + 5 * S, T + 20 * S],
           [T + 30 * S, T + 40 * S],
         ],
-        0,
+        [],
       ),
     ).toBe(30 * S)
   })
 
-  it('counts only time after the already-charged window', () => {
-    const intervals: [number, number][] = [[T, T + 390 * S]]
-    expect(unionLengthAfter(intervals, T + 100 * S)).toBe(290 * S)
-    expect(unionLengthAfter(intervals, T + 400 * S)).toBe(0)
+  it('counts only time outside the already-charged windows', () => {
+    const intervals: Interval[] = [[T, T + 390 * S]]
+    expect(uncoveredLength(intervals, [[T, T + 100 * S]])).toBe(290 * S)
+    expect(uncoveredLength(intervals, [[T - 10 * S, T + 400 * S]])).toBe(0)
+    // A charged window inside the interval, and one that began after it started.
+    expect(uncoveredLength(intervals, [[T + 100 * S, T + 200 * S]])).toBe(290 * S)
+    expect(
+      uncoveredLength(intervals, [
+        [T + 50 * S, T + 60 * S],
+        [T + 380 * S, T + 500 * S],
+      ]),
+    ).toBe(370 * S)
   })
 
   it('makes concurrent analyses cost one window, not one each', () => {
     const ten = Array.from({ length: 10 }, (_, i) => provisionalInterval(T + i * S))
-    expect(unionLengthAfter(ten, 0)).toBe(399 * S)
+    expect(uncoveredLength(ten, [])).toBe(399 * S)
   })
 
   it('opens a new session at 2 CU x (DB time + 300 s tail)', () => {
-    const { chargedUntil, addedMs } = extendWindow(0, T, T + 4 * S)
+    const { charged, addedMs } = chargeWindow([], T, T + 4 * S, 0)
     expect(addedMs).toBe(304 * S)
     expect(cuSeconds(addedMs)).toBe(608)
-    expect(chargedUntil).toBe(T + 304 * S)
+    expect(charged).toEqual([[T, T + 304 * S]])
   })
 
   it('charges an analysis inside the window only for the tail it adds', () => {
-    const first = extendWindow(0, T, T + 4 * S)
-    const second = extendWindow(first.chargedUntil, T + 60 * S, T + 62 * S)
+    const first = chargeWindow([], T, T + 4 * S, 0)
+    const second = chargeWindow(first.charged, T + 60 * S, T + 62 * S, 0)
     expect(second.addedMs).toBe(58 * S)
-    expect(second.chargedUntil).toBe(T + 362 * S)
+    expect(second.charged).toEqual([[T, T + 362 * S]])
     // Entirely inside the window (it ended before the window's last DB work): nothing.
-    expect(extendWindow(second.chargedUntil, T + 1 * S, T + 2 * S).addedMs).toBe(0)
+    expect(chargeWindow(second.charged, T + 1 * S, T + 2 * S, 0).addedMs).toBe(0)
   })
 
   it('starts a fresh session after the compute has suspended', () => {
-    const first = extendWindow(0, T, T + 4 * S)
-    const later = extendWindow(first.chargedUntil, T + 20 * MIN, T + 20 * MIN + S)
+    const first = chargeWindow([], T, T + 4 * S, 0)
+    const later = chargeWindow(first.charged, T + 20 * MIN, T + 20 * MIN + S, 0)
     expect(later.addedMs).toBe(301 * S)
+    expect(later.charged).toHaveLength(2)
+  })
+
+  it('charges the part before the window when an earlier-started analysis settles last', () => {
+    // Settled first: DB time [T + 10 s, T + 12 s]. Then one whose DB time began at T.
+    const short = chargeWindow([], T + 10 * S, T + 12 * S, 0)
+    const long = chargeWindow(short.charged, T, T + 50 * S, 0)
+    expect(short.addedMs + long.addedMs).toBe(350 * S)
+    expect(long.charged).toEqual([[T, T + 350 * S]])
+  })
+
+  it('charges only the gap when a window spans two charged ones', () => {
+    const charged: Interval[] = [
+      [T, T + 302 * S],
+      [T + 400 * S, T + 702 * S],
+    ]
+    const spanning = chargeWindow(charged, T, T + 402 * S, 0)
+    expect(spanning.addedMs).toBe(98 * S)
+    expect(spanning.charged).toEqual([[T, T + 702 * S]])
+  })
+
+  it('forgets charged windows that ended before the horizon (only ever an over-charge)', () => {
+    const old: Interval = [T - 30 * MIN, T - 25 * MIN]
+    expect(addCharged([old], [T, T + 300 * S], T - 10 * MIN)).toEqual([[T, T + 300 * S]])
+    expect(addCharged([old], [T, T + 300 * S], T - 26 * MIN)).toEqual([old, [T, T + 300 * S]])
   })
 
   it('starts the DB time at Server-Timing db before the end (less a margin), never before admission', () => {

@@ -8,8 +8,9 @@
  * last query. The governor assumes the worst autoscaler behaviour: the
  * compute sits at its maximum (2 CU) for that whole time. An analysis whose
  * DB work spans [s, e] keeps the compute up over [s, e + 300 s], so the
- * month's charge is 2 CU x the length of the union of those intervals. An
- * analysis inside an already-charged window costs only the extension it adds.
+ * month's charge is 2 CU x the length of the union of those intervals. The
+ * governor keeps the windows it has already charged, so an analysis costs
+ * only the time it adds outside them, in whatever order analyses settle.
  */
 
 import {
@@ -47,26 +48,34 @@ export function provisionalInterval(admittedAt: number): Interval {
   return [admittedAt, admittedAt + PROVISIONAL_BUSY_MS + NEON_IDLE_TAIL_MS]
 }
 
-/**
- * Length in ms of the union of `intervals`, counting only time after
- * `chargedUntil` (the end of the window already charged by settled analyses).
- */
-export function unionLengthAfter(intervals: readonly Interval[], chargedUntil: number): number {
-  const clipped = intervals
-    .map(([start, end]): Interval => [Math.max(start, chargedUntil), end])
-    .filter(([start, end]) => end > start)
-    .sort((a, b) => a[0] - b[0])
-  let total = 0
-  let current: [number, number] | null = null
-  for (const [start, end] of clipped) {
-    if (current !== null && start <= current[1]) {
-      current[1] = Math.max(current[1], end)
-      continue
-    }
-    if (current !== null) total += current[1] - current[0]
-    current = [start, end]
+/** `intervals` as sorted, disjoint intervals: overlapping or touching ones merged, empty ones dropped. */
+export function mergeIntervals(intervals: readonly Interval[]): Interval[] {
+  const sorted = intervals.filter(([start, end]) => end > start).sort((a, b) => a[0] - b[0])
+  const merged: [number, number][] = []
+  for (const [start, end] of sorted) {
+    const last = merged[merged.length - 1]
+    if (last !== undefined && start <= last[1]) last[1] = Math.max(last[1], end)
+    else merged.push([start, end])
   }
-  if (current !== null) total += current[1] - current[0]
+  return merged
+}
+
+/**
+ * Length in ms of the union of `intervals`, counting only time outside
+ * `charged` (the windows settled analyses have already charged).
+ */
+export function uncoveredLength(
+  intervals: readonly Interval[],
+  charged: readonly Interval[],
+): number {
+  const covered = mergeIntervals(charged)
+  let total = 0
+  for (const [start, end] of mergeIntervals(intervals)) {
+    total += end - start
+    for (const [from, to] of covered) {
+      total -= Math.max(0, Math.min(end, to) - Math.max(start, from))
+    }
+  }
   return total
 }
 
@@ -83,18 +92,35 @@ export function dbStart(admittedAt: number, settledAt: number, dbMs: number | nu
 }
 
 /**
- * Settle one analysis into the charged window. Returns the new window end
- * and the milliseconds of compute time it adds: the part of
- * [start, end + tail] beyond the window already charged.
+ * The charged windows with `window` added, merged, keeping only those that
+ * end after `keepAfter`. Nothing charged later can reach back before the
+ * admission of the oldest live lease, so the caller passes that horizon;
+ * dropping a window too early could only over-charge.
  */
-export function extendWindow(
-  chargedUntil: number,
+export function addCharged(
+  charged: readonly Interval[],
+  window: Interval,
+  keepAfter: number,
+): Interval[] {
+  return mergeIntervals([...charged, window]).filter(([, end]) => end > keepAfter)
+}
+
+/**
+ * Settle one analysis whose DB work spans [start, end]: the compute is up
+ * over [start, end + tail]. Returns the milliseconds of that window not
+ * charged yet, and the charged windows with it added (see `addCharged`).
+ */
+export function chargeWindow(
+  charged: readonly Interval[],
   start: number,
   end: number,
-): { chargedUntil: number; addedMs: number } {
-  const until = end + NEON_IDLE_TAIL_MS
-  const addedMs = Math.max(0, until - Math.max(start, chargedUntil))
-  return { chargedUntil: Math.max(chargedUntil, until), addedMs }
+  keepAfter: number,
+): { charged: Interval[]; addedMs: number } {
+  const window: Interval = [start, end + NEON_IDLE_TAIL_MS]
+  return {
+    addedMs: uncoveredLength([window], charged),
+    charged: addCharged(charged, window, keepAfter),
+  }
 }
 
 /** Share of the consumption period elapsed at `now`, in [0, 1]. */

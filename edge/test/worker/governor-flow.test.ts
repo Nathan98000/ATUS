@@ -163,6 +163,36 @@ describe('denials (no origin call)', () => {
     expect((await callWorker(...post('198.51.100.1'))).status).toBe(200)
   })
 
+  it('bounds admissions the API sheds (refunded), so one network cannot spend the governor', async () => {
+    controlClock(T)
+    // Past its own per-client rate, the API sheds every analysis with 429
+    // rate_limited; each is refunded, so the 60-analysis budget never trips.
+    const shed = JSON.stringify({
+      error: { code: 'rate_limited', message: 'x', details: null },
+    })
+    const calls = mockOrigin(() => apiJson(shed, 429, { 'retry-after': '10' }))
+    for (let i = 0; i < 300; i += 1) {
+      const response = await callWorker(...post('203.0.113.7', `{"years":[2024],"n":${i}}`))
+      expect(response.status).toBe(429)
+    }
+    expect(calls).toHaveLength(300)
+    const budget = await report()
+    expect(budget.analyses).toMatchObject({ admitted: 0, refunded: 300 })
+    expect(budget.prefixes).toMatchObject({ max_admitted: 0, max_attempts: 300 })
+    // The 301st is refused at the edge, until midnight, without an origin call.
+    const refused = await callWorker(...post('203.0.113.8', '{"years":[2024],"n":300}'))
+    expect(calls).toHaveLength(300)
+    expect(refused.status).toBe(429)
+    expect(refused.headers.get('retry-after')).toBe(String((MIDNIGHT - T) / 1000))
+    expect((await readEnvelope(refused)).details).toMatchObject({
+      scope: 'client',
+      budget: 'prefix',
+    })
+    // Another network is unaffected.
+    mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    expect((await callWorker(...post('198.51.100.1'))).status).toBe(200)
+  })
+
   it('answers 503 daily_capacity_reached when the global daily budget is spent', async () => {
     controlClock(T)
     await governorSql('INSERT INTO days (day, admitted) VALUES (?, 600)', utcDay(T))
@@ -299,6 +329,42 @@ describe('settling each origin outcome', () => {
         }),
     )
     expect(outcome).toEqual({ status: 503, admitted: 0, refunded: 1, prefix: 0 })
+  })
+
+  it.each([520, 521, 522, 523, 525, 526, 530])(
+    'refunds everything after a Cloudflare %i (the API never took the request)',
+    async (status) => {
+      const outcome = await settledAfter(
+        () => new Response('<html>', { status, headers: { 'content-type': 'text/html' } }),
+      )
+      expect(outcome).toEqual({ status: 502, admitted: 0, refunded: 1, prefix: 0 })
+      expect((await report()).compute_today.settled_cu_hours).toBe(0)
+    },
+  )
+
+  it('keeps the charge after a Cloudflare 524 (the API took the request and kept computing)', async () => {
+    const outcome = await settledAfter(
+      () => new Response('<html>', { status: 524, headers: { 'content-type': 'text/html' } }),
+    )
+    expect(outcome).toEqual({ status: 502, admitted: 1, refunded: 0, prefix: 1 })
+    // No Server-Timing: charged from admission, plus the 300 s tail, at 2 CU.
+    expect((await report()).compute_today.settled_cu_hours).toBeCloseTo(600 / 3600, 4)
+  })
+
+  it('does not call the governor while the circuit breaker skips the origin', async () => {
+    controlClock(T)
+    const calls = mockOrigin(() => {
+      throw new TypeError('Network connection lost.')
+    })
+    // Two connection failures open the breaker.
+    expect((await callWorker('/api/v1/meta')).status).toBe(502)
+    const response = await callWorker(...post())
+    expect(calls).toHaveLength(2)
+    expect(response.status).toBe(503)
+    expect(response.headers.get('retry-after')).toBe('30')
+    expect((await readEnvelope(response)).code).toBe('upstream_unavailable')
+    expect((await report()).analyses).toMatchObject({ admitted: 0, refunded: 0, in_flight: 0 })
+    expect(await governorSql('SELECT prefix FROM prefixes')).toEqual([])
   })
 
   it('refunds everything after a connection failure', async () => {

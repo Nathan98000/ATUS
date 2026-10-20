@@ -93,7 +93,7 @@ One SQLite-backed Durable Object named `global`. The Worker calls it only for an
 
 | # | Budget | Limit | Denial | `details.scope` | `Retry-After` / `resumes_at` |
 |---|---|---|---|---|---|
-| 1 | per client network | 60 uncached analyses per UTC day | 429 `rate_limited` | `client` | next 00:00 UTC |
+| 1 | per client network | 60 uncached analyses per UTC day, and 300 admissions including refunded ones | 429 `rate_limited` | `client` | next 00:00 UTC |
 | 2 | global | 600 per UTC day | 503 `daily_capacity_reached` | `global` | next 00:00 UTC |
 | 3 | heavy | 300 heavy per UTC day | 503 `daily_capacity_reached` | `daily` | next 00:00 UTC |
 | 4 | Neon compute today (charged by the model below) | 10 CU-h with fresh ground truth, else (100 × 0.9) / 31 = 2.903 CU-h | 503 `daily_capacity_reached` | `daily` | next 00:00 UTC |
@@ -102,23 +102,27 @@ One SQLite-backed Durable Object named `global`. The Worker calls it only for an
 
 Every denial also carries `details.budget` (`prefix`, `global`, `heavy`, `cu_day`, `egress`, `cu_month`) and `details.retry_after_seconds`. Checks 4–6 include the candidate's own provisional charge, so a budget is never overshot by the request that crosses it.
 
+The second limit in row 1 exists because refunds (below) give the 60 back: without it, one network whose analyses the API sheds (its own per-client rate limit answers 429 after 6 a minute) or that arrive while Render wakes could be admitted without bound, and every admission plus its settle writes up to 12 governor rows (Workers Free allows 100,000 a day). 300 is about ten cold starts' worth of SPA retries (150 s at `Retry-After: 5`, ~30 attempts each).
+
 **Compute charge model** (the conservative bridge of ADR-011; `budget.ts`). The compute is assumed to run at its maximum, 2 CU, from the moment DB work starts until 300 s after it ends. The charge is 2 CU × the length of the union of those windows:
 
-- **Provisional, at admission:** each in-flight analysis is assumed to occupy `[admitted, admitted + 90 s + 300 s]` (90 s is the API's deadline), 780 CU-s for a fresh session. Only the part of the union beyond the already-charged window counts, so concurrent admissions share one window instead of costing a session each.
-- **At settle:** the DB work is taken to span `[max(admitted, end − db − 5 s), end]`, where `db` is the API's `Server-Timing: db;dur=` and 5 s covers the connect and a Neon wake. Without `Server-Timing` it starts at admission, which also charges a Render spin-up: an over-charge, never an under-charge. The charge is the extension of `[start, end + 300 s]` beyond the charged window, at 2 CU.
+- **Provisional, at admission:** each in-flight analysis is assumed to occupy `[admitted, admitted + 90 s + 300 s]` (90 s is the API's deadline), 780 CU-s for a fresh session. Only the part of the union outside the windows already charged counts, so concurrent admissions share one window instead of costing a session each.
+- **At settle:** the DB work is taken to span `[max(admitted, end − db − 5 s), end]`, where `db` is the API's `Server-Timing: db;dur=` and 5 s covers the connect and a Neon wake. Without `Server-Timing` it starts at admission, which also charges a Render spin-up: an over-charge, never an under-charge. The charge is the part of `[start, end + 300 s]` not charged yet, at 2 CU. The governor keeps the charged windows themselves (merged, back to the oldest time a live lease can reach, 10 minutes), not just the end of the last one, so analyses that settle out of order (a long one that started first and finished last) are charged their whole union.
 - **Never settled** (the Worker invocation died): after 10 minutes the lease is charged in full (780 CU-s) and its counts are kept.
 
 **Settling and refunds.** The Worker reports how the origin call ended:
 
 | Outcome | Examples | Day and heavy counts | Network count | Compute and egress |
 |---|---|---|---|---|
-| `not_reached` | Render waking, platform error page, connection failure, open breaker | refunded | refunded | not charged |
+| `not_reached` | Render waking, platform error page other than a 524, connection failure | refunded | refunded | not charged |
 | `shed` | API `overloaded`, `rate_limited`, `daily_capacity_reached` | refunded | refunded | charged unless `db;dur=0` |
 | `rejected` | API 400, 413, 415, 422 | refunded | kept (bounds invalid-request floods) | charged unless `db;dur=0` |
 | `reused` | 2xx with `X-Cache: hit` or `join` | refunded | kept | charged unless `db;dur=0` |
-| `computed` | 2xx `miss`/`bypass`, `analysis_timeout`, DB errors | kept | kept | charged |
+| `computed` | 2xx `miss`/`bypass`, `analysis_timeout`, DB errors, a Cloudflare 524 | kept | kept | charged |
 
-Refunding waking and shed outcomes matters because the SPA retries during a cold start for up to 150 s.
+Refunding waking and shed outcomes matters because the SPA retries during a cold start for up to 150 s. A 524 from Render's Cloudflare zone is charged: the origin took the request and kept it past the proxy read timeout, and the API runs an admitted analysis to the end even when its client is gone. While the per-isolate circuit breaker skips the origin, analyses get 503 `upstream_unavailable` before any governor call.
+
+The network count (the 60) is refunded for `not_reached` and `shed`, but every admission still counts toward the network's 300 admissions a day.
 
 **Ground truth (optional).** With the `NEON_API_KEY` secret (a project-scoped key) and the `NEON_PROJECT_ID` var, an alarm reads `GET https://console.neon.tech/api/v2/projects/{id}` (`compute_time_seconds` / 3600 = CU-h month to date, `data_transfer_bytes`, `consumption_period_start` and `_end`). It polls at most every 5 minutes and only while analyses arrived in the last 5 minutes, so the compute is awake anyway. Between polls, usage is bridged with the same conservative charges, counted from the *previous* successful poll (Neon's figures lag), plus the in-flight provisional window. Ground truth earns the 10 CU-h daily ceiling while it is at most 24 h old; the monthly checks apply whenever ground truth for the current period exists. A failed poll keeps the last ground truth and records only a status or error name (`http_401`, `TimeoutError`); the key goes only into the `Authorization` header.
 
@@ -149,7 +153,7 @@ Durable Objects on Workers Free (SQLite backend only; cited terms below). Row co
 | Quantity | Free limit per day | Use | Bound |
 |---|---|---|---|
 | requests (incl. alarm invocations) | 100,000 | 2 per admitted analysis (admit, settle), 1 per denial, ≤ 1 midnight alarm, ≤ 288 polls only while traffic is active (with a Neon key), ops reads. PROJECTION ~95/day typical | ≤ analysis POSTs that miss KV + ~900. It can pass 100,000 only on a day the Worker's own 100,000 requests are spent, when `/api` is down anyway |
-| rows written | 100,000; each `setAlarm` is one row; deletes count | admission ≤ 8, settle ≤ 4, denial 0 (measured); plus the midnight purge and ≤ 2 per poll | ≤ ~10,000 at the 600 cap (≤ 10%) |
+| rows written | 100,000; each `setAlarm` is one row; deletes count | admission ≤ 8, settle ≤ 4, denial 0 (measured); plus the midnight purge and ≤ 2 per poll | ≤ ~10,000 at the 600 cap (≤ 10%). Refunded admissions do not count toward the 600; one network can make at most 300 a day (≤ 3,600 rows). About 28 networks doing so at once could spend the day's 100,000 (see "What this does not protect against") |
 | rows read | 5,000,000 | denial ≤ 2 (measured); admission ≤ ~15 plus the in-flight leases | ≤ ~1.5M even if all 100,000 Worker requests were uncached analyses |
 | duration | 13,000 GB-s | active only while handling calls | 0.125 GB × 86,400 s = 10,800 GB-s even if never idle |
 | storage | 5 GB per account | 40 day rows, ≤ one row per active prefix, in-flight leases, one state row | < 1 MB |
@@ -200,7 +204,7 @@ A JSON round trip is lossy (`1e400` becomes `null`, and `1.0` becomes `1`), so t
 ## What this does not protect against
 
 - **The Worker's account-wide 100,000 requests per day.** Replaying KV hits (5 req/s for ~5.6 h) spends them without touching the governor; `/api` is then down until 00:00 UTC. Only static files survive. On `workers.dev` at $0 nothing can rate-limit before the Worker runs.
-- **Distributed abuse within the global caps.** Many networks can use up the day's 600 uncached analyses (or the compute ceiling); real visitors then get `daily_capacity_reached` until 00:00 UTC.
+- **Distributed abuse within the global caps.** Many networks can use up the day's 600 uncached analyses (or the compute ceiling); real visitors then get `daily_capacity_reached` until 00:00 UTC. About 28 networks, each making its 300 admissions a day that end refunded (requests the API sheds, or sent while Render wakes), could also spend the governor's 100,000 rows written; the governor then fails closed (`capacity_unavailable`) until 00:00 UTC.
 - **Shared networks.** Everyone behind one IPv4 `/24` (a campus, a carrier NAT) shares 60 analyses a day; an attacker with many `/48`s gets 60 each.
 - **Direct-origin traffic.** Requests to the onrender.com host bypass the Worker; ADR-012's layer in the API answers them (403 without the edge secret).
 - **Model error.** The charge model is an upper bound only while the compute's maximum is at most `NEON_MAX_CU` (2 CU, a constant in `edge/src/constants.ts`) and every DB-touching request goes through the governor. Neon's availability-check wakes are not counted (ground truth catches them). Egress between polls uses estimates (32 KiB light, 256 KiB heavy per analysis) that are not measured.

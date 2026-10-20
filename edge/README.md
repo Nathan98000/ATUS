@@ -21,10 +21,11 @@ One `workers.dev` origin serves the SPA build (`../frontend/dist`) as static ass
   release (`X-Cache: edge`; key `r1/<CACHE_SCOPE>/<k>`, `src/cache.ts`), and stores new 200 results
   that pass the store gate (≤ 16 KiB, 30-day TTL);
 - admits every other analysis through the quota governor, a SQLite Durable Object (`src/governor.ts`):
-  60 per client /24 or /48 per UTC day (429 `rate_limited`), 600 per day and 300 heavy per day
-  (503 `daily_capacity_reached`), a daily Neon CU-hour ceiling and, with the optional Neon key, monthly
-  pacing and an egress stop (503 `capacity_paused`). If the governor cannot be reached, uncached
-  analyses get 503 `capacity_unavailable`; everything else keeps working;
+  60 per client /24 or /48 per UTC day, and 300 admissions including refunded ones (429
+  `rate_limited`), 600 per day and 300 heavy per day (503 `daily_capacity_reached`), a daily Neon
+  CU-hour ceiling and, with the optional Neon key, monthly pacing and an egress stop (503
+  `capacity_paused`). If the governor cannot be reached, uncached analyses get 503
+  `capacity_unavailable`; everything else keeps working;
 - answers `GET /api/_ops/budget` with the governor's budget state for `Authorization: Bearer <OPS_TOKEN>`
   (404 for anything else).
 

@@ -212,6 +212,32 @@ describe('daily counts', () => {
     expect(await day()).toMatchObject({ admitted: 61 })
   })
 
+  it('refuses a prefix after 300 admissions in a day, refunded ones included', async () => {
+    controlClock(T)
+    for (let i = 0; i < 300; i += 1) await settle(await admitted(), 'not_reached')
+    expect(await prefixCount()).toBe(0)
+    expect(await day()).toMatchObject({ admitted: 0, refunded: 300 })
+    const usage = await rowsDuring(async () => {
+      expect(await denied()).toMatchObject({
+        code: 'rate_limited',
+        scope: 'client',
+        budget: 'prefix',
+        resumesAt: new Date(MIDNIGHT).toISOString(),
+      })
+    })
+    expect(usage.written).toBe(0)
+    await admitted(OTHER)
+    const budget = await governor().budget()
+    expect(budget.prefixes).toEqual({
+      active: 2,
+      max_admitted: 1,
+      limit: 60,
+      max_attempts: 300,
+      attempts_limit: 300,
+    })
+    expect(budget.utilization.prefix).toBe(1)
+  })
+
   it('refuses the 601st analysis of the UTC day for everyone (scope global)', async () => {
     controlClock(T)
     await governorSql('INSERT INTO days (day, admitted) VALUES (?, 600)', TODAY)
@@ -327,6 +353,40 @@ describe('compute charge (conservative mode)', () => {
     await settle(second, 'computed', 1000)
     // 608 + 2 x 58 s of extra tail.
     expect((await day()).cu_s).toBe(608 + 116)
+  })
+
+  it('charges the whole union when an analysis that started earlier settles last', async () => {
+    const clock = controlClock(T)
+    const long = await admitted()
+    clock.advance(10 * S)
+    const short = await admitted(OTHER)
+    clock.advance(2 * S)
+    // DB time [T + 10 s, T + 12 s]: the compute is up over [T + 10 s, T + 312 s].
+    await settle(short, 'computed', 1000)
+    clock.advance(38 * S)
+    // DB time [T, T + 50 s]: up over [T, T + 350 s], which begins before the
+    // window already charged. The union is [T, T + 350 s]: 2 CU x 350 s.
+    await settle(long, 'computed', 50_000)
+    expect((await day()).cu_s).toBe(700)
+  })
+
+  it('charges a gap between two charged windows once, and nothing already charged', async () => {
+    const clock = controlClock(T)
+    const first = await admitted()
+    const spanning = await admitted(OTHER)
+    clock.advance(2 * S)
+    // [T, T + 302 s]
+    await settle(first, 'computed', 1000)
+    clock.advance(398 * S)
+    const second = await admitted()
+    clock.advance(2 * S)
+    // [T + 400 s, T + 702 s]
+    await settle(second, 'computed', 1000)
+    expect((await day()).cu_s).toBe(2 * (302 + 302))
+    // DB time [T, T + 402 s] covers both windows and the 98 s gap between
+    // them; the compute is up over [T, T + 702 s], so only the gap is new.
+    await settle(spanning, 'computed', 402_000 - 5000)
+    expect((await day()).cu_s).toBe(2 * 702)
   })
 
   it('charges nothing when the API reported db;dur=0', async () => {

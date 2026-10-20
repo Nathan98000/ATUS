@@ -192,6 +192,26 @@ describe('settleReportFor', () => {
     ).toBe('not_reached')
   })
 
+  it.each([520, 521, 522, 523, 525, 526, 527, 530])(
+    'reports a Cloudflare %i page as not reached',
+    (status) => {
+      const page = new Response('<html>', { status, headers: { 'content-type': 'text/html' } })
+      expect(
+        settleReportFor(page, { response: new Response(null), outcome: 'unavailable' }),
+      ).toEqual({ kind: 'not_reached', dbMs: null })
+    },
+  )
+
+  it('reports a Cloudflare 524 as computed: the API took the analysis and kept running it', () => {
+    const page = new Response('<html>', {
+      status: 524,
+      headers: { 'content-type': 'text/html' },
+    })
+    expect(
+      settleReportFor(page, { response: new Response(null), outcome: 'unavailable' }),
+    ).toEqual({ kind: 'computed', dbMs: null })
+  })
+
   it('reports an API 2xx whose body broke mid-stream as computed', () => {
     const upstream = json(200, { 'x-cache': 'miss' })
     expect(

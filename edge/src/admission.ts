@@ -36,6 +36,14 @@ const SHED_CODES = new Set(['overloaded', 'rate_limited', 'daily_capacity_reache
 /** Origin `X-Cache` values for which the API did not compute this request itself. */
 const REUSED_ORIGIN_CACHE = new Set(['hit', 'join'])
 
+/**
+ * Cloudflare's 524 from Render's zone: the origin took the request but sent
+ * no response within the proxy read timeout. Unlike the other 52x pages, the
+ * API did receive the analysis, and it runs an admitted analysis to the end
+ * even when the client is gone (ADR-011), so the DB was busy: it is charged.
+ */
+const ORIGIN_TIMEOUT_STATUS = 524
+
 export type Admission =
   | { kind: 'admitted'; leaseId: string }
   | { kind: 'denied'; denial: Denied }
@@ -216,15 +224,18 @@ export const NOT_REACHED: SettleReport = { kind: 'not_reached', dbMs: null }
 
 /**
  * Classify an origin response for `settle` (see `SettleKind`). A relayed
- * platform page means the API never answered; a 2xx JSON whose body broke
- * mid-stream did come from the API, which computed it.
+ * platform page means the API never took the request, except a 524 (the
+ * API was still computing); a 2xx JSON whose body broke mid-stream did come
+ * from the API, which computed it.
  */
 export function settleReportFor(upstream: Response, relayed: Relayed): SettleReport {
   const { status, headers } = upstream
   const dbMs = serverTimingDbMs(headers.get('server-timing'))
   const apiSuccess =
     status >= 200 && status < 300 && isJsonContentType(headers.get('content-type'))
-  if (relayed.outcome !== 'pass' && !apiSuccess) return NOT_REACHED
+  if (relayed.outcome !== 'pass' && !apiSuccess) {
+    return status === ORIGIN_TIMEOUT_STATUS ? { kind: 'computed', dbMs: null } : NOT_REACHED
+  }
   let kind: SettleKind
   if (status === 304 || (apiSuccess && REUSED_ORIGIN_CACHE.has(headers.get('x-cache') ?? ''))) {
     kind = 'reused'

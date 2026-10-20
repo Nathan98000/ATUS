@@ -52,6 +52,16 @@ export const GLOBAL_DAILY_ANALYSES = 600
 /** Uncached analyses admitted per UTC day per client IP prefix (/24 or /48). */
 export const PREFIX_DAILY_ANALYSES = 60
 
+/**
+ * Admissions per UTC day per client IP prefix, refunded or not. Analyses the
+ * API never computed (Render waking, the API shedding) are refunded, so they
+ * do not count toward the 60; but each admission and its settle write up to
+ * 12 governor rows, and Workers Free allows 100,000 a day. This caps one
+ * network at 300 x 12 = 3,600 rows. The SPA retries a waking analysis at most
+ * ~30 times (150 s at `Retry-After: 5`).
+ */
+export const PREFIX_DAILY_ADMISSIONS = 300
+
 /** Heavy uncached analyses admitted per UTC day. */
 export const HEAVY_DAILY_ANALYSES = 300
 
