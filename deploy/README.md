@@ -1,8 +1,9 @@
 # deploy/
 
-Support files for the local production stack (`docker-compose.prod.yml`) and
-its free-tier emulation (`docker-compose.emulation.yml`). The usage guide is
-in [docs/deployment.md](../docs/deployment.md#0-rehearse-the-whole-stack-locally).
+Support files for the local production stack (`docker-compose.prod.yml`), its
+free-tier emulation (`docker-compose.emulation.yml`) and the CI checks on the
+image and packaging files (`ci/`). The usage guide is in
+[docs/deployment.md](../docs/deployment.md#0-rehearse-the-whole-stack-locally).
 
 | Path | Used by | Purpose |
 |---|---|---|
@@ -15,6 +16,10 @@ in [docs/deployment.md](../docs/deployment.md#0-rehearse-the-whole-stack-locally
 | `pgbouncer/` | `pgbouncer` (emulation profile) | PgBouncer in transaction mode with Neon's pooler settings |
 | `edge/` | `edge` (profile) | the Worker under `wrangler dev`, local mode |
 | `emulation/neon_settings.py` | you, tests | Neon's compute settings for any CU range |
+| `ci/check_image.py` | CI image job, you | gate on the built image: numeric non-root user, no build tools, a `/health` check that never touches the database (proved against a logging Postgres) |
+| `ci/lint.sh` | CI, you | `docker build --check` on every Dockerfile, `docker compose config` on every compose set, shell syntax; hadolint/shellcheck when installed |
 
 Nothing here is used in production: Render runs the image, Neon is restored
-by the release scripts, and the Worker is deployed by CI.
+by the release scripts, and the Worker is deployed by CI. The two `ci/`
+scripts are what CI runs on the image and the packaging files before anything
+is pushed.

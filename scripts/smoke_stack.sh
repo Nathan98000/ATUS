@@ -26,7 +26,8 @@
 #   --emulation               add docker-compose.emulation.yml
 #   --no-build                use ATUS_STACK_IMAGE as is (e.g. a registry digest);
 #                             set ATUS_BUILD_SHA to the commit it was built from
-#   --skip-protection-checks  for API images that predate edge auth (see smoke_probe.py)
+#   --skip-protection-checks  for API images that predate the Phase 5 API contract
+#                             (edge auth, headers, limits; see smoke_probe.py)
 #   --keep                    leave the stack running (prints how to remove it)
 #   --python PATH             interpreter for --integration-via-pgbouncer
 #                             (default .venv/bin/python, then python3)

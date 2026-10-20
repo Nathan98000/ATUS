@@ -186,6 +186,15 @@ class TestProductionCompose:
         assert restore["environment"]["PGUSER"] == "neondb_owner"
         assert seed["depends_on"]["restore"]["required"] is False
 
+    def test_smoke_probe_gets_the_api_secrets_it_checks(self, config):
+        smoke = config["services"]["smoke"]
+        assert smoke["profiles"] == ["smoke"]
+        assert smoke["environment"] == {
+            "ATUS_SMOKE_EDGE_SECRET": DUMMY_STACK_ENV["ATUS_STACK_EDGE_SECRET"],
+            "ATUS_SMOKE_OPS_TOKEN": DUMMY_STACK_ENV["ATUS_STACK_OPS_TOKEN"],
+        }
+        assert _published(smoke) == [] and smoke["read_only"] is True
+
     def test_edge_is_defined_against_the_worker_contract(self, config):
         edge = config["services"]["edge"]
         assert edge["profiles"] == ["edge"]

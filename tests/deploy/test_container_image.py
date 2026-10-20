@@ -48,8 +48,9 @@ def run_python(image: str, code: str, *docker_args: str, unset: str | None = Non
 
 
 @pytest.fixture
-def unique() -> str:
-    return secrets.token_hex(4)
+def unique(docker_prefix) -> str:
+    """A container name stem unique to this test run."""
+    return f"{docker_prefix}-{secrets.token_hex(4)}"
 
 
 # --- contents -------------------------------------------------------------------
@@ -167,10 +168,10 @@ def tls_certificates(tmp_path_factory):
 
 
 @pytest.fixture(scope="module")
-def tls_postgres(docker_daemon, tls_certificates):
+def tls_postgres(docker_daemon, docker_prefix, tls_certificates):
     """A TLS-only Postgres reachable as `tlsdb` on a private network; yields (network, pw)."""
     suffix = secrets.token_hex(4)
-    network, name = f"atus-wsc-tls-{suffix}", f"atus-wsc-tlsdb-{suffix}"
+    network, name = f"{docker_prefix}-tls-{suffix}", f"{docker_prefix}-tlsdb-{suffix}"
     password = secrets.token_hex(16)
     docker("network", "create", network)
     try:
@@ -249,7 +250,7 @@ def test_ssl_cert_file_is_what_makes_system_roots_work(api_image, tls_postgres, 
 
 
 def test_health_answers_without_a_database(api_image, unique):
-    name = f"atus-wsc-health-{unique}"
+    name = f"{unique}-health"
     docker(
         "run", "-d", "--name", name, "-p", "127.0.0.1::10000",
         "-e", f"ATUS_DATABASE_URL={UNREACHABLE_DB}", "-e", "ATUS_EDGE_SECRETS=test-secret",
@@ -282,7 +283,7 @@ def test_health_answers_without_a_database(api_image, unique):
     strict=False,
 )
 def test_production_mode_refuses_to_start_without_its_settings(api_image, unique):
-    name = f"atus-wsc-refuse-{unique}"
+    name = f"{unique}-refuse"
     try:
         result = subprocess.run(
             ["docker", "run", "--rm", "--name", name, api_image],

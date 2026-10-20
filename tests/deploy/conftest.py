@@ -10,6 +10,9 @@ network access for the first build and a few minutes:
 
 ``ATUS_TEST_IMAGE=<ref>`` tests an existing image (for example the digest CI
 built) instead of building ``atus-api:test`` from this checkout.
+``ATUS_DOCKER_TEST_PREFIX`` (default ``atus-pytest``) starts the names of every
+container, network and compose project these tests create, so parallel runs
+on one machine can be kept apart (``atus-wsc`` while workstreams share it).
 """
 
 from __future__ import annotations
@@ -90,6 +93,12 @@ def compose_config(compose_cli):
         return json.loads(result.stdout)
 
     return _config
+
+
+@pytest.fixture(scope="session")
+def docker_prefix() -> str:
+    """Prefix for the names of the containers, networks and projects tests create."""
+    return os.environ.get("ATUS_DOCKER_TEST_PREFIX", "atus-pytest")
 
 
 @pytest.fixture(scope="session")

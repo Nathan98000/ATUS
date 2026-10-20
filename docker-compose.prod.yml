@@ -206,6 +206,8 @@ services:
         condition: service_healthy
     environment:
       ATUS_SMOKE_EDGE_SECRET: ${ATUS_STACK_EDGE_SECRET:?set it in the stack env file (deploy/stack/stack.env.example)}
+      # The API's ops bearer, so the probe can prove /ready and /metrics open with it.
+      ATUS_SMOKE_OPS_TOKEN: ${ATUS_STACK_OPS_TOKEN:?set it in the stack env file (deploy/stack/stack.env.example)}
     entrypoint: ["python", "/workspace/deploy/stack/smoke_probe.py"]
     command: []
     volumes:
