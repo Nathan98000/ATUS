@@ -5,8 +5,8 @@
  * failures (F26), retrying every failed query (F63), data-release changes
  * (F27), and prewake.
  */
-import { QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { QueryClientProvider, focusManager, onlineManager } from '@tanstack/react-query'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, delay, http } from 'msw'
 import { MemoryRouter } from 'react-router'
@@ -386,6 +386,31 @@ describe('data release changes (F27)', () => {
     renderApp(sleepRoute)
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
     expect(screen.queryByText(/different data release/)).not.toBeInTheDocument()
+  })
+})
+
+describe('no background metadata refetch (F62)', () => {
+  it('returning to the tab does not refetch metadata (a refetch could wake a sleeping host)', async () => {
+    await withFakeClock(async () => {
+      const requests = countRequests()
+      renderApp('/explore')
+      await screen.findByText('Build an analysis')
+      expect(requests('GET /api/v1/meta')).toBe(1)
+      // Before Phase 5, /meta went stale after 5 minutes and refetched on focus.
+      await vi.advanceTimersByTimeAsync(30 * 60_000)
+      act(() => {
+        focusManager.setFocused(false)
+        focusManager.setFocused(true)
+      })
+      act(() => {
+        onlineManager.setOnline(false)
+        onlineManager.setOnline(true)
+      })
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(requests('GET /api/v1/meta')).toBe(1)
+      expect(requests('GET /api/v1/population/metadata')).toBe(1)
+      focusManager.setFocused(undefined)
+    })
   })
 })
 

@@ -325,7 +325,7 @@ stateless. The URL encodes exactly that:
 ## Testing
 
 ```bash
-npm test          # 272 unit/component tests (Vitest + Testing Library + MSW)
+npm test          # 273 unit/component tests (Vitest + Testing Library + MSW)
 npm run test:e2e  # 29 Playwright tests (27 desktop + 2 mobile)
 ```
 
@@ -351,8 +351,9 @@ npm run test:e2e  # 29 Playwright tests (27 desktop + 2 mobile)
   themselves, "Preparing" instead of "Calculating", the incompatible API,
   paused quotas and the edge limit as single full pages, rate limits,
   one-retry transient 503s, timeouts, the data-release reload notice,
-  background refetch failures, "Try again" for every failed query, prewake,
-  and snapshot-served metadata.
+  no metadata refetch on focus or reconnect after 30 minutes, background
+  refetch failures, "Try again" for every failed query, prewake, and
+  snapshot-served metadata.
 - E2E (real API + fixture database via `scripts/e2e_backend.py`; every
   expected number hand-computable; production build served same-origin
   under the production CSP): the full first-time-user scenario, the

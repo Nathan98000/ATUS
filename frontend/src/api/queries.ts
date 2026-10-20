@@ -30,12 +30,15 @@ import {
 import type { MetaResponse, Operation, OperationContract } from './types'
 import { stableStringify } from '../utils/stableStringify'
 
-/** Metadata describes one deployed release: fetch it once per page. */
+/**
+ * Metadata describes one deployed release: fetch it once per page. Loaded
+ * data never goes stale, so nothing refetches it; only a query that failed
+ * is retried when the browser comes back online.
+ */
 const METADATA_QUERY = {
   staleTime: Infinity,
   retry: false,
   refetchOnWindowFocus: false,
-  refetchOnReconnect: false,
 } as const
 
 const META_QUERY_KEY = ['meta'] as const
