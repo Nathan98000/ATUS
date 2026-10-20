@@ -1,0 +1,217 @@
+"""Static checks on the packaging files: Dockerfiles, ignore files, config templates.
+
+F09 (image), F31 (.gitignore), F44/I13 (configuration), supply-chain pinning
+(brief §11). Read-only; needs neither Docker nor the network.
+"""
+
+from __future__ import annotations
+
+import re
+import shutil
+import subprocess
+
+import pytest
+
+from .conftest import REPO_ROOT
+
+DOCKERFILES = ["Dockerfile", "deploy/pgbouncer/Dockerfile", "deploy/edge/Dockerfile"]
+DIGEST_ARG = re.compile(r"^ARG \w+_DIGEST=sha256:[0-9a-f]{64}$", re.MULTILINE)
+
+# Every API variable in the implementation contract (CONTRACT.md "Configuration").
+CONTRACT_API_VARIABLES = [
+    "ATUS_ENV", "ATUS_DATABASE_URL", "ATUS_LOG_LEVEL", "ATUS_LOG_FORMAT", "ATUS_API_DOCS",
+    "ATUS_EDGE_SECRETS", "ATUS_EXPECTED_DATA_VERSION", "ATUS_OPS_TOKEN",
+    "ATUS_API_CORS_ORIGINS", "ATUS_API_CACHE_SIZE", "ATUS_API_POOL_MAX_SIZE",
+    "ATUS_API_POOL_MAX_IDLE_S", "ATUS_API_POOL_TIMEOUT_S", "ATUS_API_CONNECT_TIMEOUT_S",
+    "ATUS_API_STATEMENT_TIMEOUT_MS", "ATUS_API_META_STATEMENT_TIMEOUT_MS", "ATUS_API_JIT",
+    "ATUS_API_MAX_PARALLEL_WORKERS", "ATUS_API_MAX_INFLIGHT", "ATUS_API_MAX_INFLIGHT_HEAVY",
+    "ATUS_API_ADMISSION_WAIT_S", "ATUS_API_RATE_ANALYSIS", "ATUS_API_RATE_REQUESTS",
+    "ATUS_API_DAILY_ANALYSIS_CAP", "ATUS_API_MAX_BODY_BYTES", "ATUS_API_THREADS",
+    "ATUS_API_SNAPSHOT_TTL_S", "ATUS_BUILD_SHA", "PORT",
+]
+# ADR-011 / docs/deployment.md names for the other components.
+WORKER_SECRETS = ["EDGE_AUTH_SECRET", "OPS_TOKEN", "IP_HMAC_KEY", "RENDER_ORIGIN", "NEON_API_KEY"]
+WORKER_VARS = ["DATA_VERSION", "ANALYTICS_VERSION", "RESPONSE_FORMAT", "SNAPSHOT_ID", "PREWAKE"]
+GITHUB_SECRETS = [
+    "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "RENDER_DEPLOY_HOOK_URL", "RENDER_ORIGIN",
+    "PUBLIC_BASE_URL", "GHCR_IMAGE",
+]
+
+
+def _read(name: str) -> str:
+    return (REPO_ROOT / name).read_text()
+
+
+# --- Dockerfiles -------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("dockerfile", DOCKERFILES)
+def test_every_base_image_is_pinned_by_digest(dockerfile):
+    text = _read(dockerfile)
+    froms = re.findall(r"^FROM (\S+)", text, re.MULTILINE)
+    assert froms
+    for ref in froms:
+        assert ref.endswith("_DIGEST}") or re.search(r"@sha256:[0-9a-f]{64}$", ref), ref
+    if any(ref.endswith("_DIGEST}") for ref in froms):
+        assert DIGEST_ARG.search(text)
+    # A `# syntax=` line would pull a BuildKit frontend by tag at build time.
+    assert not text.startswith("# syntax=")
+
+
+def test_api_image_installs_only_hash_locked_wheels():
+    text = _read("Dockerfile").replace("\\\n", " ")  # join continuation lines
+    installs = re.findall(r"pip install[^\n&]*", text)
+    lock_installs = [i for i in installs if "-r requirements/" in i]
+    assert len(lock_installs) == 2
+    for command in lock_installs:
+        assert "--require-hashes" in command and "--only-binary=:all:" in command
+    # The project wheel itself is local: built from the copied sources, no index.
+    assert "pip install --no-deps --no-index /dist/atus_pipeline-" in text
+
+
+def test_api_image_runtime_contract():
+    text = _read("Dockerfile")
+    runtime = text.split("AS runtime", 1)[1]
+    assert re.search(r"^USER 10001:10001$", runtime, re.MULTILINE)
+    assert "COPY --from=build /opt/venv /opt/venv" in runtime
+    # nothing from the source tree is copied into the runtime stage
+    assert re.findall(r"^COPY (?!--from=build)", runtime, re.MULTILINE) == []
+    assert "HEALTHCHECK" in runtime and "/health" in runtime
+    assert 'CMD ["sh", "-c", "exec atus api --host 0.0.0.0 --port \\"${PORT}\\""]' in runtime
+    for env in ("ATUS_ENV=production", "PORT=10000", "WEB_CONCURRENCY=1",
+                "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt",
+                "ATUS_BUILD_SHA=${ATUS_BUILD_SHA}"):
+        assert env in runtime, env
+    for label in ("source", "revision", "version", "licenses", "base.name", "base.digest"):
+        assert f"org.opencontainers.image.{label}=" in runtime, label
+
+
+def test_dockerignore_is_an_allow_list_of_what_the_image_needs():
+    lines = [
+        line.strip() for line in _read(".dockerignore").splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    assert lines[0] == "*"
+    allowed = {line[1:] for line in lines if line.startswith("!")}
+    assert allowed == {
+        "pyproject.toml", "README.md", "LICENSE", "src/",
+        "requirements/api.lock.txt", "requirements/build.lock.txt",
+    }
+    copied = set()
+    for sources in re.findall(r"^COPY (?!--from)([^\n]+)", _read("Dockerfile"), re.MULTILINE):
+        copied.update(sources.split()[:-1])
+    for source in copied:
+        assert any(source == a.rstrip("/") or source.startswith(a) for a in allowed), source
+
+
+def test_edge_build_context_sends_only_the_worker():
+    lines = [
+        line.strip() for line in _read("deploy/edge/Dockerfile.dockerignore").splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    assert lines[0] == "*"
+    assert {line for line in lines if line.startswith("!")} == {
+        "!edge/", "!deploy/edge/entrypoint.sh"
+    }
+    assert "edge/node_modules" in lines and "edge/.dev.vars*" in lines
+
+
+def test_no_migrations_or_tests_reach_the_image():
+    """F56: the API never migrates; the image ships no migrations, tests or data."""
+    text = _read("Dockerfile")
+    for path in ("migrations", "tests", "data/", "frontend", "scripts"):
+        assert f"COPY {path}" not in text
+
+
+# --- .gitignore (F31) -------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def check_ignore():
+    if shutil.which("git") is None:
+        pytest.skip("git is not installed")
+
+    def ignored(path: str) -> bool:
+        result = subprocess.run(
+            ["git", "check-ignore", "--no-index", "-q", path],
+            cwd=REPO_ROOT, capture_output=True, check=False,
+        )
+        assert result.returncode in (0, 1), result.stderr
+        return result.returncode == 0
+
+    return ignored
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        ".env", ".env.local", ".env.production", ".env.production.local", ".env.prod",
+        ".env.stack", "secrets.env", "edge.env", "deploy/stack/.env.stack",
+        "frontend/.env", "frontend/.env.local", "frontend/.env.production",
+        "edge/.dev.vars", "edge/.dev.vars.production", "edge/.wrangler/state/v3/kv.sqlite",
+    ],
+)
+def test_secret_files_are_ignored(check_ignore, path):
+    assert check_ignore(path)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        ".env.example", ".env.production.example", "frontend/.env.example",
+        "deploy/stack/stack.env.example", "requirements/api.lock.txt",
+    ],
+)
+def test_templates_are_not_ignored(check_ignore, path):
+    assert not check_ignore(path)
+
+
+# --- configuration templates (F44, §8, §19) ---------------------------------------
+
+
+def _assignments(text: str) -> dict[str, str]:
+    return dict(re.findall(r"^([A-Z][A-Z0-9_]*)=(.*)$", text, re.MULTILINE))
+
+
+def test_production_example_documents_every_contract_variable():
+    text = _read(".env.production.example")
+    for name in CONTRACT_API_VARIABLES:
+        assert re.search(rf"^#? ?{name}=", text, re.MULTILINE), name
+
+
+def test_production_example_documents_every_variable_the_code_reads():
+    """Any ATUS_* name in src/ must be documented (catches new settings)."""
+    names = set()
+    for path in (REPO_ROOT / "src").rglob("*.py"):
+        names.update(re.findall(r"[\"'](ATUS_[A-Z0-9_]+)[\"']", path.read_text()))
+    text = _read(".env.production.example")
+    missing = sorted(n for n in names if not re.search(rf"\b{n}=", text))
+    assert missing == []
+
+
+def test_production_example_names_the_edge_and_github_settings():
+    text = _read(".env.production.example")
+    for name in WORKER_SECRETS + WORKER_VARS + GITHUB_SECRETS:
+        assert name in text, name
+
+
+def test_production_example_holds_no_secret_values():
+    values = _assignments(_read(".env.production.example"))
+    for name in ("ATUS_DATABASE_URL", "ATUS_EDGE_SECRETS", "ATUS_OPS_TOKEN",
+                 "ATUS_EXPECTED_DATA_VERSION"):
+        assert values[name] == "", name
+    assert values["ATUS_ENV"] == "production"
+
+
+def test_stack_example_holds_no_secret_values():
+    values = _assignments(_read("deploy/stack/stack.env.example"))
+    secrets = [n for n in values if "PASSWORD" in n or "SECRET" in n or "TOKEN" in n
+               or "HMAC" in n]
+    assert len(secrets) == 7
+    assert all(values[n] == "" for n in secrets)
+
+
+def test_development_example_keeps_development_defaults():
+    values = _assignments(_read(".env.example"))
+    assert values["ATUS_ENV"] == "development"
+    assert values["ATUS_DATABASE_URL"] == "postgresql://atus:atus@localhost:5434/atus"

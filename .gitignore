@@ -9,8 +9,20 @@ dist/
 .pytest_cache/
 .ruff_cache/
 
-# Environment / secrets
+# Environment and secrets (audit F31). Every .env variant in any directory
+# (.env.local, .env.production, frontend/.env.production, ...) and every
+# *.env file (secrets.env, edge.env, the smoke stack's env files) is ignored;
+# only the committed templates are not. Real secrets live in provider secret
+# stores and in ~/.config/atus/, never in the repository.
 .env
+.env.*
+*.env
+!.env.example
+!.env.*.example
+# wrangler's local secrets and state (edge/)
+.dev.vars
+.dev.vars.*
+.wrangler/
 
 # ATUS data: raw and staged files are large and are re-downloadable from BLS.
 # Only the acquisition manifest and small committed reference data live in Git.
