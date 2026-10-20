@@ -36,6 +36,10 @@
 
 # Static snapshot: the pointer names the current snapshot and is always
 # revalidated; a snapshot directory is written once and never changes.
+# `:snapshot` matches one path segment, so the second rule cannot match the
+# pointer (a splat after a placeholder is inferred from Cloudflare's docs,
+# not stated: verify with curl after deploying; if the rule never matched,
+# snapshot files would only fall back to the host's revalidating default).
 /snap/current.json
   Cache-Control: no-cache
 /snap/:snapshot/*

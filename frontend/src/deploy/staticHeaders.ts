@@ -85,8 +85,9 @@ export function parseHeadersFile(text: string): HeaderRule[] {
     const rule: HeaderRule = current
     if (line.startsWith('!')) {
       const name = line.slice(1).trim()
-      if (!HEADER_NAME.test(name))
+      if (!HEADER_NAME.test(name)) {
         throw new HeadersFileError(lineNumber, `bad header "${name}"`)
+      }
       rule.unset.push(name.toLowerCase())
       return
     }

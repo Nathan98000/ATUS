@@ -71,6 +71,8 @@ describe('parseHeadersFile / headersForPath', () => {
     ['an absolute URL rule', 'https://example.org/*\n  X: 1', /URL path pattern/],
     ['a line without a colon', '/*\n  not a header', /Name: value/],
     ['an empty value', '/*\n  X:', /Name: value/],
+    ['a detach of a malformed name', '/*\n  ! not a name', /bad header/],
+    ['a pattern with a space', '/a b\n  X: 1', /URL path pattern/],
     ['two splats', '/a/*/b/*\n  X: 1', /more than one splat/],
     ['a placeholder used twice', '/:a/:a\n  X: 1', /placeholder is used twice/],
     ['an over-long line', `/*\n  X: ${'v'.repeat(2_000)}`, /longer than 2000/],

@@ -401,7 +401,7 @@ snapshot's), else the version the page's metadata reported — the legacy
 ## Testing
 
 ```bash
-npm test          # 335 unit/component tests (Vitest + Testing Library + MSW)
+npm test          # 337 unit/component tests (Vitest + Testing Library + MSW)
 npm run test:e2e  # 62 Playwright runs: 34 Chromium desktop + 2 mobile,
                   # and the 13 @core journeys again in Firefox and in WebKit
 npx playwright install firefox webkit   # once, for the cross-browser projects
@@ -497,7 +497,7 @@ security.
 ## Production build and deployment shape
 
 `npm run build` type-checks and emits static assets into `frontend/dist/`
-(Oct 2026, Phase 5 with exports: 389.8 kB JS / 119.8 kB gzip, 15.8 kB CSS /
+(Oct 2026, Phase 5 with exports: 390.0 kB JS / 119.9 kB gzip, 15.8 kB CSS /
 4.0 kB gzip — one chunk, no SSR, no server runtime; Sept 2026, Phase 4:
 365.0 / 110.8 kB JS). The deployment (ADR-011) serves `dist/` as Cloudflare
 Workers static assets on one origin, whose Worker proxies `/api/*` to the
@@ -522,7 +522,10 @@ API — so the build calls `/api/v1` on its own origin:
 
   The host joins a header set by two matching rules with a comma, so no two
   rules set the same header for one path (`/snap/*` would have joined
-  `immutable` onto the pointer's `no-cache`). Other unhashed files
+  `immutable` onto the pointer's `no-cache`). That a splat may follow a
+  placeholder (`/snap/:snapshot/*`) is inferred from Cloudflare's docs, not
+  stated; check it with curl after deploying (if the rule never matched,
+  snapshot files would just be revalidated, never served stale). Other unhashed files
   (`boot.css`, icons) keep the host's default `max-age=0, must-revalidate`.
   The app needs nothing inline, no `data:` URL and nothing third-party;
   clipboard writes (the Share button) stay allowed for the page itself.

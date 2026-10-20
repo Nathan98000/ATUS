@@ -24,7 +24,9 @@ describe('About page: privacy and logs', () => {
   it('says there are no accounts, cookies or third-party analytics', () => {
     renderWithProviders(<AboutPage />)
     const text = privacySection().textContent ?? ''
-    expect(text).toMatch(/no accounts, sets no cookies, stores nothing in your browser/)
+    expect(text).toMatch(
+      /no accounts, sets no cookies, keeps nothing in your browser's\s+storage/,
+    )
     expect(text).toMatch(/no third-party analytics, trackers/)
   })
 

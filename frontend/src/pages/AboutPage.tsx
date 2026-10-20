@@ -98,14 +98,15 @@ export function AboutPage() {
 
       <h2 id="privacy">Privacy and logs</h2>
       <p>
-        ATUS Explorer has no accounts, sets no cookies, stores nothing in your browser, and uses
-        no third-party analytics, trackers, fonts or scripts. The pages, the starter examples
-        and the most common analyses are plain static files; opening them sends nothing to the
-        analysis service.
+        ATUS Explorer has no accounts, sets no cookies, keeps nothing in your browser's storage,
+        and uses no third-party analytics, trackers, fonts or scripts. The pages, the survey
+        metadata and the most common analyses (including the starter examples) are served as
+        static files that do not involve the analysis service.
       </p>
       <p>
         A new analysis sends only its specification (activity, population, years, statistic) to
-        the analysis service. For each such request the service logs:
+        the analysis service; opening the analysis builder also sends one empty request that
+        wakes the service up. For each request that reaches the service, it logs:
       </p>
       <ul>
         <li>a random request ID, the address requested, the response status and its timing;</li>
