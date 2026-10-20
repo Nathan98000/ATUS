@@ -1,0 +1,64 @@
+# Free-tier emulation override for docker-compose.prod.yml (brief §13).
+#
+#   docker compose --env-file .env.stack \
+#     -f docker-compose.prod.yml -f docker-compose.emulation.yml up -d --wait api
+#
+# Applies the CPU and RAM of the chosen hosts (ADR-011):
+#   api  Render Free web service: 0.1 CPU, 512 MB, no swap
+#   db   Neon Free compute, default its 0.25 CU floor: 0.25 vCPU, 1 GB, no swap.
+#        The 2 CU ceiling: ATUS_EMU_DB_CPUS=2 ATUS_EMU_DB_MEMORY=8g (a Docker VM
+#        with less than 8 GB caps RAM below that). Other sizes:
+#        python deploy/emulation/neon_settings.py --help
+# The database settings themselves (jit=off; shared_buffers, max_connections
+# and max_worker_processes from Neon's formula) come from docker-compose.prod.yml,
+# because they describe the deployed compute, not a resource limit.
+#
+# Profile `pgbouncer`: PgBouncer in transaction mode with Neon's pooler
+# settings (deploy/pgbouncer/entrypoint.sh) on 127.0.0.1. Production uses
+# Neon's direct endpoint (ADR-011); this exists to prove the API and the
+# integration suite also work through a transaction pooler (brief §10):
+#   API:   ATUS_STACK_API_DB_HOST=pgbouncer ATUS_STACK_API_DB_HOST_PORT=6432 \
+#            docker compose ... --profile pgbouncer up -d --wait api
+#   tests: scripts/smoke_stack.sh --integration-via-pgbouncer
+#
+# Not emulated (audit F41): Neon's remote pageserver reads, wake from
+# suspend, autoscaling itself, Render<->Neon round trips, Render's real CPU
+# share and spin-up, cloud vCPU speed.
+
+services:
+  api:
+    cpus: 0.1
+    mem_limit: 512m
+    memswap_limit: 512m
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+        required: false
+
+  db:
+    cpus: ${ATUS_EMU_DB_CPUS:-0.25}
+    mem_limit: ${ATUS_EMU_DB_MEMORY:-1g}
+    memswap_limit: ${ATUS_EMU_DB_MEMORY:-1g}
+
+  pgbouncer:
+    profiles: ["pgbouncer"]
+    image: atus-pgbouncer:local
+    pull_policy: build
+    build:
+      context: ./deploy/pgbouncer
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGBOUNCER_USERS: >-
+        atus_api:${ATUS_STACK_API_DB_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
+        neondb_owner:${ATUS_STACK_OWNER_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
+        postgres:${ATUS_STACK_PG_SUPERUSER_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}
+      PGBOUNCER_DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE:-755}
+      PGBOUNCER_MAX_PREPARED_STATEMENTS: ${PGBOUNCER_MAX_PREPARED_STATEMENTS:-1000}
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "127.0.0.1:${ATUS_STACK_PGBOUNCER_PORT-5471}:6432"
