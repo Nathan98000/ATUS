@@ -83,11 +83,14 @@ def test_docker_invocation_names_variables_but_never_their_values():
 
 
 def test_resolve_prefers_a_new_enough_local_client(monkeypatch):
+    monkeypatch.setenv("PGHOST", "elsewhere")             # never inherited
+    monkeypatch.setenv("PGSSLMODE", "disable")
     monkeypatch.setattr(pgtools, "local_major", lambda tool: 16)
     monkeypatch.setattr(pgtools.shutil, "which", lambda name: f"/usr/bin/{name}")
     tool = pgtools.resolve("pg_dump", "postgresql://u:pw@h/db", server_major=16)
     assert tool.argv == ("/usr/bin/pg_dump",)
-    assert tool.env["PGPASSWORD"] == "pw"
+    assert tool.env["PGPASSWORD"] == "pw" and tool.env["PGHOST"] == "h"
+    assert "PGSSLMODE" not in tool.env
     monkeypatch.setattr(pgtools, "local_major", lambda tool: 14)
     tool = pgtools.resolve("pg_dump", "postgresql://u:pw@h/db", server_major=16)
     assert tool.argv[:2] == ("docker", "run") and tool.argv[-2] == "postgres:16"

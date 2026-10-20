@@ -10,7 +10,12 @@ docker invocation names the variables without their values.
 
 A server on this machine (``localhost``) is reached from the container
 through ``host.docker.internal`` (Docker Desktop) or the host network
-(Linux).
+(Linux). A container's environment is visible to ``docker inspect`` while it
+runs (here: for the second or so a tool runs), that is to this machine's
+docker users, who could read the owner's secrets file anyway.
+
+Any ``PG*`` variable already in the caller's environment is dropped first,
+so a tool connects exactly where the connection string says.
 """
 
 from __future__ import annotations
@@ -111,6 +116,10 @@ def docker_argv(tool: str, env: dict[str, str], image: str, *,
     return tuple(argv), env
 
 
+def _base_environment() -> dict[str, str]:
+    return {k: v for k, v in os.environ.items() if not k.startswith("PG")}
+
+
 def resolve(tool: str, conninfo: str, *, server_major: int, image: str | None = None,
             prefer_docker: bool = False, extra_env: dict[str, str] | None = None) -> PgTool:
     """``tool`` connected to ``conninfo``: local if new enough, else docker.
@@ -123,7 +132,7 @@ def resolve(tool: str, conninfo: str, *, server_major: int, image: str | None = 
     major = None if prefer_docker else local_major(tool)
     if major is not None and major >= server_major:
         path = shutil.which(tool)
-        return PgTool(tool, (path,), {**os.environ, **env}, f"local {path} ({major})",
+        return PgTool(tool, (path,), {**_base_environment(), **env}, f"local {path} ({major})",
                       tuple((extra_env or {}).values()))
     if not shutil.which("docker"):
         found = f"found version {major}" if major else "none found"
@@ -133,5 +142,5 @@ def resolve(tool: str, conninfo: str, *, server_major: int, image: str | None = 
         )
     image = image or os.environ.get(IMAGE_ENV) or f"postgres:{server_major}"
     argv, env = docker_argv(tool, env, image)
-    return PgTool(tool, argv, {**os.environ, **env}, f"docker {image}",
+    return PgTool(tool, argv, {**_base_environment(), **env}, f"docker {image}",
                   tuple((extra_env or {}).values()))

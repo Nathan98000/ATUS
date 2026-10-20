@@ -6,6 +6,7 @@ import base64
 import hashlib
 import hmac
 import stat
+import subprocess
 
 import pytest
 
@@ -53,13 +54,15 @@ def test_update_env_file_replaces_keys_keeps_the_rest_and_is_private(tmp_path):
     path.parent.mkdir()
     path.write_text(f"# keep me\n{OWNER_URL_KEY}=postgresql://o:p@h/db\nATUS_API_DB_PASSWORD=old\n")
     path.chmod(0o644)
-    update_env_file(path, {"ATUS_API_DB_PASSWORD": "new", API_URL_KEY: "postgresql://a:b@h/db"})
+    api_url = "postgresql://a:b@h/db?sslmode=verify-full&sslrootcert=system"
+    update_env_file(path, {"ATUS_API_DB_PASSWORD": "new", API_URL_KEY: api_url})
     assert path.read_text().splitlines() == [
         "# keep me",
         f"{OWNER_URL_KEY}=postgresql://o:p@h/db",
         "ATUS_API_DB_PASSWORD=new",
-        f"{API_URL_KEY}=postgresql://a:b@h/db",
+        f"{API_URL_KEY}='{api_url}'",               # ? and & quoted for a shell
     ]
+    assert read_env_file(path)[API_URL_KEY] == api_url
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
     assert is_private(path)
     assert [p.name for p in path.parent.iterdir()] == ["neon.env"]   # no temp file left
@@ -135,3 +138,14 @@ def test_api_url_for_a_local_server_keeps_the_owner_ssl_choice():
     assert api_database_url("postgresql://o:p@[::1]:5466/atus?sslmode=disable", "r", "pw") == (
         "postgresql://r:pw@[::1]:5466/atus?sslmode=disable"
     )
+
+
+def test_the_written_file_can_be_sourced_by_a_shell(tmp_path):
+    path = tmp_path / "neon.env"
+    url = "postgresql://a:b-_9@ep-1.neon.tech/atus?sslmode=verify-full&sslrootcert=system"
+    update_env_file(path, {API_URL_KEY: url, "ATUS_API_DB_PASSWORD": "Ab-_9"})
+    out = subprocess.run(
+        ["sh", "-c", f'. "{path}" && printf %s "${API_URL_KEY}"'],
+        capture_output=True, text=True, check=True,
+    )
+    assert out.stdout == url

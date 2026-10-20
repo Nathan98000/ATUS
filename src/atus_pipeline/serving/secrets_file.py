@@ -19,6 +19,7 @@ import base64
 import hashlib
 import hmac
 import os
+import re
 import secrets
 import stat
 import tempfile
@@ -68,9 +69,24 @@ def is_private(path: Path) -> bool:
     return not (path.stat().st_mode & (stat.S_IRWXG | stat.S_IRWXO))
 
 
+_SHELL_SAFE = re.compile(r"^[A-Za-z0-9_@%+=:,./-]*$")
+
+
+def _quoted(value: str) -> str:
+    """``value`` as a shell-safe assignment value: a connection string holds
+    ``?`` and ``&``, which would break ``source``-ing the file unquoted."""
+    if _SHELL_SAFE.match(value):
+        return value
+    if "'" in value:
+        raise SecretsFileError("a value to store contains a single quote")
+    return f"'{value}'"
+
+
 def update_env_file(path: Path, updates: dict[str, str]) -> None:
     """Set ``updates`` in the secrets file (replacing existing keys, keeping
-    every other line), atomically and with mode 600."""
+    every other line), atomically and with mode 600. Values are single-quoted
+    when needed, so the file stays readable by ``read_env_file``, dotenv and
+    a POSIX shell."""
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     lines = path.read_text().splitlines() if path.exists() else []
     pending = dict(updates)
@@ -79,10 +95,10 @@ def update_env_file(path: Path, updates: dict[str, str]) -> None:
         stripped = raw.strip()
         key = stripped.removeprefix("export ").partition("=")[0].strip()
         if key in pending and not stripped.startswith("#"):
-            out.append(f"{key}={pending.pop(key)}")
+            out.append(f"{key}={_quoted(pending.pop(key))}")
         else:
             out.append(raw)
-    out.extend(f"{key}={value}" for key, value in pending.items())
+    out.extend(f"{key}={_quoted(value)}" for key, value in pending.items())
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
     try:
         os.fchmod(fd, 0o600)

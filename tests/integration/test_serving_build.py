@@ -401,6 +401,22 @@ def test_an_unconvertible_replicate_weight_stops_the_build(mutable_full, target)
     _untouched(target)
 
 
+def test_a_failed_build_into_an_empty_database_leaves_it_empty(mutable_full, test_db_url):
+    with psycopg.connect(mutable_full) as conn:
+        conn.execute("UPDATE atus.activities SET duration_minutes = 1440 "
+                     "WHERE activity_code = '010101'")   # some sums now exceed 1440
+    empty = empty_database(test_db_url, "srvb_empty")
+    try:
+        with pytest.raises(ServingBuildError, match="minute sums outside 0-1440"):
+            build_serving_database(mutable_full, empty, require_validated=False)
+        with psycopg.connect(empty) as conn:
+            assert conn.execute(
+                "SELECT to_regnamespace('atus'), to_regclass('public.schema_migrations')"
+            ).fetchone() == (None, None)
+    finally:
+        drop_scratch_database(empty)
+
+
 def test_an_omitted_row_that_an_estimate_would_read_stops_the_build(mutable_full, target):
     with psycopg.connect(mutable_full) as conn:
         conn.execute(

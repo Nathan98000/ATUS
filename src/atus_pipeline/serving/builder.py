@@ -23,8 +23,8 @@ database"):
 
 The source is read in one ``REPEATABLE READ READ ONLY`` transaction (a
 consistent snapshot; nothing is ever written there). The target is written
-in one transaction: a failed build leaves it exactly as it was (empty, or
-freshly migrated). Before committing, the build proves its invariants: the
+in one transaction, migrations included: a failed build leaves it exactly as
+it was (empty, or freshly migrated). Before committing, the build proves its invariants: the
 source assertions (:data:`ASSERTIONS`) are all zero, every served table's
 rows re-read from the target hash to exactly the rows streamed from the
 source transformation, row counts reconcile with the omitted-row counts, the
@@ -405,9 +405,10 @@ def build_serving_database(
     require_validated: bool = True,
     migrations_dir: Path | None = None,
 ) -> BuildReport:
-    """Build a serving database in ``target_url`` from the full database at
-    ``source_url`` (read only). Raises :class:`ServingBuildError` (target
-    unchanged) when an invariant does not hold."""
+    """Build a serving database in ``target_url`` (a new database: empty, or
+    freshly migrated and empty) from the full database at ``source_url``
+    (read only). Raises :class:`ServingBuildError` when an invariant does not
+    hold; the target is then exactly as it was."""
     if same_database(source_url, target_url):
         raise ServingBuildError("the source and the target are the same database")
     migrations_dir = migrations_dir or default_migrations_dir()
@@ -422,18 +423,21 @@ def build_serving_database(
     with psycopg.connect(target_url, autocommit=True) as tgt, psycopg.connect(
         source_url, autocommit=True, options="-c default_transaction_read_only=on"
     ) as src:
-        started = time.perf_counter()
         _check_target(tgt)
-        apply_migrations(tgt, migrations_dir)
-        report.server_version = tgt.execute("SHOW server_version").fetchone()[0]
-        step("migrate target", started)
-
-        # One consistent, read-only snapshot of the full database.
         src.isolation_level = psycopg.IsolationLevel.REPEATABLE_READ
         src.read_only = True
         src.execute("SET jit = off")
         src.execute("SET work_mem = '128MB'")
-        with src.transaction():
+
+        # One transaction on the target, migrations included: a failed build
+        # leaves it exactly as it was. One consistent, read-only snapshot of
+        # the full database.
+        with tgt.transaction(), src.transaction():
+            started = time.perf_counter()
+            apply_migrations(tgt, migrations_dir)
+            report.server_version = tgt.execute("SHOW server_version").fetchone()[0]
+            step("migrate target", started)
+
             if src.execute("SHOW transaction_read_only").fetchone()[0] != "on":
                 raise ServingBuildError("could not open a read-only source transaction")
             reason = serving_marker(src)
@@ -455,66 +459,65 @@ def build_serving_database(
             step("source assertions and counts", started)
 
             pin_text_output(src)
-            with tgt.transaction():
-                tgt.execute("SET maintenance_work_mem = '256MB'")
-                canonical = read_shapes(tgt)
-                for statement in reshape_sql(canonical):
-                    tgt.execute(statement)
-                pin_text_output(tgt)
+            tgt.execute("SET LOCAL maintenance_work_mem = '256MB'")
+            canonical = read_shapes(tgt)
+            for statement in reshape_sql(canonical):
+                tgt.execute(statement)
+            pin_text_output(tgt)
 
-                started = time.perf_counter()
-                served = {table: _copy_table(src, tgt, table, key)
-                          for table, key in HASHED_TABLES}
-                step("copy", started)
+            started = time.perf_counter()
+            served = {table: _copy_table(src, tgt, table, key)
+                      for table, key in HASHED_TABLES}
+            step("copy", started)
 
-                started = time.perf_counter()
-                for statement in post_load_sql(canonical):
-                    tgt.execute(statement)
-                step("keys, indexes and foreign keys", started)
+            started = time.perf_counter()
+            for statement in post_load_sql(canonical):
+                tgt.execute(statement)
+            step("keys, indexes and foreign keys", started)
 
-                problems = _reconcile(report.counts, served)
-                missing = missing_contract_columns(tgt)
-                if missing:
-                    problems.append(f"serving contract columns missing: {missing}")
-                lost = missing_checks(canonical, read_shapes(tgt))
-                if lost:
-                    problems.append(f"CHECK constraints lost: {lost}")
-                leftover = [t for t in DROPPED_TABLES if tgt.execute(
-                    "SELECT to_regclass(%s) IS NOT NULL", (f"atus.{t}",)).fetchone()[0]]
-                if leftover:
-                    problems.append(f"tables that should be dropped remain: {leftover}")
-                out_of_order = _activities_out_of_order(tgt)
-                if out_of_order:
-                    problems.append(f"activities not in activity_code order ({out_of_order})")
-                if problems:
-                    raise ServingBuildError("serving invariants failed: " + "; ".join(problems))
+            problems = _reconcile(report.counts, served)
+            missing = missing_contract_columns(tgt)
+            if missing:
+                problems.append(f"serving contract columns missing: {missing}")
+            lost = missing_checks(canonical, read_shapes(tgt))
+            if lost:
+                problems.append(f"CHECK constraints lost: {lost}")
+            leftover = [t for t in DROPPED_TABLES if tgt.execute(
+                "SELECT to_regclass(%s) IS NOT NULL", (f"atus.{t}",)).fetchone()[0]]
+            if leftover:
+                problems.append(f"tables that should be dropped remain: {leftover}")
+            out_of_order = _activities_out_of_order(tgt)
+            if out_of_order:
+                problems.append(f"activities not in activity_code order ({out_of_order})")
+            if problems:
+                raise ServingBuildError("serving invariants failed: " + "; ".join(problems))
 
-                # Re-read every served table from the target: it must hash to
-                # exactly the rows streamed from the source transformation.
-                started = time.perf_counter()
-                target_hash = compute_content_hash(tgt)
-                source_hash = combine([served[table] for table, _ in HASHED_TABLES])
-                step("content hash", started)
-                if target_hash != source_hash:
-                    mismatched = [
-                        t.table for t, s in zip(target_hash.tables, source_hash.tables,
-                                                strict=True) if t != s
-                    ]
-                    raise ServingBuildError(
-                        f"content hash mismatch between source and target: {mismatched}"
-                    )
-                report.content_hash = target_hash.content_hash
-                report.tables = {
-                    t.table: {"rows": t.rows, "sha256": t.sha256} for t in target_hash.tables
-                }
-                report.data_version = format_serving_version(
-                    report.release, report.build_id, report.content_hash
+            # Re-read every served table from the target: it must hash to
+            # exactly the rows streamed from the source transformation.
+            started = time.perf_counter()
+            target_hash = compute_content_hash(tgt)
+            source_hash = combine([served[table] for table, _ in HASHED_TABLES])
+            step("content hash", started)
+            if target_hash != source_hash:
+                mismatched = [
+                    t.table for t, s in zip(target_hash.tables, source_hash.tables,
+                                            strict=True) if t != s
+                ]
+                raise ServingBuildError(
+                    f"content hash mismatch between source and target: {mismatched}"
                 )
-                _write_run(tgt, src, source, report)
-                if _count(tgt, "SELECT count(*) FROM atus.validation_results"):
-                    raise ServingBuildError("validation_results must be empty")
-                if read_data_version(tgt) != report.data_version:
-                    raise ServingBuildError("the target does not report the new data version")
+            report.content_hash = target_hash.content_hash
+            report.tables = {
+                t.table: {"rows": t.rows, "sha256": t.sha256} for t in target_hash.tables
+            }
+            report.data_version = format_serving_version(
+                report.release, report.build_id, report.content_hash
+            )
+            _write_run(tgt, src, source, report)
+            if _count(tgt, "SELECT count(*) FROM atus.validation_results"):
+                raise ServingBuildError("validation_results must be empty")
+            if read_data_version(tgt) != report.data_version:
+                raise ServingBuildError("the target does not report the new data version")
         report.built_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     with psycopg.connect(target_url, autocommit=True) as tgt:
