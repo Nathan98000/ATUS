@@ -25,8 +25,9 @@ from dataclasses import dataclass
 import psycopg
 
 from ..config import Settings
-from ..sources import get_source
-from .results import CheckResult
+from ..database.migrate import LIVE_SCHEMA, retarget_sql
+from ..sources import get_source, lexicon_path
+from .results import CheckResult, persist_results
 from .source_checks import expected_years
 
 log = logging.getLogger(__name__)
@@ -361,7 +362,9 @@ _VIOLATION_CHECKS: list[ViolationsCheck] = [
 ]
 
 
-def _summary_cross_check(conn: psycopg.Connection, settings: Settings) -> CheckResult:
+def _summary_cross_check(
+    conn: psycopg.Connection, settings: Settings, schema: str = LIVE_SCHEMA
+) -> CheckResult:
     """Compare loaded episode durations against the BLS Activity Summary file.
 
     The Activity Summary file is produced by BLS independently of the Activity
@@ -392,12 +395,15 @@ def _summary_cross_check(conn: psycopg.Connection, settings: Settings) -> CheckR
                 break
 
     rows = conn.execute(
-        """
-        SELECT tucaseid, activity_code, sum(duration_minutes)::int
-        FROM atus.activities
-        WHERE tucaseid = ANY(%s)
-        GROUP BY tucaseid, activity_code
-        """,
+        retarget_sql(
+            """
+            SELECT tucaseid, activity_code, sum(duration_minutes)::int
+            FROM atus.activities
+            WHERE tucaseid = ANY(%s)
+            GROUP BY tucaseid, activity_code
+            """,
+            schema,
+        ),
         (list(expected),),
     ).fetchall()
     observed: dict[int, dict[str, int]] = {case: {} for case in expected}
@@ -414,13 +420,17 @@ def _summary_cross_check(conn: psycopg.Connection, settings: Settings) -> CheckR
     )
 
 
-def _lexicon_checks(conn: psycopg.Connection, settings: Settings) -> list[CheckResult]:
-    path = settings.reference_dir / f"activity_lexicon_{settings.release}.csv"
+def _lexicon_checks(
+    conn: psycopg.Connection, settings: Settings, schema: str = LIVE_SCHEMA
+) -> list[CheckResult]:
+    path = lexicon_path(settings.reference_dir, settings.release)
     results = []
     with path.open(newline="") as fh:
         levels = [row["level"] for row in csv.DictReader(fh)]
     for level, table in (("1", "activity_tier1"), ("2", "activity_tier2"), ("3", "activity_codes")):
-        db_count = conn.execute(f"SELECT count(*) FROM atus.{table}").fetchone()[0]
+        db_count = conn.execute(
+            retarget_sql(f"SELECT count(*) FROM atus.{table}", schema)
+        ).fetchone()[0]
         csv_count = levels.count(level)
         results.append(
             CheckResult(
@@ -434,11 +444,21 @@ def _lexicon_checks(conn: psycopg.Connection, settings: Settings) -> list[CheckR
     return results
 
 
-def run_db_checks(conn: psycopg.Connection, settings: Settings) -> list[CheckResult]:
+def run_db_checks(
+    conn: psycopg.Connection,
+    settings: Settings,
+    *,
+    schema: str = LIVE_SCHEMA,
+    persist: bool = True,
+) -> list[CheckResult]:
+    """Run every check against ``schema`` (the live ``atus`` by default; the
+    loader passes its shadow schema to validate new data before it goes
+    live) and, unless ``persist`` is false, record the outcomes in
+    ``atus.validation_results``."""
     results: list[CheckResult] = []
 
     for check in _scalar_checks(settings):
-        value = conn.execute(check.sql).fetchone()[0]
+        value = conn.execute(retarget_sql(check.sql, schema)).fetchone()[0]
         results.append(
             CheckResult(
                 name=check.name,
@@ -452,7 +472,7 @@ def run_db_checks(conn: psycopg.Connection, settings: Settings) -> list[CheckRes
         log.info("check %-55s %s", check.name, "PASS" if results[-1].passed else "FAIL")
 
     for check in _VIOLATION_CHECKS:
-        count = conn.execute(check.sql).fetchone()[0]
+        count = conn.execute(retarget_sql(check.sql, schema)).fetchone()[0]
         results.append(
             CheckResult(
                 name=check.name,
@@ -464,20 +484,12 @@ def run_db_checks(conn: psycopg.Connection, settings: Settings) -> list[CheckRes
         )
         log.info("check %-55s %s", check.name, "PASS" if results[-1].passed else "FAIL")
 
-    results.extend(_lexicon_checks(conn, settings))
-    results.append(_summary_cross_check(conn, settings))
+    results.extend(_lexicon_checks(conn, settings, schema))
+    results.append(_summary_cross_check(conn, settings, schema))
     log.info(
         "check %-55s %s", results[-1].name, "PASS" if results[-1].passed else "FAIL"
     )
 
-    with conn.transaction():
-        for result in results:
-            conn.execute(
-                """
-                INSERT INTO atus.validation_results
-                    (check_name, severity, passed, observed, detail)
-                VALUES (%s, %s, %s, %s, %s)
-                """,
-                (result.name, result.severity, result.passed, result.observed, result.detail),
-            )
+    if persist:
+        persist_results(conn, results)
     return results

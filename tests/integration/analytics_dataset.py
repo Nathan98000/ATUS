@@ -30,7 +30,7 @@ import csv
 import shutil
 from pathlib import Path
 
-from atus_pipeline.config import Settings
+from atus_pipeline.config import DEFAULT_RELEASE, Settings
 from atus_pipeline.manifest import Manifest
 from atus_pipeline.sources import (
     ACTIVITY_COLUMNS,
@@ -40,6 +40,8 @@ from atus_pipeline.sources import (
     RESPONDENT_COLUMNS,
     ROSTER_COLUMNS,
     WHO_COLUMNS,
+    get_source,
+    lexicon_path,
     release_files,
 )
 from tests import fixtures
@@ -84,17 +86,25 @@ def _replicates(prefix: str, values: dict[int, str], default: str) -> dict[str, 
     }
 
 
-def build_analytics_dataset(data_dir: Path) -> None:
-    staging = data_dir / "staging" / "0325"
+def build_analytics_dataset(
+    data_dir: Path, release: str = DEFAULT_RELEASE, lexicon_source: Path | None = None
+) -> None:
+    """Write the staged files, lexicon and manifest for ``release``. File names
+    come from the release registry; ``lexicon_source`` defaults to the
+    committed lexicon of that release."""
+    staging = data_dir / "staging" / release
     staging.mkdir(parents=True)
     reference = data_dir / "reference"
     reference.mkdir(parents=True)
     shutil.copy(
-        REPO_ROOT / "data" / "reference" / "activity_lexicon_0325.csv",
-        reference / "activity_lexicon_0325.csv",
+        lexicon_source or lexicon_path(REPO_ROOT / "data" / "reference", release),
+        lexicon_path(reference, release),
     )
 
-    _write(staging / "atusresp_0325.dat", RESPONDENT_COLUMNS, [
+    def staged(key: str) -> Path:
+        return staging / get_source(release, key).dat_name
+
+    _write(staged("respondent"), RESPONDENT_COLUMNS, [
         fixtures.respondent_row(
             TUCASEID=E1, TUYEAR="2023", TUDIARYDATE="20230115",
             TUFNWGTP="1.000000", TELFS="1",
@@ -121,7 +131,7 @@ def build_analytics_dataset(data_dir: Path) -> None:
         ),
     ])
 
-    _write(staging / "atusrost_0325.dat", ROSTER_COLUMNS, [
+    _write(staged("roster"), ROSTER_COLUMNS, [
         fixtures.roster_row(TUCASEID=E1, TULINENO="1", TERRP="18", TEAGE="30", TESEX="1"),
         fixtures.roster_row(TUCASEID=E2, TULINENO="1", TERRP="18", TEAGE="40", TESEX="2"),
         fixtures.roster_row(TUCASEID=E3, TULINENO="1", TERRP="18", TEAGE="70", TESEX="2"),
@@ -153,16 +163,16 @@ def build_analytics_dataset(data_dir: Path) -> None:
     episodes.append(_episode(P9, 2, TV, "06:00:00", "04:00:00", 1320, 1440))
     episodes.append(_episode(P0, 1, SLEEP, "04:00:00", "08:00:00", 240, 240))
     episodes.append(_episode(P0, 2, TV, "08:00:00", "04:00:00", 1200, 1440))
-    _write(staging / "atusact_0325.dat", ACTIVITY_COLUMNS, episodes)
+    _write(staged("activity"), ACTIVITY_COLUMNS, episodes)
 
     # One "who not asked" placeholder per episode keeps the Who file consistent.
     who_rows = [
         fixtures.who_row(TUCASEID=row["TUCASEID"], TUACTIVITY_N=row["TUACTIVITY_N"])
         for row in episodes
     ]
-    _write(staging / "atuswho_0325.dat", WHO_COLUMNS, who_rows)
+    _write(staged("who"), WHO_COLUMNS, who_rows)
 
-    _write(staging / "atuscps_0325.dat", CPS_REQUIRED_COLUMNS, [
+    _write(staged("cps"), CPS_REQUIRED_COLUMNS, [
         fixtures.cps_row(TUCASEID=E1, TULINENO="1", PEEDUCA="43", GEREG="1"),
         fixtures.cps_row(TUCASEID=E2, TULINENO="1", PEEDUCA="-1", GEREG="2"),
         fixtures.cps_row(TUCASEID=E3, TULINENO="1", PEEDUCA="39", GEREG="3"),
@@ -171,7 +181,7 @@ def build_analytics_dataset(data_dir: Path) -> None:
         fixtures.cps_row(TUCASEID=P0, TULINENO="1", PEEDUCA="40", GEREG="4"),
     ])
 
-    _write(staging / "atuswgts_0325.dat", REPLICATE_WEIGHT_COLUMNS, [
+    _write(staged("replicate_weights"), REPLICATE_WEIGHT_COLUMNS, [
         fixtures.replicate_weights_row(
             TUCASEID=E1, **_replicates("TUFNWGTP", {1: "2.000000"}, "1.000000"),
         ),
@@ -192,7 +202,7 @@ def build_analytics_dataset(data_dir: Path) -> None:
         ),
     ])
 
-    _write(staging / "atuswgtspan_1920.dat", PANDEMIC_WEIGHT_COLUMNS, [
+    _write(staged("pandemic_weights"), PANDEMIC_WEIGHT_COLUMNS, [
         fixtures.pandemic_weights_row(
             TUCASEID=P8, **_replicates("TU20FWGT", {}, "0.000000"),
         ),
@@ -204,24 +214,36 @@ def build_analytics_dataset(data_dir: Path) -> None:
         ),
     ])
 
+    record_manifest(data_dir, release)
+
+
+def record_manifest(data_dir: Path, release: str = DEFAULT_RELEASE) -> None:
+    """(Re)record download and staging provenance for every staged file
+    (call again after editing a staged file)."""
+    staging = data_dir / "staging" / release
     manifest = Manifest(data_dir / "manifest.json")
-    for source in release_files("0325"):
+    for source in release_files(release):
         manifest.record_download(
-            release="0325", key=source.key, url=source.url, zip_name=source.zip_name,
+            release=release, key=source.key, url=source.url, zip_name=source.zip_name,
             sha256="00" * 32, size_bytes=1,
         )
         if source.key != "activity_summary":
             staged = staging / source.dat_name
             manifest.record_staging(
-                release="0325", key=source.key, dat_name=source.dat_name,
+                release=release, key=source.key, dat_name=source.dat_name,
                 dat_size_bytes=staged.stat().st_size,
                 row_count=sum(1 for _ in staged.open()) - 1,
             )
 
 
-def analytics_settings(tmp_path: Path, database_url: str) -> Settings:
+def analytics_settings(
+    tmp_path: Path,
+    database_url: str,
+    release: str = DEFAULT_RELEASE,
+    lexicon_source: Path | None = None,
+) -> Settings:
     data_dir = tmp_path / "data"
-    build_analytics_dataset(data_dir)
+    build_analytics_dataset(data_dir, release, lexicon_source)
     return Settings(
-        database_url=database_url, data_dir=data_dir, release="0325", log_level="INFO"
+        database_url=database_url, data_dir=data_dir, release=release, log_level="INFO"
     )
