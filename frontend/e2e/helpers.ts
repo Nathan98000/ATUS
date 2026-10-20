@@ -7,7 +7,19 @@
  *   men vs women: 100.0 vs 66.67, difference +33.33 (SE 11.785…).
  *   2019 sleep: 240.0. 2020 under multiyear weights: unavailable.
  */
+import AxeBuilder from '@axe-core/playwright'
 import { type Page, expect } from '@playwright/test'
+
+/** Axe check: no serious or critical violations on the current page. */
+export async function expectNoSeriousViolations(page: Page) {
+  const results = await new AxeBuilder({ page }).analyze()
+  const serious = results.violations.filter((violation) =>
+    ['serious', 'critical'].includes(violation.impact ?? ''),
+  )
+  expect(
+    serious.map((violation) => `${violation.id}: ${violation.nodes.length} nodes`),
+  ).toEqual([])
+}
 
 /** Selects the sleep activity through search, as a user would. */
 export async function pickSleepBySearch(page: Page) {
@@ -29,4 +41,38 @@ export async function setAge(page: Page, min: number, max: number) {
 
 export async function analyze(page: Page) {
   await page.getByRole('button', { name: 'Analyze' }).click()
+}
+
+/** A share URL for an arbitrary spec (the app's encoding: base64url of sorted-keys JSON). */
+export function analysisUrl(operation: string, spec: object): string {
+  const sortKeys = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(sortKeys)
+    if (value !== null && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.keys(value)
+          .sort()
+          .map((key) => [key, sortKeys((value as Record<string, unknown>)[key])]),
+      )
+    }
+    return value
+  }
+  const base64 = Buffer.from(JSON.stringify(sortKeys(spec)), 'utf-8')
+    .toString('base64')
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replace(/=+$/, '')
+  return `/analysis/${operation}?spec=${base64}`
+}
+
+/** Presses Tab until `target` has focus (fails after `maxTabs`): a keyboard reachability check. */
+export async function tabTo(
+  page: Page,
+  target: import('@playwright/test').Locator,
+  maxTabs = 25,
+) {
+  for (let presses = 0; presses < maxTabs; presses += 1) {
+    if (await target.evaluate((element) => element === document.activeElement)) return
+    await page.keyboard.press('Tab')
+  }
+  await expect(target).toBeFocused()
 }

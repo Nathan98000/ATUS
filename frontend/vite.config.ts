@@ -4,6 +4,26 @@ import { defineConfig, loadEnv } from 'vite'
 
 import { apiBaseConfigError } from './src/api/apiBase.ts'
 
+/**
+ * The SPA's Content-Security-Policy: everything from its own origin, nothing
+ * inline, no third parties (audit I06 measured 0 violations under it).
+ * `vite preview` — and therefore every E2E run — serves the production build
+ * under it, so a change that needs a weaker policy fails a test. The dev
+ * server does not: Vite injects inline scripts there.
+ */
+export const CONTENT_SECURITY_POLICY = [
+  "default-src 'none'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self'",
+  "font-src 'self'",
+  "connect-src 'self'",
+  "manifest-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+].join('; ')
+
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
   // Builds and tests read configuration from the process environment only.
@@ -28,7 +48,10 @@ export default defineConfig(({ command, mode }) => {
     envDir,
     plugins: [react()],
     server: { proxy: apiProxy },
-    preview: { proxy: apiProxy },
+    preview: {
+      proxy: apiProxy,
+      headers: { 'Content-Security-Policy': CONTENT_SECURITY_POLICY },
+    },
     test: {
       environment: 'jsdom',
       setupFiles: ['src/test/setup.ts'],

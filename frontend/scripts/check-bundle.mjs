@@ -38,4 +38,6 @@ if (findings.length > 0) {
   )
   process.exit(1)
 }
-process.stdout.write(`check-bundle: ${files.length} bundle file(s), no development API address.\n`)
+process.stdout.write(
+  `check-bundle: ${files.length} bundle file(s), no development API address.\n`,
+)

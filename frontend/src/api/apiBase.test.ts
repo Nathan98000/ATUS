@@ -57,9 +57,23 @@ describe('vite.config.ts', () => {
       mode: string
       isSsrBuild: boolean
       isPreview: boolean
-    }) => { envDir?: string | false; server?: { proxy?: Record<string, unknown> } }
+    }) => {
+      envDir?: string | false
+      server?: { proxy?: Record<string, unknown> }
+      preview?: { proxy?: Record<string, unknown>; headers?: Record<string, string> }
+    }
     return factory({ command, mode, isSsrBuild: false, isPreview: false })
   }
+
+  it('previews (and so E2E-tests) the build under the strict production CSP', async () => {
+    const config = await resolveConfig('serve', 'production')
+    const policy = config.preview?.headers?.['Content-Security-Policy'] ?? ''
+    expect(policy).toContain("default-src 'none'")
+    expect(policy).toContain("script-src 'self'")
+    expect(policy).toContain("connect-src 'self'")
+    expect(policy).not.toContain('unsafe-inline')
+    expect(config.preview?.proxy).toHaveProperty('/api')
+  })
 
   it('production builds read no .env files (not even .env.local)', async () => {
     const config = await resolveConfig('build', 'production')
