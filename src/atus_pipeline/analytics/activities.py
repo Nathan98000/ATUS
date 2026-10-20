@@ -1,11 +1,14 @@
 """Activity-selector resolution against the loaded BLS coding lexicon.
 
-The harmonized 2003-25 lexicon is strictly prefix-hierarchical (tier1 = first
-2 digits, tier2 = first 4, enforced by Phase 1 schema constraints), so "a
-category and all its descendants" is exactly a code-prefix match. Resolution
-validates every requested code against ``atus.activity_tier1/2`` /
-``atus.activity_codes`` and produces the parameterized SQL fragment used to
-aggregate episode minutes.
+The harmonized multi-year lexicon (2003-25 for release 0325) is strictly
+prefix-hierarchical (tier1 = first 2 digits, tier2 = first 4, enforced by
+Phase 1 schema constraints), so "a category and all its descendants" is
+exactly a code-prefix match. Resolution validates every requested code
+against ``atus.activity_tier1/2`` / ``atus.activity_codes`` and produces the
+parameterized SQL fragment used to aggregate episode minutes.
+
+The lexicon is release-specific: the resolver also reads which release is
+loaded, so user-facing text names the right lexicon (``lexicon_label``).
 """
 
 from __future__ import annotations
@@ -14,6 +17,8 @@ from dataclasses import dataclass
 
 import psycopg
 
+from ..database.versions import read_release
+from ..sources import lexicon_label
 from .errors import InvalidSpecError, UnknownActivityError
 from .spec import ActivitySelector
 
@@ -48,13 +53,17 @@ class ActivityResolver:
                 "The activity lexicon is not loaded — the ATUS database has "
                 "not been populated yet."
             )
+        # Year span of the loaded release's lexicon, e.g. "2003-25" (None when
+        # the release is unknown; text then names "the harmonized lexicon").
+        self.lexicon_label: str | None = lexicon_label(read_release(conn))
 
     def _check_code(self, code: str) -> None:
         table = {2: self._tier1, 4: self._tier2, 6: set(self._codes)}[len(code)]
         if code not in table:
             tier = {2: "tier-1", 4: "tier-2", 6: "6-digit"}[len(code)]
+            span = f"{self.lexicon_label} " if self.lexicon_label else ""
             raise UnknownActivityError(
-                f"Activity code {code!r} is not a {tier} code in the 2003-25 "
+                f"Activity code {code!r} is not a {tier} code in the {span}"
                 f"harmonized activity lexicon."
             )
 

@@ -46,20 +46,23 @@ def test_engine_reproduces_official_bls_estimates(conn):
 
 
 def test_full_trend_runs_and_flags_2020(conn):
-    """A 2003-2025 trend on the real data: every year estimable except 2020,
-    which must be explicitly unavailable under the multi-year weight."""
+    """A full-period trend on the real data (2003-2025 for release 0325):
+    every year estimable except 2020, which must be explicitly unavailable
+    under the multi-year weight."""
     from atus_pipeline.analytics import ActivitySelector, AnalysisEngine, AnalysisSpec, Measure
+    from atus_pipeline.sources import get_release
 
+    years = get_release(load_settings().release).years
     engine = AnalysisEngine(conn)
     result = engine.trend(
         AnalysisSpec(
             measure=Measure.AVERAGE_MINUTES_PER_DAY,
             activity=ActivitySelector.preset("sleep"),
-            years=tuple(range(2003, 2026)),
+            years=years,
         )
     )
     by_year = {p.year: p for p in result.points}
-    assert len(by_year) == 23
+    assert len(by_year) == len(years)
     assert by_year[2020].estimate is None and "TUFNWGTP" in by_year[2020].unavailable_reason
     for year, point in by_year.items():
         if year == 2020:

@@ -273,8 +273,9 @@ def test_reload_during_continuous_reads_fails_no_request(db_url, api, tmp_path):
     old_run, new_run = metas[0].values[0], metas[-1].values[0]
     assert new_run > old_run
     years = (2019, 2020, 2023)
+    consistent = ((old_run, V1_RESPONDENTS, years), (new_run, V2_RESPONDENTS, years))
     for obs in metas:
-        assert obs.values in ((old_run, V1_RESPONDENTS, years), (new_run, V2_RESPONDENTS, years)), obs
+        assert obs.values in consistent, obs
     for obs in ordered("activities"):
         assert obs.values == (18,)
 
