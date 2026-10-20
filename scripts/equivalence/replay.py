@@ -96,7 +96,7 @@ from servers import (
 )
 
 from atus_pipeline.config import DEFAULT_DATABASE_URL
-from atus_pipeline.database.dsn import describe, redact
+from atus_pipeline.database.dsn import describe, redact, same_database
 from atus_pipeline.database.versions import read_data_version
 from atus_pipeline.serving.secrets_file import (
     API_URL_KEY,
@@ -218,6 +218,10 @@ def database_urls(args: argparse.Namespace) -> dict[str, tuple[str, str]]:
             urls["c"] = (os.environ[SERVING_URL_ENV], f"${SERVING_URL_ENV}")
         else:
             raise SetupError(f"target c needs --serving-secrets-file or ${SERVING_URL_ENV}")
+        if same_database(urls["b"][0], urls["c"][0]):
+            # b vs c would then compare a database with itself and prove nothing.
+            raise SetupError(f"the full and the serving database are the same database "
+                             f"({describe(urls['c'][0])})")
     return {key: urls[key] for key in args.targets}
 
 

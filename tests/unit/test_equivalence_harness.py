@@ -882,6 +882,18 @@ def test_the_serving_url_can_come_from_the_environment(tmp_path, monkeypatch):
     assert replay.database_urls(args)["c"][1] == f"${replay.SERVING_URL_ENV}"
 
 
+def test_full_and_serving_must_be_different_databases(tmp_path, monkeypatch):
+    args = replay.parse_args(["--specs", str(tmp_path), "--out", str(tmp_path),
+                              "--targets", "bc"])
+    monkeypatch.setenv(replay.FULL_URL_ENV, "postgresql://atus:atus@localhost:5434/atus")
+    monkeypatch.setenv(replay.SERVING_URL_ENV, "postgresql://atus_api:pw@127.0.0.1:5434/atus")
+    with pytest.raises(replay.SetupError, match="same database") as raised:
+        replay.database_urls(args)
+    assert ":pw@" not in str(raised.value)
+    monkeypatch.setenv(replay.SERVING_URL_ENV, "postgresql://atus_api:pw@localhost:5466/atus")
+    assert replay.database_urls(args)["c"][0].endswith("5466/atus")
+
+
 class _Flaky(BaseHTTPRequestHandler):
     answers: list[tuple[int, dict, bytes]] = []
     seen: list[tuple[str, str, bytes, str | None]] = []

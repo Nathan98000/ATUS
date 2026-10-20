@@ -40,6 +40,8 @@ Reports name databases as `user@host:port/dbname`.
 - Serving: `--serving-secrets-file`, the `KEY=value` file `atus restore-serving-db`
   writes. The harness uses `ATUS_API_DATABASE_URL` (the read-only API role) and falls
   back to `ATUS_OWNER_DATABASE_URL`. Alternatively, set `$ATUS_EQ_SERVING_DATABASE_URL`.
+  If the serving database is the full database, the harness refuses to run, because
+  comparing a database with itself proves nothing.
 
 Every server connects with `default_transaction_read_only=on`. Each server runs `atus api`
 from its own code base, on loopback, with a clean environment. Its working directory is
