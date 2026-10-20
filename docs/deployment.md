@@ -711,7 +711,7 @@ Secrets are generated into `~/.config/atus/edge.env` and loaded with `npx wrangl
 | Variable | Default | Meaning |
 |---|---|---|
 | `ATUS_STACK_PG_SUPERUSER_PASSWORD`, `ATUS_STACK_OWNER_PASSWORD`, `ATUS_STACK_API_DB_PASSWORD` | required | passwords of `postgres` (bootstrap only), `neondb_owner` and `atus_api`; URL-safe |
-| `ATUS_STACK_EDGE_SECRET`, `ATUS_STACK_OPS_TOKEN` | required | the API's `ATUS_EDGE_SECRETS` / `ATUS_OPS_TOKEN` (and the Worker's `EDGE_AUTH_SECRET`); the smoke probe gets both |
+| `ATUS_STACK_EDGE_SECRET`, `ATUS_STACK_OPS_TOKEN` | required | the API's `ATUS_EDGE_SECRETS` / `ATUS_OPS_TOKEN` (and the Worker's `EDGE_AUTH_SECRET`); the smoke probe gets both. At least 32 characters: the stack's API runs in production mode, which refuses shorter ones |
 | `ATUS_STACK_EDGE_OPS_TOKEN`, `ATUS_STACK_IP_HMAC_KEY` | empty | the Worker's `OPS_TOKEN` / `IP_HMAC_KEY` (profile `edge`) |
 | `ATUS_STACK_DUMP` | unset | serving dump for profile `dump` |
 | `ATUS_EXPECTED_DATA_VERSION` | empty | passed to the API (and the Worker's `DATA_VERSION`) |
@@ -732,7 +732,7 @@ Secrets are generated into `~/.config/atus/edge.env` and loaded with `npx wrangl
 | `ATUS_E2E_DATABASE_URL` | `postgresql://atus:atus@localhost:5434/atus_e2e` | `…/atus_e2e_wsc` | disposable database of `scripts/e2e_backend.py`. Only a local `atus_e2e[_<suffix>]` is accepted (F60) |
 | `ATUS_DATA_QUALITY` | unset | `1` | opt in to the full-DB data-quality suite |
 | `ATUS_DOCKER_TESTS` | unset | `1` | opt in to the image, gate and stack tests in `tests/deploy` |
-| `ATUS_TEST_IMAGE` | unset: build `atus-api:test` | `ghcr.io/nathan98000/atus-api@sha256:<digest>` | test an existing image |
+| `ATUS_TEST_IMAGE` | unset: build `atus-api:test` | `ghcr.io/nathan98000/atus-api@sha256:<digest>` | test an existing image; `test_stack_smoke.py` also runs the stack on it (`--no-build`) |
 | `ATUS_DOCKER_TEST_PREFIX` | `atus-pytest` | `atus-ci-${GITHUB_RUN_ID}` | prefix of every container, network and compose project the tests create |
 | `ATUS_SMOKE_ARGS` | empty | `--emulation` | extra `scripts/smoke_stack.sh` options for `test_stack_smoke.py` |
 | `ATUS_SMOKE_EDGE_SECRET`, `ATUS_SMOKE_OPS_TOKEN` | set by the `smoke` service | — | the probe's credentials |

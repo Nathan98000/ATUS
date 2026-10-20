@@ -251,9 +251,12 @@ def test_ssl_cert_file_is_what_makes_system_roots_work(api_image, tls_postgres, 
 
 def test_health_answers_without_a_database(api_image, unique):
     name = f"{unique}-health"
+    # A secret shaped like a real one: production mode refuses edge secrets
+    # shorter than 32 characters (docs/deployment.md: 32 random bytes, URL-safe).
+    edge_secret = secrets.token_urlsafe(32)
     docker(
         "run", "-d", "--name", name, "-p", "127.0.0.1::10000",
-        "-e", f"ATUS_DATABASE_URL={UNREACHABLE_DB}", "-e", "ATUS_EDGE_SECRETS=test-secret",
+        "-e", f"ATUS_DATABASE_URL={UNREACHABLE_DB}", "-e", f"ATUS_EDGE_SECRETS={edge_secret}",
         api_image,
     )
     try:
@@ -265,6 +268,10 @@ def test_health_answers_without_a_database(api_image, unique):
                     status, body = r.status, json.loads(r.read())
                 break
             except OSError:
+                state = docker("inspect", "-f", "{{.State.Status}}", name).stdout.strip()
+                if state == "exited":  # refused to start: show why instead of waiting
+                    logs = docker("logs", name, check=False)
+                    pytest.fail(f"the API exited: {(logs.stdout + logs.stderr)[-1500:]}")
                 time.sleep(0.5)
         assert status == 200 and body["status"] == "ok", body
         for _ in range(120):

@@ -61,6 +61,10 @@ def main() -> int:
             print("seed: data already present; skipping the fixture load", flush=True)
         else:
             apply_migrations(conn, WORKSPACE / "migrations")
+            # The loader commits in its own transactions and refuses a
+            # connection with one still open (apply_migrations leaves its read
+            # of the tracking table open).
+            conn.commit()
             with tempfile.TemporaryDirectory(prefix="atus-seed-") as tmp:
                 settings = analytics_settings(Path(tmp), database_url)
                 load_all(conn, settings)

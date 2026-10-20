@@ -112,6 +112,10 @@ services:
       # The seed stands in for the owner's loader, which runs from a checkout
       # in development mode; production mode (the image default) is the API's.
       ATUS_ENV: development
+      # The installed package has no migrations/ next to it: data commands
+      # (and the loader's check that the schema is current) read the mounted
+      # ones from here.
+      ATUS_MIGRATIONS_DIR: /workspace/migrations
     entrypoint: ["python", "/workspace/deploy/stack/seed_fixture.py"]
     command: []
     # The image carries no migrations, tests or data; mount just what the

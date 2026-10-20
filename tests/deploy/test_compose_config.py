@@ -67,7 +67,7 @@ class TestDevelopmentCompose:
 
 
     def test_project_and_volume_names_are_fixed(self, config):
-        """The loaded ~2 GB database lives in atus_atus_pgdata; any checkout must reuse it."""
+        """Every checkout resolves the volume the original ATUS/ directory named."""
         assert config["name"] == "atus"
         assert config["volumes"] == {"atus_pgdata": {"name": "atus_atus_pgdata"}}
         postgres = config["services"]["postgres"]
@@ -183,6 +183,10 @@ class TestProductionCompose:
         # the loader, not the API: never production mode
         assert seed["environment"]["ATUS_ENV"] == "development"
         assert all(m["read_only"] for m in seed["volumes"])
+        # The image ships no migrations; data commands must find the mounted ones.
+        mounts = {m["target"]: m["source"] for m in seed["volumes"]}
+        migrations = seed["environment"]["ATUS_MIGRATIONS_DIR"]
+        assert mounts[migrations] == str(REPO_ROOT / "migrations")
         restore = config["services"]["restore"]
         assert restore["profiles"] == ["dump"]
         assert restore["environment"]["PGUSER"] == "neondb_owner"
