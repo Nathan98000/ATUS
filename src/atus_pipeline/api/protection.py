@@ -30,7 +30,7 @@ from datetime import UTC, datetime, timedelta
 import anyio
 
 from ..config import RateLimit, Settings
-from .errors import OverloadedError
+from .errors import DailyCapacityReachedError, OverloadedError
 
 # --------------------------------------------------------------------------- #
 # cost classification                                                          #
@@ -202,6 +202,7 @@ class DailyCap:
         self._lock = threading.Lock()
         self._day = clock().date()
         self.used = 0
+        self.rejections = 0  # counted by the caller via refuse()
 
     def _roll(self, now: datetime) -> None:
         if now.date() != self._day:
@@ -219,6 +220,20 @@ class DailyCap:
                 return False
             self.used += 1
             return True
+
+    def used_today(self) -> int:
+        with self._lock:
+            self._roll(self._clock())
+            return self.used
+
+    def refuse(self) -> DailyCapacityReachedError:
+        """Count a refusal and build its error (``Retry-After`` = the time
+        until 00:00 UTC)."""
+        with self._lock:
+            self.rejections += 1
+        return DailyCapacityReachedError(
+            "daily analysis cap reached", retry_after=self.seconds_until_reset()
+        )
 
     def seconds_until_reset(self) -> int:
         now = self._clock()
@@ -252,14 +267,19 @@ class AdmissionLanes:
         self.wait_s = wait_s
         self.in_flight = 0
         self.heavy_in_flight = 0
-        self.rejections = 0
+        self.waits = 0        # admissions that found no free lane and waited
+        self.rejections = 0   # ... and were shed after the wait
 
     @asynccontextmanager
     async def admit(self, heavy: bool) -> AsyncIterator[None]:
         acquired: list[anyio.Semaphore] = []
         deadline = anyio.current_time() + self.wait_s
+        waited = False
         try:
             for semaphore in ((self._heavy, self._general) if heavy else (self._general,)):
+                if not waited and semaphore.value == 0:
+                    waited = True
+                    self.waits += 1
                 if not await self._acquire_by(semaphore, deadline):
                     self.rejections += 1
                     raise OverloadedError(

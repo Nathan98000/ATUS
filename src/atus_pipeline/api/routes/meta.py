@@ -1,10 +1,13 @@
-"""API metadata + capability discovery."""
+"""API metadata + capability discovery.
+
+The data facts (release, years, respondent count, ingestion run) come from
+the in-process data snapshot, so a fresh snapshot answers ``/meta`` with no
+database statement (audit F14, F62).
+"""
 
 from __future__ import annotations
 
-import psycopg
 from fastapi import APIRouter, Depends, Response
-from starlette.concurrency import run_in_threadpool
 
 from ...analytics import ANALYTICS_VERSION
 from ...analytics.estimators import MEASURE_UNITS
@@ -12,7 +15,7 @@ from ...analytics.population import describe_dimensions
 from ...analytics.spec import ACTIVITY_PRESETS, Measure
 from .. import API_VERSION
 from ..database import Database
-from ..dependencies import get_database
+from ..dependencies import get_database, get_snapshots
 from ..schemas.meta import (
     CapabilitiesInfo,
     DataInfo,
@@ -20,6 +23,7 @@ from ..schemas.meta import (
     MetaResponse,
     WeightSchemeInfo,
 )
+from ..snapshot import SnapshotStore
 
 router = APIRouter(prefix="/meta", tags=["meta"])
 
@@ -39,24 +43,6 @@ _MEASURE_DESCRIPTIONS = {
 }
 
 
-def _read_data_info(db: Database) -> tuple[tuple | None, list[int], int]:
-    with db.transaction("metadata") as conn:
-        return _data_info(conn)
-
-
-def _data_info(conn: psycopg.Connection) -> tuple[tuple | None, list[int], int]:
-    run = conn.execute(
-        "SELECT id, release, finished_at FROM atus.ingestion_runs "
-        "WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-    years = [
-        row[0] for row in
-        conn.execute("SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1")
-    ]
-    respondents = conn.execute("SELECT count(*) FROM atus.respondents").fetchone()[0]
-    return run, years, respondents
-
-
 @router.get(
     "",
     response_model=MetaResponse,
@@ -72,19 +58,23 @@ def _data_info(conn: psycopg.Connection) -> tuple[tuple | None, list[int], int]:
 async def meta(
     response: Response,
     db: Database = Depends(get_database),
+    snapshots: SnapshotStore = Depends(get_snapshots),
 ) -> MetaResponse:
-    run, years, respondents = await run_in_threadpool(_read_data_info, db)
+    snapshot = await snapshots.get(db)
+    run = snapshot.run
 
     response.headers["Cache-Control"] = "public, max-age=300"
+    response.headers["X-Data-Version"] = snapshot.data_version
+    response.headers["X-Analytics-Version"] = ANALYTICS_VERSION
     return MetaResponse(
         api_version=API_VERSION,
         analytics_version=ANALYTICS_VERSION,
         data=DataInfo(
-            release=run[1] if run else "unloaded",
-            years=years,
-            respondents=respondents,
-            last_ingested_at=run[2].isoformat() if run and run[2] else None,
-            ingestion_run_id=run[0] if run else None,
+            release=run.release if run else "unloaded",
+            years=list(snapshot.years),
+            respondents=snapshot.respondents,
+            last_ingested_at=run.finished_at.isoformat() if run and run.finished_at else None,
+            ingestion_run_id=run.id if run else None,
         ),
         capabilities=CapabilitiesInfo(
             measures=[

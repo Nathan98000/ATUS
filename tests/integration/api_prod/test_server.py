@@ -181,9 +181,9 @@ class TestConnectionBound:
 
 
 class SlowEngine:
-    def __init__(self, conn):
+    def __init__(self, conn, **snapshot_parts):
         self._conn = conn
-        self._engine = AnalysisEngine(conn)
+        self._engine = AnalysisEngine(conn, **snapshot_parts)
 
     def estimate(self, spec):
         self._conn.execute("SELECT pg_sleep(1.0)")

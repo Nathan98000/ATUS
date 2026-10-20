@@ -1,12 +1,20 @@
 """Logging configuration for the pipeline CLI and the API.
 
-Besides the basic format this module installs two filters the API relies on:
+Two formats (``ATUS_LOG_FORMAT``): ``text`` for people (development) and
+``json`` for log processors (production): one JSON object per line with
+``ts``, ``level``, ``logger`` and ``message``, plus the structured fields a
+record carries. The API's access log puts its fields at the top level (see
+ADR-014 for the schema); tracebacks go into ``exc``, so a record never spans
+lines.
+
+Besides the format this module installs two filters the API relies on:
 
 * **Secret redaction.** Configured secrets (the database password, edge
   secrets, the ops token) are replaced by ``***`` in any record emitted by the
   loggers that could carry them (psycopg's pool logs connection errors
-  verbatim; audit I07). DSNs are also validated at startup, so this is defense
-  in depth.
+  verbatim; audit I07), and again in the formatted output of the handler
+  this module installs (which also covers tracebacks). DSNs are also
+  validated at startup, so this is defense in depth.
 * **One traceback per unhandled error.** The API's catch-all handler logs an
   unexpected exception with its request id and marks it; uvicorn's own
   "Exception in ASGI application" record for the same exception is then
@@ -15,9 +23,11 @@ Besides the basic format this module installs two filters the API relies on:
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
 from collections.abc import Iterable
+from datetime import UTC, datetime
 
 # Records from these loggers are scrubbed of configured secrets. Logger-level
 # filters only see records created on that exact logger, so each is listed.
@@ -25,6 +35,7 @@ _REDACTED_LOGGERS = (
     "",
     "atus",
     "atus.api",
+    "atus.api.access",
     "psycopg",
     "psycopg.pool",
     "uvicorn",
@@ -35,17 +46,11 @@ _MIN_REDACTED_LENGTH = 8  # shorter values (e.g. the dev password) would mangle 
 LOGGED_MARKER = "_atus_logged"
 """Attribute set on an exception once the API has logged it with a traceback."""
 
-
-def configure_logging(level: str = "INFO") -> None:
-    logging.basicConfig(
-        level=getattr(logging, level, logging.INFO),
-        format="%(asctime)s %(levelname)-7s %(name)s: %(message)s",
-        datefmt="%H:%M:%S",
-        stream=sys.stderr,
-    )
-    # curl_cffi / urllib noise is not useful at INFO
-    logging.getLogger("curl_cffi").setLevel(logging.WARNING)
-    _install_filters()
+TEXT_FORMAT = "%(asctime)s %(levelname)-7s %(name)s: %(message)s"
+_HANDLER_MARKER = "_atus_handler"
+STRUCTURED_FIELDS = "access"
+"""Name of the ``extra`` attribute whose dict the JSON format lifts to the
+top level of the line."""
 
 
 class _RedactingFilter(logging.Filter):
@@ -55,6 +60,11 @@ class _RedactingFilter(logging.Filter):
         super().__init__()
         self.secrets: tuple[str, ...] = ()
 
+    def redact(self, text: str) -> str:
+        for secret in self.secrets:
+            text = text.replace(secret, "***")
+        return text
+
     def filter(self, record: logging.LogRecord) -> bool:
         if not self.secrets:
             return True
@@ -62,9 +72,7 @@ class _RedactingFilter(logging.Filter):
             message = record.getMessage()
         except Exception:  # a malformed record is logging's problem, not ours
             return True
-        redacted = message
-        for secret in self.secrets:
-            redacted = redacted.replace(secret, "***")
+        redacted = self.redact(message)
         if redacted != message:
             record.msg, record.args = redacted, None
         return True
@@ -80,6 +88,65 @@ class _DuplicateTracebackFilter(logging.Filter):
 
 _REDACTOR = _RedactingFilter()
 _DEDUPLICATOR = _DuplicateTracebackFilter()
+
+
+class TextFormatter(logging.Formatter):
+    def __init__(self) -> None:
+        super().__init__(TEXT_FORMAT, datefmt="%H:%M:%S")
+
+    def format(self, record: logging.LogRecord) -> str:
+        return _REDACTOR.redact(super().format(record))
+
+
+class JsonFormatter(logging.Formatter):
+    """One JSON object per record (see module docstring)."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        entry: dict = {
+            "ts": datetime.fromtimestamp(record.created, UTC).isoformat(timespec="milliseconds")
+                  .replace("+00:00", "Z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        fields = getattr(record, STRUCTURED_FIELDS, None)
+        if isinstance(fields, dict):
+            for key, value in fields.items():
+                entry.setdefault(key, value)
+        if record.exc_info:
+            entry["exc_type"] = record.exc_info[0].__name__ if record.exc_info[0] else None
+            entry["exc"] = self.formatException(record.exc_info)
+        elif record.exc_text:
+            entry["exc"] = record.exc_text
+        return _REDACTOR.redact(json.dumps(entry, default=str, ensure_ascii=False))
+
+
+def make_formatter(fmt: str) -> logging.Formatter:
+    return JsonFormatter() if fmt == "json" else TextFormatter()
+
+
+def configure_logging(level: str = "INFO", fmt: str = "text") -> None:
+    """Send records to stderr in ``fmt`` (``text`` or ``json``).
+
+    Like ``logging.basicConfig``, this installs a handler only when the root
+    logger has none (a test runner's or host's handlers are left alone); a
+    handler installed by an earlier call is reconfigured, so the API can
+    switch the CLI's text output to JSON.
+    """
+    root = logging.getLogger()
+    ours = [h for h in root.handlers if getattr(h, _HANDLER_MARKER, False)]
+    if not root.handlers:
+        handler = logging.StreamHandler(sys.stderr)
+        setattr(handler, _HANDLER_MARKER, True)
+        root.addHandler(handler)
+        ours = [handler]
+    if ours:
+        root.setLevel(getattr(logging, level, logging.INFO))
+        for handler in ours:
+            handler.setFormatter(make_formatter(fmt))
+    # curl_cffi / urllib noise is not useful at INFO
+    logging.getLogger("curl_cffi").setLevel(logging.WARNING)
+    _install_filters()
 
 
 def _install_filters() -> None:

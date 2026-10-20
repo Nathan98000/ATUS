@@ -8,12 +8,18 @@ The production process is started by ``atus api`` (see
 uvicorn process.
 
 Lifecycle: startup builds the database pool without connecting (``min_size``
-0: an API cold start never wakes the database), the analysis-result cache, and
-the per-process protection state (rate buckets, daily cap, admission lanes),
-and sizes the worker-thread limiter. Shutdown cancels queries still running,
-waits briefly for detached computations, and closes the pool. Startup
-performs no data validation and is effectively instantaneous; a production
-configuration without edge secrets is refused before anything starts.
+0: an API cold start never wakes the database), the analysis-result cache,
+the (empty) in-process data snapshot, and the per-process protection state
+(rate buckets, daily cap, admission lanes), and sizes the worker-thread
+limiter. Nothing reads the database until a request needs data. Shutdown
+cancels queries still running, waits briefly for detached computations, and
+closes the pool. Startup performs no data validation and is effectively
+instantaneous; a production configuration without edge secrets is refused
+before anything starts.
+
+Logging is configured here too (``ATUS_LOG_FORMAT``), and uvicorn's own
+access log is switched off: the request-context middleware writes one access
+line per request, with truncated client addresses (ADR-014).
 """
 
 from __future__ import annotations
@@ -34,9 +40,12 @@ from .analysis_runner import AnalysisRunner
 from .cache import InMemoryAnalysisCache
 from .database import Database
 from .errors import register_exception_handlers
+from .metrics import Metrics
 from .middleware import GuardMiddleware, RequestContextMiddleware, security_headers
+from .observability import RouteTemplates
 from .protection import Protection
 from .routes import activities, analysis, health, meta, population
+from .snapshot import SnapshotStore
 
 log = logging.getLogger("atus.api")
 
@@ -45,12 +54,15 @@ GZIP_MINIMUM_BYTES = 1024
 # Response headers a cross-origin browser client may read (audit F45).
 CORS_EXPOSE_HEADERS = (
     "X-Request-ID", "X-Analysis-Key", "X-Cache", "X-Data-Version",
-    "X-Analytics-Version", "X-Response-Format", "Retry-After",
+    "X-Analytics-Version", "X-Response-Format", "Retry-After", "Server-Timing",
 )
 
+# Release-neutral on purpose (audit F23): the loaded release and its years
+# are data, reported by GET /api/v1/meta.
 _DESCRIPTION = """\
-Read-only analytical API over the American Time Use Survey (ATUS) 2003-2025
-multi-year microdata.
+Read-only analytical API over the American Time Use Survey (ATUS) multi-year
+microdata. The loaded BLS release and its survey years are reported by
+GET /api/v1/meta.
 
 All estimates are **survey-weighted population statistics** computed by the
 project's validated analytical engine (ATUS User's Guide ch. 7 estimators;
@@ -84,8 +96,12 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
     tests that override the database dependency entirely."""
     settings = settings or load_settings()
     check_api_settings(settings)
-    configure_logging(settings.log_level)
+    configure_logging(settings.log_level, settings.log_format)
     set_redacted_secrets(_secrets_to_redact(settings))
+    # Replaced by the access line of RequestContextMiddleware, which never
+    # logs a full client address (uvicorn's would).
+    logging.getLogger("uvicorn.access").disabled = True
+    metrics = Metrics(build=settings.build_sha)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -93,10 +109,12 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
         anyio.to_thread.current_default_thread_limiter().total_tokens = settings.api_threads
         database = Database(settings, open=open_pool)
         protection = Protection.from_settings(settings)
+        snapshots = SnapshotStore(settings.api_snapshot_ttl_s, settings.expected_data_version)
         app.state.settings = settings
         app.state.database = database
         app.state.protection = protection
-        app.state.runner = AnalysisRunner(protection)
+        app.state.snapshots = snapshots
+        app.state.runner = AnalysisRunner(protection, snapshots)
         app.state.cache = InMemoryAnalysisCache(maxsize=settings.api_cache_size)
         try:
             yield
@@ -112,6 +130,10 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
         version=f"{API_VERSION} (contract)",
         description=_DESCRIPTION,
         lifespan=lifespan,
+        # ATUS_API_DOCS=off (the production default) removes /docs,
+        # /docs/oauth2-redirect, /redoc and /openapi.json; the schema is
+        # published as a static file instead (audit F43,
+        # scripts/export_openapi.py).
         docs_url="/docs" if settings.api_docs else None,
         redoc_url="/redoc" if settings.api_docs else None,
         openapi_url="/openapi.json" if settings.api_docs else None,
@@ -134,7 +156,12 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
             allow_headers=["Content-Type"],
             expose_headers=list(CORS_EXPOSE_HEADERS),
         )
-    app.add_middleware(RequestContextMiddleware, settings=settings)
+    routes = RouteTemplates()
+    app.add_middleware(
+        RequestContextMiddleware, settings=settings, metrics=metrics, routes=routes
+    )
+    app.state.settings = settings
+    app.state.metrics = metrics
 
     def outermost_headers(request: Request) -> dict[str, str]:
         """Headers for responses produced at the outermost error layer, which
@@ -155,10 +182,18 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
     register_exception_handlers(app, outermost_headers)
 
     prefix = f"/api/{API_VERSION}"
-    app.include_router(analysis.router, prefix=prefix)
-    app.include_router(activities.router, prefix=prefix)
-    app.include_router(population.router, prefix=prefix)
-    app.include_router(meta.router, prefix=prefix)
+    for router in (analysis.router, activities.router, population.router, meta.router):
+        app.include_router(router, prefix=prefix)
+        routes.add_router(router, prefix)
     app.include_router(health.router)
+    routes.add_router(health.router)
+    if app.openapi_url:  # the same conditions under which FastAPI adds them
+        routes.add(app.openapi_url)
+        if app.docs_url:
+            routes.add(app.docs_url)
+            if app.swagger_ui_oauth2_redirect_url:
+                routes.add(app.swagger_ui_oauth2_redirect_url)
+        if app.redoc_url:
+            routes.add(app.redoc_url)
 
     return app

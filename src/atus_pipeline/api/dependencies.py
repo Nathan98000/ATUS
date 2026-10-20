@@ -1,4 +1,5 @@
-"""FastAPI dependencies: settings, database, cache, engine factory, runner.
+"""FastAPI dependencies: settings, database, cache, engine factory, runner,
+data snapshot.
 
 All dependencies are ``async`` and do no I/O: they hand out per-process
 objects built in the application lifespan. Database work happens inside the
@@ -6,8 +7,9 @@ route, in exactly one worker-thread hop per transaction, through
 :meth:`Database.transaction` — so a request waiting for a connection or a
 lane holds no thread, and DB-free routes never touch the threadpool (audit
 F02). The Phase 2 ``AnalysisEngine`` is instantiated per computation around
-that transaction's connection; it is cheap (a few small lexicon lookups) and
-guarantees no analysis state is shared between concurrent requests.
+that transaction's connection, reusing the activity resolver and loaded
+years of the in-process data snapshot (read-only once built), so no
+analysis state is shared between concurrent requests beyond those.
 
 Tests replace ``get_database`` / ``get_engine_factory`` / ``get_cache`` via
 ``app.dependency_overrides``.
@@ -24,6 +26,7 @@ from ..config import Settings
 from .analysis_runner import AnalysisRunner, EngineFactory
 from .cache import AnalysisCache
 from .database import Database
+from .snapshot import SnapshotStore
 
 
 async def get_settings(request: Request) -> Settings:
@@ -44,6 +47,10 @@ async def get_engine_factory() -> EngineFactory:
 
 async def get_runner(request: Request) -> AnalysisRunner:
     return request.app.state.runner
+
+
+async def get_snapshots(request: Request) -> SnapshotStore:
+    return request.app.state.snapshots
 
 
 @dataclass(frozen=True)

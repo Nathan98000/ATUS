@@ -28,6 +28,12 @@ startup ``options`` parameter). Analyses also get a wall-clock deadline that
 cancels the running query, so a request issuing several statements is
 bounded too. The transaction ends (commit/rollback) and the connection goes
 back to the pool before the HTTP response is sent (audit I10).
+
+Every transaction is ``READ ONLY`` (psycopg sends ``BEGIN READ ONLY``; no
+extra statement): the API never writes (audit I05), so even a role that
+could write cannot be made to by the API. Statements and transaction time
+are counted per request for the access log, ``Server-Timing`` and metrics
+(``observability.py``).
 """
 
 from __future__ import annotations
@@ -44,7 +50,9 @@ from psycopg_pool import ConnectionPool, PoolTimeout
 
 from ..config import Settings
 from ..database import versions
+from . import observability
 from .errors import ApiError, DatabaseUnavailableError, OverloadedError, classify_connect_failure
+from .snapshot import DataSnapshot, load_snapshot
 
 log = logging.getLogger("atus.api")
 
@@ -138,6 +146,23 @@ class ConnectTracker:
             return self._last.error if self._last is not None else None
 
 
+class CountingCursor(psycopg.Cursor):
+    """Counts every statement it sends against the current request
+    (``Connection.execute`` goes through the connection's cursor factory)."""
+
+    def execute(self, *args, **kwargs):
+        observability.note_statement()
+        return super().execute(*args, **kwargs)
+
+    def executemany(self, *args, **kwargs):
+        observability.note_statement()
+        return super().executemany(*args, **kwargs)
+
+    def stream(self, *args, **kwargs):
+        observability.note_statement()
+        return super().stream(*args, **kwargs)
+
+
 def _tracking_connection_class(base: type[psycopg.Connection], tracker: ConnectTracker):
     class TrackedConnection(base):  # type: ignore[valid-type, misc]
         @classmethod
@@ -148,6 +173,8 @@ def _tracking_connection_class(base: type[psycopg.Connection], tracker: ConnectT
                 tracker.record(exc)
                 raise
             tracker.record(None)
+            conn.read_only = True  # every transaction: BEGIN READ ONLY (I05)
+            conn.cursor_factory = CountingCursor
             return conn
 
     return TrackedConnection
@@ -180,6 +207,7 @@ class Database:
         )
         self._active_lock = threading.Lock()
         self._active: set[psycopg.Connection] = set()
+        self.query_timeouts = 0  # queries cancelled by statement_timeout or the deadline
         if open:
             self.pool.open(wait=False)  # min_size=0: starts workers, opens nothing
 
@@ -241,16 +269,28 @@ class Database:
     # ------------------------------------------------------------------ #
 
     @contextmanager
-    def transaction(self, kind: str) -> Iterator[psycopg.Connection]:
-        """One transaction with the request's limits applied (see module
-        docstring). Commits on success, rolls back on error, and returns the
-        connection to the pool before the caller continues."""
+    def transaction(
+        self, kind: str, *, repeatable_read: bool = False
+    ) -> Iterator[psycopg.Connection]:
+        """One read-only transaction with the request's limits applied (see
+        module docstring). Commits on success, rolls back on error, and
+        returns the connection to the pool before the caller continues.
+        ``repeatable_read`` makes every statement see the same snapshot of
+        the data (``BEGIN ISOLATION LEVEL REPEATABLE READ``)."""
+        with observability.database_time():
+            with self._transaction(kind, repeatable_read) as conn:
+                yield conn
+
+    @contextmanager
+    def _transaction(self, kind: str, repeatable_read: bool) -> Iterator[psycopg.Connection]:
         sql, params = session_limits_statement(session_limits(self._settings, kind))
         conn = self.acquire()
         deadline: _Deadline | None = None
         with self._active_lock:
             self._active.add(conn)
         try:
+            if repeatable_read:
+                conn.isolation_level = psycopg.IsolationLevel.REPEATABLE_READ
             if kind == "analysis":
                 deadline = _Deadline(
                     conn, self._settings.api_statement_timeout_ms / 1000 + DEADLINE_MARGIN_S
@@ -258,17 +298,32 @@ class Database:
             with conn:
                 conn.execute(sql, params)
                 yield conn
+        except psycopg.errors.QueryCanceled:
+            with self._active_lock:
+                self.query_timeouts += 1
+            raise
         finally:
             if deadline is not None:
                 deadline.stop()  # after this, no cancel can reach the reused connection
             with self._active_lock:
                 self._active.discard(conn)
+            if repeatable_read:
+                try:
+                    conn.isolation_level = None  # back to the server default
+                except Exception:  # a broken connection is discarded by putconn
+                    pass
             self.pool.putconn(conn)
 
     def read_data_version(self) -> str:
         """The served data version (one short metadata transaction)."""
         with self.transaction("metadata") as conn:
             return versions.read_data_version(conn)
+
+    def read_snapshot(self) -> DataSnapshot:
+        """Everything the in-process data snapshot holds, read in one
+        consistent metadata transaction (``snapshot.py``)."""
+        with self.transaction("metadata", repeatable_read=True) as conn:
+            return load_snapshot(conn)
 
     # ------------------------------------------------------------------ #
     # cancellation and shutdown

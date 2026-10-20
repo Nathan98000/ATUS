@@ -132,9 +132,11 @@ class TestOpenAPI:
             "/api/v1/analysis/estimate", "/api/v1/analysis/trend",
             "/api/v1/analysis/compare", "/api/v1/activities",
             "/api/v1/activities/{code}", "/api/v1/activities/presets",
-            "/api/v1/population/metadata", "/api/v1/meta", "/health", "/ready",
+            "/api/v1/population/metadata", "/api/v1/meta", "/health",
         ):
             assert route in paths, route
+        # operator endpoints are not part of the published contract (F16)
+        assert "/ready" not in paths and "/metrics" not in paths
         schemas = spec["components"]["schemas"]
         for name in ("EstimateRequest", "EstimateResponse", "TrendResponse",
                      "CompareResponse", "ErrorResponse", "MetaResponse"):

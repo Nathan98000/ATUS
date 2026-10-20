@@ -9,7 +9,7 @@ import psycopg
 from fastapi.testclient import TestClient
 
 from atus_pipeline.analytics.results import ComparisonResult, EstimateValue
-from atus_pipeline.api.dependencies import get_cache, get_database
+from atus_pipeline.api.dependencies import get_cache
 from tests.unit.api.conftest import FakeDatabase, make_app, make_settings
 from tests.unit.api.test_contract import known_estimate_result
 
@@ -197,37 +197,35 @@ class _ReadyConnBase:
         raise NotImplementedError
 
 
+OPS_TOKEN = "o" * 40
+OPS = {"Authorization": f"Bearer {OPS_TOKEN}"}
+
+
 class TestReadinessFailurePaths:
-    def _client_with_conn(self, app, conn_factory):
-        app.dependency_overrides[get_database] = lambda: FakeDatabase(conn_factory)
+    """/ready failures are ordinary 503 envelopes without operator hints
+    (the hints go to the log; F16)."""
+
+    def _client(self, stub_engine, tmp_path, fake_db):
+        app = make_app(make_settings(tmp_path, ops_token=OPS_TOKEN), stub_engine, fake_db)
         return TestClient(app, raise_server_exceptions=False)
 
-    def test_schema_not_initialized(self, app):
+    def test_schema_not_initialized(self, stub_engine, tmp_path):
         class NoSchemaConn(_ReadyConnBase):
             def execute(self, sql, params=None):
-                if "atus." in sql:
-                    raise psycopg.errors.UndefinedTable('relation "atus.respondents" missing')
-                class _C:
-                    @staticmethod
-                    def fetchone():
-                        return (1,)
-                return _C()
+                raise psycopg.errors.UndefinedTable('relation "atus.ingestion_runs" missing')
 
-        with self._client_with_conn(app, NoSchemaConn) as client:
-            response = client.get("/ready")
+        with self._client(stub_engine, tmp_path, FakeDatabase(NoSchemaConn)) as client:
+            response = client.get("/ready", headers=OPS)
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "schema_not_initialized"
+        assert "atus migrate" not in response.text
 
-    def test_data_not_loaded(self, app):
-        class EmptyDataConn(_ReadyConnBase):
-            def execute(self, sql, params=None):
-                class _C:
-                    @staticmethod
-                    def fetchone():
-                        return (False,) if "EXISTS" in sql else (1,)
-                return _C()
+    def test_data_not_loaded(self, stub_engine, tmp_path):
+        from atus_pipeline.database import versions
 
-        with self._client_with_conn(app, EmptyDataConn) as client:
-            response = client.get("/ready")
+        fake_db = FakeDatabase(data_version=versions.UNLOADED)
+        with self._client(stub_engine, tmp_path, fake_db) as client:
+            response = client.get("/ready", headers=OPS)
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "data_not_loaded"
+        assert "atus load" not in response.text

@@ -73,8 +73,9 @@ def uvicorn_options(
         "timeout_graceful_shutdown": GRACEFUL_SHUTDOWN_S,
         "limit_concurrency": limit_concurrency(settings),
         "h11_max_incomplete_event_size": MAX_REQUEST_HEAD_BYTES,
-        # The app logs one line per request itself (with its request id);
-        # uvicorn's access log would duplicate it with the raw client IP.
+        # The app logs one structured line per request itself (request id,
+        # route template, truncated client address; ADR-014); uvicorn's
+        # access log would duplicate it with the raw client IP.
         "access_log": False,
         "log_config": None,
     }
@@ -88,7 +89,7 @@ def run(
 
     settings = settings or load_settings()
     check_api_settings(settings)
-    configure_logging(settings.log_level)
+    configure_logging(settings.log_level, settings.log_format)
     uvicorn.run(**uvicorn_options(settings, host=host, port=port, reload=reload))
 
 

@@ -49,11 +49,17 @@ log = logging.getLogger("atus.api")
 
 
 class ActivityNotFoundError(Exception):
-    """A GET /activities/{code} identifier that does not exist (404)."""
+    """A GET /activities/{code} identifier that does not exist (404).
 
-    def __init__(self, code: str):
+    ``lexicon`` names the loaded lexicon (e.g. ``"2003-25"``, derived from
+    the loaded release; audit F23); without it the message is
+    release-neutral.
+    """
+
+    def __init__(self, code: str, lexicon: str | None = None):
         self.code = code
-        super().__init__(f"Activity code {code!r} does not exist in the 2003-25 lexicon.")
+        where = f"the {lexicon} activity lexicon" if lexicon else "the activity lexicon"
+        super().__init__(f"Activity code {code!r} does not exist in {where}.")
 
 
 # --------------------------------------------------------------------------- #
@@ -152,6 +158,17 @@ class DailyCapacityReachedError(ApiError):
     message = (
         "Today's capacity for new analyses has been used. Previously computed "
         "results remain available; new analyses resume at 00:00 UTC."
+    )
+
+
+class DataVersionMismatchError(ApiError):
+    """The database serves another data version than the deployment expects
+    (``ATUS_EXPECTED_DATA_VERSION``; ADR-011 release switch)."""
+
+    status, code, scope, retry_after = 503, "data_version_mismatch", "global", 60
+    message = (
+        "The service is switching data releases and cannot answer from the "
+        "expected data right now. Retry shortly."
     )
 
 
@@ -295,6 +312,15 @@ def validation_details(raw_errors: list[dict]) -> dict:
     return details
 
 
+ERROR_CODE_KEY = "error_code"
+"""Key under which the error code of a response is left in the ASGI scope's
+``state`` for the access log and the metrics."""
+
+
+def note_error_code(state: dict, code: str) -> None:
+    state[ERROR_CODE_KEY] = code
+
+
 def _is_analysis_request(request: Request) -> bool:
     return request.url.path.startswith("/api/v1/analysis/")
 
@@ -302,29 +328,38 @@ def _is_analysis_request(request: Request) -> bool:
 def register_exception_handlers(app: FastAPI, outermost_headers) -> None:
     """Install the envelope handlers. ``outermost_headers(request)`` supplies
     the headers a 500 needs, because the catch-all runs outside every
-    middleware."""
+    middleware. Every handler records its error code in the request state."""
+
+    def respond(
+        request: Request, status: int, code: str, message: str,
+        details: dict | None = None, headers: dict[str, str] | None = None,
+    ) -> JSONResponse:
+        request.state.error_code = code
+        return error_response(status, code, message, details, headers)
+
+    def respond_api_error(request: Request, exc: ApiError) -> JSONResponse:
+        request.state.error_code = exc.code
+        return exc.to_response()
 
     @app.exception_handler(ApiError)
     async def handle_api_error(request: Request, exc: ApiError) -> JSONResponse:
         level = logging.WARNING if exc.status >= 500 else logging.INFO
         log.log(level, "%s on %s %s: %s", exc.code, request.method, request.url.path, exc)
-        return exc.to_response()
+        return respond_api_error(request, exc)
 
     @app.exception_handler(AnalyticsError)
     async def handle_domain_error(request: Request, exc: AnalyticsError) -> JSONResponse:
         for exc_type, (status, code) in _DOMAIN_MAP.items():
             if isinstance(exc, exc_type):
-                return error_response(status, code, str(exc))
+                return respond(request, status, code, str(exc))
         # Unmapped AnalyticsError subclass: still a domain rejection.
-        return error_response(422, "invalid_analysis", str(exc))
+        return respond(request, 422, "invalid_analysis", str(exc))
 
     @app.exception_handler(ActivityNotFoundError)
     async def handle_activity_not_found(
         request: Request, exc: ActivityNotFoundError
     ) -> JSONResponse:
-        return error_response(
-            404, "activity_not_found", str(exc), details={"code": exc.code}
-        )
+        return respond(request, 404, "activity_not_found", str(exc), details={"code": exc.code})
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(
@@ -333,11 +368,12 @@ def register_exception_handlers(app: FastAPI, outermost_headers) -> None:
         raw = list(exc.errors())
         details = validation_details(raw)
         if any(str(e.get("type", "")).startswith("json_") for e in raw):
-            return error_response(
-                400, "malformed_json", "The request body is not valid JSON.", details=details,
+            return respond(
+                request, 400, "malformed_json", "The request body is not valid JSON.",
+                details=details,
             )
-        return error_response(
-            422, "validation_error", "The request does not match the API schema.",
+        return respond(
+            request, 422, "validation_error", "The request does not match the API schema.",
             details=details,
         )
 
@@ -348,14 +384,15 @@ def register_exception_handlers(app: FastAPI, outermost_headers) -> None:
         # Framework-generated 404/405/... use the same envelope as everything
         # else, keeping the framework's headers (e.g. Allow on a 405).
         code = _HTTP_STATUS_CODES.get(exc.status_code, f"http_{exc.status_code}")
-        return error_response(
-            exc.status_code, code, str(exc.detail), headers=getattr(exc, "headers", None)
+        return respond(
+            request, exc.status_code, code, str(exc.detail),
+            headers=getattr(exc, "headers", None),
         )
 
     @app.exception_handler(psycopg.errors.UndefinedTable)
     async def handle_missing_schema(request: Request, exc: Exception) -> JSONResponse:
         log.error("schema not initialized: %s", exc)
-        return SchemaNotInitializedError().to_response()
+        return respond_api_error(request, SchemaNotInitializedError())
 
     @app.exception_handler(PoolTimeout)
     @app.exception_handler(psycopg.Error)
@@ -368,7 +405,7 @@ def register_exception_handlers(app: FastAPI, outermost_headers) -> None:
             "%s on %s %s: %s %s: %s", mapped.code, request.method, request.url.path,
             type(exc).__name__, getattr(exc, "sqlstate", None) or "", first_line,
         )
-        return mapped.to_response()
+        return respond_api_error(request, mapped)
 
     @app.exception_handler(Exception)
     async def handle_unexpected(request: Request, exc: Exception) -> JSONResponse:
@@ -380,7 +417,7 @@ def register_exception_handlers(app: FastAPI, outermost_headers) -> None:
             getattr(request.state, "request_id", "-"), request.method, request.url.path,
         )
         mark_logged(exc)
-        return error_response(
-            500, "internal_error", "An unexpected internal error occurred.",
+        return respond(
+            request, 500, "internal_error", "An unexpected internal error occurred.",
             headers=outermost_headers(request),
         )

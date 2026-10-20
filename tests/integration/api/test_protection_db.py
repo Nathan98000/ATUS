@@ -62,9 +62,9 @@ class SlowEngine:
     """The real engine, preceded by ``pg_sleep`` statements in the request's
     own transaction (so the request's limits apply to them)."""
 
-    def __init__(self, conn, *, sleeps=(), gate=None):
+    def __init__(self, conn, *, sleeps=(), gate=None, **snapshot_parts):
         self._conn = conn
-        self._engine = AnalysisEngine(conn)
+        self._engine = AnalysisEngine(conn, **snapshot_parts)
         self._sleeps = sleeps
         self._gate = gate
 
@@ -90,12 +90,15 @@ class TestTransactionLimits:
     def test_limits_are_applied_and_transaction_local(self, loaded_settings):
         seen = {}
 
-        def factory(conn):
+        def factory(conn, **snapshot_parts):
             for name in ("statement_timeout", "lock_timeout", "jit",
                          "idle_in_transaction_session_timeout",
                          "max_parallel_workers_per_gather", "application_name"):
                 seen[name] = conn.execute(f"SHOW {name}").fetchone()[0]
-            return AnalysisEngine(conn)
+            seen["transaction_read_only"] = conn.execute(
+                "SHOW transaction_read_only"
+            ).fetchone()[0]
+            return AnalysisEngine(conn, **snapshot_parts)
 
         with api(loaded_settings, factory, api_statement_timeout_ms=42_000,
                  api_max_parallel_workers=0) as (client, app):
@@ -111,14 +114,15 @@ class TestTransactionLimits:
         assert seen["idle_in_transaction_session_timeout"] == "30s"
         assert seen["max_parallel_workers_per_gather"] == "0"
         assert seen["application_name"] == "atus-api"
+        assert seen["transaction_read_only"] == "on"  # BEGIN READ ONLY (I05)
         assert meta_timeout == "10s"
         assert plain == "0"  # SET LOCAL: nothing leaks into the session
 
 
 class TestTimeouts:
     def test_statement_timeout_is_analysis_timeout_and_never_cached(self, loaded_settings):
-        def slow(conn):
-            return SlowEngine(conn, sleeps=(2.0,))
+        def slow(conn, **snapshot_parts):
+            return SlowEngine(conn, sleeps=(2.0,), **snapshot_parts)
 
         with api(loaded_settings, slow, api_statement_timeout_ms=200) as (client, app):
             response = client.post(ESTIMATE, json=body())
@@ -136,8 +140,8 @@ class TestTimeouts:
         whole exceeds statement_timeout + margin and is cancelled."""
         monkeypatch.setattr(dbmod, "DEADLINE_MARGIN_S", 0.1)
 
-        def slow(conn):
-            return SlowEngine(conn, sleeps=(0.3, 0.3, 0.3, 0.3))
+        def slow(conn, **snapshot_parts):
+            return SlowEngine(conn, sleeps=(0.3, 0.3, 0.3, 0.3), **snapshot_parts)
 
         with api(loaded_settings, slow, api_statement_timeout_ms=400) as (client, _):
             started = time.monotonic()
@@ -152,11 +156,13 @@ class TestPoolExhaustion:
     def test_busy_pool_is_overloaded_with_retry_after(self, loaded_settings):
         gate = Gate()
 
-        def held(conn):
-            return SlowEngine(conn, gate=gate)
+        def held(conn, **snapshot_parts):
+            return SlowEngine(conn, gate=gate, **snapshot_parts)
 
+        # TTL 0: /meta reads the snapshot every time, so it needs the pool
         with api(loaded_settings, held, api_pool_max_size=1, api_pool_timeout_s=0.3,
-                 api_max_inflight=1, api_max_inflight_heavy=1) as (client, _):
+                 api_max_inflight=1, api_max_inflight_heavy=1,
+                 api_snapshot_ttl_s=0) as (client, _):
             with ThreadPoolExecutor(1) as pool:
                 analysis = pool.submit(client.post, ESTIMATE, json=body())
                 assert gate.entered.wait(10)
@@ -172,15 +178,16 @@ class TestPoolExhaustion:
 
     def test_lane_is_taken_before_a_pool_connection(self, loaded_settings):
         """With the only analysis lane busy, a second uncached analysis is
-        shed without ever asking the pool for a compute connection (it only
-        reads the data version)."""
+        shed without ever asking the pool for a connection (the data version
+        comes from the fresh snapshot)."""
         gate = Gate()
 
-        def held(conn):
-            return SlowEngine(conn, gate=gate)
+        def held(conn, **snapshot_parts):
+            return SlowEngine(conn, gate=gate, **snapshot_parts)
 
         with api(loaded_settings, held, api_pool_max_size=3, api_max_inflight=1,
-                 api_max_inflight_heavy=1, api_admission_wait_s=0.1) as (client, app):
+                 api_max_inflight_heavy=1, api_admission_wait_s=0.1,
+                 api_snapshot_ttl_s=600) as (client, app):
             pool_stats = app.state.database.pool.get_stats
             with ThreadPoolExecutor(1) as pool:
                 first = pool.submit(client.post, ESTIMATE, json=body(2023))
@@ -191,13 +198,14 @@ class TestPoolExhaustion:
                 gate.release.set()
                 assert first.result(10).status_code == 200
         assert shed.json()["error"]["code"] == "overloaded"
-        assert after - before == 1  # the version read only
+        assert after - before == 0
         assert app.state.protection.lanes.rejections == 1
 
 
 class TestStaleConnections:
     def test_requests_succeed_after_every_backend_is_terminated(self, loaded_settings):
-        with api(loaded_settings) as (client, app):
+        # TTL 0: every request below needs the database, not the snapshot
+        with api(loaded_settings, api_snapshot_ttl_s=0) as (client, app):
             pool = app.state.database.pool
             held = [pool.getconn() for _ in range(3)]  # three idle connections
             for conn in held:
@@ -236,8 +244,8 @@ class TestEdgeAuthCostsNothing:
 
 class TestSingleFlightOverTheEngine:
     def test_identical_requests_compute_once(self, loaded_settings):
-        def slow(conn):
-            return SlowEngine(conn, sleeps=(0.5,))
+        def slow(conn, **snapshot_parts):
+            return SlowEngine(conn, sleeps=(0.5,), **snapshot_parts)
 
         with api(loaded_settings, slow) as (client, app):
             with ThreadPoolExecutor(2) as pool:
