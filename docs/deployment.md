@@ -381,9 +381,9 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
 
   | Service | Stands in for | Notes |
   |---|---|---|
-  | `db` | Neon Free, Postgres 16 | Neon's settings for the 0.25–2 CU compute (`jit=off`, `shared_buffers=215MB`, `max_connections=839`, `max_worker_processes=17`, `max_parallel_workers=8`), `shm_size: 1g` (F33). Bootstrap creates `neondb_owner` (owner, not a superuser) and `atus_api` (SELECT only, ADR-011 role defaults). Host port `127.0.0.1:5470` |
+  | `db` | Neon Free, Postgres 16 | Neon's settings for the 0.25–2 CU compute (`jit=off`, `shared_buffers=215MB`, `max_connections=839`, `max_worker_processes=17`, `max_parallel_workers=8`), `shm_size: 1g` (F33). Bootstrap creates `neondb_owner` (owner, not a superuser) and `atus_api` (SELECT only, ADR-011 role defaults); `tests/deploy/test_stack_roles.py` (opt-in) proves both, and that `atus_api` cannot write, truncate or create anything. Host port `127.0.0.1:5470` |
   | `restore` | the release switch's `pg_restore` | profile `dump`; set `ATUS_STACK_DUMP` to a serving dump. Restores as `neondb_owner` with `--no-owner --no-acl`, grants, `VACUUM (ANALYZE)` |
-  | `seed` | — | loads the fixture dataset as `neondb_owner` unless data is present; re-applies the API grants |
+  | `seed` | the owner's loader (`atus load`) | loads the fixture dataset as `neondb_owner` unless data is present, in development mode like the real loader; re-applies the API grants |
   | `api` | the Render web service | the image with exactly Render's environment (`ATUS_ENV=production`, ...). Read-only root filesystem, all capabilities dropped. **Not published on the host** |
   | `edge` | Cloudflare Worker + static assets | profile `edge`; `wrangler dev` in local mode on `127.0.0.1:8541`, assets from `frontend/dist`. Defined against the edge contract; validated once `edge/` lands (TODO(WS-D2)) |
   | `smoke` | — | profile `smoke`; the HTTP probe, run inside the stack network with the edge secret and the API's ops token |

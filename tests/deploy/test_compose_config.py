@@ -180,6 +180,8 @@ class TestProductionCompose:
         assert seed["environment"]["ATUS_SEED_DATABASE_URL"].startswith(
             "postgresql://neondb_owner:"
         )
+        # the loader, not the API: never production mode
+        assert seed["environment"]["ATUS_ENV"] == "development"
         assert all(m["read_only"] for m in seed["volumes"])
         restore = config["services"]["restore"]
         assert restore["profiles"] == ["dump"]

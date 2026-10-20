@@ -109,6 +109,9 @@ services:
     environment:
       ATUS_SEED_DATABASE_URL: postgresql://neondb_owner:${ATUS_STACK_OWNER_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}@db:5432/atus
       ATUS_SEED_FORCE: ${ATUS_SEED_FORCE:-0}
+      # The seed stands in for the owner's loader, which runs from a checkout
+      # in development mode; production mode (the image default) is the API's.
+      ATUS_ENV: development
     entrypoint: ["python", "/workspace/deploy/stack/seed_fixture.py"]
     command: []
     # The image carries no migrations, tests or data; mount just what the
