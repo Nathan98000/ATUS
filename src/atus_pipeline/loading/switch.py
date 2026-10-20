@@ -45,8 +45,12 @@ the commit of the shadow data, but which first touches the canonical tables
 after the switch, would resolve their names to the new tables and see them
 empty. :func:`switch` therefore first waits until no transaction older than
 the shadow data's commit remains (``pg_stat_activity.xact_start``; the
-loading role needs to see other sessions there, which the owner or a
-``pg_read_all_stats`` member does).
+loading role needs to see other roles' sessions there, which a superuser or a
+member of ``pg_read_all_stats`` does, and is warned otherwise).
+
+The guarantee is per transaction, so it holds for clients that run each
+request in one transaction, as the API does (one pooled connection and one
+transaction per request).
 """
 
 from __future__ import annotations
