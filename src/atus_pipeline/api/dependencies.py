@@ -18,6 +18,7 @@ from psycopg_pool import PoolTimeout
 
 from ..analytics import AnalysisEngine
 from ..config import Settings
+from ..database import versions
 from .cache import AnalysisCache
 from .errors import DatabaseUnavailableError
 
@@ -48,16 +49,9 @@ def get_engine(conn: psycopg.Connection = Depends(get_connection)) -> AnalysisEn
 
 
 def read_data_version(conn: psycopg.Connection) -> str:
-    """Cache-key component that changes whenever `atus load` rebuilds the data:
-    '<release>:run<latest successful ingestion run id>'."""
-    row = conn.execute(
-        "SELECT release, id FROM atus.ingestion_runs "
-        "WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-    if row is None:
-        return "unloaded:run0"
-    release, run_id = row
-    return f"{release}:run{run_id}"
+    """Cache-key component identifying the served data (see
+    ``atus_pipeline.database.versions``)."""
+    return versions.read_data_version(conn)
 
 
 def get_data_version(conn: psycopg.Connection = Depends(get_connection)) -> str:

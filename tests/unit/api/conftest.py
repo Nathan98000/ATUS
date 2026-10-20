@@ -48,7 +48,8 @@ class FakeVersionConnection:
             class _Cursor:
                 @staticmethod
                 def fetchone():
-                    return ("0325", 1)   # -> data version "0325:run1"
+                    # to_jsonb(row) of the latest succeeded run
+                    return ({"id": 1, "release": "0325", "data_version": "0325:run1"},)
             return _Cursor()
         raise AssertionError(f"DB-less tests must not run SQL: {sql[:80]}")
 
