@@ -353,14 +353,41 @@ def run(spec_path: str, as_trend: bool, as_json: bool) -> None:
         _emit(result.to_dict(), as_json, _print_estimate, result)
 
 
-@click.command("validate-analytics",
-               help="Reproduce official BLS estimates through the engine (benchmark suite).")
-def validate_analytics() -> None:
+@click.command(
+    "validate-analytics",
+    help=(
+        "Reproduce official BLS estimates through the engine (benchmark suite). "
+        "Results are printed, then recorded in atus.validation_results, which "
+        "needs the database owner/loader role; use --no-persist under a "
+        "read-only role."
+    ),
+)
+@click.option("--no-persist", is_flag=True,
+              help="Print results only; do not record them in atus.validation_results.")
+def validate_analytics(no_persist: bool) -> None:
+    import psycopg
+
     from .analytics.benchmarks import run_benchmarks
     from .cli import _print_results, _settings
+    from .validation.results import persist_results
 
     settings = _settings()
     with connect(settings.database_url) as conn:
-        results = run_benchmarks(conn)
-    if not _print_results(results):
+        results = run_benchmarks(conn, persist=False)
+        all_passed = _print_results(results)
+        if not no_persist:
+            try:
+                persist_results(conn, results)
+            except psycopg.Error as exc:
+                reason = str(exc).splitlines()[0] if str(exc) else ""
+                click.echo(
+                    f"\nResults were NOT recorded in atus.validation_results "
+                    f"({type(exc).__name__}: {reason}). Recording needs the database "
+                    "owner/loader role; rerun as that role, or pass --no-persist "
+                    "to only print results.",
+                    err=True,
+                )
+                sys.exit(1)
+            click.echo(f"Recorded {len(results)} results in atus.validation_results.")
+    if not all_passed:
         sys.exit(1)

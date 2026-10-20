@@ -4,10 +4,14 @@
     atus extract             stage the CSV data members into data/staging/<release>/
     atus validate-source     file-level checks of staged data (pre-load)
     atus migrate             create/upgrade the database schema
-    atus load                transform staged data and load it (atomic rebuild)
+    atus load                transform staged data and load it (build, then switch)
     atus validate-db         data-quality checks against the loaded database
     atus analyze ...         run analyses with the Phase 2 statistical engine
     atus validate-analytics  reproduce official BLS estimates (benchmark suite)
+    atus build-serving-db    build the reduced serving database (+ release artifact)
+    atus verify-serving-db   check a built or restored serving database
+    atus restore-serving-db  restore a release artifact (scripts/ops/restore_serving_db.sh)
+    atus compare-serving-db  randomized full-vs-serving equivalence diff
     atus status              show manifest and database state
 """
 
@@ -104,6 +108,7 @@ def validate_source() -> None:
 def migrate() -> None:
     settings = _settings()
     with connect(settings.database_url) as conn:
+        _refuse_serving(conn, "migrate")
         applied = apply_migrations(conn, migrations_dir=_migrations_dir())
     if applied:
         click.echo("Applied: " + ", ".join(applied))
@@ -111,16 +116,63 @@ def migrate() -> None:
         click.echo("Schema already up to date.")
 
 
-@cli.command(help="Transform staged data and load the canonical schema (atomic rebuild).")
-def load() -> None:
-    from .loading.loader import load_all
+@cli.command(
+    help=(
+        "Transform staged data and load it: build the new data next to the live "
+        "data, then switch to it in one short transaction. Readers keep working "
+        "throughout and see the old or the new data, never a mix."
+    )
+)
+@click.option(
+    "--validate", is_flag=True,
+    help="Run the validate-db checks on the new data before switching; "
+         "refuse to switch if an error-severity check fails.",
+)
+@click.option(
+    "--switch-timeout", type=float, default=120.0, show_default=True,
+    help="Seconds to keep retrying the switch while readers hold the tables.",
+)
+@click.option(
+    "--lock-timeout-ms", type=int, default=50, show_default=True,
+    help="Upper bound of each lock wait during the switch (what a reader may wait).",
+)
+def load(validate: bool, switch_timeout: float, lock_timeout_ms: int) -> None:
+    import psycopg
+
+    from .database.migrate import MigrationError
+    from .database.versions import read_data_version
+    from .loading.loader import LoadError, SwitchOptions, load_all
+    from .validation.db_checks import run_db_checks
 
     settings = _settings()
+
+    def check_new_data(conn, schema: str) -> list[CheckResult]:
+        click.echo("Validating the new data before switching:")
+        results = run_db_checks(conn, settings, schema=schema, persist=False)
+        _print_results(results)
+        return results
+
     with connect(settings.database_url) as conn:
-        results = load_all(conn, settings)
+        _refuse_serving(conn, "load")
+        try:
+            results = load_all(
+                conn, settings,
+                validate=check_new_data if validate else None,
+                options=SwitchOptions(lock_timeout_ms=lock_timeout_ms, timeout_s=switch_timeout),
+                migrations_dir=_migrations_dir(),
+            )
+        except (LoadError, MigrationError) as exc:
+            raise click.ClickException(f"load failed: {exc}") from exc
+        except psycopg.Error as exc:  # e.g. a staged code missing from the lexicon
+            first_line = str(exc).splitlines()[0] if str(exc) else ""
+            raise click.ClickException(
+                f"load failed, live data unchanged: {type(exc).__name__}: {first_line}"
+            ) from exc
+        version = read_data_version(conn)
     click.echo("\nLoaded tables:")
     for result in results:
         click.echo(f"  {result.table:<28} {result.loaded_rows:>12,} rows")
+    click.echo(f"Data version: {version}")
 
 
 @cli.command("validate-db", help="Run data-quality checks against the loaded database.")
@@ -129,9 +181,20 @@ def validate_db() -> None:
 
     settings = _settings()
     with connect(settings.database_url) as conn:
+        _refuse_serving(conn, "validate-db")
         results = run_db_checks(conn, settings)
     if not _print_results(results):
         sys.exit(1)
+
+
+def _refuse_serving(conn, command: str) -> None:
+    """Full-database commands never run against a serving database (F57)."""
+    from .serving.guard import ServingDatabaseError, refuse_if_serving
+
+    try:
+        refuse_if_serving(conn, command)
+    except ServingDatabaseError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 @cli.command(help="Show manifest and database state.")
@@ -163,16 +226,14 @@ def status() -> None:
 
 
 def _migrations_dir():
-    from pathlib import Path
+    from .database.migrate import MigrationError, default_migrations_dir
 
-    # repo layout: migrations/ next to src/; resolve relative to this file so the
-    # CLI works from any working directory inside the repo
-    candidate = Path(__file__).resolve().parents[2] / "migrations"
-    if not candidate.exists():
-        raise click.ClickException(
-            f"migrations directory not found at {candidate}; run from the repository root"
-        )
-    return candidate
+    # $ATUS_MIGRATIONS_DIR, else migrations/ of the source checkout (resolved
+    # relative to the package, so any working directory works)
+    try:
+        return default_migrations_dir()
+    except MigrationError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 @cli.command(help="Run the read-only analytical HTTP API (Phase 3).")
@@ -198,6 +259,12 @@ from .analytics_cli import analyze, validate_analytics  # noqa: E402
 
 cli.add_command(analyze)
 cli.add_command(validate_analytics)
+
+# Serving-database commands (docs/adr/ADR-013), registered the same way.
+from .serving_cli import COMMANDS as SERVING_COMMANDS  # noqa: E402
+
+for _command in SERVING_COMMANDS:
+    cli.add_command(_command)
 
 
 if __name__ == "__main__":

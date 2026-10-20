@@ -67,3 +67,38 @@ def db(migrated_db: str):
     with psycopg.connect(migrated_db) as conn:
         yield conn
         conn.rollback()
+
+
+def create_scratch_database(test_url: str, suffix: str) -> str:
+    """A fresh, migrated database next to the test database, named
+    ``<test database>_<suffix>``; returns its URL."""
+    parts = urlsplit(test_url)
+    name = f"{parts.path.lstrip('/')}_{suffix}"
+    with psycopg.connect(_admin_url(test_url), autocommit=True) as conn:
+        conn.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+        conn.execute(f'CREATE DATABASE "{name}"')
+    url = urlunsplit(parts._replace(path=f"/{name}"))
+    with psycopg.connect(url) as conn:
+        apply_migrations(conn, MIGRATIONS_DIR)
+    return url
+
+
+def drop_scratch_database(url: str) -> None:
+    name = urlsplit(url).path.lstrip("/")
+    with psycopg.connect(_admin_url(url), autocommit=True) as conn:
+        conn.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+
+
+@pytest.fixture
+def scratch_database(test_db_url: str):
+    """Factory for extra disposable, migrated databases (see
+    :func:`create_scratch_database`); dropped when the test ends."""
+    created: list[str] = []
+
+    def make(suffix: str) -> str:
+        created.append(create_scratch_database(test_db_url, suffix))
+        return created[-1]
+
+    yield make
+    for url in created:
+        drop_scratch_database(url)

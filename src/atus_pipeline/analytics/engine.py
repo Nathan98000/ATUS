@@ -44,10 +44,18 @@ from .weights import (
 
 _ANALYTICS_VERSION = "0.2"  # kept in sync with atus_pipeline.analytics.ANALYTICS_VERSION
 
-_HARMONIZATION_NOTE = (
-    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon "
-    "(cross-year comparable by construction)."
-)
+
+def harmonization_note(lexicon_label: str | None) -> str:
+    """The lexicon note attached to every result, naming the loaded release's
+    lexicon (release 0325: "...the BLS-harmonized 2003-25 multi-year
+    lexicon...")."""
+    span = f"{lexicon_label} " if lexicon_label else ""
+    return (
+        f"Activity codes use the BLS-harmonized {span}multi-year lexicon "
+        "(cross-year comparable by construction)."
+    )
+
+
 _PANDEMIC_NOTE = (
     "Pandemic weights (TU20FWGT): estimates represent only the comparable "
     "collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates "
@@ -144,7 +152,7 @@ class AnalysisEngine:
             variance_method=spec.variance,
             analytics_version=_ANALYTICS_VERSION,
             spec=spec.to_dict(),
-            warnings=tuple(sorted(warnings | {_HARMONIZATION_NOTE})),
+            warnings=tuple(sorted(warnings | {self._harmonization_note()})),
         )
 
     def compare(self, comparison: ComparisonSpec) -> ComparisonResult:
@@ -257,7 +265,7 @@ class AnalysisEngine:
 
         point = point_estimate(spec.measure, stats, days)
         warnings = set(prepared.population_sql.warnings)
-        warnings.add(_HARMONIZATION_NOTE)
+        warnings.add(self._harmonization_note())
         if prepared.scheme.name == "pandemic":
             warnings.add(_PANDEMIC_NOTE)
         if len(years) > 1:
@@ -317,6 +325,10 @@ class AnalysisEngine:
                     "pipeline (`atus load`) first."
                 )
         return self._loaded_years
+
+    def _harmonization_note(self) -> str:
+        # The resolver exists here: every operation resolves its activity first.
+        return harmonization_note(self._resolver.lexicon_label)
 
     @staticmethod
     def _activity_info(activity: ResolvedActivity) -> ActivityInfo:
