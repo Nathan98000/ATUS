@@ -14,6 +14,7 @@ import random
 import re
 import secrets
 from dataclasses import replace
+from datetime import datetime, timedelta
 from urllib.parse import urlsplit, urlunsplit
 
 import psycopg
@@ -483,6 +484,41 @@ def test_the_build_requires_recorded_validation_by_default(mutable_full, target)
     report = build_serving_database(mutable_full, target)
     assert report.validation["validate_db"]["checks"] == 1
     assert report.validation["validate_analytics"]["failed_errors"] == 0
+
+
+def _record_passing_validation(conn: psycopg.Connection, run_at) -> None:
+    """One passing validate-db and one passing validate-analytics result,
+    recorded at ``run_at``."""
+    for name in ("row counts", "analytics: A1-2025: sleeping"):
+        conn.execute(
+            "INSERT INTO atus.validation_results (check_name, severity, passed, observed, "
+            "run_at) VALUES (%s, 'error', true, 'ok', %s)",
+            (name, run_at),
+        )
+
+
+def test_only_results_recorded_since_the_data_went_live_validate_it(mutable_full, target):
+    """While a load builds its shadow tables the previous data stays live, so a
+    validate-db or validate-analytics run in that window (after the run's
+    ``started_at``, before its ``finished_at``) checked the previous data and
+    is no evidence for the new one. Results recorded in the switch
+    transaction (``atus load --validate``: ``run_at = finished_at``) are."""
+    with psycopg.connect(mutable_full) as conn:
+        finished = conn.execute(
+            "UPDATE atus.ingestion_runs SET started_at = finished_at - interval '10 minutes' "
+            "WHERE status = 'succeeded' RETURNING finished_at"
+        ).fetchone()[0]
+        _record_passing_validation(conn, finished - timedelta(minutes=5))
+        conn.commit()
+    with pytest.raises(ServingBuildError, match="no `atus validate-db` results"):
+        build_serving_database(mutable_full, target)
+    _untouched(target)
+    with psycopg.connect(mutable_full) as conn:
+        _record_passing_validation(conn, finished)
+        conn.commit()
+    report = build_serving_database(mutable_full, target)
+    for kind in ("validate_db", "validate_analytics"):
+        assert datetime.fromisoformat(report.validation[kind]["run_at"]) == finished
 
 
 # --------------------------------------------------------------------------- #

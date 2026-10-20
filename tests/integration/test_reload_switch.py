@@ -370,7 +370,18 @@ class TestValidation:
                 "SELECT count(*) FROM atus.validation_results "
                 "WHERE check_name = 'lexicon loaded completely: activity_codes'"
             ).fetchone()[0]
+            # Recorded in the switch transaction, so at exactly the run's
+            # finished_at: the serving builder counts results from then on as
+            # evidence for this data (serving/builder.py validation_evidence).
+            at_switch = conn.execute(
+                "SELECT bool_and(v.run_at = r.finished_at) "
+                "FROM atus.ingestion_runs r JOIN atus.validation_results v "
+                "ON v.run_at >= r.started_at "
+                "WHERE r.id = (SELECT max(id) FROM atus.ingestion_runs "
+                "WHERE status = 'succeeded')"
+            ).fetchone()[0]
         assert recorded >= 1
+        assert at_switch is True
 
 
 class TestReaders:

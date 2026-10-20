@@ -250,9 +250,16 @@ def _source_run(src: psycopg.Connection) -> dict:
     }
 
 
-def validation_evidence(src: psycopg.Connection, run_started_at: str) -> dict:
+def validation_evidence(src: psycopg.Connection, live_since: str) -> dict:
     """The latest ``atus validate-db`` and ``atus validate-analytics`` results
-    recorded for the source's current data (``None`` when there are none)."""
+    recorded for the source's current data (``None`` when there are none).
+
+    ``live_since`` is when that data went live: its run's ``finished_at``.
+    Results recorded earlier checked the previous data, including those
+    recorded while the run was still building its shadow tables (the old data
+    stays live until the switch); ``atus load --validate`` records its results
+    in the switch transaction, at exactly ``finished_at``.
+    """
     batches = src.execute(
         """
         SELECT run_at, check_name LIKE 'analytics: %%' AS analytics, count(*),
@@ -262,7 +269,7 @@ def validation_evidence(src: psycopg.Connection, run_started_at: str) -> dict:
         GROUP BY run_at, analytics
         ORDER BY run_at
         """,
-        (run_started_at,),
+        (live_since,),
     ).fetchall()
     evidence: dict[str, dict | None] = {"validate_db": None, "validate_analytics": None}
     for run_at, analytics, checks, failed in batches:
@@ -446,7 +453,9 @@ def build_serving_database(
             source = _source_run(src)
             report.source = source
             report.release = source["release"]
-            report.validation = validation_evidence(src, source["started_at"])
+            report.validation = validation_evidence(
+                src, source["finished_at"] or source["started_at"]
+            )
             if require_validated:
                 _require_validated(report.validation)
 
