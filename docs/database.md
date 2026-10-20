@@ -147,12 +147,61 @@ episodes.
 ## Metadata tables
 
 - `ingestion_runs` — one row per `atus load` invocation: release, pipeline
-  version, timestamps, `running/succeeded/failed`, error notes for failures.
+  version, timestamps, `running/succeeded/failed`, error notes for failures,
+  and (migration 0003) `data_version`: the globally unique identifier of the
+  data a successful run made live (`<release>:load-<run>-<UTC stamp>-<hex>`;
+  a serving build writes `<release>:serving-<build id>:<content hash>`).
+  `UNIQUE`, set only on `succeeded` rows, NULL on rows written before 0003.
+  The latest succeeded run's version is what every cache keys on
+  (`atus_pipeline.database.versions`).
 - `source_files` — per run: every source file's URL, SHA-256, size, staged row
   count, loaded table and loaded row count. Answers "which exact bytes
   produced the data currently in this database?"
-- `validation_results` — every `atus validate-db` check outcome with
-  severity, observed value, and detail, timestamped.
+- `validation_results` — every `atus validate-db` and `atus
+  validate-analytics` check outcome with severity, observed value, and
+  detail, timestamped.
+
+## Loading and reloading
+
+`atus load` never modifies the live tables in place
+([ADR-013](adr/ADR-013-data-releases-and-serving-db.md)):
+
+1. it records the attempt (`ingestion_runs.status = 'running'`);
+2. it rebuilds the ten canonical tables (the data tables and the lexicon) in
+   a shadow schema, `atus_next`, created from the same migrations, and runs
+   `ANALYZE` on them;
+3. with `--validate`, it runs the `atus validate-db` checks against the
+   shadow and refuses to continue if an error-severity check fails;
+4. in one short transaction it locks the live tables, drops the old
+   canonical tables, moves the new ones into `atus`, restores their owner and
+   grants, records provenance, and marks the run `succeeded` with its new
+   `data_version`.
+
+Readers see either the complete old data or the complete new data, and the
+data version changes in the same commit. A failed load leaves the live data
+and its version unchanged and marks the run `failed`. The metadata tables
+are never rebuilt, so their history survives every load.
+
+Operational notes:
+
+- A load needs free disk for a second copy of the canonical data until the
+  switch.
+- The switch waits for transactions that began before the new data was
+  committed (they could otherwise see the new tables empty) and retries
+  while readers hold the tables; `--switch-timeout` (default 120 s) bounds
+  both, and `--lock-timeout-ms` (default 50) bounds each lock wait a reader
+  may experience. A forgotten idle-in-transaction session therefore delays
+  or fails the switch; the error names its pid.
+- A view or other object depending on a canonical table fails the switch;
+  drop it before loading and recreate it afterwards.
+- One load at a time per database (advisory lock); a run left `running` by a
+  killed loader is marked `failed` by the next load, which also drops a
+  leftover `atus_next`.
+- The schema must be up to date (`atus migrate`) before loading.
+- A serving database (a reduced copy for hosting, marked by an `atus-serving`
+  schema comment or a serving `data_version`) is never migrated, loaded or
+  checked with `validate-db`: the CLI refuses. The tables and columns it must
+  keep are listed in `atus_pipeline.serving.contract`.
 
 ## Indexes (migration 0002)
 
