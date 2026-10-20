@@ -70,9 +70,16 @@ export function classifyFailure(error: unknown): FailureClass {
       ? 'rate_limited'
       : 'final'
   }
-  // Gateway failures without a known code (502/503/504, Cloudflare 52x):
-  // typical of a host that is still starting.
-  if ([502, 503, 504].includes(error.status) || (error.status >= 520 && error.status <= 530)) {
+  // A 503 with a code this build does not know: the service answered, so it
+  // is up — treat it like other temporary refusals.
+  if (error.status === 503) return 'transient'
+  // Gateway failures (502, 504, Cloudflare 52x): typical of a host that is
+  // still starting.
+  if (
+    error.status === 502 ||
+    error.status === 504 ||
+    (error.status >= 520 && error.status <= 530)
+  ) {
     return 'waking'
   }
   return 'final'

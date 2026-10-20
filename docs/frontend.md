@@ -155,8 +155,8 @@ not an error (`resilience.ts`, audit F11, F12, F64):
 
 | Failure | Metadata GET | Analysis POST |
 | --- | --- | --- |
-| No answer / connection error, `service_waking`, `upstream_unavailable`, other 502/503/504/52x | retried until 150 s have passed | same |
-| `overloaded`, `database_unavailable` (503) | retried until 150 s | retried **once** |
+| No answer / connection error, `service_waking`, `upstream_unavailable` (incl. any non-JSON 5xx page), other 502/504/52x | retried until 150 s have passed | same |
+| `overloaded`, `database_unavailable`, a 503 with an unknown code | retried until 150 s | retried **once** |
 | `rate_limited` (429) with `Retry-After` | retried until 150 s | never (visitor decides) |
 | client time-out (60 s per metadata attempt, 150 s per analysis) | retried until 150 s | never |
 | anything else (4xx, quota states, `analysis_timeout`, `data_version_mismatch`, incompatible API) | never | never |
@@ -325,7 +325,7 @@ stateless. The URL encodes exactly that:
 ## Testing
 
 ```bash
-npm test          # 273 unit/component tests (Vitest + Testing Library + MSW)
+npm test          # 274 unit/component tests (Vitest + Testing Library + MSW)
 npm run test:e2e  # 29 Playwright tests (27 desktop + 2 mobile)
 ```
 
