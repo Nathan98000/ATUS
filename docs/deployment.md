@@ -319,23 +319,180 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 
 ## From-scratch deploy guide
 
-**PLACEHOLDER: filled in during implementation.**
+**Skeleton.** The packaging steps (0 and 3) are written; the others are filled in as the serving-DB, edge and CI work lands. Nothing here has been run against a provider.
 
-It will cover, in order:
+### 0. Rehearse the whole stack locally
 
-1. building the serving DB and its release artifact;
-2. the restore drill;
-3. the first image and the GHCR visibility change;
-4. the owner setup above;
-5. the first approved deploy;
-6. the quota-budgeted post-deploy replay;
-7. the checks that prove the deployment ("verified" means curl plus Playwright against the public URL).
+Everything below runs on your machine, binds only to `127.0.0.1`, and calls no provider.
+
+- **Functional smoke of the production stack** (builds the image, loads the hand-computed fixture dataset, probes the API from inside the stack network, removes everything):
+
+  ```bash
+  scripts/smoke_stack.sh                 # add --emulation for the free-tier CPU/RAM limits
+  ```
+
+  The probe checks `/health`, `/api/v1/meta` with the edge secret, one analysis (sleep 2023 = 75.0 minutes, computed by hand), the v1 error envelope, the 403 for a request without the edge secret, and that `/docs` is off. `--skip-protection-checks` exists only for images built before the API protection work.
+- **Run the stack yourself:**
+
+  ```bash
+  cp deploy/stack/stack.env.example .env.stack     # fill in fresh random secrets
+  docker compose --env-file .env.stack -f docker-compose.prod.yml up -d --wait api
+  docker compose --env-file .env.stack -f docker-compose.prod.yml --profile smoke run --rm smoke --fixture
+  docker compose --env-file .env.stack -f docker-compose.prod.yml down -v
+  ```
+
+  | Service | Stands in for | Notes |
+  |---|---|---|
+  | `db` | Neon Free, Postgres 16 | Neon's settings for the 0.25–2 CU compute (`jit=off`, `shared_buffers=215MB`, `max_connections=839`, `max_worker_processes=17`, `max_parallel_workers=8`), `shm_size: 1g` (F33). Bootstrap creates `neondb_owner` (owner, not a superuser) and `atus_api` (SELECT only, ADR-011 role defaults). Host port `127.0.0.1:5470` |
+  | `restore` | the release switch's `pg_restore` | profile `dump`; set `ATUS_STACK_DUMP` to a serving dump. Restores as `neondb_owner` with `--no-owner --no-acl`, grants, `VACUUM (ANALYZE)` |
+  | `seed` | — | loads the fixture dataset as `neondb_owner` unless data is present; re-applies the API grants |
+  | `api` | the Render web service | the image with exactly Render's environment (`ATUS_ENV=production`, ...). Read-only root filesystem, all capabilities dropped. **Not published on the host** |
+  | `edge` | Cloudflare Worker + static assets | profile `edge`; `wrangler dev` in local mode on `127.0.0.1:8541`, assets from `frontend/dist`. Defined against the edge contract; validated once `edge/` lands |
+  | `smoke` | — | profile `smoke`; the HTTP probe, run inside the stack network |
+
+- **Free-tier emulation** (`-f docker-compose.emulation.yml`): API 0.1 CPU / 512 MB, no swap (Render Free); database 0.25 vCPU / 1 GB, no swap (Neon's 0.25 CU floor). For the 2 CU ceiling set `ATUS_EMU_DB_CPUS=2 ATUS_EMU_DB_MEMORY=8g` (a Docker VM with less than 8 GB caps the RAM). `python deploy/emulation/neon_settings.py --help` prints the settings for other compute sizes from Neon's published formulas. Not emulated (F41): pageserver reads, wake from suspend, autoscaling itself, round trips between providers, Render's real CPU share and spin-up.
+
+  The audit's emulation runs kept `shared_buffers` at 128 MB and Postgres's default `max_connections`/`max_worker_processes`. Neon's formula gives those values only for a fixed 0.25 CU compute; for ADR-011's 0.25–2 CU compute it gives 215 MB, 839 and 17, which the stack now uses. Later timed runs should state which settings they used.
+- **Through a transaction pooler** (brief §10; production uses the direct endpoint): profile `pgbouncer` of the emulation file runs PgBouncer with Neon's pooler settings (`pool_mode=transaction`, `max_prepared_statements=1000`, `query_wait_timeout=120`).
+
+  ```bash
+  scripts/smoke_stack.sh --integration-via-pgbouncer                          # Neon's settings
+  scripts/smoke_stack.sh --integration-via-pgbouncer --prepared-statements 0  # no prepared-statement support
+  ```
+
+  Measured on 2026-10-20 (functional, fixture data): 50/50 integration tests pass with `max_prepared_statements=1000`. With `0`, 3 fail with `DuplicatePreparedStatement` (`_pg3_0`): psycopg prepares a statement after its 5th execution, and the next transaction lands on a server connection that already has one by that name. One of them is an API request that returned 500. If the API ever goes through a pooler without prepared-statement support, the pool must pass `prepare_threshold=None`.
+
+### 1. Build the serving DB and its release artifact
+
+PLACEHOLDER (serving-DB builder, ADR-013).
+
+### 2. Restore drill
+
+PLACEHOLDER (restore script, ADR-013). The local `dump` profile above restores a serving dump into a fresh Postgres 16 as a non-superuser owner.
+
+### 3. The image
+
+- **Build:** `docker buildx build --platform linux/amd64 --build-arg ATUS_BUILD_SHA="$(git rev-parse HEAD)" --build-arg ATUS_VERSION=<version> -t atus-api .`
+- **What is in it.** A multi-stage build on `python:3.12-slim`, pinned by its multi-arch index digest. Runtime dependencies are installed from `requirements/api.lock.txt` with `--require-hashes --only-binary=:all:`, so no compiler is needed and no unpinned file is downloaded. The project wheel is built with the hash-locked setuptools. The runtime stage holds only the base image plus `/opt/venv`, which is bytecode-compiled at build time. It runs as UID/GID 10001 with OCI labels (`source`, `revision` = `ATUS_BUILD_SHA`, `version`, `base.digest`). Its Docker `HEALTHCHECK` calls `/health`, which never touches the database. `CMD` runs `atus api --host 0.0.0.0 --port $PORT`, with `PORT=10000` by default.
+- **What is not in it:** tests, data, docs, the frontend, `edge/`, `scripts/`, the pipeline-only `curl_cffi`, build tools, and the migrations. **Decision (F56):** the API never changes the schema. Production restores a serving dump, and `atus migrate` / `atus load` run from a source checkout. The image therefore ships no migrations. `.dockerignore` is an allow-list.
+- **libpq and TLS.** `psycopg[binary]` bundles its own libpq and OpenSSL. In this image that is libpq 18.6 (`pq.version()` = 180006) on both `linux/amd64` and `linux/arm64`, which meets the ≥ 16 that `sslrootcert=system` needs. See [TLS to the database](#tls-to-the-database).
+- **Locks.** `requirements/compile.sh` (uv) regenerates `dev.lock.txt` (runtime + dev + build backend), `api.lock.txt` (the image's runtime only, pinned to the dev lock's versions) and `build.lock.txt` from `pyproject.toml`, which keeps its version ranges. `tests/deploy/test_requirements_locks.py` fails if they drift. Contributor and CI install:
+
+  ```bash
+  pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+  pip install --no-deps --no-build-isolation -e .
+  ```
+- **First push and GHCR visibility:** PLACEHOLDER (CI, wave 2). See owner step 4.4.
+
+### 4. Owner setup
+
+[Owner account setup](#owner-account-setup-19) above.
+
+### 5. First approved deploy
+
+PLACEHOLDER (deploy workflow).
+
+### 6. Quota-budgeted post-deploy replay
+
+PLACEHOLDER (replay script, ADR-011 "Unknowns").
+
+### 7. Checks that prove the deployment
+
+PLACEHOLDER. "Verified" means curl plus Playwright against the public URL.
 
 ## Configuration reference
 
-**PLACEHOLDER: filled in during implementation.**
+Source of truth for names and production values: [`.env.production.example`](../.env.production.example). For development, see [`.env.example`](../.env.example); for the local stack, [`deploy/stack/stack.env.example`](../deploy/stack/stack.env.example). Real values live only in the provider stores below and in the owner's `~/.config/atus/*.env` files (`chmod 600`, outside the repository). `.gitignore` ignores every `.env*` and `*.env` file except the committed templates (F31).
 
-Every variable and secret will be listed with its owner (Worker var, Worker secret, Render env, GitHub env secret or variable), default, example and rotation procedure, matching `.env.production.example`.
+### API (Render → Environment)
+
+**Required in production.** `ATUS_ENV=production` refuses to start without `ATUS_DATABASE_URL` and `ATUS_EDGE_SECRETS`.
+
+| Variable | Development default | Production | Rotation / notes |
+|---|---|---|---|
+| `ATUS_ENV` | `development` | `production` (also the image default) | JSON logs, docs off |
+| `ATUS_DATABASE_URL` | `postgresql://atus:atus@localhost:5434/atus` | **secret**: `atus_api` on Neon's direct endpoint, `?sslmode=verify-full&sslrootcert=system` | new role password via the restore script's role step, then "Save and deploy". Never the `-pooler` host |
+| `ATUS_EDGE_SECRETS` | empty (no edge auth) | **secret**: `current` or `current,next` | set `old,new` and deploy; change the Worker's `EDGE_AUTH_SECRET` to `new` and deploy; set `new` and deploy |
+| `ATUS_EXPECTED_DATA_VERSION` | empty (no check) | the release's `data_version` | changed together with `ATUS_DATABASE_URL` at each release switch |
+| `ATUS_OPS_TOKEN` | empty (`/metrics`, `/ready` → 404) | **secret** | replace here and in the GitHub `production`/`ops` secret `ATUS_OPS_TOKEN` |
+| `WEB_CONCURRENCY` | 1 (image) | `1` | one uvicorn process |
+| `PORT` | 8000 (`atus api`), 10000 (image) | set by Render (10000) | — |
+| `ATUS_BUILD_SHA` | `dev` | image build argument | reported by `/health` as `build`; never set on Render |
+
+**Optional tuning.** Leave these unset in production unless a measurement justifies a change (ADR-012).
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `ATUS_LOG_LEVEL` | `INFO` | |
+| `ATUS_LOG_FORMAT` | `text` (dev), `json` (production) | |
+| `ATUS_API_DOCS` | `on` (dev), `off` (production) | `/docs`, `/redoc`, `/openapi.json` |
+| `ATUS_API_CORS_ORIGINS` | empty | same origin behind the Worker |
+| `ATUS_API_CACHE_SIZE` | 256 | in-process result LRU entries |
+| `ATUS_API_POOL_MAX_SIZE` | 4 | |
+| `ATUS_API_POOL_MAX_IDLE_S` | 240 | below Neon's 300 s suspend |
+| `ATUS_API_POOL_TIMEOUT_S` | 5 | acquire timeout → 503 `overloaded` |
+| `ATUS_API_CONNECT_TIMEOUT_S` | 10 | libpq `connect_timeout` |
+| `ATUS_API_STATEMENT_TIMEOUT_MS` | 85000 | per-request `SET LOCAL statement_timeout` (analyses) |
+| `ATUS_API_META_STATEMENT_TIMEOUT_MS` | 10000 | the same for metadata and lexicon reads |
+| `ATUS_API_JIT` | `off` | per-request `SET LOCAL jit` |
+| `ATUS_API_MAX_PARALLEL_WORKERS` | unset (server default) | per-request `SET LOCAL max_parallel_workers_per_gather`; decided by load tests |
+| `ATUS_API_MAX_INFLIGHT` / `ATUS_API_MAX_INFLIGHT_HEAVY` | 2 / 1 | uncached analyses in flight |
+| `ATUS_API_ADMISSION_WAIT_S` | 5 | wait for a lane before 503 `overloaded` |
+| `ATUS_API_RATE_ANALYSIS` | `6/60` | per-client-IP bucket, uncached analyses |
+| `ATUS_API_RATE_REQUESTS` | `120/60` | per-client-IP bucket, other routes |
+| `ATUS_API_DAILY_ANALYSIS_CAP` | 600 | in-process backstop, resets 00:00 UTC |
+| `ATUS_API_MAX_BODY_BYTES` | 65536 | → 413 `payload_too_large` |
+| `ATUS_API_THREADS` | 16 | anyio thread limiter |
+| `ATUS_API_SNAPSHOT_TTL_S` | 2 (dev), 600 (production) | in-process `data_version`/years/lexicon refresh |
+
+`ATUS_DATA_DIR` and `ATUS_RELEASE` are pipeline-only (`atus load` on the owner's machine); the API never reads them.
+
+### Cloudflare Worker
+
+| Name | Kind | Value | Rotation |
+|---|---|---|---|
+| `EDGE_AUTH_SECRET` | secret | one of the API's `ATUS_EDGE_SECRETS` | see `ATUS_EDGE_SECRETS` |
+| `OPS_TOKEN` | secret | bearer for `/api/_ops/budget` | `wrangler secret put` |
+| `IP_HMAC_KEY` | secret | key for the governor's HMAC of the client IP prefix | `wrangler secret put` (resets per-prefix counters) |
+| `RENDER_ORIGIN` | secret | `https://<service>.onrender.com` | changes only with the API host |
+| `NEON_API_KEY` | secret, optional | a Neon **project-scoped** key | re-create per release project |
+| `DATA_VERSION`, `ANALYTICS_VERSION`, `RESPONSE_FORMAT`, `SNAPSHOT_ID` | vars | set by the deploy workflow | each deploy |
+| `EPOCH`, `PREWAKE`, `NEON_PROJECT_ID` | vars | `edge/wrangler.jsonc` | manual |
+
+Secrets are generated into `~/.config/atus/edge.env` and loaded with `npx wrangler secret put <NAME>` (owner step 1.3). The edge workstream's `edge/wrangler.jsonc` is authoritative for var names.
+
+### GitHub environments
+
+| Environment | Secrets | Variables |
+|---|---|---|
+| `production` (required reviewer) | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `RENDER_DEPLOY_HOOK_URL`, `RENDER_ORIGIN`, `ATUS_OPS_TOKEN` | `PUBLIC_BASE_URL`, `GHCR_IMAGE` |
+| `ops` (monitors) | `ATUS_OPS_TOKEN` | `PUBLIC_BASE_URL` |
+
+### Local stack (`deploy/stack/stack.env.example`)
+
+| Variable | Meaning |
+|---|---|
+| `ATUS_STACK_PG_SUPERUSER_PASSWORD`, `ATUS_STACK_OWNER_PASSWORD`, `ATUS_STACK_API_DB_PASSWORD` | passwords of `postgres` (bootstrap only), `neondb_owner`, `atus_api` |
+| `ATUS_STACK_EDGE_SECRET`, `ATUS_STACK_OPS_TOKEN` | the API's `ATUS_EDGE_SECRETS` / `ATUS_OPS_TOKEN` (and the Worker's `EDGE_AUTH_SECRET`) |
+| `ATUS_STACK_EDGE_OPS_TOKEN`, `ATUS_STACK_IP_HMAC_KEY` | the Worker's `OPS_TOKEN` / `IP_HMAC_KEY` (profile `edge`) |
+| `ATUS_STACK_DUMP` | serving dump for profile `dump` |
+| `ATUS_STACK_IMAGE`, `ATUS_STACK_PULL_POLICY` | run a registry image by digest (`missing` + `--no-build`) instead of building |
+| `ATUS_STACK_DB_PORT`, `ATUS_STACK_PGBOUNCER_PORT`, `ATUS_STACK_EDGE_PORT` | loopback host ports (5470, 5471, 8541); empty = a random free port |
+| `ATUS_STACK_DB_SHARED_BUFFERS`, `ATUS_STACK_DB_MAX_CONNECTIONS`, `ATUS_STACK_DB_MAX_WORKER_PROCESSES` | Neon settings for another compute size (`deploy/emulation/neon_settings.py`) |
+| `ATUS_EMU_DB_CPUS`, `ATUS_EMU_DB_MEMORY` | emulated database size (default 0.25 / 1g) |
+| `PGBOUNCER_MAX_PREPARED_STATEMENTS`, `PGBOUNCER_DEFAULT_POOL_SIZE` | PgBouncer (default 1000, 755) |
+
+### TLS to the database
+
+- **Connection string:** `sslmode=verify-full&sslrootcert=system`. Never `require` alone.
+- **libpq version:** `sslrootcert=system` needs libpq ≥ 16, and SNI needs ≥ 14. The image's bundled libpq is 18.6.
+- **Why the image sets `SSL_CERT_FILE`:** the libpq inside the `psycopg[binary]` wheel uses the wheel's own OpenSSL 3.5. That OpenSSL's compiled-in certificate directory is a build-machine path (`OPENSSLDIR: "/host/tmp/libpq.build"`), so without help `system` would find no roots at all. The image therefore sets `SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt`, the Debian CA bundle.
+- **How it is tested:** `tests/deploy/test_container_image.py` (opt-in, `ATUS_DOCKER_TESTS=1`) uses a throwaway CA and a TLS-only Postgres to prove all three cases:
+  - the image connects with `verify-full` + `system`;
+  - it rejects a certificate whose CA is not in the bundle;
+  - with `SSL_CERT_FILE` unset it fails even when the CA is in the bundle.
+- **Not yet verified:** the live Neon certificate, which is checked at the first restore.
+- **Fallback** if `system` ever fails: `sslrootcert=<bundled CA file>` with `verify-full` (ADR-011).
 
 ## Rollback and runbooks
 
