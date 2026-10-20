@@ -1,0 +1,81 @@
+// Cloudflare Worker for the public ATUS origin (ADR-011).
+//
+// One workers.dev origin serves the SPA and the static result snapshot as
+// static assets (free, never invokes the Worker), and runs this Worker only
+// for `/api` and `/api/*`, where it proxies an allowlist of routes to the
+// never-published Render origin.
+//
+// Invariants asserted by test/config.test.ts (and so by CI, ADR-011 "Deploy"):
+//   - no `cache` block: Workers Cache bills requests that are otherwise free;
+//   - `preview_urls: false` and `workers_dev: true`;
+//   - `run_worker_first` lists both "/api" and "/api/*";
+//   - SPA `not_found_handling`.
+// Never connect Workers Builds or a Git repository; CI deploys with
+// `wrangler deploy` and passes the release vars with `--var NAME:value`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The public hostname is https://<name>.<account-subdomain>.workers.dev and
+  // is baked into every share link: choose it once.
+  "name": "atus",
+  "main": "src/index.ts",
+  // >= 2025-04-01 so navigation requests that match no asset get the SPA's
+  // index.html without invoking the Worker (assets_navigation_prefers_asset_serving).
+  "compatibility_date": "2026-08-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  // Wrangler usage telemetry off: no calls to Cloudflare beyond what a command needs.
+  "send_metrics": false,
+  "assets": {
+    "directory": "../frontend/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Both forms: "/api/*" alone does not match the bare "/api" path.
+    "run_worker_first": ["/api", "/api/*"]
+  },
+  // Non-secret configuration. The deploy workflow overrides the release-bound
+  // values (DATA_VERSION, ANALYTICS_VERSION, SNAPSHOT_ID) with `--var`; the
+  // empty defaults make the edge result cache store nothing (version gate).
+  "vars": {
+    "API_VERSION": "v1",
+    "ANALYTICS_VERSION": "",
+    "DATA_VERSION": "",
+    "RESPONSE_FORMAT": "1",
+    "SNAPSHOT_ID": "",
+    // Bump by hand to orphan every edge-cached result at once.
+    "EPOCH": "1",
+    // "off" disables the /api/v1/wake prewake call.
+    "PREWAKE": "on"
+  },
+  // Secrets are never in this file. Generate them with
+  // scripts/ops/gen_edge_secrets.sh (writes ~/.config/atus/edge.env, chmod 600)
+  // and load each with `npx wrangler secret put <NAME>` piped from that file:
+  //   EDGE_AUTH_SECRET  sent as X-ATUS-Edge-Auth; the API's ATUS_EDGE_SECRETS accepts it
+  //   RENDER_ORIGIN     https://<service>.onrender.com, never published
+  //   OPS_TOKEN         bearer for /api/_ops/budget
+  //   IP_HMAC_KEY       key for the governor's HMAC of client IP prefixes
+  //   NEON_API_KEY      optional, project-scoped key for the governor's usage poll
+  // `wrangler deploy` refuses to publish while a required secret is missing; a
+  // Worker's very first deploy therefore uses `--secrets-file ~/.config/atus/edge.env`.
+  "secrets": {
+    "required": ["EDGE_AUTH_SECRET", "RENDER_ORIGIN", "OPS_TOKEN", "IP_HMAC_KEY"]
+  },
+  // Persistent analysis-result cache (ADR-011 "Edge tiers"). The namespace id
+  // is not secret: replace the placeholder with the id printed by
+  // `npx wrangler kv namespace create atus-results`.
+  "kv_namespaces": [
+    {
+      "binding": "RESULT_CACHE",
+      "id": "00000000000000000000000000000000"
+    }
+  ],
+  // Quota governor: one SQLite-backed Durable Object named "global" (Workers
+  // Free offers only the SQLite backend).
+  "durable_objects": {
+    "bindings": [{ "name": "GOVERNOR", "class_name": "Governor" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Governor"] }],
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": true }
+  }
+}

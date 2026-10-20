@@ -1,0 +1,47 @@
+# ATUS edge Worker
+
+The Cloudflare Worker in front of the API (decision and request flow: [ADR-011](../docs/adr/ADR-011-hosting.md)).
+One `workers.dev` origin serves the SPA build (`../frontend/dist`) as static assets; only `/api` and
+`/api/*` run this Worker, which:
+
+- allows exactly the routes in `src/routes.ts` (everything else under `/api` is a 404 envelope);
+- refuses analysis POSTs that are not `application/json` (415) or exceed 64 KiB (413);
+- forwards to `RENDER_ORIGIN` with a fresh header set: `Content-Type`, `Accept`, `Accept-Encoding`,
+  `If-None-Match`, plus `X-Request-ID`, `X-ATUS-Client-IP` (from `CF-Connecting-IP`),
+  `X-ATUS-Edge-Auth` and `User-Agent: atus-edge/<version>`;
+- sets no timeout, retries once only when the connection fails before response headers, and skips the
+  origin for 30 s after 2 consecutive connection failures (per isolate);
+- passes API JSON and error envelopes through byte for byte, and turns platform responses into
+  `service_waking` (503) or `upstream_unavailable` (502/503) envelopes with `Retry-After`;
+- sets the security headers on every `/api` response and drops `server`, `x-render-*`, `rndr-id`
+  and every other origin header not on its allowlist;
+- answers `GET /api/_edge/health` itself and handles the `GET /api/v1/wake` prewake.
+
+## Commands
+
+```sh
+npm ci
+npm test              # Vitest in workerd (Miniflare) + Node checks; no Cloudflare account needed
+npm run typecheck     # generates worker-configuration.d.ts with `wrangler types`, then tsc
+npm run lint
+npm run format:check
+```
+
+Tests never reach Cloudflare or Render: the secrets are fake, `RENDER_ORIGIN` is
+`https://origin.invalid`, and the origin is either a mocked `fetch` or a local HTTP server on an
+ephemeral loopback port (`test/global-setup.ts`). `test/node/config.test.ts` asserts the
+`wrangler.jsonc` invariants that CI must hold (no `cache` block, `preview_urls: false`,
+`workers_dev: true`, `run_worker_first` = `/api` and `/api/*`, SPA fallback).
+
+## Local development
+
+Copy `.dev.vars.example` to `.dev.vars` (gitignored), point `RENDER_ORIGIN` at a local API (plain
+HTTP is accepted only for loopback hosts) and start that API with `ATUS_EDGE_SECRETS` set to the same
+`EDGE_AUTH_SECRET`. Build the frontend (`npm run build` in `../frontend`), then run `npm run dev`.
+
+## Secrets
+
+Production secrets live only in the Worker's secret store. `scripts/ops/gen_edge_secrets.sh` writes
+them to `~/.config/atus/edge.env` (mode 600) and prints the `wrangler secret put` commands that read
+each value from that file; it never prints a value. `wrangler.jsonc` lists the required ones, so
+`wrangler deploy` refuses to publish without them.

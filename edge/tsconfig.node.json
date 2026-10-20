@@ -1,0 +1,26 @@
+{
+  // Files that run in Node, not workerd: the Vitest config and the local
+  // origin server the integration tests talk to.
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": ["es2024"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true
+  },
+  "include": [
+    "vitest.config.ts",
+    "test/global-setup.ts",
+    "test/fixtures.ts",
+    "test/node",
+    "test/provided-context.d.ts"
+  ]
+}
