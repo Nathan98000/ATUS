@@ -996,6 +996,21 @@ def test_capacity_answers_are_retried_then_kept(flaky_api, monkeypatch):
     assert answer.status == 503 and answer.attempts == 3
 
 
+def test_a_timed_out_request_is_incomplete_and_not_retried(monkeypatch):
+    monkeypatch.setattr(replay.time, "sleep", lambda s: pytest.fail("retried a timeout"))
+    with socket.socket() as silent:            # accepts connections, never answers
+        silent.bind(("127.0.0.1", 0))
+        silent.listen()
+        answer = replay.send_with_retries(_Alive(silent.getsockname()[1]),
+                                          RequestInfo("GET", "/api/v1/meta"), retries=3,
+                                          timeout=0.2)
+    assert answer.status is None and answer.timed_out and answer.attempts == 1
+    assert answer.transport_error == "no answer within 0.2 s"
+    assert not httpdiff.is_retryable(answer)
+    entry = httpdiff.evaluate_spec(_spec(), {"b": answer, "c": ok(estimate_body())})
+    assert entry["status"] == "incomplete" and not entry["passed"]
+
+
 def test_a_lost_server_is_an_answer_not_an_exception(monkeypatch):
     class Dead:
         port = _free_port()

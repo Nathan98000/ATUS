@@ -313,6 +313,7 @@ class Response:
     body: bytes = b""
     transport_error: str | None = None
     attempts: int = 1
+    timed_out: bool = False          # no answer within the request timeout: not retried
     _parsed: Any = field(default=None, repr=False, compare=False)
 
     @property
@@ -353,9 +354,10 @@ class Response:
 
 
 def is_retryable(response: Response) -> bool:
-    """Whether a server answered "not now" (or not at all): worth retrying."""
+    """Whether a server answered "not now" (or not at all): worth retrying.
+    A request that timed out is not: it would most likely time out again."""
     if response.status is None:
-        return True
+        return not response.timed_out
     return response.status in RETRYABLE_STATUSES and response.error_code in RETRYABLE_CODES
 
 

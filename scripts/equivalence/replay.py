@@ -289,6 +289,9 @@ def send(port: int, request: RequestInfo, *, timeout: float) -> Response:
             name = name.lower()
             received[name] = f"{received[name]}, {value}" if name in received else value
         return Response(answer.status, received, body)
+    except TimeoutError:
+        return Response(None, transport_error=f"no answer within {timeout:g} s",
+                        timed_out=True)
     except (OSError, http.client.HTTPException) as exc:
         return Response(None, transport_error=f"{type(exc).__name__}: {exc}"[:300])
     finally:
@@ -313,7 +316,7 @@ def send_with_retries(server: ManagedServer, request: RequestInfo, *, retries: i
         response = send(server.port, request, timeout=timeout)
         response.attempts = attempt
         if not httpdiff.is_retryable(response) or attempt > retries:
-            return response
+            return response  # a final answer, or still "not now" after the retries
         time.sleep(_retry_delay(response, attempt))
 
 
