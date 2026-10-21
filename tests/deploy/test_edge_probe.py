@@ -154,15 +154,20 @@ def _edge_handler(behaviour: dict, assets):
             headers.update(extra)
             self._send(status, body, "application/json", headers)
 
-        def _meta(self) -> None:
-            self._api(200, behaviour["api_meta"], **{"X-Data-Version": DATA_VERSION})
+        def _meta(self, query: bool) -> None:
+            # As the Worker does (edge/src/snapshot.ts): a plain /api/v1/meta is the
+            # deployed snapshot's file; with a query string, or without that file,
+            # the request reaches the API.
+            file = assets / "snap" / behaviour["edge_snapshot_id"] / "get" / "meta.json"
+            body = behaviour["api_meta"] if query or not file.is_file() else file.read_bytes()
+            self._api(200, body, **{"X-Data-Version": DATA_VERSION})
 
         def do_GET(self):
             path = self.path
             if not path.startswith("/api"):
                 return self._static(path.split("?")[0])
-            if path == "/api/v1/meta":
-                return self._meta()
+            if path.split("?", 1)[0] == "/api/v1/meta":
+                return self._meta("?" in path)
             if path == "/api/_edge/health":
                 return self._api(200, json.dumps({
                     "status": "ok", "cache_scope": "stub", "data_version": DATA_VERSION,
