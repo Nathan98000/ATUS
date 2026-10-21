@@ -209,6 +209,46 @@ def test_the_bump_instructions_name_every_file_a_bump_edits():
     assert "edge/wrangler.jsonc" in api_doc
 
 
+_FORMAT_KEY = r"""["'](?:[xX]-[rR]esponse-[fF]ormat|response_format)["']"""
+#: A test comparing a reported format (a header or a snapshot field) with a literal.
+REPORTED_FORMAT_LITERAL = re.compile(
+    rf"""(?:\[\s*{_FORMAT_KEY}\s*\]|\.get\(\s*{_FORMAT_KEY}\s*\))\s*==\s*["'](?P<value>[^"']*)["']""")
+
+
+def _fakes_the_format(text: str, value: str) -> bool:
+    """Whether ``text`` sets up a fake that reports ``value`` itself (a header or a
+    field ``<key>: "<value>"``): its comparisons then check the fake, not the API."""
+    return re.search(rf"""{_FORMAT_KEY}\s*:\s*["']{re.escape(value)}["']""", text) is not None
+
+
+def test_a_bump_edits_no_test_outside_the_bump_files():
+    """response-format-bump-breaks-snapshot, verified in review round 2 by doing a bump as
+    instructed (the BUMP_FILES and a new fingerprint): CI still failed outside them.
+    tests/unit/api/test_guard.py and tests/integration/test_build_snapshot_api.py compared
+    the real API's format with a literal "1", and 14 edge worker tests inherited
+    wrangler.jsonc's default although their fixtures (origin headers, KV metadata, cache
+    scopes computed independently) are written for "1". Python tests compare the API's
+    format with the constant; the worker tests pin the release var they are written for
+    in edge/vitest.config.ts, as the deploy's --var does."""
+    copies = []
+    for path in sorted((ROOT / "tests").rglob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        for match in REPORTED_FORMAT_LITERAL.finditer(text):
+            if match["value"] == RESPONSE_FORMAT and not _fakes_the_format(text, match["value"]):
+                copies.append(f"{path.relative_to(ROOT)}: {match[0]}")
+    assert copies == [], f"compare with atus_pipeline.api.RESPONSE_FORMAT, not a copy: {copies}"
+    vitest = (ROOT / "edge" / "vitest.config.ts").read_text(encoding="utf-8")
+    (pinned,) = re.findall(r"const TEST_RELEASE = \{ RESPONSE_FORMAT: '([^']*)' \}", vitest)
+    assert pinned.isdigit(), pinned
+    assert "bindings: { ...TEST_SECRETS, ...TEST_RELEASE }" in vitest
+    # The scan itself: a real-API comparison is caught, a fake's own value is not.
+    sample = f'assert response.headers["X-Response-Format"] == "{RESPONSE_FORMAT}"'
+    assert [m["value"] for m in REPORTED_FORMAT_LITERAL.finditer(sample)] == [RESPONSE_FORMAT]
+    assert not _fakes_the_format(sample, RESPONSE_FORMAT)
+    assert _fakes_the_format(f'analysis(**{{"X-Response-Format": "{RESPONSE_FORMAT}"}})',
+                             RESPONSE_FORMAT)
+
+
 def test_every_pin_names_a_format_and_an_analytics_version():
     for (response_format, analytics_version), digest in PINNED.items():
         assert response_format.isdigit() and analytics_version
