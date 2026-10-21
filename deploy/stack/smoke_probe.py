@@ -1,11 +1,12 @@
 """Functional smoke checks against a running API (or the edge in front of it).
 
-Standard library only, so it runs inside the API image on the compose network
-(the API port is never published on the host). Prints one line per check and
-exits non-zero if any check fails. Never prints the edge secret or the ops
-token. Functional only: nothing here times anything.
+Standard library only (plus, without --response-format, one constant of the
+image's own atus_pipeline), so it runs inside the API image on the compose
+network (the API port is never published on the host). Prints one line per
+check and exits non-zero if any check fails. Never prints the edge secret or
+the ops token. Functional only: nothing here times anything.
 
-    python smoke_probe.py --base-url http://api:10000 --fixture --response-format 1
+    python smoke_probe.py --base-url http://api:10000 --fixture [--response-format 1]
 
 Environment: ATUS_SMOKE_EDGE_SECRET is sent as ``X-ATUS-Edge-Auth`` on the
 requests that model the edge (Worker -> API). Leave it unset when probing
@@ -34,9 +35,10 @@ API protection work landed):
   error_no_store    errors carry ``Cache-Control: no-store`` (never cached)
   analysis_headers  the analysis carries X-Response-Format (--response-format, which
                     scripts/smoke_stack.sh reads from the checkout's
-                    atus_pipeline.api.RESPONSE_FORMAT), X-Analytics-Version,
-                    X-Analysis-Key, X-Data-Version, an X-Cache verdict and
-                    Server-Timing with db and app durations
+                    atus_pipeline.api.RESPONSE_FORMAT; without it, the constant of
+                    the image the probe runs in, as the compose `smoke` service
+                    does), X-Analytics-Version, X-Analysis-Key, X-Data-Version, an
+                    X-Cache verdict and Server-Timing with db and app durations
   request_id        an edge-authenticated, well-formed X-Request-ID is echoed; the
                     same header without edge auth is replaced by the API's own
   body_limit        a body over 64 KiB is refused with 413 payload_too_large
@@ -317,15 +319,31 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-protection-checks", action="store_true",
                         help="report the Phase 5 API contract checks as SKIP (old images)")
     parser.add_argument("--response-format", default=None,
-                        help="the X-Response-Format an analysis must carry: the image's "
-                             "atus_pipeline.api.RESPONSE_FORMAT (required unless "
-                             "--skip-protection-checks)")
+                        help="the X-Response-Format an analysis must carry (default: "
+                             "atus_pipeline.api.RESPONSE_FORMAT of the image the probe "
+                             "runs in; required elsewhere unless --skip-protection-checks)")
     parser.add_argument("--timeout", type=float, default=120.0,
                         help="per-request timeout in seconds (cold starts are slow)")
     args = parser.parse_args(argv)
     if args.response_format is None and not args.skip_protection_checks:
-        parser.error("--response-format is required (the API's RESPONSE_FORMAT)")
+        # The compose `smoke` service runs this file inside the API image with no
+        # arguments of its own (review round 3, stack-smoke-probe-usage-error):
+        # the image's constant is the format its API sends.
+        args.response_format = image_response_format()
+        if args.response_format is None:
+            parser.error("--response-format is required where atus_pipeline is not "
+                         "importable (the API's RESPONSE_FORMAT)")
     return run(args)
+
+
+def image_response_format() -> str | None:
+    """``atus_pipeline.api.RESPONSE_FORMAT`` of the environment this runs in (the API
+    image's), or None where the package is not importable."""
+    try:
+        from atus_pipeline.api import RESPONSE_FORMAT
+    except ImportError:
+        return None
+    return RESPONSE_FORMAT
 
 
 if __name__ == "__main__":
