@@ -7,26 +7,31 @@ One `workers.dev` origin serves the SPA build (`../frontend/dist`) as static ass
 
 - allows exactly the routes in `src/routes.ts` (everything else under `/api` is a 404 envelope);
 - refuses analysis POSTs that are not `application/json` (415) or exceed 64 KiB (413);
-- forwards to `RENDER_ORIGIN` with a fresh header set: `Content-Type`, `Accept`, `Accept-Encoding`,
-  `If-None-Match`, plus `X-Request-ID`, `X-ATUS-Client-IP` (from `CF-Connecting-IP`),
+- forwards to `RENDER_ORIGIN` with a fresh header set: `Content-Type`, `Accept`, `If-None-Match`, plus
+  `Accept-Encoding: gzip` (always), `X-Request-ID`, `X-ATUS-Client-IP` (from `CF-Connecting-IP`),
   `X-ATUS-Edge-Auth` and `User-Agent: atus-edge/<version>`;
 - sets no timeout, retries once only when the connection fails before response headers, and skips the
   origin for 30 s after 2 consecutive connection failures (per isolate);
 - passes API JSON and error envelopes through byte for byte, and turns platform responses into
   `service_waking` (503), `overloaded` (503, uvicorn's own connection-limit answer) or
   `upstream_unavailable` (502/503, with `details.reason`) envelopes with `Retry-After`;
-- sets the security headers on every `/api` response and drops `server`, `x-render-*`, `rndr-id`
+- sets the security headers on every `/api` response it produces and drops `server`, `x-render-*`, `rndr-id`
   and every other origin header not on its allowlist;
 - answers `GET /api/_edge/health` itself and handles the `GET /api/v1/wake` prewake;
+- answers the metadata GETs (`/api/v1/meta`, `/activities`, `/activities/presets`,
+  `/population/metadata`, `/activities/<code>`) without a query string from the deployed static
+  snapshot (`src/snapshot.ts`); the rest reach the origin as governor-counted lookups (200 per
+  client /24 or /48 and 2,000 in all per UTC day);
 - answers analysis POSTs from Workers KV when the exact request bytes were answered before for the same
   release (`X-Cache: edge`; key `r1/<CACHE_SCOPE>/<k>`, `src/cache.ts`), and stores new 200 results
-  that pass the store gate (≤ 16 KiB, 30-day TTL);
+  the API computed (`X-Cache: miss`) that pass the store gate (≤ 16 KiB, 30-day TTL);
 - admits every other analysis through the quota governor, a SQLite Durable Object (`src/governor.ts`):
-  60 per client /24 or /48 per UTC day, and 300 admissions including refunded ones (429
-  `rate_limited`), 600 per day and 300 heavy per day (503 `daily_capacity_reached`), a daily Neon
-  CU-hour ceiling and, with the optional Neon key, monthly pacing and an egress stop (503
-  `capacity_paused`). If the governor cannot be reached, uncached analyses get 503
-  `capacity_unavailable`; everything else keeps working;
+  60 per client /24 or /48 per UTC day, 300 admissions including refunded ones, and a fifth of the
+  day's compute ceiling (429 `rate_limited`), 600 per day and 300 heavy per day, a daily Neon
+  CU-hour ceiling and, without the Neon key, a daily egress estimate (503 `daily_capacity_reached`),
+  and with the optional Neon key monthly pacing and an egress stop (503 `capacity_paused`). If the
+  governor cannot be reached, uncached analyses and metadata lookups get 503 `capacity_unavailable`;
+  everything else keeps working;
 - answers `GET /api/_ops/budget` with the governor's budget state for `Authorization: Bearer <OPS_TOKEN>`
   (404 for anything else).
 

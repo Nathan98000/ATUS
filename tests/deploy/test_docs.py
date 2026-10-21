@@ -235,3 +235,129 @@ def test_adr_008_and_009_point_at_their_phase_5_successors():
     adr_009 = (ADR / "ADR-009-shareable-urls.md").read_text()
     redirect = _section(adr_009, "a Phase 5 redirect service", "\n- ")
     assert "ADR-016-short-share-links.md" in redirect
+
+
+# --- Review round 1, edge findings: what the docs say the governor bounds -----------------
+
+DEPLOYMENT = REPO_ROOT / "docs" / "deployment.md"
+SECURITY = REPO_ROOT / "docs" / "security.md"
+API_DOC = REPO_ROOT / "docs" / "api.md"
+ADR_011 = ADR / "ADR-011-hosting.md"
+ADR_015 = ADR / "ADR-015-edge-cache-snapshot-and-governor.md"
+CONSTANTS = REPO_ROOT / "edge" / "src" / "constants.ts"
+
+
+def _row(text: str, start: str) -> str:
+    return next(line for line in text.splitlines() if line.startswith(start))
+
+
+def test_docs_say_one_network_cannot_spend_the_daily_compute():
+    """single-network-cu-ceiling-exhaustion: the per-network count did not bound
+    compute; the docs said exhausting the ceiling took "many networks"."""
+    assert re.search(r"^export const PREFIX_DAILY_CU_SHARE = 0\.2$", CONSTANTS.read_text(),
+                     re.MULTILINE)
+    r1 = _row(SECURITY.read_text(), "**R1.")
+    assert "An attacker with many networks" not in r1
+    assert "five spacing analyses" in r1 and "ten at their 60" in r1
+    adr = ADR_015.read_text()
+    assert "Many networks can use up" not in adr
+    budgets = _section(adr, "| # | Budget |", "Every denial")
+    assert "| 4 | per client network's compute | a fifth (`PREFIX_DAILY_CU_SHARE`)" in budgets
+    deployment = DEPLOYMENT.read_text()
+    assert "≤ ~1 CU-h even under scenario C" not in deployment
+    assert "**S1b. One client spaces cheap novel specs" in deployment
+
+
+def test_docs_bound_render_outbound_by_every_path_through_the_worker():
+    """ungoverned-metadata-gets-render-bandwidth and kv-writes-not-bounded-by-global-cap:
+    the 600-a-day cap was said to bound Render outbound (0.74 GB) and "No month-long
+    pause" held only for analyses."""
+    deployment = DEPLOYMENT.read_text()
+    outbound = _row(deployment, "| Outbound bandwidth (includes API→DB traffic")
+    assert "Hard bound from governor caps: 600/day × 40 KB × 31 ≈ 0.74 GB (85% free)" \
+        not in outbound
+    for needle in ("metadata lookups", "`/api/health`", "Refunded admissions"):
+        assert needle in outbound, needle
+    assert "also bounds KV writes and Render outbound)" not in deployment
+    assert "**S5. Replay of metadata GETs**" in deployment
+    assert "This also bounds KV writes and Render outbound traffic." not in ADR_011.read_text()
+    adr = ADR_015.read_text()
+    assert "it is not implemented." not in _section(adr, "## What this does not protect")
+    assert "**Render outbound through the Worker.**" in adr
+    assert "**Metadata at the edge.**" in adr
+    assert "the API (query string forwarded) |" not in API_DOC.read_text()
+    assert "metadata GETs reach the origin ungoverned" not in ADR_011.read_text()
+    assert "**Metadata cannot spend Render's monthly outbound.**" in SECURITY.read_text()
+
+
+def test_docs_store_only_computed_answers_in_kv():
+    """kv-writes-not-bounded-by-global-cap: the gate said `miss` or `hit`."""
+    for path in (ADR_011, ADR_015, SECURITY, API_DOC):
+        text = path.read_text()
+        assert not re.search(r"`miss` or `hit`|`miss\|hit`", text), _name(path)
+    assert "const STORABLE_ORIGIN_CACHE = new Set(['miss'])" in \
+        (REPO_ROOT / "edge" / "src" / "cache.ts").read_text()
+
+
+def test_docs_say_the_egress_stop_needs_ground_truth_and_use_the_estimates_in_code():
+    """conservative-mode-neon-egress-unbounded: without ground truth nothing bounded
+    egress, and the docs quoted 32/256 KiB estimates as the code's."""
+    constants = CONSTANTS.read_text()
+    assert "EGRESS_ESTIMATE_BYTES = { light: 64 * 1024, heavy: 512 * 1024 }" in constants
+    adr = ADR_015.read_text()
+    model = next(line for line in adr.splitlines() if line.startswith("- **Model error.**"))
+    assert "64 KiB light and 512 KiB heavy" in model and "32 KiB" not in model
+    egress = _row(DEPLOYMENT.read_text(), "| Public network transfer (egress")
+    assert "Estimated, **unmeasured**" not in egress
+    assert "**without it**" in egress and "4.5 GB / 31" in egress
+    assert "| 6 | Neon egress today, without ground truth only |" in adr
+
+
+def test_adr_015_charges_lost_settles_as_a_union():
+    """abandoned-lease-full-charge: expired leases were charged 780 CU-s each, and the
+    ADR said a lost settle showed visitors "nothing"."""
+    adr = ADR_015.read_text()
+    assert "| Settle lost | the lease expires after 10 minutes and is charged in full | nothing |" \
+        not in adr
+    never = next(line for line in adr.splitlines() if line.startswith("- **Never settled**"))
+    assert "as part of the union" in never and "share one window" in never
+    upstream = (REPO_ROOT / "edge" / "src" / "upstream.ts").read_text()
+    assert "The client's\n *   disconnect does not abort the origin call either." not in upstream
+
+
+def test_adr_015_does_not_promise_the_provisional_charge_is_never_overshot():
+    """settled-charge-exceeds-provisional."""
+    adr = ADR_015.read_text()
+    assert "never overshot" not in adr
+    assert "That is an estimate, not a bound" in adr
+
+
+def test_docs_describe_the_prewake_retry():
+    """wake-stale-waking: "waking" was remembered for 10 minutes, and the comment said the
+    probe always outlives the reply."""
+    assert "at most once a minute while it was waking" in ADR_011.read_text()
+    security = SECURITY.read_text()
+    assert "per 10 minutes once the origin answered warm, and at most one a minute" in security
+    assert "At most one origin `/health` call per isolate per 10 minutes;" not in security
+    wake = (REPO_ROOT / "edge" / "src" / "wake.ts").read_text()
+    assert "so a slow\n *   spin-up still completes" not in wake
+    assert "30 s" in wake
+
+
+def test_adr_015_settles_data_availability_refusals_as_shed():
+    """non-computing-refusals-settled-as-computed."""
+    shed = _row(ADR_015.read_text(), "| `shed` |")
+    for code in ("database_paused", "data_version_mismatch", "data_not_loaded",
+                 "schema_not_initialized"):
+        assert code in shed, code
+
+
+def test_docs_scope_the_security_headers_to_worker_responses():
+    """transport-layer-errors-skip-security-headers: runtime answers carry none."""
+    index = (REPO_ROOT / "edge" / "src" / "index.ts").read_text()
+    assert "security headers on everything" not in index
+    assert "on every `/api` response it produces" in API_DOC.read_text()
+    r8 = _section(SECURITY.read_text(), "**R8.", "**R9.")
+    assert "unknown HTTP method" in r8 and "Content-Length" in r8
+    c4 = _row(SECURITY.read_text(), "- **Edge.** An analysis POST")
+    assert "refused before the body is read" not in c4 and "(R8)" in c4

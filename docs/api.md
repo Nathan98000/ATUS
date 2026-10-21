@@ -571,8 +571,8 @@ has the design.
 
 | Public path | Method | Answered by |
 | --- | --- | --- |
-| `/api/v1/meta`, `/api/v1/activities`, `/api/v1/activities/presets`, `/api/v1/population/metadata` | GET | the API (query string forwarded) |
-| `/api/v1/activities/<code>` (1-32 characters of `[A-Za-z0-9_-]`) | GET | the API |
+| `/api/v1/meta`, `/api/v1/activities`, `/api/v1/activities/presets`, `/api/v1/population/metadata` | GET | the Worker, from the deployed static snapshot (the same bytes the API gives), when there is no query string; otherwise the API (query string forwarded) once the quota governor admits it as a metadata lookup |
+| `/api/v1/activities/<code>` (1-32 characters of `[A-Za-z0-9_-]`) | GET | the same: the snapshot holds every lexicon code (2, 4 or 6 digits); any other code goes to the API, which answers `activity_not_found` |
 | `/api/v1/analysis/estimate`, `/trend`, `/compare` | POST | the Worker's KV result cache, else the API once the quota governor admits the request |
 | `/api/health` | GET | the API's `/health` |
 | `/api/v1/wake` | GET | the Worker: starts waking the API through its `/health` (never the database) and answers `{"origin": "warm" \| "waking" \| "unknown", "wake": ...}` |
@@ -588,7 +588,9 @@ route). A listed path with another method, `HEAD` included, gets 405
 **Headers** (`edge/src/proxy.ts`, `edge/src/http.ts`):
 
 - The request to the API carries a fresh header set: `Accept`,
-  `Accept-Encoding`, `If-None-Match`, the body's `Content-Type`, a new
+  `If-None-Match` and the body's `Content-Type` from the client;
+  `Accept-Encoding: gzip` whatever the client accepts (the runtime decodes
+  the body, which the Worker relays without `Content-Encoding`); a new
   `X-Request-ID` (32 hex characters), `X-ATUS-Client-IP` (from Cloudflare's
   `CF-Connecting-IP`), `X-ATUS-Edge-Auth` and
   `User-Agent: atus-edge/<version>`. Nothing else the client sent is
@@ -597,14 +599,20 @@ route). A listed path with another method, `HEAD` included, gets 405
   `Content-Type`, `ETag`, `Last-Modified`, `Retry-After`, `Allow`,
   `Server-Timing`, `X-Request-ID`, `X-Data-Version`, `X-Analytics-Version`,
   `X-Analysis-Key`, `X-Cache`, `X-Response-Format`. The Worker then sets the
-  same security headers as the API on every `/api` response, plus
+  same security headers as the API on every `/api` response it produces
+  (answers the runtime gives before the Worker runs, such as to an unknown
+  HTTP method or a malformed `Content-Length`, are Cloudflare's), plus
   `Strict-Transport-Security: max-age=31536000` and `Cache-Control: no-store`
   (so the metadata's `public, max-age=300` does not reach browsers). CORS
   headers are dropped: the site is same-origin.
 - `X-Cache: edge` marks an analysis answered from the KV result cache. The
   Worker stores only complete 200 JSON analysis responses of at most 16 KiB
-  whose `X-Cache` was `miss` or `hit` and whose version headers equal its
+  whose `X-Cache` was `miss` and whose version headers equal its
   `DATA_VERSION`, `ANALYTICS_VERSION` and `RESPONSE_FORMAT`.
+- A metadata answer from the snapshot has `Content-Type: application/json`,
+  `X-Data-Version` (except presets and population metadata, as from the API),
+  `X-Analytics-Version` on `/meta`, `X-Request-ID` and the security headers,
+  and no `Server-Timing`.
 
 **Codes the Worker adds** (same envelope; `edge/src/index.ts`,
 `edge/src/proxy.ts`, `edge/src/ops.ts`). The API's own error envelopes pass
@@ -616,10 +624,10 @@ through unchanged.
 | 405 | `method_not_allowed` | another method on a listed path | `Allow` header, `details.allowed` |
 | 413 | `payload_too_large` | analysis body over 64 KiB (declared or streamed), checked before the cache and the API | `details.max_bytes` |
 | 415 | `unsupported_media_type` | analysis body not `application/json` | |
-| 429 | `rate_limited` | the governor's per-network daily budget is spent (60 analyses, or 300 admissions, per client IP prefix per UTC day) | until 00:00 UTC; `scope: "client"`, `budget: "prefix"`, `resumes_at` |
-| 503 | `daily_capacity_reached` | a shared daily budget is spent: 600 analyses (`budget: "global"`, `scope: "global"`), 300 heavy analyses (`heavy`) or the day's estimated database compute (`cu_day`; both `scope: "daily"`) | until 00:00 UTC; `scope`, `budget`, `resumes_at` |
+| 429 | `rate_limited` | the governor's per-network daily budget is spent: 60 analyses, 300 admissions, or a fifth of the day's estimated database compute per client IP prefix per UTC day (`budget: "prefix"`); or 200 metadata lookups (`budget: "metadata"`) | until 00:00 UTC; `scope: "client"`, `budget`, `resumes_at` |
+| 503 | `daily_capacity_reached` | a shared daily budget is spent: 600 analyses (`budget: "global"`, `scope: "global"`), 300 heavy analyses (`heavy`), the day's estimated database compute (`cu_day`) or, without the Neon usage poll, the day's estimated database egress (`egress_day`; these three `scope: "daily"`), or 2,000 metadata lookups (`metadata`, `scope: "global"`) | until 00:00 UTC; `scope`, `budget`, `resumes_at` |
 | 503 | `capacity_paused` | with the optional Neon usage poll: the month's egress or compute allowance is (nearly) used | until it resumes; `scope: "monthly"`, `budget`, `resumes_at` |
-| 503 | `capacity_unavailable` | the governor errored, did not answer within 5 s, or the Worker lacks `IP_HMAC_KEY`: uncached analyses fail closed | 60 |
+| 503 | `capacity_unavailable` | the governor errored, did not answer within 5 s, or the Worker lacks `IP_HMAC_KEY`: uncached analyses and metadata lookups fail closed | 60 |
 | 503 | `service_waking` | the API host is spinning up (Render's hibernate answer or an HTML loading page) | 5 |
 | 503 | `overloaded` | uvicorn's own plain-text connection-limit 503 | 10; `scope: "global"` |
 | 502 | `upstream_unavailable` | the answer is not the API's: `details.reason` is `connect_failed`, `platform_error`, `origin_timeout` (Cloudflare 524), `broken_response` or `not_configured` | 10 |

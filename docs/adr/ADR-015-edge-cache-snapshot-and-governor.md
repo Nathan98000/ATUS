@@ -28,7 +28,7 @@ What drives the design:
 
 | Tier | Holds | Key | Written by | Read by | Survives |
 |---|---|---|---|---|---|
-| **L0 static snapshot** `/snap/<SNAPSHOT_ID>/` | every metadata response (meta, activities, presets, population metadata, all 556 activity details) and the prewarmed analyses, byte for byte | GET: the API path; POST: the request hash `k` | the deploy workflow only, through `scripts/build_snapshot.py`, from the exact deployed image read-only against the restored release dump | the SPA, through the manifest | everything, including the Worker's daily limit and Render or Neon pauses |
+| **L0 static snapshot** `/snap/<SNAPSHOT_ID>/` | every metadata response (meta, activities, presets, population metadata, all 556 activity details) and the prewarmed analyses, byte for byte | GET: the API path; POST: the request hash `k` | the deploy workflow only, through `scripts/build_snapshot.py`, from the exact deployed image read-only against the restored release dump | the SPA, through the manifest; the Worker, for metadata GETs without a query string ("Metadata at the edge") | everything, including the Worker's daily limit and Render or Neon pauses |
 | **L1 Workers KV** | analysis responses (≤ 16 KiB) | `r1/<CACHE_SCOPE>/<k>` | the Worker only, through its `RESULT_CACHE` binding, under the store gate | the Worker, before the governor | Render spin-down and Render/Neon monthly pauses; not the Worker's daily limit |
 | **L2 API in-process LRU** | recent results | the resolved computation (ADR-012) | the API | the API | nothing (lost on spin-down) |
 
@@ -45,7 +45,7 @@ The Worker stores a response only when all of these hold (`storeHeadersAllow` pl
 
 1. a POST to `/api/v1/analysis/{estimate,trend,compare}`;
 2. status exactly 200, `Content-Type: application/json`;
-3. origin `X-Cache` is `miss` or `hit` (never `bypass`, computed during a data reload, nor `join`);
+3. origin `X-Cache` is `miss`: the API computed it for this request, on an admission whose count the governor keeps. Never `hit` (refunded from the global count, so byte variants of one spec could write without bound; review round 1), `bypass` (computed during a data reload) or `join`;
 4. `X-Data-Version` equals the Worker's `DATA_VERSION`;
 5. `X-Analytics-Version` equals the Worker's `ANALYTICS_VERSION` (stricter than ADR-011's list: the scope includes it, so a mismatch would mislabel the entry);
 6. `X-Response-Format` equals the Worker's `RESPONSE_FORMAT`;
@@ -82,9 +82,11 @@ Measured on the fixture database with the real 0325 lexicon (local run): 560 met
 
 The SPA reads the manifest and never probes for a file, because the SPA fallback answers a missing path with `index.html` and a 200.
 
+**Metadata at the edge.** The Worker answers `GET /api/v1/meta`, `/activities`, `/activities/presets`, `/population/metadata` and `/activities/<code>` (a 2-, 4- or 6-digit code) from the same files (`edge/src/snapshot.ts`): the bytes as built, `Content-Type: application/json`, the API's version headers (`X-Data-Version` from the Worker's `DATA_VERSION`, except on presets and population metadata; `X-Analytics-Version` on `/meta`), a new `X-Request-ID` and the security headers. It does so only for a request without a query string, and only when `SNAPSHOT_ID`, `DATA_VERSION` and `ANALYTICS_VERSION` are set and `SNAPSHOT_ID` ends in `sha256_hex(DATA_VERSION)[:16]`, so the version it adds is the snapshot's own. A file the snapshot does not hold comes back from the assets binding as `index.html`, which is a miss. Every miss (a query string, a code not in the lexicon, no snapshot deployed) goes to the origin only as a governed metadata lookup ("Quota governor"). Before review round 1 every metadata GET was forwarded: each cost Render outbound bandwidth (the lexicon is 70,851 B, ~8.5 KB gzipped), and one client replaying it at the Worker's 100,000 requests a day would have spent Render's 5 GB a month in under a week, after which Render suspends the service until the next month.
+
 ### Quota governor
 
-One SQLite-backed Durable Object named `global`. The Worker calls it only for analysis POSTs that missed KV (static files, KV hits and GET routes never do).
+One SQLite-backed Durable Object named `global`. The Worker calls it for analysis POSTs that missed KV, and for metadata GETs the snapshot could not answer. Static files, KV hits, snapshot answers, health and wake never call it.
 
 **Who is charged.** An HMAC of the client network: IPv4 `/24` (also for IPv4-mapped IPv6), IPv6 `/48`, from `CF-Connecting-IP`; requests without a parseable address share one `unknown` bucket. The HMAC is `HMAC-SHA256(HMAC-SHA256(IP_HMAC_KEY, "atus-ip-prefix|<UTC date>"), prefix)` truncated to 128 bits, computed in the Worker. The governor never sees an address, the key rotates every UTC day, and prefix rows are deleted at the first event after 00:00 UTC (a midnight alarm makes sure that happens without traffic).
 
@@ -94,14 +96,20 @@ One SQLite-backed Durable Object named `global`. The Worker calls it only for an
 
 | # | Budget | Limit | Denial | `details.scope` | `Retry-After` / `resumes_at` |
 |---|---|---|---|---|---|
-| 1 | per client network | 60 uncached analyses per UTC day, and 300 admissions including refunded ones | 429 `rate_limited` | `client` | next 00:00 UTC |
-| 2 | global | 600 per UTC day | 503 `daily_capacity_reached` | `global` | next 00:00 UTC |
-| 3 | heavy | 300 heavy per UTC day | 503 `daily_capacity_reached` | `daily` | next 00:00 UTC |
-| 4 | Neon compute today (charged by the model below) | 10 CU-h with fresh ground truth, else (100 × 0.9) / 31 = 2.903 CU-h | 503 `daily_capacity_reached` | `daily` | next 00:00 UTC |
-| 5 | Neon egress month to date (ground truth only) | stop at 4.5 GB (4.5 × 10⁹ B) | 503 `capacity_paused` | `monthly` | end of Neon's consumption period |
-| 6 | Neon compute month to date (ground truth only) | below `min(85, 10 + 75 × elapsed share)` CU-h | 503 `capacity_paused` | `monthly` | when the line reaches the need; the period end above 85 |
+| 1 | per client network | 60 uncached analyses per UTC day, and 300 admissions including refunded ones | 429 `rate_limited` (`prefix`) | `client` | next 00:00 UTC |
+| 2 | global | 600 per UTC day | 503 `daily_capacity_reached` (`global`) | `global` | next 00:00 UTC |
+| 3 | heavy | 300 heavy per UTC day | 503 `daily_capacity_reached` (`heavy`) | `daily` | next 00:00 UTC |
+| 4 | per client network's compute | a fifth (`PREFIX_DAILY_CU_SHARE`) of row 5's ceiling, in compute charged to the network | 429 `rate_limited` (`prefix`) | `client` | next 00:00 UTC |
+| 5 | Neon compute today (charged by the model below) | 10 CU-h with fresh ground truth, else (100 × 0.9) / 31 = 2.903 CU-h | 503 `daily_capacity_reached` (`cu_day`) | `daily` | next 00:00 UTC |
+| 6 | Neon egress today, without ground truth only | 4.5 GB / 31 ≈ 145 MB, from per-analysis estimates ("Model error") | 503 `daily_capacity_reached` (`egress_day`) | `daily` | next 00:00 UTC |
+| 7 | Neon egress month to date (ground truth only) | stop at 4.5 GB (4.5 × 10⁹ B) | 503 `capacity_paused` (`egress`) | `monthly` | end of Neon's consumption period |
+| 8 | Neon compute month to date (ground truth only) | below `min(85, 10 + 75 × elapsed share)` CU-h | 503 `capacity_paused` (`cu_month`) | `monthly` | when the line reaches the need; the period end above 85 |
 
-Every denial also carries `details.budget` (`prefix`, `global`, `heavy`, `cu_day`, `egress`, `cu_month`) and `details.retry_after_seconds`. Checks 4–6 include the candidate's own provisional charge, so a budget is never overshot by the request that crosses it.
+Every denial also carries `details.budget` (in brackets above; `metadata` for a lookup) and `details.retry_after_seconds`. Checks 4–8 include the candidate's own provisional charge: 780 CU-s for a fresh session, and its egress estimate. That is an estimate, not a bound. A settle without `Server-Timing` (a Cloudflare 524 always is one, and arrives more than 90 s after admission) is charged from admission to the settle plus the 300 s tail, so the request that crosses a compute budget can pass it by 2 CU for every second its settle comes later than 90 s after admission: at most about 1,020 CU-s, for a settle just before the 10-minute lease expiry. The excess is in the model's counter (a conservative over-charge, not compute Neon is known to have used). With `Server-Timing` the settled window is sized from the reported DB time instead.
+
+**Each network's share of the compute (row 4).** The counts in row 1 do not bound compute. An isolated analysis is charged its whole wake session, 2 CU × (DB time + 5 s + 300 s) ≈ 610 CU-s. Before review round 1, one network that spaced cheap analyses about 7 minutes apart, so that none shared a session, reached the conservative ceiling after 17 of them and the ground-truth ceiling after 59, both under its 60; every other network then got `daily_capacity_reached` until 00:00 UTC. Now every settled or expired analysis's compute (the part of the union it added, the same amount the day is charged) is also charged to its network, and admission adds what the network's own in-flight analyses and the candidate would add beyond the windows already charged. A fifth of the ceiling gives one network about 3 isolated sessions a day in conservative mode (2,090 CU-s) and about 11 with ground truth (7,200 CU-s). Analyses inside one session share its window, so a visitor's run of analyses costs little more than one. At least five networks are now needed to spend the day's compute.
+
+**Metadata lookups.** A metadata GET the snapshot could not answer ("Metadata at the edge") is admitted by `admitLookup`: at most 200 a day per client network (429 `rate_limited`, `scope: client`) and 2,000 a day in all (503 `daily_capacity_reached`, `scope: global`), both with `budget: metadata`, until 00:00 UTC. A lookup is only counted (no lease, no settle): the API answers metadata from memory, so it costs Render outbound, not Neon compute. The SPA never needs one.
 
 The second limit in row 1 exists because refunds (below) give the 60 back: without it, one network whose analyses the API sheds (its own per-client rate limit answers 429 after 6 a minute) or that arrive while Render wakes could be admitted without bound, and every admission plus its settle writes up to 12 governor rows (Workers Free allows 100,000 a day). 300 is about ten cold starts' worth of SPA retries (150 s at `Retry-After: 5`, ~30 attempts each).
 
@@ -109,16 +117,16 @@ The second limit in row 1 exists because refunds (below) give the 60 back: witho
 
 - **Provisional, at admission:** each in-flight analysis is assumed to occupy `[admitted, admitted + 90 s + 300 s]` (90 s is the API's deadline), 780 CU-s for a fresh session. Only the part of the union outside the windows already charged counts, so concurrent admissions share one window instead of costing a session each.
 - **At settle:** the DB work is taken to span `[max(admitted, end − db − 5 s), end]`, where `db` is the API's `Server-Timing: db;dur=` and 5 s covers the connect and a Neon wake. Without `Server-Timing` it starts at admission, which also charges a Render spin-up: an over-charge, never an under-charge. The charge is the part of `[start, end + 300 s]` not charged yet, at 2 CU. The governor keeps the charged windows themselves (merged, back to the oldest time a live lease can reach, 10 minutes), not just the end of the last one, so analyses that settle out of order (a long one that started first and finished last) are charged their whole union.
-- **Never settled** (the Worker invocation died): after 10 minutes the lease is charged in full (780 CU-s) and its counts are kept.
+- **Never settled** (the Worker invocation died, or Cloudflare cancelled it after its client disconnected): after 10 minutes the lease is charged as if the API had kept the DB busy to its deadline, `[admitted, admitted + 90 s + 300 s]`, as part of the union like any settle, and its counts are kept. Leases admitted together share one window (780 CU-s for a fresh session), as they would have had they settled. Before review round 1 each expired lease was charged 780 CU-s on its own, so 13 abandoned analyses closed the conservative day. The Worker queues the settle with `waitUntil` before it calls the origin, so a client that leaves early loses it only when the origin answers more than 30 s later (Cloudflare's limit for such work).
 
 **Settling and refunds.** The Worker reports how the origin call ended:
 
 | Outcome | Examples | Day and heavy counts | Network count | Compute and egress |
 |---|---|---|---|---|
 | `not_reached` | Render waking, platform error page other than a 524, connection failure | refunded | refunded | not charged |
-| `shed` | API `overloaded`, `rate_limited`, `daily_capacity_reached` | refunded | refunded | charged unless `db;dur=0` |
-| `rejected` | API 400, 413, 415, 422 | refunded | kept (bounds invalid-request floods) | charged unless `db;dur=0` |
-| `reused` | 2xx with `X-Cache: hit` or `join`, on the first attempt | refunded | kept | charged unless `db;dur=0` |
+| `shed` | API `overloaded`, `rate_limited`, `daily_capacity_reached`; and the refusals that run no analysis: `database_paused`, `data_version_mismatch`, `data_not_loaded`, `schema_not_initialized` | refunded | refunded | charged unless `db;dur=0`; never for `database_paused` (Neon refused the connection; the API still times the failed connect as DB time) |
+| `rejected` | API 400, 413, 415, 422 | refunded, unless `db;dur` > 0: a 422 found only by the statistics query (`insufficient_data`) ran it in full and keeps its counts, so the heavy cap bounds that egress | kept (bounds invalid-request floods) | charged unless `db;dur=0` |
+| `reused` | 2xx with `X-Cache: hit` or `join`, on the first attempt | refunded, unless `db;dur` > 0 (as for `rejected`) | kept | charged unless `db;dur=0` |
 | `computed` | 2xx `miss`/`bypass`, `analysis_timeout`, DB errors, a Cloudflare 524; and a `hit`/`join` that came back on the Worker's retry, which may be the first attempt's own computation (its connection dropped before the headers), charged from admission | kept | kept | charged |
 
 Refunding waking and shed outcomes matters because the SPA retries during a cold start for up to 150 s. A 524 from Render's Cloudflare zone is charged: the origin took the request and kept it past the proxy read timeout, and the API runs an admitted analysis to the end even when its client is gone. While the per-isolate circuit breaker skips the origin, analyses get 503 `upstream_unavailable` before any governor call.
@@ -129,7 +137,7 @@ The network count (the 60) is refunded for `not_reached` and `shed`, but every a
 
 **Ground truth (optional).** With the `NEON_API_KEY` secret (a project-scoped key) and the `NEON_PROJECT_ID` var, an alarm reads `GET https://console.neon.tech/api/v2/projects/{id}` (`compute_time_seconds` / 3600 = CU-h month to date, `data_transfer_bytes`, `consumption_period_start` and `_end`). It polls at most every 5 minutes and only while analyses arrived in the last 5 minutes, so the compute is awake anyway. Between polls, usage is bridged with the same conservative charges, counted from the *previous* successful poll (Neon's figures lag), plus the in-flight provisional window. Ground truth earns the 10 CU-h daily ceiling while it is at most 24 h old; the monthly checks apply whenever ground truth for the current period exists. A failed poll keeps the last ground truth and records only a status or error name (`http_401`, `TimeoutError`); the key goes only into the `Authorization` header.
 
-**Fail closed.** If the governor errors or does not answer within 5 s, uncached analyses get 503 `capacity_unavailable` (`Retry-After: 60`). KV hits, metadata, health, wake and static files are unaffected. A failed settle never fails a request.
+**Fail closed.** If the governor errors or does not answer within 5 s, uncached analyses and metadata lookups get 503 `capacity_unavailable` (`Retry-After: 60`). KV hits, metadata the snapshot answers, health, wake and static files are unaffected. A failed settle never fails a request.
 
 **Ops.** `GET /api/_ops/budget` with `Authorization: Bearer <OPS_TOKEN>` (constant-time comparison) returns the edge's versions and cache scope and the governor's report: mode, today's counts and refunds, active prefixes and the largest prefix count (no prefixes or addresses), compute today (settled, provisional, ceiling), a rolling 31-day sum, month-to-date figures with the last poll error, and a used/limit ratio per budget for the daily quota-report workflow. Any other request to that path, including a wrong method, gets the same 404 as an unknown route.
 
@@ -147,7 +155,7 @@ Workers KV (Free; cited terms below):
 | Operation | Free limit per day | Use | Bound |
 |---|---|---|---|
 | reads | 100,000 (failed and missing-key reads count) | one per analysis POST that reaches the Worker with release vars set. PROJECTION 45/day typical, 450 on the spike day | ≤ Worker requests, whose limit is also 100,000: reads cannot run out first |
-| writes | 1,000 (different keys); 1 write/s per key | at most one per admitted analysis whose response passes the gate. PROJECTION 30/day typical, 300 spike | ≤ 600 by the governor's global cap (60% of the limit) |
+| writes | 1,000 (different keys); 1 write/s per key | at most one per admitted analysis whose response passes the gate (`X-Cache: miss` only). PROJECTION 30/day typical, 300 spike | ≤ 600 by the governor's global cap (60% of the limit): a `miss` settles as `computed`, whose count is never refunded |
 | deletes, lists | 1,000 each | none (entries expire by TTL) | 0 |
 | storage | 1 GB | ≤ 16 KiB value + ≤ 1 KiB metadata per entry, 30-day TTL | 600 × 30 × 17 KiB ≈ 0.31 GB (31%). PROJECTION 1.3–10 MB |
 
@@ -155,8 +163,8 @@ Durable Objects on Workers Free (SQLite backend only; cited terms below). Row co
 
 | Quantity | Free limit per day | Use | Bound |
 |---|---|---|---|
-| requests (incl. alarm invocations) | 100,000 | 2 per admitted analysis (admit, settle), 1 per denial, ≤ 1 midnight alarm, ≤ 288 polls only while traffic is active (with a Neon key), ops reads. PROJECTION ~95/day typical | ≤ analysis POSTs that miss KV + ~900. It can pass 100,000 only on a day the Worker's own 100,000 requests are spent, when `/api` is down anyway |
-| rows written | 100,000; each `setAlarm` is one row; deletes count | admission ≤ 8, settle ≤ 4, denial 0 (measured); plus the midnight purge and ≤ 2 per poll | ≤ ~10,000 at the 600 cap (≤ 10%). Refunded admissions do not count toward the 600; one network can make at most 300 a day (≤ 3,600 rows). About 28 networks doing so at once could spend the day's 100,000 (see "What this does not protect against") |
+| requests (incl. alarm invocations) | 100,000 | 2 per admitted analysis (admit, settle), 1 per denial, 1 per metadata lookup, ≤ 1 midnight alarm, ≤ 288 polls only while traffic is active (with a Neon key), ops reads. PROJECTION ~95/day typical | ≤ analysis POSTs that miss KV + metadata lookups + ~900. It can pass 100,000 only on a day the Worker's own 100,000 requests are spent, when `/api` is down anyway |
+| rows written | 100,000; each `setAlarm` is one row; deletes count | admission ≤ 8, settle ≤ 4, metadata lookup ≤ 5, denial 0 (measured); plus the midnight purge and ≤ 2 per poll | ≤ ~10,000 at the 600 cap (≤ 10%), and ≤ 10,000 for the 2,000 lookups. Refunded admissions do not count toward the 600; one network can make at most 300 a day (≤ 3,600 rows). About 28 networks doing so at once could spend the day's 100,000 (see "What this does not protect against") |
 | rows read | 5,000,000 | denial ≤ 2 (measured); admission ≤ ~15 plus the in-flight leases | ≤ ~1.5M even if all 100,000 Worker requests were uncached analyses |
 | duration | 13,000 GB-s | active only while handling calls | 0.125 GB × 86,400 s = 10,800 GB-s even if never idle |
 | storage | 5 GB per account | 40 day rows, ≤ one row per active prefix, in-flight leases, one state row | < 1 MB |
@@ -199,7 +207,7 @@ A JSON round trip is lossy (`1e400` becomes `null`, and `1.0` becomes `1`), so t
 | KV eventual consistency (60 s or more between locations) | an extra miss, one more governed analysis | nothing; never a wrong result (keys are version-scoped) |
 | Two identical requests miss at once | both are admitted; the API's single-flight joins them (`join` is refunded); the second write to the same key may fail (1/s) and is ignored | nothing |
 | Governor errors, times out (5 s) or its quota is spent | uncached analyses fail closed | 503 `capacity_unavailable`; everything else works |
-| Settle lost | the lease expires after 10 minutes and is charged in full | nothing |
+| Settle lost (the invocation died, or was cancelled more than 30 s after its client disconnected) | the lease expires after 10 minutes and is charged to the API's deadline as part of the union, counts kept; leases lost together share one window | possibly an earlier `daily_capacity_reached` that day |
 | Neon poll fails | last ground truth kept; after 24 h the conservative ceiling applies; the error name shows in `/api/_ops/budget` | possibly earlier `daily_capacity_reached` |
 | Snapshot build hits an error response | the build fails; nothing is published | the previous deploy stays live |
 | Mid-body failure while buffering for KV | 502 `upstream_unavailable` (`reason: broken_response`); nothing stored; the analysis is charged as computed | a retryable error; the SPA retries it once (it joins or hits the API's cache) |
@@ -208,12 +216,18 @@ A JSON round trip is lossy (`1e400` becomes `null`, and `1.0` becomes `1`), so t
 ## What this does not protect against
 
 - **The Worker's account-wide 100,000 requests per day.** Replaying KV hits (5 req/s for ~5.6 h) spends them without touching the governor; `/api` is then down until 00:00 UTC. Only static files survive. On `workers.dev` at $0 nothing can rate-limit before the Worker runs.
-- **Distributed abuse within the global caps.** Many networks can use up the day's 600 uncached analyses (or the compute ceiling); real visitors then get `daily_capacity_reached` until 00:00 UTC. About 28 networks, each making its 300 admissions a day that end refunded (requests the API sheds, or sent while Render wakes), could also spend the governor's 100,000 rows written; the governor then fails closed (`capacity_unavailable`) until 00:00 UTC.
+- **Distributed abuse within the global caps.** A few networks can use up the day's shared budgets: ten at their 60 spend the 600 uncached analyses, five sending heavy analyses spend the 300 heavy, and five spacing analyses so that each is charged its own wake session spend the compute ceiling (each network is held to a fifth of it, row 4). Real visitors then get `daily_capacity_reached` until 00:00 UTC. One network alone no longer can. About 28 networks, each making its 300 admissions a day that end refunded (requests the API sheds, or sent while Render wakes), could also spend the governor's 100,000 rows written; the governor then fails closed (`capacity_unavailable`) until 00:00 UTC.
 - **Shared networks.** Everyone behind one IPv4 `/24` (a campus, a carrier NAT) shares 60 analyses a day; an attacker with many `/48`s gets 60 each.
 - **Direct-origin traffic.** Requests to the onrender.com host bypass the Worker; ADR-012's layer in the API answers them (403 without the edge secret).
-- **Model error.** The charge model is an upper bound only while the compute's maximum is at most `NEON_MAX_CU` (2 CU, a constant in `edge/src/constants.ts`) and every DB-touching request goes through the governor. Neon's availability-check wakes are not counted (ground truth catches them). Egress between polls uses estimates (32 KiB light, 256 KiB heavy per analysis) that are not measured.
+- **Model error.** The charge model is an upper bound only while the compute's maximum is at most `NEON_MAX_CU` (2 CU, a constant in `edge/src/constants.ts`) and every DB-touching request goes through the governor. Neon's availability-check wakes are not counted (ground truth catches them). Egress between polls, and the whole daily egress budget without ground truth (row 6), uses per-analysis estimates of 64 KiB light and 512 KiB heavy (`EGRESS_ESTIMATE_BYTES`). They are sized from DB-to-API bytes measured on the full database in review round 1 ([byte counts](../evidence/phase5/review-r1-bytes/README.md)): at most 61,892 B for a light analysis (7 years, pooled or trended), 392,464 B for a 22-year compare, and up to 242,394 B for one side of a narrow 22-year population. They are estimates, not bounds, and the per-process snapshot read (108,005 B at each API cold start) is not charged; ground truth corrects both. Without ground truth the heavy cap and row 6 are the only egress bounds, and the 4.5 GB monthly stop needs ground truth.
 - **Cost-class blind spots.** Single-year broad selectors (F66) are "light" for the heavy count, though their real compute time is still charged.
-- **DB-touching GET routes.** The metadata routes are not governed. They no longer keep Neon awake: with `ATUS_EXPECTED_DATA_VERSION` set, the API's in-process snapshot is pinned and never re-read for its age, and every lexicon search, non-ASCII terms included, is answered in memory (ADR-012, "Metadata reads and the quota"). What remains is one snapshot read per API process, on its first data request: a client that times a request after each Render spin-down could cause about 4 Neon wakes an hour (PROJECTION: at most about 2 CU-h a day at 0.25 CU), which the governor does not count but Neon's ground truth shows. The SPA sends no query string on these routes and reads metadata from the snapshot. Answering the metadata routes from the static snapshot in the Worker would close this; it is not implemented.
+- **DB-touching GET routes.** The Worker answers the metadata routes from the static snapshot; they reach the API only as counted lookups (a query string, a code the snapshot does not hold, no snapshot deployed). They no longer keep Neon awake: with `ATUS_EXPECTED_DATA_VERSION` set, the API's in-process snapshot is pinned and never re-read for its age, and every lexicon search, non-ASCII terms included, is answered in memory (ADR-012, "Metadata reads and the quota"). What remains is one snapshot read per API process, on its first data request: a client that times a lookup or an analysis after each Render spin-down could cause about 4 Neon wakes an hour (PROJECTION: at most about 2 CU-h a day at 0.25 CU), which the governor does not count but Neon's ground truth shows.
+- **Render outbound through the Worker.** Bounded per day as follows. PROJECTION from measured sizes:
+  - analyses that keep their counts: ≤ 600 × ~40 KB (SQL text to Neon plus the gzipped answer), ≈ 0.74 GB a month;
+  - metadata lookups: ≤ 2,000 × ~9 KB (the whole lexicon, gzipped; the Worker always asks for gzip), ≈ 0.6 GB a month;
+  - `/api/health`, which is not governed: ~0.5 KB each, ≈ 1.5 GB a month even if one client spent the Worker's whole 100,000 requests a day on it for a month.
+
+  That is about 2.8 GB of the 5 GB in the worst case, so no single client can suspend Render for the month. Admissions that end refunded (Render waking, the API shedding, a 4xx decided before any statement, a reuse) are bounded per network only, at 300 a day with answers of a few KB each, about 30 MB a month per network. It would take dozens of networks, sustained for the whole month, to spend the rest (R1 in `../security.md`). Direct requests to onrender.com are outside the Worker (ADR-011, accepted risk 8).
 
 ## Verification
 
@@ -258,8 +272,21 @@ The decisions are unchanged. This section records where the implementation diffe
 - **Who reads the ops report.**
   - `.github/workflows/quota-report.yml` reads `/api/_ops/budget` daily with `EDGE_OPS_TOKEN`, and fails above 0.7 of a pro-rated budget (`scripts/ops/monitors.py`).
   - `.github/workflows/edge-check.yml` reads `/api/_edge/health` and compares its `snapshot_id` with `/snap/current.json`.
-- **The SPA's fallback.** The SPA reads metadata from the snapshot only while the snapshot is readable. Any problem reading it falls back to the API (`frontend/src/api/snapshot.ts`), and that can trigger the per-process snapshot read described under "DB-touching GET routes".
+- **The SPA's fallback.** The SPA reads metadata from the snapshot only while the snapshot is readable. Any problem reading it falls back to the API (`frontend/src/api/snapshot.ts`). The Worker answers those GETs from the same snapshot when it can read it; otherwise they become counted lookups, which can trigger the per-process snapshot read described under "DB-touching GET routes".
 - **Verified locally only.** Everything under "Verification" ran under `wrangler dev` in local mode, with KV and the Durable Object simulated on disk.
   - In the production-mode stack, the Worker reaches the API through the loopback relay `deploy/edge/origin-relay.mjs`. The relay exists only in that stack ([ADR-011](ADR-011-hosting.md), amendments).
   - The CI job that repeats this check (`e2e-stack`) has no recorded run.
   - The items under "Not verifiable locally" remain unverified.
+
+## Amendments (review round 1, 2026-10-21)
+
+The review's confirmed edge findings changed the decision text above in place; this list says where. Nothing is deployed. Each change has a Worker test that failed before it (`edge/test/worker/`; 465 tests in the edge suite after the change, from 420).
+
+- **Per-network compute share** (budget row 4; `governor.test.ts`, "each network's share of the day's compute"). One network spacing cheap analyses could spend the whole daily compute ceiling within its 60.
+- **Metadata at the edge and metadata lookups** ("Static snapshot (L0)", "Quota governor"; `metadata.test.ts`). Every metadata GET used to reach Render, with the client's query string and `Accept-Encoding`, with no cache or governor. The Worker now also asks the origin for gzip on every call (`headers.test.ts`, `integration.test.ts`).
+- **Expired leases charged as part of the union, settle queued before the origin call** ("Compute charge model", "Failure modes"; `governor.test.ts`, `governor-flow.test.ts`). Each expired lease used to cost a full 780 CU-s, and the settle was queued only after the origin answered.
+- **Daily egress budget without ground truth; refusals that ran the statistics query keep their counts; measured egress estimates** (rows 6–7, "Settling and refunds", "Model error"; `governor.test.ts`, "Neon egress without ground truth"). In conservative mode nothing bounded Neon egress, and 422s that ran the whole query were refunded from the heavy cap.
+- **KV stores `X-Cache: miss` only** ("KV store gate"; `cache.test.ts`). Hits were stored while refunded, so KV writes were not bounded by the 600.
+- **Data-availability refusals settle as `shed`** ("Settling and refunds"; `admission.test.ts`, `governor-flow.test.ts`). `database_paused` was charged ~610 CU-s per attempt and kept its counts.
+- **Provisional charge is an estimate** (under the budget table). The text promised that the request crossing a budget could not pass it; a settle later than 90 s without `Server-Timing` can.
+- **Prewake** (`edge/src/wake.ts`, [ADR-011](ADR-011-hosting.md) "Prewake"). An isolate that saw the origin waking re-probes after a minute, not 10; `wake.test.ts`.

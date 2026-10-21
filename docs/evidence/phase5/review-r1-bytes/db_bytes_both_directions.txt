@@ -1,0 +1,9 @@
+cold-process snapshot read (GET /api/v1/meta)                          status=200 db_to_api_bytes=  108005 api_to_db_bytes=    2209 x-cache=None
+estimate 1 year (replicate SE) [fresh process, after warm-up]          status=200 db_to_api_bytes=    9523 api_to_db_bytes=   18408 x-cache=miss
+estimate pooled 22 years (replicate SE) [fresh process, after warm-up] status=200 db_to_api_bytes=  193120 api_to_db_bytes=   18513 x-cache=miss
+trend 22 years (replicate SE) [fresh process, after warm-up]           status=200 db_to_api_bytes=  193120 api_to_db_bytes=   18513 x-cache=miss
+compare by sex pooled 22 years (replicate SE) [fresh process, after warm-up] status=200 db_to_api_bytes=  392464 api_to_db_bytes=   36737 x-cache=miss
+trend 7 years (light) [fresh process, after warm-up]                   status=200 db_to_api_bytes=   61892 api_to_db_bytes=   18438 x-cache=miss
+estimate pooled 7 years (light) [fresh process, after warm-up]         status=200 db_to_api_bytes=   61892 api_to_db_bytes=   18438 x-cache=miss
+compare by sex 3 years (light) [fresh process, after warm-up]          status=200 db_to_api_bytes=   54476 api_to_db_bytes=   36547 x-cache=miss
+estimate pooled 7 years, leisure (light) [fresh process, after warm-up] status=422 db_to_api_bytes=       0 api_to_db_bytes=       0 x-cache=None
