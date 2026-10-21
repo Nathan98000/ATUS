@@ -9,9 +9,11 @@ the network.
 from __future__ import annotations
 
 import re
+import subprocess
 from datetime import date, timedelta
 from pathlib import Path
 
+import pytest
 import yaml
 
 from .conftest import REPO_ROOT
@@ -207,3 +209,51 @@ def test_every_hash_locked_install_takes_binary_wheels_only():
     assert "--only-binary=:all:" in _read(REPO_ROOT / "Dockerfile")
     c19 = _flat(_section(_read(DOCS_DIR / "security.md"), "**C19. Supply chain.**", "**C20."))
     assert "--only-binary=:all:" in c19
+
+
+# --- stack-e2e-evidence-guard-skips-in-ci ------------------------------------------------
+
+
+def test_ci_runs_the_stack_mode_record_guard_with_the_full_history():
+    """stack-e2e-evidence-guard-skips-in-ci: the guard skips in a shallow clone, and every
+    CI checkout was shallow (fetch-depth 1), so CI never enforced it."""
+    backend = _workflow("ci.yml")["jobs"]["backend"]
+    (checkout,) = [s for s in _steps(backend) if "actions/checkout@" in str(s.get("uses"))]
+    assert checkout["with"]["fetch-depth"] == 0
+    (deploy_tests,) = [s for s in _steps(backend) if "pytest tests/deploy" in s.get("run", "")]
+    assert deploy_tests["env"]["ATUS_REQUIRE_GIT_HISTORY"] == "1"
+
+
+def test_the_stack_mode_guard_covers_the_whole_e2e_suite(tmp_path):
+    """stack-e2e-evidence-guard-skips-in-ci: the guard compared only frontend/e2e/*.spec.ts,
+    so a change to helpers.ts or fixtures.ts left the dated record looking current."""
+    from .test_docs_accuracy import e2e_suite_changes_since
+
+    def git(*args: str) -> str:
+        return subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid",
+                               *args], cwd=tmp_path, capture_output=True, text=True,
+                              check=True).stdout.strip()
+
+    def write(name: str, text: str = "x") -> None:
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text)
+
+    if subprocess.run(["git", "init", "-q", str(tmp_path)], capture_output=True,
+                      check=False).returncode != 0:
+        pytest.skip("git is not available")
+    for name in ("frontend/e2e/a.spec.ts", "frontend/e2e/helpers.ts",
+                 "frontend/playwright.config.ts", "frontend/src/app.ts"):
+        write(name)
+    git("add", "-A")
+    git("commit", "-q", "-m", "recorded")
+    record = git("rev-parse", "HEAD")
+    assert e2e_suite_changes_since(record, tmp_path) == []
+    write("frontend/e2e/helpers.ts", "changed")
+    write("frontend/e2e/deployed/starter.deployed.ts")
+    write("frontend/src/app.ts", "changed")               # app code: CI's e2e-stack covers it
+    git("add", "-A")
+    git("commit", "-q", "-m", "later")
+    write("frontend/e2e/b.spec.ts")                       # untracked
+    assert e2e_suite_changes_since(record, tmp_path) == [
+        "frontend/e2e/b.spec.ts", "frontend/e2e/deployed/starter.deployed.ts",
+        "frontend/e2e/helpers.ts"]

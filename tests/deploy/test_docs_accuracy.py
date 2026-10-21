@@ -6,12 +6,14 @@ a script), the test reads that source too, so a change there fails here until
 the docs follow.
 
 Read-only. Needs neither Docker nor the network; the git checks skip in a
-shallow clone.
+shallow clone, except where ``ATUS_REQUIRE_GIT_HISTORY=1`` says the history must
+be there (CI's backend job, which checks out the full history).
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -80,9 +82,9 @@ def _sentences(path: Path):
         paragraph.append(line)
 
 
-def _git(*args: str) -> str | None:
+def _git(*args: str, cwd: Path = REPO_ROOT) -> str | None:
     try:
-        result = subprocess.run(["git", *args], cwd=REPO_ROOT, capture_output=True,
+        result = subprocess.run(["git", *args], cwd=cwd, capture_output=True,
                                 text=True, check=False, timeout=30)
     except (OSError, subprocess.SubprocessError):
         return None
@@ -560,8 +562,27 @@ _STACK_RECORD = re.compile(
     r"\(Chromium desktop (\d+), mobile (\d+), WebKit (\d+)\)")
 
 
+#: The browser suite the stack-mode record covers: every file under frontend/e2e (the
+#: specs and what they run on: helpers.ts, fixtures.ts, browserServer.ts, the deployed
+#: smoke) and the Playwright config (review round 2: only *.spec.ts was compared). App
+#: code is left out on purpose: CI's e2e-stack job reruns this suite in stack mode on
+#: every commit, while this guard keeps the dated record from predating the suite.
+E2E_SUITE = ("frontend/e2e", "frontend/playwright.config.ts")
+
+
+def e2e_suite_changes_since(commit: str, root: Path = REPO_ROOT) -> list[str]:
+    """Files of E2E_SUITE that differ between ``commit`` and HEAD (changed, added or
+    removed since), plus untracked ones, which no commit holds."""
+    changed = _git("diff", "--name-only", commit, "HEAD", "--", *E2E_SUITE, cwd=root)
+    untracked = _git("ls-files", "--others", "--exclude-standard", "--", *E2E_SUITE, cwd=root)
+    assert changed is not None and untracked is not None, f"git cannot compare with {commit}"
+    return sorted(set(filter(None, f"{changed}\n{untracked}".splitlines())))
+
+
 def test_the_stack_mode_e2e_record_names_a_commit_that_has_every_e2e_spec():
-    """stack-mode-e2e-evidence-stale: the record predated two specs that need the edge."""
+    """stack-mode-e2e-evidence-stale: the record predated two specs that need the edge.
+    Review round 2 (stack-e2e-evidence-guard-skips-in-ci): CI's shallow checkout skipped
+    this guard, and it compared only *.spec.ts."""
     records = {}
     for path in (FRONTEND, DEPLOYMENT):
         match = _STACK_RECORD.search(_flat(_read(path)))
@@ -572,12 +593,13 @@ def test_the_stack_mode_e2e_record_names_a_commit_that_has_every_e2e_spec():
     assert int(total) == int(desktop) + int(mobile) + int(webkit)
     if _git("rev-parse", "--is-shallow-repository") != "false" or \
             _git("cat-file", "-e", f"{commit}^{{commit}}") is None:
+        if os.environ.get("ATUS_REQUIRE_GIT_HISTORY") == "1":
+            pytest.fail("ATUS_REQUIRE_GIT_HISTORY=1, but the checkout is shallow or lacks "
+                        f"{commit}: check out the full history (fetch-depth: 0)")
         pytest.skip("needs the full git history")
-    for spec in sorted((REPO_ROOT / "frontend" / "e2e").glob("*.spec.ts")):
-        added = _git("log", "-1", "--format=%H", "--", str(spec.relative_to(REPO_ROOT)))
-        assert added, spec.name
-        assert _git("merge-base", "--is-ancestor", added, commit) is not None, \
-            f"{spec.name} changed after the stack-mode record ({commit})"
+    assert e2e_suite_changes_since(commit) == [], \
+        f"the E2E suite changed after the stack-mode record ({commit}): rerun it in stack " \
+        "mode (scripts/smoke_stack.sh --edge --e2e) and update the record"
 
 
 # --- monitors-fail-during-bootstrap ---------------------------------------------------------------
