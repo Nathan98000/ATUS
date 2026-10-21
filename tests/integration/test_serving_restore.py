@@ -353,6 +353,46 @@ def test_roles_only_rotates_the_api_password(restored, cluster):
     restored["api_url"] = new_url
 
 
+def test_roles_only_passes_after_the_cumulative_statistics_are_lost(restored, cluster):
+    """Review r1 (roles-only-fails-after-neon-suspend): Neon discards the
+    cumulative statistics (``pg_stat_user_tables.last_analyze``) at every
+    compute suspend; ``pg_stat_reset()`` does the same here. ``--roles-only``
+    (the password rotation procedure) then failed its error-severity
+    "planner statistics" check, after the rotation had taken effect. The
+    check now reads the planner statistics themselves (``pg_stats``,
+    catalog data that a restart keeps)."""
+    dbname = urlsplit(restored["owner_url"]).path.lstrip("/")
+    with psycopg.connect(cluster.url(dbname), autocommit=True) as admin:  # superuser
+        admin.execute("SELECT pg_stat_reset()")
+        assert admin.execute(
+            "SELECT count(*) FROM pg_stat_user_tables WHERE schemaname = 'atus' "
+            "AND (last_analyze IS NOT NULL OR last_autoanalyze IS NOT NULL)"
+        ).fetchone()[0] == 0
+    result = restore(restored["dump"], restored["secrets_file"], cluster.api_role,
+                     "--roles-only")
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    assert "[PASS] serving: planner statistics" in output
+    assert "Restore passed." in output
+
+
+def test_a_failed_check_after_a_rotation_says_the_new_password_is_in_effect(
+        restored, cluster):
+    """The checks run after roles.sql: when one fails, the rotation has still
+    happened, and the verdict says so (an operator who stops at FAILED would
+    otherwise leave the API on the old password)."""
+    result = restore(restored["dump"], restored["secrets_file"], cluster.api_role,
+                     "--roles-only", "--rotate-api-password", "--size-limit-bytes", "1")
+    output = result.stdout + result.stderr
+    restored["api_url"] = read_env_file(restored["secrets_file"])[API_URL_KEY]
+    assert result.returncode == 1
+    assert "[FAIL] restore: metered size under the limit" in output
+    assert "Restore FAILED." in output
+    assert "the API role's password was changed before the checks ran" in output
+    with psycopg.connect(restored["api_url"]) as conn:
+        assert conn.execute("SELECT 1").fetchone() == (1,)
+
+
 def test_roles_only_refuses_a_database_that_is_not_a_serving_database(
         restored, cluster, tmp_path):
     """``--roles-only`` skips the emptiness check, so it must not apply

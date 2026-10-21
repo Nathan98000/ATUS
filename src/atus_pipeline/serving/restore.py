@@ -115,6 +115,9 @@ class RestoreReport:
     checks: list[dict] = field(default_factory=list)
     sizes: dict = field(default_factory=dict)
     seconds: dict[str, float] = field(default_factory=dict)
+    # roles.sql set a password the secrets file did not hold before: from then
+    # on only the file's ATUS_API_DATABASE_URL works, whatever the checks say.
+    api_password_changed: bool = False
     passed: bool = False
 
     def as_dict(self) -> dict:
@@ -238,6 +241,7 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
     password = stored.get(API_PASSWORD_KEY)
     if options.rotate_api_password or not password:
         password = new_password()
+    changed = password != stored.get(API_PASSWORD_KEY)
     verifier = scram_sha256_verifier(password)
     api_url = api_database_url(url, options.api_role, password)
     secrets += [password, verifier, api_url]
@@ -251,6 +255,7 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
                        f"--dbname={dbname}", "-f", "-"],
                       input_bytes=options.roles_sql.read_bytes(), secrets=tuple(secrets))
     step("roles.sql", started)
+    report.api_password_changed = changed
     say(result.stdout.decode(errors="replace").strip())
     update_env_file(path, {API_PASSWORD_KEY: password, API_URL_KEY: api_url})
     say(f"Wrote {API_PASSWORD_KEY} and {API_URL_KEY} to {path} (mode 600)")

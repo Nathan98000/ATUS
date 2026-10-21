@@ -5,8 +5,8 @@ before a release switch. Cheap checks always run: the serving marker, the
 data version and row counts against the release manifest, the serving
 contract, planner statistics (a restore must be followed by ``VACUUM
 (ANALYZE)``, because a scale-to-zero compute may suspend before autovacuum
-runs), and the physical activity-code order that makes the activity index
-scan cheap. Two checks are optional:
+runs; read from ``pg_stats``, which a suspend keeps), and the physical
+activity-code order that makes the activity index scan cheap. Two checks are optional:
 
 * ``content_hash`` re-hashes every served row and compares it with the
   manifest. It reads the whole database, which on a metered host counts as
@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 
 import psycopg
+from psycopg import sql as pgsql
 
 from ..analytics.activities import ActivityResolver
 from ..analytics.population import build_population_sql
@@ -73,6 +74,29 @@ def worst_case_queries(conn: psycopg.Connection) -> list[tuple[str, bool, str, d
         params = {"years": years, **activity.sql_params, **population.params}
         out.append((f"{label}, {len(years)} years", narrow, sql, params))
     return out
+
+
+def tables_without_statistics(conn: psycopg.Connection) -> list[str]:
+    """Tables in ``atus`` that hold rows but have no planner statistics.
+
+    Reads the statistics themselves (``pg_stats``, over the ``pg_statistic``
+    catalog), which survive a restart and a Neon compute suspend. The
+    ``last_analyze`` timestamps of ``pg_stat_user_tables`` are cumulative
+    statistics instead: Neon discards them at every suspend, and a read-only
+    serving database never gets them back from autovacuum (review r1). A
+    table without rows has no statistics after ``ANALYZE`` either, and needs
+    none."""
+    candidates = [name for (name,) in conn.execute(
+        "SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace "
+        "WHERE n.nspname = 'atus' AND c.relkind = 'r' AND NOT EXISTS ("
+        "SELECT FROM pg_stats s WHERE s.schemaname = 'atus' AND s.tablename = c.relname) "
+        "ORDER BY c.relname"
+    )]
+    return [
+        name for name in candidates
+        if conn.execute(pgsql.SQL("SELECT EXISTS (SELECT FROM atus.{})").format(
+            pgsql.Identifier(name))).fetchone()[0]
+    ]
 
 
 def _plan_nodes(node: dict):
@@ -142,15 +166,11 @@ def serving_checks(
         "expected after `atus validate-analytics` ran here; the artifact itself ships empty",
         severity="warning",
     ))
-    unanalyzed = [
-        name for (name,) in conn.execute(
-            "SELECT relname FROM pg_stat_user_tables WHERE schemaname = 'atus' "
-            "AND last_analyze IS NULL AND last_autoanalyze IS NULL ORDER BY relname"
-        )
-    ]
+    unanalyzed = tables_without_statistics(conn)
     results.append(_check(
         "planner statistics", not unanalyzed,
-        "every table analyzed" if not unanalyzed else "not analyzed: " + ", ".join(unanalyzed),
+        "every table with rows has statistics" if not unanalyzed
+        else "no statistics: " + ", ".join(unanalyzed),
         "run VACUUM (ANALYZE) after a restore",
     ))
     correlation = conn.execute(
