@@ -458,10 +458,18 @@ facts are `null`, never guessed. File names are
   percentages one decimal (small nonzero values keep two significant digits
   rather than collapsing to “0.0”); SEs/CIs in the estimate's own scale and
   precision; a **difference** of two proportions is formatted in percentage
-  points (pp), matching its SE — never as “%”. Estimate and comparison
-  pages expose the raw full-precision API values under “View exact values”;
-  the trend page's “View data” table uses display precision. Raw API values
-  are never mutated in state.
+  points (pp), matching its SE — never as “%”. Confidence levels keep every
+  digit (0.975 is “97.5%”, 0.999 “99.9%” — never rounded to another level),
+  and the builder adds a shared link's non-standard level to its 90/95/99%
+  choices rather than showing one level and sending another (review round
+  3). Estimate and comparison pages expose the raw full-precision API
+  values under “View exact values”; the trend page's “View data” table uses
+  display precision. Raw API values are never mutated in state.
+- Filters are never active yet invisible. A comparison's shared filters
+  restrict both groups: in the builder their section opens and is marked
+  “(active)” when set (from a link, or carried over from an estimate or
+  trend), and the result names them in its title and in a “Both groups: …”
+  line, not only inside the collapsed panels (review round 3).
 - The one-sentence interpretation on result pages is a deterministic
   template over response fields — descriptive wording only, no causal
   claims, no significance language.

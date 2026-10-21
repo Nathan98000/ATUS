@@ -87,9 +87,11 @@ export function dimensionLabel(name: string): string {
   return overrides[name] ?? humanize(name)
 }
 
+const ALL_RESPONDENTS = 'All respondents (age 15+)'
+
 /** Short phrase describing a population filter, e.g. "Women · Ages 25–54". */
 export function populationPhrase(population: PopulationRequest | undefined): string {
-  if (!population) return 'All respondents (age 15+)'
+  if (!population) return ALL_RESPONDENTS
   const parts: string[] = []
 
   if (population.sex != null) parts.push(population.sex === 'female' ? 'Women' : 'Men')
@@ -119,10 +121,20 @@ export function populationPhrase(population: PopulationRequest | undefined): str
   if (population.diary_date_min != null) parts.push(`from ${population.diary_date_min}`)
   if (population.diary_date_max != null) parts.push(`through ${population.diary_date_max}`)
 
-  if (parts.length === 0) return 'All respondents (age 15+)'
+  if (parts.length === 0) return ALL_RESPONDENTS
   const first = parts[0] as string
   const capitalized = first.charAt(0).toUpperCase() + first.slice(1)
   return [capitalized, ...parts.slice(1)].join(' · ')
+}
+
+/**
+ * A comparison's shared population — it restricts both groups — or null when
+ * it restricts nothing. The result page names it outside its collapsed
+ * panels (review round 3).
+ */
+export function sharedPopulationPhrase(spec: AnalysisRequest): string | null {
+  const phrase = populationPhrase(spec.population)
+  return phrase === ALL_RESPONDENTS ? null : phrase
 }
 
 /** Display label for the spec's activity selection (before results arrive). */
@@ -140,7 +152,11 @@ export function activityLabelFromSpec(
   return `Custom selection (${codes.length} codes)`
 }
 
-/** Page/result title, e.g. "Sleeping — Ages 25–54 — 2025". */
+/**
+ * Page/result title, e.g. "Sleeping — Ages 25–54 — 2025"; for a comparison
+ * "Sleeping — Men vs Women — 2025", plus its shared population when one
+ * restricts both groups ("… — Men vs Women — Age 65+ — 2025", review round 3).
+ */
 export function analysisTitle(
   operation: Operation,
   spec: AnalysisRequest,
@@ -150,6 +166,8 @@ export function analysisTitle(
   if (operation === 'compare') {
     const compare = spec as CompareRequest
     parts.push(`${compare.label_a ?? 'Group A'} vs ${compare.label_b ?? 'Group B'}`)
+    const shared = sharedPopulationPhrase(spec)
+    if (shared !== null) parts.push(shared)
   } else {
     parts.push(populationPhrase(spec.population))
   }

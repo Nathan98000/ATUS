@@ -34,7 +34,12 @@ import { ErrorPanel } from '../components/ErrorPanel'
 import { LoadingPanel } from '../components/LoadingPanel'
 import { ServiceInterruption } from '../components/ServiceInterruption'
 import { useRetryFocus } from '../components/useRetryFocus'
-import { activityLabelFromSpec, analysisTitle, populationPhrase } from '../domain/describe'
+import {
+  activityLabelFromSpec,
+  analysisTitle,
+  populationPhrase,
+  sharedPopulationPhrase,
+} from '../domain/describe'
 import { isFullPageError } from '../domain/presentError'
 import {
   InvalidShareLinkError,
@@ -139,6 +144,9 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
   }, [result, operation, spec, presetLabels])
 
   const title = analysisTitle(operation, spec, activityLabel)
+  // A comparison's shared filters restrict both groups; they must be named
+  // with the result, not only inside its collapsed panels (review round 3).
+  const sharedPopulation = operation === 'compare' ? sharedPopulationPhrase(spec) : null
 
   useEffect(() => {
     document.title = `${title} · ATUS Explorer`
@@ -195,6 +203,10 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
           {operation !== 'compare' ? (
             <p className="field-hint">
               {populationPhrase(spec.population)} · {formatYears(spec.years)}
+            </p>
+          ) : sharedPopulation !== null ? (
+            <p className="field-hint">
+              Both groups: {sharedPopulation} · {formatYears(spec.years)}
             </p>
           ) : null}
         </div>

@@ -163,3 +163,37 @@ describe('long group labels (review round 1)', () => {
     expect(chartLabels[1]?.textContent).toBe(compareChildrenFixture.label_b)
   })
 })
+
+describe('confidence levels other than 90/95/99% (review round 3)', () => {
+  // The API accepts any level in (0.5, 1) from a hand-made link or request;
+  // the page must name the level it computed, as the exports do.
+  it('an estimate labels its 97.5% interval and methodology as 97.5%, not 98%', () => {
+    const result: EstimateResponse = {
+      ...estimateSleepFixture,
+      estimate: { ...estimateSleepFixture.estimate, confidence_level: 0.975 },
+    }
+    render(<EstimateView result={result} analysisKey={null} />)
+    expect(screen.getByText(/97\.5% confidence interval/)).toBeInTheDocument()
+    expect(screen.getByText(/97\.5% normal approximation/)).toBeInTheDocument()
+    expect(screen.queryByText(/98%/)).not.toBeInTheDocument()
+  })
+
+  it('a 99.9% interval is never called a 100% interval', () => {
+    const result: EstimateResponse = {
+      ...estimateSleepFixture,
+      estimate: { ...estimateSleepFixture.estimate, confidence_level: 0.999 },
+    }
+    render(<EstimateView result={result} analysisKey={null} />)
+    expect(screen.getByText(/99\.9% confidence interval/)).toBeInTheDocument()
+    expect(screen.queryByText(/100%/)).not.toBeInTheDocument()
+  })
+
+  it("a comparison's difference names its 95.45% level", () => {
+    const result: CompareResponse = {
+      ...compareChildrenFixture,
+      difference: { ...compareChildrenFixture.difference, confidence_level: 0.9545 },
+    }
+    render(<CompareView result={result} analysisKey={null} />)
+    expect(screen.getByTestId('difference')).toHaveTextContent('95.45% CI')
+  })
+})

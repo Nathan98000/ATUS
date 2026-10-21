@@ -145,6 +145,12 @@ function Builder({
   })
   const [failedSubmits, setFailedSubmits] = useState(0)
   const attempted = failedSubmits > 0
+  // A comparison's shared filters restrict both groups, so — like "More
+  // filters" — they are never active yet invisible: a prefilled link or
+  // filters carried over from an estimate open the section and mark it
+  // (review round 3). It then stays open while the visitor edits it.
+  const sharedActive = Object.values(state.population).some((value) => value != null)
+  const [sharedOpen, setSharedOpen] = useState(false)
   const errorSummaryRef = useRef<HTMLDivElement>(null)
 
   // Focus the validation summary AFTER it renders (it does not exist at the
@@ -298,13 +304,27 @@ function Builder({
                   </fieldset>
                 ))}
               </div>
-              <details className="more-filters" style={{ marginTop: '0.8rem' }}>
-                <summary>Shared filters (apply to both groups)</summary>
+              <details
+                className="more-filters"
+                style={{ marginTop: '0.8rem' }}
+                open={sharedActive || sharedOpen}
+                onToggle={(event) => setSharedOpen(event.currentTarget.open)}
+              >
+                <summary>
+                  Shared filters (apply to both groups){sharedActive ? ' (active)' : ''}
+                </summary>
                 <div style={{ marginTop: '0.6rem' }}>
                   <PopulationFields
                     dimensions={dimensions}
                     value={state.population}
-                    onChange={(population) => update({ population })}
+                    onChange={(population) => {
+                      // An edit means the section is open: record it with the
+                      // edit itself, not via the toggle event of its
+                      // programmatic opening, which Chromium may deliver only
+                      // after the edit (it then collapsed when cleared at once).
+                      setSharedOpen(true)
+                      update({ population })
+                    }}
                     ageError={shownErrors.age}
                   />
                 </div>

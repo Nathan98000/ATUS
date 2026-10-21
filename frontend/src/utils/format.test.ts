@@ -88,6 +88,23 @@ describe('uncertainty formatting', () => {
     expect(formatConfidenceLevel(0.95)).toBe('95%')
     expect(formatConfidenceLevel(0.9)).toBe('90%')
   })
+
+  // Review round 3: the API accepts any level in (0.5, 1); rounding to a whole
+  // percent named a different level than the one computed (and exported).
+  it('never rounds a confidence level to a different one', () => {
+    expect(formatConfidenceLevel(0.975)).toBe('97.5%')
+    expect(formatConfidenceLevel(0.9545)).toBe('95.45%')
+    expect(formatConfidenceLevel(0.995)).toBe('99.5%')
+    expect(formatConfidenceLevel(0.999)).toBe('99.9%')
+    expect(formatConfidenceLevel(0.99999)).toBe('99.999%')
+    expect(formatConfidenceLevel(0.99)).toBe('99%')
+    // Binary × 100 noise never shows (0.57 × 100 is 56.99999999999999)…
+    expect(formatConfidenceLevel(0.57)).toBe('57%')
+    // …and no level the API accepts collapses onto 100% or 50%: the API
+    // computes 0.9999999999999996 (z ≈ 8.13), and these two are as exported.
+    expect(formatConfidenceLevel(0.9999999999999996)).toBe('99.99999999999996%')
+    expect(formatConfidenceLevel(0.5000000000000001)).toBe('50.00000000000001%')
+  })
 })
 
 describe('years and units', () => {

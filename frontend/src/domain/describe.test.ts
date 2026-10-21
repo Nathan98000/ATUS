@@ -55,6 +55,26 @@ describe('titles', () => {
     )
   })
 
+  it("names a comparison's shared population, which restricts both groups (review round 3)", () => {
+    const spec = {
+      activity: { preset: 'sleep' },
+      years: [2025],
+      population: { age_min: 65 },
+      group_a: { sex: 'male' },
+      group_b: { sex: 'female' },
+      label_a: 'Men',
+      label_b: 'Women',
+    }
+    expect(analysisTitle('compare', spec as never, 'Sleeping')).toBe(
+      'Sleeping — Men vs Women — Age 65+ — 2025',
+    )
+    // Unset fields restrict nothing.
+    const unset = { ...spec, population: { age_min: null } }
+    expect(analysisTitle('compare', unset as never, 'Sleeping')).toBe(
+      'Sleeping — Men vs Women — 2025',
+    )
+  })
+
   it('labels activities from spec form before results arrive', () => {
     expect(activityLabelFromSpec({ activity: { preset: 'sleep' }, years: [2025] })).toBe(
       'Sleep',

@@ -9,7 +9,7 @@ import { HttpResponse, delay, http } from 'msw'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { EstimateRequest } from '../api/types'
+import type { CompareRequest, EstimateRequest } from '../api/types'
 import { encodeSpec } from '../domain/urlSpec'
 import {
   compareChildrenFixture,
@@ -181,6 +181,34 @@ describe('trend and compare results', () => {
     expect(compareChildrenFixture.difference.value).toBeLessThan(0)
     // API warnings must be visible on compare pages too.
     expect(screen.getByRole('note')).toHaveTextContent(/per-replicate differences/)
+    // No shared filters: no population line, and the title is unchanged.
+    expect(screen.queryByText(/^Both groups:/)).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      /Household children present vs No household children — 2025$/,
+    )
+  })
+
+  it("names a comparison's shared population outside the collapsed panels (review round 3)", async () => {
+    // A comparison of people aged 65+ was titled and summarised as if it
+    // covered everyone: the shared filter appeared only inside the closed
+    // methodology and exact-values panels.
+    const spec: CompareRequest = {
+      activity: { preset: 'household_activities_bls_table' },
+      years: [2025],
+      population: { age_min: 65 },
+      group_a: { sex: 'male' },
+      group_b: { sex: 'female' },
+      label_a: 'Men',
+      label_b: 'Women',
+    }
+    renderAnalysisRoute(`/analysis/compare?spec=${encodeSpec(spec)}`)
+    await screen.findByTestId('difference')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      /Men vs Women — Age 65\+ — 2025$/,
+    )
+    expect(document.title).toMatch(/Men vs Women — Age 65\+ — 2025 · ATUS Explorer$/)
+    const line = screen.getByText('Both groups: Age 65+ · 2025')
+    expect(line.closest('details')).toBeNull()
   })
 })
 
