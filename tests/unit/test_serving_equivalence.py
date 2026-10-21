@@ -119,3 +119,54 @@ def test_seed_specs_include_the_audit_extremes():
     assert zero_variance.activity.include == ("01", "02", "12")
     assert zero_variance.years == (2023,)
     assert any(getattr(s, "weights", None) == "pandemic" for _, s in specs)
+
+
+NAN, INF = float("nan"), float("inf")
+
+
+@pytest.mark.parametrize("bad", [NAN, INF, -INF])
+@pytest.mark.parametrize("field", ["se", "lo", "hi"])
+def test_a_non_finite_se_or_ci_never_matches_a_finite_one(field, bad):
+    """Review r4: NaN made ``diff > bound`` False, and inf made the bound
+    inf, so a NaN or infinite SE/CI passed as equal to any finite value."""
+    result = compare_results(_estimate(), _estimate(**{field: bad}))
+    assert not result.equivalent
+    assert not compare_results(_estimate(**{field: bad}), _estimate()).equivalent
+
+
+@pytest.mark.parametrize("bad", [NAN, INF, -INF])
+def test_the_same_non_finite_value_on_both_sides_matches(bad):
+    assert compare_results(_estimate(se=bad), _estimate(se=bad)).equivalent
+    assert not compare_results(_estimate(se=INF), _estimate(se=-INF)).equivalent
+    assert not compare_results(_estimate(se=NAN), _estimate(se=INF)).equivalent
+
+
+def test_a_non_finite_point_value_does_not_widen_the_tolerance():
+    """S is taken over finite point values: an infinite estimate on both
+    sides would otherwise make the bound infinite for its SE and CI."""
+    a = _estimate(value=INF)
+    b = _estimate(value=INF, se=1.25 * (1 + 1e-6))
+    assert not compare_results(a, b).equivalent
+
+
+@pytest.mark.parametrize("bad", [NAN, INF, -INF])
+def test_raw_statistics_reject_a_non_finite_replicate(bad):
+    row = (2023, 10, 4, Decimal("12.5"), Decimal("100.25"), Decimal("4.5"),
+           [1.0, 2.0], [3.0, 4.0], [0.0, 1.0])
+    broken = row[:6] + ([1.0, bad], [3.0, 4.0], [0.0, 1.0])
+    assert not compare_statistics([row], [broken]).equivalent
+    assert not compare_statistics([broken], [row]).equivalent
+    # one infinite replicate on both sides must not excuse its neighbours
+    wide = row[:6] + ([2.0, INF], [3.0, 4.0], [0.0, 1.0])
+    other = row[:6] + ([1.0, INF], [3.0, 4.0], [0.0, 1.0])
+    assert not compare_statistics([wide], [other]).equivalent
+
+
+def test_raw_statistics_reject_extra_columns_and_replicates():
+    row = (2023, 10, 4, Decimal("12.5"), Decimal("100.25"), Decimal("4.5"),
+           [1.0, 2.0], [3.0, 4.0], [0.0, 1.0])
+    assert not compare_statistics([row], [row + ([9.0, 9.0],)]).equivalent
+    assert not compare_statistics([row + ([9.0, 9.0],)], [row]).equivalent
+    longer = row[:6] + ([1.0, 2.0, 3.0], [3.0, 4.0], [0.0, 1.0])
+    result = compare_statistics([row], [longer])
+    assert not result.equivalent

@@ -697,9 +697,9 @@ Two answers to the same specification (from the full and the serving database, o
    |a - b| <= 1e-12 * max(|a|, |b|, S)        (REL_TOL = 1e-12)
    ```
 
-   S is the largest absolute point value of the estimate the field belongs to, and of the estimates that enclose it. For a comparison's `difference`, S also includes both groups' estimates. If either value is not a number (for example `null`), the field is compared exactly.
+   S is the largest absolute point value of the estimate the field belongs to, and of the estimates that enclose it. For a comparison's `difference`, S also includes both groups' estimates. If either value is not a number (for example `null`), the field is compared exactly. A non-finite value (NaN, ±inf) matches only the same non-finite value, and S is taken over finite point values only (review round 4: before, a NaN or infinite SE or CI bound passed as equal to any finite one).
 3. **Errors are identical.** At engine level, the exception class and message must match (`"<Class>: <message>"`). Over HTTP, the status code and the whole error body (`code`, `message`, `details`) must match.
-4. **Raw sufficient statistics** (`compare_statistics`, used to compare two SQL renderings). The row count, year, counts and `numeric` sums are exactly equal. Each replicate `float8` sum is within `1e-12 ×` the largest absolute value in its replicate array.
+4. **Raw sufficient statistics** (`compare_statistics`, used to compare two SQL renderings). The row count, column count, year, counts and `numeric` sums are exactly equal, and so is the length of every replicate array. Each replicate `float8` sum is within `1e-12 ×` the largest finite absolute value in its replicate array, with the same non-finite rule as item 2.
 5. **HTTP only** (`scripts/equivalence/httpdiff.py`):
    - These headers must be identical: `Content-Type`, `Cache-Control`, `X-Analytics-Version` and `X-Response-Format`.
    - Every Phase 5 answer's `X-Data-Version` must equal the version its server reported at start.
@@ -730,7 +730,7 @@ Two answers to the same specification (from the full and the serving database, o
 
 | Check | What it compares | When it runs |
 |---|---|---|
-| `tests/unit/test_serving_equivalence.py` | the criterion itself: exact fields, the tolerance, the scale floor, comparison scaling, errors, raw statistics, the seed specifications | CI (`ci.yml` backend) |
+| `tests/unit/test_serving_equivalence.py` | the criterion itself: exact fields, the tolerance, the scale floor, comparison scaling, non-finite values, errors, raw statistics (extra columns and replicates included), the seed specifications | CI (`ci.yml` backend) |
 | `tests/unit/test_equivalence_harness.py` | the HTTP rules: whitelist, intended differences and their negative cases, headers, retries | CI |
 | `tests/unit/ops/test_deploy_smoke.py`, `tests/unit/ops/test_replay_deployed.py` | the deploy-time comparisons: plan-order noise passes, a value outside the criterion fails | CI |
 | `tests/unit/analytics/test_year_pushdown_sql.py` | the Phase 2–4 SQL itself: the current template's rendering without the pushdown equals, byte for byte, what the Phase 1–4 code (387fc2d) rendered, frozen in `tests/unit/analytics/phase4_queries.json` for shapes covering every branch of the query, so the checks below that render the Phase 2–4 SQL from the current template compare against the real one; the pushdown and `MATERIALIZED` are the only differences | CI (`ci.yml` backend) |
