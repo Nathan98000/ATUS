@@ -1,6 +1,7 @@
 # GHCR retention (ADR-011 "Rollback"): keep the newest 20 versions (digests) of
-# ghcr.io/nathan98000/atus-api, weekly. Render keeps no images, so these are
-# the API's rollback targets; deploy.yml pushes one version per deploy.
+# ghcr.io/nathan98000/atus-api, weekly, and always the one tagged `live`, the
+# image Render's service is configured with. Render keeps no images, so these
+# are the API's rollback targets; deploy.yml pushes one version per deploy.
 #
 # Deletes through the GitHub REST API with this run's token, which needs the
 # package's "Manage Actions access" to give this repository the Admin role

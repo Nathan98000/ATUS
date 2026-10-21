@@ -271,6 +271,7 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
    - `WEB_CONCURRENCY=1`
 5. **Settings → Deploy Hook:** copy the URL into the GitHub environment secret `RENDER_DEPLOY_HOOK_URL`. Regenerate it if it ever leaks. Confirm that **no Git repository is connected**; image-backed services never auto-deploy.
 6. Do **not** create a Render API key: it grants access to every workspace you belong to. Enable email notifications for failed deploys and service events. Never add a second Free web service to this workspace.
+7. *(After the first deploy run's `promote` job has passed.)* **Settings → Image → Image URL:** `ghcr.io/nathan98000/atus-api:live`, then save. Deploys keep going through the hook by digest; this setting is what any other deploy uses (Manual Deploy, "Deploy latest reference", and possibly "Save and deploy"). Render documents that a hook's `imgURL` does not change it ("your service continues to use the tag or digest in its settings", render.com/docs/deploying-an-image, read 2026-10-21), so left at the bootstrap digest it would bring that image back, and fail once `ghcr-cleanup.yml` deletes it. `deploy.yml`'s `promote` job moves `live` to each digest whose deploy passed the smoke, `ghcr-cleanup.yml` never deletes it, and `deep-check.yml` alerts when `/health` reports another build.
 
 ### 3. Neon (Free)
 
@@ -307,7 +308,7 @@ The workflows in `.github/workflows/` read exactly these names; nothing else is 
    - Secret: `EDGE_OPS_TOKEN` (the Worker's `OPS_TOKEN`). `scripts/ops/gen_edge_secrets.sh` prints the `gh secret set` commands for it, here and optionally in `production`, each reading the value from `edge.env`.
    - `ATUS_OPS_TOKEN` and `GHCR_IMAGE` are **not** GitHub settings. No workflow reads the origin's `/ready` or `/metrics` (the post-deploy smoke checks the origin lock instead, which touches no database), and the workflows name the image repository themselves.
 4. **Repository settings:**
-   - **Actions → General → Workflow permissions:** "Read repository contents and packages permissions". Every job asks for what it needs; only deploy.yml's `push` job and the GHCR cleanup get `packages: write`.
+   - **Actions → General → Workflow permissions:** "Read repository contents and packages permissions". Every job asks for what it needs; only deploy.yml's `push` and `promote` jobs and the GHCR cleanup get `packages: write`.
    - **Actions → General:** if your settings offer "Require actions to be pinned to a full-length commit SHA", turn it on. Every workflow already pins by SHA, and `tests/deploy/test_workflows.py` enforces it.
    - **General → Releases:** enable **release immutability**.
    - **Advanced Security:** enable CodeQL default setup, Dependabot alerts and Dependabot security updates (`.github/dependabot.yml` adds weekly version updates). Secret scanning and push protection are on by default for public repos; confirm they are.
@@ -506,7 +507,7 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
   6. Trivy, installed from its immutable GitHub release and pinned by version and SHA-256, never through `aquasecurity/trivy-action` or `setup-trivy`, whose tags were hijacked in March 2026 ([GHSA-69fq-xp46-6x23](https://github.com/advisories/GHSA-69fq-xp46-6x23)). It fails on HIGH or CRITICAL vulnerabilities that have a fix, and keeps the full SARIF report as an artifact;
   7. `docker save` of the tested image plus its ID, handed on as the workflow artifact `atus-api-image`.
 - **CI: the public origin, `ci.yml` job `e2e-stack`.** It loads that tested image (same image ID) and runs `scripts/smoke_stack.sh --no-build --edge --e2e` (step 0) with `E2E_PROJECTS="desktop mobile firefox webkit"`: the API smoke, the SPA build, the static snapshot, the Worker under `wrangler dev`, every check of `deploy/stack/edge_probe.py`, and the whole Playwright suite in stack mode (`E2E_BASE_URL`) through the Worker, Firefox included.
-- **Push: `deploy.yml` only.** Its `push` job, the one job with `packages: write`, loads that artifact, checks that the image ID is the one the build job tested, and pushes it as `ghcr.io/nathan98000/atus-api:sha-<commit>` (plus `:<tag>` for a tag run). Its output is the digest reference. `ghcr-cleanup.yml` keeps the newest 20 versions, weekly.
+- **Push: `deploy.yml` only.** Its `push` job, the one job that pushes an image, loads that artifact, checks that the image ID is the one the build job tested, and pushes it as `ghcr.io/nathan98000/atus-api:sha-<commit>` (plus `:<tag>` for a tag run). Its output is the digest reference. After a deploy passed its smoke, the `promote` job (also `packages: write`) adds the tags `live` and `deployed-<commit>` to that same digest; it pushes no new image. `ghcr-cleanup.yml` keeps the newest 20 versions and the one tagged `live`, weekly.
 - **First push and GHCR visibility:** owner step 4.5. The package starts private.
 
 ### 4. Accounts (owner)
@@ -517,7 +518,7 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 2. Render 2.1–2.2: the account and the region check. Create nothing yet.
 3. Neon 3.1–3.4: the project in the paired region, compute 0.25–2 CU.
 4. GitHub 4.1–4.4: the repository variable, the environments and the repository settings.
-5. After the first deploy run has pushed the image (step 7, "Bootstrap"): GitHub 4.5 (package public), then Render 2.3–2.6 (service by digest, environment, deploy hook).
+5. After the first deploy run has pushed the image (step 7, "Bootstrap"): GitHub 4.5 (package public), then Render 2.3–2.6 (service by digest, environment, deploy hook); after that run has passed, Render 2.7 (Image URL `:live`).
 
 ### 5. Load the serving DB into Neon (owner)
 
@@ -616,7 +617,8 @@ What a rehearsal cannot show is Render's deploy hook, its image pull, and the re
    - create the Render service from the digest in the `push` job's summary (owner steps 2.3–2.6);
    - add the GitHub secrets (owner steps 4.2 and 4.3);
    - run the first Worker deploy yourself (owner step 1.3; `RENDER_ORIGIN` must exist by then).
-4. Approve `deploy`. It deploys the same digest through the hook, publishes the Worker with the release vars and runs the smoke.
+4. Approve `deploy`. It deploys the same digest through the hook, publishes the Worker with the release vars and runs the smoke. Then `promote` tags that digest `live`.
+5. Point the service at `:live` (owner step 2.7). From then on nothing on Render names the bootstrap digest.
 
 ### 8. Prove the deployment
 
@@ -696,7 +698,7 @@ This lists every variable and secret the deployed system uses: where it is set, 
 
 | Location | What it is | How a change takes effect |
 |---|---|---|
-| **Render env** | Render → service → Environment | "Save and deploy" restarts the instance with the new values |
+| **Render env** | Render → service → Environment | "Save and deploy" redeploys the service with the new values. Render documents that it redeploys "your service's existing build" (render.com/docs/configure-environment-variables, read 2026-10-21) but not which image an image-backed service then pulls; with the Image URL at `:live` (owner step 2.7) either way it is the last digest a deploy verified. Afterwards `/health` must report the `live` build (deep-check checks it; by hand: [operations.md, Conventions](operations.md#conventions)) |
 | **Image** | baked in at build time (Dockerfile) | a new image, deployed by digest; never set these on Render |
 | **Worker secret** | `npx wrangler secret put NAME`, piped from a file; encrypted and never readable again | the command deploys a new Worker version |
 | **Worker var** | `vars` in `edge/wrangler.jsonc`, or `--var` from `deploy.yml` | the next `wrangler deploy` |
@@ -823,9 +825,10 @@ Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_se
 **Which workflow uses which name.**
 
 - **`deploy.yml`, job `deploy` (environment `production`):** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (wrangler), `RENDER_DEPLOY_HOOK_URL` (the deploy), `RENDER_ORIGIN` (the build wait and the origin-lock check), `PUBLIC_BASE_URL` (the smoke) and, when set, `EDGE_OPS_TOKEN` (the smoke's budget read). No other job of any workflow can read them; `tests/deploy/test_workflows.py` asserts it.
-- **`edge-check.yml`, `deep-check.yml`:** `PUBLIC_BASE_URL` only. The edge check calls `/api/_edge/health`; the deep check calls `/api/health`.
+- **`edge-check.yml`, `deep-check.yml`:** `PUBLIC_BASE_URL` only. The edge check calls `/api/_edge/health`; the deep check calls `/api/health`, and reads the `live` tag's commit with the run's own `GITHUB_TOKEN` (`packages: read`).
 - **`quota-report.yml` (environment `ops`):** `PUBLIC_BASE_URL` and `EDGE_OPS_TOKEN`, for `/api/_ops/budget`.
-- **`schedules-check.yml`, `ghcr-cleanup.yml`:** only the run's own `GITHUB_TOKEN` (`actions: read`; `packages: write`).
+- **`schedules-check.yml` and `deploy.yml`'s `preflight`:** only the run's own `GITHUB_TOKEN`, with `actions: read`.
+- **`ghcr-cleanup.yml` and `deploy.yml`'s `promote`:** only the run's own `GITHUB_TOKEN`, with `packages: write`.
 
 ### Owner files (`~/.config/atus/`, `chmod 600`)
 
@@ -928,9 +931,10 @@ Every deploy run's summary records what ran before it and what it deployed, what
 
 - **API.** Export `RENDER_DEPLOY_HOOK_URL` from your password manager into your shell (never paste it into chat), then:
   1. `python scripts/ops/render_deploy.py trigger --image-ref ghcr.io/nathan98000/atus-api@sha256:<previous>`;
-  2. `RENDER_ORIGIN=... python scripts/ops/render_deploy.py wait --expect-build <previous build>`.
+  2. `RENDER_ORIGIN=... python scripts/ops/render_deploy.py wait --expect-build <previous build>`;
+  3. move the GHCR tag `live` back to that digest: Actions → the Deploy run that deployed it → job `promote` → Re-run. Until then `deep-check.yml` reports the build mismatch, and a Render deploy not made through the hook would bring back the image you rolled away from.
 
-  GHCR keeps the newest 20 digests. Render's dashboard can also roll back to a previous deploy.
+  The previous image in the summary is the digest that commit was last deployed as (its `deployed-<commit>` tag, which only `promote` moves), so a re-run of the running commit, whose push moves `sha-<commit>`, still names the right one. GHCR keeps the newest 20 digests and the one tagged `live`. Render's dashboard can also roll back to a previous deploy.
 - **Edge (SPA, snapshot, Worker and its vars):**
   1. `cd edge && npx wrangler rollback <previous version id> --message "rollback"`. Without an id, wrangler offers the version before the current one.
   2. Check with `python scripts/ops/monitors.py edge --base-url https://atus.<sub>.workers.dev`.

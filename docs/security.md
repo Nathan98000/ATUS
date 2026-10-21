@@ -330,7 +330,7 @@ Tests:
   - every workflow and every job declares its `permissions`;
   - no workflow uses `pull_request_target` or `workflow_run`;
   - checkouts do not persist credentials;
-  - `packages: write` is granted only to the deploy `push` job and the GHCR cleanup.
+  - `packages: write` is granted only to the deploy `push` job, the deploy `promote` job (which only adds the tags `live` and `deployed-<commit>` to the digest that passed the smoke) and the GHCR cleanup.
 - **Inputs:**
   - base images are pinned by digest;
   - Python installs are hash-locked (`--require-hashes`, binary wheels only);

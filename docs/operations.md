@@ -770,6 +770,14 @@ All runs below were local. Nothing has been compared on a deployed host.
   ```
 
   Never put a secret on a command line, in chat or in an issue. Values in `neon*.env` that contain `?` or `&` are stored single-quoted; copy them without the quotes.
+- **After every "Save and deploy"** (and any other Render deploy not made by `deploy.yml`): wait until Render → Events shows it live, then check that the API still runs the `live` build. Render does not document which image an image-backed service pulls then; with the Image URL at `:live` ([owner step 2.7](deployment.md#2-render-free-web-service)) it is the last digest a deploy verified, and `deep-check.yml` checks the build every 6 hours. By hand:
+
+  ```bash
+  build="$(GH_TOKEN="$(gh auth token)" python scripts/ops/github_ops.py live-build --owner nathan98000 --package atus-api | cut -d= -f2)"
+  RENDER_ORIGIN="$ORIGIN" python scripts/ops/render_deploy.py wait --expect-build "$build"
+  ```
+
+  Never use Render's Manual Deploy instead of `deploy.yml`: it skips the smoke.
 - **Quota.** Every request to `$SITE/api/...` is one Worker request (100,000 a day, account-wide). `/api/health` can wake Render, never Neon. Steps marked **(wakes Neon)** spend Neon compute.
 - **Status.** None of these runbooks has run against a provider. Local rehearsals are cited where they exist.
 
@@ -820,7 +828,7 @@ The summary of every Deploy run has a "Rollback" table: the build, image digest 
   RENDER_ORIGIN="$ORIGIN" python scripts/ops/render_deploy.py wait --expect-build <previous commit sha>
   ```
 
-  GHCR keeps the newest 20 digests (`ghcr-cleanup.yml`). Render's dashboard can also roll back to an earlier deploy.
+  Then move the GHCR tag `live` back: Actions → the Deploy run that deployed that digest → job `promote` → Re-run. `live` is the Image URL Render's service is configured with ([owner step 2.7](deployment.md#2-render-free-web-service)); until it moves, `deep-check.yml` fails on the build. GHCR keeps the newest 20 digests and `live` (`ghcr-cleanup.yml`). Render's dashboard can also roll back to an earlier deploy.
 - **Edge** (SPA, snapshot, Worker and its vars; needs `npx wrangler login` or `CLOUDFLARE_API_TOKEN`):
 
   ```bash

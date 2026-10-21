@@ -26,10 +26,21 @@ never printed.
         typecheck, lint and Playwright must have passed in CI.
 
     github_ops.py ghcr-cleanup --owner nathan98000 --package atus-api --keep 20 [--dry-run]
-        Deletes all but the newest ``--keep`` versions (digests) of the image.
+        Deletes all but the newest ``--keep`` versions (digests) of the image,
+        and never the one tagged ``live`` (Render's configured image).
         Render keeps no images, so these are the API's rollback targets
         (ADR-011 "Rollback"). Never deletes when there are ``--keep`` or fewer,
         and at most ``--max-delete`` per run. Weekly: ghcr-cleanup.yml.
+
+    github_ops.py live-build --owner nathan98000 --package atus-api
+        Prints ``build=<commit>``: the commit of the digest tagged ``live``
+        (empty before the first deploy). deep-check.yml expects /health to
+        report it.
+
+    github_ops.py deployed-image --owner nathan98000 --package atus-api --build <commit>
+        Prints ``image_ref=`` and ``image_source=``: the digest ``<commit>``
+        last ran as (its ``deployed-`` tag), for deploy.yml's rollback notes.
+        Never this run's own ``sha-`` tag, which its push has just moved.
 
 Exit status: 0 healthy / done, 1 a check or deletion failed, 2 usage error.
 """
@@ -229,10 +240,47 @@ class Version:
     tags: list[str]
 
 
+#: Tags deploy.yml's `promote` job moves to a digest once its deploy passed
+#: the smoke: `live` (the Image URL Render's service is configured with, so a
+#: deploy not made through the hook runs the last verified digest) and
+#: `deployed-<commit>` (the digest that commit last ran as: the rollback
+#: target, which no later push of the same commit can move).
+LIVE_TAG = "live"
+DEPLOYED_PREFIX = "deployed-"
+COMMIT = re.compile(r"^[0-9a-f]{40}$")
+
+
 def plan_cleanup(versions: list[Version], *, keep: int) -> list[Version]:
-    """The versions to delete: everything but the newest ``keep`` (pure; tested)."""
+    """The versions to delete: everything but the newest ``keep``, and never
+    the one tagged ``live`` (pure; tested)."""
     newest_first = sorted(versions, key=lambda v: (v.created_at, v.id), reverse=True)
-    return newest_first[keep:]
+    return [v for v in newest_first[keep:] if LIVE_TAG not in v.tags]
+
+
+def live_build(versions: list[Version]) -> str | None:
+    """The commit the ``live`` digest was deployed from (its ``deployed-`` tag)."""
+    for version in versions:
+        if LIVE_TAG in version.tags:
+            builds = [t.removeprefix(DEPLOYED_PREFIX) for t in version.tags
+                      if t.startswith(DEPLOYED_PREFIX) and COMMIT.match(t[len(DEPLOYED_PREFIX):])]
+            return builds[0] if builds else None
+    return None
+
+
+def deployed_image(versions: list[Version], build: str, this_build: str) -> tuple[str | None,
+                                                                                     str]:
+    """The digest ``build`` last ran as, and where that came from: its
+    ``deployed-`` tag; else, for another commit than this run's, its
+    ``sha-`` tag (the last push of that commit); else unknown. Never this
+    run's own ``sha-`` tag, which this run's push has just moved."""
+    for version in versions:
+        if f"{DEPLOYED_PREFIX}{build}" in version.tags:
+            return version.name, "deployed-tag"
+    if build != this_build:
+        for version in versions:
+            if f"sha-{build}" in version.tags:
+                return version.name, "sha-tag"
+    return None, "unknown"
 
 
 def ghcr_versions(gh: GitHub, owner_kind: str, owner: str, package: str) -> list[Version]:
@@ -265,12 +313,18 @@ def main(argv: list[str] | None = None) -> int:
     dg.add_argument("--sha", default=os.environ.get("GITHUB_SHA"))
     dg.add_argument("--branch", default="main")
     gc = sub.add_parser("ghcr-cleanup", help="keep only the newest image versions")
-    gc.add_argument("--owner", required=True)
-    gc.add_argument("--owner-kind", choices=("users", "orgs"), default="users")
-    gc.add_argument("--package", required=True)
+    lb = sub.add_parser("live-build", help="the commit the `live` image was deployed from")
+    di = sub.add_parser("deployed-image", help="the digest a commit last ran as")
+    for cmd in (gc, lb, di):
+        cmd.add_argument("--owner", required=True)
+        cmd.add_argument("--owner-kind", choices=("users", "orgs"), default="users")
+        cmd.add_argument("--package", required=True)
     gc.add_argument("--keep", type=int, default=20)
     gc.add_argument("--max-delete", type=int, default=50)
     gc.add_argument("--dry-run", action="store_true")
+    di.add_argument("--build", required=True, help="the commit /health reported")
+    di.add_argument("--this-build", default=os.environ.get("GITHUB_SHA", ""),
+                    help="this run's commit (its sha- tag was just moved)")
     args = parser.parse_args(argv)
     if args.command == "deploy-gate" and not (
             args.repo and REPOSITORY.match(args.repo) and re.fullmatch(r"[0-9a-f]{40}",
@@ -315,6 +369,28 @@ def main(argv: list[str] | None = None) -> int:
         if not (NAME.match(args.owner) and NAME.match(args.package)):
             print("error: malformed --owner or --package", file=sys.stderr)
             return 2
+        if args.command in ("live-build", "deployed-image"):
+            try:
+                versions = ghcr_versions(gh, args.owner_kind, args.owner, args.package)
+            except GitHubError as exc:
+                if exc.status != 404:
+                    raise
+                versions = []
+            if args.command == "live-build":
+                build = live_build(versions)
+                if build is None:
+                    print(f"no version is tagged {LIVE_TAG} (no deploy has passed yet)",
+                          file=sys.stderr)
+                print(f"build={build or ''}")
+                return 0
+            if not COMMIT.match(args.build):
+                print(f"unknown build {args.build[:60]!r}: no image to name", file=sys.stderr)
+                print("image_ref=\nimage_source=unknown")
+                return 0
+            digest, source = deployed_image(versions, args.build, args.this_build)
+            ref = f"ghcr.io/{args.owner.lower()}/{args.package}@{digest}" if digest else ""
+            print(f"image_ref={ref}\nimage_source={source}")
+            return 0
         if args.keep < 1 or args.max_delete < 0:
             print("error: --keep must be >= 1 and --max-delete >= 0", file=sys.stderr)
             return 2

@@ -205,8 +205,46 @@ def test_deploy_permissions_are_minimal():
     assert workflow["permissions"] == {}
     writers = {job_id for job_id, job in jobs(workflow).items()
                if any(v == "write" for v in (job.get("permissions") or {}).values())}
-    assert writers == {"push"}
-    assert jobs(workflow)["push"]["permissions"] == {"contents": "read", "packages": "write"}
+    assert writers == {"push", "promote"}
+    for job_id in writers:
+        assert jobs(workflow)[job_id]["permissions"] == {"contents": "read",
+                                                         "packages": "write"}, job_id
+
+
+def test_promote_moves_live_only_after_a_passing_deploy():
+    """Render's service is configured with `:live` (owner step 2.7), so a
+    deploy not made through the hook runs the last digest that passed the
+    smoke, not the bootstrap digest; deployed-<commit> is the next run's
+    rollback target. Same digest, no new manifest (--prefer-index=false)."""
+    promote = jobs(by_name("deploy.yml"))["promote"]
+    assert set(promote["needs"]) == {"push", "deploy"}
+    assert "if" not in promote                  # never after a failed deploy or smoke
+    assert "environment" not in promote
+    text = flat(promote)
+    assert 'for tag in live "deployed-$GITHUB_SHA"' in text
+    assert "imagetools create --prefer-index=false" in text
+    assert '"$GHCR_REPOSITORY@$digest" != "$IMAGE_REF"' in text
+
+
+def test_the_rollback_target_is_the_deployed_digest_not_this_runs_tag():
+    """A re-run of the running commit has already moved sha-<commit> when the
+    deploy job looks up the previous image: the lookup reads deployed-<commit>."""
+    deploy = jobs(by_name("deploy.yml"))["deploy"]
+    (step,) = [s for s in steps(deploy) if s.get("id") == "previous"]
+    assert "github_ops.py deployed-image" in step["run"]
+    assert '--build "$PREVIOUS_BUILD" --this-build "$GITHUB_SHA"' in step["run"]
+    assert "sha-$PREVIOUS_BUILD" not in flat(deploy)
+    assert "steps.previous.outputs.image_source" in flat(deploy)
+
+
+def test_the_deep_check_expects_the_live_build():
+    (job,) = jobs(by_name("deep-check.yml")).values()
+    assert job["permissions"] == {"contents": "read", "packages": "read"}
+    text = flat(job)
+    assert "github_ops.py live-build --owner nathan98000 --package atus-api" in text
+    assert '--expect-build "$EXPECT_BUILD"' in text
+    (live,) = [s for s in steps(job) if s.get("id") == "live"]
+    assert live["continue-on-error"] is True    # GitHub down: health still checked
 
 
 def test_only_the_production_environment_job_holds_deploy_secrets():
@@ -412,7 +450,12 @@ def test_monitors_never_touch_the_database(name):
     text = (WORKFLOWS_DIR / name).read_text()
     assert not DB_PATHS.search(text), name
     for _job, step in run_scripts(WORKFLOWS_DIR / name):
-        assert step["run"].startswith("python3 scripts/ops/monitors.py "), step["run"]
+        # The site is reached only through monitors.py; deep-check also reads
+        # the `live` tag's commit from the GitHub API (github_ops.py).
+        run = step["run"]
+        assert run.startswith("python3 scripts/ops/github_ops.py live-build ") or \
+            "python3 scripts/ops/monitors.py " in run, run
+        assert not re.search(r"\b(curl|wget)\b", run), run
     monitors = (REPO_ROOT / "scripts" / "ops" / "monitors.py").read_text()
     paths = re.findall(r'"(/[a-z_/.<>-]*)"', monitors.split("EDGE_PATHS", 1)[1]
                        .split("# Provider quotas", 1)[0])
