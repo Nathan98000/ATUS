@@ -355,7 +355,8 @@ describe('the prewarm list of a 0326 deploy (§15)', () => {
   })
 
   it('uses 2026 as the latest year and 2003–2026 as the full period', () => {
-    expect(list).toHaveLength(130)
+    // 130, plus the two comparison starters as the builder re-sends them (review round 2).
+    expect(list).toHaveLength(132)
     for (const item of list) {
       const years = item.spec.years
       if (item.name.startsWith('pandemic weights:')) continue
