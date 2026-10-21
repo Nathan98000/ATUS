@@ -380,7 +380,7 @@ Tests:
   - `/api/health` and `/api/v1/wake` reach only origin `/health`, never Neon.
   - The prewake sends at most one origin call per isolate per 10 minutes, and `PREWAKE=off` disables it (`edge/test/worker/wake.test.ts`).
   - A per-isolate circuit breaker skips the origin for 30 s after two connection failures (`edge/test/worker/resilience.test.ts`).
-- **Remaining:** R1, R2, R3.
+- **Remaining:** R1, R2, R3; and R13, a Render suspension that visitors see as a cold start.
 
 ### 2. Expensive-query DoS
 

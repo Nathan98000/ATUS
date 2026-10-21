@@ -289,6 +289,12 @@ test('a share link the static snapshot lacks: prewake "waking", service_waking, 
     'Waiting for the analysis service to wake up…',
   )
   await expect(page.getByRole('progressbar')).toHaveCount(0)
+  // One live region announces the waking state, not three (review round 1).
+  await expect(
+    page
+      .locator('output, [role="status"], [role="alert"], [aria-live]:not([aria-live="off"])')
+      .filter({ hasText: /wak/i }),
+  ).toHaveCount(1)
   await expectFocusUnmoved(page)
   await expectNoSeriousViolations(page)
 
