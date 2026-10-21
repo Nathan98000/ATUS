@@ -125,7 +125,7 @@ Every request's database work runs in one transaction, started as `BEGIN READ ON
 
 Further bounds:
 
-- **Request deadline.** An analysis gets a wall-clock deadline of `statement_timeout + 5 s` (90 s by default, ADR-011's API deadline). When it passes, the running query is cancelled with `cancel_safe()`. This bounds a compare's two statistics queries together, not only each statement. The timer can never cancel a connection after it went back to the pool.
+- **Request deadline.** An analysis gets a wall-clock deadline of `statement_timeout + 5 s` (90 s by default, ADR-011's API deadline). When it passes, the running query is cancelled with `cancel_safe()`, and the transaction sends no further statement (it fails as a cancelled query). PostgreSQL ignores a cancel that reaches the backend between statements, so the refusal is what makes the deadline hold when it passes while Python works between two statements, and the cancel is repeated every second until the transaction ends (review round 1: the deadline used to be one cancel, lost in that case). This bounds a compare's two statistics queries together, not only each statement. The timer can never cancel a connection after it went back to the pool. A shutdown cancel refuses further statements the same way.
 - **Timeouts are never cached.** A cancelled query (statement timeout or deadline) becomes 503 `analysis_timeout` with `Retry-After: 60`.
 - **Early release.** The transaction ends and its connection returns to the pool before the response is sent (I10).
 

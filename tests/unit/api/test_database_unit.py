@@ -269,5 +269,22 @@ class TestDeadline:
         stopper.join(5)
         assert conn.cancels == 1
 
+    def test_marks_the_transaction_and_repeats_the_cancel_until_stopped(self, monkeypatch):
+        """Review r1: a cancel that reaches the server between statements is
+        ignored, so the deadline makes the connection refuse further
+        statements and keeps cancelling until the transaction ends."""
+        monkeypatch.setattr(dbmod, "DEADLINE_RECANCEL_S", 0.02)
+        conn = _FakeConn()
+        deadline = _Deadline(conn, 0.01)
+        give_up = time.monotonic() + 5
+        while conn.cancels < 3:
+            assert time.monotonic() < give_up, "the cancel was not repeated"
+            time.sleep(0.01)
+        deadline.stop()
+        assert conn.refused_because == "request deadline exceeded"
+        after_stop = conn.cancels
+        time.sleep(0.1)
+        assert conn.cancels == after_stop
+
     def test_margin_constant(self):
         assert dbmod.DEADLINE_MARGIN_S == 5.0

@@ -80,6 +80,11 @@ DEADLINE_MARGIN_S = 5.0
 """An analysis may run ``statement_timeout + DEADLINE_MARGIN_S`` in total
 before its current query is cancelled (85 s + 5 s = the ADR's 90 s)."""
 
+DEADLINE_RECANCEL_S = 1.0
+"""After the deadline, the cancel is repeated this often until the
+transaction ends: PostgreSQL ignores a cancel that reaches a backend between
+statements, and one sent just as a statement starts can arrive first."""
+
 _ACQUIRE_SLICE_S = 1.0  # while a connection is being opened, re-check for failures this often
 
 KINDS = ("analysis", "metadata")
@@ -192,23 +197,39 @@ class ConnectTracker:
 
 class CountingCursor(psycopg.Cursor):
     """Counts every statement it sends against the current request
-    (``Connection.execute`` goes through the connection's cursor factory)."""
+    (``Connection.execute`` goes through the connection's cursor factory),
+    and sends none once the transaction was cancelled (``refused_because``:
+    the request deadline passed, or shutdown): a cancel that reached the
+    server between two statements was ignored there, so the next statement
+    would otherwise run bounded only by ``statement_timeout``."""
+
+    def _check_not_cancelled(self) -> None:
+        reason = getattr(self.connection, "refused_because", None)
+        if reason is not None:
+            raise psycopg.errors.QueryCanceled(f"statement not sent: {reason}")
 
     def execute(self, *args, **kwargs):
+        self._check_not_cancelled()
         observability.note_statement()
         return super().execute(*args, **kwargs)
 
     def executemany(self, *args, **kwargs):
+        self._check_not_cancelled()
         observability.note_statement()
         return super().executemany(*args, **kwargs)
 
     def stream(self, *args, **kwargs):
+        self._check_not_cancelled()
         observability.note_statement()
         return super().stream(*args, **kwargs)
 
 
 def _tracking_connection_class(base: type[psycopg.Connection], tracker: ConnectTracker):
     class TrackedConnection(base):  # type: ignore[valid-type, misc]
+        # Set when the current transaction was cancelled (CountingCursor);
+        # cleared when the next transaction registers the connection.
+        refused_because: str | None = None
+
         @classmethod
         def connect(cls, conninfo: str = "", **kwargs):
             try:
@@ -346,6 +367,7 @@ class Database:
             # registered before it (and cancelled by it) or refused here.
             closing = self._closing
             if not closing:
+                conn.refused_because = None
                 self._active.add(conn)
         if closing:
             self.pool.putconn(conn)
@@ -392,10 +414,13 @@ class Database:
     # ------------------------------------------------------------------ #
 
     def cancel_active(self) -> int:
-        """Cancel every query in flight (process shutdown). Returns how many
-        connections were signalled."""
+        """Cancel every query in flight (process shutdown); their
+        transactions send no further statement. Returns how many connections
+        were signalled."""
         with self._active_lock:
             active = list(self._active)
+            for conn in active:
+                conn.refused_because = "shutting down"
         for conn in active:
             cancel_query(conn, "shutting down")
         return len(active)
@@ -423,27 +448,43 @@ def cancel_query(conn: psycopg.Connection, reason: str) -> None:
 
 
 class _Deadline:
-    """Cancels a connection's running query once ``seconds`` have passed,
-    unless :meth:`stop` was called first (a cancel can never reach the
-    connection after it went back to the pool)."""
+    """Ends a connection's transaction once ``seconds`` have passed, unless
+    :meth:`stop` was called first (a cancel can never reach the connection
+    after it went back to the pool).
+
+    At the deadline the connection refuses further statements
+    (``refused_because``, checked by :class:`CountingCursor`) and its running
+    query is cancelled; the cancel is repeated every
+    :data:`DEADLINE_RECANCEL_S` until :meth:`stop`, because PostgreSQL drops a
+    cancel that reaches the backend between statements, including one that
+    overtakes a statement just being sent."""
 
     def __init__(self, conn: psycopg.Connection, seconds: float):
         self._conn = conn
         self._lock = threading.Lock()
         self._done = False
         self.fired = False
-        self._timer = threading.Timer(seconds, self._fire)
-        self._timer.daemon = True
-        self._timer.start()
+        self._timer = self._schedule(seconds)
+
+    def _schedule(self, seconds: float) -> threading.Timer:
+        timer = threading.Timer(seconds, self._fire)
+        timer.daemon = True
+        timer.start()
+        return timer
 
     def _fire(self) -> None:
         with self._lock:
             if self._done:
                 return
+            repeated = self.fired
             self.fired = True
-            cancel_query(self._conn, "request deadline exceeded")
+            self._conn.refused_because = "request deadline exceeded"
+            cancel_query(self._conn, "request deadline exceeded"
+                         + (" (repeated)" if repeated else ""))
+            self._timer = self._schedule(DEADLINE_RECANCEL_S)
 
     def stop(self) -> None:
         self._timer.cancel()
         with self._lock:
             self._done = True
+            self._timer.cancel()  # one scheduled by a fire that ran meanwhile

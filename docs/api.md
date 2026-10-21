@@ -487,7 +487,9 @@ a request meets them:
     `client_connection_check_interval` 5 s, `jit` off, and
     `max_parallel_workers_per_gather` when `ATUS_API_MAX_PARALLEL_WORKERS` is
     set. An analysis is also cancelled after a 90 s deadline (statement
-    timeout + 5 s), giving 503 `analysis_timeout`.
+    timeout + 5 s), giving 503 `analysis_timeout`: its running query is
+    cancelled and it sends no further statement, so the deadline holds even
+    when it passes between two statements.
 
 **Development convenience.** Without edge secrets (never the case in
 production), loopback peers and in-process test clients are not per-client

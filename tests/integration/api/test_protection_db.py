@@ -151,6 +151,30 @@ class TestTimeouts:
         assert response.json()["error"]["code"] == "analysis_timeout"
         assert elapsed < 1.1  # 0.4 s + 0.1 s deadline, not 1.2 s of sleeps
 
+    def test_a_deadline_that_passes_between_statements_still_ends_the_analysis(
+        self, loaded_settings, monkeypatch
+    ):
+        """Review r1 (deadline-lost-between-statements): the deadline passes
+        while the transaction is idle between statements, where PostgreSQL
+        ignores a cancel. It used to be lost: the later statements ran,
+        each under statement_timeout, and the answer was 200. Now no
+        statement is sent after the deadline."""
+        monkeypatch.setattr(dbmod, "DEADLINE_MARGIN_S", 0.1)   # deadline 0.4 + 0.1 s
+
+        class GapEngine(SlowEngine):
+            def estimate(self, spec):
+                time.sleep(1.0)  # work between statements: the deadline passes here
+                for _ in range(3):
+                    self._conn.execute("SELECT pg_sleep(0.3)")  # each under 0.4 s
+                return self._engine.estimate(spec)
+
+        with api(loaded_settings, lambda conn, **parts: GapEngine(conn, **parts),
+                 api_statement_timeout_ms=400) as (client, app):
+            response = client.post(ESTIMATE, json=body())
+            assert app.state.database.query_timeouts == 1
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "analysis_timeout"
+
 
 LONG_SLEEP_S = 60.0
 """Longer than any wait below: a query that ends before it was cancelled."""
