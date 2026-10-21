@@ -2,21 +2,21 @@
 
 Each handler: validated request -> AnalysisSpec -> AnalysisRunner (cache
 lookup, single-flight, admission) -> AnalysisEngine -> result.to_dict() ->
-typed response. No statistical logic lives here, and nothing touches the
-database before the request body has been validated. Responses carry
-observability headers:
-
-* ``X-Analysis-Key`` — the deterministic identifier of this analysis
-  (hash of operation + canonical spec + analytics version + data version). It is a
-  reproducibility/cache key, not a stored record ID.
-* ``X-Cache`` — ``hit``, ``miss``, ``join`` (shared an identical computation
-  already in progress) or ``bypass`` (computed during a data reload; not
-  cached).
+typed response. No statistical logic lives here.
 
 Nothing touches the database before the body has been validated, the cache
 consulted and the engine's own up-front checks passed (the runner's dry
 run): while the data snapshot is fresh, cache hits and every 4xx cost no
 statement.
+
+Responses carry observability headers:
+
+* ``X-Analysis-Key`` — the deterministic identifier of this analysis
+  (hash of operation + canonical spec + analytics version + data version). It
+  is a reproducibility/cache key, not a stored record ID.
+* ``X-Cache`` — ``hit``, ``miss``, ``join`` (shared an identical computation
+  already in progress) or ``bypass`` (computed during a data reload; not
+  cached).
 * ``X-Data-Version``, ``X-Analytics-Version``, ``X-Response-Format`` — what
   the response bytes depend on (edge caches key on them).
 """
