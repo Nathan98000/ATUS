@@ -17,6 +17,7 @@ import pytest
 import yaml
 
 from .conftest import REPO_ROOT
+from .test_dependabot import repository_files
 
 DOCS_DIR = REPO_ROOT / "docs"
 DEPLOYMENT = DOCS_DIR / "deployment.md"
@@ -261,11 +262,24 @@ def test_the_stack_mode_guard_covers_the_whole_e2e_suite(tmp_path):
 
 # --- owner-credential-tools-unpinned -----------------------------------------------------
 
-#: Everything that tells the owner (or prints for the owner) a wrangler command.
-WRANGLER_INSTRUCTIONS = (
-    DEPLOYMENT, OPERATIONS, DOCS_DIR / "security.md", REPO_ROOT / "edge" / "README.md",
-    REPO_ROOT / "scripts" / "ops" / "gen_edge_secrets.sh", WORKFLOWS / "deploy.yml",
-)
+#: A wrangler command that lets npx download wrangler instead of refusing to.
+UNLOCKED_WRANGLER = re.compile(rb"npx\s+(?:-y\s+)?wrangler\S*")
+#: Regression notes in the tests quote the old commands on purpose.
+WRANGLER_SCAN_SKIP = ("tests/", "edge/test/")
+
+
+def unlocked_wrangler_commands(root: Path = REPO_ROOT) -> dict[str, list[str]]:
+    """Every unlocked wrangler command in the repository's files (as git lists them:
+    the docs, the config templates and comments, the scripts, the workflows)."""
+    found: dict[str, list[str]] = {}
+    for path in repository_files(root):
+        relative = path.relative_to(root).as_posix()
+        if relative.startswith(WRANGLER_SCAN_SKIP) or not path.is_file():
+            continue
+        hits = UNLOCKED_WRANGLER.findall(path.read_bytes())
+        if hits:
+            found[relative] = [hit.decode(errors="replace") for hit in hits]
+    return found
 
 
 def test_the_owner_runs_only_the_wrangler_the_lockfile_installed():
@@ -273,10 +287,13 @@ def test_the_owner_runs_only_the_wrangler_the_lockfile_installed():
     guide and Bootstrap) ran `npx wrangler@4 login` from the repository root before
     `npm ci` in edge/, so npx downloaded whatever wrangler 4.x was newest and that
     performed the OAuth login. Every wrangler command now runs with `--no-install`
-    (npx refuses to download), and each login follows `npm ci` in edge/."""
-    for path in WRANGLER_INSTRUCTIONS:
-        unlocked = re.findall(r"npx\s+(?:-y\s+)?wrangler\S*", _read(path))
-        assert unlocked == [], (path.name, unlocked)
+    (npx refuses to download), and each login follows `npm ci` in edge/.
+
+    Review round 2 verification: the check read six files, and the config template
+    (.env.production.example) and edge/wrangler.jsonc's comments still told the owner
+    `npx wrangler secret put` and `npx wrangler kv namespace create`. It now reads every
+    file of the repository."""
+    assert unlocked_wrangler_commands() == {}
     logins = [line for line in _read(DEPLOYMENT).splitlines() if "wrangler login" in line]
     assert len(logins) == 3                    # step 1.3.1, the guide's 6, Bootstrap 2
     for line in logins:
@@ -284,6 +301,23 @@ def test_the_owner_runs_only_the_wrangler_the_lockfile_installed():
         assert 0 <= line.index("cd edge && npm ci") < line.index("wrangler login"), line
     security = _flat(_read(DOCS_DIR / "security.md"))
     assert "wrangler login" in security and "serving/pgtools.py" in security
+
+
+def test_the_unlocked_wrangler_scan_reads_every_file_but_the_tests(tmp_path):
+    if subprocess.run(["git", "init", "-q", str(tmp_path)], capture_output=True,
+                      check=False).returncode != 0:
+        pytest.skip("git is not available")
+    for name, text in ((".env.production.example", "# (`npx wrangler secret put NAME`)\n"),
+                       ("edge/wrangler.jsonc", "// `npx -y wrangler@4 login`\n"),
+                       ("docs/ok.md", "`npx --no-install wrangler login`\n"),
+                       ("tests/deploy/test_x.py", "# it ran `npx wrangler@4 login`\n"),
+                       ("edge/test/node/x.test.ts", "// was `npx wrangler deploy`\n")):
+        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / name).write_text(text)
+    assert unlocked_wrangler_commands(tmp_path) == {
+        ".env.production.example": ["npx wrangler"],
+        "edge/wrangler.jsonc": ["npx -y wrangler@4"],
+    }
 
 
 # --- ci-concurrency-strands-main-commits -------------------------------------------------
