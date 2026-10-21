@@ -299,6 +299,54 @@ describe('compare CSV', () => {
   })
 })
 
+describe('formula guard where spreadsheets split on ";" (review round 4)', () => {
+  // Excel in a ';' list-separator locale splits each CSV line on ';' (and
+  // some import dialogs on tabs); the quotes of a comma-separated field in
+  // the middle of a line are ordinary characters to it. A label such as
+  // "Sleep;=1+1;" was written unguarded, so "=1+1" became a cell of its own.
+  const STARTS_FORMULA = /^[=+\-@\t\r]/
+  /** The cells such a spreadsheet makes of each line, after the first (spaces and quotes skipped). */
+  function separatedCells(text: string): string[] {
+    return text
+      .slice(1)
+      .split('\r\n')
+      .flatMap((line) => line.split(/[;\t]/).slice(1))
+      .map((cell) => cell.replace(/^[ "]*/, ''))
+  }
+
+  it('guards a formula after a ";" in an activity label (the first column)', () => {
+    const labelled: EstimateResponse = {
+      ...estimateSleepFixture,
+      activity: { ...estimateSleepFixture.activity, label: 'Sleep;=1+1;' },
+    }
+    const text = estimateCsv(labelled, context())
+    expect(separatedCells(text).filter((cell) => STARTS_FORMULA.test(cell))).toEqual([])
+    // A comma-separated reader sees the label with the guard, as for a leading "=".
+    expect(records(text)[0]?.activity).toBe("Sleep;'=1+1;")
+  })
+
+  it('guards group labels after ";" or a tab, past spaces and quotes, leaving lists alone', () => {
+    const compare: CompareResponse = {
+      ...compareChildrenFixture,
+      label_a: 'Men;=HYPERLINK("https://evil.example");x',
+      label_b: 'Women; -2+3;"=1+1;\t@SUM(A1)',
+    }
+    const text = compareCsv(compare, context({ operation: 'compare' }))
+    expect(separatedCells(text).filter((cell) => STARTS_FORMULA.test(cell))).toEqual([])
+    const rows = records(text)
+    expect(rows.map((row) => row.label)).toEqual([
+      `Men;'=HYPERLINK("https://evil.example");x`,
+      `Women;' -2+3;'"=1+1;'\t'@SUM(A1)`,
+      `Men;'=HYPERLINK("https://evil.example");x minus Women;' -2+3;'"=1+1;'\t'@SUM(A1)`,
+    ])
+    // Lists of codes and years are joined with ';' and never start a formula.
+    expect(rows[0]).toMatchObject({
+      activity_include: '02;1802',
+      activity_exclude: '020903;020904',
+    })
+  })
+})
+
 describe('JSON export', () => {
   it('records the canonical spec, versions, warnings, attribution and the untouched response', () => {
     const document = JSON.parse(resultJson(estimateSleepFixture, context()))
