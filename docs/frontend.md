@@ -422,11 +422,13 @@ error that was not requested, a difference's sample size — is the literal
 `NA`, never `0` or blank. Lists (years, codes) are joined with `;`. A text
 cell that a spreadsheet would run as a formula (leading `=`, `+`, `-`, `@`,
 tab or carriage return; group labels come from share links, so they are
-untrusted) gets a leading apostrophe. So does such text after a `;` or a tab
-inside a cell (past any spaces or double quotes): spreadsheet programs whose
-list separator is `;`, such as Excel in much of Europe, start a new cell
-there, and to them the quotes of a field in the middle of a line are
-ordinary characters (review round 4).
+untrusted) gets a leading apostrophe. So does such text after a `;`, a tab
+or a line break inside a cell (past any spaces or double quotes):
+spreadsheet programs whose list separator is `;`, such as Excel in much of
+Europe, start a new cell there, and to them the quotes of a field in the
+middle of a line are ordinary characters, so a line break inside a trend's
+activity label or a comparison's group label starts a new row (review
+round 4).
 
 **JSON** — the whole analysis, `format: "atus-explorer/analysis-export"`,
 `format_version: 1`:

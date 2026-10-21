@@ -19,8 +19,8 @@
  * interpretable on its own. A text cell that a spreadsheet would run as a
  * formula (leading `=`, `+`, `-`, `@`, tab or carriage return — a group label
  * from a shared link is untrusted text) is prefixed with an apostrophe, and
- * so is such text after a `;` or tab inside a cell, where spreadsheet
- * programs in `;` locales start a new cell.
+ * so is such text after a `;`, tab or line break inside a cell, where
+ * spreadsheet programs in `;` locales start a new cell or row.
  */
 import type {
   AnalysisRequest,
@@ -78,14 +78,17 @@ export interface ExportContext {
 // CSV cells
 
 /**
- * A ';' or tab followed (after any spaces or double quotes) by a character
- * that starts a formula. Spreadsheet programs whose list separator is ';'
- * (Excel in much of Europe) split a .csv there, and to them the quotes of a
- * comma-separated field in the middle of a line are ordinary characters, so
- * the text after it starts a cell of its own: an unguarded label
- * "Sleep;=1+1;" put "=1+1" in a cell (review round 4).
+ * A ';', tab or line break followed (after any spaces or double quotes) by a
+ * character that starts a formula. Spreadsheet programs whose list separator
+ * is ';' (Excel in much of Europe) split a .csv there, and to them the quotes
+ * of a comma-separated field in the middle of a line are ordinary
+ * characters, so the text after it starts a cell of its own: an unguarded
+ * label "Sleep;=1+1;" put "=1+1" in a cell, and a line break inside a label
+ * in the middle of a line (a trend's activity, a comparison's groups) ends
+ * the row there, so "Men\n=1+1;" began the next row with "=1+1"
+ * (review round 4).
  */
-const SEPARATED_FORMULA = /[;\t](?=[ "]*[=+\-@\t\r])/g
+const SEPARATED_FORMULA = /[;\t\r\n](?=[ "]*[=+\-@\t\r])/g
 
 /** A cell holding API text: NA when absent, guarded against formula injection. */
 function text(value: string | null | undefined): Cell {
