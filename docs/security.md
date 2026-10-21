@@ -336,7 +336,7 @@ Tests:
   - `packages: write` is granted only to the deploy `push` job, the deploy `promote` job (which only adds the tags `live` and `deployed-<commit>` to the digest that passed the smoke) and the GHCR cleanup.
 - **Inputs:**
   - base images are pinned by digest;
-  - Python installs are hash-locked (`--require-hashes`, binary wheels only);
+  - Python installs are hash-locked and binary wheels only (`--require-hashes --only-binary=:all:`, in the image, CI and the deploy), so no install builds an sdist;
   - npm installs come from lockfiles (`npm ci`);
   - the image runs as UID 10001, not root.
 - **Scans in CI:**
@@ -467,7 +467,8 @@ Tests:
   - Only `.github/workflows/deploy.yml` deploys, on a `v*` tag or a manual run, after approval.
   - Render pulls the exact digest that the `push` job pushed.
   - Workers Builds and Render's Git integration are never connected. The `edge/wrangler.jsonc` invariants are tested in `edge/test/node/config.test.ts`.
-- **Remaining:** scanners only see known vulnerabilities, and coverage has gaps (R10).
+- **The deploy secrets' job.** The `deploy` job holds `CLOUDFLARE_API_TOKEN`, the Render deploy hook and the origin URL. On a GitHub-hosted runner a process started by one step can outlive it and read later steps, so that job installs only what it runs: the API's runtime lock (binary wheels) for the smoke's §9 comparison, and the edge's lockfile for `wrangler`. The `wrangler.jsonc` tests (vitest) run in `edge-config`, the browser journey (the frontend tree, Playwright) in `browser-smoke`; neither job has an environment or a secret (review round 2).
+- **Remaining:** scanners only see known vulnerabilities, and coverage has gaps (R10). The deploy job's `npm ci` in `edge/` still installs the whole locked edge tree with install scripts enabled (`wrangler` needs those of `esbuild` and `workerd`), so a compromised pinned version of a package in that tree could read the deploy secrets. Lockfile integrity hashes and Dependabot's 7-day cooldown bound this to a compromised version that was pinned on purpose.
 
 ### 10. Leaked tokens
 

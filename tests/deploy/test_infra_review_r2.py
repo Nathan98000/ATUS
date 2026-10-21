@@ -159,3 +159,51 @@ def test_the_edge_release_is_published_only_over_an_origin_bound_to_it():
     assert "expected_data_version=settings.expected_data_version" in source
     step = _flat(_section(_read(DEPLOYMENT), "**The deploy job.**", "A push to `main`"))
     assert "expected_data_version" in step and "nothing is published at the edge" in step
+
+
+# --- deploy-job-runs-dev-toolchain-before-secrets ----------------------------------------
+
+DEPLOY_SECRETS = ("RENDER_DEPLOY_HOOK_URL", "RENDER_ORIGIN", "CLOUDFLARE_API_TOKEN",
+                  "CLOUDFLARE_ACCOUNT_ID", "EDGE_OPS_TOKEN")
+
+
+def _pip_installs(path: Path) -> list[str]:
+    """Every `pip install ... -r <lock>` command of a workflow, continuations joined."""
+    text = _read(path).replace("\\\n", " ")
+    return [re.sub(r"\s+", " ", line.strip()) for line in text.splitlines()
+            if "pip install" in line and " -r " in line]
+
+
+def test_the_job_holding_deploy_secrets_runs_no_test_or_browser_tooling():
+    """deploy-job-runs-dev-toolchain-before-secrets: the deploy job installed the whole dev
+    lock and ran vitest (and later the frontend tree and Playwright) in the job that holds
+    CLOUDFLARE_API_TOKEN and the Render deploy hook."""
+    workflow = _workflow("deploy.yml")
+    holders = {job_id for job_id, job in workflow["jobs"].items()
+               if any(f"secrets.{name}" in yaml.safe_dump(job) for name in DEPLOY_SECRETS)}
+    assert holders == {"deploy"}
+    runs = "\n".join(step.get("run", "") for step in _steps(workflow["jobs"]["deploy"])
+                     if step.get("name") != "Rollback notes")
+    for tool in ("vitest", "playwright", "requirements/dev.lock.txt", "frontend"):
+        assert tool not in runs, tool
+    assert "-r requirements/api.lock.txt" in runs
+    for job_id, tool in (("edge-config", "vitest run --project node"),
+                         ("browser-smoke", "playwright.deployed.config.ts")):
+        job = workflow["jobs"][job_id]
+        assert "environment" not in job and "secrets." not in yaml.safe_dump(job), job_id
+        assert tool in yaml.safe_dump(job, width=1000), job_id
+    assert "edge-config" in workflow["jobs"]["deploy"]["needs"]
+    assert "browser-smoke" in workflow["jobs"]["promote"]["needs"]
+
+
+def test_every_hash_locked_install_takes_binary_wheels_only():
+    """security.md C19 says Python installs are binary wheels only; only the Dockerfile
+    passed --only-binary, so a future sdist-only pin would have been built (its code run)
+    in CI and in the deploy job."""
+    installs = [cmd for path in sorted(WORKFLOWS.glob("*.yml")) for cmd in _pip_installs(path)]
+    assert len(installs) >= 6
+    for command in installs:
+        assert "--require-hashes" in command and "--only-binary=:all:" in command, command
+    assert "--only-binary=:all:" in _read(REPO_ROOT / "Dockerfile")
+    c19 = _flat(_section(_read(DOCS_DIR / "security.md"), "**C19. Supply chain.**", "**C20."))
+    assert "--only-binary=:all:" in c19

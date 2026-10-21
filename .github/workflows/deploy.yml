@@ -18,16 +18,24 @@
 #              pushed digest read-only against it, builds the static snapshot
 #              and the same-origin SPA. Before any deploy step, so a failure
 #              here deploys nothing
+#   edge-config  the wrangler.jsonc invariant tests (vitest) and the KV
+#              namespace id, in a job without secrets
 #   deploy     environment `production` (the owner approves): Render deploy
-#              hook by digest, wait for the build, wrangler deploy with the
-#              release vars, post-deploy smoke (<= 30 requests, the step's
-#              --max-requests), browser smoke (<= 6 /api requests), rollback
-#              notes in the job summary
-#   promote    after a passing deploy: tags the deployed digest `live` (the
-#              image Render's service is configured with) and
-#              `deployed-<commit>` (the next run's rollback target)
+#              hook by digest, wait for the build bound to this release,
+#              wrangler deploy with the release vars, post-deploy smoke
+#              (<= 30 requests, the step's --max-requests), rollback notes in
+#              the job summary
+#   browser-smoke  after deploy, in a job without secrets: the browser
+#              smoke (<= 6 /api requests) against the public URL
+#   promote    after a passing deploy and browser smoke: tags the deployed
+#              digest `live` (the image Render's service is configured with)
+#              and `deployed-<commit>` (the next run's rollback target)
 #
-# Secrets are read from the environment by the scripts and never echoed.
+# Secrets are read from the environment by the scripts and never echoed. The
+# job that holds them installs only what it runs: the API's runtime lock for
+# the smoke's §9 comparison (binary wheels only) and the edge's lockfile for
+# wrangler; test and browser tooling runs in jobs without secrets (review
+# round 2, deploy-job-runs-dev-toolchain-before-secrets).
 name: Deploy
 
 on:
@@ -214,7 +222,7 @@ jobs:
 
       - name: Install the hash-locked environment (atus restore-serving-db)
         run: |
-          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
           python -m pip install --no-deps --no-build-isolation -e .
 
       - name: Download the release artifact (sizes and SHA-256 from releases/current.json)
@@ -359,9 +367,43 @@ jobs:
         if: ${{ always() }}
         run: docker rm -f atus-snapshot-api || true
 
+  edge-config:
+    name: Edge config invariants (no secrets)
+    # vitest and its dependency tree run here, never in the job that holds
+    # the deploy secrets.
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: edge/package-lock.json
+
+      - name: The wrangler.jsonc invariants and the KV namespace id
+        working-directory: edge
+        run: |
+          npm ci
+          npx --no-install vitest run --project node
+          if grep -Eq '"id": *"0{32}"' wrangler.jsonc; then
+            echo "::error::edge/wrangler.jsonc still has the placeholder KV namespace id (owner step 1.3)"
+            exit 1
+          fi
+
   deploy:
     name: Deploy to production
-    needs: [push, snapshot]
+    needs: [push, snapshot, edge-config]
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     environment:
@@ -370,6 +412,10 @@ jobs:
     permissions:
       contents: read
       packages: read
+    outputs:
+      # A production environment variable (owner step 4.1): the browser-smoke
+      # job, which holds no environment, reads it from here.
+      public_base_url: ${{ vars.PUBLIC_BASE_URL }}
     env:
       IMAGE_REF: ${{ needs.push.outputs.image_ref }}
       SNAPSHOT_ID: ${{ needs.snapshot.outputs.snapshot_id }}
@@ -407,11 +453,16 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: requirements/dev.lock.txt
+          cache-dependency-path: |
+            requirements/api.lock.txt
+            requirements/build.lock.txt
 
-      - name: Install the hash-locked environment (the smoke's §9 comparison)
+      # The API's runtime lock (as in the image), not the dev lock: the smoke's
+      # §9 comparison imports the package, nothing more.
+      - name: Install the API's runtime lock, binary wheels only (the smoke's §9 comparison)
         run: |
-          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --require-hashes --no-deps --only-binary=:all: \
+            -r requirements/api.lock.txt -r requirements/build.lock.txt
           python -m pip install --no-deps --no-build-isolation -e .
 
       - name: Set up Node
@@ -419,9 +470,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: |
-            edge/package-lock.json
-            frontend/package-lock.json
+          cache-dependency-path: edge/package-lock.json
 
       - name: Download the site (SPA + snapshot) built in the snapshot job
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -429,15 +478,11 @@ jobs:
           name: site-dist
           path: frontend/dist
 
-      - name: Edge toolchain (wrangler pinned by edge/package-lock.json) and config invariants
+      # wrangler's own install scripts (esbuild, workerd) still run here; the
+      # config tests ran in edge-config.
+      - name: Edge toolchain (wrangler pinned by edge/package-lock.json)
         working-directory: edge
-        run: |
-          npm ci
-          npx --no-install vitest run --project node
-          if grep -Eq '"id": *"0{32}"' wrangler.jsonc; then
-            echo "::error::edge/wrangler.jsonc still has the placeholder KV namespace id (owner step 1.3)"
-            exit 1
-          fi
+        run: npm ci
 
       - name: Record what runs now (rollback targets)
         id: before
@@ -510,13 +555,6 @@ jobs:
           if [ -n "$EDGE_OPS_TOKEN" ]; then args+=(--ops-budget); fi
           python scripts/ops/deploy_smoke.py "${args[@]}"
 
-      - name: Browser smoke against the public URL (one starter analysis)
-        working-directory: frontend
-        run: |
-          npm ci
-          npx playwright install --with-deps chromium
-          npx playwright test -c playwright.deployed.config.ts
-
       - name: Rollback notes
         if: ${{ always() }}
         env:
@@ -555,6 +593,38 @@ jobs:
             (docs/operations.md, "Rollback").
           EOF
 
+  browser-smoke:
+    name: Browser smoke against the public URL (one starter analysis)
+    # Without secrets: the frontend tree and the Playwright browsers are
+    # installed here, never in the job that holds the deploy secrets.
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      PUBLIC_BASE_URL: ${{ needs.deploy.outputs.public_base_url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: One starter renders, no CSP errors, at most 6 /api requests
+        working-directory: frontend
+        run: |
+          test -n "$PUBLIC_BASE_URL"
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test -c playwright.deployed.config.ts
+
   promote:
     name: Mark the deployed digest (Render's configured image, rollback target)
     # Only after the deploy job, smoke included, passed: `live` is the Image
@@ -564,7 +634,7 @@ jobs:
     # the digest that commit ran as, for the next run's rollback notes. Re-run
     # this job of an earlier run to move `live` back after an API rollback
     # (GitHub re-runs jobs for 30 days; after that, by hand: operations.md).
-    needs: [push, deploy]
+    needs: [push, deploy, browser-smoke]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:

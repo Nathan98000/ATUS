@@ -217,7 +217,7 @@ def test_promote_moves_live_only_after_a_passing_deploy():
     smoke, not the bootstrap digest; deployed-<commit> is the next run's
     rollback target. Same digest, no new manifest (--prefer-index=false)."""
     promote = jobs(by_name("deploy.yml"))["promote"]
-    assert set(promote["needs"]) == {"push", "deploy"}
+    assert set(promote["needs"]) == {"push", "deploy", "browser-smoke"}
     assert "if" not in promote                  # never after a failed deploy or smoke
     assert "environment" not in promote
     text = flat(promote)
@@ -282,10 +282,12 @@ def test_only_the_production_environment_job_holds_deploy_secrets():
 def test_the_deploy_job_follows_adr_011():
     deploy = flat(jobs(by_name("deploy.yml"))["deploy"])
     order = ["render_deploy.py trigger", "render_deploy.py wait --expect-build",
-             "npx --no-install wrangler deploy \\", "deploy_smoke.py",
-             "playwright.deployed.config.ts"]
+             "npx --no-install wrangler deploy \\", "deploy_smoke.py"]
     positions = [deploy.index(marker) for marker in order]
     assert positions == sorted(positions)
+    # The browser journey runs after the deploy job, in a job without secrets.
+    browser = jobs(by_name("deploy.yml"))["browser-smoke"]
+    assert browser["needs"] == "deploy" and "playwright.deployed.config.ts" in flat(browser)
     for var in ("DATA_VERSION", "ANALYTICS_VERSION", "RESPONSE_FORMAT", "SNAPSHOT_ID"):
         assert f'--var "{var}:${var}"' in deploy
     assert "--no-install wrangler" in deploy  # the lockfile's wrangler, never a download
@@ -577,7 +579,7 @@ def test_ci_runs_the_public_origin_with_the_local_stack_commands():
     assert set(smoke["env"]["E2E_PROJECTS"].split()) == {"desktop", "mobile", "firefox", "webkit"}
     assert smoke["env"]["ATUS_BUILD_SHA"] == "${{ github.sha }}"
     # deploy_smoke.py's §9 comparison imports the package
-    assert "--require-hashes --no-deps -r requirements/dev.lock.txt" in text
+    assert "--require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt" in text
     assert text.index("pip install --no-deps --no-build-isolation -e .") < \
         text.index("scripts/smoke_stack.sh")
     assert "docker compose" not in text  # the script starts, probes and removes the stack

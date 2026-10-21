@@ -593,7 +593,9 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 | `build` | `contents: read` | `image.yml` from scratch (no build cache) |
 | `push` | `contents: read`, `packages: write` | pushes exactly the tested image; outputs `ghcr.io/nathan98000/atus-api@sha256:<hex>` |
 | `snapshot` | `contents: read`, `packages: read` | builds the static snapshot from the committed release with that digest (below) |
+| `edge-config` | `contents: read` | the `wrangler.jsonc` invariant tests (`npx vitest run --project node` in `edge/`) and the placeholder KV namespace id check, in a job without secrets |
 | `deploy` | environment `production` (your approval); `contents: read`, `packages: read` | deploys and verifies (below) |
+| `browser-smoke` | `contents: read` | after `deploy`, without secrets: one browser journey against the public URL (below) |
 
 **The snapshot job.**
 
@@ -607,7 +609,7 @@ The snapshot is built before anything deploys, so a failed restore or snapshot d
 
 **The deploy job.**
 
-1. It checks that the environment holds its four secrets and that `PUBLIC_BASE_URL` is set. It runs the `wrangler.jsonc` invariant tests (`npx vitest run --project node` in `edge/`) and refuses the placeholder KV namespace id.
+1. It checks that the environment holds its four secrets and that `PUBLIC_BASE_URL` is set. It installs only what its steps run: the API's runtime lock and the package, binary wheels only (`--only-binary=:all:`), for the smoke's §9 comparison, and the edge's lockfile for `wrangler`. The `wrangler.jsonc` invariant tests ran in `edge-config`, and the browser journey runs in `browser-smoke`: their test and browser tooling never runs next to the deploy secrets.
 2. It records the rollback targets: the build the origin runs now, that build's GHCR digest, and the Worker's current deployment (`wrangler deployments status`).
 3. `scripts/ops/render_deploy.py trigger` POSTs `RENDER_DEPLOY_HOOK_URL` with `imgURL=<URL-encoded digest reference>`. The URL is read from the environment and never printed; anything but an `https://api.render.com/deploy/srv-...` URL is refused.
 4. `scripts/ops/render_deploy.py wait` polls the origin's `/health` until `build` equals `GITHUB_SHA`. It allows 15 minutes: the image pull, Render's ~1 minute spin-up and the app start. The app start took about 6 s at 0.1 CPU in the emulation ([cold-start A/B](../loadtests/results/2026-10-21-cold-start-ab.md); about 13 s before commit 5844ab7).
@@ -616,7 +618,7 @@ The snapshot is built before anything deploys, so a failed restore or snapshot d
 5. `npx --no-install wrangler deploy` (the version locked in `edge/package-lock.json`) publishes the SPA, the snapshot and the Worker, with `--var` `DATA_VERSION`, `ANALYTICS_VERSION`, `RESPONSE_FORMAT` and `SNAPSHOT_ID` read from the snapshot.
 6. The post-deploy smoke, at most 40 requests in all:
    - `scripts/ops/deploy_smoke.py`, at most 30 requests: first a bounded wait until `/api/_edge/health` and `/snap/current.json` name this release (the colo answering the runner may serve the previous version for a few seconds after `wrangler deploy`; at most 4 polls each, 15 s apart, within 60 s), then the SPA shell and its headers; the SPA fallback; the snapshot pointer and manifest; `/api/_edge/health`; `/api/health`, with a cold-start budget; `/api/v1/meta` (which the Worker answers from the snapshot); two home-page starters, whose live answers also prove the API's `X-Data-Version`, served from the snapshot and recomputed live with different request bytes (so the edge cache cannot answer) and diffed under the §9 criterion; an unknown `/api` path; and the origin lock (the onrender.com URL answers 403 `forbidden_origin`);
-   - one browser journey, `frontend/playwright.deployed.config.ts`: a starter renders, with no CSP errors and at most 6 `/api` requests.
+   - then, in the `browser-smoke` job, one browser journey, `frontend/playwright.deployed.config.ts`: a starter renders, with no CSP errors and at most 6 `/api` requests. `promote` waits for it.
 7. It writes the rollback notes (below) into the job summary, whatever the outcome.
 
 A push to `main` deploys nothing: deploy.yml has no branch trigger, which `tests/deploy/test_workflows.py` asserts along with the permissions above.

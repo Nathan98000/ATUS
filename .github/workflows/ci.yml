@@ -86,7 +86,7 @@ jobs:
 
       - name: Install the hash-locked dev environment
         run: |
-          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
           python -m pip install --no-deps --no-build-isolation -e .
           python -m pip check
 
@@ -131,7 +131,7 @@ jobs:
         run: |
           python -m venv "$RUNNER_TEMP/ci-tools"
           "$RUNNER_TEMP/ci-tools/bin/python" -m pip install --require-hashes --no-deps \
-            -r requirements/ci-tools.lock.txt
+            --only-binary=:all: -r requirements/ci-tools.lock.txt
           echo "$RUNNER_TEMP/ci-tools/bin" >> "$GITHUB_PATH"
 
       - name: pip-audit of the API image's runtime lock
@@ -292,7 +292,7 @@ jobs:
 
       - name: Install the backend (hash-locked)
         run: |
-          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
           python -m pip install --no-deps --no-build-isolation -e .
 
       - name: Set up Node
@@ -364,7 +364,7 @@ jobs:
 
       - name: Install the hash-locked environment (deploy_smoke.py's §9 comparison)
         run: |
-          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
           python -m pip install --no-deps --no-build-isolation -e .
 
       - name: Set up Node
