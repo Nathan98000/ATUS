@@ -342,6 +342,9 @@ def test_a_refused_live_lookup_fails_the_deep_check(fake_server, monkeypatch, ca
         out = capsys.readouterr()
         assert f"HTTP {status}" in out.err and "Manage Actions access" in out.err
         assert "build=" not in out.out and TOKEN not in out.err
+        # deep-check-runbook-read-role (review round 4): the repository keeps the Admin
+        # role that push, promote and ghcr-cleanup need; "read access" invited a downgrade
+        assert "with the Admin role" in out.err and "read access" not in out.err
 
 
 @pytest.mark.parametrize("missing", ["package", "tag"])
