@@ -63,7 +63,7 @@ SNAPSHOT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 ANALYSIS_STATUSES = ("miss", "hit", "join", "bypass", "edge")
 
 #: The home page's first and third starters (frontend/src/domain/prewarm.ts,
-#: STARTER_EXAMPLES; tests/unit/test_ops_deploy_smoke.py keeps them in step).
+#: STARTER_EXAMPLES; tests/unit/ops/test_deploy_smoke.py keeps them in step).
 STARTERS: tuple[tuple[str, str, dict[str, Any]], ...] = (
     ("sleep", "estimate", {"measure": "average_minutes_per_day",
                            "activity": {"preset": "sleep"}}),
