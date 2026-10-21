@@ -644,10 +644,13 @@ sends its own address from 198.19.0.0/16, and the per-visitor limits apply
 per test rather than to the whole suite), and tests that inject failures
 into `/api/v1/meta` first hide the snapshot (`withoutSnapshot`), since the
 deployed SPA would otherwise read `/meta` from `/snap/`. On 2026-10-21, at
-5beb6a4, all 66 runs passed in stack mode (Chromium desktop 50, mobile 3,
-WebKit 13), the review-round-1 browser tests (`e2e/service-codes.spec.ts`
-and others) included, after the stack smoke (15/15), the edge probe (13/13)
-and `deploy_smoke.py` (13/13). Earlier that day, at f208719, 52 of 52 had
+9188bb6, all 67 runs passed in stack mode (Chromium desktop 51, mobile 3,
+WebKit 13), the review-round-2 `api_paused` test of
+`e2e/service-codes.spec.ts` included, after the stack smoke (15/15), the
+edge probe (13/13) and `deploy_smoke.py` (13/13). Earlier that day, at
+5beb6a4, 66 of 66 had passed (Chromium desktop 50, mobile 3, WebKit 13),
+with the review-round-1 browser tests (`e2e/service-codes.spec.ts` and
+others), and at f208719, 52 of 52 had
 passed (Chromium desktop 37, mobile 2, WebKit 13), with
 `e2e/new-survey-year.spec.ts` and the static `/openapi.json` test of
 `e2e/service-states.spec.ts`; the first stack-mode run, on 2026-10-20,
