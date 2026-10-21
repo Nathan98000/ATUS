@@ -54,6 +54,12 @@ test(
 
     const chart = page.getByRole('application', { name: /Average time per day by year/ })
     await expect(chart).toBeVisible({ timeout: 15_000 })
+    // The pointer is still where "Analyze" was; if the chart renders under it,
+    // a hover sets the readout's year (WebKit fires mousemove on layout), and
+    // the first ArrowRight would then step from that year, not into 2019.
+    // A keyboard user's pointer is elsewhere.
+    await page.mouse.move(0, 0)
+    await chart.press('Escape')
     await chart.focus()
     await page.keyboard.press('ArrowRight')
     await expect(chart).toContainText('2019')
