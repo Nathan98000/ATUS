@@ -199,7 +199,9 @@ superseded requests are aborted via TanStack Query's signal, and stale
 responses cannot overwrite newer ones because every spec is its own key.
 A failed background refetch never unmounts the builder or hides a displayed
 result: pages show a page-level error only while nothing is loaded (F26),
-and Explore's "Try again" refetches every failed query (F63).
+and Explore's "Try again" refetches every failed query (F63). The activity
+picker fetches a failed activity list or preset list again when it opens
+and from its own "Try again" (review round 2).
 
 ## Cold start, retries and service states
 

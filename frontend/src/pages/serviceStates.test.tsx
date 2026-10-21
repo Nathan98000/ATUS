@@ -996,6 +996,54 @@ describe('background failures and retries (F26, F63)', () => {
     expect(requests('GET /api/v1/population/metadata')).toBe(2)
   })
 
+  // Review round 2: the picker said "Close and reopen to retry", but its
+  // query stayed mounted (staleTime Infinity, no retries, no focus
+  // refetch), so neither reopening nor anything else sent a request.
+  async function openFailedPicker() {
+    const user = userEvent.setup()
+    let failing = true
+    const requests = countRequests()
+    server.use(
+      http.get(api('/activities'), () =>
+        failing
+          ? errorResponse(500, 'internal_error', 'Boom.')
+          : HttpResponse.json(activitiesFixture),
+      ),
+    )
+    renderApp('/explore')
+    await screen.findByRole('button', { name: 'Analyze' })
+    await user.click(screen.getByRole('button', { name: 'Change activity' }))
+    expect(await screen.findByText(/The activity list could not be loaded/)).toBeInTheDocument()
+    const sent = requests('GET /api/v1/activities')
+    return {
+      user,
+      sent,
+      requests,
+      recover: () => {
+        failing = false
+      },
+    }
+  }
+
+  it('the activity picker’s "Try again" loads a failed activity list', async () => {
+    const { user, sent, requests, recover } = await openFailedPicker()
+    recover()
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByLabelText('Search activities')).toBeInTheDocument()
+    expect(requests('GET /api/v1/activities')).toBe(sent + 1)
+    // Focus stays next to the panel, on its toggle, not on <body>.
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close' }))
+  })
+
+  it('reopening the activity picker retries a failed activity list', async () => {
+    const { user, sent, requests, recover } = await openFailedPicker()
+    recover()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    await user.click(screen.getByRole('button', { name: 'Change activity' }))
+    expect(await screen.findByLabelText('Search activities')).toBeInTheDocument()
+    expect(requests('GET /api/v1/activities')).toBe(sent + 1)
+  })
+
   it('the home page offers "Try again" when starter examples cannot load', async () => {
     const user = userEvent.setup()
     let failing = true
