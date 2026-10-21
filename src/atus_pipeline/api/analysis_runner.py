@@ -40,12 +40,12 @@ that will actually compute does. A computation that fails before the engine
 starts (no connection, a Neon pause, a full pool, a data version other than
 the pinned one) gives its daily-cap unit and its analysis token back, so a
 database outage cannot use up the day's cap (review r4); one whose engine
-started stays charged, whatever its outcome. The computation runs as a task detached from
-the request that started it: if that client disconnects, the admitted
-computation still finishes (bounded by the statement timeout and the request
-deadline) and its result is cached, so a retry after a proxy timeout hits the
-cache or joins instead of paying twice (ADR-011). Errors are never cached;
-every request waiting on a failed computation receives the same error.
+started stays charged, whatever its outcome. The computation runs as a task
+detached from the request that started it: if that client disconnects, the
+admitted computation still finishes (bounded by the statement timeout and the
+request deadline) and its result is cached, so a retry after a proxy timeout
+hits the cache or joins instead of paying twice (ADR-011). Errors are never
+cached; every request waiting on a failed computation receives the same error.
 
 No statistical logic lives here: ``compute`` calls the engine and serializes
 its result exactly as before.
