@@ -777,7 +777,7 @@ All runs below were local. Nothing has been compared on a deployed host.
 
 The procedure is [deployment.md step 7](deployment.md#7-first-approved-deploy-ci). For the very first deploy, follow "Bootstrap" there.
 
-1. **Check before you start:** CI is green on the commit, and the release manifest names a published release (`deploy.yml` refuses otherwise):
+1. **Check before you start:** CI is green on the commit (a push to `main`; a tag must point at a commit CI ran on, on `main`), and the release manifest names a published release. `deploy.yml`'s preflight refuses otherwise; if CI is still running for the commit, wait for it and re-run the deploy:
 
    ```bash
    python scripts/ops/release_manifest.py check --require-published

@@ -5,8 +5,10 @@
 # deploys nothing (Render's image-backed service never auto-deploys, Workers
 # Builds is never connected). Jobs, each with the least permission it needs:
 #
-#   preflight  the ref is a semver tag or main; releases/current.json names a
-#              published serving-DB release
+#   preflight  the ref is a semver tag or main; ci.yml passed on a push to
+#              main for this very commit, and the commit is on main (this
+#              workflow runs only the Worker's config tests and the SPA
+#              build); releases/current.json names a published release
 #   build      image.yml from scratch (no build cache): the strict gate,
 #              deployment tests, stack smoke plain and emulated, Trivy
 #   push       the one job with packages: write: pushes exactly the tested
@@ -53,6 +55,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+      actions: read
     outputs:
       data_version: ${{ steps.release.outputs.data_version }}
       release_tag: ${{ steps.release.outputs.release_tag }}
@@ -81,6 +84,11 @@ jobs:
             echo "### Deploy $REF_NAME ($GITHUB_SHA)"
             if [ -n "$REASON" ]; then echo "Reason: $REASON"; fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: CI passed for this commit, and it is on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ops/github_ops.py deploy-gate --repo "$GITHUB_REPOSITORY" --sha "$GITHUB_SHA"
 
       - name: The release manifest names a published release
         id: release

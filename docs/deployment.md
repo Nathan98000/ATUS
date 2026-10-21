@@ -567,7 +567,7 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 
 | Job | Permissions | What it does |
 |---|---|---|
-| `preflight` | `contents: read` | refuses any other ref; `releases/current.json` must name a published release |
+| `preflight` | `contents: read`, `actions: read` | refuses any other ref; refuses a commit without a successful `ci.yml` run on a push to `main`, and a tag on a commit that is not on `main` (`github_ops.py deploy-gate`: this workflow runs only the Worker's config tests and the SPA build, so the Worker tests, typecheck, lint and both Playwright jobs must have passed in CI); `releases/current.json` must name a published release |
 | `build` | `contents: read` | `image.yml` from scratch (no build cache) |
 | `push` | `contents: read`, `packages: write` | pushes exactly the tested image; outputs `ghcr.io/nathan98000/atus-api@sha256:<hex>` |
 | `snapshot` | `contents: read`, `packages: read` | builds the static snapshot from the committed release with that digest (below) |

@@ -761,6 +761,7 @@ The decision is unchanged. This section records where the implementation (code, 
   - The snapshot's inputs are the ones in the "Edge tiers" table: the release dump restored into `postgres:16` with `scripts/ops/roles.sql`, and the digest run read-only. Only the order changed.
 - **Which release.** The dump is the one named in the committed `releases/current.json` (`scripts/ops/release_manifest.py`). It is downloaded and checked against the recorded sizes and SHA-256s. `preflight` refuses to run unless the file says `published`. Reason: a deploy can only serve a release that someone committed.
 - **Triggers.** Only `vMAJOR.MINOR.PATCH` tags, and manual runs from `main`. `tests/deploy/test_workflows.py` asserts the triggers and the per-job permissions.
+- **CI gate** (amendment, review round 1). `preflight` runs `scripts/ops/github_ops.py deploy-gate`: a successful `ci.yml` run on a push to `main` must exist for exactly `GITHUB_SHA`, and the commit must be on `main` (a tag can point at any commit). Before, the only guard was the runbook's "CI is green", while the deploy itself runs only the Worker's config tests and the SPA build.
 - **Smoke.** "At most 40 requests" is split in two:
   - `scripts/ops/deploy_smoke.py --max-requests 30`, which recomputes 2 snapshot entries live and checks the origin lock;
   - one Chromium journey (`frontend/playwright.deployed.config.ts`), capped at 6 `/api` requests in `frontend/e2e/deployed/starter.deployed.ts`.

@@ -1,8 +1,11 @@
-"""scripts/ops/github_ops.py against a fake GitHub REST API (schedules, GHCR retention)."""
+"""scripts/ops/github_ops.py against a fake GitHub REST API (schedules, the deploy
+gate, GHCR retention)."""
 
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+
+import pytest
 
 from .conftest import OPS_DIR, json_reply, load_script
 
@@ -111,6 +114,58 @@ def test_the_weekly_cadence_leaves_several_runs_before_the_cutoff():
 
 def test_schedules_needs_a_token(fake_server):
     assert gh_ops.main(["--api-url", fake_server.base, "schedules", "--repo", REPO]) == 2
+    assert fake_server.calls == []
+
+
+# --------------------------------------------------------------------------- #
+# deploy gate                                                                  #
+# --------------------------------------------------------------------------- #
+
+SHA = "0123456789abcdef0123456789abcdef01234567"
+CI_RUNS = (f"/repos/{REPO}/actions/workflows/ci.yml/runs?head_sha={SHA}&event=push"
+           "&branch=main&status=success&per_page=1")
+
+
+def deploy_gate(server, *, ci_passed=True, compare=("identical", 0)):
+    runs = [{"id": 77, "head_sha": SHA, "conclusion": "success", "event": "push",
+             "head_branch": "main"}] if ci_passed else []
+    server.routes[("GET", CI_RUNS)] = json_reply(
+        200, {"total_count": len(runs), "workflow_runs": runs}, api=False)
+    status, behind = compare
+    server.routes[("GET", f"/repos/{REPO}/compare/{SHA}...main")] = json_reply(
+        200, {"status": status, "behind_by": behind, "ahead_by": 3}, api=False)
+
+
+def run_gate(server, monkeypatch, sha=SHA):
+    monkeypatch.setenv("GH_TOKEN", TOKEN)
+    return gh_ops.main(["--api-url", server.base, "deploy-gate", "--repo", REPO, "--sha", sha])
+
+
+def test_a_commit_ci_passed_on_main_may_deploy(fake_server, monkeypatch, capsys):
+    deploy_gate(fake_server, compare=("ahead", 0))     # main moved on since: still on main
+    assert run_gate(fake_server, monkeypatch) == 0
+    out = capsys.readouterr()
+    assert "deploy gate: 0 failed" in out.out and TOKEN not in out.out + out.err
+
+
+def test_a_commit_without_a_green_ci_run_is_refused(fake_server, monkeypatch, capsys):
+    """deploy.yml runs only the Worker's config tests and the SPA build: the
+    Worker tests, typecheck, lint and Playwright are ci.yml's."""
+    deploy_gate(fake_server, ci_passed=False)
+    assert run_gate(fake_server, monkeypatch) == 1
+    assert "no successful ci.yml run" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("status, behind", [("diverged", 2), ("behind", 1)])
+def test_a_tag_on_a_commit_off_main_is_refused(fake_server, monkeypatch, capsys, status,
+                                               behind):
+    deploy_gate(fake_server, compare=(status, behind))
+    assert run_gate(fake_server, monkeypatch) == 1
+    assert "is not on main" in capsys.readouterr().out
+
+
+def test_the_gate_refuses_a_malformed_sha(fake_server, monkeypatch):
+    assert run_gate(fake_server, monkeypatch, sha="main") == 2
     assert fake_server.calls == []
 
 

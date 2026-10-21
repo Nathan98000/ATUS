@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""GitHub-side housekeeping for the $0 stack: schedule health and GHCR retention.
+"""GitHub-side housekeeping for the $0 stack: schedule health, the deploy gate and
+GHCR retention.
 
 Standard library only; the token comes from ``GH_TOKEN`` (or ``GITHUB_TOKEN``)
 and is sent only to the GitHub REST API (the endpoints ``gh api`` calls),
@@ -16,6 +17,13 @@ never printed.
             the repository's pushed_at, which Dependabot's branch pushes
             keep fresh), leaving four weekly runs before the 60-day cutoff.
         Run weekly (Mondays, off the hour) by .github/workflows/schedules-check.yml.
+
+    github_ops.py deploy-gate --repo Nathan98000/ATUS --sha "$GITHUB_SHA"
+        Fails unless ci.yml succeeded on a push to main for exactly this
+        commit, and the commit is on main (a vX.Y.Z tag can point anywhere).
+        deploy.yml's preflight runs it: the deploy itself runs only the
+        Worker's config tests and the SPA build, so the Worker tests,
+        typecheck, lint and Playwright must have passed in CI.
 
     github_ops.py ghcr-cleanup --owner nathan98000 --package atus-api --keep 20 [--dry-run]
         Deletes all but the newest ``--keep`` versions (digests) of the image.
@@ -184,6 +192,30 @@ def check_activity(gh: GitHub, repo: str, *, now: datetime) -> Finding:
     return Finding("repository activity", True, f"last commit on {branch} {_ago(idle)} ago")
 
 
+def check_deploy_gate(gh: GitHub, repo: str, sha: str, *, branch: str = "main",
+                      workflow: str = "ci.yml") -> list[Finding]:
+    """Whether ``sha`` may deploy: a successful ``workflow`` run on a push to
+    ``branch`` for exactly this commit, and the commit is on ``branch``."""
+    runs = gh.call("GET", f"/repos/{repo}/actions/workflows/{workflow}/runs?head_sha={sha}"
+                          f"&event=push&branch={branch}&status=success&per_page=1")
+    passed = [r for r in (runs or {}).get("workflow_runs", [])
+              if r.get("head_sha") == sha and r.get("conclusion") == "success"]
+    findings = [Finding("ci", True, f"{workflow} passed for {sha[:12]} on a push to {branch} "
+                                    f"(run {passed[0].get('id')})") if passed else
+                Finding("ci", False, f"no successful {workflow} run for {sha[:12]} on a push to "
+                                     f"{branch}: wait until CI has passed for this commit (or "
+                                     f"fix it), then re-run")]
+    compare = gh.call("GET", f"/repos/{repo}/compare/{sha}...{branch}") or {}
+    status, behind = compare.get("status"), compare.get("behind_by")
+    if status in ("ahead", "identical") and behind == 0:
+        findings.append(Finding("on_branch", True, f"{sha[:12]} is on {branch}"))
+    else:
+        findings.append(Finding("on_branch", False, f"{sha[:12]} is not on {branch} ({status}, "
+                                                    f"{behind} commit(s) off it): tag only "
+                                                    f"commits on {branch}"))
+    return findings
+
+
 def _ago(delta: timedelta) -> str:
     hours = delta.total_seconds() / 3600
     return f"{hours:.1f} h" if hours < 48 else f"{hours / 24:.1f} days"
@@ -228,6 +260,10 @@ def main(argv: list[str] | None = None) -> int:
     sch = sub.add_parser("schedules", help="scheduled workflows enabled and running")
     sch.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY"))
     sch.add_argument("--now", default=None, help=argparse.SUPPRESS)  # tests only
+    dg = sub.add_parser("deploy-gate", help="the commit passed CI and is on main")
+    dg.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY"))
+    dg.add_argument("--sha", default=os.environ.get("GITHUB_SHA"))
+    dg.add_argument("--branch", default="main")
     gc = sub.add_parser("ghcr-cleanup", help="keep only the newest image versions")
     gc.add_argument("--owner", required=True)
     gc.add_argument("--owner-kind", choices=("users", "orgs"), default="users")
@@ -236,6 +272,12 @@ def main(argv: list[str] | None = None) -> int:
     gc.add_argument("--max-delete", type=int, default=50)
     gc.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
+    if args.command == "deploy-gate" and not (
+            args.repo and REPOSITORY.match(args.repo) and re.fullmatch(r"[0-9a-f]{40}",
+                                                                       args.sha or "")
+            and NAME.match(args.branch)):
+        print("error: pass --repo <owner>/<name>, --sha <40 hex> and --branch", file=sys.stderr)
+        return 2
 
     token = (os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or "").strip()
     if not token:
@@ -257,6 +299,17 @@ def main(argv: list[str] | None = None) -> int:
             _summary(lines)
             failed = sum(1 for f in findings if not f.ok)
             print(f"schedules: {failed} failed")
+            return 1 if failed else 0
+
+        if args.command == "deploy-gate":
+            findings = check_deploy_gate(gh, args.repo, args.sha, branch=args.branch)
+            lines = ["### Deploy gate", "", "| Check | Result | Detail |", "|---|---|---|"]
+            for f in findings:
+                print(f"[{'PASS' if f.ok else 'FAIL'}] {f.name}: {f.detail}", flush=True)
+                lines.append(f"| {f.name} | {'ok' if f.ok else '**FAIL**'} | {f.detail} |")
+            _summary(lines)
+            failed = sum(1 for f in findings if not f.ok)
+            print(f"deploy gate: {failed} failed")
             return 1 if failed else 0
 
         if not (NAME.match(args.owner) and NAME.match(args.package)):

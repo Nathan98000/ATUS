@@ -186,6 +186,20 @@ def test_deploy_runs_only_on_tags_or_by_hand():
     assert on["push"] == {"tags": ["v*"]}, "a push to a branch must deploy nothing"
 
 
+def test_deploy_requires_green_ci_on_main_before_building():
+    """deploy.yml itself runs only the Worker's config tests and the SPA build:
+    preflight refuses a commit without a successful ci.yml push run on main,
+    and a tag on a commit that is not on main."""
+    preflight = jobs(by_name("deploy.yml"))["preflight"]
+    assert preflight["permissions"] == {"contents": "read", "actions": "read"}
+    (gate,) = [s for s in steps(preflight) if "github_ops.py deploy-gate" in s.get("run", "")]
+    assert '--sha "$GITHUB_SHA"' in gate["run"]
+    assert gate["env"]["GH_TOKEN"] == "${{ github.token }}"
+    names = [s.get("name", "") for s in steps(preflight)]
+    assert names.index(gate["name"]) < len(names) - 1   # before the manifest check
+    assert jobs(by_name("deploy.yml"))["build"]["needs"] == "preflight"
+
+
 def test_deploy_permissions_are_minimal():
     workflow = by_name("deploy.yml")
     assert workflow["permissions"] == {}
