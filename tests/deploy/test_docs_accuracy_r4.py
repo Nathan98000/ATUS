@@ -82,6 +82,10 @@ def test_every_leak_that_can_alter_served_results_flushes_the_edge_cache():
         assert "bump EPOCH" in _flat(_row(security, secret)), secret
     poisoning = _flat(_section(security, "### 7. Cache poisoning", "### 8. Header injection"))
     assert "passes the store gate like any other" in poisoning and "bump EPOCH" in poisoning
+    # the accepted risks that name such a recovery name the flush too
+    r4 = _flat(_section(security, "**R4. Role defaults", "**R5."))
+    r6 = _flat(_section(security, "**R6. Neon project-scoped key", "**R7."))
+    assert "EPOCH bump" in r4 and "EPOCH bump" in r6
 
     architecture = _flat(_read(DOCS_DIR / "architecture.md"))
     assert "a cached result can never be served for a different database" not in architecture

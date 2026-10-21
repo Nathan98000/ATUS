@@ -530,7 +530,7 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 
 **R6. Neon project-scoped key with editor rights**, if `NEON_API_KEY` is set.
 - The governor uses it only for `GET /projects/{id}`, sent in the `Authorization` header (`edge/test/worker/governor.test.ts`). The key itself can still edit the project.
-- A compromised Cloudflare account or Worker could therefore alter the database, also without changing any row. Recovery is a restore of the release dump into a new project ([deployment.md "Rotation"](deployment.md#rotation), item 7).
+- A compromised Cloudflare account or Worker could therefore alter the database, also without changing any row. Recovery is a restore of the release dump into a new project, then an `EPOCH` bump, since the restore keeps the release's data version and KV would keep the results computed on the altered database ([deployment.md "Rotation"](deployment.md#rotation), items 5 and 7; review round 4).
 - Without the key, the governor runs in its conservative mode.
 
 **R7. Plain HTTP inside Render**, between its load balancer and the container (documented by Render). The edge secret and the visitor's IP cross that hop unencrypted.
