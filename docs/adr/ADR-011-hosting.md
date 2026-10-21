@@ -113,8 +113,8 @@ In short:
       - handled by the Worker itself: GET `/api/v1/wake` (prewake), GET `/api/_edge/health` (no origin call) and GET `/api/_ops/budget` (bearer token).
    2. **Limits.** A body over 64 KiB gets a 413 envelope. A POST must be `application/json`.
    3. **Upstream headers.** The Worker builds a fresh upstream header set from an allowlist:
-      - forwarded from the client: `Content-Type`, `Accept`, `Accept-Encoding`, `If-None-Match`;
-      - set by the Worker: `X-Request-ID` (generated), `X-ATUS-Client-IP` (copied from `CF-Connecting-IP`), `X-ATUS-Edge-Auth` (a Worker secret) and `User-Agent: atus-edge/<version>`.
+      - forwarded from the client: `Content-Type`, `Accept`, `If-None-Match`;
+      - set by the Worker: `Accept-Encoding: gzip` (always, whatever the client accepts: the runtime decodes the body, and an uncompressed answer costs several times the Render outbound; review round 1), `X-Request-ID` (generated), `X-ATUS-Client-IP` (copied from `CF-Connecting-IP`), `X-ATUS-Edge-Auth` (a Worker secret) and `User-Agent: atus-edge/<version>`.
 
       Client-sent `X-ATUS-*`, `X-Forwarded-*`, `Forwarded`, `X-Real-IP`, `Cookie` and `Authorization` headers are never forwarded.
    4. **Edge cache lookup (analysis POSTs).** The Worker reads the body bytes once and computes `k = sha256(path + "?" + query + "\n" + body)`. It then looks up KV key `r1/<CACHE_SCOPE>/<k>`. On a hit it returns the stored bytes with `X-Cache: edge`, and Render and Neon are not touched.
@@ -145,8 +145,8 @@ In short:
 
 **Prewake.** The SPA sends GET `/api/v1/wake` only on user intent: entering Explore, or opening a share link that is not in the snapshot.
 
-- The Worker races `fetch(origin /health)` against 1.5 s and replies `{origin: warm|waking}`. If the origin is waking, the fetch stays alive through `waitUntil`.
-- A wake is sent at most once per isolate per 10 minutes, and the Worker var `PREWAKE=off` turns the feature off.
+- The Worker races `fetch(origin /health)` against 1.5 s and replies `{origin: warm|waking}`. If the origin is waking, the fetch stays alive through `waitUntil`, for at most the 30 s Cloudflare allows after the response; a longer spin-up is recorded as still waking.
+- A wake is sent at most once per isolate per 10 minutes once the origin answered warm, and at most once a minute while it was waking or unknown, so a stale "waking" does not keep the cold-start notice up (review round 1). The Worker var `PREWAKE=off` turns the feature off.
 - A wake never touches Neon.
 
 **Coldest path for a novel analysis.** PROJECTION: Render spin-up (~1 min, documented) + app start (7–11 s, measured; whether Render's minute includes it is unknown) + Neon wake (a few hundred ms to a few s) + the query (0.4–3.4 s if the autoscaler reaches 2 CU; up to ~52 s at 0.25 CU). That is about 65–80 s in the typical case and up to ~125 s in the worst.
@@ -184,7 +184,7 @@ visitor ──TLS──▶ Cloudflare edge (sets CF-Connecting-IP = visitor)
 - **KV store gate.** The Worker writes to KV only when all of these hold:
   - a POST to one of the three analysis paths;
   - status 200 with a JSON content type;
-  - origin `X-Cache` is `miss` or `hit`;
+  - origin `X-Cache` is `miss` (ADR-015: `hit` is refunded from the global count, so storing it left KV writes unbounded);
   - `X-Data-Version` equals the Worker's `DATA_VERSION`;
   - the origin's response-format header equals the Worker's `RESPONSE_FORMAT`;
   - the body is complete and ≤ 16 KiB (measured maximum 8,383 B).
@@ -214,10 +214,11 @@ visitor ──TLS──▶ Cloudflare edge (sets CF-Connecting-IP = visitor)
     - There is also a ceiling of 10 CU-h per UTC day.
   - **Bridge estimate.** Between polls, and as the whole estimate when no ground truth is available, busy time and the full 300 s idle tail are charged at the compute's maximum (2 CU). This holds until at least 7 days of reconciled data justify a smaller factor.
   - **Without ground truth.** The daily ceiling drops to `(100 × 0.9) / 31 ≈ 2.9` CU-h. That way no 30- or 31-day window can exceed the quota, wherever Neon's reset falls.
-  - **Neon egress.** Stop at 4.5 GB month-to-date, and admit at most 300 heavy analyses per day.
-  - **Global.** At most 600 uncached analyses per UTC day. This also bounds KV writes and Render outbound traffic.
-  - **Per IP prefix** (/24 or /48): at most 60 uncached analyses per day.
-- **Failure behaviour.** The governor fails closed for uncached analyses only. Static content, KV hits and metadata keep working.
+  - **Neon egress.** Stop at 4.5 GB month-to-date (ground truth only), and admit at most 300 heavy analyses per day. Without ground truth each day's estimated egress is held to 4.5 GB / 31 (ADR-015).
+  - **Global.** At most 600 uncached analyses per UTC day. This also bounds KV writes (only computed answers are stored). It bounds Render outbound only for analyses that keep their count; refunded admissions are bounded per network, and metadata lookups by their own cap (ADR-015, "Render outbound through the Worker").
+  - **Per IP prefix** (/24 or /48): at most 60 uncached analyses per day, and a fifth of the day's compute ceiling (ADR-015).
+  - **Metadata.** The Worker answers metadata GETs from the static snapshot; the rest reach Render as lookups, at most 200 per prefix and 2,000 in all per day (ADR-015).
+- **Failure behaviour.** The governor fails closed for uncached analyses and metadata lookups only. Static content, KV hits and the metadata the snapshot answers keep working.
 - **Credentials.** The Neon key is a **project-scoped** API key, stored as a Worker secret and used only by the alarm.
   - Such a key can edit one project but cannot delete it, and only organization admins can create one. Whether the Free plan offers it is undocumented.
   - A personal or organization-wide key is never stored in any runtime.
@@ -666,7 +667,7 @@ Status codes:
 ### Accepted risks (no $0 mitigation removes them)
 
 1. **Render discretionary suspension.** Render may suspend a Free service for "uncommonly high" traffic that the service initiates, with accessing an external database as the named example. That describes this design. No threshold is published, and the only documented restore is a paid plan.
-   - **Mitigation:** DB traffic stays small and governed (PROJECTION: ~0.05 GB/month of Render outbound at realistic traffic, ≤ 0.74 GB at the governor's caps). The static snapshot and KV keep serving.
+   - **Mitigation:** DB traffic stays small and governed (PROJECTION: ~0.05 GB/month of Render outbound at realistic traffic; ≤ 0.74 GB of DB traffic at the governor's caps, since every analysis that reaches the database keeps its count; about 2.8 GB of all Render outbound through the Worker in the worst case, ADR-015 "Render outbound through the Worker"). The static snapshot and KV keep serving.
    - **Recovery:** switch to the fallback by changing a Worker var. Never pay, and never recreate the service on Render to get around the suspension.
 2. **Cloudflare may rename the workers.dev subdomain** "for any or no reason", attempting a week's notice. Every share link would break. Only a custom domain removes this risk, and constraint 2 excludes one. The owner chooses the subdomain once.
 3. **Card prompts.** Render's Terms reserve a $1 authorization hold, and prompts were reported at deploy time in 2024–25. Vercel's and Tailscale's pages say nothing either way. If a prompt appears: stop, report and decide (constraint 1).
@@ -808,7 +809,7 @@ The decision is unchanged. This section records where the implementation (code, 
   - the store gate also requires `X-Analytics-Version`;
   - a client prefix is also capped at 300 admissions a day, refunded ones included;
   - the compute charge is sized from the API's `Server-Timing: db;dur=`.
-- **Failing closed.** Only analysis POSTs are governed. "Fail closed for DB-touching forwards" therefore covers analyses only; metadata GETs reach the origin ungoverned (ADR-015, "What this does not protect against").
+- **Failing closed.** Analysis POSTs and, since review round 1, the metadata GETs the static snapshot cannot answer (counted lookups) are governed, and both fail closed. The Worker answers the other metadata GETs from the snapshot without the governor. `/api/health` and the prewake are not governed (ADR-015, "What this does not protect against").
 - **Neon key.** `NEON_PROJECT_ID` is committed empty in `edge/wrangler.jsonc` and `deploy.yml` does not set it, so a first deploy runs the governor in conservative mode.
 - **Unknowns tooling.** The "ops-only echo build" and the "ops-token DB-free sleep endpoint (130 s)" under "Unknowns" do not exist in `src/` or `edge/src/`. They must be written, and removed again, before those rows can be measured. The URL-targeted replay exists: `scripts/replay_deployed.py`, with a hard budget of 40 requests and the F66 broad selector included.
 

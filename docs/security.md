@@ -68,7 +68,8 @@ Tests:
 
 **C3. Client-IP trust chain.**
 - The Worker builds a fresh upstream header set:
-  - from the client: `Accept`, `Accept-Encoding`, `If-None-Match`, plus `Content-Type` when there is a body;
+  - from the client: `Accept`, `If-None-Match`, plus `Content-Type` when there is a body;
+  - its own `Accept-Encoding: gzip`, whatever the client accepts (an uncompressed answer would cost several times the Render outbound);
   - its own `X-Request-ID`;
   - `X-ATUS-Client-IP`, copied from `CF-Connecting-IP` when that value looks like an IP address;
   - `X-ATUS-Edge-Auth`;
@@ -87,7 +88,7 @@ Tests:
 - `tests/integration/api_prod/test_server.py::TestProductionServer::test_forwarded_headers_never_change_the_client`.
 
 **C4. Request size and shape.**
-- **Edge.** An analysis POST must be `application/json` (else 415) and at most 64 KiB (else 413). A declared `Content-Length` over the cap is refused before the body is read, and a streamed body is cut off at the cap.
+- **Edge.** An analysis POST must be `application/json` (else 415) and at most 64 KiB (else 413). The Worker refuses a declared `Content-Length` over the cap before it reads the body, and cuts a streamed body off at the cap. Malformed framing (a duplicate `Content-Length`, an unknown method) is answered by the runtime before the Worker runs, without the Worker's envelope or headers (R8).
 - **API, before routing:**
   - the same body cap (`ATUS_API_MAX_BODY_BYTES`);
   - JSON-only bodies;
@@ -111,21 +112,23 @@ Tests:
 Code: `src/atus_pipeline/api/protection.py` (`TokenBucketLimiter`), `src/atus_pipeline/api/middleware.py`, `src/atus_pipeline/api/analysis_runner.py`.
 Tests: `tests/unit/api/test_protection.py::TestTokenBucket`, `tests/unit/api/test_guard.py::TestRequestRateLimit`, `tests/unit/api/test_admission.py::TestAnalysisRateLimit`.
 
-**C6. Quota governor** (one SQLite Durable Object, `global`). It admits uncached analyses only. Static files, KV hits and GET routes never call it.
-- **Per client network** (IPv4 /24 or IPv6 /48): 60 analyses and 300 admissions per UTC day, refunded admissions included. Over either, 429.
+**C6. Quota governor** (one SQLite Durable Object, `global`). It admits uncached analyses, and the metadata GETs the static snapshot cannot answer. Static files, KV hits, snapshot metadata, health and wake never call it.
+- **Per client network** (IPv4 /24 or IPv6 /48): 60 analyses and 300 admissions per UTC day, refunded admissions included, and a fifth of the day's Neon compute ceiling charged to its analyses. Over any of them, 429.
 - **Shared budgets** (503):
   - 600 analyses per UTC day globally, of which at most 300 heavy;
-  - a daily Neon CU-hour ceiling: 10 CU-h with fresh ground truth from Neon, otherwise (100 × 0.9) / 31.
+  - a daily Neon CU-hour ceiling: 10 CU-h with fresh ground truth from Neon, otherwise (100 × 0.9) / 31;
+  - without ground truth, a daily Neon egress estimate of at most 4.5 GB / 31.
 - **With the optional Neon key:** month-to-date CU-hour pacing and a stop at 4.5 GB of egress.
+- **Metadata lookups** (a query string, a code the snapshot does not hold): 200 per client network (429) and 2,000 in all (503) per UTC day.
 - **Cost of a denial:** it writes no rows.
-- **Fails closed.** Each of these gets 503 `capacity_unavailable` with `Retry-After`, while static files, KV hits and GET routes keep working:
+- **Fails closed.** Each of these gets 503 `capacity_unavailable` with `Retry-After`, while static files, KV hits and snapshot metadata keep working:
   - a governor error;
   - no answer within 5 s;
   - a malformed answer;
   - a missing `IP_HMAC_KEY`.
 
-Code: `edge/src/governor.ts`, `edge/src/admission.ts`, `edge/src/budget.ts`, `edge/src/constants.ts`.
-Tests: `edge/test/worker/governor.test.ts`, `edge/test/worker/governor-flow.test.ts` ("failing closed"), `edge/test/worker/budget.test.ts`, `edge/test/worker/cache.test.ts` ("serves a hit while the origin is unconfigured or the governor is down").
+Code: `edge/src/governor.ts`, `edge/src/admission.ts`, `edge/src/budget.ts`, `edge/src/constants.ts`, `edge/src/snapshot.ts`.
+Tests: `edge/test/worker/governor.test.ts` (including "each network's share of the day's compute" and "Neon egress without ground truth"), `edge/test/worker/governor-flow.test.ts` ("failing closed"), `edge/test/worker/metadata.test.ts`, `edge/test/worker/budget.test.ts`, `edge/test/worker/cache.test.ts` ("serves a hit while the origin is unconfigured or the governor is down").
 
 **C7. Admission in the API.**
 - **Dry run.** Analytically invalid requests get a 422 before any token, lane or statement is spent.
@@ -174,11 +177,11 @@ Tests:
 - **Scope.** `CACHE_SCOPE` hashes `EPOCH`, the API, analytics and data versions, and the response format.
 - **What gets stored.** Only the answer to an analysis POST that meets all of these:
   - a 200 JSON response;
-  - origin `X-Cache` is `miss` or `hit`;
+  - origin `X-Cache` is `miss`: computed for this request, on an admission the global count keeps;
   - the version headers equal the Worker's vars;
   - the body is complete and at most 16 KiB.
 
-  Entries expire after 30 days. Errors, joins and `bypass` answers are never stored.
+  Entries expire after 30 days. Errors, API cache hits, joins and `bypass` answers are never stored, so KV writes stay within the 600 analyses a day.
 - **On read.** An entry whose metadata does not match the deployment counts as a miss.
 - **Failures.** A failed KV read is a miss and a failed write is ignored. With empty release vars the cache is off.
 
@@ -372,13 +375,15 @@ Tests:
 
 ### 1. Quota exhaustion
 
-- **Uncached analyses.** These are the only requests that spend Render work on the database and Neon CU-hours. C6 caps them per network and globally and charges them conservatively. C5 and C7 are a second, per-process layer, which also covers a misconfigured edge.
+- **Uncached analyses.** These are the only requests that spend Render work on the database and Neon CU-hours. C6 caps them per network and globally and charges them conservatively, compute included: one network is held to a fifth of the day's compute ceiling, so spacing analyses (each then charged its own wake session) no longer lets one network spend the ceiling for everyone (`edge/test/worker/governor.test.ts`, "each network's share of the day's compute"). C5 and C7 are a second, per-process layer, which also covers a misconfigured edge.
 - **Metadata cannot keep Neon awake.** With `ATUS_EXPECTED_DATA_VERSION` set, the API pins its in-process data snapshot. Metadata, cache hits and every 4xx decided before the statistics query then cost no database statement (`src/atus_pipeline/api/snapshot.py`; `tests/unit/api/test_snapshot.py::TestPinnedSnapshot`, `::TestZeroStatementPaths`). No monitor touches the database (`tests/deploy/test_workflows.py::test_monitors_never_touch_the_database`).
+- **Metadata cannot spend Render's monthly outbound.** The Worker answers the metadata routes from the static snapshot, byte for byte. Only what the snapshot cannot answer (a query string, an unknown code) reaches Render, as a counted lookup: 200 per network and 2,000 in all per day, about 0.6 GB a month at most. The origin is always asked for gzip (`edge/test/worker/metadata.test.ts`, `headers.test.ts`).
+- **Neon egress without ground truth.** Each day's estimated egress is held to 4.5 GB / 31, and a 422 that ran the statistics query keeps its heavy count (`edge/test/worker/governor.test.ts`, "Neon egress without ground truth"). The 4.5 GB monthly stop needs the optional Neon key.
 - **KV over its daily write quota** fails rather than bills (ADR-011, cited terms). A failed write is ignored and a failed read is a miss (`edge/test/worker/cache.test.ts`).
-- **Durable Object rows.** A denial writes no rows, and refunded admissions are capped at 300 per network per day (`edge/test/worker/governor.test.ts`: "writes nothing when it denies", "writes at most 8 rows to admit and 4 to settle").
+- **Durable Object rows.** A denial writes no rows, refunded admissions are capped at 300 per network per day, and metadata lookups at 2,000 a day (`edge/test/worker/governor.test.ts`: "writes nothing when it denies", "writes at most 8 rows to admit and 4 to settle", "writes at most 5 rows for any settle, and at most 3 for a refunded one with db;dur=0", "writes at most 5 rows per metadata lookup, and none to deny one"). KV stores only computed answers, so its writes stay within the 600 analyses a day (`edge/test/worker/cache.test.ts`).
 - **Render:**
   - `/api/health` and `/api/v1/wake` reach only origin `/health`, never Neon.
-  - The prewake sends at most one origin call per isolate per 10 minutes, and `PREWAKE=off` disables it (`edge/test/worker/wake.test.ts`).
+  - The prewake sends at most one origin call per isolate per 10 minutes once the origin answered warm, and at most one a minute while it is waking; `PREWAKE=off` disables it (`edge/test/worker/wake.test.ts`).
   - A per-isolate circuit breaker skips the origin for 30 s after two connection failures (`edge/test/worker/resilience.test.ts`).
 - **Remaining:** R1, R2, R3.
 
@@ -491,11 +496,11 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 | `/health` | `/api/health` → origin `/health` | 200 `{status, build}` | **Public.** Render's health check and the monitors need it. It touches no database and needs no edge auth; it is exempt from rate limiting |
 | `/api/_edge/health` | answered by the Worker | — | **Public.** Versions, snapshot ID and cache scope, none of them secret. No origin call |
 | `/api/_ops/budget` | 200 with `Authorization: Bearer <OPS_TOKEN>`, otherwise the 404 envelope | — | **Owner and the daily quota report.** Counts and budgets only |
-| `/api/v1/wake` | answered by the Worker | — | **Public.** At most one origin `/health` call per isolate per 10 minutes; never touches Neon |
+| `/api/v1/wake` | answered by the Worker | — | **Public.** At most one origin `/health` call per isolate per 10 minutes once the origin is warm, one a minute while it is waking; never touches Neon |
 
 ## Accepted risks
 
-**R1. Distributed abuse beyond the per-network caps.** Budgets are per /24 or /48. An attacker with many networks (a botnet, many IPv6 /48s) passes every per-network limit. The global (600/day), heavy (300/day) and CU-hour budgets still hold. But legitimate visitors then get 503 `daily_capacity_reached` for new analyses until 00:00 UTC. Static and cached results keep working.
+**R1. Distributed abuse beyond the per-network caps.** Budgets are per /24 or /48, and a few networks are enough to spend the shared ones: ten at their 60 analyses spend the global 600, five sending heavy analyses spend the heavy 300, and five spacing analyses so that each is charged its own wake session spend the daily compute ceiling (each network is held to a fifth of it; before review round 1 one network alone could). An attacker with that many networks (a botnet, a few IPv6 /48s) passes every per-network limit. The global (600/day), heavy (300/day), CU-hour and egress budgets still hold, but legitimate visitors then get 503 `daily_capacity_reached` for new analyses until 00:00 UTC. Static and cached results keep working. Admissions that end refunded (the API shed them, or answered from its cache) are bounded per network only, at 300 a day and a few KB of Render outbound each: dozens of networks keeping that up for a whole month could spend Render's 5 GB and suspend it until the 1st (`deployment.md`, S6).
 
 **R2. Workers Free's 100,000 requests per day are account-wide.** Every `/api` request counts, including those the Worker refuses. On workers.dev at $0, nothing can rate-limit before the Worker runs (ADR-011, accepted risk 4). Once the requests are spent, `/api` is down until 00:00 UTC, KV-cached results included. The SPA and the static snapshot keep working, because static asset requests never invoke the Worker.
 
@@ -528,7 +533,8 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 - whether the Free plan can create project-scoped Neon keys;
 - whether Neon accepts `ALTER ROLE atus_api SET ...`;
 - whether `sslrootcert=system` verifies Neon's live certificate;
-- the exact response after the 100k/day Worker limit, and Neon's error when its quota is exhausted. Both are handled in code and never induced.
+- the exact response after the 100k/day Worker limit, and Neon's error when its quota is exhausted. Both are handled in code and never induced;
+- what Cloudflare itself answers, before the Worker runs, to an unknown HTTP method, duplicate or malformed `Content-Length` headers, and a declared `Content-Length` larger than the body sent. The Worker's code adds the security headers and the JSON envelope to every response it produces, and refuses a declared `Content-Length` over 64 KiB before reading the body. Responses the runtime gives before invoking it carry neither: locally, `wrangler dev` answered an unknown method with 501 and a duplicate `Content-Length` with 500 (`text/plain`, no security headers), and waited for an under-delivered body; the API's uvicorn answers malformed framing with a plain 400 (review round 1, `probe-abuse`). The bodies are short static text with nothing sensitive.
 
 **R9. The API's limits reset on restart.** Its buckets, daily cap and lanes live in one process, and Render may restart a Free service at any time. The governor's durable state is the primary limit.
 

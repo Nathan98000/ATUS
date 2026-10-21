@@ -1,9 +1,10 @@
 /**
  * Quota governor Durable Object (ADR-011 "Quota governor"; ADR-015).
  *
- * One SQLite-backed instance named "global" admits the analyses that would
- * reach Render and Neon: uncached analysis POSTs only (static files and KV
- * hits never call it). For each, the Worker calls
+ * One SQLite-backed instance named "global" admits what the Worker sends to
+ * Render: uncached analysis POSTs, and metadata GETs the static snapshot
+ * could not answer (static files, KV hits and snapshot answers never call
+ * it). For each analysis, the Worker calls
  *
  *     admit({prefix, costClass})  ->  {ok: true, leaseId} | a denial
  *     settle(leaseId, {kind, dbMs})          when the origin call ends
@@ -17,12 +18,20 @@
  *      admissions including refunded ones
  *   2. global: 600 per UTC day                        503 daily_capacity_reached (global)
  *   3. heavy analyses: 300 per UTC day                503 daily_capacity_reached (daily)
- *   4. Neon compute today, charged by the model in budget.ts:
+ *   4. per client IP prefix: a fifth of check 5's     429 rate_limited (client)
+ *      ceiling in compute charged to it today
+ *   5. Neon compute today, charged by the model in budget.ts:
  *      10 CU-h with fresh ground truth, else 90/31   503 daily_capacity_reached (daily)
- *   5. with ground truth from the Neon API (optional key):
+ *   6. without ground truth: Neon egress today        503 daily_capacity_reached (daily)
+ *      (estimated) < 4.5 GB / 31
+ *   7. with ground truth from the Neon API (optional key):
  *      egress month to date < 4.5 GB                 503 capacity_paused (monthly)
  *      CU-h month to date < min(85, 10 + 75 x elapsed share of the period)
  *                                                    503 capacity_paused (monthly)
+ *
+ * A metadata lookup is only counted: 200 per prefix and 2,000 in all per UTC
+ * day (`admitLookup`), which bounds what metadata costs Render's monthly
+ * outbound bandwidth.
  *
  * Ground truth: when `NEON_API_KEY` and `NEON_PROJECT_ID` are set, an alarm
  * reads `GET /projects/{id}` at most every 5 minutes and only while analyses
@@ -42,7 +51,6 @@
 
 import { DurableObject } from 'cloudflare:workers'
 import {
-  addCharged,
   chargeWindow,
   cuSeconds,
   dbStart,
@@ -60,9 +68,11 @@ import {
 import {
   DAILY_CU_HOURS_CONSERVATIVE,
   DAILY_CU_HOURS_GROUND_TRUTH,
+  EGRESS_DAILY_CONSERVATIVE_BYTES,
   EGRESS_ESTIMATE_BYTES,
   EGRESS_STOP_BYTES,
   GLOBAL_DAILY_ANALYSES,
+  GLOBAL_DAILY_LOOKUPS,
   GROUND_TRUTH_MAX_AGE_MS,
   HEAVY_DAILY_ANALYSES,
   LEASE_TTL_MS,
@@ -71,6 +81,9 @@ import {
   NEON_POLL_TIMEOUT_MS,
   PREFIX_DAILY_ADMISSIONS,
   PREFIX_DAILY_ANALYSES,
+  PREFIX_DAILY_CU_SHARE,
+  PREFIX_DAILY_LOOKUPS,
+  PROVISIONAL_BUSY_MS,
 } from './constants'
 
 /** The one instance every Worker isolate talks to. */
@@ -78,6 +91,13 @@ export const GOVERNOR_NAME = 'global'
 
 /** Day rows kept for the ops report's rolling 31-day sum. */
 const DAY_RETENTION_DAYS = 40
+
+/** Columns the schema gained after its first version: [table, column, definition]. */
+const ADDED_COLUMNS: readonly (readonly [string, string, string])[] = [
+  ['days', 'lookups', 'INTEGER NOT NULL DEFAULT 0'],
+  ['prefixes', 'cu_s', 'REAL NOT NULL DEFAULT 0'],
+  ['prefixes', 'lookups', 'INTEGER NOT NULL DEFAULT 0'],
+]
 
 export type CostClass = 'light' | 'heavy'
 
@@ -87,9 +107,15 @@ export interface AdmitRequest {
   costClass: CostClass
 }
 
+export interface LookupRequest {
+  /** As for `AdmitRequest`. */
+  prefix: string
+}
+
 export type DenialCode = 'rate_limited' | 'daily_capacity_reached' | 'capacity_paused'
 export type DenialScope = 'client' | 'global' | 'daily' | 'monthly'
-export type BudgetName = 'prefix' | 'global' | 'heavy' | 'cu_day' | 'cu_month' | 'egress'
+export type BudgetName =
+  'prefix' | 'global' | 'heavy' | 'cu_day' | 'egress_day' | 'cu_month' | 'egress' | 'metadata'
 
 export interface Admitted {
   ok: true
@@ -108,6 +134,8 @@ export interface Denied {
 
 export type AdmitResult = Admitted | Denied
 
+export type LookupResult = { ok: true } | Denied
+
 /**
  * How an admitted analysis ended, as the Worker saw it:
  *
@@ -115,7 +143,9 @@ export type AdmitResult = Admitted | Denied
  *   platform error page other than a 524, connection failure, open breaker).
  *   Fully refunded.
  * - `shed`: the API refused it without computing (`overloaded`,
- *   `rate_limited`, `daily_capacity_reached`). Counts refunded.
+ *   `rate_limited`, `daily_capacity_reached`, and the data-availability
+ *   refusals: `database_paused`, `data_version_mismatch`, `data_not_loaded`,
+ *   `schema_not_initialized`). Counts refunded.
  * - `rejected`: a 4xx from the API (validation). Global and heavy counts
  *   refunded; the prefix keeps the charge, so invalid requests stay bounded.
  * - `reused`: a 2xx the API served from its cache or a joined computation.
@@ -124,8 +154,14 @@ export type AdmitResult = Admitted | Denied
  *   Cloudflare's 524, after which the API still runs the analysis to the
  *   end — and DB errors).
  *
+ * A `rejected` or `reused` answer that reported DB time (`dbMs > 0`) keeps
+ * its global and heavy counts: a 422 found only by the statistics query
+ * (`insufficient_data`) ran that query in full, and the heavy count is what
+ * bounds the Neon egress such queries cost.
+ *
  * Compute is charged for everything the API answered unless its
- * `Server-Timing` reported `db;dur=0` (`dbMs === 0`).
+ * `Server-Timing` reported `db;dur=0` (`dbMs === 0`), to the day and to the
+ * client's prefix.
  */
 export type SettleKind = 'not_reached' | 'shed' | 'rejected' | 'reused' | 'computed'
 
@@ -190,6 +226,18 @@ type DayRow = {
   cu_s: number
   egress_bytes: number
   refunded: number
+  lookups: number
+}
+
+type PrefixRow = {
+  /** Analyses charged (the 60). */
+  count: number
+  /** Admissions, refunded ones included (the 300). */
+  attempts: number
+  /** Compute charged to this prefix's analyses, in CU-s. */
+  cu_s: number
+  /** Metadata lookups sent to the origin. */
+  lookups: number
 }
 
 type LeaseRow = {
@@ -223,11 +271,28 @@ export interface BudgetReport {
     /** Largest number of admissions by one prefix today, refunded ones included. */
     max_attempts: number
     attempts_limit: number
+    /** Largest settled compute charged to one prefix today. */
+    max_cu_hours: number
+    /** The per-prefix share of today's compute ceiling. */
+    cu_limit_cu_hours: number
   }
   compute_today: {
     settled_cu_hours: number
     provisional_cu_hours: number
     ceiling_cu_hours: number
+  }
+  /** Estimated Neon egress today; the ceiling applies only without ground truth (null then). */
+  egress_today: {
+    settled_bytes: number
+    provisional_bytes: number
+    ceiling_bytes: number | null
+  }
+  /** Metadata GETs sent to the origin today (those the snapshot could not answer). */
+  metadata: {
+    origin_calls: number
+    limit: number
+    max_prefix: number
+    prefix_limit: number
   }
   compute_rolling_31d_cu_hours: number
   month: {
@@ -260,13 +325,16 @@ export class Governor extends DurableObject<Env> {
         heavy INTEGER NOT NULL DEFAULT 0,
         cu_s REAL NOT NULL DEFAULT 0,
         egress_bytes REAL NOT NULL DEFAULT 0,
-        refunded INTEGER NOT NULL DEFAULT 0
+        refunded INTEGER NOT NULL DEFAULT 0,
+        lookups INTEGER NOT NULL DEFAULT 0
       );
       CREATE TABLE IF NOT EXISTS prefixes (
         day TEXT NOT NULL,
         prefix TEXT NOT NULL,
         count INTEGER NOT NULL,
         attempts INTEGER NOT NULL DEFAULT 0,
+        cu_s REAL NOT NULL DEFAULT 0,
+        lookups INTEGER NOT NULL DEFAULT 0,
         PRIMARY KEY (day, prefix)
       );
       CREATE TABLE IF NOT EXISTS leases (
@@ -282,6 +350,15 @@ export class Governor extends DurableObject<Env> {
         value TEXT NOT NULL
       );
     `)
+    // Columns added after the first local runs (`wrangler dev` keeps its
+    // database under .wrangler/): an older database gains them here.
+    for (const [table, column, type] of ADDED_COLUMNS) {
+      const present = this.sql
+        .exec<{ name: string }>(`PRAGMA table_info(${table})`)
+        .toArray()
+        .some((row) => row.name === column)
+      if (!present) this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`)
+    }
   }
 
   // --- RPC ---------------------------------------------------------------
@@ -295,7 +372,7 @@ export class Governor extends DurableObject<Env> {
     const heavy = costClass === 'heavy'
 
     // Cheapest checks first: a flood of denials reads one or two rows.
-    const prefixUse = this.prefixUse(today, request.prefix)
+    let prefixUse = this.prefixUse(today, request.prefix)
     if (
       prefixUse.count >= PREFIX_DAILY_ANALYSES ||
       prefixUse.attempts >= PREFIX_DAILY_ADMISSIONS
@@ -314,23 +391,43 @@ export class Governor extends DurableObject<Env> {
     if (this.expireLeases(now, state)) {
       this.saveState(state)
       day = this.dayRow(today)
+      prefixUse = this.prefixUse(today, request.prefix)
     }
     const leases = this.leaseRows()
+    const todays = leases.filter((lease) => lease.day === today)
     const candidate = provisionalInterval(now)
+    const ceilingS = dailyCeilingCuHours(state, now, this.neonConfigured()) * 3600
 
-    const todays = leases.filter((lease) => lease.day === today).map(leaseInterval)
-    const dayCuS = day.cu_s + cuSeconds(uncoveredLength([...todays, candidate], state.charged))
-    if (dayCuS > dailyCeilingCuHours(state, now, this.neonConfigured()) * 3600) {
+    // The network's own share of the day's compute: its settled charges, plus
+    // what its in-flight analyses and this one would add. Counting analyses
+    // alone let one network that spaced cheap ones (~610 CU-s each, no shared
+    // wake session) spend the whole ceiling, and lock everyone else out.
+    const own = todays.filter((lease) => lease.prefix === request.prefix).map(leaseInterval)
+    const prefixCuS =
+      prefixUse.cu_s + cuSeconds(uncoveredLength([...own, candidate], state.charged))
+    if (prefixCuS > PREFIX_DAILY_CU_SHARE * ceilingS) {
+      return deny('rate_limited', 'client', 'prefix', midnight, now)
+    }
+
+    const dayCuS =
+      day.cu_s +
+      cuSeconds(uncoveredLength([...todays.map(leaseInterval), candidate], state.charged))
+    if (dayCuS > ceilingS) {
       return deny('daily_capacity_reached', 'daily', 'cu_day', midnight, now)
     }
 
     const neon = currentNeon(state, now)
-    if (neon !== null) {
-      const inFlightEgress = leases.reduce((sum, lease) => sum + lease.egress_bytes, 0)
+    if (neon === null) {
+      // No monthly figure to check egress against: hold each day to 1/31 of the stop.
+      const dayEgress = day.egress_bytes + sumEgress(todays) + EGRESS_ESTIMATE_BYTES[costClass]
+      if (dayEgress > EGRESS_DAILY_CONSERVATIVE_BYTES) {
+        return deny('daily_capacity_reached', 'daily', 'egress_day', midnight, now)
+      }
+    } else {
       const egress =
         neon.dataTransferBytes +
         (state.egressTotal - neon.egressBase) +
-        inFlightEgress +
+        sumEgress(leases) +
         EGRESS_ESTIMATE_BYTES[costClass]
       if (egress >= EGRESS_STOP_BYTES) {
         return deny('capacity_paused', 'monthly', 'egress', neon.periodEnd, now)
@@ -375,17 +472,55 @@ export class Governor extends DurableObject<Env> {
     return { ok: true, leaseId }
   }
 
+  /**
+   * Admit one metadata GET to the origin (the static snapshot could not
+   * answer it). Only counted: it never touches Neon (the API answers
+   * metadata from memory), but each costs Render outbound bandwidth.
+   */
+  async admitLookup(request: LookupRequest): Promise<LookupResult> {
+    const now = Date.now()
+    const today = utcDay(now)
+    const midnight = nextUtcMidnight(now)
+    // As for analyses, a denial reads one or two rows and writes none.
+    if (this.prefixUse(today, request.prefix).lookups >= PREFIX_DAILY_LOOKUPS) {
+      return deny('rate_limited', 'client', 'metadata', midnight, now)
+    }
+    if (this.dayRow(today).lookups >= GLOBAL_DAILY_LOOKUPS) {
+      return deny('daily_capacity_reached', 'global', 'metadata', midnight, now)
+    }
+    this.sql.exec(
+      `INSERT INTO days (day, lookups) VALUES (?, 1)
+       ON CONFLICT (day) DO UPDATE SET lookups = lookups + 1`,
+      today,
+    )
+    this.sql.exec(
+      `INSERT INTO prefixes (day, prefix, count, lookups) VALUES (?, ?, 0, 1)
+       ON CONFLICT (day, prefix) DO UPDATE SET lookups = lookups + 1`,
+      today,
+      request.prefix,
+    )
+    const state = this.loadState()
+    if (state.purgedDay !== today) this.purge(now, state)
+    await this.scheduleAlarm(state, now)
+    return { ok: true }
+  }
+
   async settle(leaseId: string, report: SettleReport): Promise<void> {
     const lease = this.sql
       .exec<LeaseRow>('SELECT * FROM leases WHERE id = ?', leaseId)
       .toArray()[0]
-    // Unknown or already expired (and charged in full): nothing to do.
+    // Unknown or already expired (and charged): nothing to do.
     if (lease === undefined) return
     const now = Date.now()
     this.sql.exec('DELETE FROM leases WHERE id = ?', leaseId)
 
     const { kind } = report
-    const refundCounts = kind !== 'computed'
+    // A refusal or reuse that ran statements keeps its counts (see `SettleKind`).
+    const ranStatements = report.dbMs !== null && report.dbMs > 0
+    const refundCounts =
+      kind === 'not_reached' ||
+      kind === 'shed' ||
+      ((kind === 'rejected' || kind === 'reused') && !ranStatements)
     const refundPrefix = kind === 'not_reached' || kind === 'shed'
     if (refundCounts) {
       this.sql.exec(
@@ -395,22 +530,18 @@ export class Governor extends DurableObject<Env> {
         lease.day,
       )
     }
-    if (refundPrefix) {
-      this.sql.exec(
-        'UPDATE prefixes SET count = MAX(0, count - 1) WHERE day = ? AND prefix = ?',
-        lease.day,
-        lease.prefix,
-      )
-    }
+    let cuS = 0
     const dbTouched = kind !== 'not_reached' && report.dbMs !== 0
-    if (!dbTouched) return
-
-    const state = this.loadState()
-    const start = dbStart(lease.admitted_at, now, report.dbMs)
-    const settled = chargeWindow(state.charged, start, now, now - LEASE_TTL_MS)
-    this.charge(state, lease.day, cuSeconds(settled.addedMs), lease.egress_bytes)
-    state.charged = settled.charged
-    this.saveState(state)
+    if (dbTouched) {
+      const state = this.loadState()
+      const start = dbStart(lease.admitted_at, now, report.dbMs)
+      const settled = chargeWindow(state.charged, start, now, now - LEASE_TTL_MS)
+      cuS = cuSeconds(settled.addedMs)
+      this.charge(state, lease.day, cuS, lease.egress_bytes)
+      state.charged = settled.charged
+      this.saveState(state)
+    }
+    if (refundPrefix || cuS > 0) this.chargePrefix(lease, cuS, refundPrefix)
   }
 
   async budget(): Promise<BudgetReport> {
@@ -420,8 +551,15 @@ export class Governor extends DurableObject<Env> {
     const day = this.dayRow(today)
     const leases = this.leaseRows()
     const prefixes = this.sql
-      .exec<{ active: number; max_admitted: number | null; max_attempts: number | null }>(
-        `SELECT count(*) AS active, max(count) AS max_admitted, max(attempts) AS max_attempts
+      .exec<{
+        active: number
+        max_admitted: number | null
+        max_attempts: number | null
+        max_cu_s: number | null
+        max_lookups: number | null
+      }>(
+        `SELECT count(*) AS active, max(count) AS max_admitted, max(attempts) AS max_attempts,
+           max(cu_s) AS max_cu_s, max(lookups) AS max_lookups
          FROM prefixes WHERE day = ?`,
         today,
       )
@@ -433,10 +571,15 @@ export class Governor extends DurableObject<Env> {
       )
       .one()
 
-    const todays = leases.filter((lease) => lease.day === today).map(leaseInterval)
-    const provisionalTodayS = cuSeconds(uncoveredLength(todays, state.charged))
+    const todaysLeases = leases.filter((lease) => lease.day === today)
+    const provisionalTodayS = cuSeconds(
+      uncoveredLength(todaysLeases.map(leaseInterval), state.charged),
+    )
     const ceiling = dailyCeilingCuHours(state, now, this.neonConfigured())
+    const prefixCuLimitS = PREFIX_DAILY_CU_SHARE * ceiling * 3600
     const neon = currentNeon(state, now)
+    const egressCeiling = neon === null ? EGRESS_DAILY_CONSERVATIVE_BYTES : null
+    const provisionalEgress = sumEgress(todaysLeases)
 
     let month: BudgetReport['month'] = {
       polled_at: state.neon === null ? null : new Date(state.neon.polledAt).toISOString(),
@@ -456,10 +599,7 @@ export class Governor extends DurableObject<Env> {
       const share = elapsedShare(now, neon.periodStart, neon.periodEnd)
       const provisionalS = cuSeconds(uncoveredLength(leases.map(leaseInterval), state.charged))
       const bridgeCuHours = (state.cuTotalS - neon.cuBaseS + provisionalS) / 3600
-      const bridgeEgress =
-        state.egressTotal -
-        neon.egressBase +
-        leases.reduce((sum, lease) => sum + lease.egress_bytes, 0)
+      const bridgeEgress = state.egressTotal - neon.egressBase + sumEgress(leases)
       const allowance = pacingAllowance(share)
       monthUse = {
         cu: neon.computeTimeSeconds / 3600 + bridgeCuHours,
@@ -501,11 +641,24 @@ export class Governor extends DurableObject<Env> {
         limit: PREFIX_DAILY_ANALYSES,
         max_attempts: prefixes.max_attempts ?? 0,
         attempts_limit: PREFIX_DAILY_ADMISSIONS,
+        max_cu_hours: round((prefixes.max_cu_s ?? 0) / 3600, 4),
+        cu_limit_cu_hours: round(prefixCuLimitS / 3600, 4),
       },
       compute_today: {
         settled_cu_hours: round(day.cu_s / 3600, 4),
         provisional_cu_hours: round(provisionalTodayS / 3600, 4),
         ceiling_cu_hours: round(ceiling, 4),
+      },
+      egress_today: {
+        settled_bytes: Math.round(day.egress_bytes),
+        provisional_bytes: Math.round(provisionalEgress),
+        ceiling_bytes: egressCeiling === null ? null : Math.round(egressCeiling),
+      },
+      metadata: {
+        origin_calls: day.lookups,
+        limit: GLOBAL_DAILY_LOOKUPS,
+        max_prefix: prefixes.max_lookups ?? 0,
+        prefix_limit: PREFIX_DAILY_LOOKUPS,
       },
       compute_rolling_31d_cu_hours: round((rolling.cu_s ?? 0) / 3600, 4),
       month,
@@ -514,14 +667,26 @@ export class Governor extends DurableObject<Env> {
           Math.max(
             (prefixes.max_admitted ?? 0) / PREFIX_DAILY_ANALYSES,
             (prefixes.max_attempts ?? 0) / PREFIX_DAILY_ADMISSIONS,
+            (prefixes.max_cu_s ?? 0) / prefixCuLimitS,
           ),
           4,
         ),
         global: round(day.admitted / GLOBAL_DAILY_ANALYSES, 4),
         heavy: round(day.heavy / HEAVY_DAILY_ANALYSES, 4),
         cu_day: round(dayCuHours / ceiling, 4),
+        egress_day:
+          egressCeiling === null
+            ? null
+            : round((day.egress_bytes + provisionalEgress) / egressCeiling, 4),
         cu_month: monthUse === null ? null : round(monthUse.cu / monthUse.allowance, 4),
         egress: monthUse === null ? null : round(monthUse.egress / EGRESS_STOP_BYTES, 4),
+        metadata: round(
+          Math.max(
+            day.lookups / GLOBAL_DAILY_LOOKUPS,
+            (prefixes.max_lookups ?? 0) / PREFIX_DAILY_LOOKUPS,
+          ),
+          4,
+        ),
       },
     }
   }
@@ -559,23 +724,23 @@ export class Governor extends DurableObject<Env> {
     )
   }
 
-  /** A prefix's charged analyses (`count`) and all its admissions (`attempts`) on `day`. */
-  private prefixUse(day: string, prefix: string): { count: number; attempts: number } {
+  /** A prefix's use of its budgets on `day` (see `PrefixRow`). */
+  private prefixUse(day: string, prefix: string): PrefixRow {
     const row = this.sql
-      .exec<{ count: number; attempts: number }>(
-        'SELECT count, attempts FROM prefixes WHERE day = ? AND prefix = ?',
+      .exec<PrefixRow>(
+        'SELECT count, attempts, cu_s, lookups FROM prefixes WHERE day = ? AND prefix = ?',
         day,
         prefix,
       )
       .toArray()[0]
-    return row ?? { count: 0, attempts: 0 }
+    return row ?? { count: 0, attempts: 0, cu_s: 0, lookups: 0 }
   }
 
   private dayRow(day: string): DayRow {
     const row = this.sql
       .exec<DayRow & { day: string }>('SELECT * FROM days WHERE day = ?', day)
       .toArray()[0]
-    return row ?? { admitted: 0, heavy: 0, cu_s: 0, egress_bytes: 0, refunded: 0 }
+    return row ?? { admitted: 0, heavy: 0, cu_s: 0, egress_bytes: 0, refunded: 0, lookups: 0 }
   }
 
   private leaseRows(): LeaseRow[] {
@@ -597,20 +762,53 @@ export class Governor extends DurableObject<Env> {
   }
 
   /**
-   * Charge in full, and drop, every lease older than `LEASE_TTL_MS`: its
-   * Worker invocation died before settling. Returns whether any expired.
+   * Add a settled or expired lease's compute to its prefix, and give back its
+   * analysis count when `refund`. A prefix row deleted at midnight stays deleted.
+   */
+  private chargePrefix(lease: LeaseRow, cuS: number, refund: boolean): void {
+    this.sql.exec(
+      'UPDATE prefixes SET count = MAX(0, count - ?), cu_s = cu_s + ? WHERE day = ? AND prefix = ?',
+      refund ? 1 : 0,
+      cuS,
+      lease.day,
+      lease.prefix,
+    )
+  }
+
+  /**
+   * Charge, and drop, every lease older than `LEASE_TTL_MS`: its settle was
+   * lost (the Worker invocation died, or was cancelled when its client left).
+   * Each is charged like a settle at the end of the API's deadline, as part
+   * of the union: leases admitted together share one window, as they would
+   * have had they settled, however late the next event comes. Counts are
+   * kept. Returns whether any expired.
    */
   private expireLeases(now: number, state: GovernorState): boolean {
     const stale = this.sql
-      .exec<LeaseRow>('SELECT * FROM leases WHERE admitted_at < ?', now - LEASE_TTL_MS)
+      .exec<LeaseRow>(
+        'SELECT * FROM leases WHERE admitted_at < ? ORDER BY admitted_at',
+        now - LEASE_TTL_MS,
+      )
       .toArray()
+    if (stale.length === 0) return false
+    // Keep the windows charged here until every stale lease is in (the oldest
+    // one's admission is the horizon), then trim to what a live lease can reach.
+    const horizon = stale[0]!.admitted_at
     for (const lease of stale) {
-      const window = leaseInterval(lease)
-      this.charge(state, lease.day, cuSeconds(window[1] - window[0]), lease.egress_bytes)
-      state.charged = addCharged(state.charged, window, now - LEASE_TTL_MS)
+      const expired = chargeWindow(
+        state.charged,
+        lease.admitted_at,
+        lease.admitted_at + PROVISIONAL_BUSY_MS,
+        horizon,
+      )
+      const cuS = cuSeconds(expired.addedMs)
+      this.charge(state, lease.day, cuS, lease.egress_bytes)
+      state.charged = expired.charged
+      if (cuS > 0) this.chargePrefix(lease, cuS, false)
       this.sql.exec('DELETE FROM leases WHERE id = ?', lease.id)
     }
-    return stale.length > 0
+    state.charged = state.charged.filter(([, end]) => end > now - LEASE_TTL_MS)
+    return true
   }
 
   /** Delete earlier days' prefix rows (their key has rotated) and old day rows. */
@@ -738,6 +936,11 @@ function deny(
 
 function leaseInterval(lease: LeaseRow): Interval {
   return provisionalInterval(lease.admitted_at)
+}
+
+/** The egress estimates `leases` hold. */
+function sumEgress(leases: readonly LeaseRow[]): number {
+  return leases.reduce((sum, lease) => sum + lease.egress_bytes, 0)
 }
 
 function round(value: number, digits: number): number {

@@ -9,14 +9,21 @@
  *    methods a 405, with no origin call;
  * 2. Worker-answered routes: `/api/_edge/health`, `/api/v1/wake` and the
  *    bearer-gated `/api/_ops/budget`;
- * 3. limits on analysis POSTs: `application/json` only (415), 64 KiB (413);
- * 4. analysis POSTs: the KV result cache (cache.ts) — a hit is answered
+ * 3. metadata GETs: the static snapshot (snapshot.ts) answers them when it
+ *    holds them;
+ * 4. limits on analysis POSTs: `application/json` only (415), 64 KiB (413);
+ * 5. analysis POSTs: the KV result cache (cache.ts) — a hit is answered
  *    here — then admission by the quota governor (admission.ts), which can
- *    refuse with 429/503 or, when unreachable, fail closed;
- * 5. the origin call (upstream.ts) with a fresh header set (proxy.ts);
- * 6. the response: API envelopes byte for byte, platform pages converted,
- *    security headers on everything; then, through `waitUntil`, the KV
- *    store (when the store gate allows) and the governor settle.
+ *    refuse with 429/503 or, when unreachable, fail closed; metadata GETs
+ *    the snapshot could not answer are admitted as counted lookups;
+ * 6. the origin call (upstream.ts) with a fresh header set (proxy.ts); an
+ *    admitted analysis's settle is queued (`waitUntil`) before it starts, so
+ *    a client that disconnects meanwhile does not lose it;
+ * 7. the response: API envelopes byte for byte, platform pages converted,
+ *    security headers on every response this code produces (errors the
+ *    runtime gives before the Worker runs — an unknown HTTP method, a
+ *    malformed Content-Length — are the platform's; docs/security.md R8);
+ *    then, through `waitUntil`, the KV store (when the store gate allows).
  *
  * One structured log line per /api request: route, status, outcome, cache
  * and governor results, origin status and attempts, the origin's
@@ -27,6 +34,7 @@
 import {
   NOT_REACHED,
   admitAnalysis,
+  admitLookup,
   costClass,
   ipPrefix,
   prefixHmac,
@@ -60,6 +68,7 @@ import {
 import { capacityUnavailable, handleBudget } from './ops'
 import { buildUpstreamHeaders, relayResponse, upstreamUnavailable } from './proxy'
 import { isApiPath, matchRoute, upstreamPathFor, type Route } from './routes'
+import { readSnapshot } from './snapshot'
 import { fetchOrigin, originBreaker, originUrl } from './upstream'
 import { handleWake } from './wake'
 
@@ -75,9 +84,12 @@ interface LogRecord {
   outcome?: string
   /** For `unavailable`: the `upstream_unavailable` reason. */
   reason?: string
-  /** Analysis POSTs: edge (KV hit) | miss | error (KV read failed) | off (no release vars) */
+  /**
+   * Analysis POSTs: edge (KV hit) | miss | error (KV read failed) | off (no release vars).
+   * Metadata GETs: snapshot (answered from it) | miss (sent to the origin).
+   */
   cache?: string
-  /** Analysis POSTs: admitted | denied:<budget> | unavailable */
+  /** Analysis POSTs and metadata lookups: admitted | denied:<budget> | unavailable */
   governor?: string
   upstream_status?: number
   attempts?: number
@@ -162,6 +174,16 @@ async function dispatch(
     return handleBudget(request, env, requestId)
   }
 
+  // Tier L0: the deployed snapshot answers metadata without the origin.
+  if (route.metadata) {
+    const answered = await readSnapshot(env, url, requestId)
+    log.cache = answered === null ? 'miss' : 'snapshot'
+    if (answered !== null) {
+      log.outcome = 'edge'
+      return answered
+    }
+  }
+
   let body: Uint8Array | undefined
   if (route.method === 'POST') {
     const limited = await readJsonBody(request, requestId)
@@ -207,9 +229,12 @@ async function dispatch(
     return handleWake(request, env, ctx, requestId, target, env.EDGE_AUTH_SECRET)
   }
 
-  // Only uncached analyses reach Render and Neon: the governor admits them.
+  // What reaches Render through here is admitted by the governor: uncached
+  // analyses (Render and Neon), and metadata the snapshot could not answer
+  // (Render's outbound bandwidth). Health and wake are not.
   let leaseId: string | null = null
-  if (route.analysis && body !== undefined) {
+  const analysis = route.analysis === true && body !== undefined
+  if (analysis || route.metadata) {
     // While the breaker skips the origin, an admission could only be refunded:
     // answer now and spend no governor call.
     const openMs = originBreaker.remainingOpenMs(Date.now())
@@ -229,10 +254,10 @@ async function dispatch(
       Date.now(),
       ipPrefix(request.headers.get('cf-connecting-ip')),
     )
-    const admission = await admitAnalysis(env, {
-      prefix,
-      costClass: costClass(route.name, body),
-    })
+    const admission =
+      analysis && body !== undefined
+        ? await admitAnalysis(env, { prefix, costClass: costClass(route.name, body) })
+        : await admitLookup(env, { prefix })
     if (admission.kind === 'unavailable') {
       log.governor = 'unavailable'
       log.outcome = 'denied'
@@ -247,12 +272,24 @@ async function dispatch(
     leaseId = admission.leaseId
   }
 
-  const forwarded = await forward(request, route, target, body, env, requestId, log, cacheKey)
+  const forwarding = forward(request, route, target, body, env, requestId, log, cacheKey)
+  if (leaseId !== null) {
+    // Queued before the origin answers: Cloudflare may cancel a request's
+    // pending work once its client disconnects, but gives `waitUntil` work
+    // up to 30 s more. A settle lost anyway expires and is charged then.
+    const lease = leaseId
+    ctx.waitUntil(
+      forwarding.then(
+        (forwarded) => settleAnalysis(env, lease, forwarded.settle),
+        () => false,
+      ),
+    )
+  }
+  const forwarded = await forwarding
   const { store } = forwarded
   if (store !== undefined) {
     ctx.waitUntil(storeCached(env.RESULT_CACHE, store.key, store.body, store.meta))
   }
-  if (leaseId !== null) ctx.waitUntil(settleAnalysis(env, leaseId, forwarded.settle))
   return forwarded.response
 }
 
@@ -377,10 +414,18 @@ function denialResponse(denial: Denied, requestId: string): Response {
     capacity_paused:
       "New analyses are paused until this month's free database allowance allows more.",
   }
+  const metadata: Partial<Record<Denied['code'], string>> = {
+    rate_limited:
+      'Your network has made as many uncached metadata requests today as this free service ' +
+      "allows. The site's metadata files still work; the limit resets at 00:00 UTC.",
+    daily_capacity_reached:
+      "Today's free capacity for uncached metadata requests is used up. The site's metadata " +
+      'files still work; it resets at 00:00 UTC.',
+  }
   return errorResponse(
     denial.code === 'rate_limited' ? 429 : 503,
     denial.code,
-    messages[denial.code],
+    (denial.budget === 'metadata' ? metadata[denial.code] : undefined) ?? messages[denial.code],
     requestId,
     {
       retryAfterSeconds: denial.retryAfterSeconds,

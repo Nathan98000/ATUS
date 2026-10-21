@@ -13,7 +13,9 @@ in front of the production-mode API. Each check prints one PASS/FAIL line:
   snapshot_static   /snap/current.json (no-cache) points at a manifest whose
                     files are served byte for byte as built, as static files
                     (no Worker header), immutable
-  snapshot_matches  the snapshot's /meta is byte-identical to /api/v1/meta
+  snapshot_matches  the snapshot's /meta is byte-identical to the API's own
+                    /api/v1/meta (asked with a query string: the Worker answers
+                    the plain path from the snapshot itself)
   edge_health       /api/_edge/health reports the release vars and a cache scope
   api_allowlist     unknown /api paths, /ready, /docs, /openapi.json, /metrics,
                     trailing slashes and case variants: 404 envelopes; wrong
@@ -218,12 +220,17 @@ def check_snapshot_matches_api(probe: Probe, snapshot: dict | None) -> None:
         return
     sid = snapshot["snapshot_id"]
     static = probe.get(f"/snap/{sid}/get/meta.json")
-    live = probe.get("/api/v1/meta", headers=visitor(0, 10))
-    same = static.body == live.body
+    # The Worker answers a plain /api/v1/meta from this same snapshot file; a
+    # query string (which the API ignores) makes it ask the API instead.
+    live = probe.get("/api/v1/meta?probe=snapshot_matches", headers=visitor(0, 10))
+    served = probe.get("/api/v1/meta", headers=visitor(0, 10))
+    same = static.body == live.body == served.body
     version = live.headers.get("x-data-version")
     probe.check("snapshot_matches",
-                same and version == snapshot.get("data_version"),
-                f"/meta static == /api/v1/meta ({len(live.body)} B), data_version {version}")
+                same and version == snapshot.get("data_version")
+                and served.headers.get("x-data-version") == version,
+                f"/meta static == API /api/v1/meta == edge /api/v1/meta ({len(live.body)} B), "
+                f"data_version {version}")
 
 
 def check_edge_health(probe: Probe, expected_version: str | None,

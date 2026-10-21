@@ -38,7 +38,15 @@ import {
 } from './http'
 
 /** Client request headers copied upstream (the body's Content-Type only when there is a body). */
-const FORWARDED_REQUEST_HEADERS = ['accept', 'accept-encoding', 'if-none-match'] as const
+const FORWARDED_REQUEST_HEADERS = ['accept', 'if-none-match'] as const
+
+/**
+ * Always asked of the origin, whatever the client accepts: the runtime
+ * decodes the body (the relay drops `Content-Encoding`), and an uncompressed
+ * answer would cost several times the Render outbound bandwidth (the
+ * lexicon: 70,851 B raw, ~8.5 KB gzipped).
+ */
+const UPSTREAM_ACCEPT_ENCODING = 'gzip'
 
 /** IPv4 or IPv6 text form, as Cloudflare writes `CF-Connecting-IP`. */
 const CLIENT_IP = /^[0-9A-Fa-f:.]{2,45}$/
@@ -76,6 +84,7 @@ export function buildUpstreamHeaders(
     const value = request.headers.get(name)
     if (value !== null) headers.set(name, value)
   }
+  headers.set('Accept-Encoding', UPSTREAM_ACCEPT_ENCODING)
   if (hasBody) {
     const contentType = request.headers.get('content-type')
     if (contentType !== null) headers.set('content-type', contentType)

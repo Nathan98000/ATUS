@@ -5,10 +5,14 @@
  * is unreachable, and how each origin outcome is settled.
  */
 
+import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test'
+import { env } from 'cloudflare:workers'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { prefixHmac } from '../../src/admission'
 import { nextUtcMidnight, utcDay } from '../../src/budget'
+import worker from '../../src/index'
 import {
+  BASE,
   EDGE_SECRET,
   apiJson,
   callWorker,
@@ -107,11 +111,14 @@ describe('admission', () => {
     expect((await report()).analyses).toMatchObject({ admitted: 2, heavy: 1 })
   })
 
-  it('never calls the governor for GET routes', async () => {
+  it('counts metadata GETs sent to the origin as lookups, never as analyses', async () => {
     mockOrigin(() => apiJson('{"api_version":"v1"}'))
     await callWorker('/api/v1/meta')
     await callWorker('/api/v1/activities')
-    expect((await report()).analyses.admitted).toBe(0)
+    await callWorker('/api/health')
+    const budget = await report()
+    expect(budget.analyses.admitted).toBe(0)
+    expect(budget.metadata.origin_calls).toBe(2)
   })
 
   it('logs the governor and cache results without the client address or prefix hash', async () => {
@@ -248,8 +255,8 @@ describe('failing closed', () => {
     expect(error.code).toBe('capacity_unavailable')
     expect(error.details).toEqual({ retry_after_seconds: 60 })
     expect(calls).toHaveLength(0)
-    // Metadata and health still go through.
-    expect((await callWorker('/api/v1/meta', undefined, { GOVERNOR: governor })).status).toBe(
+    // Health still goes through (snapshot metadata too: metadata.test.ts).
+    expect((await callWorker('/api/health', undefined, { GOVERNOR: governor })).status).toBe(
       200,
     )
     expect(
@@ -284,6 +291,40 @@ describe('failing closed', () => {
     const governor = brokenGovernor(() => Promise.resolve({ ok: 'yes' }))
     const response = await callWorker(...post(), { GOVERNOR: governor })
     expect((await readEnvelope(response)).code).toBe('capacity_unavailable')
+  })
+
+  it('queues the settle before the origin answers, so a client that leaves meanwhile still settles', async () => {
+    // Cloudflare may cancel a request's work once its client disconnects;
+    // `waitUntil` work registered before that gets up to 30 s more.
+    controlClock(T)
+    const origin: { answer?: (response: Response) => void } = {}
+    mockOrigin(
+      () =>
+        new Promise<Response>((resolve) => {
+          origin.answer = resolve
+        }),
+    )
+    const ctx = createExecutionContext()
+    const [path, init] = post()
+    const handled = worker.fetch(
+      new Request(BASE + path, init) as Request<unknown, IncomingRequestCfProperties>,
+      env,
+      ctx,
+    )
+    for (let i = 0; i < 100 && origin.answer === undefined; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 5))
+    }
+    expect(await governorSql('SELECT id FROM leases')).toHaveLength(1)
+    const queued = await Promise.race([
+      waitOnExecutionContext(ctx).then(() => 'nothing queued'),
+      new Promise((resolve) => setTimeout(() => resolve('settle queued'), 200)),
+    ])
+    expect(queued).toBe('settle queued')
+    origin.answer!(apiJson('{"ok":true}', 200, COMPUTED))
+    expect((await handled).status).toBe(200)
+    await waitOnExecutionContext(ctx)
+    expect(await governorSql('SELECT id FROM leases')).toEqual([])
+    expect((await report()).analyses).toMatchObject({ admitted: 1, in_flight: 0 })
   })
 
   it('never fails a request because settling failed', async () => {
@@ -356,8 +397,8 @@ describe('settling each origin outcome', () => {
     const calls = mockOrigin(() => {
       throw new TypeError('Network connection lost.')
     })
-    // Two connection failures open the breaker.
-    expect((await callWorker('/api/v1/meta')).status).toBe(502)
+    // Two connection failures open the breaker (/api/health is never governed).
+    expect((await callWorker('/api/health')).status).toBe(502)
     const response = await callWorker(...post())
     expect(calls).toHaveLength(2)
     expect(response.status).toBe(503)
@@ -378,6 +419,25 @@ describe('settling each origin outcome', () => {
     const outcome = await settledAfter(() => apiJson(envelope('overloaded'), 503))
     expect(outcome).toEqual({ status: 503, admitted: 0, refunded: 1, prefix: 0 })
   })
+
+  it('refunds the counts and charges no compute when Neon refused the connection (database_paused)', async () => {
+    // The API times the failed connection as DB time; Neon ran nothing.
+    const outcome = await settledAfter(() =>
+      apiJson(envelope('database_paused'), 503, {
+        'server-timing': 'db;dur=12.0, app;dur=13.0',
+      }),
+    )
+    expect(outcome).toEqual({ status: 503, admitted: 0, refunded: 1, prefix: 0 })
+    expect((await report()).compute_today.settled_cu_hours).toBe(0)
+  })
+
+  it.each(['data_version_mismatch', 'data_not_loaded', 'schema_not_initialized'])(
+    'refunds the counts of a %s refusal (no analysis ran)',
+    async (code) => {
+      const outcome = await settledAfter(() => apiJson(envelope(code), 503))
+      expect(outcome).toEqual({ status: 503, admitted: 0, refunded: 1, prefix: 0 })
+    },
+  )
 
   it('refunds the day but keeps the network charge for a validation error', async () => {
     const outcome = await settledAfter(() => apiJson(envelope('validation_error'), 422))

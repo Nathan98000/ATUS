@@ -25,8 +25,14 @@
 import { KV_KEY_VERSION, KV_MAX_VALUE_BYTES, KV_TTL_SECONDS } from './constants'
 import { applySecurityHeaders, concatBytes, isJsonContentType, sha256Hex } from './http'
 
-/** Origin `X-Cache` values a stored response may carry: computed or served from the API's own cache. */
-const STORABLE_ORIGIN_CACHE = new Set(['miss', 'hit'])
+/**
+ * Origin `X-Cache` values a stored response may carry: computed by the API
+ * for this request. Not `hit` (served from the API's own cache): the
+ * governor refunds those from its global count, so storing them would let
+ * byte variants of one spec spend KV's 1,000 writes a day beyond the 600
+ * analyses the count bounds.
+ */
+const STORABLE_ORIGIN_CACHE = new Set(['miss'])
 
 /** KV's documented metadata limit (serialized JSON). */
 const MAX_METADATA_BYTES = 1024
@@ -118,8 +124,8 @@ export async function readCached(
 
 /**
  * The header half of the store gate (ADR-011): a 200 JSON response the API
- * computed or served from its own cache (`X-Cache: miss|hit`, never
- * `bypass` or `join`), for exactly this deployment's data version, analytics
+ * computed for this request (`X-Cache: miss`, never `hit`, `bypass` or
+ * `join`), for exactly this deployment's data version, analytics
  * version and response format. The caller adds the rest: a POST to an
  * analysis path and a complete body of at most 16 KiB.
  */

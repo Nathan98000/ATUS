@@ -1,7 +1,8 @@
 /**
  * The Worker's side of the quota governor (governor.ts; ADR-015): who an
- * uncached analysis is charged to, what it costs, the RPC calls and their
- * failure policy, and how its outcome is reported back.
+ * uncached analysis (or a metadata lookup the snapshot could not answer) is
+ * charged to, what it costs, the RPC calls and their failure policy, and how
+ * an analysis's outcome is reported back.
  *
  * - Client: an HMAC of the IPv4 /24 or IPv6 /48 of `CF-Connecting-IP`,
  *   under a key derived from `IP_HMAC_KEY` and the UTC date, so it rotates
@@ -24,14 +25,36 @@ import {
   type BudgetReport,
   type CostClass,
   type Denied,
+  type LookupRequest,
   type SettleKind,
   type SettleReport,
 } from './governor'
 import { isJsonContentType, toHex } from './http'
 import type { Relayed } from './proxy'
 
-/** API error codes that mean "refused without computing". */
-const SHED_CODES = new Set(['overloaded', 'rate_limited', 'daily_capacity_reached'])
+/**
+ * API error codes that mean "refused, no result": the API's own load
+ * shedding, and the data-availability refusals (Neon's quota pause, a data
+ * release switch, no data loaded), which depend on the deployment's state,
+ * not on the request. Counts are refunded; DB time they report (a version
+ * change found after computing) is still charged.
+ */
+const SHED_CODES = new Set([
+  'overloaded',
+  'rate_limited',
+  'daily_capacity_reached',
+  'database_paused',
+  'data_version_mismatch',
+  'data_not_loaded',
+  'schema_not_initialized',
+])
+
+/**
+ * Neon refused the connection because its quota is spent: its compute is
+ * suspended, so nothing ran, although the API reports the failed connect as
+ * DB time.
+ */
+const NO_COMPUTE_CODES = new Set(['database_paused'])
 
 /** Origin `X-Cache` values for which the API did not compute this request itself. */
 const REUSED_ORIGIN_CACHE = new Set(['hit', 'join'])
@@ -184,7 +207,30 @@ export async function admitAnalysis(
   return { kind: 'unavailable' }
 }
 
-/** Report how an admitted analysis ended. Never rejects; a lost settle expires in full. */
+/** As `Admission`; a lookup holds no lease (nothing to settle). */
+export type LookupAdmission =
+  { kind: 'admitted'; leaseId: null } | Exclude<Admission, { kind: 'admitted' }>
+
+/** Ask the governor to admit a metadata GET to the origin. Never rejects. */
+export async function admitLookup(
+  env: Pick<Env, 'GOVERNOR'>,
+  request: LookupRequest,
+): Promise<LookupAdmission> {
+  let result: unknown
+  try {
+    result = await withTimeout<unknown>(governorStub(env).admitLookup(request))
+  } catch {
+    return { kind: 'unavailable' }
+  }
+  const answer = result as Partial<{ ok: boolean; code: unknown }> | null
+  if (answer?.ok === true) return { kind: 'admitted', leaseId: null }
+  if (answer?.ok === false && typeof answer.code === 'string') {
+    return { kind: 'denied', denial: result as Denied }
+  }
+  return { kind: 'unavailable' }
+}
+
+/** Report how an admitted analysis ended. Never rejects; a lost settle expires (charged). */
 export async function settleAnalysis(
   env: Pick<Env, 'GOVERNOR'>,
   leaseId: string,
@@ -250,6 +296,8 @@ export function settleReportFor(
     kind = 'reused'
   } else if (apiSuccess) {
     kind = 'computed'
+  } else if (relayed.errorCode !== undefined && NO_COMPUTE_CODES.has(relayed.errorCode)) {
+    return { kind: 'shed', dbMs: 0 }
   } else if (relayed.errorCode !== undefined && SHED_CODES.has(relayed.errorCode)) {
     kind = 'shed'
   } else if (status >= 400 && status < 500) {

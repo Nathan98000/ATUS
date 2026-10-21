@@ -382,15 +382,21 @@ assets and never run Worker code. Only `/api` and `/api/*` do
 - **Limits and headers** (`src/proxy.ts`, `src/http.ts`): 413 above 64 KiB,
   415 for non-JSON POSTs; a fresh upstream header set with
   `X-ATUS-Edge-Auth`, `X-ATUS-Client-IP` (from `CF-Connecting-IP`) and
-  `X-Request-ID`; the Worker's own security headers on every `/api` response.
+  `X-Request-ID`, and always `Accept-Encoding: gzip`; the Worker's own
+  security headers on every `/api` response it produces.
+- **Metadata** (`src/snapshot.ts`): the metadata GETs are answered from the
+  deployed static snapshot, byte for byte, with no origin call; only those
+  it cannot answer (a query string, an unknown code) reach the API, as
+  governed lookups.
 - **Result cache** (`src/cache.ts`): Workers KV keyed by the SHA-256 of the
   exact request bytes, scoped by the release (`CACHE_SCOPE`); stores only
-  complete 200 responses whose `X-Data-Version` equals the Worker's
-  `DATA_VERSION`.
+  complete 200 responses the API computed (`X-Cache: miss`) whose
+  `X-Data-Version` equals the Worker's `DATA_VERSION`.
 - **Quota governor** (`src/governor.ts`, `src/admission.ts`, `src/budget.ts`):
   one SQLite-backed Durable Object that admits uncached analyses against
-  per-network, global and heavy daily caps and a Neon compute-hour budget;
-  it fails closed for uncached analyses only.
+  per-network, global and heavy daily caps, a per-network share of the
+  daily Neon compute, Neon compute-hour and egress budgets, and counts
+  metadata lookups; it fails closed for those two only.
 - **Upstream** (`src/upstream.ts`): no timeout of its own, one retry only when
   the connection fails before response headers; non-API platform responses
   (Render's waking page, Cloudflare 52x) become JSON envelopes such as

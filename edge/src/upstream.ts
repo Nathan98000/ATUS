@@ -2,8 +2,12 @@
  * The Worker's only way to reach the origin (ADR-011 "Request flow", step 3.6).
  *
  * - No timeout of its own: a cold Render spin-up plus a worst-case query can
- *   take well over a minute, and the API bounds its own work. The client's
- *   disconnect does not abort the origin call either.
+ *   take well over a minute, and the API bounds its own work. Nothing here
+ *   aborts the call when the client disconnects, but Cloudflare may cancel
+ *   the request's pending work then ("tasks associated with that request may
+ *   be canceled"); `waitUntil` work gets up to 30 s more. The Worker queues
+ *   an analysis's settle before calling (index.ts), and the governor charges
+ *   one that is lost anyway when its lease expires.
  * - Exactly one retry, and only when the connection fails before any
  *   response headers arrive (`fetch` rejects). Every routed call is an
  *   idempotent read, and any response — even a 5xx — is final.

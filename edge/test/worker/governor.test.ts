@@ -9,8 +9,20 @@ import { runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DAY_MS, nextUtcMidnight, pacingResumesAt, utcDay } from '../../src/budget'
-import { DAILY_CU_HOURS_CONSERVATIVE } from '../../src/constants'
-import type { AdmitResult, Denied, Governor, SettleKind } from '../../src/governor'
+import {
+  DAILY_CU_HOURS_CONSERVATIVE,
+  DAILY_CU_HOURS_GROUND_TRUTH,
+  EGRESS_ESTIMATE_BYTES,
+  EGRESS_STOP_BYTES,
+  PREFIX_DAILY_CU_SHARE,
+} from '../../src/constants'
+import {
+  Governor as GovernorClass,
+  type AdmitResult,
+  type Denied,
+  type Governor,
+  type SettleKind,
+} from '../../src/governor'
 import { controlClock, governorSql, governorStub, resetEdgeState } from './helpers'
 
 // In the future, so an alarm the governor schedules never fires by itself
@@ -138,6 +150,27 @@ async function alarmAt(): Promise<number | null> {
   return runInDurableObject(governor(), (_instance, state) => state.storage.getAlarm())
 }
 
+/** Fresh ground truth for the current period (Neon configured), as a poll would leave it. */
+async function seedGroundTruth(polledAt = T): Promise<void> {
+  await setNeon({ key: NEON_KEY, project: NEON_PROJECT })
+  const neon = {
+    polledAt,
+    computeTimeSeconds: 0,
+    dataTransferBytes: 0,
+    periodStart: PERIOD_START,
+    periodEnd: PERIOD_END,
+    cuBaseS: 0,
+    egressBase: 0,
+    cuAtPollS: 0,
+    egressAtPoll: 0,
+  }
+  await governorSql(
+    `INSERT INTO state (id, value) VALUES (1, ?)
+     ON CONFLICT (id) DO UPDATE SET value = excluded.value`,
+    JSON.stringify({ neon }),
+  )
+}
+
 /** Point the governor's Neon settings at a test project (or clear them). */
 async function setNeon(config: { key: string; project: string } | null): Promise<void> {
   await runInDurableObject(governor(), (instance: Governor) => {
@@ -234,6 +267,8 @@ describe('daily counts', () => {
       limit: 60,
       max_attempts: 300,
       attempts_limit: 300,
+      max_cu_hours: 0,
+      cu_limit_cu_hours: expect.closeTo(PREFIX_DAILY_CU_SHARE * DAILY_CU_HOURS_CONSERVATIVE, 4),
     })
     expect(budget.utilization.prefix).toBe(1)
   })
@@ -313,6 +348,46 @@ describe('Durable Object row budget (Workers Free: 100k rows written, 5M read pe
     expect(settleComputed.written).toBeLessThanOrEqual(4)
     expect(settleRefund.written).toBeLessThanOrEqual(4)
     expect(firstAdmit.read + secondAdmit.read).toBeLessThanOrEqual(30)
+  })
+
+  it('writes at most 5 rows for any settle, and at most 3 for a refunded one with db;dur=0', async () => {
+    // A settle that refunds counts and is also charged compute (a data-
+    // availability refusal with DB time, or an API answer without
+    // Server-Timing) deletes its lease and writes the day twice (refund,
+    // charge), the state and the prefix's compute: 5 rows. What a client can
+    // cause to be refunded (sheds, waking, 4xx and cache reuse, all with
+    // db;dur=0 or not reached) writes at most 3.
+    const clock = controlClock(T)
+    const kinds: SettleKind[] = ['not_reached', 'shed', 'rejected', 'reused', 'computed']
+    for (const kind of kinds) {
+      for (const dbMs of [0, 1000, null]) {
+        const lease = await admitted(`${kinds.indexOf(kind)}`.repeat(32))
+        clock.advance(2 * S)
+        const { written } = await rowsDuring(() => settle(lease, kind, dbMs))
+        expect(written, `${kind} db=${dbMs}`).toBeLessThanOrEqual(5)
+        if (kind === 'not_reached' || (kind !== 'computed' && dbMs === 0)) {
+          expect(written, `${kind} db=${dbMs}`).toBeLessThanOrEqual(3)
+        }
+      }
+    }
+  })
+
+  it('writes at most 5 rows per metadata lookup, and none to deny one', async () => {
+    controlClock(T)
+    const first = await rowsDuring(() => governor().admitLookup({ prefix: PREFIX }))
+    const second = await rowsDuring(() => governor().admitLookup({ prefix: PREFIX }))
+    await governorSql('UPDATE prefixes SET lookups = 200 WHERE prefix = ?', PREFIX)
+    const refused = await rowsDuring(async () => {
+      expect(await governor().admitLookup({ prefix: PREFIX })).toMatchObject({
+        ok: false,
+        code: 'rate_limited',
+        budget: 'metadata',
+      })
+    })
+    expect(first.written).toBeLessThanOrEqual(5)
+    expect(second.written).toBeLessThanOrEqual(5)
+    expect(refused.written).toBe(0)
+    expect(refused.read).toBeLessThanOrEqual(1)
   })
 })
 
@@ -420,6 +495,26 @@ describe('compute charge (conservative mode)', () => {
     },
   )
 
+  it.each([
+    // kind, admitted, heavy, prefix, refunded
+    ['shed', 0, 0, 0, 1],
+    ['rejected', 1, 1, 1, 0],
+    ['reused', 1, 1, 1, 0],
+    ['computed', 1, 1, 1, 0],
+  ] as const)(
+    'settles %s that ran database statements (db;dur > 0): admitted %i, heavy %i, prefix %i, refunded %i',
+    async (kind, admittedCount, heavy, prefix, refunded) => {
+      // A 422 found only by the statistics query (insufficient_data) ran it in
+      // full: its Neon egress is real, so it counts toward the heavy cap.
+      const clock = controlClock(T)
+      const lease = await admitted(PREFIX, 'heavy')
+      clock.advance(3 * S)
+      await settle(lease, kind, 1200)
+      expect(await day()).toMatchObject({ admitted: admittedCount, heavy, refunded })
+      expect(await prefixCount()).toBe(prefix)
+    },
+  )
+
   it('ignores a second settle and unknown leases', async () => {
     const clock = controlClock(T)
     const lease = await admitted()
@@ -466,6 +561,196 @@ describe('compute charge (conservative mode)', () => {
     await admitted(OTHER)
     expect(await governorSql('SELECT prefix FROM leases')).toEqual([{ prefix: OTHER }])
     expect(await day()).toMatchObject({ admitted: 2, cu_s: 780 })
+    expect(await prefixCuS()).toBe(780)
+  })
+
+  it.each([
+    ['11 minutes', 11 * MIN],
+    ['3 hours', 180 * MIN],
+  ])(
+    'charges never-settled leases admitted together one shared window (next event after %s)',
+    async (_label, later) => {
+      // Clients that disconnect during a cold start can lose their settles;
+      // 13 such leases must not cost 13 sessions (10,140 CU-s, the whole
+      // conservative day) when they would have shared one had they settled.
+      const clock = controlClock(T)
+      for (let i = 0; i < 13; i += 1) await admitted(`${i}`.padStart(2, '0').repeat(16))
+      clock.advance(later)
+      await admitted(OTHER)
+      expect(await governorSql('SELECT prefix FROM leases')).toEqual([{ prefix: OTHER }])
+      expect(await day()).toMatchObject({ admitted: 14, cu_s: 780 })
+    },
+  )
+})
+
+async function prefixCuS(prefix = PREFIX, dayName = TODAY): Promise<number> {
+  const rows = await governorSql<{ cu_s: number }>(
+    'SELECT cu_s FROM prefixes WHERE day = ? AND prefix = ?',
+    dayName,
+    prefix,
+  )
+  return rows[0]?.cu_s ?? 0
+}
+
+describe("each network's share of the day's compute", () => {
+  /**
+   * One network's analyses, each settled a second after admission with
+   * `dbMs` of DB time, the next admitted `gap` after that. By default cheap
+   * ones (80 ms) 7 minutes apart, so none shares another's wake session:
+   * each is charged ~610 CU-s.
+   */
+  async function spaced(
+    clock: ReturnType<typeof controlClock>,
+    prefix: string,
+    gap = 7 * MIN,
+    dbMs = 80,
+  ): Promise<{ admitted: number; denial: Denied | null }> {
+    for (let count = 0; count < 60; count += 1) {
+      const result = await admit(prefix)
+      if (!result.ok) return { admitted: count, denial: result }
+      clock.advance(S)
+      await settle(result.leaseId, 'computed', dbMs)
+      clock.advance(gap)
+    }
+    return { admitted: 60, denial: null }
+  }
+
+  it.each([
+    ['conservative', DAILY_CU_HOURS_CONSERVATIVE, 3],
+    ['ground-truth', DAILY_CU_HOURS_GROUND_TRUTH, 11],
+  ] as const)(
+    'refuses one network spacing analyses at a fifth of the %s ceiling; others still get in',
+    async (mode, ceilingCuHours, expected) => {
+      const clock = controlClock(Date.UTC(2036, 9, 20, 0, 5))
+      if (mode === 'ground-truth') await seedGroundTruth(clock.now())
+      const attack = await spaced(clock, PREFIX)
+      // Without the share this network got 17 (conservative) or 59 (ground
+      // truth) and then locked every other network out until midnight.
+      expect(attack.admitted).toBe(expected)
+      expect(attack.denial).toMatchObject({
+        code: 'rate_limited',
+        scope: 'client',
+        budget: 'prefix',
+      })
+      const used = await prefixCuS(PREFIX, utcDay(clock.now()))
+      expect(used).toBeLessThanOrEqual(PREFIX_DAILY_CU_SHARE * ceilingCuHours * 3600)
+      expect((await admit(OTHER)).ok).toBe(true)
+      const report = await governor().budget()
+      expect(report.prefixes.max_cu_hours).toBeCloseTo(used / 3600, 4)
+      expect(report.prefixes.cu_limit_cu_hours).toBeCloseTo(
+        PREFIX_DAILY_CU_SHARE * ceilingCuHours,
+        4,
+      )
+    },
+  )
+
+  it.each([
+    ['conservative', 11],
+    ['ground-truth', 54],
+  ] as const)(
+    "also holds a real visitor's continuous run of analyses, a minute apart (%s: %i)",
+    async (mode, expected) => {
+      // The price of the share, stated in ADR-015 row 4: one wake session
+      // grows with its length, so a network running novel analyses without a
+      // break is refused after about 11 minutes a day (conservative) or 54
+      // (ground truth), where before it could run its 60.
+      const start = Date.UTC(2036, 9, 20, 0, 5)
+      const clock = controlClock(start)
+      if (mode === 'ground-truth') await seedGroundTruth(clock.now())
+      const run = await spaced(clock, PREFIX, MIN - S, 1000)
+      expect(run.admitted).toBe(expected)
+      expect(run.denial).toMatchObject({ code: 'rate_limited', budget: 'prefix' })
+      expect((clock.now() - start) / MIN).toBe(expected)
+      expect((await admit(OTHER)).ok).toBe(true)
+    },
+  )
+
+  it("checks the candidate's provisional charge and the network's own in-flight analyses", async () => {
+    const clock = controlClock(T)
+    const share = PREFIX_DAILY_CU_SHARE * DAILY_CU_HOURS_CONSERVATIVE * 3600
+    await governorSql(
+      'INSERT INTO prefixes (day, prefix, count, attempts, cu_s) VALUES (?, ?, 3, 3, ?)',
+      TODAY,
+      PREFIX,
+      share - 779,
+    )
+    // A fresh session is provisionally 780 CU-s: one more than is left.
+    expect(await denied()).toMatchObject({
+      code: 'rate_limited',
+      scope: 'client',
+      budget: 'prefix',
+    })
+    await governorSql('UPDATE prefixes SET cu_s = ? WHERE prefix = ?', share - 1000, PREFIX)
+    await admitted()
+    // 200 s later its own in-flight window and the new one span 590 s: 1,180 CU-s.
+    clock.advance(200 * S)
+    expect((await denied()).budget).toBe('prefix')
+    await admitted(OTHER)
+  })
+
+  it('charges each network what its analyses added to the day, and the day the sum', async () => {
+    const clock = controlClock(T)
+    const first = await admitted(PREFIX)
+    clock.advance(4 * S)
+    await settle(first, 'computed', 2000)
+    clock.advance(56 * S)
+    const second = await admitted(OTHER)
+    clock.advance(2 * S)
+    await settle(second, 'computed', 1000)
+    // 608, then 2 x 58 s of extra tail (as in the compute-charge tests above).
+    expect(await prefixCuS(PREFIX)).toBe(608)
+    expect(await prefixCuS(OTHER)).toBe(116)
+    expect((await day()).cu_s).toBe(608 + 116)
+  })
+})
+
+describe('Neon egress without ground truth', () => {
+  it("refuses analyses once today's estimated egress would pass 4.5 GB / 31", async () => {
+    controlClock(T)
+    await governorSql(
+      'INSERT INTO days (day, egress_bytes) VALUES (?, ?)',
+      TODAY,
+      EGRESS_STOP_BYTES / 31 - EGRESS_ESTIMATE_BYTES.heavy + 1,
+    )
+    expect(await denied(PREFIX, 'heavy')).toMatchObject({
+      code: 'daily_capacity_reached',
+      scope: 'daily',
+      budget: 'egress_day',
+      resumesAt: new Date(MIDNIGHT).toISOString(),
+    })
+    // A light analysis's smaller estimate still fits.
+    await admitted(PREFIX, 'light')
+    const report = await governor().budget()
+    expect(report.utilization.egress_day).toBeGreaterThan(0.99)
+  })
+
+  it('leaves egress to the monthly check once ground truth exists', async () => {
+    controlClock(T)
+    await seedGroundTruth()
+    await governorSql(
+      'INSERT INTO days (day, egress_bytes) VALUES (?, ?)',
+      TODAY,
+      EGRESS_STOP_BYTES / 31,
+    )
+    await admitted(PREFIX, 'heavy')
+    expect((await governor().budget()).utilization.egress_day).toBeNull()
+  })
+
+  it('refuses the 301st heavy analysis when the first 300 were 422s that ran the statistics query', async () => {
+    // Before, a 422 was refunded from the heavy cap even when the query ran in
+    // full (~376 KB of egress for a 22-year compare): 360 of them from six
+    // networks were all admitted, and nothing else bounded their egress.
+    controlClock(T)
+    await seedGroundTruth()
+    for (let i = 0; i < 300; i += 1) {
+      const lease = await admitted(`${Math.floor(i / 60)}`.repeat(32), 'heavy')
+      await settle(lease, 'rejected', 1200)
+    }
+    expect(await day()).toMatchObject({ admitted: 300, heavy: 300, refunded: 0 })
+    expect(await denied(OTHER, 'heavy')).toMatchObject({
+      code: 'daily_capacity_reached',
+      budget: 'heavy',
+    })
   })
 })
 
@@ -638,6 +923,37 @@ describe('ground truth from the Neon API', () => {
   })
 })
 
+describe('schema', () => {
+  it('adds the newer columns to a database created before them', async () => {
+    await runInDurableObject(governor(), (_instance, state) => {
+      state.storage.sql.exec(`
+        DROP TABLE days; DROP TABLE prefixes;
+        CREATE TABLE days (day TEXT PRIMARY KEY, admitted INTEGER NOT NULL DEFAULT 0,
+          heavy INTEGER NOT NULL DEFAULT 0, cu_s REAL NOT NULL DEFAULT 0,
+          egress_bytes REAL NOT NULL DEFAULT 0, refunded INTEGER NOT NULL DEFAULT 0);
+        CREATE TABLE prefixes (day TEXT NOT NULL, prefix TEXT NOT NULL, count INTEGER NOT NULL,
+          attempts INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, prefix));
+        INSERT INTO prefixes (day, prefix, count, attempts) VALUES ('${TODAY}', '${PREFIX}', 2, 2);
+      `)
+      const upgraded = new GovernorClass(state, env)
+      expect(upgraded).toBeInstanceOf(GovernorClass)
+      const columns = (table: string): string[] =>
+        state.storage.sql
+          .exec<{ name: string }>(`PRAGMA table_info(${table})`)
+          .toArray()
+          .map((row) => row.name)
+      expect(columns('prefixes')).toEqual(
+        expect.arrayContaining(['count', 'attempts', 'cu_s', 'lookups']),
+      )
+      expect(columns('days')).toContain('lookups')
+    })
+    controlClock(T)
+    expect(await prefixCount()).toBe(2)
+    await admitted()
+    expect(await prefixCount()).toBe(3)
+  })
+})
+
 describe('purge and alarms', () => {
   it('purges prefix rows at midnight even without traffic', async () => {
     const clock = controlClock(T)
@@ -688,7 +1004,17 @@ describe('budget report', () => {
     // The second lease's window beyond the charged one: [T+304 s, T+390 s].
     expect(report.compute_today.provisional_cu_hours).toBeCloseTo((2 * 86) / 3600, 4)
     expect(report.utilization.global).toBeCloseTo(2 / 600, 4)
-    expect(report.utilization.prefix).toBeCloseTo(2 / 60, 4)
+    // The busiest network's largest share: its compute (608 CU-s) of a fifth of the ceiling.
+    expect(report.utilization.prefix).toBeCloseTo(
+      608 / (PREFIX_DAILY_CU_SHARE * DAILY_CU_HOURS_CONSERVATIVE * 3600),
+      4,
+    )
+    expect(report.prefixes.max_cu_hours).toBeCloseTo(608 / 3600, 4)
+    expect(report.egress_today).toEqual({
+      settled_bytes: EGRESS_ESTIMATE_BYTES.heavy,
+      provisional_bytes: EGRESS_ESTIMATE_BYTES.light,
+      ceiling_bytes: Math.round(EGRESS_STOP_BYTES / 31),
+    })
     expect(report.utilization.cu_month).toBeNull()
     expect(JSON.stringify(report)).not.toContain(PREFIX)
   })

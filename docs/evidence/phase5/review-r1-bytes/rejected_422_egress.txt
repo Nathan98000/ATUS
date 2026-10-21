@@ -1,0 +1,8 @@
+pooled 22y avg_per_participant 050301 age80-85 NILF                    status=200 db_to_api_bytes=  128561 api_to_db_bytes=   18681 result=ok
+pooled 22y avg_per_participant 060101 age80-85 NILF                    status=200 db_to_api_bytes=   90701 api_to_db_bytes=   18681 result=ok
+pooled 22y avg_per_participant 030101 age80-85 NILF                    status=200 db_to_api_bytes=  135734 api_to_db_bytes=   18681 result=ok
+pooled 22y avg_per_participant 120501 age80-85 NILF                    status=200 db_to_api_bytes=  242394 api_to_db_bytes=   20741 result=ok
+compare 22y avg_per_participant 050301 age80-85 NILF by sex            status=200 db_to_api_bytes=  211124 api_to_db_bytes=   36600 result=ok
+estimate pooled 22y sleep, age 81-85          status=422 db_to_api_bytes=  180565 api_to_db_bytes=   18594 result=insufficient_data No respondents match the population filters in year(s) [2003, 2004]; a pooled estimate wou
+compare 22y sleep age 81-85 by sex            status=422 db_to_api_bytes=  176064 api_to_db_bytes=   18622 result=insufficient_data No respondents match the population filters in year(s) [2003, 2004].
+compare 22y sleep: group_a all, group_b age 81-85 (missing years) status=422 db_to_api_bytes=  376495 api_to_db_bytes=   36714 result=insufficient_data No respondents match the population filters in year(s) [2003, 2004].

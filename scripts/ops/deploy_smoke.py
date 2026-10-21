@@ -18,7 +18,9 @@ Checks, in order (brief §16, §17; deployment.md "8. Prove the deployment"):
   edge_health      GET /api/_edge/health: the Worker's vars match the deploy
   api_health       GET /api/health through the Worker to Render's /health,
                    with a cold-start budget; reports the expected build
-  meta             GET /api/v1/meta: v1, and X-Data-Version as expected
+  meta             GET /api/v1/meta: v1, and X-Data-Version as expected (the
+                   Worker answers it from the snapshot; the starters check
+                   the API's own X-Data-Version)
   starter_<n>      a home-page starter analysis served from the static
                    snapshot, recomputed live through the Worker with different
                    request bytes (so the edge cache cannot answer it) and

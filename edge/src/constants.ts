@@ -33,8 +33,14 @@ export const RETRY_AFTER_OVERLOADED_S = 10
 /** Prewake: how long the reply waits for origin /health before answering "waking". */
 export const WAKE_RACE_MS = 1_500
 
-/** Prewake: at most one origin wake per isolate in this window. */
+/** Prewake: after an origin answered warm, at most one origin wake per isolate in this window. */
 export const WAKE_INTERVAL_MS = 10 * 60 * 1000
+
+/**
+ * Prewake: an origin last seen waking (or unknown) is probed again after
+ * this long — Render's documented spin-up, and inside the SPA's 90 s notice.
+ */
+export const WAKE_RETRY_MS = 60 * 1000
 
 // --- Edge result cache, tier L1 (ADR-015) ------------------------------------
 
@@ -65,8 +71,29 @@ export const PREFIX_DAILY_ANALYSES = 60
  */
 export const PREFIX_DAILY_ADMISSIONS = 300
 
+/**
+ * Share of the day's Neon compute ceiling one client IP prefix may be
+ * charged. Counting analyses alone does not bound compute: one network that
+ * spaces cheap analyses so none shares a wake session is charged ~610 CU-s
+ * each, and would reach the shared ceiling long before its 60. With this
+ * share at least five networks are needed to spend the ceiling.
+ */
+export const PREFIX_DAILY_CU_SHARE = 0.2
+
 /** Heavy uncached analyses admitted per UTC day. */
 export const HEAVY_DAILY_ANALYSES = 300
+
+/**
+ * Metadata GETs the static snapshot cannot answer (a query string, a code it
+ * does not hold, no snapshot deployed) that may reach the origin per UTC day,
+ * all clients together. Each costs Render outbound (up to ~9 KB gzipped for
+ * the whole lexicon), which is a monthly quota: 2,000 a day bound it to
+ * ~0.6 GB a month. The SPA itself never needs one.
+ */
+export const GLOBAL_DAILY_LOOKUPS = 2_000
+
+/** The same per client IP prefix, so one network cannot spend everyone's. */
+export const PREFIX_DAILY_LOOKUPS = 200
 
 /**
  * Year queries at which an analysis is heavy: `len(years)`, doubled for a
@@ -110,10 +137,21 @@ export const PACING_CAP_CU_HOURS = 85
 export const EGRESS_STOP_BYTES = 4.5e9
 
 /**
- * Neon egress charged per computed analysis between polls (estimates, not
- * measured: ~15 KB single-year, up to ~230 KB multi-year; docs/deployment.md).
+ * Neon egress per UTC day without ground truth (no monthly figure to check):
+ * the monthly stop spread over 31 days, so no month can pass it.
  */
-export const EGRESS_ESTIMATE_BYTES = { light: 32 * 1024, heavy: 256 * 1024 } as const
+export const EGRESS_DAILY_CONSERVATIVE_BYTES = EGRESS_STOP_BYTES / 31
+
+/**
+ * Neon egress charged per analysis that touched the database, until ground
+ * truth replaces it. Sized from DB->API bytes measured on the full database
+ * (review r1, 2026-10-21): light 61,892 B for a broad 7-year pooled estimate
+ * or trend (a narrow population moved about a quarter more per year, so a
+ * light analysis may pass 64 KiB: an estimate, not a bound); heavy 392,464 B
+ * for a 22-year compare, and up to 242,394 B for one side of a narrow 22-year
+ * population, so a compare of two such sides fits 512 KiB.
+ */
+export const EGRESS_ESTIMATE_BYTES = { light: 64 * 1024, heavy: 512 * 1024 } as const
 
 /** Neon usage poll: at most this often, and only while analyses arrived within it. */
 export const NEON_POLL_INTERVAL_MS = 5 * 60 * 1000

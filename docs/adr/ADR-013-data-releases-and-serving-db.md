@@ -240,7 +240,7 @@ The normative text is in [`../operations.md`](../operations.md), "Equivalence cr
 6. **Smoke test** a local API against the new project with that connection string (read only).
 7. **Snapshot.** CI builds the static snapshot for the new `DATA_VERSION` (the manifest's `data_version`) without deploying it.
 8. **Switch** (owner): in Render, set `ATUS_DATABASE_URL` (the new `ATUS_API_DATABASE_URL`) and `ATUS_EXPECTED_DATA_VERSION` together and "Save and deploy"; then the deploy workflow publishes the Worker variables and the new snapshot (ADR-011 "Release switch").
-9. **Verify** `/api/v1/meta`, `X-Data-Version` and the post-deploy replay.
+9. **Verify** `/api/v1/meta`, `X-Data-Version` and the post-deploy replay. Through the Worker a plain `/api/v1/meta` comes from the new snapshot; the API's own answer needs a query string (`/api/v1/meta?check=1`, a counted metadata lookup, ADR-015) or a live analysis.
 10. **Keep the previous project** until the new one is verified; delete it only with the owner's approval.
 
 **What makes the switch safe.**
