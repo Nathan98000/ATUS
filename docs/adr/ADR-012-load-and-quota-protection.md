@@ -119,7 +119,7 @@ Every request's database work runs in one transaction, started as `BEGIN READ ON
 | `statement_timeout` | 85,000 ms for analyses, 10,000 ms for metadata | `ATUS_API_STATEMENT_TIMEOUT_MS`, `ATUS_API_META_STATEMENT_TIMEOUT_MS` |
 | `lock_timeout` | 5 s | constant (ADR-011 role default) |
 | `idle_in_transaction_session_timeout` | 30 s | constant (ADR-011 role default) |
-| `client_connection_check_interval` | 5 s | constant: a killed API process does not leave its query running (F52) |
+| `client_connection_check_interval` | 5 s | constant: a killed API process does not leave its query running (F52; `test_protection_db.py::TestKilledProcess` SIGKILLs one) |
 | `jit` | `off` | `ATUS_API_JIT` (Neon has no LLVM; F37) |
 | `max_parallel_workers_per_gather` | server default: unset in production ("Calibration (§13)") | `ATUS_API_MAX_PARALLEL_WORKERS` (§9-gated; F38) |
 

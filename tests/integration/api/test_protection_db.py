@@ -319,6 +319,60 @@ class TestShutdownCancel:
                                                                  "overloaded"]
 
 
+KILLED_CHILD = """
+import sys
+from atus_pipeline.api.database import Database
+from atus_pipeline.config import load_settings
+
+settings = load_settings({"ATUS_DATABASE_URL": sys.argv[1], "ATUS_LOG_LEVEL": "WARNING"})
+with Database(settings).transaction("analysis") as conn:
+    conn.execute("SELECT pg_sleep(60) /* " + sys.argv[2] + " */")
+"""
+
+
+class TestKilledProcess:
+    """F52's other half: after SIGKILL nothing in the API can cancel its
+    query; the server must notice the dead client itself
+    (``client_connection_check_interval``, set per transaction). Review r1
+    (f52-sigkill-untested): only the setting's value was tested."""
+
+    def test_the_server_ends_the_query_of_a_killed_api_process(self, loaded_settings):
+        import os
+        import signal
+        import subprocess
+        import sys
+        import uuid
+
+        url = loaded_settings.database_url
+        marker = f"killed-api-{uuid.uuid4().hex}"
+
+        def running() -> int:
+            with psycopg.connect(url, autocommit=True) as admin:
+                return admin.execute(
+                    "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() "
+                    "AND application_name = %s AND state = 'active' AND query LIKE %s "
+                    "AND pid <> pg_backend_pid()",
+                    (dbmod.APPLICATION_NAME, f"%{marker}%"),
+                ).fetchone()[0]
+
+        child = subprocess.Popen([sys.executable, "-c", KILLED_CHILD, url, marker])
+        try:
+            wait_for(lambda: running() == 1, "the child's analysis query", 30)
+            os.kill(child.pid, signal.SIGKILL)
+            child.wait(10)
+            # 60 s of pg_sleep, an 85 s statement_timeout: only the server's
+            # check of the client connection (every 5 s) ends it this early
+            wait_for(lambda: running() == 0, "the server to end the dead client's query", 20)
+        finally:
+            if child.poll() is None:
+                child.kill()
+            with psycopg.connect(url, autocommit=True) as admin:
+                admin.execute(
+                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                    "WHERE datname = current_database() AND query LIKE %s "
+                    "AND pid <> pg_backend_pid()", (f"%{marker}%",))
+
+
 class TestPoolExhaustion:
     def test_busy_pool_is_overloaded_with_retry_after(self, loaded_settings):
         gate = Gate()
