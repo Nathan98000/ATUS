@@ -85,14 +85,13 @@ DOMAIN_ERROR_CODES = frozenset({
 
 # Capacity answers that say "not now" rather than "no": the harness retries
 # them (and a request that never got an HTTP answer). Anything else is final.
-# analysis_timeout is one of them: with the harness's 10-minute statement
-# timeout it means a saturated database (a metadata read over its limit while
-# the full database ran the other servers' analyses, seen once in a 544-spec
-# run), not a property of the spec.
+# analysis_timeout is not: at the harness's 10-minute statement timeout it
+# has meant a query plan that runs for over 10 minutes again on every retry
+# (two pandemic date-window specs on the full database, 2026-10-20), so it
+# is reported at once, as a Phase 5 server error.
 RETRYABLE_STATUSES = frozenset({429, 503})
 RETRYABLE_CODES = frozenset({
     "rate_limited", "overloaded", "database_unavailable", "daily_capacity_reached",
-    "analysis_timeout",
 })
 
 # Response headers that must be identical on b and c (same code, so they can

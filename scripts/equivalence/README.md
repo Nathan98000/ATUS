@@ -52,13 +52,21 @@ under `OUT/run/`, and the harness refuses to start if a `.env` file could reach 
 The Phase 5 servers run in development mode without edge authentication. When edge
 authentication is off, loopback clients are exempt from the per-client buckets. Their
 limits are set so that no capacity answer replaces a result: daily cap 1,000,000, four
-analyses at once, a 120 s lane wait, a 10-minute statement timeout and a 2-minute
-metadata timeout (the baseline has none). All other settings keep their defaults.
-`servers.phase5_env` lists them, and the report records them. Capacity answers are
-retried up to `--retries` times: 429, and 503 `overloaded`, `database_unavailable`,
-`daily_capacity_reached` or `analysis_timeout`. At these limits, `analysis_timeout`
-means a saturated database. Lost connections are retried too, but a request with no
-answer within `--request-timeout` is not. Nothing is timed.
+analyses at once, a 120 s lane wait, and a 10-minute statement timeout (the baseline has
+none). All other settings keep their defaults. `servers.phase5_env` lists them, and the
+report records them.
+
+Retries:
+
+- Capacity answers are retried up to `--retries` times: 429, and 503 `overloaded`,
+  `database_unavailable` or `daily_capacity_reached`. `DiskFull` on the container's
+  64 MiB `/dev/shm` arrives as `overloaded`.
+- Lost connections are retried too.
+- `analysis_timeout` and a request with no answer within `--request-timeout` are not
+  retried. At a 10-minute statement timeout they mean a plan that would time out again,
+  and they are reported as failures.
+
+Nothing is timed.
 
 Exit status: 0 everything passed, 1 a spec or GET failed (see `summary.md`), 2 a usage,
 input or start-up error.
