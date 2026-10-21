@@ -61,6 +61,11 @@ export interface ExportContext {
   dataVersion: string | null
   /** `/meta` facts of the service the page talked to. */
   apiVersion: string | null
+  /**
+   * The release the page's `/meta` names. The JSON export uses it only when
+   * `dataVersion` does not name one: during a release switch a response can
+   * come from a newer release than the page's metadata.
+   */
   dataRelease: string | null
   /** The page's own (canonical, shareable) link. */
   link: string
@@ -367,7 +372,7 @@ export function analysisExport(
     api_version: context.apiVersion,
     analytics_version: result.analytics_version,
     data_version: context.dataVersion,
-    data_release: context.dataRelease,
+    data_release: releaseOf(context.dataVersion) ?? context.dataRelease,
     unit: resultUnit(result, context.operation),
     warnings: result.warnings ?? [],
     attribution: {
@@ -378,6 +383,16 @@ export function analysisExport(
     },
     response: result,
   }
+}
+
+/**
+ * The release a data version was written for: every format starts with
+ * `<release>:` (src/atus_pipeline/database/versions.py); null for an unknown
+ * version and for `unloaded:run0`.
+ */
+function releaseOf(dataVersion: string | null): string | null {
+  const release = dataVersion?.split(':', 1)[0] ?? ''
+  return release !== '' && release !== 'unloaded' && dataVersion?.includes(':') ? release : null
 }
 
 export function resultJson(result: AnalysisResponse, context: ExportContext): string {

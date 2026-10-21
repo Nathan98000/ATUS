@@ -86,3 +86,35 @@ describe('prototype-pollution key names (review finding)', () => {
     }
   })
 })
+
+describe('deeply nested links (review round 1)', () => {
+  /** base64url of a spec whose population holds `depth` nested arrays. */
+  function nestedLink(depth: number): string {
+    const arrays = `${'['.repeat(depth)}${']'.repeat(depth)}`
+    const json = `{"activity":{"preset":"sleep"},"years":[2023],"population":{"x":${arrays}}}`
+    return btoa(json).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
+  }
+
+  it('rejects a link nested deeper than any specification as an invalid link', () => {
+    // ~8 KB, within the URL limit: JSON.parse accepts it, but the recursive
+    // canonical serialization overflowed the stack and the app's error
+    // boundary replaced the page instead of the invalid-link message.
+    const encoded = nestedLink(3_000)
+    expect(encoded.length).toBeLessThan(16_000)
+    expect(() => decodeSpec(encoded, 'estimate')).toThrow(InvalidShareLinkError)
+    expect(() => decodeSpec(nestedLink(11), 'estimate')).toThrow(/nested too deeply/)
+  })
+
+  it('accepts the deepest shape a specification has (spec → activity → include)', () => {
+    const spec: CompareRequest = {
+      activity: { include: ['010101'], exclude: ['010102'] },
+      years: [2023],
+      population: { age_min: 25 },
+      group_a: { sex: 'male' },
+      group_b: { sex: 'female' },
+    }
+    expect(decodeSpec(encodeSpec(spec), 'compare')).toEqual(spec)
+    // A little nesting beyond that is left for the API to refuse (422).
+    expect(() => decodeSpec(nestedLink(5), 'estimate')).not.toThrow()
+  })
+})

@@ -379,8 +379,12 @@ response (the API's response, unchanged: every estimate, SE and CI)
 
 `data_version` is the response's `X-Data-Version` (or the static
 snapshot's), else the version the page's metadata reported — the legacy
-`<release>:run<id>` tag for an API that reports none. Unknown facts are
-`null`, never guessed. File names are
+`<release>:run<id>` tag for an API that reports none. `data_release` is the
+release that data version names (every format starts with `<release>:`), so
+one export never names two releases — during a release switch a response
+can come from a newer release than the page's metadata; only without a
+data version does it fall back to the release `/meta` reported. Unknown
+facts are `null`, never guessed. File names are
 `atus-<operation>-<activity>-<years>.<csv|json>`, e.g.
 `atus-trend-sleeping-2019-2023.csv`.
 
