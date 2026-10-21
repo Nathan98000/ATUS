@@ -14,12 +14,15 @@ from __future__ import annotations
 
 import ast
 import re
+from pathlib import Path
 
+import pytest
 import yaml
 
 from .conftest import REPO_ROOT
+from .test_dependabot import repository_files
 from .test_docs_accuracy import DEPLOYMENT, OPERATIONS, WORKFLOWS, _flat, _read, _row, _section
-from .test_infra_review_r2 import _step
+from .test_infra_review_r2 import WRANGLER_SCAN_SKIP, _step
 
 SCRIPTS = REPO_ROOT / "scripts"
 
@@ -176,3 +179,57 @@ def test_the_equivalence_harness_is_documented_against_the_local_drill_only():
     flat = _flat(readme)
     assert "Never point it at a provider's database (Neon)" in flat
     assert "refuses a database that is not on this machine" in flat
+
+
+# --- kv-namespace-create-default-prompt-breaks-ci ---------------------------------------
+
+KV_CREATE = re.compile(r"wrangler\s+kv\s+namespace\s+create\b[^`\n]*")
+WRANGLER_CLI = REPO_ROOT / "edge" / "node_modules" / "wrangler" / "wrangler-dist" / "cli.js"
+
+
+def _kv_create_commands() -> dict[str, list[str]]:
+    found: dict[str, list[str]] = {}
+    for path in repository_files(REPO_ROOT):
+        relative = path.relative_to(REPO_ROOT).as_posix()
+        if relative.startswith(WRANGLER_SCAN_SKIP) or not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, OSError):
+            continue
+        for command in KV_CREATE.findall(text):
+            found.setdefault(relative, []).append(command)
+    return found
+
+
+def test_every_kv_namespace_create_keeps_wrangler_out_of_the_config():
+    """kv-namespace-create-default-prompt-breaks-ci: run interactively as documented,
+    `wrangler kv namespace create <name>` asks whether to add the namespace to
+    edge/wrangler.jsonc (default yes) and under which binding (default: one derived from
+    the name), so the default answers append a second KV binding. config.test.ts allows
+    only RESULT_CACHE: CI on the owner's push failed and preflight refused the bootstrap
+    deploy. Every instruction now passes --update-config=false."""
+    config_test = _read(REPO_ROOT / "edge" / "test" / "node" / "config.test.ts")
+    assert re.search(r"kv_namespaces\?\.map\(.*?\)\)\.toEqual\(\[\s*'RESULT_CACHE',\s*\]\)",
+                     config_test)
+    commands = _kv_create_commands()
+    assert set(commands) == {"docs/deployment.md", "edge/wrangler.jsonc"}, commands
+    assert len(commands["docs/deployment.md"]) == 3      # step 1.3.2, the guide, Bootstrap 2
+    for path, found in commands.items():
+        for command in found:
+            assert "--update-config=false" in command, (path, command)
+    step = next(line for line in _read(DEPLOYMENT).splitlines()
+                if line.lstrip().startswith("2. `npx --no-install wrangler kv namespace create"))
+    assert "second KV binding" in step and "edge/test/node/config.test.ts" in step
+
+
+@pytest.mark.skipif(not WRANGLER_CLI.is_file(), reason="needs npm ci in edge/")
+def test_the_locked_wrangler_asks_to_edit_the_config_unless_told_not_to():
+    """The source of the finding in the locked wrangler: createdResourceConfig writes
+    to the config when --binding or --update-config says so, and otherwise asks, with
+    yes as the default answer and a derived binding name."""
+    cli = Path(WRANGLER_CLI).read_text(encoding="utf-8")
+    assert re.search(r"const writeToConfig = defaults3\?\.binding \?\? defaults3\?\.updateConfig "
+                     r"\?\? await confirm2\(\"Would you like Wrangler to add it on your "
+                     r"behalf\?\", \{\s*defaultValue: true,", cli)
+    assert re.search(r'"update-config": \{\s*type: "boolean"', cli)
