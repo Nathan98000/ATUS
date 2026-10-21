@@ -189,3 +189,22 @@ export async function readEnvelope(
   expect(Object.keys(payload.error)).toEqual(['code', 'message', 'details'])
   return payload.error
 }
+
+/**
+ * Headers a client might send to claim another address (security.md abuse
+ * case 5), one per entry, each naming `address` or another network. The
+ * governor charges the network of `CF-Connecting-IP` whatever they say
+ * (`governor-flow.test.ts`, `metadata.test.ts`).
+ */
+export function forgedAddressHeaders(address: string): [name: string, value: string][] {
+  return [
+    ['X-Forwarded-For', address],
+    ['X-Forwarded-For', `${address}, 192.0.2.250`],
+    ['X-Real-IP', address],
+    ['True-Client-IP', address],
+    ['X-Client-IP', address],
+    ['X-ATUS-Client-IP', address],
+    ['Forwarded', `for=${address};proto=https`],
+    ['CF-Connecting-IPv6', '2001:db8:ffff::1'],
+  ]
+}

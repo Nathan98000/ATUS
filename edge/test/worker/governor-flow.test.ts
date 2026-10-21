@@ -18,6 +18,7 @@ import {
   callWorker,
   controlClock,
   expectSecurityHeaders,
+  forgedAddressHeaders,
   governorSql,
   governorStub,
   mockOrigin,
@@ -168,6 +169,53 @@ describe('denials (no origin call)', () => {
     // Another network is still admitted.
     mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
     expect((await callWorker(...post('198.51.100.1'))).status).toBe(200)
+  })
+
+  it('charges the network of CF-Connecting-IP whatever forwarding headers the client adds', async () => {
+    // Brief §17 (proxy-chain client IP, trusted versus forged headers) and
+    // security.md abuse case 5. Review r3: no test sent a forged header to the
+    // governor, and keying it on X-Forwarded-For passed every Worker test,
+    // which would let one client claim a new network on every request.
+    controlClock(T)
+    const full = await prefixHmac(IP_KEY, T, '203.0.113.0/24')
+    await governorSql(
+      'INSERT INTO prefixes (day, prefix, count) VALUES (?, ?, 60)',
+      utcDay(T),
+      full,
+    )
+    const calls = mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    const forged = forgedAddressHeaders('198.51.100.1')
+    const withHeaders = (ip: string, extra: Record<string, string>): [string, RequestInit] => {
+      const [path, init] = post(ip)
+      return [
+        path,
+        { ...init, headers: { ...(init.headers as Record<string, string>), ...extra } },
+      ]
+    }
+    for (const [name, value] of [...forged, ['all of them', '']] as const) {
+      const extra = name === 'all of them' ? Object.fromEntries(forged) : { [name]: value }
+      const response = await callWorker(...withHeaders('203.0.113.9', extra))
+      expect(response.status, name).toBe(429)
+      expect((await readEnvelope(response)).details, name).toMatchObject({
+        scope: 'client',
+        budget: 'prefix',
+      })
+    }
+    expect(calls).toHaveLength(0)
+    // The other way round: naming the full network does not charge it either.
+    for (const [name, value] of forgedAddressHeaders('203.0.113.9')) {
+      const response = await callWorker(...withHeaders('192.0.2.77', { [name]: value }))
+      expect(response.status, name).toBe(200)
+    }
+    const rows = await governorSql<{ prefix: string; count: number }>(
+      'SELECT prefix, count FROM prefixes',
+    )
+    expect(new Map(rows.map((row) => [row.prefix, row.count]))).toEqual(
+      new Map([
+        [full, 60],
+        [await prefixHmac(IP_KEY, T, '192.0.2.0/24'), forged.length],
+      ]),
+    )
   })
 
   it('bounds admissions the API sheds (refunded), so one network cannot spend the governor', async () => {
