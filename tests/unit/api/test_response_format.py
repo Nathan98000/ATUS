@@ -238,8 +238,12 @@ def test_a_bump_edits_no_test_outside_the_bump_files():
                 copies.append(f"{path.relative_to(ROOT)}: {match[0]}")
     assert copies == [], f"compare with atus_pipeline.api.RESPONSE_FORMAT, not a copy: {copies}"
     vitest = (ROOT / "edge" / "vitest.config.ts").read_text(encoding="utf-8")
-    (pinned,) = re.findall(r"const TEST_RELEASE = \{ RESPONSE_FORMAT: '([^']*)' \}", vitest)
+    # The pin lives in edge/test/release.ts since review round 4, with the owner's
+    # manual levers (epoch-prewake-levers-blocked-by-config-test).
+    release = (ROOT / "edge" / "test" / "release.ts").read_text(encoding="utf-8")
+    (pinned,) = re.findall(r"^  RESPONSE_FORMAT: '([^']*)',$", release, re.MULTILINE)
     assert pinned.isdigit(), pinned
+    assert "import { TEST_RELEASE } from './test/release'" in vitest
     assert "bindings: { ...TEST_SECRETS, ...TEST_RELEASE }" in vitest
     # The scan itself: a real-API comparison is caught, a fake's own value is not.
     sample = f'assert response.headers["X-Response-Format"] == "{RESPONSE_FORMAT}"'

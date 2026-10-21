@@ -21,6 +21,7 @@
     "test/global-setup.ts",
     "test/fixtures.ts",
     "test/node",
+    "test/release.ts",
     "test/provided-context.d.ts"
   ]
 }

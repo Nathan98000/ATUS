@@ -1,5 +1,6 @@
 import { cloudflareTest } from '@cloudflare/vitest-plugin'
 import { defineConfig } from 'vitest/config'
+import { TEST_RELEASE } from './test/release'
 
 // Fake values for the Worker's required secrets. RENDER_ORIGIN uses the
 // reserved `.invalid` TLD, so an unmocked origin call can never leave the
@@ -14,13 +15,12 @@ const TEST_SECRETS = {
 }
 Object.assign(process.env, TEST_SECRETS)
 
-// The release var the worker tests' fixtures (origin headers, KV metadata,
-// cache scopes computed independently) are written for. The deploy always sets
-// it with --var, so the tests pin it too instead of inheriting wrangler.jsonc's
-// default: a RESPONSE_FORMAT bump then edits that default and
-// test/node/config.test.ts, never these fixtures (review round 2,
-// response-format-bump-breaks-snapshot; tests/unit/api/test_response_format.py).
-const TEST_RELEASE = { RESPONSE_FORMAT: '1' }
+// The worker tests pin the vars their fixtures are written for (TEST_RELEASE,
+// test/release.ts) instead of inheriting wrangler.jsonc's values: the deploy's
+// --var RESPONSE_FORMAT, and the levers the owner changes there by hand (EPOCH,
+// PREWAKE, NEON_PROJECT_ID). Changing one then edits wrangler.jsonc, never these
+// fixtures (review rounds 2 and 4; tests/unit/api/test_response_format.py and
+// test/node/config.test.ts check the pin).
 
 // Two projects, neither of which talks to Cloudflare or Render:
 //
