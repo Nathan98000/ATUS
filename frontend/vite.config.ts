@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react'
 import { type Plugin, defineConfig, loadEnv } from 'vite'
 
 import { apiBaseConfigError, resolveApiBase } from './src/api/apiBase.ts'
+import { ASSET_SALT, outputFileNames } from './src/deploy/assetNames.ts'
 import {
   type HeaderRule,
   cspAllowsConnection,
@@ -165,6 +166,9 @@ export default defineConfig(({ command, mode }) => {
       publishOpenApiPlugin(),
       previewStaticHeadersPlugin(),
     ],
+    // Bundle names carry ASSET_SALT when set (the recovery after a Cloudflare
+    // compromise, src/deploy/assetNames.ts); otherwise Vite's defaults.
+    build: { rollupOptions: { output: outputFileNames(ASSET_SALT) } },
     server: { proxy: apiProxy },
     preview: { proxy: apiProxy },
     test: {

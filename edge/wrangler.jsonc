@@ -46,7 +46,9 @@
     "DATA_VERSION": "",
     "RESPONSE_FORMAT": "1",
     "SNAPSHOT_ID": "",
-    // Bump by hand to orphan every edge-cached result at once.
+    // Bump by hand to orphan every edge-cached result at once. Not the purge
+    // after a Cloudflare compromise: its next value is public, so that is a
+    // rotated IP_HMAC_KEY (docs/deployment.md "Rotation", item 5).
     "EPOCH": "1",
     // "off" disables the /api/v1/wake prewake call.
     "PREWAKE": "on",
@@ -61,7 +63,8 @@
   //   EDGE_AUTH_SECRET  sent as X-ATUS-Edge-Auth; the API's ATUS_EDGE_SECRETS accepts it
   //   RENDER_ORIGIN     https://<service>.onrender.com, never published
   //   OPS_TOKEN         bearer for /api/_ops/budget
-  //   IP_HMAC_KEY       key for the governor's HMAC of client IP prefixes
+  //   IP_HMAC_KEY       key for the governor's HMAC of client IP prefixes; it also
+  //                     names the governor's instance and tags every KV entry
   //   NEON_API_KEY      optional, project-scoped key for the governor's usage poll
   // `wrangler deploy` refuses to publish while a required secret is missing; a
   // Worker's very first deploy therefore passes them with `--secrets-file`,
@@ -81,8 +84,9 @@
       "id": "00000000000000000000000000000000"
     }
   ],
-  // Quota governor (ADR-015): one SQLite-backed Durable Object named "global"
-  // admits uncached analyses (Workers Free offers only the SQLite backend).
+  // Quota governor (ADR-015): one SQLite-backed Durable Object, named by an
+  // HMAC of IP_HMAC_KEY, admits uncached analyses (Workers Free offers only
+  // the SQLite backend).
   "durable_objects": {
     "bindings": [{ "name": "GOVERNOR", "class_name": "Governor" }]
   },

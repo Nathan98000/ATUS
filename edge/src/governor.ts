@@ -1,10 +1,11 @@
 /**
  * Quota governor Durable Object (ADR-011 "Quota governor"; ADR-015).
  *
- * One SQLite-backed instance named "global" admits what the Worker sends to
- * Render: uncached analysis POSTs, and metadata GETs the static snapshot
- * could not answer (static files, KV hits and snapshot answers never call
- * it). For each analysis, the Worker calls
+ * One SQLite-backed instance, named by `IP_HMAC_KEY` (admission.ts,
+ * `governorName`), admits what the Worker sends to Render: uncached analysis
+ * POSTs, and metadata GETs the static snapshot could not answer (static
+ * files, KV hits and snapshot answers never call it). For each analysis, the
+ * Worker calls
  *
  *     admit({prefix, costClass})  ->  {ok: true, leaseId} | a denial
  *     settle(leaseId, {kind, dbMs})          when the origin call ends
@@ -53,6 +54,15 @@
  * denied requests cannot spend the Durable Object's daily row-write budget;
  * admissions that end refunded (and so never reach the 60) are capped per
  * prefix by `PREFIX_DAILY_ADMISSIONS`.
+ *
+ * Storage outlives every Worker version, and a version deployed with a
+ * leaked Cloudflare token runs code of its own as this class (review round 4,
+ * docs/deployment.md "Rotation", item 5). The recovery rotates
+ * `IP_HMAC_KEY`, which moves the Worker onto a fresh instance; in any
+ * instance, what no version of this code could have written is not trusted:
+ * rows dated after today are deleted whenever the instance starts (every
+ * deploy restarts it), a count that is not a non-negative number counts as
+ * spent, and the state row is checked on every load (`sanitizeState`).
  */
 
 import { DurableObject } from 'cloudflare:workers'
@@ -61,6 +71,7 @@ import {
   cuSeconds,
   dbStart,
   elapsedShare,
+  mergeIntervals,
   nextUtcMidnight,
   pacingAllowance,
   pacingResumesAt,
@@ -83,6 +94,7 @@ import {
   HEAVY_DAILY_ANALYSES,
   LEASE_TTL_MS,
   NEON_API_BASE,
+  NEON_IDLE_TAIL_MS,
   NEON_POLL_INTERVAL_MS,
   NEON_POLL_TIMEOUT_MS,
   PREFIX_DAILY_ADMISSIONS,
@@ -93,11 +105,28 @@ import {
   SNAPSHOT_READ_EGRESS_BYTES,
 } from './constants'
 
-/** The one instance every Worker isolate talks to. */
-export const GOVERNOR_NAME = 'global'
-
 /** Day rows kept for the ops report's rolling 31-day sum. */
 const DAY_RETENTION_DAYS = 40
+
+/**
+ * How far past the time it is written a charged window can end: a settle
+ * charges up to `NEON_IDLE_TAIL_MS` ahead, an expired lease its whole
+ * provisional window (less, as it is already past). Anything later is planted.
+ */
+const MAX_WINDOW_AHEAD_MS = PROVISIONAL_BUSY_MS + NEON_IDLE_TAIL_MS
+
+/**
+ * Longest Neon consumption period accepted, and how far after a poll it may
+ * end: a calendar month, with a day's slack.
+ */
+const NEON_MAX_PERIOD_MS = 32 * DAY_MS
+
+/** The largest egress estimate a lease can hold. */
+const MAX_LEASE_EGRESS_BYTES = Math.max(
+  EGRESS_ESTIMATE_BYTES.light,
+  EGRESS_ESTIMATE_BYTES.heavy,
+  SNAPSHOT_READ_EGRESS_BYTES,
+)
 
 /** Columns the schema gained after its first version: [table, column, definition]. */
 const ADDED_COLUMNS: readonly (readonly [string, string, string])[] = [
@@ -372,6 +401,7 @@ export class Governor extends DurableObject<Env> {
         .some((row) => row.name === column)
       if (!present) this.sql.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`)
     }
+    this.dropImpossibleRows(Date.now())
   }
 
   // --- RPC ---------------------------------------------------------------
@@ -562,7 +592,7 @@ export class Governor extends DurableObject<Env> {
     )
     const ceiling = dailyCeilingCuHours(state, now, this.neonConfigured())
     const prefixCuLimitS = PREFIX_DAILY_CU_SHARE * ceiling * 3600
-    const neon = currentNeon(state, now)
+    const neon = currentNeon(state, now, this.neonConfigured())
     const egressCeiling = neon === null ? EGRESS_DAILY_CONSERVATIVE_BYTES : null
     const provisionalEgress = sumEgress(todaysLeases)
 
@@ -736,7 +766,7 @@ export class Governor extends DurableObject<Env> {
       return deny('daily_capacity_reached', 'daily', 'cu_day', midnight, now)
     }
 
-    const neon = currentNeon(state, now)
+    const neon = currentNeon(state, now, this.neonConfigured())
     if (neon === null) {
       // No monthly figure to check egress against: hold each day to 1/31 of the stop.
       const dayEgress = day.egress_bytes + sumEgress(todays) + egressBytes
@@ -773,7 +803,13 @@ export class Governor extends DurableObject<Env> {
       .exec<{ value: string }>('SELECT value FROM state WHERE id = 1')
       .toArray()[0]
     if (row === undefined) return { ...INITIAL_STATE }
-    return { ...INITIAL_STATE, ...(JSON.parse(row.value) as Partial<GovernorState>) }
+    let stored: unknown
+    try {
+      stored = JSON.parse(row.value)
+    } catch {
+      stored = null
+    }
+    return sanitizeState(stored, Date.now())
   }
 
   private saveState(state: GovernorState): void {
@@ -784,7 +820,7 @@ export class Governor extends DurableObject<Env> {
     )
   }
 
-  /** A prefix's use of its budgets on `day` (see `PrefixRow`). */
+  /** A prefix's use of its budgets on `day` (see `PrefixRow`; `spent` for impossible values). */
   private prefixUse(day: string, prefix: string): PrefixRow {
     const row = this.sql
       .exec<PrefixRow>(
@@ -793,14 +829,31 @@ export class Governor extends DurableObject<Env> {
         prefix,
       )
       .toArray()[0]
-    return row ?? { count: 0, attempts: 0, cu_s: 0, lookups: 0 }
+    if (row === undefined) return { count: 0, attempts: 0, cu_s: 0, lookups: 0 }
+    return {
+      count: spent(row.count),
+      attempts: spent(row.attempts),
+      cu_s: spent(row.cu_s),
+      lookups: spent(row.lookups),
+    }
   }
 
+  /** `day`'s totals (`spent` for impossible values). */
   private dayRow(day: string): DayRow {
     const row = this.sql
       .exec<DayRow & { day: string }>('SELECT * FROM days WHERE day = ?', day)
       .toArray()[0]
-    return row ?? { admitted: 0, heavy: 0, cu_s: 0, egress_bytes: 0, refunded: 0, lookups: 0 }
+    if (row === undefined) {
+      return { admitted: 0, heavy: 0, cu_s: 0, egress_bytes: 0, refunded: 0, lookups: 0 }
+    }
+    return {
+      admitted: spent(row.admitted),
+      heavy: spent(row.heavy),
+      cu_s: spent(row.cu_s),
+      egress_bytes: spent(row.egress_bytes),
+      refunded: spent(row.refunded),
+      lookups: spent(row.lookups),
+    }
   }
 
   private leaseRows(): LeaseRow[] {
@@ -877,6 +930,31 @@ export class Governor extends DurableObject<Env> {
     this.sql.exec('DELETE FROM prefixes WHERE day < ?', today)
     this.sql.exec('DELETE FROM days WHERE day < ?', utcDay(now - DAY_RETENTION_DAYS * DAY_MS))
     state.purgedDay = today
+  }
+
+  /**
+   * Delete rows this code never writes, so only a version deployed with a
+   * leaked token could have: day and prefix rows dated after today (once its
+   * day came, each would refuse that whole day before any purge ran), and
+   * leases admitted in the future, dated other than their admission, or
+   * holding more egress than any estimate (they would never expire, or would
+   * charge another day). Runs when the instance starts: every deploy
+   * restarts it. The `day` conditions read only the rows they delete.
+   */
+  private dropImpossibleRows(now: number): void {
+    const today = utcDay(now)
+    this.sql.exec('DELETE FROM days WHERE day > ?', today)
+    this.sql.exec('DELETE FROM prefixes WHERE day > ?', today)
+    // `IS NOT 1`, not `NOT`: a condition that reads NULL (`strftime` gives no
+    // date for an admission outside SQLite's date range) deletes the row too.
+    this.sql.exec(
+      `DELETE FROM leases WHERE (
+         admitted_at <= ? AND day = strftime('%Y-%m-%d', admitted_at / 1000, 'unixepoch')
+         AND egress_bytes >= 0 AND egress_bytes <= ? AND heavy IN (0, 1) AND lookup IN (0, 1)
+       ) IS NOT 1`,
+      now,
+      MAX_LEASE_EGRESS_BYTES,
+    )
   }
 
   // --- alarm and the Neon poll --------------------------------------------
@@ -960,16 +1038,22 @@ export class Governor extends DurableObject<Env> {
       const previous = state.neon
       // First poll: re-count today's charges too (Neon's figures lag).
       const today = this.dayRow(utcDay(now))
-      state.pollError = null
-      state.neon = {
-        ...result,
-        polledAt: now,
-        cuBaseS: previous?.cuAtPollS ?? Math.max(0, state.cuTotalS - today.cu_s),
-        egressBase:
-          previous?.egressAtPoll ?? Math.max(0, state.egressTotal - today.egress_bytes),
-        cuAtPollS: state.cuTotalS,
-        egressAtPoll: state.egressTotal,
-      }
+      const neon = sanitizeNeon(
+        {
+          ...result,
+          polledAt: now,
+          cuBaseS: previous?.cuAtPollS ?? Math.max(0, state.cuTotalS - today.cu_s),
+          egressBase:
+            previous?.egressAtPoll ?? Math.max(0, state.egressTotal - today.egress_bytes),
+          cuAtPollS: state.cuTotalS,
+          egressAtPoll: state.egressTotal,
+        },
+        Date.now(),
+        state,
+      )
+      // What the next load would drop (a period over 32 days) is not kept.
+      state.pollError = neon === null ? 'invalid_response' : null
+      if (neon !== null) state.neon = neon
     }
     this.saveState(state)
   }
@@ -1008,18 +1092,121 @@ function round(value: number, digits: number): number {
   return Math.round(value * factor) / factor
 }
 
-/** Ground truth for the current consumption period, however old. */
-function currentNeon(state: GovernorState, now: number): NeonUsage | null {
-  return state.neon !== null && now < state.neon.periodEnd ? state.neon : null
+/** A finite, non-negative number, as every count, charge and time this code stores. */
+function isAmount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
+/**
+ * A stored count or charge, or `Infinity` when it is not a finite,
+ * non-negative number: this code never writes one, and read as a number a
+ * negative or text value would lift the budget it counts for the rest of the
+ * day. As spent, it refuses that budget instead, as a planted value at the
+ * limit would anyway.
+ */
+function spent(value: unknown): number {
+  return isAmount(value) ? value : Number.POSITIVE_INFINITY
+}
+
+/**
+ * The stored state, with what this code could not have written as of `now`
+ * reset to its initial value:
+ *
+ * - charged windows ending more than `MAX_WINDOW_AHEAD_MS` after now (one
+ *   to the end of time made every later analysis free of compute charges);
+ * - counters and times that are not finite and non-negative, and times after now;
+ * - Neon ground truth that no poll could have produced (`sanitizeNeon`).
+ */
+function sanitizeState(stored: unknown, now: number): GovernorState {
+  const raw = (typeof stored === 'object' && stored !== null ? stored : {}) as Record<
+    string,
+    unknown
+  >
+  const past = (value: unknown): number => (isAmount(value) && value <= now ? value : 0)
+  const charged = Array.isArray(raw.charged)
+    ? mergeIntervals(
+        raw.charged.filter(
+          (window: unknown): window is Interval =>
+            Array.isArray(window) &&
+            window.length === 2 &&
+            isAmount(window[0]) &&
+            isAmount(window[1]) &&
+            window[1] <= now + MAX_WINDOW_AHEAD_MS,
+        ),
+      )
+    : []
+  const purgedDay = typeof raw.purgedDay === 'string' ? raw.purgedDay : ''
+  const state: GovernorState = {
+    charged,
+    cuTotalS: isAmount(raw.cuTotalS) ? raw.cuTotalS : 0,
+    egressTotal: isAmount(raw.egressTotal) ? raw.egressTotal : 0,
+    lastAdmitAt: past(raw.lastAdmitAt),
+    lastPollAt: past(raw.lastPollAt),
+    pollError: typeof raw.pollError === 'string' ? raw.pollError.slice(0, 64) : null,
+    purgedDay:
+      /^\d{4}-\d{2}-\d{2}$/.test(purgedDay) && purgedDay <= utcDay(now) ? purgedDay : '',
+    alarmAt: isAmount(raw.alarmAt) ? raw.alarmAt : null,
+    neon: null,
+  }
+  state.neon = sanitizeNeon(raw.neon, now, state)
+  return state
+}
+
+/** The fields of `NeonUsage`, each a finite, non-negative number. */
+const NEON_FIELDS: readonly (keyof NeonUsage)[] = [
+  'polledAt',
+  'computeTimeSeconds',
+  'dataTransferBytes',
+  'periodStart',
+  'periodEnd',
+  'cuBaseS',
+  'egressBase',
+  'cuAtPollS',
+  'egressAtPoll',
+]
+
+/**
+ * `stored` as ground truth, or null when no poll could have produced it: a
+ * field that is not a finite, non-negative number; a poll after `now`; a
+ * consumption period that is empty, longer than `NEON_MAX_PERIOD_MS` or ends
+ * more than that after the poll; or bridge bases above the bridge counters
+ * (`totals`), which would subtract charges instead of adding them.
+ */
+function sanitizeNeon(
+  stored: unknown,
+  now: number,
+  totals: Pick<GovernorState, 'cuTotalS' | 'egressTotal'>,
+): NeonUsage | null {
+  if (typeof stored !== 'object' || stored === null) return null
+  const raw = stored as Partial<Record<keyof NeonUsage, unknown>>
+  if (!NEON_FIELDS.every((field) => isAmount(raw[field]))) return null
+  const neon = Object.fromEntries(
+    NEON_FIELDS.map((field) => [field, raw[field]]),
+  ) as unknown as NeonUsage
+  const possible =
+    neon.polledAt <= now &&
+    neon.periodStart < neon.periodEnd &&
+    neon.periodEnd - neon.periodStart <= NEON_MAX_PERIOD_MS &&
+    neon.periodEnd - neon.polledAt <= NEON_MAX_PERIOD_MS &&
+    neon.cuBaseS <= neon.cuAtPollS &&
+    neon.cuAtPollS <= totals.cuTotalS &&
+    neon.egressBase <= neon.egressAtPoll &&
+    neon.egressAtPoll <= totals.egressTotal
+  return possible ? neon : null
+}
+
+/**
+ * Ground truth for the current consumption period, however old; none while
+ * no Neon key is configured (no poll can have written it then).
+ */
+function currentNeon(state: GovernorState, now: number, configured: boolean): NeonUsage | null {
+  return configured && state.neon !== null && now < state.neon.periodEnd ? state.neon : null
 }
 
 /** Ground truth recent enough to earn the larger daily ceiling. */
 function groundTruthFresh(state: GovernorState, now: number, configured: boolean): boolean {
-  return (
-    configured &&
-    currentNeon(state, now) !== null &&
-    now - state.neon!.polledAt <= GROUND_TRUTH_MAX_AGE_MS
-  )
+  const neon = currentNeon(state, now, configured)
+  return neon !== null && now - neon.polledAt <= GROUND_TRUTH_MAX_AGE_MS
 }
 
 function dailyCeilingCuHours(state: GovernorState, now: number, configured: boolean): number {

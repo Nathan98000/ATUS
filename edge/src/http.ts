@@ -169,6 +169,29 @@ export async function sha256Hex(data: string | Uint8Array): Promise<string> {
   return toHex(await crypto.subtle.digest('SHA-256', bytes))
 }
 
+/** HMAC-SHA256 of `message` (UTF-8) under `key` (UTF-8 for strings). */
+export async function hmacSha256(
+  key: string | BufferSource,
+  message: string,
+): Promise<ArrayBuffer> {
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    typeof key === 'string' ? new TextEncoder().encode(key) : key,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  return crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(message))
+}
+
+/** Whether two strings are equal, compared in constant time for equal lengths. */
+export function timingSafeEqualText(a: string, b: string): boolean {
+  const encoder = new TextEncoder()
+  const left = encoder.encode(a)
+  const right = encoder.encode(b)
+  return left.byteLength === right.byteLength && crypto.subtle.timingSafeEqual(left, right)
+}
+
 /** The 404 for anything outside the allowlist (and for ops routes without the bearer token). */
 export function notFoundResponse(requestId: string): Response {
   return errorResponse(404, 'not_found', 'The requested API route does not exist.', requestId)

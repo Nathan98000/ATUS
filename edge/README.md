@@ -24,9 +24,11 @@ One `workers.dev` origin serves the SPA build (`../frontend/dist`) as static ass
   /24 or /48 and 2,000 in all per UTC day, and the compute budgets below: a lookup that reaches
   a freshly started API process reads from Neon, and is charged like an analysis);
 - answers analysis POSTs from Workers KV when the exact request bytes were answered before for the same
-  release (`X-Cache: edge`; key `r1/<CACHE_SCOPE>/<k>`, `src/cache.ts`), and stores new 200 results
-  the API computed (`X-Cache: miss`) that pass the store gate (≤ 16 KiB, 30-day TTL);
-- admits every other analysis through the quota governor, a SQLite Durable Object (`src/governor.ts`):
+  release (`X-Cache: edge`; key `r1/<CACHE_SCOPE>/<k>`, `src/cache.ts`) and the entry's HMAC tag
+  verifies under `IP_HMAC_KEY`, and stores new 200 results the API computed (`X-Cache: miss`) that
+  pass the store gate (≤ 16 KiB, 30-day TTL);
+- admits every other analysis through the quota governor, a SQLite Durable Object named by an HMAC
+  of `IP_HMAC_KEY` (`src/governor.ts`, `src/admission.ts`):
   60 per client /24 or /48 per UTC day, 300 admissions including refunded ones, and a fifth of the
   day's compute ceiling (429 `rate_limited`), 600 per day and 300 heavy per day, a daily Neon
   CU-hour ceiling and, without the Neon key, a daily egress estimate (503 `daily_capacity_reached`),

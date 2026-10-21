@@ -8,6 +8,9 @@
  * - Client: an HMAC of the IPv4 /24 or IPv6 /48 of `CF-Connecting-IP`,
  *   under a key derived from `IP_HMAC_KEY` and the UTC date, so it rotates
  *   daily and no IP or reversible hash ever reaches the governor's storage.
+ * - Instance: the governor is the one Durable Object named by an HMAC of
+ *   `IP_HMAC_KEY` (`governorName`), so rotating that key moves the Worker
+ *   onto a fresh instance (docs/deployment.md "Rotation", item 5).
  * - Cost: heavy when `len(years)` (doubled for a compare) is 8 or more —
  *   the API's lane classifier — or when the body cannot be read as JSON
  *   with a `years` array (the API rejects those anyway, and they are
@@ -20,7 +23,6 @@
 import { utcDay } from './budget'
 import { GOVERNOR_TIMEOUT_MS, HEAVY_YEAR_QUERIES } from './constants'
 import {
-  GOVERNOR_NAME,
   type AdmitRequest,
   type Governor,
   type BudgetReport,
@@ -30,7 +32,7 @@ import {
   type SettleKind,
   type SettleReport,
 } from './governor'
-import { isJsonContentType, toHex } from './http'
+import { hmacSha256 as hmac, isJsonContentType, toHex } from './http'
 import type { Relayed } from './proxy'
 
 /**
@@ -135,17 +137,6 @@ export function ipPrefix(ip: string | null): string {
     .join(':')}::/48`
 }
 
-async function hmac(key: BufferSource, message: string): Promise<ArrayBuffer> {
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    key,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  )
-  return crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(message))
-}
-
 /**
  * HMAC-SHA256 of `prefix` under the day key HMAC-SHA256(secret,
  * "atus-ip-prefix|<UTC date>"), truncated to 128 bits (hex). Without the
@@ -176,8 +167,24 @@ export function costClass(routeName: string, body: Uint8Array): CostClass {
 
 // --- RPC ------------------------------------------------------------------------
 
-function governorStub(env: Pick<Env, 'GOVERNOR'>): DurableObjectStub<Governor> {
-  return env.GOVERNOR.get(env.GOVERNOR.idFromName(GOVERNOR_NAME))
+/**
+ * The name of the one governor instance: `global-` and an HMAC of
+ * `IP_HMAC_KEY`, truncated to 128 bits. A Worker version deployed with a
+ * leaked Cloudflare token can write any instance's storage, but only under
+ * names it can compute; a rotated key names an instance it could not, so the
+ * state it left (planted counts, compute windows, Neon figures) is never read
+ * again. Every rotation therefore starts the governor afresh.
+ */
+export async function governorName(secret: string): Promise<string> {
+  return `global-${toHex(await hmac(secret, 'atus-governor-instance')).slice(0, 32)}`
+}
+
+type GovernorEnv = Pick<Env, 'GOVERNOR' | 'IP_HMAC_KEY'>
+
+async function governorStub(env: GovernorEnv): Promise<DurableObjectStub<Governor>> {
+  // The Worker refuses governed requests before this without the key.
+  if (!env.IP_HMAC_KEY) throw new Error('IP_HMAC_KEY is not configured')
+  return env.GOVERNOR.get(env.GOVERNOR.idFromName(await governorName(env.IP_HMAC_KEY)))
 }
 
 /** `promise`, or a rejection after `GOVERNOR_TIMEOUT_MS`. */
@@ -193,14 +200,22 @@ async function withTimeout<T>(promise: Promise<T>): Promise<T> {
   }
 }
 
+/** `call` on the governor's stub, or a rejection after `GOVERNOR_TIMEOUT_MS`. */
+async function callGovernor(
+  env: GovernorEnv,
+  call: (stub: DurableObjectStub<Governor>) => unknown,
+): Promise<unknown> {
+  return withTimeout<unknown>((async (): Promise<unknown> => call(await governorStub(env)))())
+}
+
 /** Ask the governor to admit an uncached analysis. Never rejects. */
 export async function admitAnalysis(
-  env: Pick<Env, 'GOVERNOR'>,
+  env: GovernorEnv,
   request: AdmitRequest,
 ): Promise<Admission> {
   let result: unknown
   try {
-    result = await withTimeout<unknown>(governorStub(env).admit(request))
+    result = await callGovernor(env, (stub) => stub.admit(request))
   } catch {
     return { kind: 'unavailable' }
   }
@@ -219,12 +234,12 @@ export async function admitAnalysis(
  * an analysis, an admitted lookup holds a lease the Worker settles.
  */
 export async function admitLookup(
-  env: Pick<Env, 'GOVERNOR'>,
+  env: GovernorEnv,
   request: LookupRequest,
 ): Promise<Admission> {
   let result: unknown
   try {
-    result = await withTimeout<unknown>(governorStub(env).admitLookup(request))
+    result = await callGovernor(env, (stub) => stub.admitLookup(request))
   } catch {
     return { kind: 'unavailable' }
   }
@@ -243,12 +258,12 @@ export async function admitLookup(
  * settle expires (charged).
  */
 export async function settleAnalysis(
-  env: Pick<Env, 'GOVERNOR'>,
+  env: GovernorEnv,
   leaseId: string,
   report: SettleReport,
 ): Promise<boolean> {
   try {
-    await withTimeout<unknown>(governorStub(env).settle(leaseId, report))
+    await callGovernor(env, (stub) => stub.settle(leaseId, report))
     return true
   } catch {
     return false
@@ -256,8 +271,8 @@ export async function settleAnalysis(
 }
 
 /** The governor's budget report for the ops endpoint (rejects when unreachable). */
-export async function readBudget(env: Pick<Env, 'GOVERNOR'>): Promise<BudgetReport> {
-  return (await withTimeout<unknown>(governorStub(env).budget())) as BudgetReport
+export async function readBudget(env: GovernorEnv): Promise<BudgetReport> {
+  return (await callGovernor(env, (stub) => stub.budget())) as BudgetReport
 }
 
 // --- settling -------------------------------------------------------------------

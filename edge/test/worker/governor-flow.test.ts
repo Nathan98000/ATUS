@@ -5,11 +5,16 @@
  * is unreachable, and how each origin outcome is settled.
  */
 
-import { createExecutionContext, waitOnExecutionContext } from 'cloudflare:test'
+import {
+  createExecutionContext,
+  runInDurableObject,
+  waitOnExecutionContext,
+} from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { prefixHmac } from '../../src/admission'
 import { nextUtcMidnight, utcDay } from '../../src/budget'
+import type { Governor } from '../../src/governor'
 import worker from '../../src/index'
 import {
   BASE,
@@ -263,6 +268,20 @@ describe('denials (no origin call)', () => {
 
   it('answers 503 capacity_paused until the Neon period ends past the monthly hard stop', async () => {
     controlClock(T)
+    // Ground truth counts only while a Neon key is configured (review round 4:
+    // without one, no poll can have written it; compromise.test.ts).
+    await runInDurableObject(governorStub(), (instance: Governor) => {
+      ;(instance as unknown as { env: Env }).env = {
+        ...env,
+        NEON_API_KEY: 'neon-test-key',
+        NEON_PROJECT_ID: 'proud-sun-123456',
+      }
+    })
+    onTestFinished(() =>
+      runInDurableObject(governorStub(), (instance: Governor) => {
+        ;(instance as unknown as { env: Env }).env = env
+      }),
+    )
     const periodEnd = Date.UTC(2036, 10, 1)
     const neon = {
       polledAt: T,

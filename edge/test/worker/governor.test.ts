@@ -1069,6 +1069,8 @@ describe('ground truth from the Neon API', () => {
 
 describe('schema', () => {
   it('adds the newer columns to a database created before them', async () => {
+    // The clock first: a starting instance deletes rows dated after its today.
+    controlClock(T)
     await runInDurableObject(governor(), (_instance, state) => {
       state.storage.sql.exec(`
         DROP TABLE days; DROP TABLE prefixes; DROP TABLE leases;
@@ -1094,7 +1096,6 @@ describe('schema', () => {
       expect(columns('days')).toContain('lookups')
       expect(columns('leases')).toContain('lookup')
     })
-    controlClock(T)
     expect(await prefixCount()).toBe(2)
     await admitted()
     expect(await prefixCount()).toBe(3)

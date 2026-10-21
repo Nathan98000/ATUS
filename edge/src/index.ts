@@ -89,7 +89,8 @@ interface LogRecord {
   /** For `unavailable`: the `upstream_unavailable` reason. */
   reason?: string
   /**
-   * Analysis POSTs: edge (KV hit) | miss | error (KV read failed) | off (no release vars).
+   * Analysis POSTs: edge (KV hit) | miss | error (KV read failed) | off (no release vars,
+   * or no IP_HMAC_KEY to tag entries with).
    * Metadata GETs: snapshot (answered from it) | miss (sent to the origin).
    */
   cache?: string
@@ -200,15 +201,22 @@ async function dispatch(
     body = limited
   }
 
-  // Tier L1: this exact request already answered for this release.
+  // Tier L1: this exact request already answered for this release, under a
+  // tag that verifies with the current IP_HMAC_KEY.
   let cacheKey: string | null = null
   if (route.analysis && body !== undefined) {
-    const scope = await cacheScope(env)
+    const scope = env.IP_HMAC_KEY ? await cacheScope(env) : null
     if (scope === null) {
       log.cache = 'off'
     } else {
       cacheKey = kvKey(scope, await requestHash(url.pathname, url.search.slice(1), body))
-      const cached = await readCached(env.RESULT_CACHE, cacheKey, env, requestId)
+      const cached = await readCached(
+        env.RESULT_CACHE,
+        cacheKey,
+        env,
+        requestId,
+        env.IP_HMAC_KEY,
+      )
       if (cached instanceof Response) {
         log.cache = 'edge'
         log.outcome = 'edge'
@@ -303,7 +311,9 @@ async function dispatch(
   const forwarded = await forwarding
   const { store } = forwarded
   if (store !== undefined) {
-    ctx.waitUntil(storeCached(env.RESULT_CACHE, store.key, store.body, store.meta))
+    ctx.waitUntil(
+      storeCached(env.RESULT_CACHE, store.key, store.body, store.meta, env.IP_HMAC_KEY),
+    )
   }
   return forwarded.response
 }

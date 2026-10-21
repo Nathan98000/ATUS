@@ -14,8 +14,9 @@ import {
 } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { expect, vi } from 'vitest'
+import { governorName } from '../../src/admission'
 import worker from '../../src/index'
-import { GOVERNOR_NAME, type Governor } from '../../src/governor'
+import type { Governor } from '../../src/governor'
 import { originBreaker } from '../../src/upstream'
 import { resetWakeState } from '../../src/wake'
 
@@ -41,9 +42,12 @@ export async function resetEdgeState(): Promise<void> {
   await Promise.all(keys.map((key) => env.RESULT_CACHE.delete(key.name)))
 }
 
-/** The governor instance the Worker talks to. */
+/** The name of the governor instance under the tests' `IP_HMAC_KEY`. */
+const GOVERNOR_INSTANCE = await governorName(env.IP_HMAC_KEY)
+
+/** The governor instance the Worker talks to (under the tests' `IP_HMAC_KEY`). */
 export function governorStub(): DurableObjectStub<Governor> {
-  return env.GOVERNOR.get(env.GOVERNOR.idFromName(GOVERNOR_NAME))
+  return env.GOVERNOR.get(env.GOVERNOR.idFromName(GOVERNOR_INSTANCE))
 }
 
 /** Run SQL inside the governor (seed or inspect its tables). */

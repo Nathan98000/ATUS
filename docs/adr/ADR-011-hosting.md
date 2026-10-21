@@ -203,7 +203,7 @@ visitor ──TLS──▶ Cloudflare edge (sets CF-Connecting-IP = visitor)
 
 ### Quota governor (to be finalized in ADR-012)
 
-- **Where it lives.** A single Durable Object named `global`, using the SQLite backend on Workers Free.
+- **Where it lives.** A single Durable Object, using the SQLite backend on Workers Free. It was named `global`; since review round 4 its name is derived from `IP_HMAC_KEY`, so rotating that key starts a fresh instance ([ADR-015](ADR-015-edge-cache-snapshot-and-governor.md), amendments, review round 4).
   - Its state survives Render restarts and spin-downs.
   - It does not depend on the API host, which keeps the fallback swap (below) cheap.
   - The API keeps its own in-flight lanes and per-IP buckets as a second, independent layer.
