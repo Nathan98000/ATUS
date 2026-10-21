@@ -194,7 +194,15 @@ class TestTimeouts:
         with api(loaded_settings, lambda conn, **parts: GapEngine(conn, **parts),
                  api_statement_timeout_ms=400) as (client, app):
             response = client.post(ESTIMATE, json=body())
-            assert app.state.database.query_timeouts == 1
+            database = app.state.database
+            assert database.query_timeouts == 1
+            # the refusal ended with that transaction: every pooled connection
+            # passes its check and serves the next ones without a reconnect
+            opened = database.pool.get_stats()["connections_num"]
+            for _ in range(database.pool.get_stats()["pool_size"] + 1):
+                with database.transaction("metadata") as conn:
+                    assert conn.execute("SELECT 1").fetchone() == (1,)
+            assert database.pool.get_stats()["connections_num"] == opened
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "analysis_timeout"
 
@@ -389,6 +397,51 @@ class TestStaleConnections:
                 client.post(ESTIMATE, json=body(2023)).status_code,
             ]
         assert statuses == [200, 200, 200, 200]
+
+    def test_a_failed_check_closes_the_dead_connections_without_reopening_them(
+        self, loaded_settings
+    ):
+        """Review r1 (pool-drain-reopens-whole-pool): after the server ended
+        every pooled connection (a Neon suspend), the first checkout's failed
+        check drained the pool, which reopened a connection for each one it
+        closed: one metadata read took the pool from 3 idle connections to 4
+        and opened 4 (exp_drain). Now the dead idle ones are closed and not
+        replaced. psycopg_pool still replaces the connection that failed and,
+        while the request waits, grows by one: at most two new connections,
+        whatever the pool held."""
+        url = loaded_settings.database_url
+
+        def api_backends() -> int:
+            with psycopg.connect(url, autocommit=True) as admin:
+                return admin.execute(
+                    "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() "
+                    "AND application_name = %s", (dbmod.APPLICATION_NAME,)).fetchone()[0]
+
+        database = dbmod.Database(loaded_settings)
+        try:
+            held = [database.pool.getconn() for _ in range(3)]  # three idle connections
+            for conn in held:
+                database.pool.putconn(conn)
+            wait_for(lambda: database.pool.get_stats()["pool_size"]
+                     == database.pool.get_stats()["pool_available"], "the pool to settle")
+            idle = database.pool.get_stats()["pool_available"]
+            opened = database.pool.get_stats()["connections_num"]
+            with psycopg.connect(url, autocommit=True) as admin:
+                killed = admin.execute(
+                    "SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity "
+                    "WHERE datname = current_database() AND application_name = %s",
+                    (dbmod.APPLICATION_NAME,)).fetchone()[0]
+            assert killed == idle >= 3
+            with database.transaction("metadata") as conn:
+                assert conn.execute("SELECT 1").fetchone() == (1,)
+            wait_for(lambda: database.pool.get_stats()["pool_size"]
+                     == database.pool.get_stats()["pool_available"], "the pool to settle")
+            stats = database.pool.get_stats()
+            assert stats["pool_size"] <= 2 < idle
+            assert 1 <= stats["connections_num"] - opened <= 2
+            assert api_backends() == stats["pool_size"]
+        finally:
+            database.close()
 
 
 class TestSlowWakeAfterAnOldFailure:

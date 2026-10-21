@@ -10,8 +10,15 @@ Pool (audit F05, F17, F18, F36, I08):
   configurable ``prepare_threshold`` (``None`` behind transaction poolers).
 * Every checkout runs ``ConnectionPool.check_connection`` (one empty query).
   When it finds a dead connection — the server restarted or the compute
-  suspended — the pool is drained, because the other idle connections died
-  the same way; the next attempt gets a fresh connection.
+  suspended — every idle connection is closed and none is reopened in its
+  place (:meth:`_ApiPool.discard_idle`), because the others died the same
+  way. psycopg_pool replaces the failed connection and retries the checkout
+  at once (then after about 1 s, doubling); while the request waits for a
+  connection the pool also grows by one, so a wake opens at most two new
+  connections, whatever the pool held.
+* psycopg_pool closes at most one idle connection per ``max_idle`` period,
+  so idle connections can outlive Neon's 5-minute suspend (four of them
+  take four periods to go); the check above is what makes that harmless.
 
 Checkout (audit F34): when every connection is busy, a request waits
 ``ATUS_API_POOL_TIMEOUT_S`` and then gets 503 ``overloaded``. When the pool
@@ -227,7 +234,7 @@ class CountingCursor(psycopg.Cursor):
 def _tracking_connection_class(base: type[psycopg.Connection], tracker: ConnectTracker):
     class TrackedConnection(base):  # type: ignore[valid-type, misc]
         # Set when the current transaction was cancelled (CountingCursor);
-        # cleared when the next transaction registers the connection.
+        # cleared when that transaction releases the connection.
         refused_because: str | None = None
 
         @classmethod
@@ -245,6 +252,36 @@ def _tracking_connection_class(base: type[psycopg.Connection], tracker: ConnectT
     return TrackedConnection
 
 
+class _ApiPool(ConnectionPool):
+    """psycopg_pool's ``ConnectionPool`` plus :meth:`discard_idle`."""
+
+    def discard_idle(self) -> int:
+        """Close every idle connection and shrink the pool by as many,
+        opening none in their place; returns how many were closed.
+
+        ``drain()`` instead reopens one connection for each it closes and
+        replaces every connection checked out at the time when it comes
+        back, so after a suspend it rebuilt the whole pool, and one more
+        (review r1). This uses the pool's private state the way
+        ``_shrink_pool`` does for one connection (``_lock``, ``_pool``,
+        ``_nconns``, ``_nconns_min``); the requirements pin psycopg_pool 3.3,
+        an integration test checks the accounting, and if the internals ever
+        differ the pool is drained as before."""
+        try:
+            with self._lock:
+                idle = list(self._pool)
+                self._pool.clear()
+                self._nconns -= len(idle)
+                self._nconns_min = 0
+        except AttributeError:  # another psycopg_pool: its own, costlier way
+            log.warning("psycopg_pool internals changed; draining the pool instead")
+            self.drain()
+            return 0
+        for conn in idle:
+            self._close_connection(conn)
+        return len(idle)
+
+
 class Database:
     """Pool owner and the per-request transaction context manager."""
 
@@ -254,7 +291,7 @@ class Database:
     ):
         self._settings = settings
         self.tracker = ConnectTracker()
-        self.pool = ConnectionPool(
+        self.pool = _ApiPool(
             conninfo=settings.database_url,
             connection_class=_tracking_connection_class(connection_class, self.tracker),
             kwargs=connection_kwargs(settings),
@@ -285,10 +322,11 @@ class Database:
         try:
             ConnectionPool.check_connection(conn)
         except Exception:
-            log.info("pooled connection failed its check; draining idle connections")
-            drain = getattr(self.pool, "drain", None)  # psycopg_pool >= 3.3
-            if drain is not None:
-                drain()
+            # The other idle connections died the same way (a restart or a
+            # suspend): close them, without reopening any. psycopg_pool then
+            # replaces the failed one, and the checkout gets that.
+            closed = self.pool.discard_idle()
+            log.info("pooled connection failed its check; closed %d idle connections", closed)
             raise
 
     # ------------------------------------------------------------------ #
@@ -367,7 +405,6 @@ class Database:
             # registered before it (and cancelled by it) or refused here.
             closing = self._closing
             if not closing:
-                conn.refused_because = None
                 self._active.add(conn)
         if closing:
             self.pool.putconn(conn)
@@ -397,6 +434,9 @@ class Database:
                 deadline.stop()  # after this, no cancel can reach the reused connection
             with self._active_lock:
                 self._active.discard(conn)
+                # The cancel belonged to this transaction: the pool's own
+                # check and the next transaction may use the connection.
+                conn.refused_because = None
             if repeatable_read:
                 try:
                     conn.isolation_level = None  # back to the server default

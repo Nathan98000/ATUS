@@ -72,7 +72,7 @@ with a message naming the variable, and the message never echoes a secret.
 | `ATUS_API_CORS_ORIGINS` | *(empty: no cross-origin access)* | *(empty: same origin)* | comma-separated exact origins, e.g. `http://localhost:5173` (the ATUS Explorer dev server); never `*` |
 | `ATUS_API_CACHE_SIZE` | `256` | `256` | analysis-result cache entries (LRU) |
 | `ATUS_API_POOL_MAX_SIZE` | `4` | `4` | pool connections |
-| `ATUS_API_POOL_MAX_IDLE_S` | `240` | `240` | a pooled connection unused this long is closed (below Neon's 300 s suspend); the pool keeps no minimum |
+| `ATUS_API_POOL_MAX_IDLE_S` | `240` | `240` | psycopg_pool closes at most one idle connection per period of this length (the pool keeps no minimum), so idle connections can outlive Neon's 300 s suspend; the first checkout after a suspend finds them dead, closes them all and opens at most two |
 | `ATUS_API_POOL_TIMEOUT_S` | `5` | `5` | wait for a connection while every pool connection is busy, then 503 `overloaded`; while a new connection is being opened the wait is this plus `ATUS_API_CONNECT_TIMEOUT_S` |
 | `ATUS_API_CONNECT_TIMEOUT_S` | `10` | `10` | libpq `connect_timeout` |
 | `ATUS_API_STATEMENT_TIMEOUT_MS` | `85000` | `85000` | per-transaction `statement_timeout` for analyses |
