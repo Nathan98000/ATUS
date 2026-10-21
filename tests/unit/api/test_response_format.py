@@ -23,8 +23,20 @@ formatting, null handling, warnings and labels as serialized). If it fails:
 2. add the printed fingerprint under the new key. Never edit an existing
    entry: that is exactly the silent change this test exists to catch.
 
-Engine-produced text (warnings, labels) changes the bytes too; ADR-015 asks
-for a bump on any change to analysis response bytes.
+Engine-produced text (warnings, notes, labels, population descriptions,
+unavailable reasons) changes the bytes too, and the known results above are
+hand-built, so none of it reaches that fingerprint. ``ENGINE_PINNED`` pins
+it (review r4, response-format-pin-misses-engine-output): the real
+``AnalysisEngine`` answers ``ENGINE_REQUESTS`` through the API on synthetic
+sufficient statistics (``SyntheticStatistics``, no database), reaching every
+warning branch, every generated label and description form and both trend
+unavailable reasons. Its fingerprint covers every string, key and integer
+of those responses exactly, and every float to 12 significant digits (the
+stub fingerprint above pins number formatting; 12 digits keep a libm's last
+bit in ``NormalDist.inv_cdf`` out of it while catching any estimator change).
+If it fails, the same two steps apply: bump ``RESPONSE_FORMAT`` for a text
+change, ``ANALYTICS_VERSION`` for a number change, and add the new
+fingerprint under the new key.
 """
 
 from __future__ import annotations
@@ -32,18 +44,32 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import math
 import re
 import sys
+from decimal import Decimal
 from pathlib import Path
 
-from atus_pipeline.analytics import ANALYTICS_VERSION
+import pytest
+from fastapi.testclient import TestClient
+
+from atus_pipeline.analytics import ANALYTICS_VERSION, engine, variance
+from atus_pipeline.analytics.activities import ActivityResolver
 from atus_pipeline.analytics.results import (
     ComparisonResult,
     EstimateValue,
     TrendPoint,
     TrendResult,
 )
-from atus_pipeline.api import RESPONSE_FORMAT
+from atus_pipeline.api import RESPONSE_FORMAT, observability
+from atus_pipeline.api.app import create_app
+from atus_pipeline.api.dependencies import get_database
+from tests.unit.api.conftest import (
+    FAKE_LEXICON,
+    FakeDatabase,
+    FakeVersionConnection,
+    make_settings,
+)
 from tests.unit.api.test_contract import known_estimate_result
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -168,6 +194,203 @@ def test_analysis_response_bytes_are_pinned_to_the_response_format(client, stub_
         "ANALYTICS_VERSION. Edge KV entries survive code-only deploys (ADR-015): "
         f"{BUMP_INSTRUCTIONS}. New fingerprint: {digest!r}."
     )
+
+
+# --------------------------------------------------------------------------- #
+# the real engine's output (review r4)                                         #
+# --------------------------------------------------------------------------- #
+
+ENGINE_PINNED: dict[tuple[str, str], str] = {
+    ("1", "0.2"): "7ed90b948a92a6663a939b656b0959af22b8f08f9ddccfe30cf61ea651778c1f",
+}
+
+_ALL_DIMENSIONS = {
+    "age_min": 80, "sex": "female", "employment_status": "not_in_labor_force",
+    "has_household_children": False, "region": 3, "state_fips": "06",
+    "education_level": "high_school", "day_type": "weekend",
+}
+#: Requests reaching every warning and note the engine and population.py add
+#: (harmonization, pandemic, pooled, CI truncation, covariance, age topcode,
+#: education, day type), every form of the activity label (preset, a given
+#: label, a single leaf's name, "<n> activity codes") and of the population
+#: description, both trend unavailable reasons, both weight schemes, every
+#: measure, and both variance methods. Year 2005 has no respondents in
+#: ``SyntheticStatistics``.
+ENGINE_REQUESTS: tuple[tuple[str, dict], ...] = (
+    ("estimate", {"activity": {"preset": "sleep"}, "years": [2023]}),
+    ("estimate", {"activity": {"preset": "sleep"}, "years": [2023],
+                  "measure": "participation_rate"}),
+    ("estimate", {"activity": {"include": ["0101"]}, "years": [2021, 2022, 2023],
+                  "measure": "average_minutes_per_participant",
+                  "population": _ALL_DIMENSIONS}),
+    ("estimate", {"activity": {"include": ["12"]}, "years": [2019, 2020],
+                  "weights": "pandemic", "measure": "participants_per_day",
+                  "variance": "none",
+                  "population": {"age_max": 64, "diary_date_min": "2019-06-01",
+                                 "diary_date_max": "2020-10-31"}}),
+    ("estimate", {"activity": {"include": ["01"], "exclude": ["010102"], "label": "Own"},
+                  "years": [2019], "confidence_level": 0.9,
+                  "population": {"age_min": 25, "has_household_children": True,
+                                 "diary_date_min": "2019-03-01"}}),
+    ("estimate", {"activity": {"include": ["01"], "exclude": ["010102"]}, "years": [2018],
+                  "population": {"diary_date_max": "2018-06-30"}}),
+    ("trend", {"activity": {"preset": "sleep"}, "years": [2004, 2005, 2019, 2020, 2021],
+               "population": {"day_type": "weekday"}}),
+    ("trend", {"activity": {"preset": "sleep"}, "years": [2019, 2020],
+               "weights": "pandemic", "measure": "participation_rate"}),
+    ("compare", {"activity": {"preset": "sleep"}, "years": [2021, 2022, 2023],
+                 "group_a": {"sex": "male"}, "group_b": {"sex": "female"}}),
+    ("compare", {"activity": {"include": ["120303"]}, "years": [2023], "variance": "none",
+                 "population": {"region": 1},
+                 "group_a": {"employment_status": "employed"},
+                 "group_b": {"employment_status": "unemployed"},
+                 "label_a": "Employed", "label_b": "Unemployed"}),
+)
+_EMPTY_YEARS = frozenset({2005})
+
+
+class _Rows(list):
+    def fetchall(self):
+        return list(self)
+
+
+class _LexiconConnection:
+    """Answers the three lexicon reads of ``ActivityResolver`` from
+    ``FAKE_LEXICON`` (the API builds its resolver with the data snapshot)."""
+
+    def execute(self, sql, params=None):
+        level = {"activity_tier1": 1, "activity_tier2": 2, "activity_codes": 3}[
+            re.search(r"atus\.(\w+)", sql)[1]
+        ]
+        return _Rows((e.code, e.name) if level == 3 else (e.code,)
+                     for e in FAKE_LEXICON if e.level == level)
+
+
+class SyntheticStatistics(FakeVersionConnection):
+    """Answers the engine's sufficient-statistics query with rows computed
+    from its parameters (deterministic, no database): numeric sums as
+    ``Decimal`` and 160 replicate sums per array, as PostgreSQL returns them.
+    Sleep codes participate near-universally, so a participation rate's CI
+    crosses 1 and is truncated."""
+
+    def execute(self, sql, params=None):
+        if not params or "years" not in params:
+            return super().execute(sql, params)
+        observability.note_statement()
+        with_replicates = "rep_sum_w" in sql
+        return [self._row(year, params, with_replicates)
+                for year in params["years"] if year not in _EMPTY_YEARS]
+
+    @staticmethod
+    def _row(year: int, params: dict, with_replicates: bool) -> tuple:
+        others = {k: v for k, v in params.items() if k != "years"}
+        seed_text = json.dumps([year, others], sort_keys=True, default=str)
+        h = int(hashlib.sha256(seed_text.encode()).hexdigest()[:8], 16)
+        universal = all(code.startswith("0101") for code in params["activity_codes"])
+        n = 120 + h % 60
+        n_part = n - 1 if universal else n // 2 + h % 10
+        sum_w = Decimal(1_000_000 + h % 100_000) + Decimal("0.125")
+        share = Decimal("0.9995") if universal else Decimal("0.5") + Decimal(h % 100) / 1000
+        minutes = Decimal(400 + h % 120) if universal else Decimal(30 + h % 90)
+        sum_wp = (sum_w * share).quantize(Decimal("0.000001"))
+        sum_wx = (sum_w * minutes).quantize(Decimal("0.000001"))
+        row = (year, n, n_part, sum_w, sum_wx, sum_wp)
+        if not with_replicates:
+            return row
+        return row + tuple(
+            [float(total) * (1 + ((i * step + h) % mod - mod // 2) * 1e-3) for i in range(160)]
+            for total, step, mod in ((sum_w, 7, 13), (sum_wx, 11, 17), (sum_wp, 5, 19))
+        )
+
+
+def _canonical(node):
+    """Keys in order, strings, integers, booleans and nulls as they are; each
+    float to 12 significant digits (module docstring)."""
+    if isinstance(node, dict):
+        return [[key, _canonical(value)] for key, value in node.items()]
+    if isinstance(node, list):
+        return [_canonical(value) for value in node]
+    if isinstance(node, float):
+        return f"<float {node:.12g}>"
+    return node
+
+
+def engine_fingerprint(tmp_path) -> tuple[str, list]:
+    resolver = ActivityResolver(_LexiconConnection(), release="0325")
+    database = FakeDatabase(SyntheticStatistics, resolver=resolver)
+    app = create_app(make_settings(tmp_path), open_pool=False)  # the real engine
+    app.dependency_overrides[get_database] = lambda: database
+    material = []
+    with TestClient(app, raise_server_exceptions=False) as client:
+        for operation, body in ENGINE_REQUESTS:
+            response = client.post(f"/api/v1/analysis/{operation}", json=body)
+            assert response.status_code == 200, (operation, body, response.text)
+            assert response.headers["X-Cache"] == "miss"
+            assert response.headers["X-Response-Format"] == RESPONSE_FORMAT
+            material.append([operation, _canonical(response.json())])
+    digest = hashlib.sha256(
+        json.dumps(material, separators=(",", ":"), ensure_ascii=False).encode()
+    ).hexdigest()
+    return digest, material
+
+
+def test_engine_output_is_pinned_to_the_response_and_analytics_versions(tmp_path):
+    digest, _ = engine_fingerprint(tmp_path)
+    key = (RESPONSE_FORMAT, ANALYTICS_VERSION)
+    assert key in ENGINE_PINNED, (
+        f"no engine fingerprint for {key!r}: add {key!r}: {digest!r} to ENGINE_PINNED "
+        "(see the module docstring)"
+    )
+    assert ENGINE_PINNED[key] == digest, (
+        "The real engine's analysis responses changed under the same RESPONSE_FORMAT and "
+        "ANALYTICS_VERSION (warning, note, label or description text, or a number). Edge KV "
+        "entries survive code-only deploys (ADR-015): for a text change, "
+        f"{BUMP_INSTRUCTIONS}; for a number change, bump ANALYTICS_VERSION. New engine "
+        f"fingerprint: {digest!r}."
+    )
+
+
+@pytest.mark.parametrize("ulps", [-1, 1])
+def test_the_engine_pin_does_not_depend_on_the_platform_libm(tmp_path, monkeypatch, ulps):
+    """glibc's ``NormalDist().inv_cdf(0.975)`` is 1 ulp above macOS's
+    (measured in review r4), so CI bounds differ in their last bit between
+    platforms. Rounding to 12 digits must absorb that for every pinned value."""
+    z_value = variance.z_value
+    monkeypatch.setattr(
+        variance, "z_value",
+        lambda level: math.nextafter(z_value(level), math.copysign(math.inf, ulps)),
+    )
+    digest, _ = engine_fingerprint(tmp_path)
+    assert digest == ENGINE_PINNED[(RESPONSE_FORMAT, ANALYTICS_VERSION)]
+
+
+def test_the_engine_requests_reach_every_warning_and_label_form(tmp_path):
+    """The pin is only as wide as its requests: each engine text it is meant
+    to cover must appear in the responses it fingerprints."""
+    _, material = engine_fingerprint(tmp_path)
+    text = json.dumps(material, ensure_ascii=False)
+    for needle in (
+        engine._PANDEMIC_NOTE,
+        engine.harmonization_note("2003-25"),
+        "Pooled estimate: represents the average day across 3 survey years",
+        "(1,095 days combined)",
+        "Confidence interval truncated to [0, 1]",
+        "per-replicate differences, which accounts for covariance",
+        "Roster age is topcoded", "Education comes from the CPS interview",
+        "Day-type estimates represent the average such day",
+        "TUFNWGTP is undefined for 2020", "no respondents match the population filters",
+        '"2 activity codes"', '"Sleeping"', '"Own"', '"Television and movies (not religious)"',
+        "civilian noninstitutional population age 15+",
+        "age 80-85+ (topcoded), sex=female, employment_status=not_in_labor_force, "
+        "education_level=high_school, day_type=weekend, no household children under 18, "
+        "Census region 3, state FIPS 06",
+        "age 25-85+ (topcoded), household children under 18 present, "
+        "diary dates 2019-03-01 to (end of period)",
+        "age 15-64, diary dates 2019-06-01 to 2020-10-31",
+        "diary dates (start) to 2018-06-30",
+        "TU20FWGT", "respondents.pandemic_weight",
+    ):
+        assert needle in text, needle
 
 
 def _script(path: str, name: str):

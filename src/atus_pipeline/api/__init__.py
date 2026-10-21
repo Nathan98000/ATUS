@@ -21,6 +21,9 @@ formatting, warning or label text) without a change in
 Everything else follows this constant: deploy.yml publishes the format the
 snapshot recorded, ``scripts/build_snapshot.py`` takes the one the API
 reports, and ``scripts/smoke_stack.sh`` reads it here for the stack probe.
-``tests/unit/api/test_response_format.py`` pins the response schemas and
-bytes to this value, and the copies to it.
+``tests/unit/api/test_response_format.py`` pins the response schemas, the
+bytes of hand-built results and the real engine's responses to a fixed set
+of requests (``ENGINE_REQUESTS``: every warning, label and description form
+the engine produces today) to this value and ``ANALYTICS_VERSION``, and the
+copies to it. New engine text needs a request there to be covered.
 """
