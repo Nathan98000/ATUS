@@ -230,6 +230,39 @@ class TestShutdownCancel:
         assert "shutdown: cancelled 1 running queries" in caplog.text
         assert running_sleeps(url) == 0
 
+    def test_an_analysis_queued_for_a_lane_never_starts_during_shutdown(self, loaded_settings):
+        """Review r1 (shutdown-admits-queued-analyses-after-cancel): with the
+        only lane busy, a second analysis waits for it. Shutdown cancelled
+        the running query; the queued analysis then took the freed lane and
+        started a query that nothing cancelled, which outlived the app. Now
+        shutdown closes the lanes and the database to new work first."""
+        def sleeping(conn, **snapshot_parts):
+            return SlowEngine(conn, sleeps=(LONG_SLEEP_S,), **snapshot_parts)
+
+        url = loaded_settings.database_url
+        try:
+            with ThreadPoolExecutor(3) as pool:
+                context = api(loaded_settings, sleeping, api_max_inflight=1,
+                              api_max_inflight_heavy=1, api_admission_wait_s=60)
+                client, app = context.__enter__()
+                first = pool.submit(client.post, ESTIMATE, json=body(2023))
+                wait_for(lambda: running_sleeps(url) == 1, "the first analysis query")
+                second = pool.submit(client.post, ESTIMATE, json=body(2019))
+                wait_for(lambda: app.state.protection.lanes.waits == 1,
+                         "the second analysis to queue for the lane")
+                context.__exit__(None, None, None)              # the lifespan shutdown
+                still_running = running_sleeps(url)
+                responses = first.result(30), second.result(30)
+        finally:
+            with psycopg.connect(url, autocommit=True) as admin:  # never leave one behind
+                admin.execute(
+                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                    "WHERE datname = current_database() AND application_name = %s",
+                    (dbmod.APPLICATION_NAME,))
+        assert still_running == 0
+        assert [r.json()["error"]["code"] for r in responses] == ["analysis_timeout",
+                                                                 "overloaded"]
+
 
 class TestPoolExhaustion:
     def test_busy_pool_is_overloaded_with_retry_after(self, loaded_settings):

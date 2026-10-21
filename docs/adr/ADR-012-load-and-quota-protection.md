@@ -175,7 +175,7 @@ These settings live in `api/serve.py`, which `atus api` runs.
 - **Protocol.** Proxy headers off, `forwarded_allow_ips` empty, no `server` header, websockets off, h11 with a 16 KiB request-head limit.
 - **Threads.** The anyio thread limiter is set to `ATUS_API_THREADS` (16) at startup. Routes are async and do their database work in exactly one worker-thread hop per transaction, so DB-free routes never wait for a thread (F02).
 - **Connections.** Keep-alive 5 s. `limit_concurrency` is 4 × threads (64): beyond it uvicorn answers 503 before any app code runs (F49).
-- **Shutdown.** `timeout_graceful_shutdown` is 20 s, below Render's 30 s grace. On shutdown, queries still running are cancelled and detached computations get up to 5 s before the pool closes (F52).
+- **Shutdown.** `timeout_graceful_shutdown` is 20 s, below Render's 30 s grace. On shutdown, the lanes and the database first refuse new work (503 `overloaded`, also for an analysis still waiting for a lane), then queries still running are cancelled, detached computations get up to 5 s, whatever still runs is cancelled again, and the pool closes (F52).
 
 ### Relation to the edge governor (ADR-015)
 

@@ -199,6 +199,20 @@ class TestCheckout:
         finally:
             db.close()
 
+    def test_no_transaction_starts_after_shutdown_began(self, tmp_path):
+        """Review r1: whatever is admitted after the shutdown cancel (an
+        analysis that waited for a lane) gets 503 overloaded, not a query."""
+        failing = _failing_connection_class("must not connect during shutdown")
+        db = self._database(tmp_path, failing)
+        try:
+            assert db.begin_shutdown() == 0
+            for kind in ("analysis", "metadata"):
+                with pytest.raises(OverloadedError, match="shutting down"), db.transaction(kind):
+                    pass
+            assert failing.attempts == 0
+        finally:
+            db.close()
+
     def test_pool_starts_without_connecting(self, tmp_path):
         failing = _failing_connection_class("must not connect at startup")
         db = self._database(tmp_path, failing)

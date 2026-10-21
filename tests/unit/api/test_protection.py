@@ -222,3 +222,30 @@ class TestAdmissionLanes:
                 pass
 
         anyio.run(scenario)
+
+    def test_closed_lanes_admit_nothing_not_even_a_waiter(self):
+        """Shutdown (review r1): a request waiting for a lane when the lanes
+        close must not take the lane that frees; later requests are refused."""
+        async def scenario():
+            lanes = AdmissionLanes(max_inflight=1, max_heavy=1, wait_s=2.0)
+            outcome = []
+
+            async def waiter():
+                try:
+                    async with lanes.admit(heavy=False):
+                        outcome.append("admitted")
+                except OverloadedError as exc:
+                    outcome.append(str(exc))
+
+            async with anyio.create_task_group() as tg:
+                async with lanes.admit(heavy=False):
+                    tg.start_soon(waiter)
+                    await anyio.sleep(0.05)
+                    lanes.close()
+            assert outcome == ["server shutting down"]
+            with pytest.raises(OverloadedError):
+                async with lanes.admit(heavy=True):
+                    pass
+            assert lanes.in_flight == 0
+
+        anyio.run(scenario)

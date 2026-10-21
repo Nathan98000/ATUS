@@ -13,8 +13,9 @@ the (empty) in-process data snapshot and the per-process protection state
 (rate buckets, daily cap, admission lanes); it sizes the worker-thread
 limiter and starts the periodic metrics log event (``metrics.py``; it
 touches no database). Nothing reads the database until a request needs
-data. Shutdown cancels queries still running, waits briefly for detached
-computations, and closes the pool. The lifespan startup performs no data
+data. Shutdown closes the admission lanes and the database to new work,
+cancels queries still running, waits briefly for detached computations,
+cancels again whatever still runs, and closes the pool. The lifespan startup performs no data
 validation and no I/O (a cold start's cost is importing the code); a
 production configuration without edge secrets, or with a database URL that
 does not verify the server's certificate, is refused before anything starts
@@ -131,10 +132,19 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
             yield
         finally:
             metrics_events.cancel()
-            cancelled = await anyio.to_thread.run_sync(database.cancel_active)
+            # Nothing new starts from here on: an analysis waiting for a lane
+            # must not take the lane a cancelled query frees, and no
+            # transaction may begin after the cancel below.
+            protection.lanes.close()
+            cancelled = await anyio.to_thread.run_sync(database.begin_shutdown)
             if cancelled:
                 log.warning("shutdown: cancelled %d running queries", cancelled)
             await app.state.runner.shutdown()
+            # A cancel that reached a transaction between two statements was
+            # ignored by the server; cancel whatever is still running.
+            late = await anyio.to_thread.run_sync(database.cancel_active)
+            if late:
+                log.warning("shutdown: cancelled %d queries still running", late)
             await anyio.to_thread.run_sync(database.close)
 
     app = FastAPI(

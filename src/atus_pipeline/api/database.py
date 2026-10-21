@@ -251,6 +251,7 @@ class Database:
         )
         self._active_lock = threading.Lock()
         self._active: set[psycopg.Connection] = set()
+        self._closing = False  # shutdown began: no new transaction (begin_shutdown)
         self.query_timeouts = 0  # queries cancelled by statement_timeout or the deadline
         if open:
             self.pool.open(wait=False)  # min_size=0: starts workers, opens nothing
@@ -336,10 +337,19 @@ class Database:
             sql, params = snapshot_limits_statement(limits), None
         else:
             sql, params = session_limits_statement(limits)
+        if self._closing:
+            raise OverloadedError("server shutting down")
         conn = self.acquire()
         deadline: _Deadline | None = None
         with self._active_lock:
-            self._active.add(conn)
+            # Under the lock that begin_shutdown takes: a transaction is either
+            # registered before it (and cancelled by it) or refused here.
+            closing = self._closing
+            if not closing:
+                self._active.add(conn)
+        if closing:
+            self.pool.putconn(conn)
+            raise OverloadedError("server shutting down")
         try:
             if repeatable_read:
                 conn.isolation_level = psycopg.IsolationLevel.REPEATABLE_READ
@@ -389,6 +399,16 @@ class Database:
         for conn in active:
             cancel_query(conn, "shutting down")
         return len(active)
+
+    def begin_shutdown(self) -> int:
+        """Shutdown's first step: from now on no transaction starts (503
+        ``overloaded``), and every query in flight is cancelled, so nothing
+        that is admitted later (an analysis waiting for a lane, say) can
+        start a query that outlives the process. Returns how many
+        connections were signalled."""
+        with self._active_lock:
+            self._closing = True
+        return self.cancel_active()
 
     def close(self) -> None:
         self.pool.close(timeout=5.0)
