@@ -16,8 +16,9 @@ touches no database). Nothing reads the database until a request needs
 data. Shutdown cancels queries still running, waits briefly for detached
 computations, and closes the pool. The lifespan startup performs no data
 validation and no I/O (a cold start's cost is importing the code); a
-production configuration without edge secrets is refused before anything
-starts.
+production configuration without edge secrets, or with a database URL that
+does not verify the server's certificate, is refused before anything starts
+(``config.check_api_settings``).
 
 Logging is configured here too (``ATUS_LOG_FORMAT``), and uvicorn's own
 access log is switched off: the request-context middleware writes one access

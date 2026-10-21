@@ -84,6 +84,8 @@ def production_settings(data_settings):
     return load_settings({
         "ATUS_ENV": "production",
         "ATUS_DATABASE_URL": data_settings.database_url,
+        # the local test server has no TLS: the local-stack escape hatch
+        "ATUS_DATABASE_TLS": "local-stack-only",
         "ATUS_EDGE_SECRETS": SECRET,
         "ATUS_LOG_LEVEL": "INFO",
     })
@@ -275,6 +277,7 @@ class TestProductionProcess:
             **os.environ,
             "ATUS_ENV": "production",
             "ATUS_DATABASE_URL": data_settings.database_url,
+            "ATUS_DATABASE_TLS": "local-stack-only",
             "ATUS_EDGE_SECRETS": SECRET,
             "ATUS_OPS_TOKEN": OPS_TOKEN,
             "ATUS_BUILD_SHA": "0123abcd",

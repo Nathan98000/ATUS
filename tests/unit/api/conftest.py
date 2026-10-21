@@ -150,7 +150,8 @@ def fake_db() -> FakeDatabase:
 
 def make_settings(tmp_path, **overrides) -> Settings:
     return Settings(
-        database_url="postgresql://nobody:nobody@127.0.0.1:1/none",
+        # verify-full: production-mode settings built from it pass the TLS rule
+        database_url="postgresql://nobody:nobody@127.0.0.1:1/none?sslmode=verify-full",
         data_dir=tmp_path, release="0325", log_level="WARNING", **overrides,
     )
 

@@ -223,6 +223,21 @@ def test_http_snippets_compile_and_carry_no_secret(gate, edge_auth, strict):
     assert ("raise" in code) is strict
 
 
+def test_the_gates_database_urls_pass_the_production_rules(gate):
+    """The gate runs the image in production mode: both API containers must be
+    configured so that the image starts (TLS verification, or the local-stack
+    escape hatch for the throwaway Postgres reachable as `db`)."""
+    from atus_pipeline.config import ConfigError, check_api_settings, load_settings
+
+    base = {"ATUS_ENV": "production", "ATUS_EDGE_SECRETS": "e" * 32}
+    check_api_settings(load_settings({**base, "ATUS_DATABASE_URL": gate.UNRESOLVABLE_DATABASE_URL}))
+    stack_url = f"postgresql://{gate.API_ROLE}@db:5432/postgres"
+    check_api_settings(load_settings({**base, "ATUS_DATABASE_URL": stack_url,
+                                      **gate.LOCAL_STACK_TLS}))
+    with pytest.raises(ConfigError, match="sslmode"):
+        load_settings({**base, "ATUS_DATABASE_URL": stack_url})
+
+
 def test_stack_redacts_edge_secrets(gate):
     stack = gate.Stack("image", "prefix", "postgres", timeout=1)
     stack.edge_secrets.append("s3cr3t-value")

@@ -50,6 +50,8 @@ def container_env(stage, state: dict) -> Path:
         "ATUS_ENV": "production",
         "ATUS_DATABASE_URL": f"postgresql://atus_api:{env['ATUS_STACK_API_DB_PASSWORD']}"
                              "@db:5432/atus",
+        # the stack's Postgres has no TLS: the escape hatch docker-compose.prod.yml sets
+        "ATUS_DATABASE_TLS": "local-stack-only",
         "ATUS_EDGE_SECRETS": env["ATUS_STACK_EDGE_SECRET"],
         "ATUS_OPS_TOKEN": env["ATUS_STACK_OPS_TOKEN"],
         "ATUS_EXPECTED_DATA_VERSION": state["data_version"],

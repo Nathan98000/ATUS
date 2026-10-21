@@ -24,7 +24,8 @@ from tests.unit.api.conftest import make_settings
 SECRET = "e" * 40
 PROD_ENV = {
     "ATUS_ENV": "production",
-    "ATUS_DATABASE_URL": "postgresql://atus_api:Prod-Passw0rd-123456@db.internal:5432/atus",
+    "ATUS_DATABASE_URL": "postgresql://atus_api:Prod-Passw0rd-123456@db.internal:5432/atus"
+                         "?sslmode=verify-full",
     "ATUS_EDGE_SECRETS": SECRET,
     "PORT": "10000",
 }
@@ -98,6 +99,17 @@ class TestApiCommand:
         result = CliRunner().invoke(cli.cli, ["api"], env=env)
         assert result.exit_code != 0
         assert "ATUS_DATABASE_URL is required" in result.output
+        assert started == []
+
+    def test_production_without_certificate_verification_refuses_to_start(self, monkeypatch):
+        monkeypatch.delenv("ATUS_DATABASE_TLS", raising=False)
+        started = []
+        monkeypatch.setattr(serve, "run", lambda *a, **k: started.append(k))
+        url = "postgresql://atus_api:Prod-Passw0rd-123456@db.internal:5432/atus?sslmode=require"
+        result = CliRunner().invoke(cli.cli, ["api"], env={**PROD_ENV, "ATUS_DATABASE_URL": url})
+        assert result.exit_code != 0
+        assert "sslmode=require" in result.output and "verify-full" in result.output
+        assert "Prod-Passw0rd" not in result.output
         assert started == []
 
     def test_valid_configuration_starts_the_server(self, monkeypatch):

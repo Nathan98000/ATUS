@@ -64,8 +64,14 @@ POSTGRES_IMAGE = (
 )
 # The role the API connects as, here and in production (ADR-011 "Roles").
 API_ROLE = "atus_api"
-# A database host that can never resolve (RFC 6761 reserves .invalid).
-UNRESOLVABLE_DATABASE_URL = f"postgresql://{API_ROLE}@db.invalid:5432/atus"
+# A database host that can never resolve (RFC 6761 reserves .invalid), with the
+# certificate verification production requires of every database URL.
+UNRESOLVABLE_DATABASE_URL = (
+    f"postgresql://{API_ROLE}@db.invalid:5432/atus?sslmode=verify-full&sslrootcert=system"
+)
+# The throwaway Postgres below has no TLS: the API's local-stack escape hatch,
+# which production mode accepts only for such a host (here the alias `db`).
+LOCAL_STACK_TLS = {"ATUS_DATABASE_TLS": "local-stack-only"}
 EDGE_AUTH_HEADER = "X-ATUS-Edge-Auth"
 # Every backend's log lines start with this prefix, so the API role's lines are
 # found by `user=atus_api ` whatever application_name the API sets.
@@ -399,8 +405,10 @@ class Stack:
         docker("exec", self.db, "psql", "-h", "127.0.0.1", "-U", "postgres", "-v",
                "ON_ERROR_STOP=1", "-qc", f"CREATE ROLE {API_ROLE} LOGIN")
 
-    def start_api(self, name: str, database_url: str, network: str) -> None:
-        """Run the image's own command, configured the way Render runs it."""
+    def start_api(self, name: str, database_url: str, network: str,
+                  extra_env: dict[str, str] | None = None) -> None:
+        """Run the image's own command, configured the way Render runs it
+        (plus ``extra_env``)."""
         self.containers.append(name)
         secret = secrets.token_urlsafe(24)
         self.edge_secrets.append(secret)
@@ -408,6 +416,8 @@ class Stack:
             env_file = os.path.join(tmp, "api.env")
             with open(os.open(env_file, os.O_WRONLY | os.O_CREAT, 0o600), "w") as handle:
                 handle.write(f"ATUS_DATABASE_URL={database_url}\nATUS_EDGE_SECRETS={secret}\n")
+                for key, value in (extra_env or {}).items():
+                    handle.write(f"{key}={value}\n")
             docker("run", "-d", "--name", name, "--network", network, "--env-file", env_file,
                    self.image)
 
@@ -537,7 +547,8 @@ def dynamic_checks(stack: Stack, config: dict, contents: dict, results: list[Res
 
     # Against a database that logs everything the API role does.
     stack.start_database()
-    stack.start_api(stack.api, f"postgresql://{API_ROLE}@db:5432/postgres", stack.network)
+    stack.start_api(stack.api, f"postgresql://{API_ROLE}@db:5432/postgres", stack.network,
+                    extra_env=LOCAL_STACK_TLS)
     if not stack.wait_until_healthy(stack.api, health):
         raise CheckError(f"{label} never passed against the test database")
     pid1 = docker("exec", stack.api, "cat", "/proc/1/status").stdout

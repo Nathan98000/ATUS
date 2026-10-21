@@ -269,7 +269,7 @@ class TestJsonFormat:
 
         settings = load_settings({
             "ATUS_ENV": "production",
-            "ATUS_DATABASE_URL": "postgresql://u:p@db.example/atus",
+            "ATUS_DATABASE_URL": "postgresql://u:p@db.example/atus?sslmode=verify-full",
             "ATUS_EDGE_SECRETS": SECRET,
         })
         assert settings.log_format == "json"

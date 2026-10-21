@@ -8,7 +8,8 @@ Functional checks only, no timings:
   against a throwaway TLS Postgres with a throwaway CA;
 - /health answers with no reachable database, and Docker's health check
   turns healthy (liveness never touches the DB);
-- production mode refuses to start without its required settings (F44).
+- production mode refuses to start without its required settings (F44), and
+  with a database URL that does not verify the server's certificate.
 """
 
 from __future__ import annotations
@@ -25,7 +26,8 @@ import pytest
 POSTGRES_IMAGE = (
     "postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94"
 )
-UNREACHABLE_DB = "postgresql://atus_api:unused@127.0.0.1:1/atus"
+# Production mode requires certificate verification in every database URL.
+UNREACHABLE_DB = "postgresql://atus_api:unused@127.0.0.1:1/atus?sslmode=verify-full"
 
 
 def docker(*args: str, check: bool = True, timeout: float = 300) -> subprocess.CompletedProcess:
@@ -298,3 +300,32 @@ def test_production_mode_refuses_to_start_without_its_settings(api_image, unique
     assert result.returncode != 0
     output = result.stdout + result.stderr
     assert "ATUS_DATABASE_URL" in output
+
+
+@pytest.mark.parametrize(
+    ("query", "extra_env", "message"),
+    [
+        ("?sslmode=require", {}, "sslmode=require"),
+        # the escape hatch is refused for a host outside the local stack
+        ("", {"ATUS_DATABASE_TLS": "local-stack-only"}, "local-stack-only is accepted only"),
+    ],
+)
+def test_production_mode_refuses_a_database_url_without_verification(
+    api_image, unique, query, extra_env, message
+):
+    name = f"{unique}-tls"
+    env_args = ["-e", f"ATUS_DATABASE_URL=postgresql://atus_api@db.example.com/atus{query}",
+                "-e", f"ATUS_EDGE_SECRETS={secrets.token_urlsafe(32)}"]
+    for key, value in extra_env.items():
+        env_args += ["-e", f"{key}={value}"]
+    try:
+        result = subprocess.run(
+            ["docker", "run", "--rm", "--name", name, "--network", "none", *env_args, api_image],
+            capture_output=True, text=True, timeout=60, check=False,
+        )
+    except subprocess.TimeoutExpired:
+        pytest.fail("the API started with a database URL that does not verify the server")
+    finally:
+        docker("rm", "-f", name, check=False)
+    assert result.returncode != 0
+    assert message in result.stdout + result.stderr

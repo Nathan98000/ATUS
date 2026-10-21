@@ -207,6 +207,22 @@ def test_production_example_values_match_the_contract():
     assert commented["ATUS_API_MAX_PARALLEL_WORKERS"] == ""
     assert commented["PORT"] == "10000"
     assert commented["ATUS_BUILD_SHA"] == "dev"
+    # documented, never active: the local stack's TLS escape hatch is not Render's
+    assert commented["ATUS_DATABASE_TLS"] == ""
+
+
+def test_production_example_database_url_shape_passes_the_tls_rule():
+    """The documented production DSN shape is what production accepts; the
+    weaker `require` the template warns about is refused."""
+    from atus_pipeline.config import ConfigError, load_settings
+
+    text = _read(".env.production.example")
+    shape = re.search(r"^#\s+(postgresql://atus_api:<password>@\S+)$", text, re.MULTILINE)
+    url = shape.group(1).replace("<password>", "pw").replace("<id>", "x")
+    env = {"ATUS_ENV": "production", "ATUS_EDGE_SECRETS": "e" * 40, "ATUS_DATABASE_URL": url}
+    assert load_settings(env).database_tls == "verify"
+    with pytest.raises(ConfigError, match="sslmode=require"):
+        load_settings({**env, "ATUS_DATABASE_URL": url.replace("verify-full", "require")})
 
 
 # ADR-012 "Calibration (§13)": the values the 2026-10-21 emulation runs confirmed
@@ -229,7 +245,8 @@ def test_calibrated_limits_are_the_defaults_and_agree_across_components():
     assert {name: example[name] for name in CALIBRATED} == CALIBRATED
     settings = load_settings({
         "ATUS_ENV": "production", "ATUS_EDGE_SECRETS": "e" * 40,
-        "ATUS_DATABASE_URL": "postgresql://atus_api:not-a-secret@db.invalid:5432/atus",
+        "ATUS_DATABASE_URL": "postgresql://atus_api:not-a-secret@db.invalid:5432/atus"
+                             "?sslmode=verify-full&sslrootcert=system",
     })
     assert (settings.api_statement_timeout_ms, settings.api_max_inflight,
             settings.api_max_inflight_heavy, settings.api_admission_wait_s) == (85_000, 2, 1, 5)

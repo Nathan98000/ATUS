@@ -42,11 +42,16 @@ name: atus-stack
 
 x-api-image: &api-image ${ATUS_STACK_IMAGE:-atus-api:local}
 
-# Exactly what the Render service sets; every other setting keeps the API's
-# production default (.env.production.example).
+# Exactly what the Render service sets, plus ATUS_DATABASE_TLS, the one
+# setting Render never has: the stack's Postgres has no TLS, and production
+# mode refuses a database URL without sslmode=verify-full unless this escape
+# hatch is set, which it accepts only for a local-stack host (`db`,
+# `pgbouncer`). Every other setting keeps the API's production default
+# (.env.production.example).
 x-api-environment: &api-environment
   ATUS_ENV: production
   ATUS_DATABASE_URL: postgresql://atus_api:${ATUS_STACK_API_DB_PASSWORD:?set it in the stack env file (deploy/stack/stack.env.example)}@${ATUS_STACK_API_DB_HOST:-db}:${ATUS_STACK_API_DB_HOST_PORT:-5432}/atus
+  ATUS_DATABASE_TLS: local-stack-only
   ATUS_EDGE_SECRETS: ${ATUS_STACK_EDGE_SECRET:?set it in the stack env file (deploy/stack/stack.env.example)}
   ATUS_EXPECTED_DATA_VERSION: ${ATUS_EXPECTED_DATA_VERSION:-}
   ATUS_OPS_TOKEN: ${ATUS_STACK_OPS_TOKEN:?set it in the stack env file (deploy/stack/stack.env.example)}
