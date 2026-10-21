@@ -544,7 +544,8 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
   - no `[cache]` block;
   - `preview_urls = false` and `workers_dev = true`;
   - `run_worker_first` lists both `/api` and `/api/*`;
-  - static assets come from `frontend/dist`.
+  - static assets come from `frontend/dist`;
+  - the release vars keep their safe defaults, except `NEON_PROJECT_ID`, which may hold the project id you commit (letters, digits and hyphens, at most 64; `edge/test/node/config.test.ts`).
 - **Names** (`edge/wrangler.jsonc`): Worker `atus`, KV binding `RESULT_CACHE` (replace the placeholder namespace id with the one `kv namespace create` prints), Durable Object binding `GOVERNOR`, class `Governor`, migration tag `v1`.
 - **Secrets:** `scripts/ops/gen_edge_secrets.sh [--render-origin https://<service>.onrender.com]` writes `~/.config/atus/edge.env` and prints the commands, including the first deploy's filtered `--secrets-file` (see [Cloudflare Worker](#cloudflare-worker)).
 - **Rehearsed locally:** `scripts/smoke_stack.sh --edge --e2e` runs this Worker, with the same `wrangler.jsonc`, in front of the production-mode API (step 0).
