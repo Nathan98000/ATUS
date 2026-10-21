@@ -780,9 +780,9 @@ one origin, whose Worker proxies `/api/*` to the API — so the build calls
   The bundle names are Vite's defaults (`assets/[name]-[hash]`), unless
   `ASSET_SALT` in `src/deploy/assetNames.ts` is set: then every name also ends
   in `-<salt>`. The salt stays empty; the recovery after a Cloudflare
-  compromise sets a fresh one, so the recovered build reuses no name a
-  browser may hold an attacker's immutable copy of (deployment.md
-  "Rotation", item 5; security.md R16).
+  compromise sets a fresh one, so the recovered build reuses no bundle name
+  a browser may hold an attacker's immutable copy of (`boot.css` and the
+  favicon keep their names; deployment.md "Rotation", item 5; security.md R16).
   The app needs nothing inline, no `data:` URL and nothing third-party;
   clipboard writes (the Share button) stay allowed for the page itself.
 - **`<meta>` CSP backstop.** The build injects the same policy, minus

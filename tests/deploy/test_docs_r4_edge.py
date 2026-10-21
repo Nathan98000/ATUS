@@ -70,8 +70,15 @@ def test_a_compromise_is_recovered_in_order_without_an_epoch_bump():
     positions = [item.index(needle) for needle in order]
     assert positions == sorted(positions), dict(zip(order, positions, strict=True))
     for needle in ("no entry that version wrote verifies", "fresh instance", "back to back",
-                   "new SNAPSHOT_ID", "security.md R16"):
+                   "new SNAPSHOT_ID", "security.md R16",
+                   # Such a version may delete a required secret, so that wrangler refuses
+                   # the deploy; a secret put then deploys that version's code with the value.
+                   "a throwaway value for it", "never put a value you keep"):
         assert needle in item, needle
+    # The salt renames the bundles only: the page still names /boot.css and /favicon.svg
+    # (index.html), which such a version may have sent as immutable too.
+    assert "never asks for a file whose name" not in item
+    assert "(the page, /boot.css, /favicon.svg)" in item
 
 
 def test_the_other_runbooks_and_the_threat_model_say_the_same():
@@ -103,6 +110,11 @@ def test_the_other_runbooks_and_the_threat_model_say_the_same():
     assert numbers == list(range(1, len(numbers) + 1)), numbers
     r16 = _flat(risks[risks.index("**R16."):])
     assert "ASSET_SALT" in r16 and "SNAPSHOT_ID" in r16 and "service worker" in r16
+    assert "never asks for a name such a version could have filled" not in r16
+    assert "/boot.css and /favicon.svg" in r16 and "cache: 'no-cache'" in r16
+    index_html = _read(REPO_ROOT / "frontend" / "index.html")
+    unhashed = set(re.findall(r'(?:href|src)="(/[^"/]+\.(?:css|svg|js))"', index_html))
+    assert unhashed == {"/boot.css", "/favicon.svg"}, unhashed
 
     adr = _read(ADR_015)
     l1 = _flat(next(line for line in adr.splitlines() if line.startswith("- **L1:**")))

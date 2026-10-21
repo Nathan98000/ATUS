@@ -7,8 +7,9 @@
  * Cloudflare token may have served its own files under them, and browsers
  * keep such copies. The recovery (docs/deployment.md "Rotation", item 5)
  * therefore commits a fresh random `ASSET_SALT`, which every bundle's name
- * then carries, so the recovered site never asks for a name a browser may
- * hold an attacker's copy of. Empty: Vite's default names.
+ * then carries, so the recovered site asks for no bundle under a name a
+ * browser may hold an attacker's copy of (`/boot.css` and `/favicon.svg` keep
+ * theirs: docs/security.md R16). Empty: Vite's default names.
  */
 
 /** Set by the recovery to `openssl rand -hex 8`; lowercase hex, at most 32 characters. */
