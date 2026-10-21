@@ -195,7 +195,7 @@ jobs:
       - name: Production build (same-origin, no VITE_API_BASE_URL)
         run: npm run build
 
-      - name: Bundle guard (no dev API address, CSP-safe HTML, _headers rules)
+      - name: Bundle guard (no dev API address, CSP-safe HTML, _headers rules, /openapi.json)
         run: npm run check:bundle
 
       - name: npm audit (runtime dependencies, high and above)

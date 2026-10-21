@@ -97,6 +97,7 @@ Every response carries `Server-Timing: db;dur=<ms>, app;dur=<ms>`: the request's
 | `atus_db_statements_per_request{route}` | histogram, 0 to 21 | access record |
 | `atus_analyses_in_flight`, `atus_analyses_heavy_in_flight` | gauge | admission lanes |
 | `atus_admission_waits_total`, `atus_admission_shed_total` | counter | admission lanes |
+| `atus_client_disconnects_total{route}` | counter | clients that disconnected before their response (analyses) |
 | `atus_rate_limit_rejections_total{bucket}` | counter: `request`, `analysis` | token buckets |
 | `atus_daily_cap_rejections_total`, `atus_daily_cap_used`, `atus_daily_cap_limit` | counter, gauges | daily cap |
 | `atus_analysis_computations_total`, `atus_analysis_joins_total` | counter | analysis runner |

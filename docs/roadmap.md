@@ -248,26 +248,22 @@ data version, and [deployment.md](deployment.md) matches the ADR-011
 amendments (the Vercel fallback is a documented manual procedure, not
 implemented, and no Worker var selects the API origin).
 
-1. **Documentation** (§18): the module docstring of
-   `src/atus_pipeline/api/cache.py` still describes the Phase 4
-   data-version format (audit F69;
-   [operations.md, "What remains open"](operations.md#what-remains-open)).
-2. **CI on GitHub**: the Phase 5 workflows have not yet run on GitHub-hosted
+1. **CI on GitHub**: the Phase 5 workflows have not yet run on GitHub-hosted
    runners; their steps were rehearsed locally. That first run is also the
    first native-Linux and first stack-mode Firefox E2E result.
-3. **Owner account steps** ([deployment.md](deployment.md#owner-account-setup-19)):
+2. **Owner account steps** ([deployment.md](deployment.md#owner-account-setup-19)):
    Cloudflare, Render, Neon and GitHub on free plans; publish the serving-DB
    release artifact (`releases/current.json` says `unpublished`); restore it
    into Neon; run the first Worker deploy; approve the first deploy run.
-4. **Prove the deployment** (deployment.md, step 8): curl and Playwright
+3. **Prove the deployment** (deployment.md, step 8): curl and Playwright
    against the public URL, including the security headers and CSP on the
    real origins, the origin lock, and live recomputation of snapshot entries
    under §9. Only then does the README show a live URL.
-5. **Post-deploy measurement** (deployment.md, steps 9 and 10): the
+4. **Post-deploy measurement** (deployment.md, steps 9 and 10): the
    quota-budgeted replay (`scripts/replay_deployed.py`: the BLS benchmarks
    and §9 spot checks against the deployed URL), the unknowns listed in
    ADR-011, and the week-1 calibration of the Neon compute and timeouts. The
    replay must confirm the emulation's calibration on Neon, F66 included
    (ADR-012, "What stays open").
-6. **Monitors live**: the scheduled workflows stay skipped until the
+5. **Monitors live**: the scheduled workflows stay skipped until the
    repository variable `PUBLIC_BASE_URL` is set after the first deploy.
