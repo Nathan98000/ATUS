@@ -20,6 +20,8 @@ import secrets
 import shutil
 import stat
 import subprocess
+import threading
+import time
 from pathlib import Path
 from types import SimpleNamespace
 from urllib.parse import urlsplit, urlunsplit
@@ -460,7 +462,10 @@ def test_the_restore_check_fails_on_a_setting_roles_sql_did_not_make(restored, c
 
 def test_a_rotation_says_so_when_it_cannot_end_the_old_sessions(restored, cluster):
     """Without pg_signal_backend (a self-managed server, say) the rotation
-    cannot end the role's sessions: the check fails and says what to do."""
+    cannot end the role's sessions. It then applies nothing (a session left
+    open could undo roles.sql at once), leaves the role locked out, says what
+    to do, and a run after that succeeds."""
+    password_before = read_env_file(restored["secrets_file"])[API_PASSWORD_KEY]
     held = psycopg.connect(restored["api_url"], autocommit=True)
     with cluster.admin() as conn:
         conn.execute(f'REVOKE pg_signal_backend FROM "{cluster.owner}"')
@@ -468,16 +473,111 @@ def test_a_rotation_says_so_when_it_cannot_end_the_old_sessions(restored, cluste
         result = restore(restored["dump"], restored["secrets_file"], cluster.api_role,
                          "--roles-only", "--rotate-api-password")
         output = result.stdout + result.stderr
-        restored["api_url"] = read_env_file(restored["secrets_file"])[API_URL_KEY]
         assert result.returncode == 1, output
-        assert "[FAIL] restore: API role's earlier sessions ended  0 ended, 1 still open" \
-            in output
-        assert "Restart" in output and "pg_signal_backend" in output
+        assert "1 open session(s) of" in output and "roles.sql was not applied" in output
+        assert "Restart compute" in output and "pg_signal_backend" in output
+        assert "--roles-only --rotate-api-password" in output
+        assert "password was changed" not in output
+        assert read_env_file(restored["secrets_file"])[API_PASSWORD_KEY] == password_before
         assert held.execute("SELECT 1").fetchone() == (1,)      # still open, as reported
+        with pytest.raises(psycopg.OperationalError, match="not permitted to log in"):
+            psycopg.connect(restored["api_url"]).close()        # locked out meanwhile
     finally:
         held.close()
         with cluster.admin() as conn:
             conn.execute(f'GRANT pg_signal_backend TO "{cluster.owner}"')
+    again = restore(restored["dump"], restored["secrets_file"], cluster.api_role,
+                    "--roles-only", "--rotate-api-password")
+    restored["api_url"] = read_env_file(restored["secrets_file"])[API_URL_KEY]
+    assert again.returncode == 0, again.stdout + again.stderr
+    with psycopg.connect(restored["api_url"]) as conn:
+        assert conn.execute("SELECT current_user").fetchone() == (cluster.api_role,)
+
+
+def test_roles_sql_runs_while_the_api_role_is_locked_out(restored, cluster, tmp_path):
+    """Review r3 verification: a new password ends no session, and the role
+    may change its own password and settings. Ending its sessions after
+    roles.sql left a window in which a session of whoever held the old
+    password set them again (its own password included) before it was ended,
+    so the rotation lost. The restore now locks the role out (NOLOGIN) and
+    ends its sessions before roles.sql: when roles.sql runs, the role cannot
+    log in and has no session. roles.sql's own LOGIN lets it back in."""
+    probe = (
+        "SELECT (SELECT NOT rolcanlogin FROM pg_roles WHERE rolname = :'api_role')\n"
+        "   AND NOT EXISTS (SELECT FROM pg_stat_activity WHERE usename = :'api_role')\n"
+        "   AS locked_out \\gset\n"
+        "\\if :locked_out\n"
+        "\\else\n"
+        "  DO $$ BEGIN RAISE EXCEPTION 'probe: the API role could log in or had a session "
+        "when roles.sql ran'; END $$;\n"
+        "\\endif\n"
+    )
+    roles_sql = tmp_path / "roles.sql"
+    roles_sql.write_text(probe + ROLES_SQL.read_text())
+    held = psycopg.connect(restored["api_url"], autocommit=True)
+    try:
+        result = restore(restored["dump"], restored["secrets_file"], cluster.api_role,
+                         "--roles-only", "--rotate-api-password", "--roles-sql", str(roles_sql))
+        output = result.stdout + result.stderr
+        restored["api_url"] = read_env_file(restored["secrets_file"])[API_URL_KEY]
+        assert result.returncode == 0, output
+        assert "Locked " in output and "ended 1 open session(s)" in output
+        with pytest.raises(psycopg.OperationalError):
+            held.execute("SELECT 1")
+    finally:
+        held.close()
+    with psycopg.connect(restored["api_url"]) as conn:     # LOGIN again, new password
+        assert conn.execute("SELECT current_user").fetchone() == (cluster.api_role,)
+
+
+def test_a_holder_who_keeps_changing_the_role_cannot_outlast_the_rotation(restored, cluster):
+    """Review r3 verification, the attack itself: the leaked password's holder
+    keeps a session open and sets the role's password and a setting again
+    and again while the owner rotates. With the sessions ended after
+    roles.sql, the holder's password was in effect afterwards (and the
+    restore's own connection was refused); now neither survives."""
+    role, leaked = cluster.api_role, restored["api_url"]
+    theirs = "holders-own-password-1"
+    stop = threading.Event()
+    seen = {"changes": 0}
+
+    def holder() -> None:
+        try:
+            with psycopg.connect(leaked, autocommit=True) as conn:
+                conn.execute("SET default_transaction_read_only = off")
+                while not stop.is_set():
+                    try:
+                        conn.execute(f"ALTER ROLE \"{role}\" PASSWORD '{theirs}'")
+                        conn.execute(f'ALTER ROLE "{role}" SET enable_indexscan = off')
+                        seen["changes"] += 1
+                    except psycopg.errors.InternalError_:      # tuple concurrently updated
+                        pass
+                    time.sleep(0.005)
+        except psycopg.OperationalError:
+            pass                                               # ended by the rotation
+
+    thread = threading.Thread(target=holder, daemon=True)
+    thread.start()
+    deadline = time.monotonic() + 10
+    while seen["changes"] < 3:
+        assert time.monotonic() < deadline, "the holder never ran"
+        time.sleep(0.02)
+    try:
+        result = restore(restored["dump"], restored["secrets_file"], role,
+                         "--roles-only", "--rotate-api-password")
+    finally:
+        stop.set()
+        thread.join(10)
+    output = result.stdout + result.stderr
+    restored["api_url"] = read_env_file(restored["secrets_file"])[API_URL_KEY]
+    assert result.returncode == 0, output
+    holders = urlunsplit(urlsplit(leaked)._replace(
+        netloc=f"{role}:{theirs}@{urlsplit(leaked).hostname}:{urlsplit(leaked).port}"))
+    with pytest.raises(psycopg.OperationalError, match="password authentication failed"):
+        psycopg.connect(holders).close()
+    assert _api_role_settings(restored["owner_url"], role) == {"role": ROLES_SQL_SETTINGS}
+    with psycopg.connect(restored["api_url"]) as conn:
+        assert conn.execute("SHOW enable_indexscan").fetchone()[0] == "on"
 
 
 def test_roles_only_passes_after_the_cumulative_statistics_are_lost(restored, cluster):

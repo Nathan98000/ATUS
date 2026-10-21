@@ -98,8 +98,16 @@ def test_the_api_password_leak_and_its_rotation_are_described_as_they_are():
     item = _rotation_item(2)
     assert "open connections keep working" not in item
     assert "ends the role's open sessions" in item and "Restart compute" in item
+    # Review r3 verification: locked out and ended *before* roles.sql, or a
+    # session left open re-sets the password or settings right after it.
+    assert "first locks the role out (NOLOGIN)" in item
+    assert "stops before roles.sql" in item and "then run step 1 again" in item
+    assert "def lock_out_api_role(" in restore
+    held = "test_a_holder_who_keeps_changing_the_role_cannot_outlast_the_rotation"
+    assert held in r4 and f"def {held}(" in _read(RESTORE_TESTS)
     row = _flat(_row(_read(OPERATIONS), "`atus_api` password"))
     assert "[PASS] restore: API role settings are roles.sql's alone" in row
     assert "[PASS] restore: API role's earlier sessions ended" in row
     roles = _flat(_read(ADR / "ADR-013-data-releases-and-serving-db.md"))
     assert "resets every setting of the role, role-wide and for the database" in roles
+    assert "first locks the role out (ALTER ROLE ... NOLOGIN)" in roles

@@ -68,7 +68,10 @@ SELECT coalesce(obj_description(to_regnamespace('atus')::oid, 'pg_namespace')
 
 BEGIN;
 
--- The role: can log in, holds no attribute beyond that.
+-- The role: can log in, holds no attribute beyond that. When the restore
+-- gives an existing role a new password, it first locks the role out
+-- (NOLOGIN) and ends its sessions, so none is left to set the password or
+-- settings again after this script (review r3); LOGIN here lets it back in.
 SELECT format('CREATE ROLE %I', :'api_role')
 WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = :'api_role') \gexec
 ALTER ROLE :"api_role" WITH LOGIN NOCREATEDB NOCREATEROLE CONNECTION LIMIT 10
