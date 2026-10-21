@@ -615,4 +615,5 @@ def test_trivy_is_a_pinned_binary_never_the_hijacked_actions():
     assert env["TRIVY_VERSION"] not in ("0.69.4", "0.69.5", "0.69.6")
     assert re.fullmatch(r"[0-9a-f]{64}", env["TRIVY_SHA256"])
     assert "sha256sum --check --strict" in text
-    assert "--severity HIGH,CRITICAL --ignore-unfixed --exit-code 1" in text
+    assert "--severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore --exit-code 1" \
+        in text

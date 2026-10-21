@@ -541,7 +541,7 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 **R9. The API's limits reset on restart.** Its buckets, daily cap and lanes live in one process, and Render may restart a Free service at any time. The governor's durable state is the primary limit.
 
 **R10. Gaps in scanner coverage.**
-- Trivy fails only on HIGH or CRITICAL vulnerabilities that have a fix (`--ignore-unfixed`).
+- Trivy fails only on HIGH or CRITICAL vulnerabilities that have a fix (`--ignore-unfixed`). Entries in `.trivyignore` (each with a reason and an expiry at most 31 days out, `tests/deploy/test_infra_review_r2.py`) are accepted until they expire; the runbook is [operations.md, "The image scan blocks a deploy"](operations.md#the-image-scan-blocks-a-deploy).
 - `pip-audit` covers only the API's runtime lock, not the build, dev or CI-tool locks.
 - `npm audit --omit=dev` covers runtime dependencies only. The Worker has none, so the build and deploy tools (`wrangler`, the frontend's `vite`) are covered only by Dependabot and the owner's Dependabot alerts.
 

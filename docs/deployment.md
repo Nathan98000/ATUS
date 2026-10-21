@@ -948,7 +948,7 @@ Every secret has one procedure.
 
 ## Rollback and runbooks
 
-The general runbooks live in [`operations.md`](operations.md#runbooks): deploy, rollback, serving-DB build and restore, data release and new ATUS year, restore drill, incident first steps, token rotation, quota exhausted, and provider free-tier changes. The procedures below are the ones the workflows implement.
+The general runbooks live in [`operations.md`](operations.md#runbooks): deploy, rollback, a deploy blocked by the image scan, serving-DB build and restore, data release and new ATUS year, restore drill, incident first steps, token rotation, quota exhausted, and provider free-tier changes. The procedures below are the ones the workflows implement.
 
 ### Rollback
 
@@ -966,8 +966,9 @@ Every deploy run's summary records what ran before it and what it deployed, what
   3. Check with `python scripts/ops/monitors.py edge --base-url https://atus.<sub>.workers.dev`, and run one analysis through the site.
 - **Data:** the release switch in reverse (ADR-013; the commands are in [operations.md "Rollback"](operations.md#rollback)):
   1. restore the previous `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` on Render;
-  2. make `releases/current.json` on `main` name the previous release again (`git checkout <commit of the previous release> -- releases/current.json`, and `NEON_PROJECT_ID` in `edge/wrangler.jsonc` if the governor reads Neon usage), commit and push;
-  3. `gh workflow run deploy.yml --ref main`, then approve, so the Worker's `DATA_VERSION` and snapshot follow with the current code. Preflight runs only `main` or a `vX.Y.Z` tag; re-running an old run (GitHub allows that for 30 days) or tagging the old commit would deploy that commit's API image and Worker code too.
+  2. roll the edge back at once with `wrangler rollback` to the Worker version from before the release's deploy (Edge, above): it restores the Worker's `DATA_VERSION` and the old snapshot. Steps 1 and 2 need no build or scan, so they work even while the image scan blocks every deploy ([operations.md, "The image scan blocks a deploy"](operations.md#the-image-scan-blocks-a-deploy));
+  3. make `releases/current.json` on `main` name the previous release again (`git checkout <commit of the previous release> -- releases/current.json`, and `NEON_PROJECT_ID` in `edge/wrangler.jsonc` if the governor reads Neon usage), commit and push;
+  4. `gh workflow run deploy.yml --ref main`, then approve, so `main`, the Worker's code and the snapshot agree. Preflight runs only `main` or a `vX.Y.Z` tag; re-running an old run (GitHub allows that for 30 days) or tagging the old commit would deploy that commit's API image and Worker code too.
 - **API host:** no failover is implemented. The Vercel fallback (ADR-011 "Fallback") is a documented manual procedure whose preconditions are not built, and no Worker var selects the API origin; the Worker reads it only from the secret `RENDER_ORIGIN`. See the runbook [Render suspends the service](operations.md#render-suspends-the-service) (owner decision).
 
 ### Monitoring and alerting ($0)

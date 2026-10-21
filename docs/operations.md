@@ -859,15 +859,27 @@ The summary of every Deploy run has a "Rollback" table: the build, image digest 
 
 - **Keep the API and edge on the same data version.** If the two deploys carry different `DATA_VERSION`s, roll back the data binding as well (next item). Otherwise the edge cache stores nothing and the SPA shows its reload notice.
 - **Browsers may hold HTML under rolled-back URLs.** Between a deploy and its rollback, a request for a file of the other version (`/snap/<snapshot_id>/…`, `/assets/<hash>.js`) gets the SPA's `index.html` with the one-year `immutable` Cache-Control of its path (`frontend/public/_headers`). The SPA re-fetches such a snapshot file once with `cache: "reload"`, so the snapshot recovers by itself. A bundle cached that way does not: that browser shows the boot fallback ("ATUS Explorer did not start") until its cache is cleared. Only a page that loaded during the gap and requested the other version's hashed bundle is affected; the SPA has a single entry bundle and no lazy chunks.
-- **Data: the release switch in reverse** (ADR-013 "Rollback").
+- **Data: the release switch in reverse** (ADR-013 "Rollback"). Steps 1 and 2 need no build, scan or CI, so they work even while [the image scan blocks every deploy](#the-image-scan-blocks-a-deploy).
   1. In Render → Environment, set `ATUS_DATABASE_URL` back to the previous project's `atus_api` DSN and `ATUS_EXPECTED_DATA_VERSION` to that release's `data_version`, together, then "Save and deploy".
-  2. Make `releases/current.json` on `main` name the previous release again (`git checkout <commit of the previous release> -- releases/current.json`). If the governor reads Neon usage, set `NEON_PROJECT_ID` in `edge/wrangler.jsonc` back too. Commit and push.
-  3. `gh workflow run deploy.yml --ref main -f reason="data rollback to <tag>"`, then approve. The Worker's `DATA_VERSION` and the snapshot follow.
-  4. Put the previous project's `NEON_API_KEY` back with `npx wrangler secret put NEON_API_KEY`, if one is used.
-  5. Check that `curl -s "$SITE/api/_edge/health"` shows the previous `data_version`.
+  2. Roll the edge back right away, to the Worker version that ran before the release's deploy (the "Rollback" table of that Deploy run, "Before this run"; or `npx wrangler deployments list`): `cd edge && npx wrangler rollback <version id> --message "data rollback"`, as in the Edge item above. It restores the Worker's `DATA_VERSION`, `SNAPSHOT_ID` and the old snapshot, so the API and the edge agree again within minutes. If wrangler says secrets have changed since that version, read the Edge item first: after a release switch the changed secret is normally the new project's `NEON_API_KEY`, which the rollback then puts back as it was; decline if any other secret (an edge-secret rotation) is listed.
+  3. Make `releases/current.json` on `main` name the previous release again (`git checkout <commit of the previous release> -- releases/current.json`). If the governor reads Neon usage, set `NEON_PROJECT_ID` in `edge/wrangler.jsonc` back too. Commit and push. Until this lands, every deploy from `main` would publish the newer release again.
+  4. `gh workflow run deploy.yml --ref main -f reason="data rollback to <tag>"`, then approve, so `main`, the Worker's code and the snapshot agree. It rebuilds and scans the image: if the scan blocks it, the rollback from steps 1-2 stays in place meanwhile.
+  5. Put the previous project's `NEON_API_KEY` back with `npx wrangler secret put NEON_API_KEY`, if one is used and step 2 did not restore it.
+  6. Check that `curl -s "$SITE/api/_edge/health"` shows the previous `data_version`.
 
   Keep the newer project; it is deleted only with the owner's approval.
 - **API host:** see [Render suspends the service](#render-suspends-the-service).
+
+### The image scan blocks a deploy
+
+`image.yml`'s Trivy step fails the image job on any HIGH or CRITICAL vulnerability in the image that has a fix, and when Trivy cannot download its vulnerability database. `ci.yml` then fails too (`e2e-stack` needs the image), so `deploy.yml`'s preflight refuses the commit, and `deploy.yml`'s own build (always from scratch) fails at the same step. Every deploy stops: code, a data release's switch, and the `deploy.yml` step of a data rollback.
+
+1. **Read the scan step** (Actions → the run → job Image → "Scan the image"): the package, the vulnerability and its fixed version. No table but a download or network error is transient: re-run the job later.
+2. **Fix forward when you can.**
+   - A Debian package of the base image: bump the base digest (`python:3.12-slim@sha256:…` on both `FROM` lines of `Dockerfile` and in `ARG PYTHON_DIGEST`). Dependabot proposes it after its 7-day cooldown; by hand, `docker buildx imagetools inspect python:3.12-slim` shows the current digest. The Dockerfile never runs `apt-get upgrade`, so the fix arrives only with a rebuilt upstream image.
+   - A Python wheel: bump it in the locks (`requirements/compile.sh --upgrade-package <name>`).
+3. **Otherwise accept it for a short, recorded time.** Only when the advisory shows that the vulnerable code is not reachable in the API, add it to `.trivyignore` in a pull request: a comment with the date, who reviewed it and why, then the ID with an expiry at most 31 days out (`CVE-2026-12345 exp:2026-12-02`; the file's header has the format). Trivy stops ignoring it on that date; `tests/deploy/test_infra_review_r2.py` refuses an entry without a reason or with a later expiry. Remove the entry with the fix. The SARIF report still lists accepted entries.
+4. **Rollbacks need no pipeline.** The API rolls back through the Render deploy hook and the edge through `wrangler rollback` ([Rollback](#rollback)); neither builds or scans. A data rollback's steps 1-2 are those two; its manifest commit and `deploy.yml` run can wait until the scan passes.
 
 ### Serving-DB build and restore
 
