@@ -497,12 +497,13 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 
 **R1. Distributed abuse beyond the per-network caps.** Budgets are per /24 or /48. An attacker with many networks (a botnet, many IPv6 /48s) passes every per-network limit. The global (600/day), heavy (300/day) and CU-hour budgets still hold. But legitimate visitors then get 503 `daily_capacity_reached` for new analyses until 00:00 UTC. Static and cached results keep working.
 
-**R2. Workers Free's 100,000 requests per day are account-wide.** Every `/api` request counts, including those the Worker refuses. On workers.dev at $0, nothing can rate-limit before the Worker runs (ADR-011, accepted risk 4). Once the requests are spent, `/api` is down until 00:00 UTC, KV-cached results included. The SPA and the static snapshot keep working, because static asset requests never invoke the Worker.
+**R2. Workers Free's 100,000 requests per day are account-wide.** Every `/api` request counts, including those the Worker refuses. On workers.dev at $0, nothing can rate-limit before the Worker runs (ADR-011, accepted risk 4). Once the requests are spent, `/api` is down until 00:00 UTC, KV-cached results included. The SPA and the static snapshot keep working, because static asset requests never invoke the Worker. Early warning: only with the optional read-only analytics token (owner step 4.3), when the daily quota report finds more than 70% of the pro-rated allowance used; it runs once a day, so a flood that starts after 22:05 UTC is seen only when `/api` stops. Without the token there is none, only the weekly reminder to look at the dashboard.
 
 **R3. Render direct-origin bandwidth.** The onrender.com hostname cannot be disabled.
 - Every direct request costs Render outbound bandwidth, even when refused, and `/health` answers anyone without a rate limit.
 - A sustained flood could exhaust the workspace's monthly outbound allowance. Render would then suspend the service until the next month (ADR-011, accepted risk 8).
 - Mitigations: an unpublished name with a random suffix, minimal 403 bodies, zero database work, and Render's own Cloudflare layer.
+- No early warning: reading Render's bandwidth needs an account-wide Render API key, which is never created, so no monitor sees the allowance running out. The weekly schedules-check summary reminds the owner to look at the workspace's usage; the first automated signal is the suspension itself.
 
 **R4. Role defaults are a backstop, not a boundary.**
 - `atus_api`'s defaults are session defaults: `statement_timeout`, `lock_timeout`, `idle_in_transaction_session_timeout`, `jit` and `default_transaction_read_only`. The role can `SET` each of them itself.

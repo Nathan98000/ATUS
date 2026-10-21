@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from .conftest import (
@@ -223,6 +225,69 @@ def test_quota_report_fails_when_the_token_is_rejected(fake_server, monkeypatch,
 def test_quota_report_needs_the_token(fake_server):
     assert monitors.main(["quota", "--base-url", fake_server.base]) == 2
     assert fake_server.calls == []
+
+
+# The Worker's account-wide 100,000 requests/day: Cloudflare's GraphQL
+# Analytics API, read with a read-only Account Analytics token (optional).
+CF_TOKEN = "cf-analytics-token-0123456789abcdef"
+CF_ACCOUNT = "0123456789abcdef0123456789abcdef"
+
+
+def cloudflare(server, *requests_per_row, errors=None):
+    rows = [{"sum": {"requests": n}} for n in requests_per_row]
+    server.routes[("POST", "/client/v4/graphql")] = json_reply(200, {
+        "data": None if errors else {"viewer": {"accounts": [
+            {"workersInvocationsAdaptive": rows}]}},
+        "errors": errors}, api=False)
+    server.routes[("GET", "/api/_ops/budget")] = json_reply(
+        200, {"status": "ok", "governor": governor()})   # noon: half the day elapsed
+
+
+def run_quota(server, monkeypatch, *, analytics=True):
+    monkeypatch.setenv("EDGE_OPS_TOKEN", TOKEN)
+    if analytics:
+        monkeypatch.setenv("CLOUDFLARE_ANALYTICS_TOKEN", CF_TOKEN)
+        monkeypatch.setenv("CLOUDFLARE_ANALYTICS_ACCOUNT", CF_ACCOUNT)
+    return monitors.main(["quota", "--base-url", server.base,
+                          "--cloudflare-api-url", server.base])
+
+
+def test_worker_requests_are_judged_against_the_pro_rated_daily_allowance(
+        fake_server, monkeypatch, capsys):
+    cloudflare(fake_server, 15_000, 5_000)       # 20,000 of a pro-rated 50,000
+    assert run_quota(fake_server, monkeypatch) == 0
+    out = capsys.readouterr()
+    assert "[PASS] Worker requests today (account)" in out.out
+    assert CF_TOKEN not in out.out + out.err
+    (query,) = [c for c in fake_server.calls if c["path"] == "/client/v4/graphql"]
+    assert query["headers"]["authorization"] == f"Bearer {CF_TOKEN}"
+    sent = json.loads(query["body"])
+    assert "workersInvocationsAdaptive" in sent["query"] and "requests" in sent["query"]
+    assert sent["variables"] == {"accountTag": CF_ACCOUNT,
+                                 "datetimeStart": "2026-10-20T00:00:00Z",
+                                 "datetimeEnd": "2026-10-20T12:00:00Z"}
+
+
+def test_worker_requests_above_70_percent_alert_before_the_allowance_runs_out(
+        fake_server, monkeypatch, capsys):
+    cloudflare(fake_server, 36_000)              # 72% of the pro-rated 50,000
+    assert run_quota(fake_server, monkeypatch) == 1
+    assert "[FAIL] Worker requests today (account)" in capsys.readouterr().out
+
+
+def test_a_cloudflare_error_fails_the_report(fake_server, monkeypatch, capsys):
+    cloudflare(fake_server, errors=[{"message": "not authorized for that account"}])
+    assert run_quota(fake_server, monkeypatch) == 1
+    assert "not authorized" in capsys.readouterr().out
+
+
+def test_without_an_analytics_token_worker_requests_are_reported_as_unmonitored(
+        fake_server, monkeypatch, capsys):
+    cloudflare(fake_server, 99_999)
+    assert run_quota(fake_server, monkeypatch, analytics=False) == 0
+    out = capsys.readouterr().out
+    assert "worker_requests" in out and "not monitored" in out
+    assert all(c["path"] != "/client/v4/graphql" for c in fake_server.calls)
 
 
 # --------------------------------------------------------------------------- #

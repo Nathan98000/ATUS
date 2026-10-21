@@ -177,6 +177,7 @@ The decisions are unchanged. This section records where the implementation diffe
   - It runs daily at 22:05 UTC, so it reads the governor's counters before their 00:00 UTC reset.
   - It runs in the GitHub environment `ops`, with the Worker's ops token stored as `EDGE_OPS_TOKEN`, and alerts at a threshold of 0.7.
   - The pro-rating rules are in [`../deployment.md`](../deployment.md#monitoring-and-alerting-0). The per-network cap is reported but never alerts.
+  - Amended in review round 1: the governor's budgets say nothing about the account's Worker requests or Render's outbound bandwidth. With an optional read-only Cloudflare token (Account Analytics: Read) the report also judges the Worker requests today against the pro-rated 100,000 (GraphQL Analytics API, `workersInvocationsAdaptive`; availability on Workers Free undocumented). Render outbound stays unmonitored, because reading it needs an account-wide Render API key; the weekly schedules-check summary reminds the owner to look.
 - **Schedule check: a weekly workflow (Monday 09:41 UTC, off the hour), not a runbook step.** It re-enables nothing: with a read-only token (`actions: read`) it can only fail, and so email the owner, when:
   - a scheduled workflow is not active;
   - a monitor's last scheduled run is too old;

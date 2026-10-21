@@ -162,5 +162,5 @@ def _clean_ops_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """No real deployment secret or URL from the developer's shell reaches a test."""
     for name in ("RENDER_ORIGIN", "RENDER_DEPLOY_HOOK_URL", "EDGE_OPS_TOKEN", "PUBLIC_BASE_URL",
                  "GH_TOKEN", "GITHUB_TOKEN", "GITHUB_OUTPUT", "GITHUB_STEP_SUMMARY",
-                 "GITHUB_REPOSITORY"):
+                 "GITHUB_REPOSITORY", "CLOUDFLARE_ANALYTICS_TOKEN", "CLOUDFLARE_ANALYTICS_ACCOUNT"):
         monkeypatch.delenv(name, raising=False)

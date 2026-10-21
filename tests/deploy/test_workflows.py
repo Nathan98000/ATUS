@@ -474,6 +474,17 @@ def test_quota_report_reads_its_token_from_the_ops_environment():
     assert "secrets.EDGE_OPS_TOKEN" in flat(job)
 
 
+def test_quota_report_watches_the_workers_daily_requests_when_configured():
+    """The early warning for Workers Free's 100,000 requests/day: the optional
+    read-only analytics token from the `ops` environment reaches monitors.py
+    (which skips the line, visibly, without it)."""
+    (job,) = jobs(by_name("quota-report.yml")).values()
+    (step,) = [s for s in steps(job) if "monitors.py quota" in s.get("run", "")]
+    assert step["env"]["CLOUDFLARE_ANALYTICS_TOKEN"] == "${{ secrets.CLOUDFLARE_ANALYTICS_TOKEN }}"
+    assert step["env"]["CLOUDFLARE_ANALYTICS_ACCOUNT"] == \
+        "${{ secrets.CLOUDFLARE_ANALYTICS_ACCOUNT }}"
+
+
 def test_ghcr_cleanup_keeps_20():
     (job,) = jobs(by_name("ghcr-cleanup.yml")).values()
     assert job["permissions"] == {"contents": "read", "packages": "write"}

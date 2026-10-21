@@ -7,6 +7,13 @@
 # governor's own storage; nothing reaches Render or Neon. Runs at 22:05 UTC, so
 # the governor's daily counters (reset at 00:00 UTC) cover most of the day and
 # a delayed run still lands before the reset.
+#
+# With the optional `ops` secrets CLOUDFLARE_ANALYTICS_TOKEN (read-only,
+# Account Analytics: Read) and CLOUDFLARE_ANALYTICS_ACCOUNT, one more request
+# to Cloudflare's GraphQL Analytics API judges the account's Worker requests
+# today against Workers Free's 100,000 a day. Render's outbound bandwidth has
+# no monitor (it needs an account-wide Render API key): the weekly
+# schedules-check summary reminds the owner to look at it.
 name: Quota report
 
 on:
@@ -41,4 +48,8 @@ jobs:
         env:
           PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
           EDGE_OPS_TOKEN: ${{ secrets.EDGE_OPS_TOKEN }}
+          # Optional (owner step 4.3): a read-only "Account Analytics: Read"
+          # token and the account id, for the Worker requests line.
+          CLOUDFLARE_ANALYTICS_TOKEN: ${{ secrets.CLOUDFLARE_ANALYTICS_TOKEN }}
+          CLOUDFLARE_ANALYTICS_ACCOUNT: ${{ secrets.CLOUDFLARE_ANALYTICS_ACCOUNT }}
         run: python3 scripts/ops/monitors.py quota --threshold 0.7

@@ -19,7 +19,14 @@ wake Render, never Neon). Tolerates a cold start.
 ``quota`` (daily, ``quota-report.yml``): reads the governor's budget state
 from ``GET /api/_ops/budget`` (bearer ``EDGE_OPS_TOKEN``, never printed) and
 fails when any provider budget is above 70% of its pro-rated value. One
-Worker request; the governor answers from its own storage.
+Worker request; the governor answers from its own storage. With
+``CLOUDFLARE_ANALYTICS_TOKEN`` (a read-only "Account Analytics: Read" token)
+and ``CLOUDFLARE_ANALYTICS_ACCOUNT`` (the account id) it also judges the
+account's Worker requests today against Workers Free's 100,000 a day, from
+one query to Cloudflare's GraphQL Analytics API (``workersInvocationsAdaptive``;
+whether that dataset answers on Workers Free is not documented). Render's
+outbound bandwidth has no monitor: reading it needs an account-wide Render
+API key, which the owner never creates (docs/deployment.md, owner step 2.6).
 
 No monitor calls a path that touches the database; tests/deploy/test_workflows.py
 holds the workflows to that. Exit status: 0 healthy, 1 a check failed, 2 usage.
@@ -28,6 +35,7 @@ holds the workflows to that. Exit status: 0 healthy, 1 a check failed, 2 usage.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -61,6 +69,19 @@ ALERT_THRESHOLD = 0.70
 #: Pro-rating floors, so a report right after a reset does not alert on noise.
 MIN_DAY_SHARE = 1 / 24
 MIN_MONTH_SHARE = 1 / 31
+#: Workers Free: 100,000 requests a day, account-wide, reset at 00:00 UTC.
+WORKER_DAILY_REQUESTS = 100_000
+CLOUDFLARE_API = "https://api.cloudflare.com"
+GRAPHQL_PATH = "/client/v4/graphql"
+#: The account's Worker invocations over a window (Cloudflare's "Querying
+#: Workers metrics with GraphQL" tutorial, without the per-script filter).
+WORKER_REQUESTS_QUERY = (
+    "query WorkerRequests($accountTag: string, $datetimeStart: string, $datetimeEnd: string) {"
+    " viewer { accounts(filter: {accountTag: $accountTag}) {"
+    " workersInvocationsAdaptive(limit: 10000, filter: {"
+    "datetime_geq: $datetimeStart, datetime_leq: $datetimeEnd}) { sum { requests } } } } }"
+)
+ACCOUNT_ID = re.compile(r"^[0-9a-f]{32}$")
 
 
 # --------------------------------------------------------------------------- #
@@ -181,6 +202,43 @@ def _num(value: Any) -> float | None:
         else None
 
 
+def _day_share(generated: datetime) -> float:
+    midnight = generated.replace(hour=0, minute=0, second=0, microsecond=0)
+    return max(MIN_DAY_SHARE, (generated - midnight).total_seconds() / 86_400)
+
+
+def _iso(moment: datetime) -> str:
+    return moment.astimezone(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def worker_requests_line(client: Client, *, token: str, account: str, generated: datetime,
+                         threshold: float) -> BudgetLine:
+    """The account's Worker requests since 00:00 UTC against the pro-rated
+    100,000 a day (one GraphQL query; raises OpsError on any problem)."""
+    midnight = generated.replace(hour=0, minute=0, second=0, microsecond=0)
+    body = json.dumps({"query": WORKER_REQUESTS_QUERY, "variables": {
+        "accountTag": account, "datetimeStart": _iso(midnight),
+        "datetimeEnd": _iso(generated)}}).encode()
+    reply = client.post_json(GRAPHQL_PATH, body, headers={"Authorization": f"Bearer {token}"})
+    if reply.status != 200 or not reply.is_json:
+        raise OpsError(f"Cloudflare GraphQL Analytics API: {reply.describe()}")
+    payload = reply.json()
+    if payload.get("errors"):
+        messages = "; ".join(str((e or {}).get("message", "?"))[:160]
+                             for e in payload["errors"][:3])
+        raise OpsError(f"Cloudflare GraphQL Analytics API: {messages}")
+    accounts = (((payload.get("data") or {}).get("viewer") or {}).get("accounts")) or []
+    if not accounts:
+        raise OpsError("Cloudflare returned no account: check CLOUDFLARE_ANALYTICS_ACCOUNT and "
+                       "that the token has Account Analytics: Read on it")
+    rows = accounts[0].get("workersInvocationsAdaptive") or []
+    used = sum(_num((row.get("sum") or {}).get("requests")) or 0.0 for row in rows)
+    return _line("Worker requests today (account)", used,
+                 WORKER_DAILY_REQUESTS * _day_share(generated), threshold,
+                 f"{WORKER_DAILY_REQUESTS:,}/day account-wide (Workers Free), "
+                 "Cloudflare's analytics")
+
+
 def _line(name: str, used: float, budget: float | None, threshold: float,
           note: str = "", informational: bool = False) -> BudgetLine:
     ratio = used / budget if budget else None
@@ -199,8 +257,7 @@ def evaluate_budget(report: dict, *, threshold: float = ALERT_THRESHOLD) -> list
     it is the protection working, not a quota at risk.
     """
     generated = _parse_time(report.get("generated_at")) or datetime.now(UTC)
-    midnight = generated.replace(hour=0, minute=0, second=0, microsecond=0)
-    day_share = max(MIN_DAY_SHARE, (generated - midnight).total_seconds() / 86_400)
+    day_share = _day_share(generated)
     lines: list[BudgetLine] = []
 
     analyses = report.get("analyses") or {}
@@ -250,7 +307,8 @@ def evaluate_budget(report: dict, *, threshold: float = ALERT_THRESHOLD) -> list
 
 
 def check_quota(client: Client, report: Report, *, token: str, threshold: float,
-                summary: list[str]) -> None:
+                summary: list[str], cloudflare: Client | None = None,
+                cloudflare_token: str = "", cloudflare_account: str = "") -> None:
     reply = client.get("/api/_ops/budget", headers={"Authorization": f"Bearer {token}"})
     if reply.status == 404:
         report.fail("budget", "404: the Worker rejected EDGE_OPS_TOKEN (or has no OPS_TOKEN)")
@@ -267,6 +325,18 @@ def check_quota(client: Client, report: Report, *, token: str, threshold: float,
     if not lines:
         report.fail("budget", "the governor reported no budgets")
         return
+    if cloudflare is not None:
+        generated = _parse_time(governor.get("generated_at")) or datetime.now(UTC)
+        try:
+            lines.append(worker_requests_line(cloudflare, token=cloudflare_token,
+                                              account=cloudflare_account, generated=generated,
+                                              threshold=threshold))
+        except OpsError as exc:
+            report.fail("worker_requests", str(exc))
+    else:
+        report.add("worker_requests", "SKIP",
+                   "not monitored: set CLOUDFLARE_ANALYTICS_TOKEN and "
+                   "CLOUDFLARE_ANALYTICS_ACCOUNT (docs/deployment.md, owner step 4.3)")
     summary += [f"Governor mode: **{governor.get('mode', '?')}**, "
                 f"day {governor.get('day', '?')}, generated {governor.get('generated_at', '?')}",
                 "", "| Budget | Used | Pro-rated budget | Share | Alert |", "|---|---|---|---|---|"]
@@ -303,6 +373,8 @@ def main(argv: list[str] | None = None) -> int:
             cmd.add_argument("--expect-build", default=None)
         if name == "quota":
             cmd.add_argument("--threshold", type=float, default=ALERT_THRESHOLD)
+            cmd.add_argument("--cloudflare-api-url", default=CLOUDFLARE_API,
+                             help=argparse.SUPPRESS)  # tests only
     args = parser.parse_args(argv)
 
     if not args.base_url:
@@ -326,8 +398,18 @@ def main(argv: list[str] | None = None) -> int:
             if not token:
                 print("error: set EDGE_OPS_TOKEN (the Worker's OPS_TOKEN)", file=sys.stderr)
                 return 2
+            cf_token = os.environ.get("CLOUDFLARE_ANALYTICS_TOKEN", "").strip()
+            cf_account = os.environ.get("CLOUDFLARE_ANALYTICS_ACCOUNT", "").strip()
+            if cf_account and not ACCOUNT_ID.match(cf_account):
+                print("error: CLOUDFLARE_ANALYTICS_ACCOUNT is not a 32-hex account id",
+                      file=sys.stderr)
+                return 2
+            cloudflare = Client(args.cloudflare_api_url, label="cloudflare", max_requests=1) \
+                if cf_token and cf_account else None
             check_quota(Client(args.base_url, label="site", max_requests=len(QUOTA_PATHS)),
-                        report, token=token, threshold=args.threshold, summary=summary)
+                        report, token=token, threshold=args.threshold, summary=summary,
+                        cloudflare=cloudflare, cloudflare_token=cf_token,
+                        cloudflare_account=cf_account)
     except OpsError as exc:
         report.fail(args.command, str(exc))
     report.write_summary(os.environ.get("GITHUB_STEP_SUMMARY"))

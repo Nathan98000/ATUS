@@ -1095,14 +1095,14 @@ Every exhaustion degrades toward the static floor: the SPA, the snapshot (starte
 
 | Quota | Signal | Action |
 |---|---|---|
-| Worker requests, 100,000/day, account-wide | `/api` answers a non-JSON 429 or error 1027; the SPA's daily-allowance page | Wait for 00:00 UTC. Find the source in Workers Logs (deployment.md scenarios S1–S3). Nothing at $0 can rate-limit before the Worker runs (ADR-011 accepted risk 4) |
+| Worker requests, 100,000/day, account-wide | Before: the daily quota report's "Worker requests today" line above 70% of the pro-rated allowance (only with the optional analytics token, owner step 4.3). After: `/api` answers a non-JSON 429 or error 1027; the SPA's daily-allowance page | Wait for 00:00 UTC. Find the source in Workers Logs (deployment.md scenarios S1–S3). Nothing at $0 can rate-limit before the Worker runs (ADR-011 accepted risk 4) |
 | KV reads or writes | none visible; more misses | wait for 00:00 UTC |
 | Durable Object requests or rows written | 503 `capacity_unavailable` for new analyses | wait for 00:00 UTC; `/api/_ops/budget` may fail too |
 | Governor daily caps | 503 `daily_capacity_reached` (`budget` `global`, `heavy`, `cu_day`); 429 `budget: "prefix"` | Working as designed; wait for 00:00 UTC. If real visitors often hit `cu_day` without a Neon key, add the project-scoped `NEON_API_KEY`: with fresh usage figures the daily ceiling is 10 CU-h instead of 2.903 (ADR-015) |
 | Governor monthly pacing | 503 `capacity_paused` (`budget` `egress` or `cu_month`) with `resumes_at` | Wait for `resumes_at`. If it happens every month, apply the calibration lever ([deployment.md step 10](deployment.md#10-week-1-calibration)): lower the compute's maximum CU and set `NEON_MAX_CU` in `edge/src/constants.ts` to match |
 | Neon compute (100 CU-h) or egress (5 GB) | 503 `database_paused`; the SPA's paused page | Wait for the next Neon consumption period (Neon console, or the Neon `period_end` in `/api/_ops/budget` when `NEON_API_KEY` is set). Then find out why the governor did not stop first |
 | Neon storage (1 GB per project) | owner writes fail (`validate-analytics`); the API is unaffected | Never keep two copies in one project; a release goes into a new project |
-| Render outbound (5 GB/month) | services paused until the 1st; the Worker answers `upstream_unavailable`; the SPA says "paused until the 1st" | Wait. Find the cause in Render logs (direct hits show `edge_authenticated: false` and 403). Never pay; never recreate the service |
+| Render outbound (5 GB/month) | Before: nothing automated (no monitor can read it without an account-wide Render API key); the weekly schedules-check summary reminds you to look at the workspace's usage. After: services paused until the 1st; the Worker answers `upstream_unavailable`; the SPA says "paused until the 1st" | Wait. Find the cause in Render logs (direct hits show `edge_authenticated: false` and 403). Never pay; never recreate the service |
 | Render pipeline minutes | deploys wait; the running service keeps serving | Wait for the next month. Image deploys build nothing; whether pulls count is undocumented |
 | Render instance hours | cannot run out with one service | never add a second Free web service |
 | Workers Logs | edge logs stop until 00:00 UTC | none needed |
