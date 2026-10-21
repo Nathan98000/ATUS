@@ -784,7 +784,7 @@ All runs below were local. Nothing has been compared on a deployed host.
 
 The procedure is [deployment.md step 7](deployment.md#7-first-approved-deploy-ci). For the very first deploy, follow "Bootstrap" there.
 
-1. **Check before you start:** CI is green on the commit (a push to `main`; a tag must point at a commit CI ran on, on `main`), and the release manifest names a published release. `deploy.yml`'s preflight refuses otherwise; if CI is still running for the commit, wait for it and re-run the deploy:
+1. **Check before you start:** CI is green on the commit (a push to `main`; a tag must point at a commit CI ran on, on `main`), and the release manifest names a published release. `deploy.yml`'s preflight refuses otherwise, and says what happened to the commit's CI. If it is still running, wait for it and re-run the deploy. Not every commit on `main` gets a CI run: a push of several commits runs CI on its head only, and a run still waiting is cancelled when a newer push to `main` queues (`ci.yml`'s concurrency). For a cancelled run, re-run it (`gh run rerun <id>`) and then the deploy; otherwise tag a commit whose CI passed, such as the head of `main`:
 
    ```bash
    python scripts/ops/release_manifest.py check --require-published

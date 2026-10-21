@@ -126,11 +126,19 @@ CI_RUNS = (f"/repos/{REPO}/actions/workflows/ci.yml/runs?head_sha={SHA}&event=pu
            "&branch=main&status=success&per_page=1")
 
 
-def deploy_gate(server, *, ci_passed=True, compare=("identical", 0)):
+ALL_CI_RUNS = (f"/repos/{REPO}/actions/workflows/ci.yml/runs?head_sha={SHA}&event=push"
+               "&branch=main&per_page=5")
+
+
+def deploy_gate(server, *, ci_passed=True, compare=("identical", 0), other_runs=()):
     runs = [{"id": 77, "head_sha": SHA, "conclusion": "success", "event": "push",
              "head_branch": "main"}] if ci_passed else []
     server.routes[("GET", CI_RUNS)] = json_reply(
         200, {"total_count": len(runs), "workflow_runs": runs}, api=False)
+    others = [{"head_sha": SHA, "event": "push", "head_branch": "main", **run}
+              for run in other_runs]
+    server.routes[("GET", ALL_CI_RUNS)] = json_reply(
+        200, {"total_count": len(others), "workflow_runs": others}, api=False)
     status, behind = compare
     server.routes[("GET", f"/repos/{REPO}/compare/{SHA}...main")] = json_reply(
         200, {"status": status, "behind_by": behind, "ahead_by": 3}, api=False)
@@ -154,6 +162,37 @@ def test_a_commit_without_a_green_ci_run_is_refused(fake_server, monkeypatch, ca
     deploy_gate(fake_server, ci_passed=False)
     assert run_gate(fake_server, monkeypatch) == 1
     assert "no successful ci.yml run" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(("runs", "says"), [
+    # a push of several commits, or a run cancelled while still waiting: none will come
+    ((), ["and none will come", "head commit of a push", "Tag a commit whose ci.yml run"]),
+    (({"id": 88, "status": "completed", "conclusion": "cancelled",
+       "created_at": "2026-10-21T10:00:00Z"},),
+     ["run 88 was cancelled", "gh run rerun 88", "or tag a commit whose ci.yml run passed"]),
+    (({"id": 87, "status": "completed", "conclusion": "cancelled",
+       "created_at": "2026-10-21T09:00:00Z"},
+      {"id": 89, "status": "in_progress", "conclusion": None,
+       "created_at": "2026-10-21T10:00:00Z"}),
+     ["yet: run 89 is in_progress", "wait until it passes"]),
+    (({"id": 90, "status": "completed", "conclusion": "failure",
+       "created_at": "2026-10-21T10:00:00Z"},),
+     ["run 90 ended failure", "deploy the fixing commit"]),
+])
+def test_the_gate_says_what_happened_to_the_commits_ci(fake_server, monkeypatch, capsys,
+                                                       runs, says):
+    """ci-concurrency-strands-main-commits (review round 2): ci.yml's push concurrency
+    cancels a pending main run when a newer push queues, and a multi-commit push runs CI
+    on its head only; the refusal said "wait until CI has passed" for a run that would
+    never come."""
+    deploy_gate(fake_server, ci_passed=False, other_runs=runs)
+    assert run_gate(fake_server, monkeypatch) == 1
+    out = " ".join(capsys.readouterr().out.split())
+    assert "[FAIL] ci: no successful ci.yml run for 0123456789ab on a push to main" in out
+    for text in says:
+        assert text in out, text
+    if runs:
+        assert "wait until CI has passed" not in out
 
 
 @pytest.mark.parametrize("status, behind", [("diverged", 2), ("behind", 1)])

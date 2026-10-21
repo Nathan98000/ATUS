@@ -284,3 +284,19 @@ def test_the_owner_runs_only_the_wrangler_the_lockfile_installed():
         assert 0 <= line.index("cd edge && npm ci") < line.index("wrangler login"), line
     security = _flat(_read(DOCS_DIR / "security.md"))
     assert "wrangler login" in security and "serving/pgtools.py" in security
+
+
+# --- ci-concurrency-strands-main-commits -------------------------------------------------
+
+
+def test_the_deploy_runbook_says_not_every_main_commit_gets_ci():
+    """ci-concurrency-strands-main-commits: ci.yml's push concurrency cancels a pending
+    main run when a newer push queues, and a multi-commit push runs CI on its head only,
+    while Deploy step 1 said only to wait for CI. The runbook now says how to recover
+    (github_ops.py's refusal is tested in tests/unit/ops/test_github_ops.py)."""
+    ci = yaml.safe_load(_read(WORKFLOWS / "ci.yml"))
+    assert ci["concurrency"]["cancel-in-progress"] == "${{ github.event_name == 'pull_request' }}"
+    step = _flat(_step(_section(_read(OPERATIONS), "### Deploy", "### Rollback"), 1))
+    for text in ("runs CI on its head only", "cancelled when a newer push", "gh run rerun",
+                 "tag a commit whose CI passed"):
+        assert text in step, text

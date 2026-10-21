@@ -212,15 +212,19 @@ def check_deploy_gate(gh: GitHub, repo: str, sha: str, *, branch: str = "main",
                       workflow: str = "ci.yml") -> list[Finding]:
     """Whether ``sha`` may deploy: a successful ``workflow`` run on a push to
     ``branch`` for exactly this commit, and the commit is on ``branch``."""
-    runs = gh.call("GET", f"/repos/{repo}/actions/workflows/{workflow}/runs?head_sha={sha}"
-                          f"&event=push&branch={branch}&status=success&per_page=1")
+    runs_path = (f"/repos/{repo}/actions/workflows/{workflow}/runs?head_sha={sha}"
+                 f"&event=push&branch={branch}")
+    runs = gh.call("GET", f"{runs_path}&status=success&per_page=1")
     passed = [r for r in (runs or {}).get("workflow_runs", [])
               if r.get("head_sha") == sha and r.get("conclusion") == "success"]
-    findings = [Finding("ci", True, f"{workflow} passed for {sha[:12]} on a push to {branch} "
-                                    f"(run {passed[0].get('id')})") if passed else
-                Finding("ci", False, f"no successful {workflow} run for {sha[:12]} on a push to "
-                                     f"{branch}: wait until CI has passed for this commit (or "
-                                     f"fix it), then re-run")]
+    if passed:
+        findings = [Finding("ci", True, f"{workflow} passed for {sha[:12]} on a push to "
+                                        f"{branch} (run {passed[0].get('id')})")]
+    else:
+        others = gh.call("GET", f"{runs_path}&per_page=5") or {}
+        findings = [Finding("ci", False, _why_no_green_ci(
+            [r for r in others.get("workflow_runs", []) if r.get("head_sha") == sha],
+            workflow, sha, branch))]
     compare = gh.call("GET", f"/repos/{repo}/compare/{sha}...{branch}") or {}
     status, behind = compare.get("status"), compare.get("behind_by")
     if status in ("ahead", "identical") and behind == 0:
@@ -230,6 +234,37 @@ def check_deploy_gate(gh: GitHub, repo: str, sha: str, *, branch: str = "main",
                                                     f"{behind} commit(s) off it): tag only "
                                                     f"commits on {branch}"))
     return findings
+
+
+#: Run states GitHub reports before a run has a conclusion.
+UNFINISHED = frozenset({"queued", "in_progress", "waiting", "pending", "requested"})
+
+
+def _why_no_green_ci(runs: list[dict], workflow: str, sha: str, branch: str) -> str:
+    """The deploy gate's refusal, saying what happened to this commit's CI. ci.yml's
+    concurrency keeps one pending push run on ``branch``: a newer push cancels the run
+    still waiting, and a push of several commits runs CI on its head only, so "wait"
+    alone can wait for a run that never comes (review round 2,
+    ci-concurrency-strands-main-commits)."""
+    refused = f"no successful {workflow} run for {sha[:12]} on a push to {branch}"
+    green = (f"or tag a commit whose {workflow} run passed (the head of {branch} once its "
+             "CI is green)")
+    if not runs:
+        return (f"{refused}, and none will come: GitHub runs CI only on the head commit "
+                f"of a push, and cancels a run still waiting when a newer push to "
+                f"{branch} queues. Tag a commit whose {workflow} run passed (the head of "
+                f"{branch} once its CI is green), then re-run")
+    latest = max(runs, key=lambda r: (str(r.get("created_at") or ""), r.get("id") or 0))
+    run_id, status = latest.get("id"), latest.get("status")
+    conclusion = latest.get("conclusion")
+    if status in UNFINISHED:
+        return f"{refused} yet: run {run_id} is {status}; wait until it passes, then re-run"
+    if conclusion == "cancelled":
+        return (f"{refused}: run {run_id} was cancelled (a newer push to {branch} "
+                f"superseded it while it waited). Re-run it (gh run rerun {run_id}) and "
+                f"re-run this deploy once it passes, {green}")
+    return (f"{refused}: run {run_id} ended {conclusion or status}. Fix it on {branch} "
+            "and deploy the fixing commit once its CI passes")
 
 
 def _ago(delta: timedelta) -> str:

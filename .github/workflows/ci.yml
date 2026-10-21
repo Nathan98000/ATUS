@@ -32,6 +32,11 @@ on:
 
 permissions: read-all
 
+# Pushes to main never cancel a running CI run, but GitHub keeps one pending
+# run per group: a push that queues while another waits cancels the waiting
+# one, and a push of several commits runs CI on its head only. deploy.yml's
+# gate (github_ops.py deploy-gate) needs a green push run for exactly the
+# commit it deploys, and says which of these happened when there is none.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
