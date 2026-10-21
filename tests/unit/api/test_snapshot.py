@@ -713,6 +713,18 @@ class TestZeroStatementPaths:
         assert error["message"] == "Activity code 'abc' does not exist in the activity lexicon."
         assert fake_db.transactions == []
 
+    @pytest.mark.parametrize("code", ["abc", "0101011", "1", "01x1"])
+    def test_a_malformed_code_gets_the_same_404_from_a_cold_or_warm_process(self, build, code):
+        """Review r1 (activity-404-text-depends-on-process-state): the body
+        named the lexicon only once the process held a snapshot."""
+        client, fake_db, _ = build()
+        cold = client.get(f"/api/v1/activities/{code}")
+        assert client.get("/api/v1/meta").status_code == 200   # the snapshot is read
+        warm = client.get(f"/api/v1/activities/{code}")
+        assert cold.status_code == warm.status_code == 404
+        assert cold.content == warm.content
+        assert fake_db.transactions == ["metadata"]           # only /meta's read
+
 
 class TestDryRun:
     """Domain errors the engine raises before its first statement cost no

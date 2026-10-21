@@ -262,7 +262,7 @@ One envelope everywhere:
 | 400 | `malformed_json` | body is not valid JSON, or the parser gave up on it (e.g. nested too deeply) | |
 | 403 | `forbidden_origin` | edge authentication is on and the request has no valid `X-ATUS-Edge-Auth` (every path except `/health`; `/ready` and `/metrics` also pass with a valid ops bearer) | |
 | 404 | `not_found` | no such route, including a trailing-slash spelling; also `/ready` and `/metrics` without a valid ops bearer, for every method | |
-| 404 | `activity_not_found` | `GET /activities/{code}` for a nonexistent or malformed code; `details.code` repeats it | |
+| 404 | `activity_not_found` | `GET /activities/{code}` for a nonexistent or malformed code; `details.code` repeats it. The message names the loaded lexicon ("... the 2003-25 activity lexicon.") for a well-formed code, and is release-neutral ("... the activity lexicon.") for a code that is not 2, 4 or 6 digits, which never needs the data | |
 | 405 | `method_not_allowed` | wrong method; the `Allow` header lists the right one | |
 | other 4xx | `http_<status>` | any other framework-generated status (none is expected from the documented routes) | |
 | 413 | `payload_too_large` | body over `ATUS_API_MAX_BODY_BYTES`, declared or streamed (the connection is then closed) | |

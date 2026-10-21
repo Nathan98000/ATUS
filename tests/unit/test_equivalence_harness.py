@@ -412,6 +412,19 @@ def test_the_lexicon_wording_and_health_build_are_intended():
         "Activity code '999999' does not exist in the 2003-25 activity lexicon.",
         {"code": "99"}))
     assert a_b(baseline, other_details, request).outcome == "mismatch"
+    # A malformed code is answered release-neutrally, cold or warm (review r1)
+    malformed = RequestInfo("GET", "/api/v1/activities/abc")
+    baseline_abc = response(404, envelope(
+        "activity_not_found", "Activity code 'abc' does not exist in the 2003-25 lexicon.",
+        {"code": "abc"}))
+    neutral_abc = response(404, envelope(
+        "activity_not_found", "Activity code 'abc' does not exist in the activity lexicon.",
+        {"code": "abc"}))
+    assert a_b(baseline_abc, neutral_abc, malformed).classification["id"] == "lexicon_wording"
+    neutral_999999 = response(404, envelope(
+        "activity_not_found", "Activity code '999999' does not exist in the activity lexicon.",
+        {"code": "999999"}))
+    assert a_b(baseline, neutral_999999, request).outcome == "mismatch"  # a well-formed code
     health = RequestInfo("GET", "/health")
     assert a_b(response(200, {"status": "ok"}), response(200, {"status": "ok", "build": "abc"}),
                health).classification["id"] == "health_reports_build"
