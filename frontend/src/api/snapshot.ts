@@ -66,6 +66,25 @@ async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
   return (await response.json()) as unknown
 }
 
+/**
+ * A file under `/snap/<snapshot_id>/`: immutable, so the browser keeps it for
+ * a year. The host answers a missing file with the SPA's index.html and a 200
+ * that carries the same one-year immutable Cache-Control (`_headers` matches
+ * the request path), so a page that asked for a file of a snapshot that was
+ * not deployed at that moment (a deploy gap; a rollback can deploy that
+ * snapshot again later) would keep that HTML for a year. A body that is not
+ * JSON is therefore fetched once more with `cache: 'reload'`, which bypasses
+ * the cached copy and replaces it.
+ */
+async function fetchImmutableJson(url: string): Promise<unknown> {
+  try {
+    return await fetchJson(url)
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error
+    return await fetchJson(url, { cache: 'reload' })
+  }
+}
+
 /** Validates the pointer and manifest; null means "no usable snapshot". */
 function parseSnapshot(pointer: unknown, manifest: unknown, id: string): Snapshot | null {
   if (!isRecord(pointer) || !isRecord(manifest)) return null
@@ -106,7 +125,7 @@ async function fetchSnapshot(): Promise<Snapshot | null> {
   if (apiMajorVersion(pointer.api_version) !== SUPPORTED_API_VERSION) return null
   let manifest: unknown
   try {
-    manifest = await fetchJson(`${SNAPSHOT_ROOT}${id}/manifest.json`)
+    manifest = await fetchImmutableJson(`${SNAPSHOT_ROOT}${id}/manifest.json`)
   } catch {
     return null
   }
@@ -156,7 +175,7 @@ export async function snapshotGet<T>(apiPath: string): Promise<ApiResult<T> | nu
   const file = snapshot?.get[apiPath]
   if (!snapshot || file === undefined) return null
   try {
-    const data = (await fetchJson(fileUrl(snapshot, file))) as T
+    const data = (await fetchImmutableJson(fileUrl(snapshot, file))) as T
     return { data, analysisKey: null, cache: 'snapshot', dataVersion: snapshot.dataVersion }
   } catch {
     return null
@@ -201,7 +220,7 @@ export async function snapshotPost<T>(
   const entry = key === null ? undefined : snapshot.post[key]
   if (!entry || entry.path !== apiPath) return null
   try {
-    const data = (await fetchJson(fileUrl(snapshot, entry.file))) as T
+    const data = (await fetchImmutableJson(fileUrl(snapshot, entry.file))) as T
     return {
       data,
       analysisKey: entry.analysis_key,

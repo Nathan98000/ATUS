@@ -291,6 +291,18 @@ every analysis on an origin without WebCrypto (plain http other than
 localhost), where the key cannot be computed. `snapshot_id` is
 `<api build[:12]>-<sha256(data_version)[:16]>` (`scripts/build_snapshot.py`).
 
+The host answers a missing `/snap/<snapshot_id>/…` file with `index.html`
+and the snapshot's one-year `immutable` Cache-Control, because `_headers`
+rules match the request path, not the file that answers (observed under
+`wrangler dev`, whose asset worker is Cloudflare's; review round 1). A
+browser that asked for a file of a snapshot that was not deployed at that
+moment — a tab left open across a deploy — would keep that HTML for a
+year, also after a rollback deploys that snapshot id again. So a manifest
+or data file whose body is not JSON is fetched once more with `cache:
+"reload"`, which bypasses and replaces the cached copy, before the request
+falls back to the API. The pointer is `no-cache` and is never re-fetched
+this way.
+
 `scripts/snapshot-requests.mjs` prints the request list the snapshot builder
 (`scripts/build_snapshot.py`) sends, as `[{name, path, body, key}]`, with
 `body` already serialized by the SPA's own `stableStringify` (send it

@@ -195,6 +195,67 @@ describe('with a snapshot', () => {
   })
 })
 
+describe('a snapshot file cached as the SPA fallback (review round 1)', () => {
+  // The host answers a missing /snap/<id>/ file with index.html and a 200
+  // that carries the snapshot's one-year immutable Cache-Control (_headers
+  // matches the request path). A browser that asked for a file during a
+  // deploy gap keeps that HTML for a year — also after a rollback deploys
+  // that snapshot again — and the snapshot entry then silently went to the
+  // API (which may be asleep or out of quota).
+  function servedHtmlFirst(path: string, body: unknown) {
+    let reads = 0
+    server.use(
+      http.get(path, () => {
+        reads += 1
+        return reads === 1
+          ? new HttpResponse('<!doctype html><title>ATUS Explorer</title>', {
+              headers: { 'Content-Type': 'text/html' },
+            })
+          : HttpResponse.json(body as Record<string, unknown>)
+      }),
+    )
+  }
+
+  it('fetches a data file once more, bypassing the HTTP cache', async () => {
+    await installSnapshot({ get: { '/api/v1/meta': metaFixture } })
+    servedHtmlFirst(`/snap/${SNAPSHOT_ID}/get/0.json`, metaFixture)
+    const modes = recordCacheModes()
+    const calls = countApiCalls()
+    const loaded = await fetchMeta()
+    expect(loaded.dataVersion).toBe(SNAPSHOT_DATA_VERSION)
+    expect(calls('GET /api/v1/meta')).toBe(0)
+    expect(modes(`/snap/${SNAPSHOT_ID}/get/0.json`)).toEqual(['default', 'reload'])
+  })
+
+  it('fetches the manifest once more, bypassing the HTTP cache', async () => {
+    await installSnapshot({ get: { '/api/v1/meta': metaFixture } })
+    servedHtmlFirst(`/snap/${SNAPSHOT_ID}/manifest.json`, {
+      snapshot_id: SNAPSHOT_ID,
+      data_version: SNAPSHOT_DATA_VERSION,
+      get: { '/api/v1/meta': 'get/0.json' },
+      post: {},
+    })
+    const modes = recordCacheModes()
+    const calls = countApiCalls()
+    expect((await fetchMeta()).dataVersion).toBe(SNAPSHOT_DATA_VERSION)
+    expect(calls('GET /api/v1/meta')).toBe(0)
+    expect(modes(`/snap/${SNAPSHOT_ID}/manifest.json`)).toEqual(['default', 'reload'])
+  })
+
+  it('never re-fetches the no-cache pointer, which is not cached that way', async () => {
+    // Development and E2E have no snapshot: the pointer is the SPA fallback.
+    server.use(
+      http.get(
+        SNAPSHOT_POINTER_PATH,
+        () => new HttpResponse('<!doctype html><title>x</title>'),
+      ),
+    )
+    const modes = recordCacheModes()
+    await fetchMeta()
+    expect(modes(SNAPSHOT_POINTER_PATH)).toEqual(['no-cache'])
+  })
+})
+
 describe('revalidation across releases (F27, review round 1)', () => {
   // A reload must never pair a /meta (or snapshot pointer) from the browser's
   // HTTP cache with data of a newer release: both are revalidated.

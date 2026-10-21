@@ -831,6 +831,7 @@ The summary of every Deploy run has a "Rollback" table: the build, image digest 
   ```
 
 - **Keep the API and edge on the same data version.** If the two deploys carry different `DATA_VERSION`s, roll back the data binding as well (next item). Otherwise the edge cache stores nothing and the SPA shows its reload notice.
+- **Browsers may hold HTML under rolled-back URLs.** Between a deploy and its rollback, a request for a file of the other version (`/snap/<snapshot_id>/…`, `/assets/<hash>.js`) gets the SPA's `index.html` with the one-year `immutable` Cache-Control of its path (`frontend/public/_headers`). The SPA re-fetches such a snapshot file once with `cache: "reload"`, so the snapshot recovers by itself. A bundle cached that way does not: that browser shows the boot fallback ("ATUS Explorer did not start") until its cache is cleared. Only a page that loaded during the gap and requested the other version's hashed bundle is affected; the SPA has a single entry bundle and no lazy chunks.
 - **Data: the release switch in reverse** (ADR-013 "Rollback").
   1. In Render → Environment, set `ATUS_DATABASE_URL` back to the previous project's `atus_api` DSN and `ATUS_EXPECTED_DATA_VERSION` to that release's `data_version`, together, then "Save and deploy".
   2. Make `releases/current.json` on `main` name the previous release again (`git checkout <commit of the previous release> -- releases/current.json`). If the governor reads Neon usage, set `NEON_PROJECT_ID` in `edge/wrangler.jsonc` back too. Commit and push.
