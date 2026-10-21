@@ -6,7 +6,7 @@
 # Deletes through the GitHub REST API with this run's token, which needs the
 # package's "Manage Actions access" to give this repository the Admin role
 # (packages pushed by this repository's workflows get it; docs/deployment.md,
-# owner step 4.4). A manual run defaults to a dry run.
+# owner step 4.5). A manual run defaults to a dry run.
 name: GHCR cleanup
 
 on:

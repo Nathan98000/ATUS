@@ -474,10 +474,16 @@ full database.
 | `analytics_version` | `0.2` | `src/atus_pipeline/analytics/__init__.py` | every result, cache keys |
 | `data_version` | see [Data version](#data-version-migration-0003) | `atus.ingestion_runs` | API cache key, `X-Data-Version`, KV `CACHE_SCOPE` and store gate, snapshot id, frontend query keys |
 
-Because every cache is keyed by a `data_version` that never repeats, a cached
-result can never be served for a different database. A statistical change in
-the engine requires bumping `ANALYTICS_VERSION` and recording it in
-[analytics.md](analytics.md).
+Because every cache is keyed by a `data_version` that never repeats for
+different data, a cached result is never served for another release. A restore
+of the same release artifact keeps its `data_version` (a lost Neon project, or
+the recovery from a leaked `neondb_owner` DSN, `NEON_API_KEY` or `atus_api`
+password, which can change what the API computes without changing a row), so
+no cache key changes with it: those leak runbooks bump `EPOCH` to flush the
+edge cache (KV), and the API's restart empties its in-process cache
+([deployment.md "Rotation"](deployment.md#rotation), items 2 and 7; review
+round 4). A statistical change in the engine requires bumping
+`ANALYTICS_VERSION` and recording it in [analytics.md](analytics.md).
 
 ## Performance
 

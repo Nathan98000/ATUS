@@ -248,7 +248,7 @@ The normative text is in [`../operations.md`](../operations.md), "Equivalence cr
 **What makes the switch safe.**
 
 - *The version always changes.* Every build has a new data version (test), and the API answers 503 `data_version_mismatch` while the database it reaches is not the expected one (ADR-012), so a half-done switch fails loudly instead of serving mixed data.
-- *No cache crosses versions.* The API cache, the KV cache (stored only when `X-Data-Version` equals the Worker's `DATA_VERSION`) and the snapshot (named by the data version) are all keyed by it.
+- *No cache crosses releases.* The API cache, the KV cache (stored only when `X-Data-Version` equals the Worker's `DATA_VERSION`) and the snapshot (named by the data version) are all keyed by it. A restore of the same release keeps its data version, so no cache tells the release apart from a database whose answers a leaked owner or API credential altered without changing a row: those leak runbooks restart the API, which empties its cache, and bump `EPOCH`, which orphans every KV entry ([`../deployment.md`](../deployment.md#rotation), "Rotation", items 2 and 7; review round 4).
 - *No failed requests.* The zero-failure proof against the fixture database is the local switch (Decision 1, `tests/integration/test_reload_under_api_load.py`: continuous reads, zero failures, the version changes). In the hosted switch each database is complete and immutable, and requests keep being served by the old instance and project until Render routes to the new deploy. Whether Render Free switches an environment change without a gap is unverified (ADR-011); the Worker's single retry on a connection failure and the SPA's retry budget cover a restart. This part is checked after the first real switch, not by a test here.
 
 **Rollback.** Set the two Render variables back to the previous project's values and redeploy; the Worker variables follow through the deploy workflow. If a project is lost, restore its release artifact into a new project (the artifact is the backup).
@@ -283,7 +283,7 @@ The normative text is in [`../operations.md`](../operations.md), "Equivalence cr
 - A load needs twice the canonical data's disk space while it runs, and an old open transaction can delay the switch.
 - A new release is a registry entry and a lexicon file; the tests above fail if any other code needs to change.
 - The hosted database is a 0.63 GB serving database that serves the same numbers (the §9 criterion), carries a unique data version, refuses full-database commands, and is restored from a checksummed release artifact that doubles as its backup.
-- The API reaches it as a role that can only read; a leaked API connection string cannot change data.
+- The API reaches it as a role that can only read; a leaked API connection string cannot change the stored data. It can change the role's own settings, output precision among them, and so the values served until the rotation resets them; the rotation then has the owner bump `EPOCH`, since KV would keep the results computed meanwhile (review round 4).
 
 ## Amendments (implementation, 2026-10-21)
 

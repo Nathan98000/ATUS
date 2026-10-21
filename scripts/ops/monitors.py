@@ -10,7 +10,12 @@ Run by the scheduled GitHub workflows; standard library only:
 ``edge`` (every 30 min, ``.github/workflows/edge-check.yml``): the static SPA
 shell with its security headers, the Worker's own ``/api/_edge/health`` and
 the static result snapshot (pointer and manifest). Four requests, one of
-which invokes the Worker; nothing reaches Render or Neon.
+which invokes the Worker; nothing reaches Render or Neon. On its own it
+proves the edge consistent (the Worker's ``SNAPSHOT_ID`` is the static
+pointer's), which the previous release is too. To confirm which release is
+served (a deploy that arrived late, an edge rollback), pass
+``--expect-snapshot-id`` and ``--expect-data-version``: the Worker's vars and
+the pointer must then name that release (review round 4).
 
 ``deep`` (every 6 h, ``deep-check.yml``): ``GET /api/health`` through the
 Worker to Render's ``/health``, which never touches the database (it may
@@ -100,7 +105,20 @@ ACCOUNT_ID = re.compile(r"^[0-9a-f]{32}$")
 # edge                                                                         #
 # --------------------------------------------------------------------------- #
 
-def check_edge(client: Client, report: Report) -> None:
+def _other_release(body: dict, expect_snapshot_id: str | None,
+                   expect_data_version: str | None) -> list[str]:
+    """What ``body`` (``/api/_edge/health`` or ``/snap/current.json``) names
+    other than the expected release."""
+    wrong = []
+    if expect_snapshot_id and body.get("snapshot_id") != expect_snapshot_id:
+        wrong.append(f"snapshot {body.get('snapshot_id')}, expected {expect_snapshot_id}")
+    if expect_data_version and body.get("data_version") != expect_data_version:
+        wrong.append(f"data {body.get('data_version')}, expected {expect_data_version}")
+    return wrong
+
+
+def check_edge(client: Client, report: Report, *, expect_snapshot_id: str | None = None,
+               expect_data_version: str | None = None) -> None:
     shell = client.get("/")
     problems = header_problems(shell, SITE_HEADERS)
     if shell.status != 200 or shell.content_type != "text/html":
@@ -121,10 +139,13 @@ def check_edge(client: Client, report: Report) -> None:
         body = health.json()
         edge_snapshot = body.get("snapshot_id")
         problems = header_problems(health, API_HEADERS)
+        wrong = _other_release(body, expect_snapshot_id, expect_data_version)
         if body.get("status") != "ok":
             report.fail("edge_health", f"status {body.get('status')!r}")
         elif problems:
             report.fail("edge_health", "security headers: " + ", ".join(problems))
+        elif wrong:
+            report.fail("edge_health", "the Worker serves another release: " + "; ".join(wrong))
         else:
             report.ok("edge_health", f"edge {body.get('edge_version')}, "
                                      f"data {body.get('data_version')}, "
@@ -141,6 +162,10 @@ def check_edge(client: Client, report: Report) -> None:
     snapshot_id = pointer.json().get("snapshot_id")
     if not isinstance(snapshot_id, str) or not SNAPSHOT_ID.match(snapshot_id):
         report.fail("snapshot", "the pointer names no valid snapshot_id")
+        return
+    wrong = _other_release(pointer.json(), expect_snapshot_id, expect_data_version)
+    if wrong:
+        report.fail("snapshot", "the static pointer names another release: " + "; ".join(wrong))
         return
     if edge_snapshot is not None and edge_snapshot != snapshot_id:
         report.fail("snapshot", f"the Worker's SNAPSHOT_ID {edge_snapshot} differs from the "
@@ -428,6 +453,13 @@ def main(argv: list[str] | None = None) -> int:
         cmd = sub.add_parser(name, help=help_text)
         cmd.add_argument("--base-url", default=os.environ.get("PUBLIC_BASE_URL"),
                          help="the public origin (default: $PUBLIC_BASE_URL)")
+        if name == "edge":
+            cmd.add_argument("--expect-snapshot-id", default=None,
+                             help="fail unless the Worker and the static pointer name "
+                                  "this snapshot")
+            cmd.add_argument("--expect-data-version", default=None,
+                             help="fail unless the Worker and the static pointer name "
+                                  "this data version")
         if name == "deep":
             cmd.add_argument("--wake-timeout", type=float, default=240.0,
                              help="seconds to wait for a sleeping Render instance")
@@ -448,7 +480,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "edge":
             check_edge(Client(args.base_url, label="site", max_requests=len(EDGE_PATHS)),
-                       report)
+                       report, expect_snapshot_id=args.expect_snapshot_id,
+                       expect_data_version=args.expect_data_version)
         elif args.command == "deep":
             if not 1 <= args.max_requests <= 12:
                 print("error: --max-requests must be 1-12", file=sys.stderr)

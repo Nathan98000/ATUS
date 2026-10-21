@@ -74,6 +74,59 @@ def test_edge_check_fails_when_worker_and_static_snapshot_disagree(fake_server, 
     assert "half-finished deploy" in capsys.readouterr().out
 
 
+OLD_SNAP = "0123456789ab-fedcba9876543210"
+
+
+def previous_release(server) -> None:
+    """A self-consistent edge still on the previous release: the Worker's vars and the
+    static pointer agree with each other, not with the release just deployed."""
+    server.routes.update({
+        ("GET", "/"): html_reply(),
+        ("GET", "/api/_edge/health"): json_reply(200, {
+            "status": "ok", "edge_version": "0.1.0", "data_version": "dv-old",
+            "snapshot_id": OLD_SNAP}),
+        ("GET", "/snap/current.json"): json_reply(200, {
+            "snapshot_id": OLD_SNAP, "data_version": "dv-old"}, api=False),
+        ("GET", f"/snap/{OLD_SNAP}/manifest.json"): json_reply(
+            200, {"snapshot_id": OLD_SNAP}, api=False),
+    })
+
+
+def test_edge_check_with_a_release_expectation_fails_on_the_previous_release(fake_server,
+                                                                              capsys):
+    """deploy-step6-edge-monitor-cannot-confirm-release (review round 4): Deploy step 6
+    and the edge rollbacks used `monitors.py edge` to confirm which release the edge
+    serves, but it only proved the edge self-consistent, which the previous release is
+    too. With the release's snapshot id and data version it fails there, within the same
+    four requests."""
+    previous_release(fake_server)
+    assert monitors.main(["edge", "--base-url", fake_server.base]) == 0
+    capsys.readouterr()
+    fake_server.calls.clear()
+    assert monitors.main(["edge", "--base-url", fake_server.base,
+                          "--expect-snapshot-id", SNAP, "--expect-data-version", "dv"]) == 1
+    assert len(fake_server.calls) <= len(monitors.EDGE_PATHS)
+    out = capsys.readouterr().out
+    assert f"[FAIL] edge_health: the Worker serves another release: snapshot {OLD_SNAP}, " \
+        f"expected {SNAP}; data dv-old, expected dv" in out
+    assert f"[FAIL] snapshot: the static pointer names another release: snapshot " \
+        f"{OLD_SNAP}, expected {SNAP}" in out
+    assert "edge: 2 failed" in out
+    # each expectation on its own is enough
+    for flag, value in (("--expect-snapshot-id", SNAP), ("--expect-data-version", "dv")):
+        assert monitors.main(["edge", "--base-url", fake_server.base, flag, value]) == 1
+
+
+def test_edge_check_with_a_release_expectation_passes_on_that_release(fake_server, capsys):
+    healthy_site(fake_server)
+    fake_server.routes[("GET", "/snap/current.json")] = json_reply(
+        200, {"snapshot_id": SNAP, "data_version": "dv"}, api=False)
+    assert monitors.main(["edge", "--base-url", fake_server.base,
+                          "--expect-snapshot-id", SNAP, "--expect-data-version", "dv"]) == 0
+    assert len(fake_server.calls) == len(monitors.EDGE_PATHS)
+    assert "edge: 0 failed" in capsys.readouterr().out
+
+
 def test_edge_check_fails_when_the_worker_is_down(fake_server, capsys):
     healthy_site(fake_server)
     fake_server.routes[("GET", "/api/_edge/health")] = (429, {"Content-Type": "text/html"},

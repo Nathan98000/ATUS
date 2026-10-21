@@ -629,7 +629,9 @@ jobs:
             GHCR keeps the last 20 digests and \`live\`.
           - **Edge:** \`cd edge && npx --no-install wrangler rollback <previous version id> --message "rollback"\`
             (without an id: the version before the current one), then
-            \`python scripts/ops/monitors.py edge --base-url $PUBLIC_BASE_URL\` and one analysis
+            \`python scripts/ops/monitors.py edge --base-url $PUBLIC_BASE_URL --expect-snapshot-id <its SNAPSHOT_ID> --expect-data-version <its DATA_VERSION>\`
+            with the vars of the version you rolled back to (\`npx --no-install wrangler versions view <version id> --json\`
+            lists them; without them the check passes on this run's edge too), and one analysis
             through the site. If wrangler says secrets have changed since that version, decline
             and read docs/deployment.md "Rollback" first: confirming restores the old secret values.
           - **Data:** the release switch in reverse (ADR-013): restore the previous Render

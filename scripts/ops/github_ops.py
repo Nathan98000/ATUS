@@ -353,9 +353,10 @@ def print_live_build(gh: GitHub, owner_kind: str, owner: str, package: str, *,
             return 0
         if exc.status in (401, 403):
             print(f"error: {exc}: the token may not read the versions of {where}. In the "
-                  "package's settings, Manage Actions access must give this repository "
-                  "read access (docs/operations.md, \"The deep check cannot read the live "
-                  "tag\")", file=sys.stderr)
+                  "package's settings, Manage Actions access must list this repository "
+                  "with the Admin role; Read would break deploy.yml's push and promote and "
+                  "ghcr-cleanup.yml (docs/operations.md, \"The deep check cannot read the "
+                  "live tag\")", file=sys.stderr)
             return 1
         if exc.status != 404:
             raise
