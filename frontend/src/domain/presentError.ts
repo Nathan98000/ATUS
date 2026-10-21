@@ -193,15 +193,14 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         retryAfterSeconds: retryAfter,
       }
     case 'daily_capacity_reached':
+      // Always a shared allowance: the API sends it with details.scope
+      // 'daily', the edge governor with 'global' or 'daily'. A per-network
+      // daily denial is `rate_limited` with budget 'prefix' (above).
       return {
         ...common,
         kind: 'limit',
         heading: 'Today’s capacity for new analyses is used up',
-        message: `${
-          scopeOf(error) === 'client'
-            ? 'Your network has started as many new analyses today as this free service allows for one visitor.'
-            : 'This free service can run a limited number of new analyses per day, and today’s are used up.'
-        } The limit resets at ${utcMidnightPhrase(now)}.`,
+        message: `This free service can run a limited number of new analyses per day, and today’s are used up. The limit resets at ${utcMidnightPhrase(now)}.`,
         hint: STILL_WORKS,
       }
     case 'capacity_paused':
@@ -349,11 +348,6 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
 
 /** A rate limit asking for more than this is not "a few per minute": no countdown. */
 const LONG_WAIT_SECONDS = 15 * 60
-
-function scopeOf(error: ApiError): string | null {
-  const scope = (error.details as { scope?: unknown } | null)?.scope
-  return typeof scope === 'string' ? scope : null
-}
 
 /** The edge governor's budget name (`details.budget`), when it sent one. */
 export function budgetOf(error: ApiError): string | null {

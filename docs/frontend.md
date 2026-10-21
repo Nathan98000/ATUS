@@ -73,7 +73,7 @@ frontend/e2e/
 frontend/scripts/
   snapshot-requests.mjs  prints the prewarmed analysis requests for the snapshot
   check-bundle.mjs       the deploy guard on dist/ (API address, inline code,
-                         <meta> CSP, _headers)
+                         <meta> CSP, _headers, the published openapi.json)
   api-types.mjs          generates / checks src/api/generated.ts
 frontend/public/
   _headers               response headers of the static site (CSP, HSTS, cache rules)
@@ -224,7 +224,7 @@ contract and of the edge have public-facing copy:
 | --- | --- |
 | `invalid_spec`, `validation_error`, `malformed_json`, `unknown_activity`, `activity_not_found`, `unsupported_analysis`, `insufficient_data`, `payload_too_large` | the request is the problem: the API's own explanation, "Adjust analysis" |
 | `rate_limited` | "Too many new analyses in a short time" with a `Retry-After` countdown on "Try again" (the ticking seconds are hidden from assistive technology; the message states the wait). The edge's per-network daily allowance (`details.budget: "prefix"`) instead says that the network's new analyses for today are used up and that the limit resets at 00:00 UTC (in local time), with no countdown and no "Try again"; any other wait over 15 minutes names the local time it ends |
-| `daily_capacity_reached` | today's capacity is used up (per visitor or for everyone, from `details.scope`); resets at 00:00 UTC, shown in local time |
+| `daily_capacity_reached` | the service's shared capacity for new analyses is used up for today; resets at 00:00 UTC, shown in local time. Always a shared allowance: the API sends `details.scope: "daily"`, the edge governor `"global"` or `"daily"`; a per-network daily denial is `rate_limited` with budget `prefix` (above) |
 | `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `schema_not_initialized`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); `analysis_timeout` also offers "Adjust analysis" |
 | `database_paused`, `capacity_paused`, `edge_daily_limit` | **full-page** "paused" state: free hosting quota used up, when it resets, what still works (starter examples and earlier analyses), a link home |
 | `not_found`, `method_not_allowed`, `unsupported_media_type` | a request outside the HTTP contract, which the page never sends on purpose: most likely a page and a service from different versions, so the copy says to reload the page; no "Try again" (the retry policy treats these as final) |
@@ -433,7 +433,7 @@ snapshot's), else the version the page's metadata reported — the legacy
 
 ```bash
 npm test          # unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 63 Playwright runs: 35 tests in Chromium desktop, 2 mobile,
+npm run test:e2e  # 65 Playwright runs: 37 tests in Chromium desktop, 2 mobile,
                   # and the 13 @core journeys again in Firefox and in WebKit
 npx playwright install firefox webkit   # once, for the cross-browser projects
 ```
@@ -475,6 +475,16 @@ The E2E counts are the tests declared in `e2e/*.spec.ts` and the projects in
   snapshot-served metadata, and the downloads (the saved file is built from
   the response on screen, through a Blob URL, with the page's analysis key,
   data version and canonical link).
+- New survey year (brief §15, `src/pages/newSurveyYear.test.tsx`): with a
+  `/meta` (or a static snapshot) announcing a release 0326 with years
+  2003–2026 and its own data version, and no code change, the year pickers
+  (single, pooled, trend) offer 2026 and default to it, the default trend is
+  2003–2026, the home page's starters, the footer, the "View … trend" link
+  and the prewarm list use 2026, results are cached under the 0326 version
+  tag, and a shared link through 2026 opens unchanged (under the 0325
+  release it loses 2026, with the note). The 2020 rules still hold: the
+  builder's gap note follows the range and the weights, a trend through 2026
+  shows the 2020 gap, pandemic weights stay 2019–2020 only.
 - E2E (real API + fixture database via `scripts/e2e_backend.py`; every
   expected number hand-computable; production build served same-origin
   under the production CSP): the full first-time-user scenario, the
@@ -486,10 +496,14 @@ The E2E counts are the tests declared in `e2e/*.spec.ts` and the projects in
   `data_version_mismatch` 503, paused database, edge daily limit, rate-limit
   countdown, the boot fallback with the bundle blocked; downloads read back
   from disk (CSV values equal to the JSON response's, `NA` for 2020, keyboard
-  operation); and the headers to be deployed: every page carries the `_headers`
-  rules and the `<meta>` CSP, bundles are served immutable, and the core
-  journeys (including a download) produce no CSP violation or
-  Permissions-Policy error, with every API request on the page's own origin.
+  operation); a release announcing 2026 through `/meta` (the year controls
+  and starters offer it, the default estimate asks the real API for 2026,
+  and the real 2019–2023 trend still shows the 2020 gap); and the headers to
+  be deployed: every page carries the `_headers` rules and the `<meta>` CSP,
+  bundles are served immutable, `/openapi.json` is served with its rules and
+  equals `frontend/openapi.json`, and the core journeys (including a
+  download) produce no CSP violation or Permissions-Policy error, with every
+  API request on the page's own origin.
 - Cross-browser: tests tagged `@core` — the first-time-user estimate, the
   comparison, share links (copy, refresh, invalid), the 2020 gap and chart
   keyboard access, the exports, the waking notice, and the headers/CSP
@@ -586,7 +600,7 @@ one origin, whose Worker proxies `/api/*` to the API — so the build calls
   | every static file | `Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`, `Strict-Transport-Security: max-age=31536000`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy` denying every powerful feature the site does not use (camera, microphone, geolocation, payment, USB, clipboard reads, …), `Cross-Origin-Opener-Policy: same-origin` |
   | `/assets/*` (hashed bundles) | `Cache-Control: public, max-age=31536000, immutable` |
   | `/`, `/index.html`, `/explore`, `/about`, `/analysis/*` | `Cache-Control: no-cache` |
-  | `/snap/current.json` | `Cache-Control: no-cache` |
+  | `/snap/current.json`, `/openapi.json` | `Cache-Control: no-cache` |
   | `/snap/:snapshot/*` (a snapshot directory) | `Cache-Control: public, max-age=31536000, immutable` |
 
   The host joins a header set by two matching rules with a comma, so no two
@@ -604,6 +618,17 @@ one origin, whose Worker proxies `/api/*` to the API — so the build calls
   `_headers` to the SPA-fallback `index.html` (an unverified detail of
   ADR-011; check a deep link with curl after deploying). The dev server does
   not get it: Vite injects inline scripts there.
+- **Published OpenAPI schema: `/openapi.json`.** The build copies
+  `frontend/openapi.json` (written by `scripts/export_openapi.py`; the API
+  types are generated from it) byte for byte to `dist/openapi.json` (the
+  `atus-publish-openapi` plugin in `vite.config.ts`), so the static host
+  serves the schema while the API's own `/openapi.json` stays off in
+  production (ADR-011). It is a static file at the site root, not under
+  `/api`: the edge Worker runs first only for `/api` and `/api/*`, so its
+  route allowlist is never involved (a unit test checks `run_worker_first`
+  in `edge/wrangler.jsonc`). Being unhashed, it gets `Cache-Control:
+  no-cache`, so a deploy that changes the API is seen at once.
+  `check:bundle` and an E2E test compare it with `frontend/openapi.json`.
 - **Every E2E run uses the deployed headers.** `vite preview` applies the
   built `dist/_headers` to every non-`/api` response (a plugin in
   `vite.config.ts`), so the browser tests run under the exact CSP,
@@ -617,7 +642,9 @@ one origin, whose Worker proxies `/api/*` to the API — so the build calls
   after a script or stylesheet; or lacks `_headers`, a security header on
   any HTML route, a strict CSP (`'none'` default, `'self'` scripts and
   connections, no `unsafe-*`, `data:` or wildcard, `frame-ancestors 'none'`),
-  HSTS of at least a year, or the cache rules above.
+  HSTS of at least a year, or the cache rules above; or if `openapi.json`
+  is missing or differs from `frontend/openapi.json` by a single byte, or a
+  `dist/api/` directory exists (the Worker answers every `/api` path first).
 - **Deploys.** Hashed bundles may disappear after a new deploy while an old
   `index.html` is still open or cached; the boot shell then explains instead
   of showing a blank page, and a reload fetches the new `index.html` (never

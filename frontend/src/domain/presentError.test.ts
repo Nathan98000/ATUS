@@ -129,17 +129,33 @@ describe('presentError: every contract code is specific', () => {
     }
   })
 
-  it('a daily limit names the reset time, per visitor or for everyone', () => {
+  it('a daily capacity limit is the shared allowance, with the reset time', () => {
+    // The scopes the senders use: the API's DailyCapacityReachedError says
+    // 'daily'; the edge governor says 'global' (all analyses) or 'daily'
+    // (heavy analyses, compute). A per-network daily denial is never this
+    // code: it is rate_limited with budget 'prefix' (tested above).
     const now = Date.UTC(2026, 9, 20, 15, 0, 0)
-    const everyone = presentError(apiError(503, 'daily_capacity_reached'), now)
-    expect(everyone.message).toMatch(/today’s are used up/)
-    expect(everyone.message).toMatch(/00:00 UTC \(.+ your time\)/)
-    const visitor = presentError(
-      apiError(503, 'daily_capacity_reached', { details: { scope: 'client' } }),
-      now,
-    )
-    expect(visitor.message).toMatch(/Your network/)
-    expect(everyone.retryable).toBe(false)
+    for (const details of [
+      null,
+      { scope: 'daily', retry_after_seconds: 32400 },
+      { scope: 'global', budget: 'global', resumes_at: '2026-10-21T00:00:00Z' },
+      { scope: 'daily', budget: 'heavy', resumes_at: '2026-10-21T00:00:00Z' },
+      { scope: 'daily', budget: 'cu_day', resumes_at: '2026-10-21T00:00:00Z' },
+    ]) {
+      const presented = presentError(
+        apiError(503, 'daily_capacity_reached', { retryAfter: 9 * 3600, details }),
+        now,
+      )
+      expect(presented.kind).toBe('limit')
+      expect(presented.heading).toBe('Today’s capacity for new analyses is used up')
+      expect(presented.message).toMatch(/limited number of new analyses per day/)
+      expect(presented.message).toMatch(/today’s are used up/)
+      expect(presented.message).toMatch(/00:00 UTC \(.+ your time\)/)
+      expect(presented.message).not.toMatch(/Your network/)
+      expect(presented.retryable).toBe(false)
+      expect(presented.retryAfterSeconds).toBeNull()
+      expect(presented.hint).toMatch(/Starter examples/)
+    }
   })
 
   it('a paused quota explains free hosting and what still works', () => {

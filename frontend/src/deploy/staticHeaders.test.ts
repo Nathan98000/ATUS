@@ -175,6 +175,37 @@ describe('public/_headers (the deployed rules)', () => {
     // Unhashed files keep the host's default (revalidate every time).
     expect(cache('/boot.css')).toBeUndefined()
   })
+
+  it('serves the published OpenAPI schema revalidated, with the site headers', () => {
+    const headers = headersForPath(rules, '/openapi.json')
+    expect(headers.get('cache-control')).toBe('no-cache')
+    expect(headers.get('content-security-policy')).toBe(policy)
+    expect(headers.get('x-content-type-options')).toBe('nosniff')
+    expect(headers.get('strict-transport-security')).toBe('max-age=31536000')
+  })
+})
+
+describe('/openapi.json is a static file of the site (ADR-011)', () => {
+  /** Cloudflare's `run_worker_first` globs: `*` matches any characters. */
+  const workerFirst = (pattern: string, path: string) =>
+    new RegExp(
+      `^${pattern
+        .split('*')
+        .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+        .join('.*')}$`,
+    ).test(path)
+
+  it('never runs the edge Worker: run_worker_first covers /api only', () => {
+    const wrangler = readFileSync(join(process.cwd(), '..', 'edge', 'wrangler.jsonc'), 'utf8')
+    const listed = /"run_worker_first"\s*:\s*(\[[^\]]*\])/.exec(wrangler)?.[1]
+    expect(listed, 'edge/wrangler.jsonc assets.run_worker_first').toBeDefined()
+    const patterns = JSON.parse(listed as string) as string[]
+    expect(patterns.length).toBeGreaterThan(0)
+    // The matcher itself: both /api forms run the Worker.
+    expect(patterns.some((pattern) => workerFirst(pattern, '/api'))).toBe(true)
+    expect(patterns.some((pattern) => workerFirst(pattern, '/api/openapi.json'))).toBe(true)
+    expect(patterns.filter((pattern) => workerFirst(pattern, '/openapi.json'))).toEqual([])
+  })
 })
 
 describe('vite preview', () => {
@@ -234,6 +265,9 @@ describe('vite preview', () => {
     expect(page.get('content-security-policy')).toContain("script-src 'self'")
     expect(page.get('cache-control')).toBe('no-cache')
     expect(serve(middleware, '/assets/index-x.js').get('cache-control')).toContain('immutable')
+    const schema = serve(middleware, '/openapi.json')
+    expect(schema.get('cache-control')).toBe('no-cache')
+    expect(schema.get('content-security-policy')).toContain("default-src 'none'")
   })
 
   it('adds none of them to /api, which the edge Worker answers', async () => {

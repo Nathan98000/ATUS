@@ -14,13 +14,17 @@
  * 3. `index.html` lacks the `<meta>` CSP backstop, or it differs from the
  *    `_headers` policy, or it comes after a script or stylesheet;
  * 4. `dist/_headers` is missing or malformed, or does not give the site the
- *    security headers and cache rules ADR-011 relies on.
+ *    security headers and cache rules ADR-011 relies on;
+ * 5. `dist/openapi.json`, the published API schema (ADR-011), is missing or
+ *    is not byte for byte `frontend/openapi.json` (the build copies it), or
+ *    `dist/api/` exists (the edge Worker answers every /api path first).
  *
  * Usage: node scripts/check-bundle.mjs [distDir]   (default: dist)
  * Needs Node >= 22.18 (it imports src/deploy/staticHeaders.ts directly).
  */
-import { readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import {
   headersForPath,
@@ -29,13 +33,15 @@ import {
 } from '../src/deploy/staticHeaders.ts'
 
 const DEV_API_ADDRESS = /(?:localhost|127\.0\.0\.1|\[::1\]):\d+/g
+/** The committed schema (scripts/export_openapi.py) that the build publishes. */
+const OPENAPI_SOURCE = fileURLToPath(new URL('../openapi.json', import.meta.url))
 
 const dist = process.argv[2] ?? 'dist'
 const findings = []
 
-function read(path) {
+function read(path, encoding = 'utf8') {
   try {
-    return readFileSync(path, 'utf8')
+    return readFileSync(path, encoding)
   } catch (error) {
     process.stderr.write(`check-bundle: cannot read ${path}: ${error.message}\n`)
     process.exit(2)
@@ -149,13 +155,27 @@ for (const name of assetNames) {
     findings.push(`_headers: /assets/${name} is not cached as immutable`)
   }
 }
-for (const path of ['/', '/index.html', '/snap/current.json']) {
+for (const path of ['/', '/index.html', '/snap/current.json', '/openapi.json']) {
   if (cacheControl(path) !== 'no-cache') {
     findings.push(`_headers: ${path} must be Cache-Control: no-cache, is ${cacheControl(path)}`)
   }
 }
 if (!/\bimmutable\b/.test(cacheControl('/snap/0123456789ab-0123456789abcdef/manifest.json'))) {
   findings.push('_headers: snapshot directories are not cached as immutable')
+}
+
+// 5. The published OpenAPI schema, served by the static host at /openapi.json.
+const schema = read(OPENAPI_SOURCE, null)
+if (!existsSync(join(dist, 'openapi.json'))) {
+  findings.push('openapi.json is missing (the build publishes frontend/openapi.json)')
+} else if (!read(join(dist, 'openapi.json'), null).equals(schema)) {
+  findings.push('openapi.json differs from frontend/openapi.json (rebuild)')
+}
+// /api and /api/* run the edge Worker first: a static file there is never served.
+if (existsSync(join(dist, 'api'))) {
+  findings.push(
+    'dist/api/ exists, but /api belongs to the edge Worker (static files there are never served)',
+  )
 }
 
 if (findings.length > 0) {
@@ -168,5 +188,5 @@ if (findings.length > 0) {
 process.stdout.write(
   `check-bundle: ${scripts.length} bundle file(s) with no development API address; ` +
     `${htmlFiles.length} HTML file(s) with no inline code and the <meta> CSP; ` +
-    `_headers with ${rules.length} rules.\n`,
+    `_headers with ${rules.length} rules; openapi.json equal to frontend/openapi.json.\n`,
 )
