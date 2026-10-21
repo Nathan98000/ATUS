@@ -25,6 +25,37 @@ test('the 2020 multiyear restriction shows the API explanation', async ({ page }
   await expect(page.getByRole('link', { name: 'Adjust analysis' }).first()).toBeVisible()
 })
 
+test("a schema violation shows the API's field-level detail (review round 1)", async ({
+  page,
+}) => {
+  // The real API's 422 envelope: details.errors[] = {location, message, type}.
+  await page.goto(
+    specUrl('estimate', { activity: { preset: 'sleep' }, measure: 'bogus', years: [2023] }),
+  )
+  const alert = page.getByRole('alert')
+  await expect(alert).toContainText('This analysis request is not valid', { timeout: 15_000 })
+  await expect(alert.getByRole('listitem')).toContainText(/^measure: Input should be /)
+  await expect(alert).toContainText('HTTP 422 · validation_error')
+})
+
+test('an analysis started offline says so, and runs when the connection returns (review round 1)', async ({
+  page,
+  context,
+}) => {
+  await page.goto('/')
+  const starter = page.getByRole('link', { name: /How much do Americans sleep\?/ })
+  await expect(starter).toBeVisible({ timeout: 15_000 })
+  await context.setOffline(true)
+  await starter.click()
+  const alert = page.getByRole('alert')
+  await expect(alert).toContainText('Check your internet connection', { timeout: 15_000 })
+  await expect(page.getByText('Calculating estimate…')).toHaveCount(0)
+
+  await context.setOffline(false)
+  await expect(page.locator('.stat-value')).toBeVisible({ timeout: 15_000 })
+  await expect(alert).toHaveCount(0)
+})
+
 test('an unknown activity code is refused with the lexicon explanation', async ({ page }) => {
   await page.goto(specUrl('estimate', { activity: { include: ['999999'] }, years: [2023] }))
   const alert = page.getByRole('alert')
