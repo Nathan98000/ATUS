@@ -30,7 +30,7 @@ from atus_pipeline.analytics import (
 from atus_pipeline.analytics.benchmarks import run_benchmarks
 from atus_pipeline.api.app import create_app
 from atus_pipeline.loading.loader import load_all
-from atus_pipeline.serving.contract import READ, WRITE, missing_contract_columns
+from atus_pipeline.serving.contract import LOCKED, READ, WRITE, missing_contract_columns
 from tests.integration.analytics_dataset import analytics_settings
 from tests.integration.conftest import create_scratch_database, drop_scratch_database
 
@@ -67,6 +67,8 @@ def contract(test_db_url, tmp_path_factory):
                 conn.execute(
                     f'GRANT {privilege} ({", ".join(columns)}) ON atus.{table} TO "{role}"'
                 )
+        for table in LOCKED:  # LOCK TABLE needs the table's own SELECT privilege
+            conn.execute(f'GRANT SELECT ON atus.{table} TO "{role}"')
     yield url, role, settings
     drop_scratch_database(url)
     with psycopg.connect(test_db_url, autocommit=True) as conn:

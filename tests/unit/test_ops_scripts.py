@@ -7,7 +7,7 @@ import os
 import re
 from pathlib import Path
 
-from atus_pipeline.serving.contract import READ
+from atus_pipeline.serving.contract import LOCKED, READ
 from atus_pipeline.serving.guard import SERVING_MARKER
 from atus_pipeline.serving.restore import DEFAULT_ROLES_SQL, EXPECTED_ROLE_SETTINGS
 
@@ -24,6 +24,7 @@ def test_the_api_role_gets_select_on_exactly_the_served_tables():
     grant = re.search(r"GRANT SELECT ON TABLE(.*?)TO :\"api_role\";", ROLES_SQL, re.S)
     tables = {t.strip().removeprefix("atus.") for t in grant.group(1).split(",")}
     assert tables == set(READ)
+    assert set(LOCKED) <= tables  # table-level SELECT: the API's snapshot read locks them
     verified = re.search(r"AS reads_ok\s+FROM unnest\(ARRAY\[(.*?)\]\)", ROLES_SQL, re.S)
     assert {t.strip().strip("'").removeprefix("atus.")
             for t in verified.group(1).split(",")} == set(READ)

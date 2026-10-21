@@ -5,8 +5,8 @@ A serving database may drop every other table and column, but must keep
 these with their names, types, NULL semantics and constraints, so the engine
 code runs unchanged on it. ``tests/integration/test_serving_contract.py``
 proves the contract is complete: it runs the engine, the HTTP API and the
-benchmark suite as a role that holds privileges on exactly these columns and
-nothing else. The serving-DB builder asserts its output with
+benchmark suite as a role that holds privileges on exactly these columns
+(plus SELECT on the :data:`LOCKED` tables as a whole) and nothing else. The serving-DB builder asserts its output with
 :func:`missing_contract_columns`.
 
 ``atus validate-db`` is deliberately outside the contract: it checks the
@@ -46,6 +46,13 @@ READ: dict[str, tuple[str, ...]] = {
         "notes", "data_version",
     ),
 }
+
+# Tables the API locks, so their role needs SELECT on the table itself, not
+# only on its columns (LOCK TABLE ... IN ACCESS SHARE MODE checks the table's
+# privilege): the data snapshot read locks ingestion_runs before its
+# REPEATABLE READ snapshot is taken (api/database.py, SNAPSHOT_LOCK).
+# scripts/ops/roles.sql grants SELECT on every READ table as a whole.
+LOCKED: tuple[str, ...] = ("ingestion_runs",)
 
 # Columns written with INSERT (validate-analytics records its results; owner
 # role only, never the API role).
