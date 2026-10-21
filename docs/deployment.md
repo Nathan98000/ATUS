@@ -192,7 +192,7 @@ The governor charges every admitted analysis at 2 CU (`NEON_MAX_CU`) for its DB 
 | ground truth (fresh Neon usage, mid-period) | 123 of 300 | after 17,712 s (about 4.9 h) | 177 (59%) |
 
 - **What visitors see.** On the day a share link spreads, most visitors' novel analyses get "Today's free analysis capacity is used up; resets at <time>". The snapshot, prewarmed results and KV-cached results keep working.
-- **Arrival pattern.** Bunched arrivals share tails and fare better; evenly spread ones, as here, fare worst.
+- **Arrival pattern.** Bunched arrivals share tails and fare better. Arrivals more than 300 s apart fare worse: each is charged its whole tail (about 600 CU-s at 1 s of DB time, against about 290 CU-s at this spacing), so a day whose first analyses are sparse gets even fewer served before the ceiling.
 - **The budget tables above.** Their spike-day figures for KV, the Durable Object, Render and Neon assume every analysis is served, so they are upper bounds. Worker requests are spent either way.
 - **What would serve more.** Loading the project-scoped `NEON_API_KEY` at the first deploy (owner step 3.6) raises the spike day from 34 to 123 served. Charging less than 2 CU per second needs evidence from the week-1 calibration (step 10). Deriving the daily ceiling from the monthly pacing headroom is not implemented.
 
@@ -213,7 +213,7 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 
 | Event | How it shows up | What visitors see | Recovery |
 |---|---|---|---|
-| Render spun down (normal, after 15 idle minutes) | first `/api` call waits about a minute, or gets Render's hibernate 503, which the Worker maps to `service_waking` | home, starters, presets and metadata are instant (static). "Waking up the analysis service — free hosting sleeps when idle; this can take up to a minute" appears (polite live region, no fake progress bar) when a metadata request has been pending for 3 s, when an attempt fails as waking (`service_waking`, `upstream_unavailable` or `database_unavailable`), or while a prewake that answered "waking" is under 90 s old ([frontend.md](frontend.md)). A novel analysis that Render simply holds while it spins up has no 3 s timer: it shows the notice only through that prewake (sent on entering Explore or opening a share link). The SPA retries for up to 150 s, honouring `Retry-After` | automatic |
+| Render spun down (normal, after 15 idle minutes) | first `/api` call waits about a minute, or gets Render's hibernate 503, which the Worker maps to `service_waking` | home, starters, presets and metadata are instant (static). "Waking up the analysis service — free hosting sleeps when idle; this can take up to a minute" appears (polite live region, no fake progress bar) when a metadata request has been pending for 3 s, when an attempt fails as waking (`service_waking`, `upstream_unavailable` or `database_unavailable`), or while a prewake that answered "waking" is under 90 s old ([frontend.md](frontend.md)). A novel analysis that Render simply holds while it spins up has no 3 s timer: it shows the notice only through that prewake (sent, at most once per 10 minutes per page, on entering Explore and before an analysis the snapshot does not hold). The SPA retries for up to 150 s, honouring `Retry-After` | automatic |
 | Neon suspended (normal, after 5 idle minutes) | first query waits a few hundred ms to a few s | absorbed in the analysis wait | automatic |
 | Neon branch archived after quiet days | slow first query (unmeasured) | same waiting message | automatic |
 | Neon compute update restart | dropped connections | none: `check_connection` replaces them (test) | automatic |
@@ -629,7 +629,7 @@ What a rehearsal cannot show is Render's deploy hook, its image pull, and the re
 4. Meanwhile:
    - make the package public (owner step 4.5);
    - create the Render service from the digest in the `push` job's summary (owner steps 2.3–2.6);
-   - add the GitHub secrets and `production`'s variable `PUBLIC_BASE_URL` (owner steps 4.1–4.3);
+   - add the GitHub secrets (owner steps 4.2–4.3), and `production`'s variable `PUBLIC_BASE_URL` if it is not set yet (owner step 4.1, first bullet; the repository variable waits for step 6);
    - run the first Worker deploy yourself (owner steps 1.3.3–1.3.4: build `frontend/dist` and run `npm ci` in `edge/` first; `RENDER_ORIGIN` must exist by then). Until step 5 the public hostname serves that build without a snapshot.
 5. Approve `deploy`. It deploys the same digest through the hook, publishes the Worker with the release vars and runs the smoke.
 6. After step 8 has verified the site, set the repository variable `PUBLIC_BASE_URL` (owner step 4.1). The monitors start with it.

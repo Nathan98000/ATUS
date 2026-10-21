@@ -531,7 +531,9 @@ jobs:
             GHCR keeps the last 20 digests (ghcr-cleanup.yml).
           - **Edge:** \`cd edge && npx wrangler rollback <previous version id> --message "rollback"\`
             (without an id: the version before the current one), then
-            \`python scripts/ops/monitors.py edge --base-url $PUBLIC_BASE_URL\`.
+            \`python scripts/ops/monitors.py edge --base-url $PUBLIC_BASE_URL\` and one analysis
+            through the site. If wrangler says secrets have changed since that version, decline
+            and read docs/deployment.md "Rollback" first: confirming restores the old secret values.
           - **Data:** the release switch in reverse (ADR-013): restore the previous Render
             \`ATUS_DATABASE_URL\` and \`ATUS_EXPECTED_DATA_VERSION\`; restore the previous
             release's manifest on main (\`git checkout <its commit> -- releases/current.json\`),

@@ -147,7 +147,7 @@ Workers KV (Free; cited terms below):
 | Operation | Free limit per day | Use | Bound |
 |---|---|---|---|
 | reads | 100,000 (failed and missing-key reads count) | one per analysis POST that reaches the Worker with release vars set. PROJECTION 45/day typical, 450 on the spike day | ≤ Worker requests, whose limit is also 100,000: reads cannot run out first |
-| writes | 1,000 (different keys); 1 write/s per key | at most one per admitted analysis whose response passes the gate. PROJECTION 30/day typical, 300 spike | ≤ 600 by the governor's global cap (60% of the limit) |
+| writes | 1,000 (different keys); 1 write/s per key | at most one per admitted analysis whose response passes the gate. PROJECTION 30/day typical; on the spike day only what the governor admits, 34–123 of 300 (`deployment.md`, "The spike day under the governor") | ≤ 600 by the governor's global cap (60% of the limit) |
 | deletes, lists | 1,000 each | none (entries expire by TTL) | 0 |
 | storage | 1 GB | ≤ 16 KiB value + ≤ 1 KiB metadata per entry, 30-day TTL | 600 × 30 × 17 KiB ≈ 0.31 GB (31%). PROJECTION 1.3–10 MB |
 

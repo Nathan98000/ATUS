@@ -524,7 +524,7 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 - which headers reach the app through the Worker, and whether `X-ATUS-Client-IP` arrives unchanged; that a client cannot override `CF-Connecting-IP` on workers.dev is assumed, not tested;
 - whether `_headers` applies to the SPA-fallback `index.html`. The `<meta>` CSP backstop covers every directive except `frame-ancestors`, which a meta element cannot carry, and `scripts/ops/deploy_smoke.py` reports it;
 - whether Cloudflare's 125 s proxy read timeout applies to the Worker→Render hop;
-- whether Workers invocation logs record client IPs or headers. They stay off (`invocation_logs: false`, `edge/test/node/config.test.ts`) until a record on the deployed Worker shows they do not (ADR-014);
+- whether Workers invocation logs record client IPs or headers. They stay off (`invocation_logs: false`, `edge/test/node/config.test.ts`) unless a deliberate check of one record, made while only the owner's requests reach the Worker, shows they do not (ADR-014);
 - the minimal Cloudflare token for `wrangler deploy`;
 - whether the Free plan can create project-scoped Neon keys;
 - whether Neon accepts `ALTER ROLE atus_api SET ...`;

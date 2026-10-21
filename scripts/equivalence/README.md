@@ -22,7 +22,7 @@ scripts/equivalence/run.sh setup
 
 # the replay: starts a, b and c, replays, stops them, writes the report
 scripts/equivalence/run.sh --specs DIR --out OUT \
-    --serving-secrets-file ~/.config/atus/neon.env
+    --serving-secrets-file ~/.config/atus/neon-<release>-<build8>.env
 ```
 
 `run.sh` prepares the baseline (at `$ATUS_EQ_BASELINE_DIR`, default

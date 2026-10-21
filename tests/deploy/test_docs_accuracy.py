@@ -124,6 +124,10 @@ def test_the_spike_day_states_what_the_governor_refuses():
     consequences = _flat(_section(_read(ADR_015), "## Consequences", "## Failure modes"))
     for admitted, _, _ in results.values():
         assert f"{admitted} of 300" in consequences
+    # ADR-015's KV table: writes follow admissions, so the spike day writes only the admitted
+    kv_writes = _row(_read(ADR_015), "writes")
+    assert "300 spike" not in kv_writes
+    assert all(f"{admitted}" in kv_writes for admitted, _, _ in results.values())
 
 
 # --- bootstrap-kv-id-after-dispatch -------------------------------------------------
@@ -217,6 +221,8 @@ def test_workers_invocation_logs_are_off_as_the_privacy_statements_require():
     assert "enabled in `edge/wrangler.jsonc`" not in _read(SECURITY)
     section = _flat(_section(_read(ADR_014), "### Workers invocation logs"))
     assert "invocation_logs: false" in section and "turns them off" in section
+    # the check that would allow them back has to be possible while they are off
+    assert "nothing is recorded while they are off" in section
 
 
 # --- c2-edge-auth-scope-inaccurate ---------------------------------------------------
@@ -346,7 +352,9 @@ def test_deployment_keeps_one_neon_secrets_file_per_project():
     """single-neon-env-vs-per-project: a rollback needs the previous project's DSN."""
     per_project = "~/.config/atus/neon-<release>-<build8>.env"
     text = _read(DEPLOYMENT)
-    singular = [line for line in text.splitlines()
+    # neon.env is only ever the restore's default, never the file a procedure fills in
+    singular = [f"{_name(path)}: {line}" for path in [*DOCS, ENV_PRODUCTION]
+                for line in _read(path).splitlines()
                 if "neon.env" in line and "default" not in line]
     assert singular == []
     step_5 = _flat(_section(text, "### 5. Load the serving DB into Neon (owner)", "### 6."))
@@ -393,6 +401,8 @@ def test_the_edge_rollback_handles_wranglers_changed_secrets_prompt():
         edge = _flat(_section(_read(path), start, end))
         assert "secrets have changed" in edge, _name(path)
         assert "EDGE_AUTH_SECRET" in edge and "wrangler secret put" in edge, _name(path)
+    summary = _flat(_section(_read(WORKFLOWS / "deploy.yml"), "- **Edge:**", "- **Data:**"))
+    assert "secrets have changed" in summary and "decline" in summary
 
 
 # --- verify-serving-db-env-var-wrong ---------------------------------------------------
