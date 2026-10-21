@@ -267,6 +267,32 @@ describe('error handling', () => {
     }
   })
 
+  it('a comparison link whose has_household_children is a string is an invalid link (review round 4)', async () => {
+    // The API computes "false" as without household children; the page
+    // titled the result "Both groups: With household children".
+    let posts = 0
+    server.use(
+      http.post(api('/analysis/compare'), () => {
+        posts += 1
+        return HttpResponse.json(compareChildrenFixture)
+      }),
+    )
+    const json = JSON.stringify({
+      activity: { preset: 'sleep' },
+      years: [2019, 2023],
+      population: { has_household_children: 'false' },
+      group_a: { sex: 'male' },
+      group_b: { sex: 'female' },
+    })
+    const encoded = btoa(json).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
+    renderAnalysisRoute(`/analysis/compare?spec=${encoded}`)
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'This analysis link cannot be opened',
+    )
+    expect(screen.queryByText(/household children/i)).not.toBeInTheDocument()
+    expect(posts).toBe(0)
+  })
+
   it('rejects unknown analysis types in the URL', async () => {
     renderAnalysisRoute(`/analysis/median?spec=${encodeSpec(sleepSpec)}`)
     expect(await screen.findByRole('alert')).toHaveTextContent('unknown analysis type')

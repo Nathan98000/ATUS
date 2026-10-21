@@ -364,6 +364,11 @@ stateless. The URL encodes exactly that:
   commits one history entry.
 - Opening a share link: decode → structural validation (nonsense links get a
   friendly error page) → POST → render. Refresh reproduces the analysis.
+  Every field the page shows must have the JSON type the page reads it as,
+  population values included (`has_household_children` a boolean, ages and
+  `region` numbers, the rest strings): the API reads `"no"`, `"false"` or
+  `"0"` as `false`, which the page would have labelled "with household
+  children" (review round 4).
 - **Canonicalization:** after a successful estimate/trend run, the page
   rewrites the URL (history *replace*) using the API's canonical `spec` from
   the response, and seeds the query cache under the canonical key so the

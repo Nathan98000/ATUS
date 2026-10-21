@@ -94,12 +94,38 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 const isString = (value: unknown) => typeof value === 'string'
 const isNumber = (value: unknown) => typeof value === 'number'
+const isBoolean = (value: unknown) => typeof value === 'boolean'
+const isScalar = (value: unknown) => isString(value) || isNumber(value) || isBoolean(value)
 const isStringList = (value: unknown) => Array.isArray(value) && value.every(isString)
-/** A population filter: an object of scalar values (strings, numbers, booleans, null). */
+
+/**
+ * The population dimensions the page describes, with the JSON type it reads
+ * each as. The API reads its fields leniently — "no", "false", "0" and "off"
+ * are all `has_household_children: false` to it — while the page described
+ * any non-empty string as "with household children", so a hand-written link
+ * was computed for one population and labelled with the opposite one
+ * (review round 4). Other dimensions (unknown to the page) may hold any
+ * scalar; the API refuses them.
+ */
+const POPULATION_TYPES = new Map<string, (value: unknown) => boolean>([
+  ['age_min', isNumber],
+  ['age_max', isNumber],
+  ['sex', isString],
+  ['employment_status', isString],
+  ['has_household_children', isBoolean],
+  ['region', isNumber],
+  ['state_fips', isString],
+  ['education_level', isString],
+  ['day_type', isString],
+  ['diary_date_min', isString],
+  ['diary_date_max', isString],
+])
+
+/** A population filter: an object of scalar values (null when unset), each of its dimension's type. */
 const isPopulation = (value: unknown) =>
   isPlainObject(value) &&
-  Object.values(value).every(
-    (item) => item === null || ['string', 'number', 'boolean'].includes(typeof item),
+  Object.entries(value).every(
+    ([dimension, item]) => item === null || (POPULATION_TYPES.get(dimension) ?? isScalar)(item),
   )
 
 /**
