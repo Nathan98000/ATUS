@@ -210,7 +210,7 @@ def restore_serving_db(artifact, secrets_file, api_role, rotate_api_password, ro
         restore,
         write_report,
     )
-    from .serving.secrets_file import SecretsFileError
+    from .serving.secrets_file import API_PASSWORD_KEY, SecretsFileError, read_env_file
 
     _settings()
     options = RestoreOptions(
@@ -223,9 +223,28 @@ def restore_serving_db(artifact, secrets_file, api_role, rotate_api_password, ro
         url = owner_url(options)
     except (RestoreError, SecretsFileError) as exc:
         raise _fail(exc) from exc
+
+    def stored_api_password() -> str | None:
+        path = secrets_file.expanduser()
+        try:
+            return read_env_file(path).get(API_PASSWORD_KEY) if path.is_file() else None
+        except (OSError, ValueError, SecretsFileError):
+            return None
+
+    def password_note(when: str) -> str:
+        return (f"Note: the API role's password was changed{when}; only "
+                f"ATUS_API_DATABASE_URL in {secrets_file} works now (update the API's "
+                "ATUS_DATABASE_URL (Render) to it, then Save and deploy).")
+
+    password_before = stored_api_password()
     try:
         report = restore(options, echo=click.echo)
     except (RestoreError, ArtifactError, PgToolError, SecretsFileError, psycopg.Error) as exc:
+        # The file is rewritten only after roles.sql succeeded: a new password
+        # in it means the role has it now, though a later step failed (the
+        # checks' connections, say).
+        if stored_api_password() != password_before:
+            click.echo(password_note(" before the restore stopped with an error"))
         raise _fail(exc, url, conninfo_to_dict(url).get("password") or "") from exc
     if report_path:
         write_report(report, report_path, url)
@@ -233,10 +252,7 @@ def restore_serving_db(artifact, secrets_file, api_role, rotate_api_password, ro
     if report.api_password_changed:
         # Whatever the verdict: the checks run after roles.sql, and a failure
         # does not undo it (review r2: a passing run used to say nothing).
-        when = "" if report.passed else " before the checks ran"
-        click.echo(f"Note: the API role's password was changed{when}; only "
-                   f"ATUS_API_DATABASE_URL in {secrets_file} works now (update the API's "
-                   "ATUS_DATABASE_URL (Render) to it, then Save and deploy).")
+        click.echo(password_note("" if report.passed else " before the checks ran"))
     if not report.passed:
         sys.exit(1)
 

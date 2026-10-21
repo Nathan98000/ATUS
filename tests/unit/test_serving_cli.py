@@ -6,6 +6,7 @@ owner-url-env-overrides-secrets-file)."""
 
 from __future__ import annotations
 
+import psycopg
 import pytest
 from click.testing import CliRunner
 
@@ -153,6 +154,41 @@ def test_a_new_api_password_is_announced_whatever_the_verdict(tmp_path, monkeypa
         assert f"only ATUS_API_DATABASE_URL in {secrets_file} works now" in result.output
         assert "update the API's ATUS_DATABASE_URL (Render)" in result.output
         assert ("before the checks ran" in result.output) is not passed
+
+
+@pytest.mark.parametrize("rotated", [True, False])
+@pytest.mark.parametrize("stored", [None, "old-api-pw"], ids=["no file", "stored password"])
+def test_a_new_api_password_is_announced_when_a_later_step_fails(tmp_path, monkeypatch,
+                                                                 rotated, stored):
+    """Review r2 verification (roles-only-silent-api-password-rotation): the
+    secrets file is rewritten right after roles.sql, before the VACUUM, the
+    checks and the API role's own connection. When one of those raised (a
+    dropped connection, say), the CLI printed only the error: a new password
+    in effect went unannounced, against the "announce every new one" fix."""
+    dump = tmp_path / "atus-serving-0325-x.dump"
+    dump.write_bytes(b"PGDMP")
+    secrets_file = tmp_path / "neon.env"
+    if stored is not None:
+        secrets_file.write_text(f"ATUS_API_DB_PASSWORD={stored}\n")
+        secrets_file.chmod(0o600)
+
+    def restore_that_stops(options, echo=print):
+        if rotated:   # what restore() does once roles.sql succeeded
+            secrets_file.write_text("ATUS_API_DB_PASSWORD=new-api-pw\n")
+        raise psycopg.OperationalError("connection to server was lost")
+
+    monkeypatch.setattr(restore_module, "restore", restore_that_stops)
+    result = CliRunner().invoke(cli, [
+        "restore-serving-db", "--artifact", str(dump), "--roles-only",
+        "--secrets-file", str(secrets_file),
+    ], env={"ATUS_OWNER_DATABASE_URL": OWNER_URL, "ATUS_LOG_LEVEL": "WARNING"})
+    assert result.exit_code == 1
+    assert "connection to server was lost" in result.output
+    note = "Note: the API role's password was changed before the restore stopped with an error"
+    assert (note in result.output) is rotated
+    if rotated:
+        assert f"only ATUS_API_DATABASE_URL in {secrets_file} works now" in result.output
+    assert "new-api-pw" not in result.output and "s3cret-owner-pw" not in result.output
 
 
 # --------------------------------------------------------------------------- #

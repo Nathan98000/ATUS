@@ -913,7 +913,7 @@ Every secret has one procedure.
    4. Render `ATUS_EDGE_SECRETS=<new>`, then "Save and deploy".
 2. **`atus_api` database password.**
    1. `scripts/ops/restore_serving_db.sh --artifact <the release dump> --secrets-file <that project's file> --roles-only --rotate-api-password` re-applies `scripts/ops/roles.sql` as `neondb_owner` with a new generated 192-bit password (sent as a SCRAM verifier) and rewrites `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` in that file.
-   2. Update Render's `ATUS_DATABASE_URL`, then "Save and deploy". Do this even if step 1 ended with `Restore FAILED.` after the note "the API role's password was changed before the checks ran": the new password is already in effect.
+   2. Update Render's `ATUS_DATABASE_URL`, then "Save and deploy". Do this even if step 1 ended with `Restore FAILED.` after the note "the API role's password was changed before the checks ran", or with an error after the note "the API role's password was changed before the restore stopped with an error": the new password is already in effect.
 
    A Postgres role has only one password. Between steps 1 and 2, new connections fail, so uncached analyses may get 503 `database_unavailable` with `Retry-After`; open connections keep working. Rotate when the service is idle.
 3. **Ops tokens** (`ATUS_OPS_TOKEN`; the Worker's `OPS_TOKEN`).
