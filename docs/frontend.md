@@ -139,7 +139,11 @@ Metadata queries load once per page (`staleTime: Infinity`) and loaded
 metadata never refetches in the background — not on window focus, not on
 reconnect — because a focus refetch could wake a sleeping free-tier host for
 nothing (audit F62); only a query that failed is retried when the browser
-comes back online. `/meta` is fetched with `cache: "no-cache"` when it comes
+comes back online. Every query runs with `networkMode: "always"`: TanStack
+Query's default pauses a query that starts while the browser is offline
+before its function runs, which left a new analysis on "Calculating…" for as
+long as the browser stayed offline, with no request and no message (review
+round 1). The request now fails at once and is presented as offline. `/meta` is fetched with `cache: "no-cache"` when it comes
 from the API, so a reload never pairs a `/meta` from the browser's HTTP cache
 with newer data (F27); a deployed snapshot's `/meta` comes from an
 immutable snapshot directory whose name includes a hash of the data version,
@@ -169,7 +173,16 @@ data swap by itself: every later response's `X-Data-Version` is compared
 with the loaded one (`serviceStatus.ts`), and a difference shows a polite
 "different data release — reload" notice. (Before Phase 5 the docs said the
 key invalidated "by construction"; that only held after a reload, and only
-with a globally unique data version — audit F06/F27.)
+with a globally unique data version — audit F06/F27.) The notice offers
+"Reload page" only when a reload would load that release: without a static
+snapshot (the page's `/meta` came from the API), or when the snapshot
+pointer, read again with `no-cache`, now names it
+(`snapshot.ts reloadLoadsVersion`). During a release switch the API serves
+the new release before the deploy job publishes the new snapshot (ADR-013
+step 8); every page load, a reload or a new tab alike, then reads the old
+snapshot, so the notice instead says the service is switching releases,
+that new results already come from the new one and that reloading does not
+change that yet, with no button (review round 1).
 
 Analyses are retried automatically only in the cold-start cases below;
 superseded requests are aborted via TanStack Query's signal, and stale
@@ -197,7 +210,9 @@ not an error (`resilience.ts`, audit F11, F12, F64):
 Every wait honours `Retry-After` (at least 1 s); without it the backoff is
 1, 2, 4, 8, 8, … s. A retry is not started when its wait would end after the
 150 s budget. Being offline (`navigator.onLine` false) is not a cold start
-and is not retried.
+and is not retried; a query started offline runs too (`networkMode:
+"always"`), so it fails at once with "check your internet connection"
+instead of pausing silently.
 
 **Waking notice.** "Waking up the analysis service — free hosting sleeps
 when idle; this can take up to a minute." appears when a metadata request
@@ -227,16 +242,16 @@ contract and of the edge have public-facing copy:
 
 | Code | Presentation |
 | --- | --- |
-| `invalid_spec`, `validation_error`, `malformed_json`, `unknown_activity`, `activity_not_found`, `unsupported_analysis`, `insufficient_data`, `payload_too_large` | the request is the problem: the API's own explanation, "Adjust analysis" |
+| `invalid_spec`, `validation_error`, `malformed_json`, `invalid_analysis`, `unknown_activity`, `activity_not_found`, `unsupported_analysis`, `insufficient_data`, `payload_too_large` | the request is the problem: the API's own explanation, "Adjust analysis"; a 422's `details.errors[]` (`{location, message, type}`) become one line per field, e.g. "measure: Input should be …" |
 | `rate_limited` | "Too many new analyses in a short time" with a `Retry-After` countdown on "Try again" (the ticking seconds are hidden from assistive technology; the message states the wait). The edge's per-network daily allowance (`details.budget: "prefix"`) instead says that the network's new analyses for today are used up and that the limit resets at 00:00 UTC (in local time), with no countdown and no "Try again"; any other wait over 15 minutes names the local time it ends |
 | `daily_capacity_reached` | the service's shared capacity for new analyses is used up for today; resets at 00:00 UTC, shown in local time. Always a shared allowance: the API sends `details.scope: "daily"`, the edge governor `"global"` or `"daily"`; a per-network daily denial is `rate_limited` with budget `prefix` (above) |
-| `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `schema_not_initialized`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); `analysis_timeout` also offers "Adjust analysis" |
-| `database_paused`, `capacity_paused`, `edge_daily_limit` | **full-page** "paused" state: free hosting quota used up, when it resets, what still works (starter examples and earlier analyses), a link home |
+| `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `schema_not_initialized`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); `analysis_timeout` also offers "Adjust analysis". `upstream_unavailable` follows `details.reason`: `connect_failed`/`circuit_open` "could not be reached", `origin_timeout` "did not answer in time", `broken_response` "broke off", `not_configured` "not set up"; only `platform_error` (or a non-JSON 5xx) says the hosting provider answered. `service_waking` and the waking-class `upstream_unavailable` are shown only after the 150 s budget, so they say the service has not answered for more than 2 minutes and that its free hosting may be paused, for example until next month, instead of promising a temporary problem: a Render suspension looks exactly like this ([security.md R13](security.md#accepted-risks)) |
+| `database_paused`, `capacity_paused`, `edge_daily_limit` | **full-page** "paused" state: free hosting quota used up, when it resets, what still works (starter examples and earlier analyses), a link home. A date is named only when the service says when the pause ends (`capacity_paused`: `resumes_at`/`Retry-After`); `database_paused`'s fixed `Retry-After: 3600` only paces retries, so its page names no date |
 | `not_found`, `method_not_allowed`, `unsupported_media_type` | a request outside the HTTP contract, which the page never sends on purpose: most likely a page and a service from different versions, so the copy says to reload the page; no "Try again" (the retry policy treats these as final) |
 | `forbidden_origin` | the service accepts requests only through the site itself; no "Try again" |
 | incompatible API | **full-page** state with a reload button |
 | no answer (`NetworkError`) | "could not be reached" or "did not answer in time", with "Try again" |
-| any other code (`internal_error`, `invalid_analysis`, `malformed_response`, `unknown_error`, a code this build does not know) | one generic "unexpected problem in the service" copy with "Try again" |
+| any other code (`internal_error`, `malformed_response`, `unknown_error`, a code this build does not know) | one generic "unexpected problem in the service" copy with "Try again" (honouring `Retry-After`) |
 
 **Boot fallback** (F65). `index.html` ships a shell inside `#root` that React
 replaces when it starts. If the hashed bundle never loads (a stale page after
@@ -422,11 +437,20 @@ facts are `null`, never guessed. File names are
   region; the comparison chart is `role="img"` with a data summary; every
   chart has a data table alternative.
 - Loading states are `<output>` (status) elements; errors are
-  `role="alert"`; group colors are always paired with text labels.
+  `role="alert"`; group colors are always paired with text labels. The
+  analysis page announces through one persistent polite region of its own,
+  so its loading panel is a plain container there, and the waking state is
+  announced by the site-wide notice alone: each state is read once, not two
+  or three times (review round 1).
 - Service notices (waking, data release changed) live in persistent
   `<output>` regions, so text added later is announced politely; nothing
   moves focus. A `Retry-After` countdown is visual only (`aria-hidden`); the
   alert's text states the wait once.
+- "Try again" replaces the panel that holds it, so `useRetryFocus` moves
+  focus to the page's heading (`<h1 tabIndex={-1}>`; on Home, the starter
+  examples' heading) before the retry and, until it settles, back to the
+  heading the page then shows whenever focus fell to `<body>` (review
+  round 1).
 - The download buttons are ordinary buttons; a persistent `<output>` says
   which file was started, and focus stays on the button.
 - Playwright runs axe checks (no serious or critical violations) on the five

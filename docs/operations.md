@@ -937,7 +937,7 @@ The normative procedure is ADR-013 "Release procedure on the free stack (§15)".
 
 6. **Switch.**
    1. Push the commit from step 3 and run `gh workflow run deploy.yml --ref main -f reason="data release <tag>"`.
-   2. While `deploy` waits for approval (its snapshot is already built), set Render's `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` (the manifest's `data_version`) together, "Save and deploy", and wait until Render → Events shows it live. Until the next step the API answers with the new version, the Worker stores nothing in KV, and open tabs see the reload notice.
+   2. While `deploy` waits for approval (its snapshot is already built), set Render's `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` (the manifest's `data_version`) together, "Save and deploy", and wait until Render → Events shows it live. Until the next step the API answers with the new version while every page load still reads the old snapshot, and the Worker stores nothing in KV. Every visitor who opens an analysis the snapshot does not hold — in an open tab, after a reload, or in a new tab — gets it from the new release next to starter examples and descriptions from the old one, and sees a notice that the service is switching data releases and that reloading does not change that yet (no "Reload page" button: a reload loads the same old snapshot). After `deploy` publishes the new snapshot, the notice in open tabs offers the reload, which then helps. Keep this window short: approve `deploy` as soon as Render shows the switch live.
    3. If used, load the new project's `NEON_API_KEY` with `npx wrangler secret put NEON_API_KEY`.
    4. Approve `deploy`. Its smoke checks `X-Data-Version`.
 7. **Verify (at most 40 requests; wakes Neon):**
@@ -1047,7 +1047,7 @@ Restore every release artifact once, as production will, into a fresh cluster wi
 |---|---|---|
 | `$SITE/` fails | Cloudflare, or a broken Worker deploy | Cloudflare status; Deployments; edge [rollback](#rollback) |
 | `/api/*` gives a non-JSON 429 or error 1027; SPA says "daily request allowance reached" | Worker 100,000 requests/day used | [quota runbook](#a-quota-is-exhausted) |
-| 503 `service_waking` | Render spinning up | normal; it lasts about a minute |
+| 503 `service_waking` | Render spinning up, or suspended (its answer then is undocumented; [security.md R13](security.md#accepted-risks)) | normal if it lasts about a minute; if it persists, Render → Events and [Render suspends the service](#render-suspends-the-service) |
 | 502 `upstream_unavailable`, `reason` `not_configured` | Worker secret `RENDER_ORIGIN` missing or invalid | `wrangler secret put RENDER_ORIGIN` from `edge.env` |
 | `upstream_unavailable`, `reason` `connect_failed`, `circuit_open` or `platform_error` | Render down, suspended, or image pull failed | Render → Events; [Render suspends the service](#render-suspends-the-service) |
 | `upstream_unavailable`, `reason` `origin_timeout` | a 524: the origin held the request past the proxy timeout | Render logs for `analysis_timeout` and `db_ms` |
@@ -1092,7 +1092,7 @@ Every exhaustion degrades toward the static floor: the SPA, the snapshot (starte
 | Governor monthly pacing | 503 `capacity_paused` (`budget` `egress` or `cu_month`) with `resumes_at` | Wait for `resumes_at`. If it happens every month, apply the calibration lever ([deployment.md step 10](deployment.md#10-week-1-calibration)): lower the compute's maximum CU and set `NEON_MAX_CU` in `edge/src/constants.ts` to match |
 | Neon compute (100 CU-h) or egress (5 GB) | 503 `database_paused`; the SPA's paused page | Wait for the next Neon consumption period (Neon console, or the Neon `period_end` in `/api/_ops/budget` when `NEON_API_KEY` is set). Then find out why the governor did not stop first |
 | Neon storage (1 GB per project) | owner writes fail (`validate-analytics`); the API is unaffected | Never keep two copies in one project; a release goes into a new project |
-| Render outbound (5 GB/month) | services paused until the 1st; the Worker answers `upstream_unavailable`; the SPA says "paused until the 1st" | Wait. Find the cause in Render logs (direct hits show `edge_authenticated: false` and 403). Never pay; never recreate the service |
+| Render outbound (5 GB/month) | services suspended until the 1st (Render email or dashboard). Render's answer while suspended is undocumented: the Worker answers `service_waking` or `upstream_unavailable`, and the SPA shows the waking notice, then "still not answering … may be paused" — it cannot tell a suspension from a cold start ([security.md R13](security.md#accepted-risks)) | Wait. Find the cause in Render logs (direct hits show `edge_authenticated: false` and 403). Never pay; never recreate the service |
 | Render pipeline minutes | deploys wait; the running service keeps serving | Wait for the next month. Image deploys build nothing; whether pulls count is undocumented |
 | Render instance hours | cannot run out with one service | never add a second Free web service |
 | Workers Logs | edge logs stop until 00:00 UTC | none needed |
@@ -1103,7 +1103,7 @@ Every exhaustion degrades toward the static floor: the SPA, the snapshot (starte
 
 This means Render's discretionary suspension for "uncommonly high" traffic that the service initiates (ADR-011 accepted risk 1). It is not the monthly bandwidth pause, which ends on the 1st.
 
-1. **Confirm** in Render → the service, and in Render's email. The deep monitor fails, and analyses answer `upstream_unavailable`.
+1. **Confirm** in Render → the service, and in Render's email. The deep monitor fails, and analyses answer `service_waking` or `upstream_unavailable`: what a suspended service answers is undocumented. Visitors see the waking notice for 150 s per novel analysis, then "The analysis service is still not answering … may be paused"; there is no dedicated paused page ([security.md R13](security.md#accepted-risks)).
 2. **Do not:**
    - pay, add a card or upgrade;
    - recreate the service, or create another one in this or a new workspace. Render's AUP forbids attempts to "bypass, circumvent, or defeat" its restrictions (ADR-011 "Must-not-do list").

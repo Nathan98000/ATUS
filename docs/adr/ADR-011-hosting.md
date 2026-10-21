@@ -688,6 +688,7 @@ Status codes:
    - **Mitigation:** an unpublished name with a random suffix, a minimal 403 response, and Render's own Cloudflare DDoS layer.
 9. **Plain HTTP inside Render**, between its load balancer and the container (documented by Render).
 10. **Mixed-version windows** of a few minutes during deploys and data releases. Results always carry their own `data_version`, and the version gate prevents cache poisoning.
+11. **A Render suspension is presented as a cold start** (review round 1; [`../security.md`](../security.md#accepted-risks), R13). What a suspended Free service answers is undocumented, so the Worker maps it to `service_waking` or `upstream_unavailable`. The SPA waits out its 150 s budget per novel analysis, then says the service is still not answering and may be paused until next month; it has no dedicated page saying that the API host is paused for the month. The static floor keeps serving.
 
 ### Other risks and their mitigations
 
