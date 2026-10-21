@@ -435,7 +435,9 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
   scripts/smoke_stack.sh --integration-via-pgbouncer --prepared-statements 0  # no prepared-statement support
   ```
 
-  Measured on 2026-10-20 (functional, fixture data): 50/50 integration tests pass with `max_prepared_statements=1000`. With `0`, 3 fail with `DuplicatePreparedStatement` (`_pg3_0`): psycopg prepares a statement after its 5th execution, and the next transaction lands on a server connection that already has one by that name. One of them is an API request that returned 500. If the API ever goes through a pooler without prepared-statement support, the pool must pass `prepare_threshold=None`.
+  Both deselect the integration tests marked `direct_connection` (`pytest -m "not direct_connection"`). Those create roles or template databases, set startup options, terminate backends or hold session-level locks, which no transaction pooler supports; they cover the loader, the serving build and restore, the serving contract's role checks, the equivalence harness's altered-copy check and the stale-connection recovery, none of which runs through a pooler in production.
+
+  Measured on 2026-10-21 (review round 3; functional, fixture data): with `max_prepared_statements=1000`, 142 passed, 113 deselected. The same command without the deselection had ended with 20 failed, 155 passed, 1 skipped and 79 errors, every one in those tests (the first run, on 2026-10-20, passed all 50 integration tests of the time). With `0`, the scoped run ends with 14 failed, 98 passed and 30 errors, every one a `DuplicatePreparedStatement` (`_pg3_0`) or its consequence: psycopg prepares a statement after its 5th execution, and the next transaction lands on a server connection that already has one by that name; API requests answered 500. If the API ever goes through a pooler without prepared-statement support, the pool must pass `prepare_threshold=None`.
 - **The image gate and the packaging lint** (step 3) run locally exactly as in CI.
 
 ### 1. Build the serving DB and its release artifact

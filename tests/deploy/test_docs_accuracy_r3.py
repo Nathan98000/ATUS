@@ -12,6 +12,9 @@ without ``edge/node_modules``.
 
 from __future__ import annotations
 
+import ast
+import re
+
 import yaml
 
 from .conftest import REPO_ROOT
@@ -74,3 +77,79 @@ def test_a_failed_smoke_says_how_to_move_the_live_tags():
     deployment = _flat(_read(DEPLOYMENT))
     assert "A failed smoke skips browser-smoke and promote" in deployment
     assert "After a deploy whose smoke failed, promote never ran" in deployment
+
+
+# --- pgbouncer-rehearsal-now-fails ------------------------------------------------------
+
+#: What failed or errored when `scripts/smoke_stack.sh --integration-via-pgbouncer` ran
+#: all of tests/integration through PgBouncer at cd9ad7e (20 failed, 79 errors): a whole
+#: module, a class, or one test (module, class, function).
+FAILED_THROUGH_PGBOUNCER = [
+    ("test_serving_restore.py", None, None),
+    ("test_reload_switch.py", None, None),
+    ("api/test_protection_db.py", "TestStaleConnections", None),
+    ("test_equivalence_harness.py", None,
+     "test_a_changed_serving_database_is_caught_with_json_paths"),
+    *(("test_serving_contract.py", None, name) for name in (
+        "test_the_role_cannot_read_outside_the_contract",
+        "test_the_engine_reads_only_contract_columns",
+        "test_every_endpoint_works_within_the_contract",
+        "test_benchmarks_record_their_results_within_the_contract")),
+    *(("test_serving_build.py", None, name) for name in (
+        "test_the_content_hash_changes_with_the_data",
+        "test_an_unconvertible_replicate_weight_stops_the_build",
+        "test_a_failed_build_into_an_empty_database_leaves_it_empty",
+        "test_an_omitted_row_that_an_estimate_would_read_stops_the_build",
+        "test_the_build_requires_recorded_validation_by_default",
+        "test_only_results_recorded_since_the_data_went_live_validate_it",
+        "test_a_select_only_role_can_build_from_the_source",
+        "test_the_commands_build_verify_and_compare")),
+]
+
+
+def _marked(node: ast.AST) -> bool:
+    return any("pytest.mark.direct_connection" in ast.unparse(d)
+               for d in getattr(node, "decorator_list", []))
+
+
+def _direct_connection(module: str, cls: str | None, function: str | None) -> bool:
+    tree = ast.parse(_read(REPO_ROOT / "tests" / "integration" / module))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+                isinstance(t, ast.Name) and t.id == "pytestmark" for t in node.targets):
+            if "pytest.mark.direct_connection" in ast.unparse(node.value):
+                return True
+    if function is None and cls is None:
+        return False
+    (owner,) = [n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == cls] \
+        if cls else [tree]
+    if cls and _marked(owner):
+        return True
+    if function is None:
+        return False
+    (test,) = [n for n in owner.body if isinstance(n, ast.FunctionDef) and n.name == function]
+    return _marked(test)
+
+
+def test_the_pooler_rehearsal_leaves_out_what_no_transaction_pooler_supports():
+    """pgbouncer-rehearsal-now-fails: the brief §10 rehearsal ran all of tests/integration
+    through PgBouncer and exited 1 (20 failed, 79 errors), while deployment.md still cited
+    "50/50". The failures were tests that create roles or template databases, set startup
+    options, terminate backends or hold session-level locks. They are now marked
+    ``direct_connection`` and the rehearsal deselects them; the docs record the scoped
+    result."""
+    pyproject = _read(REPO_ROOT / "pyproject.toml")
+    assert '"direct_connection: ' in pyproject            # a registered marker
+    smoke = _read(SCRIPTS / "smoke_stack.sh")
+    assert re.search(r'-m pytest tests/integration -m "not direct_connection"', smoke)
+    unmarked = [entry for entry in FAILED_THROUGH_PGBOUNCER if not _direct_connection(*entry)]
+    assert unmarked == []
+
+    pooler = _flat(_section(_read(DEPLOYMENT), "- **Through a transaction pooler**",
+                            "- **The image gate"))
+    assert "direct_connection" in pooler and "deselect" in pooler
+    assert "50/50 integration tests pass" not in pooler
+    assert re.search(r"Measured on 2026-10-21 .*\d+ passed, \d+ deselected", pooler)
+    f18 = _flat(_row(_section(_read(OPERATIONS), "### Findings F01", "### Recorded facts"),
+                     "F18"))
+    assert "direct_connection" in f18

@@ -54,7 +54,9 @@ from tests.integration.conftest import (
 )
 from tests.integration.random_dataset import random_settings
 
-pytestmark = pytest.mark.integration
+# The restore creates roles and databases and logs in as the roles it creates, which a
+# transaction pooler's user list does not know; it runs on the direct endpoint.
+pytestmark = [pytest.mark.integration, pytest.mark.direct_connection]
 
 REPO = Path(__file__).resolve().parents[2]
 RESTORE = REPO / "scripts" / "ops" / "restore_serving_db.sh"

@@ -37,7 +37,11 @@
 # --integration-via-pgbouncer starts only db + PgBouncer (transaction mode,
 # emulation profile) and runs the existing integration suite from this
 # checkout's virtualenv through it, as the bootstrap superuser (the suite
-# creates its own database). --prepared-statements sets PgBouncer's
+# creates its own database), without the tests marked direct_connection:
+# those create roles or template databases, set startup options, terminate
+# backends or hold session-level locks, which no transaction pooler supports
+# (they cover the loader, the serving build and the restore, which never run
+# through one). --prepared-statements sets PgBouncer's
 # max_prepared_statements (default 1000, Neon's value; 0 = no support).
 #
 # Secrets are random, written to a private temporary env file and deleted on
@@ -278,7 +282,8 @@ else
   compose --profile pgbouncer up -d --wait --wait-timeout 300 pgbouncer
   port=$(compose --profile pgbouncer port pgbouncer 6432 | sed 's/.*://')
   superuser_password=$(sed -n 's/^ATUS_STACK_PG_SUPERUSER_PASSWORD=//p' "$env_file")
-  echo "== pytest tests/integration through PgBouncer on 127.0.0.1:$port"
+  echo "== pytest tests/integration through PgBouncer on 127.0.0.1:$port (not direct_connection)"
   ATUS_TEST_DATABASE_URL="postgresql://postgres:${superuser_password}@127.0.0.1:${port}/atus_test_pgbouncer" \
-    "$python_bin" -m pytest tests/integration -q -p no:cacheprovider 2>&1 | redact
+    "$python_bin" -m pytest tests/integration -m "not direct_connection" -q -p no:cacheprovider \
+    2>&1 | redact
 fi

@@ -53,7 +53,10 @@ from tests.integration.reload_dataset import (
     make_second_version,
 )
 
-pytestmark = pytest.mark.integration
+# `atus load` holds a session-level advisory lock for the whole load, and the switch
+# relies on session settings and on lock waits between sessions: none of it survives a
+# transaction pooler, and the loader only ever runs against the full database directly.
+pytestmark = [pytest.mark.integration, pytest.mark.direct_connection]
 
 LOAD_VERSION = re.compile(r"^0325:load-(\d+)-\d{8}T\d{6}Z-[0-9a-f]{6}$")
 SLEEP_2023 = AnalysisSpec(

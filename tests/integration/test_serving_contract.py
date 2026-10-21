@@ -119,6 +119,8 @@ def test_the_migrated_schema_satisfies_the_contract(contract):
         conn.rollback()
 
 
+# Sets its role as a startup option (options=-c role=...), which a pooler refuses
+@pytest.mark.direct_connection
 def test_the_role_cannot_read_outside_the_contract(contract):
     url, role, _ = contract
     with psycopg.connect(as_role(url, role)) as conn:
@@ -132,6 +134,8 @@ def test_the_role_cannot_read_outside_the_contract(contract):
                     conn.execute(sql)
 
 
+# Sets its role as a startup option (options=-c role=...), which a pooler refuses
+@pytest.mark.direct_connection
 def test_the_engine_reads_only_contract_columns(contract):
     url, role, _ = contract
     with psycopg.connect(url) as owner:
@@ -143,6 +147,8 @@ def test_the_engine_reads_only_contract_columns(contract):
     assert sum(isinstance(r, dict) for r in expected) >= len(POPULATIONS) + 2
 
 
+# Sets its role as a startup option (options=-c role=...), which a pooler refuses
+@pytest.mark.direct_connection
 def test_every_endpoint_works_within_the_contract(contract):
     url, role, settings = contract
     ops_token = "ops-" + "x" * 40
@@ -175,6 +181,8 @@ def test_every_endpoint_works_within_the_contract(contract):
         assert unknown.status_code == 422
 
 
+# Sets its role as a startup option (options=-c role=...), which a pooler refuses
+@pytest.mark.direct_connection
 def test_benchmarks_record_their_results_within_the_contract(contract):
     url, role, _ = contract
     with psycopg.connect(as_role(url, role)) as conn:
