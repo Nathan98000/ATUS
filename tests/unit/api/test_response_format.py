@@ -229,7 +229,7 @@ def test_a_bump_edits_no_test_outside_the_bump_files():
     wrangler.jsonc's default although their fixtures (origin headers, KV metadata, cache
     scopes computed independently) are written for "1". Python tests compare the API's
     format with the constant; the worker tests pin the release var they are written for
-    in edge/vitest.config.ts, as the deploy's --var does."""
+    in edge/test/release.ts (bound by edge/vitest.config.ts), as the deploy's --var does."""
     copies = []
     for path in sorted((ROOT / "tests").rglob("*.py")):
         text = path.read_text(encoding="utf-8")
