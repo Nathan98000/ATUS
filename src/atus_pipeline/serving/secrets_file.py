@@ -24,9 +24,9 @@ import secrets
 import stat
 import tempfile
 from pathlib import Path
-from urllib.parse import quote, urlencode, urlunsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
-from psycopg.conninfo import conninfo_to_dict
+from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
 DEFAULT_SECRETS_FILE = Path("~/.config/atus/neon.env")
 OWNER_URL_KEY = "ATUS_OWNER_DATABASE_URL"
@@ -136,6 +136,36 @@ def scram_sha256_verifier(password: str, *, salt: bytes | None = None,
 
 
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1", "host.docker.internal"}
+
+
+def _is_local(host: str) -> bool:
+    return host in LOCAL_HOSTS or host.startswith("/")   # a Unix socket directory
+
+
+def verified_owner_url(url: str) -> str:
+    """The owner's connection string as the restore uses it: a remote
+    server's certificate and host name are always verified.
+
+    Owner step 3.5.1 pastes Neon's string as is, and it carries
+    ``sslmode=require``, which encrypts but authenticates no server; the
+    owner's session streams every served row and sends the API role's SCRAM
+    verifier (review r3). Any weaker ``sslmode`` (or none) therefore becomes
+    ``verify-full``, with ``sslrootcert=system`` unless the string names a CA
+    file of its own, as in :func:`api_database_url`; every other parameter
+    (``channel_binding`` included) is kept. A local server (the drill, the
+    stack) keeps the owner's choice."""
+    params = conninfo_to_dict(url)
+    if _is_local(params.get("host") or "localhost") or params.get("sslmode") == "verify-full":
+        return url
+    overrides = {"sslmode": "verify-full"}
+    if not params.get("sslrootcert"):
+        overrides["sslrootcert"] = "system"
+    if not url.startswith(("postgres://", "postgresql://")):
+        return make_conninfo(url, **overrides)
+    parts = urlsplit(url)
+    query = [(key, value) for key, value in parse_qsl(parts.query, keep_blank_values=True)
+             if key not in overrides]
+    return urlunsplit(parts._replace(query=urlencode([*query, *overrides.items()])))
 
 
 def api_database_url(owner_url: str, role: str, password: str) -> str:

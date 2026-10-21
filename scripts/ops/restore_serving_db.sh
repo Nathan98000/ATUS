@@ -10,7 +10,9 @@
 #      not the -pooler host) from $ATUS_OWNER_DATABASE_URL or from the secrets
 #      file (default ~/.config/atus/neon.env, a line
 #      ATUS_OWNER_DATABASE_URL=postgresql://...); it is never printed. When both
-#      are set they must name the same database, or nothing is changed;
+#      are set they must name the same database, or nothing is changed. A
+#      remote server is always verified: a pasted sslmode=require (Neon's
+#      default) becomes sslmode=verify-full&sslrootcert=system;
 #   2. verifies the dump's SHA-256 against its .sha256 file and its manifest;
 #   3. refuses a database that is not empty (one new Neon project per release);
 #   4. pg_restore --no-owner --no-acl --single-transaction --exit-on-error,

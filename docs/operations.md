@@ -919,7 +919,7 @@ scripts/ops/restore_serving_db.sh --artifact ~/atus-artifacts/<dir>/atus-serving
 
 This step **(wakes Neon)**. Do not pass `--verify-content-hash` on Neon: it re-reads every row, which costs about the data's size in egress. The script writes `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` into the secrets file. The report has the checks, the metered size and each step's duration (`seconds`).
 
-TLS needs the system's CA roots on your machine. The script finds them itself (macOS `/etc/ssl/cert.pem`) unless `SSL_CERT_FILE` names another bundle, and hands them to the `postgres:16` docker client when there is no local `pg_restore`/`psql` 16 or newer ([deployment.md, "TLS to the database"](deployment.md#tls-to-the-database)). On a machine without a system bundle, `export SSL_CERT_FILE=<CA bundle>` first. "certificate verify failed" means no roots were found; never work around it with `sslmode=require`.
+TLS needs the system's CA roots on your machine. The script finds them itself (macOS `/etc/ssl/cert.pem`) unless `SSL_CERT_FILE` names another bundle, and hands them to the `postgres:16` docker client when there is no local `pg_restore`/`psql` 16 or newer ([deployment.md, "TLS to the database"](deployment.md#tls-to-the-database)). On a machine without a system bundle, `export SSL_CERT_FILE=<CA bundle>` first. "certificate verify failed" means no roots were found (or the server is not the one named); never work around it with `sslmode=require`, which the restore upgrades to `verify-full` for any remote host anyway (review round 3).
 
 **Restore after a lost project.** The release artifact is the backup.
 

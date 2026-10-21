@@ -18,17 +18,20 @@ import ipaddress
 import secrets
 import subprocess
 import time
+from urllib.parse import urlsplit, urlunsplit
 
 import psycopg
 import pytest
 
 from atus_pipeline.database import dsn
 from atus_pipeline.serving import pgtools
+from atus_pipeline.serving.restore import RestoreOptions, owner_url
 
 from .test_container_image import POSTGRES_IMAGE, docker
 
 SSL_OF_THIS_SESSION = "SELECT ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()"
 REAL_BUNDLE = dsn.system_ca_bundle()      # before any test replaces the list
+REMOTE_NAME = "db.atus-owner-tls.test"    # in the certificate; reached through hostaddr
 
 
 @pytest.fixture(scope="module")
@@ -61,7 +64,7 @@ def owner_certificates(tmp_path_factory):
     )
     server_key = ec.generate_private_key(ec.SECP256R1())
     names = [x509.DNSName("localhost"), x509.DNSName("host.docker.internal"),
-             x509.IPAddress(ipaddress.ip_address("127.0.0.1"))]
+             x509.DNSName(REMOTE_NAME), x509.IPAddress(ipaddress.ip_address("127.0.0.1"))]
     server_cert = (
         x509.CertificateBuilder()
         .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "localhost")]))
@@ -170,3 +173,33 @@ def test_without_any_bundle_the_docker_client_refuses_with_advice(tls_only_postg
     monkeypatch.delenv("SSL_CERT_FILE")
     with pytest.raises(pgtools.PgToolError, match="SSL_CERT_FILE"):
         _ssl_through_psql(tls_only_postgres)
+
+
+def test_the_restore_verifies_neons_pasted_sslmode_require(tls_only_postgres, owner_machine,
+                                                           monkeypatch, tmp_path):
+    """Review r3 (owner-restore-unverified-tls): owner step 3.5.1 pastes Neon's
+    string as is, ``sslmode=require``, and the restore connected with it
+    unchanged: TLS, but no server authenticated, while that session streams
+    every served row and sends the API role's SCRAM verifier. A remote host
+    name the certificate covers stands in for Neon's (reached through
+    ``hostaddr``). The restore's owner URL now verifies it: refused under
+    roots that do not know the server's CA, verified under roots that do."""
+    if REAL_BUNDLE is None:
+        pytest.skip("no system CA bundle on this machine")
+    parts = urlsplit(tls_only_postgres)
+    pasted = urlunsplit(parts._replace(
+        netloc=f"{parts.username}:{parts.password}@{REMOTE_NAME}:{parts.port}",
+        query="sslmode=require&channel_binding=require&hostaddr=127.0.0.1"))
+    monkeypatch.setenv("SSL_CERT_FILE", REAL_BUNDLE)      # roots that miss the server's CA
+    with psycopg.connect(pasted, connect_timeout=15) as conn:   # as given: unverified
+        assert conn.execute(SSL_OF_THIS_SESSION).fetchone()[0] is True
+    secrets_file = tmp_path / "neon.env"
+    secrets_file.write_text(f"ATUS_OWNER_DATABASE_URL='{pasted}'\n")
+    secrets_file.chmod(0o600)
+    monkeypatch.delenv("ATUS_OWNER_DATABASE_URL", raising=False)
+    url = owner_url(RestoreOptions(artifact=tmp_path / "x.dump", secrets_file=secrets_file))
+    with pytest.raises(psycopg.OperationalError, match="certificate verify failed"):
+        psycopg.connect(url, connect_timeout=15).close()
+    monkeypatch.setenv("SSL_CERT_FILE", str(owner_machine / "ca.crt"))
+    with psycopg.connect(url, connect_timeout=15) as conn:
+        assert conn.execute(SSL_OF_THIS_SESSION).fetchone()[0] is True

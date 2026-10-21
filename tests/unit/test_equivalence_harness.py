@@ -964,8 +964,13 @@ def test_the_serving_url_prefers_the_api_role(tmp_path, monkeypatch):
     assert urls["c"] == ("postgresql://atus_api:a-secret@h/atus",
                          "neon.env:ATUS_API_DATABASE_URL")
     assert urls["b"][1] == f"${replay.FULL_URL_ENV}"
-    secrets_file.write_text("ATUS_OWNER_DATABASE_URL=postgresql://owner:o-secret@h/atus\n")
-    assert replay.database_urls(args)["c"][1] == "neon.env:ATUS_OWNER_DATABASE_URL"
+    secrets_file.write_text("ATUS_OWNER_DATABASE_URL=postgresql://owner:o-secret@h/atus"
+                            "?sslmode=require\n")
+    owner, source = replay.database_urls(args)["c"]
+    assert source == "neon.env:ATUS_OWNER_DATABASE_URL"
+    # Review r3 (owner-restore-unverified-tls): a pasted owner string is verified.
+    assert owner == ("postgresql://owner:o-secret@h/atus"
+                     "?sslmode=verify-full&sslrootcert=system")
     secrets_file.write_text("OTHER=1\n")
     with pytest.raises(replay.SetupError) as raised:
         replay.database_urls(args)

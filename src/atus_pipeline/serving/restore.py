@@ -5,7 +5,8 @@ The procedure of brief §9 and ADR-013, in order:
 
 1. read the owner's connection string from ``$ATUS_OWNER_DATABASE_URL`` or the
    owner's secrets file (default ``~/.config/atus/neon.env``); it is never
-   printed, and when both are set they must name the same database
+   printed, when both are set they must name the same database, and a remote
+   server is always verified, whatever ``sslmode`` was pasted
    (:func:`owner_url`);
 2. verify the dump against its ``.sha256`` file and its manifest;
 3. refuse a target database that is not empty (each release goes into a new
@@ -64,6 +65,7 @@ from .secrets_file import (
     read_env_file,
     scram_sha256_verifier,
     update_env_file,
+    verified_owner_url,
 )
 
 DEFAULT_SIZE_LIMIT_BYTES = 1_000_000_000   # Neon Free: "1 GB" per project (1e9 or 2^30:
@@ -131,7 +133,9 @@ class RestoreReport:
 
 
 def owner_url(options: RestoreOptions) -> str:
-    """The owner's connection string: the environment first, then the file.
+    """The owner's connection string: the environment first, then the file,
+    always verifying a remote server (:func:`verified_owner_url`: Neon's
+    pasted ``sslmode=require`` becomes ``verify-full``, review r3).
 
     The API role's password and connection string are written into the
     secrets file, which the runbooks keep one per Neon project. So when both
@@ -150,7 +154,7 @@ def owner_url(options: RestoreOptions) -> str:
                 f"so both must name the same database. Unset {OWNER_URL_KEY}, or pass "
                 "that database's --secrets-file. Nothing was changed."
             )
-        return from_env
+        return verified_owner_url(from_env)
     if not path.is_file():
         raise RestoreError(
             f"set {OWNER_URL_KEY}, or put {OWNER_URL_KEY}=<owner connection string> "
@@ -158,7 +162,7 @@ def owner_url(options: RestoreOptions) -> str:
         )
     if from_file is None:
         raise RestoreError(f"{path} has no {OWNER_URL_KEY}")
-    return from_file
+    return verified_owner_url(from_file)
 
 
 def _role_settings(conn: psycopg.Connection) -> dict[str, str]:
