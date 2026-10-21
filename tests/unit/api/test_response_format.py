@@ -10,9 +10,10 @@ response-format-bump-unenforced).
 
 This test pins, for each ``(RESPONSE_FORMAT, ANALYTICS_VERSION)``, a
 fingerprint of the OpenAPI schemas of the three analysis responses (with
-every schema they reference) and of the exact bytes the API serves for one
-known result per operation (field names and order, number formatting, null
-handling, warnings and labels as serialized). If it fails:
+every schema they reference; their documentation keywords, which never
+reach the bytes, are left out: ``DOC_KEYWORDS``) and of the exact bytes the
+API serves for one known result per operation (field names and order, number
+formatting, null handling, warnings and labels as serialized). If it fails:
 
 1. the analysis response bytes changed. Bump ``RESPONSE_FORMAT`` in
    ``src/atus_pipeline/api/__init__.py`` (and the Worker's ``RESPONSE_FORMAT``
@@ -41,10 +42,11 @@ from atus_pipeline.api import RESPONSE_FORMAT
 from tests.unit.api.test_contract import known_estimate_result
 
 PINNED: dict[tuple[str, str], str] = {
-    ("1", "0.2"): "efdb9f5a27f976b98fc63a2ba408263db82b62a75c029ce574e31fb3854e9b23",
+    ("1", "0.2"): "017328a7f8aeecbc48b759b2af6c601b4d8e6c359c0990c44ba7588569fa1645",
 }
 
 ANALYSIS_RESPONSES = ("EstimateResponse", "TrendResponse", "CompareResponse")
+DOC_KEYWORDS = frozenset({"description", "title", "examples", "example"})
 BODY = {"activity": {"preset": "sleep"}, "years": [2023], "variance": "none"}
 
 
@@ -100,6 +102,18 @@ def _referenced(schemas: dict, name: str, seen: dict) -> None:
         _referenced(schemas, ref, seen)
 
 
+def _structure(node, names: bool = False):
+    """A schema without its documentation keywords: editing a field's
+    description changes no response byte and needs no bump. ``names`` marks
+    a ``properties`` mapping, whose keys are field names, never keywords."""
+    if isinstance(node, dict):
+        return {key: _structure(value, names=key == "properties" and not names)
+                for key, value in node.items() if names or key not in DOC_KEYWORDS}
+    if isinstance(node, list):
+        return [_structure(value) for value in node]
+    return node
+
+
 def response_fingerprint(client, stub_engine) -> tuple[str, dict]:
     stub_engine.estimate_behavior = lambda spec: known_estimate_result()
     stub_engine.trend_behavior = lambda spec: _known_trend()
@@ -118,7 +132,7 @@ def response_fingerprint(client, stub_engine) -> tuple[str, dict]:
         assert response.status_code == 200, response.text
         assert response.headers["X-Response-Format"] == RESPONSE_FORMAT
         bodies[operation] = response.content.decode()
-    material = {"schemas": pinned_schemas, "bodies": bodies}
+    material = {"schemas": _structure(pinned_schemas), "bodies": bodies}
     digest = hashlib.sha256(
         json.dumps(material, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
