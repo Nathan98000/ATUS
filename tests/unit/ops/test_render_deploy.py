@@ -148,6 +148,28 @@ def test_wait_polls_until_the_origin_reports_the_build(fake_server, monkeypatch,
     assert fake_server.base not in out.out + out.err  # the origin URL is not published
 
 
+def test_wait_warns_when_the_origin_already_ran_this_build(fake_server, monkeypatch, capsys):
+    # A re-run rebuilt and pushed a new digest of the same commit: /health
+    # (which reports the commit) cannot show the switch, so say so.
+    fake_server.routes[("GET", "/health")] = json_reply(200, {"status": "ok", "build": SHA})
+    monkeypatch.setenv("RENDER_ORIGIN", fake_server.base)
+    assert render.main(["wait", "--expect-build", SHA, "--previous-build", SHA,
+                        "--timeout", "60", "--interval", "5"]) == 0
+    out = capsys.readouterr().out
+    assert "::warning title=Render deploy not observed::" in out
+    assert fake_server.base not in out
+
+
+@pytest.mark.parametrize("previous", ["", "unknown", "old0000"])
+def test_wait_does_not_warn_for_another_or_unknown_previous_build(fake_server, monkeypatch,
+                                                                  capsys, previous):
+    fake_server.routes[("GET", "/health")] = json_reply(200, {"status": "ok", "build": SHA})
+    monkeypatch.setenv("RENDER_ORIGIN", fake_server.base)
+    assert render.main(["wait", "--expect-build", SHA, "--previous-build", previous,
+                        "--timeout", "60", "--interval", "5"]) == 0
+    assert "::warning" not in capsys.readouterr().out
+
+
 def test_wait_gives_up_after_its_budget(fake_server, monkeypatch, capsys):
     fake_server.routes[("GET", "/health")] = json_reply(200, {"status": "ok", "build": "old"})
     monkeypatch.setenv("RENDER_ORIGIN", fake_server.base)

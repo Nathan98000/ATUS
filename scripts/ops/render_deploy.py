@@ -18,10 +18,14 @@ Commands:
         POST the deploy hook with imgURL=<the URL-encoded reference>. Render
         requires every part but the digest to match the service's image URL.
 
-    render_deploy.py wait --expect-build <git sha> [--timeout 900]
+    render_deploy.py wait --expect-build <git sha> [--previous-build <sha>] [--timeout 900]
         Poll origin /health until it reports that build: the image is pulled,
         started and routed. Allows for Render's ~1 min spin-up plus the app's
-        7-11 s start (F67) and the image pull.
+        7-11 s start (F67) and the image pull. /health reports the commit, not
+        the digest: when the origin already ran this commit before the hook
+        (``--previous-build``, e.g. a re-run that rebuilt and pushed a new
+        digest), the wait cannot see the switch, so it says so as a GitHub
+        warning instead of implying the new digest was observed.
 
 Exit status: 0 success, 1 failure, 2 usage error.
 """
@@ -163,6 +167,8 @@ def main(argv: list[str] | None = None) -> int:
     trig.add_argument("--image-repo", default=DEFAULT_IMAGE_REPO)
     wait = sub.add_parser("wait", help="poll origin /health until it reports a build")
     wait.add_argument("--expect-build", required=True)
+    wait.add_argument("--previous-build", default="",
+                      help="the build the origin ran before the hook (current-build)")
     wait.add_argument("--timeout", type=float, default=900.0)
     wait.add_argument("--interval", type=float, default=15.0)
     args = parser.parse_args(argv)
@@ -186,6 +192,11 @@ def main(argv: list[str] | None = None) -> int:
                 raise OpsError("--expect-build must be 1-64 characters of [A-Za-z0-9._-]")
             if not 1 <= args.interval <= 120 or not 10 <= args.timeout <= 3600:
                 raise OpsError("--interval must be 1-120 s and --timeout 10-3600 s")
+            if args.previous_build.strip() == args.expect_build:
+                print(f"::warning title=Render deploy not observed::the origin already ran "
+                      f"build {args.expect_build} before the deploy hook, and /health reports "
+                      "the commit, not the image digest, so this wait cannot show when the "
+                      "new digest is live. Check Render -> Events for this deploy.", flush=True)
             budget = ceil_div(args.timeout, args.interval) + 2
             wait_for_build(_origin(budget), args.expect_build, deadline_s=args.timeout,
                            interval_s=args.interval)

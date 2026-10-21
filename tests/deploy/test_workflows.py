@@ -216,6 +216,9 @@ def test_the_deploy_job_follows_adr_011():
     for var in ("DATA_VERSION", "ANALYTICS_VERSION", "RESPONSE_FORMAT", "SNAPSHOT_ID"):
         assert f'--var "{var}:${var}"' in deploy
     assert "--no-install wrangler" in deploy  # the lockfile's wrangler, never a download
+    # A same-commit redeploy cannot be observed through /health: the wait warns.
+    assert '--previous-build "$PREVIOUS_BUILD"' in deploy
+    assert "steps.before.outputs.build" in deploy
     assert "--max-requests 30" in deploy and "--origin-lock" in deploy
     assert "Rollback" in deploy
 
