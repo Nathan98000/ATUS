@@ -17,13 +17,14 @@
 #               deploy/, scripts/ and requirements/: syntax only.
 # Run only when already on PATH (reported as SKIP otherwise, never installed):
 #   hadolint    Dockerfile best practices (errors fail; warnings are printed)
-#   shellcheck  shell script analysis (warnings and errors fail)
+#   ShellCheck  shell script analysis (warnings and errors fail); the
+#               GitHub-hosted Ubuntu runners have it, so CI always runs it
 #
 # Prints one line per file and check; exits 1 if anything failed. Python files
 # are linted by `ruff check .`, which CI already runs.
 set -uo pipefail
 
-cd "${1:-$(dirname "$0")/../..}"
+cd "${1:-$(dirname "$0")/../..}" || exit 2
 
 failures=0
 pass() { echo "[PASS] $1"; }
@@ -81,8 +82,8 @@ fi
 
 while IFS= read -r script; do
   case $(head -n 1 "$script") in
-    *bash*) shell=bash ;;
-    *) shell=sh ;;
+    *bash*) shell="bash" ;;
+    *) shell="sh" ;;
   esac
   if output=$("$shell" -n "$script" 2>&1); then
     pass "shell       $script ($shell -n)"

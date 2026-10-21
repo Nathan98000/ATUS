@@ -127,6 +127,8 @@ fi
 
 tmp="$(mktemp "${dir}/.edge.env.XXXXXX")"
 trap 'rm -f -- "$tmp"' EXIT
+# The value_* variables are assigned by `printf -v` in the loop above.
+# shellcheck disable=SC2154
 {
   printf '# ATUS edge Worker secrets (ADR-011), written by scripts/ops/gen_edge_secrets.sh.\n'
   printf '# Never commit, paste or print these values.\n'
