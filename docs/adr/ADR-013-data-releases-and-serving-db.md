@@ -282,3 +282,50 @@ The normative text is in [`../operations.md`](../operations.md), "Equivalence cr
 - A new release is a registry entry and a lexicon file; the tests above fail if any other code needs to change.
 - The hosted database is a 0.63 GB serving database that serves the same numbers (the §9 criterion), carries a unique data version, refuses full-database commands, and is restored from a checksummed release artifact that doubles as its backup.
 - The API reaches it as a role that can only read; a leaked API connection string cannot change data.
+
+## Amendments (implementation, 2026-10-21)
+
+The decisions are unchanged. This section records where the implementation differs from the text above, and why. Nothing is deployed, and no release has been published.
+
+### Decision 9: the pushed-down CTE is `MATERIALIZED`
+
+Commit `9afd1b4` changed `src/atus_pipeline/analytics/queries.py`.
+
+- **What the §9 HTTP equivalence run found** ([`../evidence/phase5/equivalence/README.md`](../evidence/phase5/equivalence/README.md)):
+  - Some specifications combine correlated respondent filters: year, `pandemic_weight > 0` and diary dates. For these, the planner badly underestimated the base rows.
+  - With the inlined, year-pushed-down CTE, it then chose a nested loop that re-ran the activity aggregate once per respondent.
+  - `population-071` hit the statement timeout on the full database.
+- **The fix.** Materializing the CTE computes the aggregate once, as the Phase 2-4 plan did.
+- **Why no value changes.** The same rows are aggregated and joined, so no value changes and `ANALYTICS_VERSION` stays 0.2.
+- **Tests.**
+  - `tests/unit/analytics/test_year_pushdown_sql.py` now asserts that the rendered SQL differs from the Phase 2-4 query only by the pushdown and `MATERIALIZED`.
+  - `tests/data_quality/test_query_plans.py` (opt-in, full database) checks the hazard specifications: their plans, the production statement budget, and their sufficient statistics against the Phase 2-4 query.
+- **Evidence.** The three-way run repeated after the fix found every specification equivalent ([`../evidence/phase5/equivalence/final-9afd1b4/README.md`](../evidence/phase5/equivalence/final-9afd1b4/README.md)).
+- **Scope of the earlier figures.** The proof figures under Decision 9 were measured before this change.
+
+### Release procedure: the committed release manifest (steps 4, 7 and 8)
+
+- **Step 4.** After publishing the three files, the owner records the release in `releases/current.json` with `scripts/ops/release_manifest.py write`:
+  - the tag, data version and content hash;
+  - every asset's size and SHA-256.
+
+  The owner then commits the file.
+- **How deploy.yml uses it.**
+  - `.github/workflows/deploy.yml` reads only this file.
+  - `preflight` refuses to run unless its status is `published`.
+  - The `snapshot` job downloads exactly those assets and verifies them.
+  - Reason: a deploy can only serve a release that someone committed.
+- **Current state.** The file says `"status": "unpublished"`. Release 0325's artifact exists locally but is not published.
+- **Step 7.** No workflow builds only the snapshot. "CI builds the static snapshot … without deploying it" is the `snapshot` job of a `deploy.yml` run for the commit that updates `releases/current.json`. It runs before the `production` approval.
+- **Step 8.** While that run waits, the owner changes the two Render variables. Approving the `deploy` job then:
+  - redeploys the API image by digest and waits for `/health`;
+  - publishes the Worker with the new `DATA_VERSION` and snapshot;
+  - runs the smoke, which expects the new data version.
+- **Rollback.** Set the two Render variables back. Then run `deploy.yml` at the commit whose `releases/current.json` names the previous release ([`../deployment.md`](../deployment.md#rollback)).
+- **A step the procedure omits.** The governor's `NEON_PROJECT_ID` must move with each new Neon project. It is a var committed in `edge/wrangler.jsonc`, and `deploy.yml` does not set it. The project-scoped `NEON_API_KEY` (a Worker secret) must move too. Otherwise the governor keeps reading the old project's usage ([ADR-015](ADR-015-edge-cache-snapshot-and-governor.md), "Staleness across releases"). While both are empty, the governor runs in conservative mode.
+
+### Still open
+
+- **Restore drill timing.** No serialized re-timing of the drill is committed, so its wall times above remain illustrative.
+- **Parallel query (F38).** `ATUS_API_MAX_PARALLEL_WORKERS` is unset by default (the server default applies). The §13 load tests decide it: see loadtests/results (§13), [`../../loadtests/results/`](../../loadtests/results/).
+- **Release literals (Decision 4, "Not covered here").** `frontend/openapi.json` still names the "2003-25 multi-year lexicon" in a description. No frontend test was found that serves `/meta` with a survey year after 2025.

@@ -234,3 +234,32 @@ A JSON round trip is lossy (`1e400` becomes `null`, and `1.0` becomes `1`), so t
 | Cache API is per data center; `put` resolves either way | https://developers.cloudflare.com/workers/runtime-apis/cache/ | "the contents of the cache do not replicate outside of the originating data center" |
 | Neon project endpoint: `compute_time_seconds`, `data_transfer_bytes`, `consumption_period_start` / `_end`; Bearer API key | https://api-docs.neon.tech/reference/getproject | "Egress traffic from the Neon cloud to the client for given project over the billing period." |
 | `compute_time_seconds` is CU-seconds; divide by 3600 for CU-hours; Free plans read usage from the project endpoint | https://neon.com/docs/introduction/usage-calculations | "Divide by 3600 for CU-hours." |
+
+## Amendments (implementation, 2026-10-21)
+
+The decisions are unchanged. This section records where the implementation differs from the text above, and why. Nothing is deployed.
+
+- **`Server-Timing` is sent.**
+  - The API adds `Server-Timing: db;dur=…, app;dur=…` to every response (`src/atus_pipeline/api/middleware.py`; [ADR-014](ADR-014-observability.md)).
+  - The Worker relays it and logs it (`edge/src/proxy.ts`, `edge/src/index.ts`), and the governor sizes the settle charge from `db` as specified.
+  - The sentence under "Consequences" saying the header was absent describes the first local run only.
+- **Where L0 is built.** In `.github/workflows/deploy.yml`, job `snapshot`, before the `production` approval and before any deploy step. Its steps:
+  1. It downloads the release named in the committed `releases/current.json` and verifies it ([ADR-013](ADR-013-data-releases-and-serving-db.md), amendments).
+  2. It restores the dump into a `postgres:16` service as a non-superuser owner, with `scripts/ops/roles.sql`.
+  3. It runs the pushed digest read-only as the `atus_api` role: `--read-only`, production mode, the release's `ATUS_EXPECTED_DATA_VERSION`, and per-client limits raised for the builder.
+  4. It builds the SPA and the snapshot (`scripts/build_snapshot.py`).
+  5. It hands `frontend/dist` to the `deploy` job as the artifact `site-dist`, kept 30 days so that a late approval still finds it.
+
+  A local rehearsal against release 0325 is recorded in [`../deployment.md`](../deployment.md#7-first-approved-deploy-ci), step 7. On fixture data, `scripts/smoke_stack.sh --edge` (and the `ci.yml` job `e2e-stack`) builds a snapshot with `--skip-refused`.
+- **`NEON_PROJECT_ID` is a committed var.**
+  - It is empty in `edge/wrangler.jsonc`, and `deploy.yml` does not set it. A deploy therefore runs the governor in conservative mode until the owner commits the project id and loads `NEON_API_KEY` with `wrangler secret put`.
+  - The same edit is due at every release that moves to a new project ("Staleness across releases").
+  - `keep_vars` is not set, so a value set only in the Cloudflare dashboard would not survive the next deploy.
+- **Who reads the ops report.**
+  - `.github/workflows/quota-report.yml` reads `/api/_ops/budget` daily with `EDGE_OPS_TOKEN`, and fails above 0.7 of a pro-rated budget (`scripts/ops/monitors.py`).
+  - `.github/workflows/edge-check.yml` reads `/api/_edge/health` and compares its `snapshot_id` with `/snap/current.json`.
+- **The SPA's fallback.** The SPA reads metadata from the snapshot only while the snapshot is readable. Any problem reading it falls back to the API (`frontend/src/api/snapshot.ts`), and that can trigger the per-process snapshot read described under "DB-touching GET routes".
+- **Verified locally only.** Everything under "Verification" ran under `wrangler dev` in local mode, with KV and the Durable Object simulated on disk.
+  - In the production-mode stack, the Worker reaches the API through the loopback relay `deploy/edge/origin-relay.mjs`. The relay exists only in that stack ([ADR-011](ADR-011-hosting.md), amendments).
+  - The CI job that repeats this check (`e2e-stack`) has no recorded run.
+  - The items under "Not verifiable locally" remain unverified.

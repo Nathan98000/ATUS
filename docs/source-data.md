@@ -35,8 +35,10 @@ derivable from the Activity file joined to Respondent/Roster/CPS. Loading it
 would duplicate 4.99M episodes in aggregated form. It *is* downloaded and
 staged, because it serves as an independent cross-check: `atus validate-db`
 recomputes per-case-per-code totals from loaded episodes and compares them
-against this file (2,000-case sample). Phase 2 can materialize an equivalent
-summary as a view/table when query patterns demand it.
+against this file (2,000-case sample). The hosted serving database (Phase 5)
+does store a per-respondent, per-code aggregate, but derives it from the
+loaded episodes, not from this file
+([database.md](database.md#the-serving-database)).
 
 ## Files deliberately excluded from Phase 1
 
@@ -127,6 +129,13 @@ the data-side steps are:
    published for specific years; run them unchanged, record any value BLS
    revised instead of editing the expectation, and add the new year's
    published values as new benchmarks.
+6. For the hosted deployment: build the serving database from the validated
+   full database (`atus build-serving-db`), run the equivalence checks,
+   restore it into a new database, and switch the API's `ATUS_DATABASE_URL`
+   and `ATUS_EXPECTED_DATA_VERSION` together; the previous database stays
+   available for rollback. Steps:
+   [ADR-013](adr/ADR-013-data-releases-and-serving-db.md#release-procedure-on-the-free-stack-15)
+   and the runbooks in [operations.md](operations.md#runbooks).
 
 ## The activity lexicon changes per release
 

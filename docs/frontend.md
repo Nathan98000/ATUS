@@ -12,7 +12,7 @@ feature/state layer (builder state, TanStack Query server state)
 endpoints.ts → static snapshot (exact API responses, written at deploy)
             ↘ API client (src/api/client.ts — the only fetch to the API)
     ↓
-Phase 3 HTTP API  →  Phase 2 analytical engine  →  PostgreSQL
+[edge Worker, in the deployment]  →  Phase 3 HTTP API  →  Phase 2 analytical engine  →  PostgreSQL
 ```
 
 The static snapshot holds byte-for-byte copies of earlier API responses for
@@ -64,7 +64,12 @@ frontend/src/
               (full-page paused-quota and incompatible-API states)
   pages/      Home, Explore (builder), Analysis (result), About, NotFound
   utils/      format.ts (precision policy), stableStringify.ts, download.ts
+  styles/     global.css (design tokens)
   test/       MSW server (+ snapshot publisher), captured fixtures, render helpers
+frontend/e2e/
+  *.spec.ts   Playwright suites; fixtures.ts (one visitor per test), helpers.ts
+  deployed/   starter.deployed.ts: the post-deploy browser smoke
+              (playwright.deployed.config.ts)
 frontend/scripts/
   snapshot-requests.mjs  prints the prewarmed analysis requests for the snapshot
   check-bundle.mjs       the deploy guard on dist/ (API address, inline code,
@@ -97,19 +102,26 @@ frontend/public/
     build. So does an origin that the site's CSP (`connect-src` in
     `public/_headers`) does not allow: the built page enforces that policy
     and could never reach the API. There is no fallback to a developer
-    address (audit F24).
-  - **Errors.** An error status becomes `ApiError`
-    (status/code/message/details/request id/`retryAfterSeconds`). With the
-    API's envelope the code is the API's; an error page that is not the
-    API's JSON gets a synthesized code: `edge_daily_limit` for a 429 (the
-    edge's daily request allowance is used up), `upstream_unavailable` for a
-    5xx (a host or proxy page), `malformed_response` otherwise. A request
+    address (audit F24). Only builds check the value: under `npm run dev`
+    and in tests, a value that is not an absolute http(s) URL is ignored and
+    the app calls its own origin (`resolveApiBase` in `src/api/apiBase.ts`).
+  - **Errors** (`src/api/client.ts`). Every error status becomes an
+    `ApiError` (status/code/message/details/request id/`retryAfterSeconds`),
+    never a `NetworkError`. With the API's or the Worker's envelope the code
+    is theirs (`unknown_error` if an envelope has a message but no code). An
+    error body that is not JSON gets a synthesized code: `edge_daily_limit`
+    for a 429 (the edge's daily request allowance is used up),
+    `upstream_unavailable` for a 5xx (a host or proxy page),
+    `malformed_response` for any other status; a JSON error body that is not
+    an envelope is also `malformed_response`. `NetworkError` is only a request
     that gets no answer, exceeds its time limit, or returns a success status
-    whose body is not JSON becomes `NetworkError`. `Retry-After` (seconds or
-    an HTTP date; else `details.retry_after_seconds`) is kept on the error.
-  - **Headers read.** `X-Analysis-Key`, `X-Cache` and `X-Data-Version`.
-    Across origins a browser only exposes them if the API lists them in
-    `Access-Control-Expose-Headers`; same-origin (production) always does.
+    whose body is not JSON. `Retry-After` (seconds or an HTTP date; else
+    `details.retry_after_seconds`; capped at 31 days) is kept on the error.
+  - **Headers read.** `X-Analysis-Key`, `X-Cache` and `X-Data-Version` on
+    success, `X-Request-ID` and `Retry-After` on errors. Across origins a
+    browser only exposes them if the API lists them in
+    `Access-Control-Expose-Headers` (the API does when CORS is on);
+    same-origin, as in the planned deployment, it always does.
   - **Bodies.** Analysis specs are serialized once with `stableStringify`
     (sorted keys) and those exact bytes are sent, so one specification is
     always one byte sequence — the key of the edge cache and the snapshot.
@@ -123,11 +135,15 @@ frontend/public/
 
 ## Server state and caching
 
-Metadata queries load once per page (`staleTime: Infinity`) and never
-refetch in the background — not on window focus, not on reconnect — because
-a focus refetch could wake a sleeping free-tier host for nothing (audit
-F62). `/meta` is always fetched with `cache: "no-cache"`, so a reload never
-pairs a `/meta` from the browser's HTTP cache with newer data (F27). TanStack
+Metadata queries load once per page (`staleTime: Infinity`) and loaded
+metadata never refetches in the background — not on window focus, not on
+reconnect — because a focus refetch could wake a sleeping free-tier host for
+nothing (audit F62); only a query that failed is retried when the browser
+comes back online. `/meta` is fetched with `cache: "no-cache"` when it comes
+from the API, so a reload never pairs a `/meta` from the browser's HTTP cache
+with newer data (F27); a deployed snapshot's `/meta` comes from an
+immutable snapshot directory whose name includes a hash of the data version,
+found through the `no-cache` pointer. TanStack
 Query's own retries are off; `resilience.ts` retries instead (below).
 
 **API compatibility.** `/meta` must report API major version `v1` and the
@@ -176,17 +192,20 @@ not an error (`resilience.ts`, audit F11, F12, F64):
 | `rate_limited` (429) with `Retry-After` | retried until 150 s | never (visitor decides) |
 | `rate_limited` with `details.budget: "prefix"` (the edge's per-network daily allowance, waiting until 00:00 UTC) | never | never |
 | client time-out (60 s per metadata attempt, 150 s per analysis) | retried until 150 s | never |
-| anything else (4xx, quota states, `analysis_timeout`, `data_version_mismatch`, incompatible API) | never | never |
+| anything else: every other 4xx, `analysis_timeout`, `data_version_mismatch`, `data_not_loaded`, `schema_not_initialized`, `daily_capacity_reached`, `database_paused`, `capacity_paused`, `capacity_unavailable`, `edge_daily_limit`, an incompatible API, being offline | never | never |
 
 Every wait honours `Retry-After` (at least 1 s); without it the backoff is
-1, 2, 4, 8, 8, … s. Being offline is not a cold start and is not retried.
+1, 2, 4, 8, 8, … s. A retry is not started when its wait would end after the
+150 s budget. Being offline (`navigator.onLine` false) is not a cold start
+and is not retried.
 
 **Waking notice.** "Waking up the analysis service — free hosting sleeps
 when idle; this can take up to a minute." appears when a metadata request
-has been pending for 3 s, while an attempt has just failed as "waking", or
-while the edge's prewake said the origin is waking and an API call is
-pending. It lives in a persistent `<output>` (polite live region) at the top
-of the page, never moves focus, and comes with no progress bar — the service
+has been pending for 3 s, while an attempt has just failed as "waking" (or
+with `database_unavailable`, a database resuming), or for up to 90 s after
+the edge's prewake said the origin is waking, while an API call is pending.
+It lives in a persistent `<output>` (polite live region) at the top of the
+page, never moves focus, and comes with no progress bar — the service
 reports no progress, so none is invented. A shared link whose analysis is
 still waiting for `/meta` says "Preparing the analysis…", never
 "Calculating…": no analysis has been sent yet.
@@ -198,19 +217,21 @@ overlaps with the time spent building a spec. The edge Worker answers it
 without touching the database. It is only sent where that Worker exists,
 which a deployed snapshot indicates; development and E2E never send it.
 
-**Presentations** (`domain/presentError.ts`, F13). Every code of the v1
-contract and of the edge has its own public-facing copy:
+**Presentations** (`domain/presentError.ts`, F13). The codes of the v1
+contract and of the edge have public-facing copy:
 
 | Code | Presentation |
 | --- | --- |
 | `invalid_spec`, `validation_error`, `malformed_json`, `unknown_activity`, `activity_not_found`, `unsupported_analysis`, `insufficient_data`, `payload_too_large` | the request is the problem: the API's own explanation, "Adjust analysis" |
 | `rate_limited` | "Too many new analyses in a short time" with a `Retry-After` countdown on "Try again" (the ticking seconds are hidden from assistive technology; the message states the wait). The edge's per-network daily allowance (`details.budget: "prefix"`) instead says that the network's new analyses for today are used up and that the limit resets at 00:00 UTC (in local time), with no countdown and no "Try again"; any other wait over 15 minutes names the local time it ends |
 | `daily_capacity_reached` | today's capacity is used up (per visitor or for everyone, from `details.scope`); resets at 00:00 UTC, shown in local time |
-| `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); no more "the service is up" |
+| `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `schema_not_initialized`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); `analysis_timeout` also offers "Adjust analysis" |
 | `database_paused`, `capacity_paused`, `edge_daily_limit` | **full-page** "paused" state: free hosting quota used up, when it resets, what still works (starter examples and earlier analyses), a link home |
 | `not_found`, `method_not_allowed`, `unsupported_media_type` | a request outside the HTTP contract, which the page never sends on purpose: most likely a page and a service from different versions, so the copy says to reload the page; no "Try again" (the retry policy treats these as final) |
 | `forbidden_origin` | the service accepts requests only through the site itself; no "Try again" |
 | incompatible API | **full-page** state with a reload button |
+| no answer (`NetworkError`) | "could not be reached" or "did not answer in time", with "Try again" |
+| any other code (`internal_error`, `invalid_analysis`, `malformed_response`, `unknown_error`, a code this build does not know) | one generic "unexpected problem in the service" copy with "Try again" |
 
 **Boot fallback** (F65). `index.html` ships a shell inside `#root` that React
 replaces when it starts. If the hashed bundle never loads (a stale page after
@@ -228,8 +249,8 @@ a quota is exhausted, and when the Worker's daily allowance runs out.
 
 ```text
 /snap/current.json                  no-cache pointer: snapshot_id, data_version, api_version, …
-/snap/<snapshot_id>/manifest.json   immutable: { get: {"/api/v1/meta": file, …}, post: {k: entry} }
-/snap/<snapshot_id>/<file>          exact API response bodies
+/snap/<snapshot_id>/manifest.json   immutable: { get: {"/api/v1/meta": file, …}, post: {k: entry}, files: {…} }
+/snap/<snapshot_id>/get/…, post/<k>.json   exact API response bodies
 ```
 
 `snapshot.ts` loads the pointer once per page. Missing, not JSON (the SPA
@@ -245,7 +266,10 @@ k = sha256_hex(path + "?" + query + "\n" + body)   (WebCrypto, UTF-8)
 for the exact bytes the SPA would send — the same key the edge cache uses.
 The analysis key shown in the methodology panel is then the manifest's
 `analysis_key`. The manifest is always consulted first; files are never
-probed. Any failure reading a listed file falls back to the API.
+probed. Any failure reading a listed file falls back to the API, and so does
+every analysis on an origin without WebCrypto (plain http other than
+localhost), where the key cannot be computed. `snapshot_id` is
+`<api build[:12]>-<sha256(data_version)[:16]>` (`scripts/build_snapshot.py`).
 
 `scripts/snapshot-requests.mjs` prints the request list the snapshot builder
 (`scripts/build_snapshot.py`) sends, as `[{name, path, body, key}]`, with
@@ -321,7 +345,7 @@ byte-order mark so spreadsheet programs read non-ASCII labels correctly):
 | --- | --- | --- |
 | estimate | one | activity (label, included and excluded codes), population, years, measure, `unit`, `estimate`, `standard_error`, `ci_lower`, `ci_upper`, `confidence_level`, respondents, participants, weighted population per day, days in period |
 | trend | one per year | `year`, activity, population, measure, `unit`, the estimate columns, sample columns, `unavailable_reason` |
-| compare | group A, group B, difference (A − B) | `series`, `label`, population, activity, years, measure, `unit`, the estimate columns, sample columns (`NA` on the difference row) |
+| compare | group A, group B, difference (A − B) | `series`, `label` (the difference row's is "<A> minus <B>"), population (`NA` on the difference row), activity, years, measure, `unit`, the estimate columns, sample columns and days in period (`NA` on the difference row) |
 
 Every row ends with its provenance: `weights` (scheme), `weight_variable`
 (e.g. `TUFNWGTP`), `variance_method`, `analytics_version`, `data_version`,
@@ -408,11 +432,14 @@ snapshot's), else the version the page's metadata reported — the legacy
 ## Testing
 
 ```bash
-npm test          # 349 unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 62 Playwright runs: 34 Chromium desktop + 2 mobile,
+npm test          # unit/component tests (Vitest + Testing Library + MSW)
+npm run test:e2e  # 63 Playwright runs: 35 tests in Chromium desktop, 2 mobile,
                   # and the 13 @core journeys again in Firefox and in WebKit
 npx playwright install firefox webkit   # once, for the cross-browser projects
 ```
+
+The E2E counts are the tests declared in `e2e/*.spec.ts` and the projects in
+`playwright.config.ts`; the CI test report gives the per-run counts.
 
 - Unit: formatters, URL spec round-trips (including non-ASCII labels and
   malformed links), builder state ⇄ spec conversion, lexicon index, API
@@ -459,7 +486,7 @@ npx playwright install firefox webkit   # once, for the cross-browser projects
   `data_version_mismatch` 503, paused database, edge daily limit, rate-limit
   countdown, the boot fallback with the bundle blocked; downloads read back
   from disk (CSV values equal to the JSON response's, `NA` for 2020, keyboard
-  operation); and the deployed headers: every page carries the `_headers`
+  operation); and the headers to be deployed: every page carries the `_headers`
   rules and the `<meta>` CSP, bundles are served immutable, and the core
   journeys (including a download) produce no CSP violation or
   Permissions-Policy error, with every API request on the page's own origin.
@@ -471,7 +498,12 @@ npx playwright install firefox webkit   # once, for the cross-browser projects
   (macOS 27) Playwright's Firefox build exits at launch with "Could not find
   profile folder", inside and outside the tool sandbox and with a persistent
   profile, so the first CI run on Linux gives the first Firefox result.
-  Chromium (36 runs) and WebKit (13) pass.
+  The last recorded local result is the stack-mode run below, in which
+  Chromium and WebKit passed.
+- Post-deploy smoke: `playwright.deployed.config.ts` runs `e2e/deployed/`
+  (one Chromium journey, no retries, against `PUBLIC_BASE_URL`; `deploy.yml`
+  runs it after a deploy). It has never run against a public URL, because
+  nothing is deployed yet.
 
 E2E ports default to 4173 (frontend) and 8137 (backend);
 `E2E_FRONTEND_PORT` / `E2E_BACKEND_PORT` override them,
@@ -529,12 +561,14 @@ deployment).
 
 ## Production build and deployment shape
 
-`npm run build` type-checks and emits static assets into `frontend/dist/`
-(Oct 2026, Phase 5 with exports: 390.4 kB JS / 120.0 kB gzip, 15.8 kB CSS /
-4.0 kB gzip — one chunk, no SSR, no server runtime; Sept 2026, Phase 4:
-365.0 / 110.8 kB JS). The deployment (ADR-011) serves `dist/` as Cloudflare
-Workers static assets on one origin, whose Worker proxies `/api/*` to the
-API — so the build calls `/api/v1` on its own origin:
+`npm run build` type-checks and emits static assets into `frontend/dist/`:
+one JS chunk, no SSR, no server runtime. Measured sizes: 390.4 kB JS /
+120.0 kB gzip and 15.8 kB CSS / 4.0 kB gzip at commit 6411d73 (2026-10-20,
+Phase 5 with exports; later commits changed the bundled code and it was
+not re-measured); 365.0 / 110.8 kB JS in Sept 2026 (Phase 4). The planned
+deployment (ADR-011) serves `dist/` as Cloudflare Workers static assets on
+one origin, whose Worker proxies `/api/*` to the API — so the build calls
+`/api/v1` on its own origin:
 
 - **Configuration.** Builds read `VITE_*` variables from the process
   environment only; no `.env` file (not even `.env.local`) reaches a
@@ -617,5 +651,10 @@ then replaces the metadata API calls).
 | Activity search keystrokes | 0 network requests |
 | Analysis requests | only on **Analyze** — never per keystroke |
 
-Slow analyses (~11 s uncached full-period variance) show an explanatory
-loading state; repeated runs hit the server cache (milliseconds).
+Slow analyses show an explanatory loading state. Uncached full-period
+variance took about 11 s on the Phase 4 laptop; the Phase 5 audit measured
+tens of seconds for the pre-Phase-5 code under free-tier emulation
+([`evidence/phase5/01-audit-timed.md`](evidence/phase5/01-audit-timed.md));
+for the current code, see [loadtests/results](../loadtests/results/) (§13).
+Repeated runs hit a cache (the static snapshot, the edge, or the API's
+in-process cache).
