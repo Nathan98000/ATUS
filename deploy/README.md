@@ -17,8 +17,9 @@ image and packaging files (`ci/`). The usage guide is in
 | `emulation/neon_settings.py` | you, tests | Neon's compute settings for any CU range |
 | `ci/check_image.py` | CI image job, you | gate on the built image: numeric non-root user, no build tools, a `/health` check that never touches the database (proved against a logging Postgres) |
 | `ci/lint.sh` | CI, you | `docker build --check` on every Dockerfile, `docker compose config` on every compose set, shell syntax; hadolint/shellcheck when installed |
+| `ci/audit_gate.py` | CI (`pip-audit`, `npm audit`) | the dependency audits with a reviewed, expiring allowlist: `.pip-audit-ignore`, `frontend/.npm-audit-ignore`, `edge/.npm-audit-ignore` |
 
 Nothing here is used in production: Render runs the image, Neon is restored
-by the release scripts, and the Worker is deployed by CI. The two `ci/`
-scripts are what CI runs on the image and the packaging files before anything
-is pushed.
+by the release scripts, and the Worker is deployed by CI. The `ci/` scripts
+are what CI runs on the image, the packaging files and the dependencies before
+anything is pushed.

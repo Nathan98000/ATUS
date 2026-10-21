@@ -345,7 +345,8 @@ Tests:
 - **Scans in CI:**
   - Trivy, from a pinned release binary checked against its SHA-256, which fails on HIGH or CRITICAL vulnerabilities that have a fix;
   - `pip-audit --strict` on `requirements/api.lock.txt`;
-  - `npm audit --omit=dev` (the frontend's at `--audit-level=high`).
+  - `npm audit --omit=dev` (the frontend's at `--audit-level=high`);
+  - both audits through `deploy/ci/audit_gate.py`, which accepts an advisory only by a reviewed entry with an expiry at most 31 days out (R10).
 - **Updates.** Dependabot proposes weekly updates for pip, npm (frontend and edge), GitHub Actions, Docker and Compose, each after a 7-day cooldown. For the base images (`postgres:16`, `python:3.12-slim`, `node:22-slim`) it proposes only digest refreshes: their versions are platform contracts (Neon's Postgres major, the locks' Python, the edge's Node), changed by hand when the platform changes (`ignore` rules in `.github/dependabot.yml`). The `postgres:16` digest also has copies no ecosystem updates (the workflows' `services:` images, `deploy/ci/check_image.py`, `tests/deploy/test_container_image.py`, `serving/pgtools.py`): `tests/deploy/test_dependabot.py::test_every_postgres_16_pin_names_the_same_digest` fails a pull request that bumps only some of them, so CI, the deploy snapshot and the stack keep one PostgreSQL build.
 - **Deploy.** It pushes exactly the tested image ID, and Render deploys it by digest.
 
@@ -547,6 +548,7 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 
 **R10. Gaps in scanner coverage.**
 - Trivy fails only on HIGH or CRITICAL vulnerabilities that have a fix (`--ignore-unfixed`). Entries in `.trivyignore` (each with a reason and an expiry at most 31 days out, `tests/deploy/test_infra_review_r2.py`) are accepted until they expire; the runbook is [operations.md, "The image scan blocks a deploy"](operations.md#the-image-scan-blocks-a-deploy).
+- `pip-audit` and `npm audit` fail on every advisory, fixed or not. One with no fix yet is accepted only by an entry in `.pip-audit-ignore`, `frontend/.npm-audit-ignore` or `edge/.npm-audit-ignore`, with a reason and an expiry at most 31 days out, until it expires (`deploy/ci/audit_gate.py`, review round 3; runbook: [operations.md, "A dependency audit blocks a deploy"](operations.md#a-dependency-audit-blocks-a-deploy)).
 - `pip-audit` covers only the API's runtime lock, not the build, dev or CI-tool locks.
 - `npm audit --omit=dev` covers runtime dependencies only. The Worker has none, so the build and deploy tools (`wrangler`, the frontend's `vite`) are covered only by Dependabot and the owner's Dependabot alerts.
 

@@ -984,7 +984,7 @@ Every secret has one procedure.
 
 ## Rollback and runbooks
 
-The general runbooks live in [`operations.md`](operations.md#runbooks): deploy, rollback, a deploy blocked by the image scan, serving-DB build and restore, data release and new ATUS year, restore drill, incident first steps, token rotation, quota exhausted, and provider free-tier changes. The procedures below are the ones the workflows implement.
+The general runbooks live in [`operations.md`](operations.md#runbooks): deploy, rollback, a deploy blocked by the image scan or a dependency audit, serving-DB build and restore, data release and new ATUS year, restore drill, incident first steps, token rotation, quota exhausted, and provider free-tier changes. The procedures below are the ones the workflows implement.
 
 ### Rollback
 

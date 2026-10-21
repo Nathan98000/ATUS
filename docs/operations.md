@@ -785,7 +785,7 @@ All runs below were local. Nothing has been compared on a deployed host.
 
 The procedure is [deployment.md step 7](deployment.md#7-first-approved-deploy-ci). For the very first deploy, follow "Bootstrap" there.
 
-1. **Check before you start:** CI is green on the commit (a push to `main`; a tag must point at a commit CI ran on, on `main`), and the release manifest names a published release. `deploy.yml`'s preflight refuses otherwise, and says what happened to the commit's CI. If it is still running, wait for it and re-run the deploy. Not every commit on `main` gets a CI run: a push of several commits runs CI on its head only, and a run still waiting is cancelled when a newer push to `main` queues (`ci.yml`'s concurrency). For a cancelled run, re-run it (`gh run rerun <id>`) and then the deploy; otherwise tag a commit whose CI passed, such as the head of `main`:
+1. **Check before you start:** CI is green on the commit (a push to `main`; a tag must point at a commit CI ran on, on `main`), and the release manifest names a published release. `deploy.yml`'s preflight refuses otherwise, and says what happened to the commit's CI. If it failed at a security check, see [The image scan blocks a deploy](#the-image-scan-blocks-a-deploy) or [A dependency audit blocks a deploy](#a-dependency-audit-blocks-a-deploy). If it is still running, wait for it and re-run the deploy. Not every commit on `main` gets a CI run: a push of several commits runs CI on its head only, and a run still waiting is cancelled when a newer push to `main` queues (`ci.yml`'s concurrency). For a cancelled run, re-run it (`gh run rerun <id>`) and then the deploy; otherwise tag a commit whose CI passed, such as the head of `main`:
 
    ```bash
    python scripts/ops/release_manifest.py check --require-published
@@ -882,6 +882,17 @@ The summary of every Deploy run has a "Rollback" table: the build, image digest 
    - A Python wheel: bump it in the locks (`requirements/compile.sh --upgrade-package <name>`).
 3. **Otherwise accept it for a short, recorded time.** Only when the advisory shows that the vulnerable code is not reachable in the API, add it to `.trivyignore` in a pull request: a comment with the date, who reviewed it and why, then the ID with an expiry at most 31 days out (`CVE-2026-12345 exp:2026-12-02`; the file's header has the format). Trivy stops ignoring it on that date; `tests/deploy/test_infra_review_r2.py` refuses an entry without a reason or with a later expiry. Remove the entry with the fix. The SARIF report still lists accepted entries.
 4. **Rollbacks need no pipeline.** The API rolls back through the Render deploy hook and the edge through `wrangler rollback` ([Rollback](#rollback)); neither builds or scans. A data rollback's steps 1-2 are those two; its manifest commit and `deploy.yml` run can wait until the scan passes.
+
+### A dependency audit blocks a deploy
+
+`ci.yml` audits what the deployed artifacts run: `pip-audit` of `requirements/api.lock.txt` (job Supply chain), and `npm audit --omit=dev` of the SPA's runtime packages at high and above (job Frontend) and of the Worker's at every severity (job Edge Worker). Each fails on a known advisory whether or not a fixed version exists. The push run then fails, so `deploy.yml`'s preflight (`github_ops.py deploy-gate`) refuses the commit: every deploy stops, hotfixes and the `deploy.yml` step of a data rollback included. The running service is not affected. Each audit runs through `deploy/ci/audit_gate.py` with its own reviewed allowlist (review round 3; before, a disclosed advisory with no fix blocked every deploy until someone edited `ci.yml`).
+
+1. **Read the failed step** (Actions → the run → the job → its audit step): the package, the advisory ID and whether a fixed version exists. For npm the gate prints a `[FAIL]` line per advisory; pip-audit prints its own table. An error from the registry or the advisory service (no table, no `[FAIL]` line) is transient: re-run the job.
+2. **Fix forward when you can.**
+   - Python: `requirements/compile.sh --upgrade-package <name>`, then commit the locks.
+   - npm: `npm update <name>` in `frontend/` or `edge/` (or a new range in its `package.json`), then commit `package-lock.json`.
+3. **Otherwise accept it for a short, recorded time.** Only when the advisory shows that the vulnerable code is not reachable in what that tree ships (the API, the SPA bundle, the Worker), add it in a pull request to the allowlist of the job that failed: `.pip-audit-ignore` (the API lock), `frontend/.npm-audit-ignore` or `edge/.npm-audit-ignore`. Write a comment with the date, who reviewed it and why, then the ID with an expiry at most 31 days out (`GHSA-xxxx-xxxx-xxxx exp:2026-12-02`). pip-audit takes a `GHSA-`, `CVE-` or `PYSEC-` ID and also matches an advisory's aliases; npm takes the `GHSA-` ID from the advisory's github.com/advisories URL. `deploy/ci/audit_gate.py` stops accepting an entry on its expiry date and refuses a file with an entry that has no reason or a later expiry (so does `tests/deploy/test_infra_review_r3.py`). Remove the entry with the fix: for npm, the gate notes an entry that no longer matches anything.
+4. **Rollbacks need no pipeline**, as for the image scan ([The image scan blocks a deploy](#the-image-scan-blocks-a-deploy), step 4).
 
 ### Serving-DB build and restore
 

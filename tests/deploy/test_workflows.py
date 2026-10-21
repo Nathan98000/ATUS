@@ -586,16 +586,20 @@ def test_ci_backend_covers_both_pythons_and_the_openapi_drift():
 
 def test_ci_audits_and_lints():
     text = flat(jobs(by_name("ci.yml"))["supply-chain"])
-    assert "pip-audit --strict --require-hashes" in text and "api.lock.txt" in text
+    # pip-audit through its allowlist gate (review round 3, test_infra_review_r3.py)
+    assert "audit_gate.py pip --ignore-file .pip-audit-ignore -- --strict --require-hashes" \
+        in text and "api.lock.txt" in text
     assert "actionlint" in text and "sha256sum --check" in text
 
 
 @pytest.mark.parametrize("job, commands", [
     ("frontend", ["npm ci", "npm run typecheck", "npm run lint", "npm run format:check",
                   "npm test", "npm run build", "npm run check:bundle",
-                  "npm run check:api-types", "npm audit --omit=dev --audit-level=high"]),
+                  "npm run check:api-types",
+                  "audit_gate.py npm --ignore-file .npm-audit-ignore --audit-level high "
+                  "-- --omit=dev"]),
     ("edge", ["npm ci", "npm run typecheck", "npm run lint", "npm run format:check",
-              "npm test", "npm audit --omit=dev"]),
+              "npm test", "audit_gate.py npm --ignore-file .npm-audit-ignore -- --omit=dev"]),
     ("e2e", ["npx playwright install --with-deps chromium firefox webkit",
              "npm run test:e2e"]),
     ("e2e-stack", ["npm ci", "npx playwright install --with-deps chromium firefox webkit",

@@ -1,0 +1,17 @@
+# Advisories the API lock's audit accepts for a short, recorded time
+# (.github/workflows/ci.yml, job supply-chain: pip-audit of
+# requirements/api.lock.txt, through deploy/ci/audit_gate.py pip).
+#
+# Empty unless an advisory blocks every deploy and cannot be fixed forward
+# soon (often: no fixed version exists yet): docs/operations.md, "A dependency
+# audit blocks a deploy". Each entry is one advisory ID (GHSA-, CVE- or
+# PYSEC-; pip-audit also matches an advisory's aliases) with an expiry date,
+# preceded by a comment with the date, who reviewed it, and why the
+# vulnerable code is not reachable in the API:
+#
+#   # 2026-11-02 owner: libfoo in the API lock; the API never calls it; no fix yet
+#   GHSA-xxxx-xxxx-xxxx exp:2026-12-02
+#
+# deploy/ci/audit_gate.py stops accepting an entry on its expiry date, and
+# refuses this file when an entry has no reason or expires more than 31 days
+# out. Remove the entry with the fix.

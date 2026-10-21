@@ -13,6 +13,8 @@
 #                guard, API-type drift, npm audit
 #   edge         the Worker: typecheck, lint, format, tests (incl. the
 #                wrangler.jsonc invariants), npm audit
+#   (each audit through deploy/ci/audit_gate.py and its reviewed, expiring
+#   allowlist: .pip-audit-ignore, frontend/ and edge/.npm-audit-ignore)
 #   image        image.yml: build once, strict gate, deployment tests, stack
 #                smoke (plain and free-tier emulation), Trivy
 #   e2e          Playwright, every project (Chromium, mobile, Firefox, WebKit),
@@ -145,8 +147,12 @@ jobs:
             --only-binary=:all: -r requirements/ci-tools.lock.txt
           echo "$RUNNER_TEMP/ci-tools/bin" >> "$GITHUB_PATH"
 
-      - name: pip-audit of the API image's runtime lock
-        run: pip-audit --strict --require-hashes --disable-pip -r requirements/api.lock.txt
+      # Each audit fails on any advisory, fixed or not; an advisory with no fix
+      # yet is accepted only by a reviewed entry with an expiry at most 31 days
+      # out (deploy/ci/audit_gate.py; docs/operations.md, "A dependency audit
+      # blocks a deploy"), as the image scan's .trivyignore.
+      - name: pip-audit of the API image's runtime lock (allowlist .pip-audit-ignore)
+        run: python3 deploy/ci/audit_gate.py pip --ignore-file .pip-audit-ignore -- --strict --require-hashes --disable-pip -r requirements/api.lock.txt
 
       - name: Install actionlint (pinned version, verified checksum)
         env:
@@ -210,8 +216,8 @@ jobs:
       - name: Bundle guard (no dev API address, CSP-safe HTML, _headers rules, /openapi.json)
         run: npm run check:bundle
 
-      - name: npm audit (runtime dependencies, high and above)
-        run: npm audit --omit=dev --audit-level=high
+      - name: npm audit (runtime dependencies, high and above; allowlist .npm-audit-ignore)
+        run: python3 ../deploy/ci/audit_gate.py npm --ignore-file .npm-audit-ignore --audit-level high -- --omit=dev
 
   edge:
     name: Edge Worker
@@ -252,8 +258,8 @@ jobs:
       - name: Tests (workerd via Miniflare, plus the wrangler.jsonc invariants)
         run: npm test
 
-      - name: npm audit (runtime dependencies)
-        run: npm audit --omit=dev
+      - name: npm audit (runtime dependencies; allowlist .npm-audit-ignore)
+        run: python3 ../deploy/ci/audit_gate.py npm --ignore-file .npm-audit-ignore -- --omit=dev
 
   image:
     name: Image
