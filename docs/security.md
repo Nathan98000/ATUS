@@ -99,7 +99,7 @@ Tests:
 Code: `edge/src/index.ts` (`readJsonBody`), `src/atus_pipeline/api/middleware.py`, `src/atus_pipeline/api/schemas/analysis.py`, `src/atus_pipeline/api/errors.py`, `src/atus_pipeline/api/serve.py`.
 Tests:
 - `edge/test/worker/limits.test.ts`;
-- `tests/unit/api/test_guard.py` (`TestBodySize`, `TestMediaType`, `TestValidationOutput`, `TestRawHeaders`);
+- `tests/unit/api/test_guard.py` (`TestBodySize`, `TestMediaType`, `TestValidationOutput`, `TestRawHeaders`); the schema bounds: `TestValidationOutput::test_schema_bounds_are_422_before_any_work` (51 years, 101 include or exclude codes, a 121-character label, an 81-character `label_a` or `label_b`) and `::test_the_bounds_themselves_pass_the_schema`;
 - `tests/integration/api/test_protection_db.py::TestQueryParameters`;
 - `tests/integration/api_prod/test_server.py` (`test_body_caps_over_real_sockets`, `TestConnectionBound`).
 
@@ -548,7 +548,7 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 - `pip-audit` covers only the API's runtime lock, not the build, dev or CI-tool locks.
 - `npm audit --omit=dev` covers runtime dependencies only. The Worker has none, so the build and deploy tools (`wrangler`, the frontend's `vite`) are covered only by Dependabot and the owner's Dependabot alerts.
 
-**R11. TLS to the database depends on the connection string.** In production the API refuses an `ATUS_DATABASE_URL` whose `sslmode` is not `verify-full` or `verify-ca` (`src/atus_pipeline/config.py`; `tests/unit/api/test_config.py`). The only exception is `ATUS_DATABASE_TLS=local-stack-only`, accepted solely for local hosts (compose service names, loopback, Unix sockets) in the local production-mode stack; a single-label host name is resolved by the container's resolver, which is the residual risk.
+**R11. TLS to the database depends on the connection string.** In production the API refuses an `ATUS_DATABASE_URL` whose `sslmode` is not `verify-full` (`src/atus_pipeline/config.py`; `tests/unit/api/test_config.py`). `verify-ca` is refused as well (review round 2): it checks the certificate chain but never the host name, so with a public CA bundle such as the image's `SSL_CERT_FILE` any publicly issued certificate, for any domain, would pass (`tests/unit/api/test_config.py::TestDatabaseTls::test_production_refuses_verify_ca`). The only exception is `ATUS_DATABASE_TLS=local-stack-only`, accepted solely for local hosts (compose service names, loopback, Unix sockets) in the local production-mode stack; a single-label host name is resolved by the container's resolver, which is the residual risk.
 - For any non-local host, the restore tool writes the API's URL with `sslmode=verify-full&sslrootcert=system`. Code: `src/atus_pipeline/serving/secrets_file.py::api_database_url`. Test: `tests/unit/test_serving_secrets_file.py::test_api_url_for_a_remote_server_verifies_the_certificate`.
 - The owner copies that value to Render.
 

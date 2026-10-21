@@ -8,7 +8,9 @@ database (docs/evidence/phase5/equivalence/README.md). The pushed-down CTE is
 now materialized. These specifications, the hazard set found by the
 equivalence run's EXPLAIN survey, must scan ``atus.activities`` only inside
 the materialized CTE, finish within the production statement budget, and
-return the Phase 2-4 query's sufficient statistics.
+return the Phase 2-4 query's sufficient statistics (its rendering without the
+pushdown, held to the text 387fc2d rendered by
+tests/unit/analytics/test_year_pushdown_sql.py).
 
     ATUS_DATA_QUALITY=1 pytest tests/data_quality/test_query_plans.py
 """

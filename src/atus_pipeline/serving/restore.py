@@ -21,7 +21,9 @@ The procedure of brief §9 and ADR-013, in order:
 5. apply ``scripts/ops/roles.sql`` with the API role's password (reused from
    the secrets file, or newly generated: 192 bits), sent as a SCRAM verifier,
    and write the password and the API's connection string back into the
-   secrets file (mode 600);
+   secrets file (mode 600). ``--roles-only`` never generates one for a role
+   that already exists unless ``--rotate-api-password`` asks for it: that
+   would silently break the deployed connection string;
 6. ``VACUUM (ANALYZE)`` every table (a scale-to-zero compute may suspend
    before autovacuum runs);
 7. checks: the serving checks against the manifest (``serving/checks.py``),
@@ -237,6 +239,9 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
             "OR to_regclass('public.schema_migrations') IS NOT NULL"
         ).fetchone()[0]
         marker = serving_marker(conn) if occupied else None
+        api_role_exists = conn.execute(
+            "SELECT EXISTS (SELECT FROM pg_roles WHERE rolname = %s)", (options.api_role,)
+        ).fetchone()[0]
     if options.roles_only and not occupied:
         raise RestoreError("--roles-only needs a restored serving database")
     if options.roles_only and not marker:
@@ -256,6 +261,21 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
                "--roles-only" if marker else "")
         )
 
+    # The API role's password: reused unless rotating, so a re-run keeps the
+    # deployed connection string valid.
+    path = options.secrets_file.expanduser()
+    stored = read_env_file(path) if path.is_file() else {}
+    if (options.roles_only and not options.rotate_api_password
+            and not stored.get(API_PASSWORD_KEY) and api_role_exists):
+        # Re-applying roles.sql would set a new password on the live role: the
+        # API's connection string would stop working, silently (review r2).
+        raise RestoreError(
+            f"{path} holds no {API_PASSWORD_KEY}, but the role {options.api_role} exists: "
+            "--roles-only would give it a new password, and the API's ATUS_DATABASE_URL "
+            "would stop working. Pass the --secrets-file the restore wrote, or add "
+            "--rotate-api-password to replace the password on purpose; nothing was changed"
+        )
+
     if not options.roles_only:
         pg_restore = pgtools.resolve("pg_restore", url,
                                      server_major=restore_client_major(server_major, manifest),
@@ -268,10 +288,6 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
                             "--exit-on-error", f"--dbname={dbname}"], stdin=dump)
         step("pg_restore", started)
 
-    # The API role's password: reused unless rotating, so a re-run keeps the
-    # deployed connection string valid.
-    path = options.secrets_file.expanduser()
-    stored = read_env_file(path) if path.is_file() else {}
     password = stored.get(API_PASSWORD_KEY)
     if options.rotate_api_password or not password:
         password = new_password()

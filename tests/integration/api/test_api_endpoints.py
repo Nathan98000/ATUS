@@ -167,6 +167,59 @@ class TestAnalysisEndpoints:
         assert response.status_code == 422
         assert response.json()["error"]["code"] == "insufficient_data"
 
+    @pytest.mark.parametrize(
+        ("operation", "extra"),
+        [("estimate", {}), ("trend", {"years": [2019, 2023]}),
+         ("compare", {"group_a": {"sex": "male"}, "group_b": {"sex": "female"}})],
+    )
+    def test_a_confidence_level_without_a_quantile_is_refused_uncharged(
+            self, client, operation, extra):
+        """Review r2 (confidence-level-max-double-500): with the real engine,
+        1 - 2**-53 ran the statistics query, then failed in the z quantile
+        (StatisticsError: 500 internal_error), charged like a computation."""
+        runner = client.app.state.runner
+        before = runner.computations
+        body = {**self.BODY, "confidence_level": 1 - 2**-53, **extra}
+        response = client.post(f"/api/v1/analysis/{operation}", json=body)
+        assert response.status_code == 422, response.text
+        assert response.json()["error"]["code"] == "invalid_spec"
+        assert runner.computations == before
+        nearest_valid = client.post(f"/api/v1/analysis/{operation}",
+                                    json={**body, "confidence_level": 1 - 2**-52})
+        assert nearest_valid.status_code == 200, nearest_valid.text
+
+    @pytest.mark.parametrize(
+        ("operation", "extra"),
+        [("estimate", {}), ("trend", {"years": [2019, 2023]}),
+         ("compare", {"group_a": {"sex": "male"}, "group_b": {"sex": "female"}})],
+    )
+    def test_a_variance_none_answer_keeps_any_confidence_level(self, client, operation, extra):
+        """Review r2 verification: with variance "none" the engine computes no
+        interval and never reads the level, so 1 - 2**-53 always answered 200.
+        The refusal above covers replicate variance only: this answer, and its
+        statistics, stay what they were."""
+        body = {**self.BODY, "variance": "none", **extra}
+        largest = client.post(f"/api/v1/analysis/{operation}",
+                              json={**body, "confidence_level": 1 - 2**-53})
+        assert largest.status_code == 200, largest.text
+        default = client.post(f"/api/v1/analysis/{operation}", json=body)
+        assert default.status_code == 200, default.text
+
+        def echoed_levels(payload) -> list[float]:
+            """Remove (and return) the level each echoed spec carries."""
+            if isinstance(payload, list):
+                return [level for item in payload for level in echoed_levels(item)]
+            if not isinstance(payload, dict):
+                return []
+            levels = [payload["spec"].pop("confidence_level")] if "spec" in payload else []
+            return levels + [level for key, value in payload.items()
+                             for level in echoed_levels(value)]
+
+        echoed, answer = largest.json(), default.json()
+        assert set(echoed_levels(echoed)) == {1 - 2**-53}
+        assert set(echoed_levels(answer)) == {0.95}
+        assert echoed == answer                 # every statistic, as before
+
 
 class TestActivitiesEndpoints:
     def test_full_lexicon_listing(self, client):

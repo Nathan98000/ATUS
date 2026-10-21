@@ -13,9 +13,9 @@ token).
 
 Production mode never falls back to the development database URL: a missing
 ``ATUS_DATABASE_URL`` is an error for every command, and so is one that does
-not verify the server's certificate (``sslmode=verify-full`` or
-``verify-ca``) unless ``ATUS_DATABASE_TLS=local-stack-only`` is set for a
-database on the local stack (:func:`check_database_tls`). The API
+not verify the server's certificate and host name (``sslmode=verify-full``)
+unless ``ATUS_DATABASE_TLS=local-stack-only`` is set for a database on the
+local stack (:func:`check_database_tls`). The API
 additionally refuses to start in production without ``ATUS_EDGE_SECRETS``
 (:func:`check_api_settings`).
 """
@@ -49,7 +49,10 @@ _BUILD_SHA_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 DATABASE_TLS_VERIFY = "verify"
 DATABASE_TLS_LOCAL_STACK = "local-stack-only"
 DATABASE_TLS_MODES = (DATABASE_TLS_VERIFY, DATABASE_TLS_LOCAL_STACK)
-VERIFYING_SSLMODES = ("verify-full", "verify-ca")
+# Only verify-full checks the host name: verify-ca accepts any certificate the
+# root bundle chains to, so with a public bundle (the image's SSL_CERT_FILE)
+# any publicly issued certificate for any domain would pass (review r2).
+VERIFYING_SSLMODES = ("verify-full",)
 _LIBPQ_SSLMODES = ("disable", "allow", "prefer", "require", "verify-ca", "verify-full")
 # Hosts the local production-mode stack uses: compose service names (one DNS
 # label that starts with a letter, so it can never be read as a numeric IPv4
@@ -291,10 +294,12 @@ def check_database_tls(
 ) -> None:
     """Production's rule for the database connection (ADR-011 "TLS").
 
-    ``ATUS_DATABASE_URL`` itself must set ``sslmode=verify-full`` or
-    ``verify-ca``: libpq's default (``prefer``) and ``require`` encrypt
-    without checking whom they talk to, and a ``PGSSLMODE`` in the
-    environment is not proof of anything the URL does not say.
+    ``ATUS_DATABASE_URL`` itself must set ``sslmode=verify-full``: libpq's
+    default (``prefer``) and ``require`` encrypt without checking whom they
+    talk to, ``verify-ca`` checks the certificate chain but not the host name
+    (with a public CA bundle, any public certificate for any domain passes),
+    and a ``PGSSLMODE`` in the environment is not proof of anything the URL
+    does not say.
 
     ``tls_mode`` ``local-stack-only`` (``ATUS_DATABASE_TLS``) is the escape
     hatch for the local production-mode stack, whose Postgres has no TLS. It
@@ -337,10 +342,12 @@ def check_database_tls(
     shown = f"sslmode={sslmode}" if sslmode in _LIBPQ_SSLMODES else (
         "no sslmode" if not sslmode else "an unrecognised sslmode"
     )
+    why = (" (verify-ca checks the certificate chain but not the server's host name)"
+           if sslmode == "verify-ca" else "")
     raise ConfigError(
-        f"ATUS_DATABASE_URL has {shown}; when ATUS_ENV=production it must verify the "
-        "server's certificate: add sslmode=verify-full (with sslrootcert=system for a "
-        "public CA) to the URL"
+        f"ATUS_DATABASE_URL has {shown}{why}; when ATUS_ENV=production it must verify the "
+        "server's certificate and host name: use sslmode=verify-full (with "
+        "sslrootcert=system for a public CA) in the URL"
     )
 
 

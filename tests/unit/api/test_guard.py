@@ -22,6 +22,22 @@ SECRET_B = "b" * 40
 ESTIMATE = "/api/v1/analysis/estimate"
 BODY = {"activity": {"preset": "sleep"}, "years": [2023], "variance": "none"}
 REMOTE = ("203.0.113.5", 40000)
+COMPARE = "/api/v1/analysis/compare"
+YEARS = list(range(2050, 2101))                   # distinct, valid, not in the snapshot
+CODES = [f"{i:06d}" for i in range(101)]          # distinct, well-formed 6-digit codes
+
+
+def _bounded(**fields) -> dict:
+    """An analysis body with one schema-bounded field set (compare when a
+    group label is given); its other fields are valid."""
+    activity = {"include": ["0101"]}
+    for key in ("include", "exclude", "label"):
+        if key in fields:
+            activity[key] = fields.pop(key)
+    body = {"activity": activity, "years": fields.pop("years", [2099])}
+    if "label_a" in fields or "label_b" in fields:
+        body.update(group_a={"sex": "male"}, group_b={"sex": "female"})
+    return {**body, **fields}
 
 
 @pytest.fixture
@@ -225,6 +241,39 @@ class TestValidationOutput:
         response = client.post(ESTIMATE, json={**BODY, "activity": {"preset": "x" * 65}})
         assert response.status_code == 422
         assert response.json()["error"]["code"] == "validation_error"
+
+    @pytest.mark.parametrize(("path", "body", "location"), [
+        (ESTIMATE, _bounded(years=YEARS[:51]), ["body", "years"]),
+        (ESTIMATE, _bounded(include=CODES[:101]), ["body", "activity", "include"]),
+        (ESTIMATE, _bounded(exclude=CODES[:101]), ["body", "activity", "exclude"]),
+        (ESTIMATE, _bounded(label="x" * 121), ["body", "activity", "label"]),
+        (COMPARE, _bounded(label_a="a" * 81), ["body", "label_a"]),
+        (COMPARE, _bounded(label_b="b" * 81), ["body", "label_b"]),
+    ], ids=["51 years", "101 include", "101 exclude", "label 121", "label_a 81", "label_b 81"])
+    def test_schema_bounds_are_422_before_any_work(self, build, path, body, location):
+        """Review r2 (schema-bounds-untested): docs/security.md C4 lists these
+        bounds as a control; no request had ever exceeded them."""
+        client, fake_db = build()
+        response = client.post(path, json=body)
+        assert response.status_code == 422
+        error = response.json()["error"]
+        assert error["code"] == "validation_error"
+        assert [e["location"] for e in error["details"]["errors"]] == [location]
+        assert fake_db.transactions == []
+
+    @pytest.mark.parametrize("body", [
+        _bounded(years=YEARS[:50]), _bounded(include=CODES[:100]),
+        _bounded(exclude=CODES[:100]), _bounded(label="x" * 120),
+        _bounded(label_a="a" * 80, label_b="b" * 80),
+    ], ids=["50 years", "100 include", "100 exclude", "label 120", "labels 80"])
+    def test_the_bounds_themselves_pass_the_schema(self, build, body):
+        """At each bound the schema accepts the request; the domain then
+        refuses it (years outside the snapshot) before any analysis query."""
+        client, fake_db = build()
+        response = client.post(COMPARE if "label_a" in body else ESTIMATE, json=body)
+        assert response.status_code == 422
+        assert response.json()["error"]["code"] != "validation_error", response.text
+        assert "analysis" not in fake_db.transactions      # only the snapshot read
 
 
 class TestHeaders:

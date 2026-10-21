@@ -62,7 +62,7 @@ with a message naming the variable, and the message never echoes a secret.
 | Variable | Default (dev) | Production | Meaning |
 | --- | --- | --- | --- |
 | `ATUS_ENV` | `development` | `production` | production requires `ATUS_DATABASE_URL` and `ATUS_EDGE_SECRETS` (refuses to start otherwise) and refuses an `ATUS_DATABASE_URL` whose `sslmode` does not verify the server; JSON logs, docs off, HSTS |
-| `ATUS_DATABASE_URL` | compose instance on :5434 | **required** | analytical database; production never falls back to the development URL and refuses it if set explicitly. In production the URL itself must set `sslmode=verify-full` (with `sslrootcert=system` for a public CA) or `verify-ca`, or the API refuses to start ([deployment.md, "TLS to the database"](deployment.md#tls-to-the-database)) |
+| `ATUS_DATABASE_URL` | compose instance on :5434 | **required** | analytical database; production never falls back to the development URL and refuses it if set explicitly. In production the URL itself must set `sslmode=verify-full` (with `sslrootcert=system` for a public CA), or the API refuses to start; `verify-ca` is refused too, because it never checks the host name ([deployment.md, "TLS to the database"](deployment.md#tls-to-the-database)) |
 | `ATUS_DATABASE_TLS` | `verify` | *(unset: `verify`)*; never set on Render | `local-stack-only` lifts the `sslmode` rule for the local production-mode stack, whose Postgres has no TLS. It is itself refused unless every host in `ATUS_DATABASE_URL` is a compose service name without dots, `localhost` or a loopback address, `host.docker.internal`, or a Unix socket ([deployment.md](deployment.md#tls-to-the-database)) |
 | `ATUS_LOG_LEVEL` | `INFO` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 | `ATUS_LOG_FORMAT` | `text` | `json` | `text` or `json` (one object per line; [ADR-014](adr/ADR-014-observability.md)) |
@@ -164,7 +164,11 @@ Field notes (full semantics in [analytics.md](analytics.md)):
 - `variance: "none"` skips replicate SEs (faster; `standard_error` is null).
 - Defaults (`src/atus_pipeline/api/schemas/analysis.py`): `measure`
   `average_minutes_per_day`, `weights` `multiyear`, `variance` `replicate`,
-  `confidence_level` 0.95 (must lie strictly between 0.5 and 1), `population`
+  `confidence_level` 0.95 (must lie strictly between 0.5 and 1; with
+  `variance` `replicate` the largest double below 1, `0.9999999999999999`, is
+  refused as `invalid_spec` because its two-sided quantile
+  `0.5 + confidence_level/2` rounds to 1; `variance: "none"` computes no
+  interval and accepts it), `population`
   empty. `activity` and `years` are required; compare also requires `group_a`
   and `group_b` (`label_a`/`label_b` default to `group_a`/`group_b`).
 

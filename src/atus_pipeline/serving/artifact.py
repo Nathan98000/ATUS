@@ -149,8 +149,18 @@ def write_artifact(conninfo: str, out_dir: Path, report: BuildReport, *,
 
 
 def read_manifest(path: Path) -> dict:
-    manifest = json.loads(path.read_text())
-    if manifest.get("kind") != KIND:
+    """The release manifest at ``path``; :class:`ArtifactError` when it is
+    missing, unreadable, not JSON or not an atus-serving-db manifest."""
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:  # missing, unreadable, undecodable, not JSON
+        reason = exc.strerror if isinstance(exc, OSError) and exc.strerror else \
+            type(exc).__name__
+        raise ArtifactError(
+            f"{path} is missing or unreadable ({reason}); keep the release's .manifest.json "
+            "beside its .dump"
+        ) from exc
+    if not isinstance(manifest, dict) or manifest.get("kind") != KIND:
         raise ArtifactError(f"{path} is not an {KIND} manifest")
     for key in ("data_version", "content_hash", "release", "build_id", "artifact", "tables"):
         if key not in manifest:

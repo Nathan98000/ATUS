@@ -123,7 +123,8 @@ def build_query(
     values travel only as bound parameters.
 
     ``push_down_years=False`` renders the Phase 2-4 query (no year pushdown),
-    kept for the equivalence tests."""
+    kept for the equivalence tests; a unit test holds it byte for byte to
+    what 387fc2d rendered (``tests/unit/analytics/phase4_queries.json``)."""
     joins = []
     if population.needs_roster:
         joins.append(

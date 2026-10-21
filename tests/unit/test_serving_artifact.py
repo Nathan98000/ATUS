@@ -231,6 +231,25 @@ def test_read_manifest_refuses_other_json(tmp_path):
         read_manifest(path)
 
 
+@pytest.mark.parametrize(("content", "message"), [
+    (None, "missing or unreadable .*keep the release's .manifest.json beside"),
+    ("{not json", "missing or unreadable .*keep the release's .manifest.json beside"),
+    ("\udcff", "missing or unreadable .*keep the release's .manifest.json beside"),
+    ("[1, 2]", "is not an atus-serving-db manifest"),
+], ids=["missing", "corrupt", "undecodable", "not an object"])
+def test_read_manifest_refuses_a_missing_or_unreadable_file_cleanly(tmp_path, content, message):
+    """Review r2 (restore-missing-manifest-traceback): a missing or corrupt
+    manifest raised FileNotFoundError/JSONDecodeError (a JSON list,
+    AttributeError), which no command catches, so restore-serving-db ended
+    in a traceback."""
+    dump, manifest_path = _artifact(tmp_path)
+    manifest_path.unlink()
+    if content is not None:
+        manifest_path.write_bytes(content.encode("utf-8", "surrogateescape"))
+    with pytest.raises(ArtifactError, match=message):
+        read_manifest(manifest_for(dump))
+
+
 @pytest.mark.parametrize("owner_query", ["sslmode=verify-full&sslrootcert=system",
                                          "sslmode=require&channel_binding=require"])
 def test_the_restore_finds_ca_roots_before_its_first_connection(tmp_path, monkeypatch,

@@ -82,7 +82,7 @@ The per-request statement budget, verified against PostgreSQL's own statement lo
 
 ### `Server-Timing`
 
-Every response carries `Server-Timing: db;dur=<ms>, app;dur=<ms>`: the request's `db_ms`, and the rest of its time up to the response start. The Worker logs it, and its governor uses `db` to size the compute charge of an analysis; a shed, rejected or cached answer with `db;dur=0` is not charged at all (ADR-015). It is the only latency attribution available on Render's free plan, which has no percentiles.
+Every response carries `Server-Timing: db;dur=<ms>, app;dur=<ms>`: the request's `db_ms`, and the rest of its time up to the response start. That includes an unexpected 500, which Starlette renders outside the request-context middleware: the catch-all handler reports the same accounting (review round 2; `tests/unit/api/test_edge_contract.py::TestServerTimingForTheGovernor::test_an_unhandled_500_reports_the_database_time_it_spent`). The Worker logs it, and its governor uses `db` to size the compute charge of an analysis; a shed, rejected or cached answer with `db;dur=0` is not charged at all (ADR-015). It is the only latency attribution available on Render's free plan, which has no percentiles.
 
 ### Metrics
 

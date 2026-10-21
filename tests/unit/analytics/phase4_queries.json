@@ -1,0 +1,470 @@
+{
+ "queries": [
+  {
+   "name": "leaf, one year",
+   "params": {
+    "activity_codes": [
+     "010101"
+    ],
+    "years": [
+     2023
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [],
+     "include": [
+      "010101"
+     ],
+     "label": null
+    },
+    "confidence_level": 0.95,
+    "measure": "average_minutes_per_day",
+    "population": {},
+    "variance": "replicate",
+    "weights": "multiyear",
+    "years": [
+     2023
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.final_weight AS w\n    FROM atus.respondents r\n    \n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.final_weight > 0\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       , ARRAY[sum(rw.tufnwgtp001::float8), sum(rw.tufnwgtp002::float8), sum(rw.tufnwgtp003::float8), sum(rw.tufnwgtp004::float8), sum(rw.tufnwgtp005::float8), sum(rw.tufnwgtp006::float8), sum(rw.tufnwgtp007::float8), sum(rw.tufnwgtp008::float8), sum(rw.tufnwgtp009::float8), sum(rw.tufnwgtp010::float8), sum(rw.tufnwgtp011::float8), sum(rw.tufnwgtp012::float8), sum(rw.tufnwgtp013::float8), sum(rw.tufnwgtp014::float8), sum(rw.tufnwgtp015::float8), sum(rw.tufnwgtp016::float8), sum(rw.tufnwgtp017::float8), sum(rw.tufnwgtp018::float8), sum(rw.tufnwgtp019::float8), sum(rw.tufnwgtp020::float8), sum(rw.tufnwgtp021::float8), sum(rw.tufnwgtp022::float8), sum(rw.tufnwgtp023::float8), sum(rw.tufnwgtp024::float8), sum(rw.tufnwgtp025::float8), sum(rw.tufnwgtp026::float8), sum(rw.tufnwgtp027::float8), sum(rw.tufnwgtp028::float8), sum(rw.tufnwgtp029::float8), sum(rw.tufnwgtp030::float8), sum(rw.tufnwgtp031::float8), sum(rw.tufnwgtp032::float8), sum(rw.tufnwgtp033::float8), sum(rw.tufnwgtp034::float8), sum(rw.tufnwgtp035::float8), sum(rw.tufnwgtp036::float8), sum(rw.tufnwgtp037::float8), sum(rw.tufnwgtp038::float8), sum(rw.tufnwgtp039::float8), sum(rw.tufnwgtp040::float8), sum(rw.tufnwgtp041::float8), sum(rw.tufnwgtp042::float8), sum(rw.tufnwgtp043::float8), sum(rw.tufnwgtp044::float8), sum(rw.tufnwgtp045::float8), sum(rw.tufnwgtp046::float8), sum(rw.tufnwgtp047::float8), sum(rw.tufnwgtp048::float8), sum(rw.tufnwgtp049::float8), sum(rw.tufnwgtp050::float8), sum(rw.tufnwgtp051::float8), sum(rw.tufnwgtp052::float8), sum(rw.tufnwgtp053::float8), sum(rw.tufnwgtp054::float8), sum(rw.tufnwgtp055::float8), sum(rw.tufnwgtp056::float8), sum(rw.tufnwgtp057::float8), sum(rw.tufnwgtp058::float8), sum(rw.tufnwgtp059::float8), sum(rw.tufnwgtp060::float8), sum(rw.tufnwgtp061::float8), sum(rw.tufnwgtp062::float8), sum(rw.tufnwgtp063::float8), sum(rw.tufnwgtp064::float8), sum(rw.tufnwgtp065::float8), sum(rw.tufnwgtp066::float8), sum(rw.tufnwgtp067::float8), sum(rw.tufnwgtp068::float8), sum(rw.tufnwgtp069::float8), sum(rw.tufnwgtp070::float8), sum(rw.tufnwgtp071::float8), sum(rw.tufnwgtp072::float8), sum(rw.tufnwgtp073::float8), sum(rw.tufnwgtp074::float8), sum(rw.tufnwgtp075::float8), sum(rw.tufnwgtp076::float8), sum(rw.tufnwgtp077::float8), sum(rw.tufnwgtp078::float8), sum(rw.tufnwgtp079::float8), sum(rw.tufnwgtp080::float8), sum(rw.tufnwgtp081::float8), sum(rw.tufnwgtp082::float8), sum(rw.tufnwgtp083::float8), sum(rw.tufnwgtp084::float8), sum(rw.tufnwgtp085::float8), sum(rw.tufnwgtp086::float8), sum(rw.tufnwgtp087::float8), sum(rw.tufnwgtp088::float8), sum(rw.tufnwgtp089::float8), sum(rw.tufnwgtp090::float8), sum(rw.tufnwgtp091::float8), sum(rw.tufnwgtp092::float8), sum(rw.tufnwgtp093::float8), sum(rw.tufnwgtp094::float8), sum(rw.tufnwgtp095::float8), sum(rw.tufnwgtp096::float8), sum(rw.tufnwgtp097::float8), sum(rw.tufnwgtp098::float8), sum(rw.tufnwgtp099::float8), sum(rw.tufnwgtp100::float8), sum(rw.tufnwgtp101::float8), sum(rw.tufnwgtp102::float8), sum(rw.tufnwgtp103::float8), sum(rw.tufnwgtp104::float8), sum(rw.tufnwgtp105::float8), sum(rw.tufnwgtp106::float8), sum(rw.tufnwgtp107::float8), sum(rw.tufnwgtp108::float8), sum(rw.tufnwgtp109::float8), sum(rw.tufnwgtp110::float8), sum(rw.tufnwgtp111::float8), sum(rw.tufnwgtp112::float8), sum(rw.tufnwgtp113::float8), sum(rw.tufnwgtp114::float8), sum(rw.tufnwgtp115::float8), sum(rw.tufnwgtp116::float8), sum(rw.tufnwgtp117::float8), sum(rw.tufnwgtp118::float8), sum(rw.tufnwgtp119::float8), sum(rw.tufnwgtp120::float8), sum(rw.tufnwgtp121::float8), sum(rw.tufnwgtp122::float8), sum(rw.tufnwgtp123::float8), sum(rw.tufnwgtp124::float8), sum(rw.tufnwgtp125::float8), sum(rw.tufnwgtp126::float8), sum(rw.tufnwgtp127::float8), sum(rw.tufnwgtp128::float8), sum(rw.tufnwgtp129::float8), sum(rw.tufnwgtp130::float8), sum(rw.tufnwgtp131::float8), sum(rw.tufnwgtp132::float8), sum(rw.tufnwgtp133::float8), sum(rw.tufnwgtp134::float8), sum(rw.tufnwgtp135::float8), sum(rw.tufnwgtp136::float8), sum(rw.tufnwgtp137::float8), sum(rw.tufnwgtp138::float8), sum(rw.tufnwgtp139::float8), sum(rw.tufnwgtp140::float8), sum(rw.tufnwgtp141::float8), sum(rw.tufnwgtp142::float8), sum(rw.tufnwgtp143::float8), sum(rw.tufnwgtp144::float8), sum(rw.tufnwgtp145::float8), sum(rw.tufnwgtp146::float8), sum(rw.tufnwgtp147::float8), sum(rw.tufnwgtp148::float8), sum(rw.tufnwgtp149::float8), sum(rw.tufnwgtp150::float8), sum(rw.tufnwgtp151::float8), sum(rw.tufnwgtp152::float8), sum(rw.tufnwgtp153::float8), sum(rw.tufnwgtp154::float8), sum(rw.tufnwgtp155::float8), sum(rw.tufnwgtp156::float8), sum(rw.tufnwgtp157::float8), sum(rw.tufnwgtp158::float8), sum(rw.tufnwgtp159::float8), sum(rw.tufnwgtp160::float8)] AS rep_sum_w, ARRAY[sum(rw.tufnwgtp001::float8 * base.x), sum(rw.tufnwgtp002::float8 * base.x), sum(rw.tufnwgtp003::float8 * base.x), sum(rw.tufnwgtp004::float8 * base.x), sum(rw.tufnwgtp005::float8 * base.x), sum(rw.tufnwgtp006::float8 * base.x), sum(rw.tufnwgtp007::float8 * base.x), sum(rw.tufnwgtp008::float8 * base.x), sum(rw.tufnwgtp009::float8 * base.x), sum(rw.tufnwgtp010::float8 * base.x), sum(rw.tufnwgtp011::float8 * base.x), sum(rw.tufnwgtp012::float8 * base.x), sum(rw.tufnwgtp013::float8 * base.x), sum(rw.tufnwgtp014::float8 * base.x), sum(rw.tufnwgtp015::float8 * base.x), sum(rw.tufnwgtp016::float8 * base.x), sum(rw.tufnwgtp017::float8 * base.x), sum(rw.tufnwgtp018::float8 * base.x), sum(rw.tufnwgtp019::float8 * base.x), sum(rw.tufnwgtp020::float8 * base.x), sum(rw.tufnwgtp021::float8 * base.x), sum(rw.tufnwgtp022::float8 * base.x), sum(rw.tufnwgtp023::float8 * base.x), sum(rw.tufnwgtp024::float8 * base.x), sum(rw.tufnwgtp025::float8 * base.x), sum(rw.tufnwgtp026::float8 * base.x), sum(rw.tufnwgtp027::float8 * base.x), sum(rw.tufnwgtp028::float8 * base.x), sum(rw.tufnwgtp029::float8 * base.x), sum(rw.tufnwgtp030::float8 * base.x), sum(rw.tufnwgtp031::float8 * base.x), sum(rw.tufnwgtp032::float8 * base.x), sum(rw.tufnwgtp033::float8 * base.x), sum(rw.tufnwgtp034::float8 * base.x), sum(rw.tufnwgtp035::float8 * base.x), sum(rw.tufnwgtp036::float8 * base.x), sum(rw.tufnwgtp037::float8 * base.x), sum(rw.tufnwgtp038::float8 * base.x), sum(rw.tufnwgtp039::float8 * base.x), sum(rw.tufnwgtp040::float8 * base.x), sum(rw.tufnwgtp041::float8 * base.x), sum(rw.tufnwgtp042::float8 * base.x), sum(rw.tufnwgtp043::float8 * base.x), sum(rw.tufnwgtp044::float8 * base.x), sum(rw.tufnwgtp045::float8 * base.x), sum(rw.tufnwgtp046::float8 * base.x), sum(rw.tufnwgtp047::float8 * base.x), sum(rw.tufnwgtp048::float8 * base.x), sum(rw.tufnwgtp049::float8 * base.x), sum(rw.tufnwgtp050::float8 * base.x), sum(rw.tufnwgtp051::float8 * base.x), sum(rw.tufnwgtp052::float8 * base.x), sum(rw.tufnwgtp053::float8 * base.x), sum(rw.tufnwgtp054::float8 * base.x), sum(rw.tufnwgtp055::float8 * base.x), sum(rw.tufnwgtp056::float8 * base.x), sum(rw.tufnwgtp057::float8 * base.x), sum(rw.tufnwgtp058::float8 * base.x), sum(rw.tufnwgtp059::float8 * base.x), sum(rw.tufnwgtp060::float8 * base.x), sum(rw.tufnwgtp061::float8 * base.x), sum(rw.tufnwgtp062::float8 * base.x), sum(rw.tufnwgtp063::float8 * base.x), sum(rw.tufnwgtp064::float8 * base.x), sum(rw.tufnwgtp065::float8 * base.x), sum(rw.tufnwgtp066::float8 * base.x), sum(rw.tufnwgtp067::float8 * base.x), sum(rw.tufnwgtp068::float8 * base.x), sum(rw.tufnwgtp069::float8 * base.x), sum(rw.tufnwgtp070::float8 * base.x), sum(rw.tufnwgtp071::float8 * base.x), sum(rw.tufnwgtp072::float8 * base.x), sum(rw.tufnwgtp073::float8 * base.x), sum(rw.tufnwgtp074::float8 * base.x), sum(rw.tufnwgtp075::float8 * base.x), sum(rw.tufnwgtp076::float8 * base.x), sum(rw.tufnwgtp077::float8 * base.x), sum(rw.tufnwgtp078::float8 * base.x), sum(rw.tufnwgtp079::float8 * base.x), sum(rw.tufnwgtp080::float8 * base.x), sum(rw.tufnwgtp081::float8 * base.x), sum(rw.tufnwgtp082::float8 * base.x), sum(rw.tufnwgtp083::float8 * base.x), sum(rw.tufnwgtp084::float8 * base.x), sum(rw.tufnwgtp085::float8 * base.x), sum(rw.tufnwgtp086::float8 * base.x), sum(rw.tufnwgtp087::float8 * base.x), sum(rw.tufnwgtp088::float8 * base.x), sum(rw.tufnwgtp089::float8 * base.x), sum(rw.tufnwgtp090::float8 * base.x), sum(rw.tufnwgtp091::float8 * base.x), sum(rw.tufnwgtp092::float8 * base.x), sum(rw.tufnwgtp093::float8 * base.x), sum(rw.tufnwgtp094::float8 * base.x), sum(rw.tufnwgtp095::float8 * base.x), sum(rw.tufnwgtp096::float8 * base.x), sum(rw.tufnwgtp097::float8 * base.x), sum(rw.tufnwgtp098::float8 * base.x), sum(rw.tufnwgtp099::float8 * base.x), sum(rw.tufnwgtp100::float8 * base.x), sum(rw.tufnwgtp101::float8 * base.x), sum(rw.tufnwgtp102::float8 * base.x), sum(rw.tufnwgtp103::float8 * base.x), sum(rw.tufnwgtp104::float8 * base.x), sum(rw.tufnwgtp105::float8 * base.x), sum(rw.tufnwgtp106::float8 * base.x), sum(rw.tufnwgtp107::float8 * base.x), sum(rw.tufnwgtp108::float8 * base.x), sum(rw.tufnwgtp109::float8 * base.x), sum(rw.tufnwgtp110::float8 * base.x), sum(rw.tufnwgtp111::float8 * base.x), sum(rw.tufnwgtp112::float8 * base.x), sum(rw.tufnwgtp113::float8 * base.x), sum(rw.tufnwgtp114::float8 * base.x), sum(rw.tufnwgtp115::float8 * base.x), sum(rw.tufnwgtp116::float8 * base.x), sum(rw.tufnwgtp117::float8 * base.x), sum(rw.tufnwgtp118::float8 * base.x), sum(rw.tufnwgtp119::float8 * base.x), sum(rw.tufnwgtp120::float8 * base.x), sum(rw.tufnwgtp121::float8 * base.x), sum(rw.tufnwgtp122::float8 * base.x), sum(rw.tufnwgtp123::float8 * base.x), sum(rw.tufnwgtp124::float8 * base.x), sum(rw.tufnwgtp125::float8 * base.x), sum(rw.tufnwgtp126::float8 * base.x), sum(rw.tufnwgtp127::float8 * base.x), sum(rw.tufnwgtp128::float8 * base.x), sum(rw.tufnwgtp129::float8 * base.x), sum(rw.tufnwgtp130::float8 * base.x), sum(rw.tufnwgtp131::float8 * base.x), sum(rw.tufnwgtp132::float8 * base.x), sum(rw.tufnwgtp133::float8 * base.x), sum(rw.tufnwgtp134::float8 * base.x), sum(rw.tufnwgtp135::float8 * base.x), sum(rw.tufnwgtp136::float8 * base.x), sum(rw.tufnwgtp137::float8 * base.x), sum(rw.tufnwgtp138::float8 * base.x), sum(rw.tufnwgtp139::float8 * base.x), sum(rw.tufnwgtp140::float8 * base.x), sum(rw.tufnwgtp141::float8 * base.x), sum(rw.tufnwgtp142::float8 * base.x), sum(rw.tufnwgtp143::float8 * base.x), sum(rw.tufnwgtp144::float8 * base.x), sum(rw.tufnwgtp145::float8 * base.x), sum(rw.tufnwgtp146::float8 * base.x), sum(rw.tufnwgtp147::float8 * base.x), sum(rw.tufnwgtp148::float8 * base.x), sum(rw.tufnwgtp149::float8 * base.x), sum(rw.tufnwgtp150::float8 * base.x), sum(rw.tufnwgtp151::float8 * base.x), sum(rw.tufnwgtp152::float8 * base.x), sum(rw.tufnwgtp153::float8 * base.x), sum(rw.tufnwgtp154::float8 * base.x), sum(rw.tufnwgtp155::float8 * base.x), sum(rw.tufnwgtp156::float8 * base.x), sum(rw.tufnwgtp157::float8 * base.x), sum(rw.tufnwgtp158::float8 * base.x), sum(rw.tufnwgtp159::float8 * base.x), sum(rw.tufnwgtp160::float8 * base.x)] AS rep_sum_wx, ARRAY[sum(rw.tufnwgtp001::float8 * base.p), sum(rw.tufnwgtp002::float8 * base.p), sum(rw.tufnwgtp003::float8 * base.p), sum(rw.tufnwgtp004::float8 * base.p), sum(rw.tufnwgtp005::float8 * base.p), sum(rw.tufnwgtp006::float8 * base.p), sum(rw.tufnwgtp007::float8 * base.p), sum(rw.tufnwgtp008::float8 * base.p), sum(rw.tufnwgtp009::float8 * base.p), sum(rw.tufnwgtp010::float8 * base.p), sum(rw.tufnwgtp011::float8 * base.p), sum(rw.tufnwgtp012::float8 * base.p), sum(rw.tufnwgtp013::float8 * base.p), sum(rw.tufnwgtp014::float8 * base.p), sum(rw.tufnwgtp015::float8 * base.p), sum(rw.tufnwgtp016::float8 * base.p), sum(rw.tufnwgtp017::float8 * base.p), sum(rw.tufnwgtp018::float8 * base.p), sum(rw.tufnwgtp019::float8 * base.p), sum(rw.tufnwgtp020::float8 * base.p), sum(rw.tufnwgtp021::float8 * base.p), sum(rw.tufnwgtp022::float8 * base.p), sum(rw.tufnwgtp023::float8 * base.p), sum(rw.tufnwgtp024::float8 * base.p), sum(rw.tufnwgtp025::float8 * base.p), sum(rw.tufnwgtp026::float8 * base.p), sum(rw.tufnwgtp027::float8 * base.p), sum(rw.tufnwgtp028::float8 * base.p), sum(rw.tufnwgtp029::float8 * base.p), sum(rw.tufnwgtp030::float8 * base.p), sum(rw.tufnwgtp031::float8 * base.p), sum(rw.tufnwgtp032::float8 * base.p), sum(rw.tufnwgtp033::float8 * base.p), sum(rw.tufnwgtp034::float8 * base.p), sum(rw.tufnwgtp035::float8 * base.p), sum(rw.tufnwgtp036::float8 * base.p), sum(rw.tufnwgtp037::float8 * base.p), sum(rw.tufnwgtp038::float8 * base.p), sum(rw.tufnwgtp039::float8 * base.p), sum(rw.tufnwgtp040::float8 * base.p), sum(rw.tufnwgtp041::float8 * base.p), sum(rw.tufnwgtp042::float8 * base.p), sum(rw.tufnwgtp043::float8 * base.p), sum(rw.tufnwgtp044::float8 * base.p), sum(rw.tufnwgtp045::float8 * base.p), sum(rw.tufnwgtp046::float8 * base.p), sum(rw.tufnwgtp047::float8 * base.p), sum(rw.tufnwgtp048::float8 * base.p), sum(rw.tufnwgtp049::float8 * base.p), sum(rw.tufnwgtp050::float8 * base.p), sum(rw.tufnwgtp051::float8 * base.p), sum(rw.tufnwgtp052::float8 * base.p), sum(rw.tufnwgtp053::float8 * base.p), sum(rw.tufnwgtp054::float8 * base.p), sum(rw.tufnwgtp055::float8 * base.p), sum(rw.tufnwgtp056::float8 * base.p), sum(rw.tufnwgtp057::float8 * base.p), sum(rw.tufnwgtp058::float8 * base.p), sum(rw.tufnwgtp059::float8 * base.p), sum(rw.tufnwgtp060::float8 * base.p), sum(rw.tufnwgtp061::float8 * base.p), sum(rw.tufnwgtp062::float8 * base.p), sum(rw.tufnwgtp063::float8 * base.p), sum(rw.tufnwgtp064::float8 * base.p), sum(rw.tufnwgtp065::float8 * base.p), sum(rw.tufnwgtp066::float8 * base.p), sum(rw.tufnwgtp067::float8 * base.p), sum(rw.tufnwgtp068::float8 * base.p), sum(rw.tufnwgtp069::float8 * base.p), sum(rw.tufnwgtp070::float8 * base.p), sum(rw.tufnwgtp071::float8 * base.p), sum(rw.tufnwgtp072::float8 * base.p), sum(rw.tufnwgtp073::float8 * base.p), sum(rw.tufnwgtp074::float8 * base.p), sum(rw.tufnwgtp075::float8 * base.p), sum(rw.tufnwgtp076::float8 * base.p), sum(rw.tufnwgtp077::float8 * base.p), sum(rw.tufnwgtp078::float8 * base.p), sum(rw.tufnwgtp079::float8 * base.p), sum(rw.tufnwgtp080::float8 * base.p), sum(rw.tufnwgtp081::float8 * base.p), sum(rw.tufnwgtp082::float8 * base.p), sum(rw.tufnwgtp083::float8 * base.p), sum(rw.tufnwgtp084::float8 * base.p), sum(rw.tufnwgtp085::float8 * base.p), sum(rw.tufnwgtp086::float8 * base.p), sum(rw.tufnwgtp087::float8 * base.p), sum(rw.tufnwgtp088::float8 * base.p), sum(rw.tufnwgtp089::float8 * base.p), sum(rw.tufnwgtp090::float8 * base.p), sum(rw.tufnwgtp091::float8 * base.p), sum(rw.tufnwgtp092::float8 * base.p), sum(rw.tufnwgtp093::float8 * base.p), sum(rw.tufnwgtp094::float8 * base.p), sum(rw.tufnwgtp095::float8 * base.p), sum(rw.tufnwgtp096::float8 * base.p), sum(rw.tufnwgtp097::float8 * base.p), sum(rw.tufnwgtp098::float8 * base.p), sum(rw.tufnwgtp099::float8 * base.p), sum(rw.tufnwgtp100::float8 * base.p), sum(rw.tufnwgtp101::float8 * base.p), sum(rw.tufnwgtp102::float8 * base.p), sum(rw.tufnwgtp103::float8 * base.p), sum(rw.tufnwgtp104::float8 * base.p), sum(rw.tufnwgtp105::float8 * base.p), sum(rw.tufnwgtp106::float8 * base.p), sum(rw.tufnwgtp107::float8 * base.p), sum(rw.tufnwgtp108::float8 * base.p), sum(rw.tufnwgtp109::float8 * base.p), sum(rw.tufnwgtp110::float8 * base.p), sum(rw.tufnwgtp111::float8 * base.p), sum(rw.tufnwgtp112::float8 * base.p), sum(rw.tufnwgtp113::float8 * base.p), sum(rw.tufnwgtp114::float8 * base.p), sum(rw.tufnwgtp115::float8 * base.p), sum(rw.tufnwgtp116::float8 * base.p), sum(rw.tufnwgtp117::float8 * base.p), sum(rw.tufnwgtp118::float8 * base.p), sum(rw.tufnwgtp119::float8 * base.p), sum(rw.tufnwgtp120::float8 * base.p), sum(rw.tufnwgtp121::float8 * base.p), sum(rw.tufnwgtp122::float8 * base.p), sum(rw.tufnwgtp123::float8 * base.p), sum(rw.tufnwgtp124::float8 * base.p), sum(rw.tufnwgtp125::float8 * base.p), sum(rw.tufnwgtp126::float8 * base.p), sum(rw.tufnwgtp127::float8 * base.p), sum(rw.tufnwgtp128::float8 * base.p), sum(rw.tufnwgtp129::float8 * base.p), sum(rw.tufnwgtp130::float8 * base.p), sum(rw.tufnwgtp131::float8 * base.p), sum(rw.tufnwgtp132::float8 * base.p), sum(rw.tufnwgtp133::float8 * base.p), sum(rw.tufnwgtp134::float8 * base.p), sum(rw.tufnwgtp135::float8 * base.p), sum(rw.tufnwgtp136::float8 * base.p), sum(rw.tufnwgtp137::float8 * base.p), sum(rw.tufnwgtp138::float8 * base.p), sum(rw.tufnwgtp139::float8 * base.p), sum(rw.tufnwgtp140::float8 * base.p), sum(rw.tufnwgtp141::float8 * base.p), sum(rw.tufnwgtp142::float8 * base.p), sum(rw.tufnwgtp143::float8 * base.p), sum(rw.tufnwgtp144::float8 * base.p), sum(rw.tufnwgtp145::float8 * base.p), sum(rw.tufnwgtp146::float8 * base.p), sum(rw.tufnwgtp147::float8 * base.p), sum(rw.tufnwgtp148::float8 * base.p), sum(rw.tufnwgtp149::float8 * base.p), sum(rw.tufnwgtp150::float8 * base.p), sum(rw.tufnwgtp151::float8 * base.p), sum(rw.tufnwgtp152::float8 * base.p), sum(rw.tufnwgtp153::float8 * base.p), sum(rw.tufnwgtp154::float8 * base.p), sum(rw.tufnwgtp155::float8 * base.p), sum(rw.tufnwgtp156::float8 * base.p), sum(rw.tufnwgtp157::float8 * base.p), sum(rw.tufnwgtp158::float8 * base.p), sum(rw.tufnwgtp159::float8 * base.p), sum(rw.tufnwgtp160::float8 * base.p)] AS rep_sum_wp\nFROM base\nJOIN atus.replicate_weights rw ON rw.tucaseid = base.tucaseid\nGROUP BY base.year\nORDER BY base.year\n"
+  },
+  {
+   "name": "no replicates",
+   "params": {
+    "activity_codes": [
+     "010101"
+    ],
+    "years": [
+     2023
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [],
+     "include": [
+      "010101"
+     ],
+     "label": null
+    },
+    "confidence_level": 0.95,
+    "measure": "average_minutes_per_day",
+    "population": {},
+    "variance": "none",
+    "weights": "multiyear",
+    "years": [
+     2023
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.final_weight AS w\n    FROM atus.respondents r\n    \n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.final_weight > 0\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       \nFROM base\n\nGROUP BY base.year\nORDER BY base.year\n"
+  },
+  {
+   "name": "tier-1 minus tier-2, pooled",
+   "params": {
+    "activity_codes": [
+     "010201"
+    ],
+    "years": [
+     2019,
+     2021,
+     2023
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [
+      "0101"
+     ],
+     "include": [
+      "01"
+     ],
+     "label": "Personal care but sleep"
+    },
+    "confidence_level": 0.95,
+    "measure": "participation_rate",
+    "population": {},
+    "variance": "none",
+    "weights": "multiyear",
+    "years": [
+     2019,
+     2021,
+     2023
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.final_weight AS w\n    FROM atus.respondents r\n    \n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.final_weight > 0\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       \nFROM base\n\nGROUP BY base.year\nORDER BY base.year\n"
+  },
+  {
+   "name": "several prefixes",
+   "params": {
+    "activity_codes": [
+     "010101",
+     "010102",
+     "120303",
+     "120304"
+    ],
+    "years": [
+     2010,
+     2015
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [],
+     "include": [
+      "0101",
+      "120303",
+      "120304"
+     ],
+     "label": null
+    },
+    "confidence_level": 0.95,
+    "measure": "average_minutes_per_participant",
+    "population": {},
+    "variance": "none",
+    "weights": "multiyear",
+    "years": [
+     2010,
+     2015
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.final_weight AS w\n    FROM atus.respondents r\n    \n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.final_weight > 0\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       \nFROM base\n\nGROUP BY base.year\nORDER BY base.year\n"
+  },
+  {
+   "name": "pandemic weights",
+   "params": {
+    "activity_codes": [
+     "120301",
+     "120303",
+     "120304"
+    ],
+    "years": [
+     2019,
+     2020
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [],
+     "include": [
+      "1203"
+     ],
+     "label": null
+    },
+    "confidence_level": 0.95,
+    "measure": "average_minutes_per_day",
+    "population": {},
+    "variance": "replicate",
+    "weights": "pandemic",
+    "years": [
+     2019,
+     2020
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.pandemic_weight AS w\n    FROM atus.respondents r\n    \n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.pandemic_weight > 0\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       , ARRAY[sum(rw.tu20fwgt001::float8), sum(rw.tu20fwgt002::float8), sum(rw.tu20fwgt003::float8), sum(rw.tu20fwgt004::float8), sum(rw.tu20fwgt005::float8), sum(rw.tu20fwgt006::float8), sum(rw.tu20fwgt007::float8), sum(rw.tu20fwgt008::float8), sum(rw.tu20fwgt009::float8), sum(rw.tu20fwgt010::float8), sum(rw.tu20fwgt011::float8), sum(rw.tu20fwgt012::float8), sum(rw.tu20fwgt013::float8), sum(rw.tu20fwgt014::float8), sum(rw.tu20fwgt015::float8), sum(rw.tu20fwgt016::float8), sum(rw.tu20fwgt017::float8), sum(rw.tu20fwgt018::float8), sum(rw.tu20fwgt019::float8), sum(rw.tu20fwgt020::float8), sum(rw.tu20fwgt021::float8), sum(rw.tu20fwgt022::float8), sum(rw.tu20fwgt023::float8), sum(rw.tu20fwgt024::float8), sum(rw.tu20fwgt025::float8), sum(rw.tu20fwgt026::float8), sum(rw.tu20fwgt027::float8), sum(rw.tu20fwgt028::float8), sum(rw.tu20fwgt029::float8), sum(rw.tu20fwgt030::float8), sum(rw.tu20fwgt031::float8), sum(rw.tu20fwgt032::float8), sum(rw.tu20fwgt033::float8), sum(rw.tu20fwgt034::float8), sum(rw.tu20fwgt035::float8), sum(rw.tu20fwgt036::float8), sum(rw.tu20fwgt037::float8), sum(rw.tu20fwgt038::float8), sum(rw.tu20fwgt039::float8), sum(rw.tu20fwgt040::float8), sum(rw.tu20fwgt041::float8), sum(rw.tu20fwgt042::float8), sum(rw.tu20fwgt043::float8), sum(rw.tu20fwgt044::float8), sum(rw.tu20fwgt045::float8), sum(rw.tu20fwgt046::float8), sum(rw.tu20fwgt047::float8), sum(rw.tu20fwgt048::float8), sum(rw.tu20fwgt049::float8), sum(rw.tu20fwgt050::float8), sum(rw.tu20fwgt051::float8), sum(rw.tu20fwgt052::float8), sum(rw.tu20fwgt053::float8), sum(rw.tu20fwgt054::float8), sum(rw.tu20fwgt055::float8), sum(rw.tu20fwgt056::float8), sum(rw.tu20fwgt057::float8), sum(rw.tu20fwgt058::float8), sum(rw.tu20fwgt059::float8), sum(rw.tu20fwgt060::float8), sum(rw.tu20fwgt061::float8), sum(rw.tu20fwgt062::float8), sum(rw.tu20fwgt063::float8), sum(rw.tu20fwgt064::float8), sum(rw.tu20fwgt065::float8), sum(rw.tu20fwgt066::float8), sum(rw.tu20fwgt067::float8), sum(rw.tu20fwgt068::float8), sum(rw.tu20fwgt069::float8), sum(rw.tu20fwgt070::float8), sum(rw.tu20fwgt071::float8), sum(rw.tu20fwgt072::float8), sum(rw.tu20fwgt073::float8), sum(rw.tu20fwgt074::float8), sum(rw.tu20fwgt075::float8), sum(rw.tu20fwgt076::float8), sum(rw.tu20fwgt077::float8), sum(rw.tu20fwgt078::float8), sum(rw.tu20fwgt079::float8), sum(rw.tu20fwgt080::float8), sum(rw.tu20fwgt081::float8), sum(rw.tu20fwgt082::float8), sum(rw.tu20fwgt083::float8), sum(rw.tu20fwgt084::float8), sum(rw.tu20fwgt085::float8), sum(rw.tu20fwgt086::float8), sum(rw.tu20fwgt087::float8), sum(rw.tu20fwgt088::float8), sum(rw.tu20fwgt089::float8), sum(rw.tu20fwgt090::float8), sum(rw.tu20fwgt091::float8), sum(rw.tu20fwgt092::float8), sum(rw.tu20fwgt093::float8), sum(rw.tu20fwgt094::float8), sum(rw.tu20fwgt095::float8), sum(rw.tu20fwgt096::float8), sum(rw.tu20fwgt097::float8), sum(rw.tu20fwgt098::float8), sum(rw.tu20fwgt099::float8), sum(rw.tu20fwgt100::float8), sum(rw.tu20fwgt101::float8), sum(rw.tu20fwgt102::float8), sum(rw.tu20fwgt103::float8), sum(rw.tu20fwgt104::float8), sum(rw.tu20fwgt105::float8), sum(rw.tu20fwgt106::float8), sum(rw.tu20fwgt107::float8), sum(rw.tu20fwgt108::float8), sum(rw.tu20fwgt109::float8), sum(rw.tu20fwgt110::float8), sum(rw.tu20fwgt111::float8), sum(rw.tu20fwgt112::float8), sum(rw.tu20fwgt113::float8), sum(rw.tu20fwgt114::float8), sum(rw.tu20fwgt115::float8), sum(rw.tu20fwgt116::float8), sum(rw.tu20fwgt117::float8), sum(rw.tu20fwgt118::float8), sum(rw.tu20fwgt119::float8), sum(rw.tu20fwgt120::float8), sum(rw.tu20fwgt121::float8), sum(rw.tu20fwgt122::float8), sum(rw.tu20fwgt123::float8), sum(rw.tu20fwgt124::float8), sum(rw.tu20fwgt125::float8), sum(rw.tu20fwgt126::float8), sum(rw.tu20fwgt127::float8), sum(rw.tu20fwgt128::float8), sum(rw.tu20fwgt129::float8), sum(rw.tu20fwgt130::float8), sum(rw.tu20fwgt131::float8), sum(rw.tu20fwgt132::float8), sum(rw.tu20fwgt133::float8), sum(rw.tu20fwgt134::float8), sum(rw.tu20fwgt135::float8), sum(rw.tu20fwgt136::float8), sum(rw.tu20fwgt137::float8), sum(rw.tu20fwgt138::float8), sum(rw.tu20fwgt139::float8), sum(rw.tu20fwgt140::float8), sum(rw.tu20fwgt141::float8), sum(rw.tu20fwgt142::float8), sum(rw.tu20fwgt143::float8), sum(rw.tu20fwgt144::float8), sum(rw.tu20fwgt145::float8), sum(rw.tu20fwgt146::float8), sum(rw.tu20fwgt147::float8), sum(rw.tu20fwgt148::float8), sum(rw.tu20fwgt149::float8), sum(rw.tu20fwgt150::float8), sum(rw.tu20fwgt151::float8), sum(rw.tu20fwgt152::float8), sum(rw.tu20fwgt153::float8), sum(rw.tu20fwgt154::float8), sum(rw.tu20fwgt155::float8), sum(rw.tu20fwgt156::float8), sum(rw.tu20fwgt157::float8), sum(rw.tu20fwgt158::float8), sum(rw.tu20fwgt159::float8), sum(rw.tu20fwgt160::float8)] AS rep_sum_w, ARRAY[sum(rw.tu20fwgt001::float8 * base.x), sum(rw.tu20fwgt002::float8 * base.x), sum(rw.tu20fwgt003::float8 * base.x), sum(rw.tu20fwgt004::float8 * base.x), sum(rw.tu20fwgt005::float8 * base.x), sum(rw.tu20fwgt006::float8 * base.x), sum(rw.tu20fwgt007::float8 * base.x), sum(rw.tu20fwgt008::float8 * base.x), sum(rw.tu20fwgt009::float8 * base.x), sum(rw.tu20fwgt010::float8 * base.x), sum(rw.tu20fwgt011::float8 * base.x), sum(rw.tu20fwgt012::float8 * base.x), sum(rw.tu20fwgt013::float8 * base.x), sum(rw.tu20fwgt014::float8 * base.x), sum(rw.tu20fwgt015::float8 * base.x), sum(rw.tu20fwgt016::float8 * base.x), sum(rw.tu20fwgt017::float8 * base.x), sum(rw.tu20fwgt018::float8 * base.x), sum(rw.tu20fwgt019::float8 * base.x), sum(rw.tu20fwgt020::float8 * base.x), sum(rw.tu20fwgt021::float8 * base.x), sum(rw.tu20fwgt022::float8 * base.x), sum(rw.tu20fwgt023::float8 * base.x), sum(rw.tu20fwgt024::float8 * base.x), sum(rw.tu20fwgt025::float8 * base.x), sum(rw.tu20fwgt026::float8 * base.x), sum(rw.tu20fwgt027::float8 * base.x), sum(rw.tu20fwgt028::float8 * base.x), sum(rw.tu20fwgt029::float8 * base.x), sum(rw.tu20fwgt030::float8 * base.x), sum(rw.tu20fwgt031::float8 * base.x), sum(rw.tu20fwgt032::float8 * base.x), sum(rw.tu20fwgt033::float8 * base.x), sum(rw.tu20fwgt034::float8 * base.x), sum(rw.tu20fwgt035::float8 * base.x), sum(rw.tu20fwgt036::float8 * base.x), sum(rw.tu20fwgt037::float8 * base.x), sum(rw.tu20fwgt038::float8 * base.x), sum(rw.tu20fwgt039::float8 * base.x), sum(rw.tu20fwgt040::float8 * base.x), sum(rw.tu20fwgt041::float8 * base.x), sum(rw.tu20fwgt042::float8 * base.x), sum(rw.tu20fwgt043::float8 * base.x), sum(rw.tu20fwgt044::float8 * base.x), sum(rw.tu20fwgt045::float8 * base.x), sum(rw.tu20fwgt046::float8 * base.x), sum(rw.tu20fwgt047::float8 * base.x), sum(rw.tu20fwgt048::float8 * base.x), sum(rw.tu20fwgt049::float8 * base.x), sum(rw.tu20fwgt050::float8 * base.x), sum(rw.tu20fwgt051::float8 * base.x), sum(rw.tu20fwgt052::float8 * base.x), sum(rw.tu20fwgt053::float8 * base.x), sum(rw.tu20fwgt054::float8 * base.x), sum(rw.tu20fwgt055::float8 * base.x), sum(rw.tu20fwgt056::float8 * base.x), sum(rw.tu20fwgt057::float8 * base.x), sum(rw.tu20fwgt058::float8 * base.x), sum(rw.tu20fwgt059::float8 * base.x), sum(rw.tu20fwgt060::float8 * base.x), sum(rw.tu20fwgt061::float8 * base.x), sum(rw.tu20fwgt062::float8 * base.x), sum(rw.tu20fwgt063::float8 * base.x), sum(rw.tu20fwgt064::float8 * base.x), sum(rw.tu20fwgt065::float8 * base.x), sum(rw.tu20fwgt066::float8 * base.x), sum(rw.tu20fwgt067::float8 * base.x), sum(rw.tu20fwgt068::float8 * base.x), sum(rw.tu20fwgt069::float8 * base.x), sum(rw.tu20fwgt070::float8 * base.x), sum(rw.tu20fwgt071::float8 * base.x), sum(rw.tu20fwgt072::float8 * base.x), sum(rw.tu20fwgt073::float8 * base.x), sum(rw.tu20fwgt074::float8 * base.x), sum(rw.tu20fwgt075::float8 * base.x), sum(rw.tu20fwgt076::float8 * base.x), sum(rw.tu20fwgt077::float8 * base.x), sum(rw.tu20fwgt078::float8 * base.x), sum(rw.tu20fwgt079::float8 * base.x), sum(rw.tu20fwgt080::float8 * base.x), sum(rw.tu20fwgt081::float8 * base.x), sum(rw.tu20fwgt082::float8 * base.x), sum(rw.tu20fwgt083::float8 * base.x), sum(rw.tu20fwgt084::float8 * base.x), sum(rw.tu20fwgt085::float8 * base.x), sum(rw.tu20fwgt086::float8 * base.x), sum(rw.tu20fwgt087::float8 * base.x), sum(rw.tu20fwgt088::float8 * base.x), sum(rw.tu20fwgt089::float8 * base.x), sum(rw.tu20fwgt090::float8 * base.x), sum(rw.tu20fwgt091::float8 * base.x), sum(rw.tu20fwgt092::float8 * base.x), sum(rw.tu20fwgt093::float8 * base.x), sum(rw.tu20fwgt094::float8 * base.x), sum(rw.tu20fwgt095::float8 * base.x), sum(rw.tu20fwgt096::float8 * base.x), sum(rw.tu20fwgt097::float8 * base.x), sum(rw.tu20fwgt098::float8 * base.x), sum(rw.tu20fwgt099::float8 * base.x), sum(rw.tu20fwgt100::float8 * base.x), sum(rw.tu20fwgt101::float8 * base.x), sum(rw.tu20fwgt102::float8 * base.x), sum(rw.tu20fwgt103::float8 * base.x), sum(rw.tu20fwgt104::float8 * base.x), sum(rw.tu20fwgt105::float8 * base.x), sum(rw.tu20fwgt106::float8 * base.x), sum(rw.tu20fwgt107::float8 * base.x), sum(rw.tu20fwgt108::float8 * base.x), sum(rw.tu20fwgt109::float8 * base.x), sum(rw.tu20fwgt110::float8 * base.x), sum(rw.tu20fwgt111::float8 * base.x), sum(rw.tu20fwgt112::float8 * base.x), sum(rw.tu20fwgt113::float8 * base.x), sum(rw.tu20fwgt114::float8 * base.x), sum(rw.tu20fwgt115::float8 * base.x), sum(rw.tu20fwgt116::float8 * base.x), sum(rw.tu20fwgt117::float8 * base.x), sum(rw.tu20fwgt118::float8 * base.x), sum(rw.tu20fwgt119::float8 * base.x), sum(rw.tu20fwgt120::float8 * base.x), sum(rw.tu20fwgt121::float8 * base.x), sum(rw.tu20fwgt122::float8 * base.x), sum(rw.tu20fwgt123::float8 * base.x), sum(rw.tu20fwgt124::float8 * base.x), sum(rw.tu20fwgt125::float8 * base.x), sum(rw.tu20fwgt126::float8 * base.x), sum(rw.tu20fwgt127::float8 * base.x), sum(rw.tu20fwgt128::float8 * base.x), sum(rw.tu20fwgt129::float8 * base.x), sum(rw.tu20fwgt130::float8 * base.x), sum(rw.tu20fwgt131::float8 * base.x), sum(rw.tu20fwgt132::float8 * base.x), sum(rw.tu20fwgt133::float8 * base.x), sum(rw.tu20fwgt134::float8 * base.x), sum(rw.tu20fwgt135::float8 * base.x), sum(rw.tu20fwgt136::float8 * base.x), sum(rw.tu20fwgt137::float8 * base.x), sum(rw.tu20fwgt138::float8 * base.x), sum(rw.tu20fwgt139::float8 * base.x), sum(rw.tu20fwgt140::float8 * base.x), sum(rw.tu20fwgt141::float8 * base.x), sum(rw.tu20fwgt142::float8 * base.x), sum(rw.tu20fwgt143::float8 * base.x), sum(rw.tu20fwgt144::float8 * base.x), sum(rw.tu20fwgt145::float8 * base.x), sum(rw.tu20fwgt146::float8 * base.x), sum(rw.tu20fwgt147::float8 * base.x), sum(rw.tu20fwgt148::float8 * base.x), sum(rw.tu20fwgt149::float8 * base.x), sum(rw.tu20fwgt150::float8 * base.x), sum(rw.tu20fwgt151::float8 * base.x), sum(rw.tu20fwgt152::float8 * base.x), sum(rw.tu20fwgt153::float8 * base.x), sum(rw.tu20fwgt154::float8 * base.x), sum(rw.tu20fwgt155::float8 * base.x), sum(rw.tu20fwgt156::float8 * base.x), sum(rw.tu20fwgt157::float8 * base.x), sum(rw.tu20fwgt158::float8 * base.x), sum(rw.tu20fwgt159::float8 * base.x), sum(rw.tu20fwgt160::float8 * base.x)] AS rep_sum_wx, ARRAY[sum(rw.tu20fwgt001::float8 * base.p), sum(rw.tu20fwgt002::float8 * base.p), sum(rw.tu20fwgt003::float8 * base.p), sum(rw.tu20fwgt004::float8 * base.p), sum(rw.tu20fwgt005::float8 * base.p), sum(rw.tu20fwgt006::float8 * base.p), sum(rw.tu20fwgt007::float8 * base.p), sum(rw.tu20fwgt008::float8 * base.p), sum(rw.tu20fwgt009::float8 * base.p), sum(rw.tu20fwgt010::float8 * base.p), sum(rw.tu20fwgt011::float8 * base.p), sum(rw.tu20fwgt012::float8 * base.p), sum(rw.tu20fwgt013::float8 * base.p), sum(rw.tu20fwgt014::float8 * base.p), sum(rw.tu20fwgt015::float8 * base.p), sum(rw.tu20fwgt016::float8 * base.p), sum(rw.tu20fwgt017::float8 * base.p), sum(rw.tu20fwgt018::float8 * base.p), sum(rw.tu20fwgt019::float8 * base.p), sum(rw.tu20fwgt020::float8 * base.p), sum(rw.tu20fwgt021::float8 * base.p), sum(rw.tu20fwgt022::float8 * base.p), sum(rw.tu20fwgt023::float8 * base.p), sum(rw.tu20fwgt024::float8 * base.p), sum(rw.tu20fwgt025::float8 * base.p), sum(rw.tu20fwgt026::float8 * base.p), sum(rw.tu20fwgt027::float8 * base.p), sum(rw.tu20fwgt028::float8 * base.p), sum(rw.tu20fwgt029::float8 * base.p), sum(rw.tu20fwgt030::float8 * base.p), sum(rw.tu20fwgt031::float8 * base.p), sum(rw.tu20fwgt032::float8 * base.p), sum(rw.tu20fwgt033::float8 * base.p), sum(rw.tu20fwgt034::float8 * base.p), sum(rw.tu20fwgt035::float8 * base.p), sum(rw.tu20fwgt036::float8 * base.p), sum(rw.tu20fwgt037::float8 * base.p), sum(rw.tu20fwgt038::float8 * base.p), sum(rw.tu20fwgt039::float8 * base.p), sum(rw.tu20fwgt040::float8 * base.p), sum(rw.tu20fwgt041::float8 * base.p), sum(rw.tu20fwgt042::float8 * base.p), sum(rw.tu20fwgt043::float8 * base.p), sum(rw.tu20fwgt044::float8 * base.p), sum(rw.tu20fwgt045::float8 * base.p), sum(rw.tu20fwgt046::float8 * base.p), sum(rw.tu20fwgt047::float8 * base.p), sum(rw.tu20fwgt048::float8 * base.p), sum(rw.tu20fwgt049::float8 * base.p), sum(rw.tu20fwgt050::float8 * base.p), sum(rw.tu20fwgt051::float8 * base.p), sum(rw.tu20fwgt052::float8 * base.p), sum(rw.tu20fwgt053::float8 * base.p), sum(rw.tu20fwgt054::float8 * base.p), sum(rw.tu20fwgt055::float8 * base.p), sum(rw.tu20fwgt056::float8 * base.p), sum(rw.tu20fwgt057::float8 * base.p), sum(rw.tu20fwgt058::float8 * base.p), sum(rw.tu20fwgt059::float8 * base.p), sum(rw.tu20fwgt060::float8 * base.p), sum(rw.tu20fwgt061::float8 * base.p), sum(rw.tu20fwgt062::float8 * base.p), sum(rw.tu20fwgt063::float8 * base.p), sum(rw.tu20fwgt064::float8 * base.p), sum(rw.tu20fwgt065::float8 * base.p), sum(rw.tu20fwgt066::float8 * base.p), sum(rw.tu20fwgt067::float8 * base.p), sum(rw.tu20fwgt068::float8 * base.p), sum(rw.tu20fwgt069::float8 * base.p), sum(rw.tu20fwgt070::float8 * base.p), sum(rw.tu20fwgt071::float8 * base.p), sum(rw.tu20fwgt072::float8 * base.p), sum(rw.tu20fwgt073::float8 * base.p), sum(rw.tu20fwgt074::float8 * base.p), sum(rw.tu20fwgt075::float8 * base.p), sum(rw.tu20fwgt076::float8 * base.p), sum(rw.tu20fwgt077::float8 * base.p), sum(rw.tu20fwgt078::float8 * base.p), sum(rw.tu20fwgt079::float8 * base.p), sum(rw.tu20fwgt080::float8 * base.p), sum(rw.tu20fwgt081::float8 * base.p), sum(rw.tu20fwgt082::float8 * base.p), sum(rw.tu20fwgt083::float8 * base.p), sum(rw.tu20fwgt084::float8 * base.p), sum(rw.tu20fwgt085::float8 * base.p), sum(rw.tu20fwgt086::float8 * base.p), sum(rw.tu20fwgt087::float8 * base.p), sum(rw.tu20fwgt088::float8 * base.p), sum(rw.tu20fwgt089::float8 * base.p), sum(rw.tu20fwgt090::float8 * base.p), sum(rw.tu20fwgt091::float8 * base.p), sum(rw.tu20fwgt092::float8 * base.p), sum(rw.tu20fwgt093::float8 * base.p), sum(rw.tu20fwgt094::float8 * base.p), sum(rw.tu20fwgt095::float8 * base.p), sum(rw.tu20fwgt096::float8 * base.p), sum(rw.tu20fwgt097::float8 * base.p), sum(rw.tu20fwgt098::float8 * base.p), sum(rw.tu20fwgt099::float8 * base.p), sum(rw.tu20fwgt100::float8 * base.p), sum(rw.tu20fwgt101::float8 * base.p), sum(rw.tu20fwgt102::float8 * base.p), sum(rw.tu20fwgt103::float8 * base.p), sum(rw.tu20fwgt104::float8 * base.p), sum(rw.tu20fwgt105::float8 * base.p), sum(rw.tu20fwgt106::float8 * base.p), sum(rw.tu20fwgt107::float8 * base.p), sum(rw.tu20fwgt108::float8 * base.p), sum(rw.tu20fwgt109::float8 * base.p), sum(rw.tu20fwgt110::float8 * base.p), sum(rw.tu20fwgt111::float8 * base.p), sum(rw.tu20fwgt112::float8 * base.p), sum(rw.tu20fwgt113::float8 * base.p), sum(rw.tu20fwgt114::float8 * base.p), sum(rw.tu20fwgt115::float8 * base.p), sum(rw.tu20fwgt116::float8 * base.p), sum(rw.tu20fwgt117::float8 * base.p), sum(rw.tu20fwgt118::float8 * base.p), sum(rw.tu20fwgt119::float8 * base.p), sum(rw.tu20fwgt120::float8 * base.p), sum(rw.tu20fwgt121::float8 * base.p), sum(rw.tu20fwgt122::float8 * base.p), sum(rw.tu20fwgt123::float8 * base.p), sum(rw.tu20fwgt124::float8 * base.p), sum(rw.tu20fwgt125::float8 * base.p), sum(rw.tu20fwgt126::float8 * base.p), sum(rw.tu20fwgt127::float8 * base.p), sum(rw.tu20fwgt128::float8 * base.p), sum(rw.tu20fwgt129::float8 * base.p), sum(rw.tu20fwgt130::float8 * base.p), sum(rw.tu20fwgt131::float8 * base.p), sum(rw.tu20fwgt132::float8 * base.p), sum(rw.tu20fwgt133::float8 * base.p), sum(rw.tu20fwgt134::float8 * base.p), sum(rw.tu20fwgt135::float8 * base.p), sum(rw.tu20fwgt136::float8 * base.p), sum(rw.tu20fwgt137::float8 * base.p), sum(rw.tu20fwgt138::float8 * base.p), sum(rw.tu20fwgt139::float8 * base.p), sum(rw.tu20fwgt140::float8 * base.p), sum(rw.tu20fwgt141::float8 * base.p), sum(rw.tu20fwgt142::float8 * base.p), sum(rw.tu20fwgt143::float8 * base.p), sum(rw.tu20fwgt144::float8 * base.p), sum(rw.tu20fwgt145::float8 * base.p), sum(rw.tu20fwgt146::float8 * base.p), sum(rw.tu20fwgt147::float8 * base.p), sum(rw.tu20fwgt148::float8 * base.p), sum(rw.tu20fwgt149::float8 * base.p), sum(rw.tu20fwgt150::float8 * base.p), sum(rw.tu20fwgt151::float8 * base.p), sum(rw.tu20fwgt152::float8 * base.p), sum(rw.tu20fwgt153::float8 * base.p), sum(rw.tu20fwgt154::float8 * base.p), sum(rw.tu20fwgt155::float8 * base.p), sum(rw.tu20fwgt156::float8 * base.p), sum(rw.tu20fwgt157::float8 * base.p), sum(rw.tu20fwgt158::float8 * base.p), sum(rw.tu20fwgt159::float8 * base.p), sum(rw.tu20fwgt160::float8 * base.p)] AS rep_sum_wp\nFROM base\nJOIN atus.pandemic_replicate_weights rw ON rw.tucaseid = base.tucaseid\nGROUP BY base.year\nORDER BY base.year\n"
+  },
+  {
+   "name": "pandemic, diary window, no replicates",
+   "params": {
+    "activity_codes": [
+     "120301",
+     "120303",
+     "120304"
+    ],
+    "diary_date_max": "2020-12-31",
+    "diary_date_min": "2020-05-10",
+    "years": [
+     2020
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [],
+     "include": [
+      "12"
+     ],
+     "label": null
+    },
+    "confidence_level": 0.95,
+    "measure": "participants_per_day",
+    "population": {
+     "diary_date_max": "2020-12-31",
+     "diary_date_min": "2020-05-10"
+    },
+    "variance": "none",
+    "weights": "pandemic",
+    "years": [
+     2020
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.pandemic_weight AS w\n    FROM atus.respondents r\n    \n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.pandemic_weight > 0 AND r.diary_date >= %(diary_date_min)s AND r.diary_date <= %(diary_date_max)s\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       \nFROM base\n\nGROUP BY base.year\nORDER BY base.year\n"
+  },
+  {
+   "name": "roster: age and sex",
+   "params": {
+    "activity_codes": [
+     "010101"
+    ],
+    "age_max": 54,
+    "age_min": 25,
+    "sex": 2,
+    "years": [
+     2024
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [],
+     "include": [
+      "010101"
+     ],
+     "label": null
+    },
+    "confidence_level": 0.95,
+    "measure": "average_minutes_per_day",
+    "population": {
+     "age_max": 54,
+     "age_min": 25,
+     "sex": "female"
+    },
+    "variance": "none",
+    "weights": "multiyear",
+    "years": [
+     2024
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.final_weight AS w\n    FROM atus.respondents r\n    JOIN atus.household_members hm ON hm.tucaseid = r.tucaseid AND hm.lineno = 1\n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.final_weight > 0 AND hm.age >= %(age_min)s AND hm.age <= %(age_max)s AND hm.sex = %(sex)s\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       \nFROM base\n\nGROUP BY base.year\nORDER BY base.year\n"
+  },
+  {
+   "name": "roster: topcoded age",
+   "params": {
+    "activity_codes": [
+     "010101"
+    ],
+    "age_min": 80,
+    "years": [
+     2024
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [],
+     "include": [
+      "010101"
+     ],
+     "label": null
+    },
+    "confidence_level": 0.95,
+    "measure": "average_minutes_per_day",
+    "population": {
+     "age_min": 80
+    },
+    "variance": "none",
+    "weights": "multiyear",
+    "years": [
+     2024
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.final_weight AS w\n    FROM atus.respondents r\n    JOIN atus.household_members hm ON hm.tucaseid = r.tucaseid AND hm.lineno = 1\n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.final_weight > 0 AND hm.age >= %(age_min)s\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       \nFROM base\n\nGROUP BY base.year\nORDER BY base.year\n"
+  },
+  {
+   "name": "respondent columns",
+   "params": {
+    "activity_codes": [
+     "120301",
+     "120303",
+     "120304"
+    ],
+    "day_codes": [
+     1,
+     7
+    ],
+    "employment_codes": [
+     1,
+     2
+    ],
+    "years": [
+     2022
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [],
+     "include": [
+      "1203"
+     ],
+     "label": null
+    },
+    "confidence_level": 0.95,
+    "measure": "participation_rate",
+    "population": {
+     "day_type": "weekend",
+     "employment_status": "employed",
+     "has_household_children": true
+    },
+    "variance": "none",
+    "weights": "multiyear",
+    "years": [
+     2022
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.final_weight AS w\n    FROM atus.respondents r\n    \n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.final_weight > 0 AND r.labor_force_status = ANY(%(employment_codes)s) AND r.household_children > 0 AND r.diary_day_of_week = ANY(%(day_codes)s)\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       \nFROM base\n\nGROUP BY base.year\nORDER BY base.year\n"
+  },
+  {
+   "name": "no household children",
+   "params": {
+    "activity_codes": [
+     "120301",
+     "120303",
+     "120304"
+    ],
+    "day_codes": [
+     2,
+     3,
+     4,
+     5,
+     6
+    ],
+    "employment_codes": [
+     5
+    ],
+    "years": [
+     2022
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [],
+     "include": [
+      "1203"
+     ],
+     "label": null
+    },
+    "confidence_level": 0.95,
+    "measure": "participation_rate",
+    "population": {
+     "day_type": "weekday",
+     "employment_status": "not_in_labor_force",
+     "has_household_children": false
+    },
+    "variance": "none",
+    "weights": "multiyear",
+    "years": [
+     2022
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.final_weight AS w\n    FROM atus.respondents r\n    \n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.final_weight > 0 AND r.labor_force_status = ANY(%(employment_codes)s) AND r.household_children = 0 AND r.diary_day_of_week = ANY(%(day_codes)s)\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       \nFROM base\n\nGROUP BY base.year\nORDER BY base.year\n"
+  },
+  {
+   "name": "CPS: region, state, education",
+   "params": {
+    "activity_codes": [
+     "120303"
+    ],
+    "education_hi": 46,
+    "education_lo": 43,
+    "region": 3,
+    "state_fips": "48",
+    "years": [
+     2018,
+     2019
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [],
+     "include": [
+      "120303"
+     ],
+     "label": null
+    },
+    "confidence_level": 0.95,
+    "measure": "average_minutes_per_day",
+    "population": {
+     "education_level": "bachelor_or_higher",
+     "region": 3,
+     "state_fips": "48"
+    },
+    "variance": "none",
+    "weights": "multiyear",
+    "years": [
+     2018,
+     2019
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.final_weight AS w\n    FROM atus.respondents r\n    JOIN atus.cps_persons c ON c.tucaseid = r.tucaseid AND c.lineno = 1\n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.final_weight > 0 AND c.region = %(region)s AND c.state_fips = %(state_fips)s AND c.education BETWEEN %(education_lo)s AND %(education_hi)s\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       \nFROM base\n\nGROUP BY base.year\nORDER BY base.year\n"
+  },
+  {
+   "name": "every dimension",
+   "params": {
+    "activity_codes": [
+     "010101",
+     "010201",
+     "120301",
+     "120303",
+     "120304"
+    ],
+    "age_max": 64,
+    "age_min": 15,
+    "day_codes": [
+     2,
+     3,
+     4,
+     5,
+     6
+    ],
+    "diary_date_max": "2018-11-30",
+    "diary_date_min": "2016-02-01",
+    "education_hi": 38,
+    "education_lo": 31,
+    "employment_codes": [
+     3,
+     4
+    ],
+    "region": 1,
+    "sex": 1,
+    "state_fips": "36",
+    "years": [
+     2016,
+     2017,
+     2018
+    ]
+   },
+   "spec": {
+    "activity": {
+     "exclude": [
+      "010102"
+     ],
+     "include": [
+      "01",
+      "12"
+     ],
+     "label": null
+    },
+    "confidence_level": 0.95,
+    "measure": "average_minutes_per_participant",
+    "population": {
+     "age_max": 64,
+     "age_min": 15,
+     "day_type": "weekday",
+     "diary_date_max": "2018-11-30",
+     "diary_date_min": "2016-02-01",
+     "education_level": "less_than_high_school",
+     "employment_status": "unemployed",
+     "has_household_children": true,
+     "region": 1,
+     "sex": "male",
+     "state_fips": "36"
+    },
+    "variance": "replicate",
+    "weights": "multiyear",
+    "years": [
+     2016,
+     2017,
+     2018
+    ]
+   },
+   "sql": "\nWITH activity_minutes AS (\n    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes\n    FROM atus.activities a\n    WHERE a.activity_code = ANY(%(activity_codes)s)\n    GROUP BY a.tucaseid\n),\nbase AS (\n    SELECT r.data_year AS year,\n           r.tucaseid,\n           COALESCE(m.minutes, 0) AS x,\n           (COALESCE(m.minutes, 0) > 0)::int AS p,\n           r.final_weight AS w\n    FROM atus.respondents r\n    JOIN atus.household_members hm ON hm.tucaseid = r.tucaseid AND hm.lineno = 1 JOIN atus.cps_persons c ON c.tucaseid = r.tucaseid AND c.lineno = 1\n    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid\n    WHERE r.data_year = ANY(%(years)s) AND r.final_weight > 0 AND hm.age >= %(age_min)s AND hm.age <= %(age_max)s AND hm.sex = %(sex)s AND r.labor_force_status = ANY(%(employment_codes)s) AND r.household_children > 0 AND c.region = %(region)s AND c.state_fips = %(state_fips)s AND c.education BETWEEN %(education_lo)s AND %(education_hi)s AND r.diary_day_of_week = ANY(%(day_codes)s) AND r.diary_date >= %(diary_date_min)s AND r.diary_date <= %(diary_date_max)s\n)\nSELECT base.year,\n       count(*)::bigint AS n_respondents,\n       sum(base.p)::bigint AS n_participants,\n       sum(base.w) AS sum_w,\n       sum(base.w * base.x) AS sum_wx,\n       sum(base.w * base.p) AS sum_wp\n       , ARRAY[sum(rw.tufnwgtp001::float8), sum(rw.tufnwgtp002::float8), sum(rw.tufnwgtp003::float8), sum(rw.tufnwgtp004::float8), sum(rw.tufnwgtp005::float8), sum(rw.tufnwgtp006::float8), sum(rw.tufnwgtp007::float8), sum(rw.tufnwgtp008::float8), sum(rw.tufnwgtp009::float8), sum(rw.tufnwgtp010::float8), sum(rw.tufnwgtp011::float8), sum(rw.tufnwgtp012::float8), sum(rw.tufnwgtp013::float8), sum(rw.tufnwgtp014::float8), sum(rw.tufnwgtp015::float8), sum(rw.tufnwgtp016::float8), sum(rw.tufnwgtp017::float8), sum(rw.tufnwgtp018::float8), sum(rw.tufnwgtp019::float8), sum(rw.tufnwgtp020::float8), sum(rw.tufnwgtp021::float8), sum(rw.tufnwgtp022::float8), sum(rw.tufnwgtp023::float8), sum(rw.tufnwgtp024::float8), sum(rw.tufnwgtp025::float8), sum(rw.tufnwgtp026::float8), sum(rw.tufnwgtp027::float8), sum(rw.tufnwgtp028::float8), sum(rw.tufnwgtp029::float8), sum(rw.tufnwgtp030::float8), sum(rw.tufnwgtp031::float8), sum(rw.tufnwgtp032::float8), sum(rw.tufnwgtp033::float8), sum(rw.tufnwgtp034::float8), sum(rw.tufnwgtp035::float8), sum(rw.tufnwgtp036::float8), sum(rw.tufnwgtp037::float8), sum(rw.tufnwgtp038::float8), sum(rw.tufnwgtp039::float8), sum(rw.tufnwgtp040::float8), sum(rw.tufnwgtp041::float8), sum(rw.tufnwgtp042::float8), sum(rw.tufnwgtp043::float8), sum(rw.tufnwgtp044::float8), sum(rw.tufnwgtp045::float8), sum(rw.tufnwgtp046::float8), sum(rw.tufnwgtp047::float8), sum(rw.tufnwgtp048::float8), sum(rw.tufnwgtp049::float8), sum(rw.tufnwgtp050::float8), sum(rw.tufnwgtp051::float8), sum(rw.tufnwgtp052::float8), sum(rw.tufnwgtp053::float8), sum(rw.tufnwgtp054::float8), sum(rw.tufnwgtp055::float8), sum(rw.tufnwgtp056::float8), sum(rw.tufnwgtp057::float8), sum(rw.tufnwgtp058::float8), sum(rw.tufnwgtp059::float8), sum(rw.tufnwgtp060::float8), sum(rw.tufnwgtp061::float8), sum(rw.tufnwgtp062::float8), sum(rw.tufnwgtp063::float8), sum(rw.tufnwgtp064::float8), sum(rw.tufnwgtp065::float8), sum(rw.tufnwgtp066::float8), sum(rw.tufnwgtp067::float8), sum(rw.tufnwgtp068::float8), sum(rw.tufnwgtp069::float8), sum(rw.tufnwgtp070::float8), sum(rw.tufnwgtp071::float8), sum(rw.tufnwgtp072::float8), sum(rw.tufnwgtp073::float8), sum(rw.tufnwgtp074::float8), sum(rw.tufnwgtp075::float8), sum(rw.tufnwgtp076::float8), sum(rw.tufnwgtp077::float8), sum(rw.tufnwgtp078::float8), sum(rw.tufnwgtp079::float8), sum(rw.tufnwgtp080::float8), sum(rw.tufnwgtp081::float8), sum(rw.tufnwgtp082::float8), sum(rw.tufnwgtp083::float8), sum(rw.tufnwgtp084::float8), sum(rw.tufnwgtp085::float8), sum(rw.tufnwgtp086::float8), sum(rw.tufnwgtp087::float8), sum(rw.tufnwgtp088::float8), sum(rw.tufnwgtp089::float8), sum(rw.tufnwgtp090::float8), sum(rw.tufnwgtp091::float8), sum(rw.tufnwgtp092::float8), sum(rw.tufnwgtp093::float8), sum(rw.tufnwgtp094::float8), sum(rw.tufnwgtp095::float8), sum(rw.tufnwgtp096::float8), sum(rw.tufnwgtp097::float8), sum(rw.tufnwgtp098::float8), sum(rw.tufnwgtp099::float8), sum(rw.tufnwgtp100::float8), sum(rw.tufnwgtp101::float8), sum(rw.tufnwgtp102::float8), sum(rw.tufnwgtp103::float8), sum(rw.tufnwgtp104::float8), sum(rw.tufnwgtp105::float8), sum(rw.tufnwgtp106::float8), sum(rw.tufnwgtp107::float8), sum(rw.tufnwgtp108::float8), sum(rw.tufnwgtp109::float8), sum(rw.tufnwgtp110::float8), sum(rw.tufnwgtp111::float8), sum(rw.tufnwgtp112::float8), sum(rw.tufnwgtp113::float8), sum(rw.tufnwgtp114::float8), sum(rw.tufnwgtp115::float8), sum(rw.tufnwgtp116::float8), sum(rw.tufnwgtp117::float8), sum(rw.tufnwgtp118::float8), sum(rw.tufnwgtp119::float8), sum(rw.tufnwgtp120::float8), sum(rw.tufnwgtp121::float8), sum(rw.tufnwgtp122::float8), sum(rw.tufnwgtp123::float8), sum(rw.tufnwgtp124::float8), sum(rw.tufnwgtp125::float8), sum(rw.tufnwgtp126::float8), sum(rw.tufnwgtp127::float8), sum(rw.tufnwgtp128::float8), sum(rw.tufnwgtp129::float8), sum(rw.tufnwgtp130::float8), sum(rw.tufnwgtp131::float8), sum(rw.tufnwgtp132::float8), sum(rw.tufnwgtp133::float8), sum(rw.tufnwgtp134::float8), sum(rw.tufnwgtp135::float8), sum(rw.tufnwgtp136::float8), sum(rw.tufnwgtp137::float8), sum(rw.tufnwgtp138::float8), sum(rw.tufnwgtp139::float8), sum(rw.tufnwgtp140::float8), sum(rw.tufnwgtp141::float8), sum(rw.tufnwgtp142::float8), sum(rw.tufnwgtp143::float8), sum(rw.tufnwgtp144::float8), sum(rw.tufnwgtp145::float8), sum(rw.tufnwgtp146::float8), sum(rw.tufnwgtp147::float8), sum(rw.tufnwgtp148::float8), sum(rw.tufnwgtp149::float8), sum(rw.tufnwgtp150::float8), sum(rw.tufnwgtp151::float8), sum(rw.tufnwgtp152::float8), sum(rw.tufnwgtp153::float8), sum(rw.tufnwgtp154::float8), sum(rw.tufnwgtp155::float8), sum(rw.tufnwgtp156::float8), sum(rw.tufnwgtp157::float8), sum(rw.tufnwgtp158::float8), sum(rw.tufnwgtp159::float8), sum(rw.tufnwgtp160::float8)] AS rep_sum_w, ARRAY[sum(rw.tufnwgtp001::float8 * base.x), sum(rw.tufnwgtp002::float8 * base.x), sum(rw.tufnwgtp003::float8 * base.x), sum(rw.tufnwgtp004::float8 * base.x), sum(rw.tufnwgtp005::float8 * base.x), sum(rw.tufnwgtp006::float8 * base.x), sum(rw.tufnwgtp007::float8 * base.x), sum(rw.tufnwgtp008::float8 * base.x), sum(rw.tufnwgtp009::float8 * base.x), sum(rw.tufnwgtp010::float8 * base.x), sum(rw.tufnwgtp011::float8 * base.x), sum(rw.tufnwgtp012::float8 * base.x), sum(rw.tufnwgtp013::float8 * base.x), sum(rw.tufnwgtp014::float8 * base.x), sum(rw.tufnwgtp015::float8 * base.x), sum(rw.tufnwgtp016::float8 * base.x), sum(rw.tufnwgtp017::float8 * base.x), sum(rw.tufnwgtp018::float8 * base.x), sum(rw.tufnwgtp019::float8 * base.x), sum(rw.tufnwgtp020::float8 * base.x), sum(rw.tufnwgtp021::float8 * base.x), sum(rw.tufnwgtp022::float8 * base.x), sum(rw.tufnwgtp023::float8 * base.x), sum(rw.tufnwgtp024::float8 * base.x), sum(rw.tufnwgtp025::float8 * base.x), sum(rw.tufnwgtp026::float8 * base.x), sum(rw.tufnwgtp027::float8 * base.x), sum(rw.tufnwgtp028::float8 * base.x), sum(rw.tufnwgtp029::float8 * base.x), sum(rw.tufnwgtp030::float8 * base.x), sum(rw.tufnwgtp031::float8 * base.x), sum(rw.tufnwgtp032::float8 * base.x), sum(rw.tufnwgtp033::float8 * base.x), sum(rw.tufnwgtp034::float8 * base.x), sum(rw.tufnwgtp035::float8 * base.x), sum(rw.tufnwgtp036::float8 * base.x), sum(rw.tufnwgtp037::float8 * base.x), sum(rw.tufnwgtp038::float8 * base.x), sum(rw.tufnwgtp039::float8 * base.x), sum(rw.tufnwgtp040::float8 * base.x), sum(rw.tufnwgtp041::float8 * base.x), sum(rw.tufnwgtp042::float8 * base.x), sum(rw.tufnwgtp043::float8 * base.x), sum(rw.tufnwgtp044::float8 * base.x), sum(rw.tufnwgtp045::float8 * base.x), sum(rw.tufnwgtp046::float8 * base.x), sum(rw.tufnwgtp047::float8 * base.x), sum(rw.tufnwgtp048::float8 * base.x), sum(rw.tufnwgtp049::float8 * base.x), sum(rw.tufnwgtp050::float8 * base.x), sum(rw.tufnwgtp051::float8 * base.x), sum(rw.tufnwgtp052::float8 * base.x), sum(rw.tufnwgtp053::float8 * base.x), sum(rw.tufnwgtp054::float8 * base.x), sum(rw.tufnwgtp055::float8 * base.x), sum(rw.tufnwgtp056::float8 * base.x), sum(rw.tufnwgtp057::float8 * base.x), sum(rw.tufnwgtp058::float8 * base.x), sum(rw.tufnwgtp059::float8 * base.x), sum(rw.tufnwgtp060::float8 * base.x), sum(rw.tufnwgtp061::float8 * base.x), sum(rw.tufnwgtp062::float8 * base.x), sum(rw.tufnwgtp063::float8 * base.x), sum(rw.tufnwgtp064::float8 * base.x), sum(rw.tufnwgtp065::float8 * base.x), sum(rw.tufnwgtp066::float8 * base.x), sum(rw.tufnwgtp067::float8 * base.x), sum(rw.tufnwgtp068::float8 * base.x), sum(rw.tufnwgtp069::float8 * base.x), sum(rw.tufnwgtp070::float8 * base.x), sum(rw.tufnwgtp071::float8 * base.x), sum(rw.tufnwgtp072::float8 * base.x), sum(rw.tufnwgtp073::float8 * base.x), sum(rw.tufnwgtp074::float8 * base.x), sum(rw.tufnwgtp075::float8 * base.x), sum(rw.tufnwgtp076::float8 * base.x), sum(rw.tufnwgtp077::float8 * base.x), sum(rw.tufnwgtp078::float8 * base.x), sum(rw.tufnwgtp079::float8 * base.x), sum(rw.tufnwgtp080::float8 * base.x), sum(rw.tufnwgtp081::float8 * base.x), sum(rw.tufnwgtp082::float8 * base.x), sum(rw.tufnwgtp083::float8 * base.x), sum(rw.tufnwgtp084::float8 * base.x), sum(rw.tufnwgtp085::float8 * base.x), sum(rw.tufnwgtp086::float8 * base.x), sum(rw.tufnwgtp087::float8 * base.x), sum(rw.tufnwgtp088::float8 * base.x), sum(rw.tufnwgtp089::float8 * base.x), sum(rw.tufnwgtp090::float8 * base.x), sum(rw.tufnwgtp091::float8 * base.x), sum(rw.tufnwgtp092::float8 * base.x), sum(rw.tufnwgtp093::float8 * base.x), sum(rw.tufnwgtp094::float8 * base.x), sum(rw.tufnwgtp095::float8 * base.x), sum(rw.tufnwgtp096::float8 * base.x), sum(rw.tufnwgtp097::float8 * base.x), sum(rw.tufnwgtp098::float8 * base.x), sum(rw.tufnwgtp099::float8 * base.x), sum(rw.tufnwgtp100::float8 * base.x), sum(rw.tufnwgtp101::float8 * base.x), sum(rw.tufnwgtp102::float8 * base.x), sum(rw.tufnwgtp103::float8 * base.x), sum(rw.tufnwgtp104::float8 * base.x), sum(rw.tufnwgtp105::float8 * base.x), sum(rw.tufnwgtp106::float8 * base.x), sum(rw.tufnwgtp107::float8 * base.x), sum(rw.tufnwgtp108::float8 * base.x), sum(rw.tufnwgtp109::float8 * base.x), sum(rw.tufnwgtp110::float8 * base.x), sum(rw.tufnwgtp111::float8 * base.x), sum(rw.tufnwgtp112::float8 * base.x), sum(rw.tufnwgtp113::float8 * base.x), sum(rw.tufnwgtp114::float8 * base.x), sum(rw.tufnwgtp115::float8 * base.x), sum(rw.tufnwgtp116::float8 * base.x), sum(rw.tufnwgtp117::float8 * base.x), sum(rw.tufnwgtp118::float8 * base.x), sum(rw.tufnwgtp119::float8 * base.x), sum(rw.tufnwgtp120::float8 * base.x), sum(rw.tufnwgtp121::float8 * base.x), sum(rw.tufnwgtp122::float8 * base.x), sum(rw.tufnwgtp123::float8 * base.x), sum(rw.tufnwgtp124::float8 * base.x), sum(rw.tufnwgtp125::float8 * base.x), sum(rw.tufnwgtp126::float8 * base.x), sum(rw.tufnwgtp127::float8 * base.x), sum(rw.tufnwgtp128::float8 * base.x), sum(rw.tufnwgtp129::float8 * base.x), sum(rw.tufnwgtp130::float8 * base.x), sum(rw.tufnwgtp131::float8 * base.x), sum(rw.tufnwgtp132::float8 * base.x), sum(rw.tufnwgtp133::float8 * base.x), sum(rw.tufnwgtp134::float8 * base.x), sum(rw.tufnwgtp135::float8 * base.x), sum(rw.tufnwgtp136::float8 * base.x), sum(rw.tufnwgtp137::float8 * base.x), sum(rw.tufnwgtp138::float8 * base.x), sum(rw.tufnwgtp139::float8 * base.x), sum(rw.tufnwgtp140::float8 * base.x), sum(rw.tufnwgtp141::float8 * base.x), sum(rw.tufnwgtp142::float8 * base.x), sum(rw.tufnwgtp143::float8 * base.x), sum(rw.tufnwgtp144::float8 * base.x), sum(rw.tufnwgtp145::float8 * base.x), sum(rw.tufnwgtp146::float8 * base.x), sum(rw.tufnwgtp147::float8 * base.x), sum(rw.tufnwgtp148::float8 * base.x), sum(rw.tufnwgtp149::float8 * base.x), sum(rw.tufnwgtp150::float8 * base.x), sum(rw.tufnwgtp151::float8 * base.x), sum(rw.tufnwgtp152::float8 * base.x), sum(rw.tufnwgtp153::float8 * base.x), sum(rw.tufnwgtp154::float8 * base.x), sum(rw.tufnwgtp155::float8 * base.x), sum(rw.tufnwgtp156::float8 * base.x), sum(rw.tufnwgtp157::float8 * base.x), sum(rw.tufnwgtp158::float8 * base.x), sum(rw.tufnwgtp159::float8 * base.x), sum(rw.tufnwgtp160::float8 * base.x)] AS rep_sum_wx, ARRAY[sum(rw.tufnwgtp001::float8 * base.p), sum(rw.tufnwgtp002::float8 * base.p), sum(rw.tufnwgtp003::float8 * base.p), sum(rw.tufnwgtp004::float8 * base.p), sum(rw.tufnwgtp005::float8 * base.p), sum(rw.tufnwgtp006::float8 * base.p), sum(rw.tufnwgtp007::float8 * base.p), sum(rw.tufnwgtp008::float8 * base.p), sum(rw.tufnwgtp009::float8 * base.p), sum(rw.tufnwgtp010::float8 * base.p), sum(rw.tufnwgtp011::float8 * base.p), sum(rw.tufnwgtp012::float8 * base.p), sum(rw.tufnwgtp013::float8 * base.p), sum(rw.tufnwgtp014::float8 * base.p), sum(rw.tufnwgtp015::float8 * base.p), sum(rw.tufnwgtp016::float8 * base.p), sum(rw.tufnwgtp017::float8 * base.p), sum(rw.tufnwgtp018::float8 * base.p), sum(rw.tufnwgtp019::float8 * base.p), sum(rw.tufnwgtp020::float8 * base.p), sum(rw.tufnwgtp021::float8 * base.p), sum(rw.tufnwgtp022::float8 * base.p), sum(rw.tufnwgtp023::float8 * base.p), sum(rw.tufnwgtp024::float8 * base.p), sum(rw.tufnwgtp025::float8 * base.p), sum(rw.tufnwgtp026::float8 * base.p), sum(rw.tufnwgtp027::float8 * base.p), sum(rw.tufnwgtp028::float8 * base.p), sum(rw.tufnwgtp029::float8 * base.p), sum(rw.tufnwgtp030::float8 * base.p), sum(rw.tufnwgtp031::float8 * base.p), sum(rw.tufnwgtp032::float8 * base.p), sum(rw.tufnwgtp033::float8 * base.p), sum(rw.tufnwgtp034::float8 * base.p), sum(rw.tufnwgtp035::float8 * base.p), sum(rw.tufnwgtp036::float8 * base.p), sum(rw.tufnwgtp037::float8 * base.p), sum(rw.tufnwgtp038::float8 * base.p), sum(rw.tufnwgtp039::float8 * base.p), sum(rw.tufnwgtp040::float8 * base.p), sum(rw.tufnwgtp041::float8 * base.p), sum(rw.tufnwgtp042::float8 * base.p), sum(rw.tufnwgtp043::float8 * base.p), sum(rw.tufnwgtp044::float8 * base.p), sum(rw.tufnwgtp045::float8 * base.p), sum(rw.tufnwgtp046::float8 * base.p), sum(rw.tufnwgtp047::float8 * base.p), sum(rw.tufnwgtp048::float8 * base.p), sum(rw.tufnwgtp049::float8 * base.p), sum(rw.tufnwgtp050::float8 * base.p), sum(rw.tufnwgtp051::float8 * base.p), sum(rw.tufnwgtp052::float8 * base.p), sum(rw.tufnwgtp053::float8 * base.p), sum(rw.tufnwgtp054::float8 * base.p), sum(rw.tufnwgtp055::float8 * base.p), sum(rw.tufnwgtp056::float8 * base.p), sum(rw.tufnwgtp057::float8 * base.p), sum(rw.tufnwgtp058::float8 * base.p), sum(rw.tufnwgtp059::float8 * base.p), sum(rw.tufnwgtp060::float8 * base.p), sum(rw.tufnwgtp061::float8 * base.p), sum(rw.tufnwgtp062::float8 * base.p), sum(rw.tufnwgtp063::float8 * base.p), sum(rw.tufnwgtp064::float8 * base.p), sum(rw.tufnwgtp065::float8 * base.p), sum(rw.tufnwgtp066::float8 * base.p), sum(rw.tufnwgtp067::float8 * base.p), sum(rw.tufnwgtp068::float8 * base.p), sum(rw.tufnwgtp069::float8 * base.p), sum(rw.tufnwgtp070::float8 * base.p), sum(rw.tufnwgtp071::float8 * base.p), sum(rw.tufnwgtp072::float8 * base.p), sum(rw.tufnwgtp073::float8 * base.p), sum(rw.tufnwgtp074::float8 * base.p), sum(rw.tufnwgtp075::float8 * base.p), sum(rw.tufnwgtp076::float8 * base.p), sum(rw.tufnwgtp077::float8 * base.p), sum(rw.tufnwgtp078::float8 * base.p), sum(rw.tufnwgtp079::float8 * base.p), sum(rw.tufnwgtp080::float8 * base.p), sum(rw.tufnwgtp081::float8 * base.p), sum(rw.tufnwgtp082::float8 * base.p), sum(rw.tufnwgtp083::float8 * base.p), sum(rw.tufnwgtp084::float8 * base.p), sum(rw.tufnwgtp085::float8 * base.p), sum(rw.tufnwgtp086::float8 * base.p), sum(rw.tufnwgtp087::float8 * base.p), sum(rw.tufnwgtp088::float8 * base.p), sum(rw.tufnwgtp089::float8 * base.p), sum(rw.tufnwgtp090::float8 * base.p), sum(rw.tufnwgtp091::float8 * base.p), sum(rw.tufnwgtp092::float8 * base.p), sum(rw.tufnwgtp093::float8 * base.p), sum(rw.tufnwgtp094::float8 * base.p), sum(rw.tufnwgtp095::float8 * base.p), sum(rw.tufnwgtp096::float8 * base.p), sum(rw.tufnwgtp097::float8 * base.p), sum(rw.tufnwgtp098::float8 * base.p), sum(rw.tufnwgtp099::float8 * base.p), sum(rw.tufnwgtp100::float8 * base.p), sum(rw.tufnwgtp101::float8 * base.p), sum(rw.tufnwgtp102::float8 * base.p), sum(rw.tufnwgtp103::float8 * base.p), sum(rw.tufnwgtp104::float8 * base.p), sum(rw.tufnwgtp105::float8 * base.p), sum(rw.tufnwgtp106::float8 * base.p), sum(rw.tufnwgtp107::float8 * base.p), sum(rw.tufnwgtp108::float8 * base.p), sum(rw.tufnwgtp109::float8 * base.p), sum(rw.tufnwgtp110::float8 * base.p), sum(rw.tufnwgtp111::float8 * base.p), sum(rw.tufnwgtp112::float8 * base.p), sum(rw.tufnwgtp113::float8 * base.p), sum(rw.tufnwgtp114::float8 * base.p), sum(rw.tufnwgtp115::float8 * base.p), sum(rw.tufnwgtp116::float8 * base.p), sum(rw.tufnwgtp117::float8 * base.p), sum(rw.tufnwgtp118::float8 * base.p), sum(rw.tufnwgtp119::float8 * base.p), sum(rw.tufnwgtp120::float8 * base.p), sum(rw.tufnwgtp121::float8 * base.p), sum(rw.tufnwgtp122::float8 * base.p), sum(rw.tufnwgtp123::float8 * base.p), sum(rw.tufnwgtp124::float8 * base.p), sum(rw.tufnwgtp125::float8 * base.p), sum(rw.tufnwgtp126::float8 * base.p), sum(rw.tufnwgtp127::float8 * base.p), sum(rw.tufnwgtp128::float8 * base.p), sum(rw.tufnwgtp129::float8 * base.p), sum(rw.tufnwgtp130::float8 * base.p), sum(rw.tufnwgtp131::float8 * base.p), sum(rw.tufnwgtp132::float8 * base.p), sum(rw.tufnwgtp133::float8 * base.p), sum(rw.tufnwgtp134::float8 * base.p), sum(rw.tufnwgtp135::float8 * base.p), sum(rw.tufnwgtp136::float8 * base.p), sum(rw.tufnwgtp137::float8 * base.p), sum(rw.tufnwgtp138::float8 * base.p), sum(rw.tufnwgtp139::float8 * base.p), sum(rw.tufnwgtp140::float8 * base.p), sum(rw.tufnwgtp141::float8 * base.p), sum(rw.tufnwgtp142::float8 * base.p), sum(rw.tufnwgtp143::float8 * base.p), sum(rw.tufnwgtp144::float8 * base.p), sum(rw.tufnwgtp145::float8 * base.p), sum(rw.tufnwgtp146::float8 * base.p), sum(rw.tufnwgtp147::float8 * base.p), sum(rw.tufnwgtp148::float8 * base.p), sum(rw.tufnwgtp149::float8 * base.p), sum(rw.tufnwgtp150::float8 * base.p), sum(rw.tufnwgtp151::float8 * base.p), sum(rw.tufnwgtp152::float8 * base.p), sum(rw.tufnwgtp153::float8 * base.p), sum(rw.tufnwgtp154::float8 * base.p), sum(rw.tufnwgtp155::float8 * base.p), sum(rw.tufnwgtp156::float8 * base.p), sum(rw.tufnwgtp157::float8 * base.p), sum(rw.tufnwgtp158::float8 * base.p), sum(rw.tufnwgtp159::float8 * base.p), sum(rw.tufnwgtp160::float8 * base.p)] AS rep_sum_wp\nFROM base\nJOIN atus.replicate_weights rw ON rw.tucaseid = base.tucaseid\nGROUP BY base.year\nORDER BY base.year\n"
+  }
+ ],
+ "source": "rendered by atus_pipeline at commit 387fc2d (Phases 1-4); never edit"
+}

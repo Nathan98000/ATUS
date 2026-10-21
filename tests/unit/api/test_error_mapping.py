@@ -93,6 +93,27 @@ def test_domain_cross_field_validation_flows_through(client, stub_engine):
     assert response.json()["error"]["code"] == "invalid_spec"
 
 
+@pytest.mark.parametrize(
+    ("operation", "extra"),
+    [("estimate", {}), ("trend", {}),
+     ("compare", {"group_a": {"sex": "male"}, "group_b": {"sex": "female"}})],
+)
+def test_a_confidence_level_without_a_quantile_is_invalid_spec_before_any_work(
+        client, fake_db, operation, extra):
+    """Review r2 (confidence-level-max-double-500): 1 - 2**-53 passes the
+    schema's (0.5, 1) bounds, but 0.5 + cl/2 rounds to 1.0. It used to reach
+    the engine and fail with a 500 after the statistics query; the domain
+    spec now refuses it before the request is charged."""
+    body = {"activity": {"preset": "sleep"}, "years": [2025],
+            "confidence_level": 1 - 2**-53, **extra}
+    response = client.post(f"/api/v1/analysis/{operation}", json=body)
+    assert response.status_code == 422, response.text
+    error = response.json()["error"]
+    assert error["code"] == "invalid_spec" and "confidence_level" in error["message"]
+    assert fake_db.transactions == []
+    assert client.app.state.runner.computations == 0
+
+
 def test_duplicate_years_rejected_by_domain(client):
     body = {"activity": {"preset": "sleep"}, "years": [2025, 2025]}
     response = client.post("/api/v1/analysis/estimate", json=body)
