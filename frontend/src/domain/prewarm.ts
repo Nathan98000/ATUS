@@ -15,7 +15,12 @@
  */
 import type { AnalysisRequest, Operation } from '../api/types'
 import type { BuilderState } from '../features/builder/state.ts'
-import { KNOWN_MEASURES, defaultBuilderState, toRequest } from '../features/builder/state.ts'
+import {
+  KNOWN_MEASURES,
+  defaultBuilderState,
+  fromRequest,
+  toRequest,
+} from '../features/builder/state.ts'
 import { stableStringify } from '../utils/stableStringify.ts'
 
 export interface StarterExample {
@@ -105,8 +110,9 @@ export interface PrewarmedAnalysis {
  * About 130 analyses: the four starters; every preset under every measure
  * (latest year); a full-period trend per preset and per tier-1 category; a
  * latest-year estimate per tier-1 category; men vs women per preset and per
- * tier-1 category; and each preset in the two pandemic-weight years. Duplicates
- * (same operation and bytes) are dropped, keeping the first.
+ * tier-1 category; each preset in the two pandemic-weight years; and each
+ * starter as the builder sends it after "Adjust analysis" without a change.
+ * Duplicates (same operation and bytes) are dropped, keeping the first.
  */
 export function prewarmedAnalyses(input: PrewarmInput): PrewarmedAnalysis[] {
   const { years } = input
@@ -168,6 +174,21 @@ export function prewarmedAnalyses(input: PrewarmInput): PrewarmedAnalysis[] {
         })
       }
     }
+  }
+
+  // "Adjust analysis" then Analyze, unchanged: the builder states every
+  // default, so a starter comes back in other bytes. Estimate and trend
+  // starters land on entries above; a comparison starter keeps its own
+  // labels and would otherwise miss the snapshot (review round 2).
+  for (const starter of STARTER_EXAMPLES) {
+    list.push({
+      name: `starter via the builder: ${starter.question}`,
+      operation: starter.operation,
+      spec: toRequest(
+        fromRequest(starter.operation, starter.spec(years, latest), years),
+        years,
+      ),
+    })
   }
 
   const seen = new Set<string>()

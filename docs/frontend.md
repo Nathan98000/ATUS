@@ -324,8 +324,11 @@ the four home-page starters, then — built by the analysis builder's own
 `toRequest`, so the bytes match what visitors send — every preset under every
 measure, a full-period trend per preset and per tier-1 category, a
 latest-year estimate per tier-1 category, men vs women per preset and per
-tier-1 category, and each preset under the pandemic weights in 2019 and
-2020 (130 for the 2003–2025 release). Two passes:
+tier-1 category, each preset under the pandemic weights in 2019 and
+2020, and each starter as the builder sends it after "Adjust analysis"
+without a change (every default stated; for the two comparison starters
+these bytes are otherwise in no list; review round 2) — 132 for the
+2003–2025 release. Two passes:
 
 ```bash
 node scripts/snapshot-requests.mjs --meta meta.json --activities activities.json
