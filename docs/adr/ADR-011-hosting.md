@@ -741,3 +741,99 @@ Status codes:
 | Whether Render offers Virginia for Free | the creation form, before creating the Neon project | 0 |
 | Cost of Neon's availability-check wakes (`compute_time_seconds` drift with no traffic, 3–7 days) | project GET | 0 |
 | Cannot be tested without exhausting a quota: the exact response after 100k/day (429 or a 1027 page) and Neon's error when exhausted | both handled in code; never induced | — |
+
+## Amendments (implementation, 2026-10-21)
+
+The decision is unchanged. This section records where the implementation (code, workflows and scripts at the commit that adds it) differs from the text above, and why. Nothing is deployed: the owner accounts do not exist yet, `releases/current.json` says `"status": "unpublished"`, and `edge/wrangler.jsonc` still holds the placeholder KV namespace id, which the deploy job refuses. Nothing below describes a live service.
+
+### Cross-references
+
+- The labels "to be finalized in ADR-012" on "Quota governor" and "final values in ADR-012" on its "Starting budgets" name the wrong ADR. The governor, its budgets and the edge tiers are finalized in [ADR-015](ADR-015-edge-cache-snapshot-and-governor.md), whose title is "Edge result cache, static snapshot and quota governor" (broader than the "persistent result cache" under **Related**).
+- [ADR-012](ADR-012-load-and-quota-protection.md) holds the API's own limits, the "Bounded work" values (still provisional) and the API's error codes. [ADR-013](ADR-013-data-releases-and-serving-db.md) finalizes "Release switch". [ADR-014](ADR-014-observability.md) finalizes the IP truncation in logs and the monitor cadence.
+- [ADR-016](ADR-016-short-share-links.md) (short share links, deferred) was added.
+- Error code names: the API's codes are in ADR-012 "Error mapping". The Worker-generated `service_waking`, `upstream_unavailable`, `capacity_unavailable` and `capacity_paused` are specified in ADR-015 and defined in `edge/src/proxy.ts`, `edge/src/ops.ts` and `edge/src/index.ts`. The client-facing table is `docs/api.md`, "Errors".
+
+### Deploy workflow (`.github/workflows/deploy.yml`)
+
+- **Order.** "Deploy" lists hook, wait, snapshot, `wrangler deploy`, smoke. The workflow runs the jobs `preflight`, `build` (`image.yml`, no build cache), `push`, `snapshot`, `deploy`.
+  - The snapshot is built in its own job, from the pushed digest, before the `production` approval and before any deploy step, so a failed restore or snapshot deploys nothing.
+  - The `deploy` job then runs hook, wait, `wrangler deploy` and the smoke.
+  - The snapshot's inputs are the ones in the "Edge tiers" table: the release dump restored into `postgres:16` with `scripts/ops/roles.sql`, and the digest run read-only. Only the order changed.
+- **Which release.** The dump is the one named in the committed `releases/current.json` (`scripts/ops/release_manifest.py`). It is downloaded and checked against the recorded sizes and SHA-256s. `preflight` refuses to run unless the file says `published`. Reason: a deploy can only serve a release that someone committed.
+- **Triggers.** Only `vMAJOR.MINOR.PATCH` tags, and manual runs from `main`. `tests/deploy/test_workflows.py` asserts the triggers and the per-job permissions.
+- **Smoke.** "At most 40 requests" is split in two:
+  - `scripts/ops/deploy_smoke.py --max-requests 30`, which recomputes 2 snapshot entries live and checks the origin lock;
+  - one Chromium journey (`frontend/playwright.deployed.config.ts`), capped at 6 `/api` requests in `frontend/e2e/deployed/starter.deployed.ts`.
+- **Wait.** `scripts/ops/render_deploy.py wait` allows 15 minutes. `/health` reports the commit, not the digest, so a re-run that pushes a new digest of a commit already running cannot be observed. The step then warns instead of passing.
+- **Rollback targets.** The job summary records the previous build, its GHCR digest and the previous Worker versions. `.github/workflows/ghcr-cleanup.yml` (weekly) keeps the newest 20 digests.
+- **What the pushed image passed.** In a deploy run, `image.yml` lints, gates the image, runs `tests/deploy` against it (TLS to Postgres included), smokes the production stack plain and under emulation, and runs Trivy.
+  - The Playwright suite does not run in `deploy.yml`. It runs in `ci.yml`: job `e2e` against the vite-preview build and the API from source, and job `e2e-stack` on `ci.yml`'s own cached image build of the same commit.
+  - "Tests it (… Playwright)" therefore holds for the commit, not for the exact pushed bytes.
+  - The projected 10–15 extra CI minutes for the snapshot remain unmeasured.
+- **Trivy** is a release binary pinned by version and by the archive's SHA-256, not an action pinned to a commit. The reason is in the comment in `.github/workflows/image.yml`: the action's tags were hijacked in March 2026 (GHSA-69fq-xp46-6x23).
+- **Must-not-do assertions.** CI asserts:
+  - `edge/wrangler.jsonc` (`edge/test/node/config.test.ts`): no `cache` block, no environments, routes or custom domains, `workers_dev: true`, `preview_urls: false`, `run_worker_first` with both forms, SPA fallback, required secrets;
+  - in `tests/deploy/test_workflows.py`: deploy triggers and permissions, and that no other workflow can deploy or push.
+
+  Not asserted by any test: the absence of a `render.yaml`, Render auto-deploy off, no Git connection on Render, Workers Builds not connected, no card, no Neon branches. These remain owner checks ([`../deployment.md`](../deployment.md#owner-account-setup-19), and step 8 there).
+- **Environments.** Besides `production`, the daily quota report uses a GitHub environment `ops` that holds `EDGE_OPS_TOKEN`.
+
+### Fallback (P3, Vercel Hobby): a documented procedure, not ready
+
+- None of the five "Preconditions that implementation must keep ready" exists in the repository:
+  - no Vercel entry module, no `vercel.json` and no import test;
+  - no `GATE_INFLIGHT` in-flight gating in the governor (it tracks leases only to charge compute);
+  - no Vercel budgets;
+  - no origin mode that sends `x-vercel-protection-bypass`;
+  - no `deploy-vercel` job.
+
+  They were not built in Phase 5.
+- The Worker reads its origin only from the secret `RENDER_ORIGIN` (`edge/src/index.ts`, `edge/src/upstream.ts`). `API_ORIGIN` and `GATE_INFLIGHT`, which `deploy/edge/entrypoint.sh` would pass as vars, are read by no Worker code.
+- **Consequence.** "Recovery: switch to the fallback by changing a Worker var" (accepted risk 1) and the graft "fail over to a different provider by changing one Worker var" do not hold for the current code.
+  - After a Render suspension, only static content and KV-cached results keep working.
+  - That lasts until the preconditions are built and the switch procedure is run.
+  - Pointing the Worker at another HTTPS origin is `wrangler secret put RENDER_ORIGIN` (a secret, not a var). For Vercel, that alone is not enough: the bypass header and global in-flight gating are missing.
+
+### Worker details
+
+- **Size.** `edge/src` is 13 TypeScript files and 2,816 lines, comments included (`wc -l`). "Consequences" projected roughly 300–400 lines.
+- **Error mapping** (`edge/src/proxy.ts`, `edge/src/routes.ts`, `edge/src/index.ts`):
+  - `upstream_unavailable` is a 502, or a 503 while the circuit breaker is open. It carries `details.reason`: `connect_failed`, `circuit_open`, `platform_error`, `origin_timeout` (a 524), `broken_response` or `not_configured`. Reason: only some causes mean the API may have computed the request, and the SPA retries those once.
+  - uvicorn's own plain-text 503 becomes `overloaded`.
+  - A wrong method on a known route gets 405 `method_not_allowed`. The hidden ops route answers 404 instead.
+  - An analysis POST that is not JSON gets 415 `unsupported_media_type`.
+- **Headers.** The Worker's security headers also include `Permissions-Policy` (`edge/src/http.ts`).
+- **Prewake.** The answer is `{origin: warm|waking|unknown, wake: sent|recent|off|circuit_open}` (`edge/src/wake.ts`).
+- **KV and governor** are as finalized in ADR-015. These differ from the text above:
+  - the store gate also requires `X-Analytics-Version`;
+  - a client prefix is also capped at 300 admissions a day, refunded ones included;
+  - the compute charge is sized from the API's `Server-Timing: db;dur=`.
+- **Failing closed.** Only analysis POSTs are governed. "Fail closed for DB-touching forwards" therefore covers analyses only; metadata GETs reach the origin ungoverned (ADR-015, "What this does not protect against").
+- **Neon key.** `NEON_PROJECT_ID` is committed empty in `edge/wrangler.jsonc` and `deploy.yml` does not set it, so a first deploy runs the governor in conservative mode.
+- **Unknowns tooling.** The "ops-only echo build" and the "ops-token DB-free sleep endpoint (130 s)" under "Unknowns" do not exist in `src/` or `edge/src/`. They must be written, and removed again, before those rows can be measured. The URL-targeted replay exists: `scripts/replay_deployed.py`, with a hard budget of 40 requests and the F66 broad selector included.
+
+### API and database details
+
+- **In-process snapshot.** With `ATUS_EXPECTED_DATA_VERSION` set (production), the snapshot is pinned and never re-read for its age; "refreshed at most every 10 minutes" no longer applies. A stale-if-error fallback was added (ADR-012). Reason: every re-read can wake Neon.
+- **OpenAPI.** `/openapi.json` is off in production as decided. The schema is not served as a static asset of the site, though: it is committed as `frontend/openapi.json` (`scripts/export_openapi.py`, drift-checked in `ci.yml`).
+- **TLS check.** The libpq-version and `sslrootcert=system` checks are in `tests/deploy/test_container_image.py`, which the image job runs after the build; the Dockerfile itself checks nothing. The image sets `SSL_CERT_FILE`, because the libpq inside the psycopg binary wheel has no usable default CA path ([`../deployment.md`](../deployment.md#tls-to-the-database)).
+- **Optimizations.**
+  - `max_parallel_workers_per_gather` is a per-request API setting (`ATUS_API_MAX_PARALLEL_WORKERS`, unset by default), not a role default (`scripts/ops/roles.sql`).
+  - The year pushdown was adopted with the §9 proof, as a `MATERIALIZED` CTE (ADR-013, amendments).
+- **Calibration.** The statement timeout and the lanes still await the §13 emulation runs and the post-deploy replay, and the maximum CU awaits week-1 Neon data. For the §13 results, see loadtests/results (§13), [`../../loadtests/results/`](../../loadtests/results/). This amendment adds no performance number.
+
+### Release switch
+
+- Step 2 ("CI builds the snapshot … but does not deploy it yet") is the `snapshot` job of a `deploy.yml` run. That run needs `releases/current.json`, updated for the new release, committed first. No snapshot-only workflow exists.
+- Step 4 is the same run's `deploy` job, after approval. It also redeploys the API image by digest through the hook.
+- Data rollback restores the two Render variables, then runs `deploy.yml` at the commit whose `releases/current.json` names the previous release.
+- The governor's `NEON_PROJECT_ID` and `NEON_API_KEY` must move with the project (ADR-015).
+
+### Verified locally only
+
+- **The local Worker.** The production-mode local stack (`docker-compose.prod.yml`, profile `edge`) runs the Worker under `wrangler dev` in local mode (`deploy/edge/Dockerfile`). KV and the Durable Object are simulated on disk, and no Cloudflare account is involved.
+- **The local relay.** The Worker accepts a plain-HTTP origin only on loopback (`edge/src/upstream.ts`). In the stack, a TCP relay (`deploy/edge/origin-relay.mjs`) therefore forwards 127.0.0.1:10000 to the API container. The relay exists only there. Production has no relay: `RENDER_ORIGIN` is the HTTPS onrender.com URL.
+- **Browsers.** Chromium and WebKit pass locally ([`../frontend.md`](../frontend.md)).
+  - The Firefox projects run only in Linux CI (`ci.yml` jobs `e2e` and `e2e-stack`), because Playwright's Firefox does not launch on the development machine (macOS 27).
+  - No CI run of the Phase 5 workflows is recorded in the repository, and the remote-tracking `origin/main` in this clone is the Phase 4 commit `387fc2d`. No Firefox result exists yet.
+  - The post-deploy browser smoke runs in Chromium only.

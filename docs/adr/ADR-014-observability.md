@@ -155,3 +155,53 @@ Cadence and budget as in [`../deployment.md`](../deployment.md) (traffic model a
 - Statement counts are visible per request and per route, so a regression that makes cache hits or 4xx touch the database shows up in `atus_db_statements_per_request` and fails `test_statement_log.py`.
 - Tests: `tests/unit/api/test_observability.py` (access record, IP truncation, JSON format, `Server-Timing`, operator endpoints, exposition format, metrics events), `tests/integration/api/test_snapshot_db.py` (statement counts, pool series), `tests/integration/api/test_statement_log.py` (PostgreSQL's own count), `tests/integration/api_prod/test_server.py` (a production process logging JSON on stderr).
 - No timing, latency or load numbers were measured for this ADR.
+
+## Amendments (implementation, 2026-10-21)
+
+The decisions are unchanged. This section records where the implementation differs from the text above, and why. Nothing is deployed, so no monitor has run against a deployment.
+
+### Monitors (status line: "monitors and the quota report belong to the CI and edge work")
+
+- **Implemented as workflows.** The monitors are `.github/workflows/edge-check.yml`, `deep-check.yml`, `quota-report.yml` and `schedules-check.yml`. They run `scripts/ops/monitors.py` and `scripts/ops/github_ops.py`.
+  - `tests/deploy/test_workflows.py` asserts each one's cadence and manual trigger.
+  - It also asserts that no monitor touches the database, and that the site monitors are skipped until the repository variable `PUBLIC_BASE_URL` exists.
+- **Edge check: 4 requests per run, not 1.**
+  - It fetches the SPA shell (with its security headers), `/api/_edge/health`, and the snapshot pointer and manifest.
+  - Only `/api/_edge/health` invokes the Worker, so the Worker requests per month are as projected.
+  - It also fails when the Worker's `SNAPSHOT_ID` differs from `/snap/current.json`.
+- **Deep check: 1–8 requests per run** (`--wake-timeout 240 --max-requests 8`). It retries through a cold start instead of failing on the first `service_waking`.
+  - The bound is 8 × 124 = 992 Worker requests a month, not 124.
+  - Each run still wakes Render at most once and never wakes Neon.
+- **Quota report.**
+  - It runs daily at 22:05 UTC, so it reads the governor's counters before their 00:00 UTC reset.
+  - It runs in the GitHub environment `ops`, with the Worker's ops token stored as `EDGE_OPS_TOKEN`, and alerts at a threshold of 0.7.
+  - The pro-rating rules are in [`../deployment.md`](../deployment.md#monitoring-and-alerting-0). The per-network cap is reported but never alerts.
+- **Schedule check: a monthly workflow (1st, 09:00 UTC), not a runbook step.** It re-enables nothing: with a read-only token (`actions: read`) it can only fail, and so email the owner, when:
+  - a scheduled workflow is not active;
+  - a monitor's last scheduled run is too old;
+  - the repository has had no push for 28 days.
+
+  Re-enabling a workflow stays manual (Actions → workflow → "Enable workflow"). If the schedule check itself has been disabled, it cannot alert.
+
+### Metrics
+
+Two series were added after the table above: `atus_snapshot_pinned` (gauge) and `atus_snapshot_stale_serves_total` (counter). They report the pinned and stale-if-error data snapshot of [ADR-012](ADR-012-load-and-quota-protection.md) (`src/atus_pipeline/api/metrics.py`).
+
+### The Worker's log line
+
+This ADR describes only the API's logs. The Worker writes one JSON line per `/api` request (`edge/src/index.ts`).
+
+- **Fields:**
+  - `event`, `request_id`, `method`, the route name, `status`, `outcome` and `reason`;
+  - `cache` (`edge`, `miss`, `error`, `off`) and `governor` (`admitted`, `denied:<budget>`, `unavailable`);
+  - `upstream_status`, `attempts`, the origin's `server_timing` and `duration_ms`;
+  - an error name, when there is one.
+- **Never logged:** bodies, client IPs, prefix hashes, secrets or the origin hostname.
+- **Correlation.** Its `request_id` is the `X-Request-ID` that the API logs.
+
+### Workers invocation logs
+
+`edge/wrangler.jsonc` enables `observability.logs.invocation_logs`. Whether Cloudflare's invocation records include the client IP or request headers is unverified ([ADR-011](ADR-011-hosting.md), "Unknowns").
+
+- **What is verified.** "Logs and metrics never see more than the /24 or /48 prefix" is verified only for the API's records and the Worker's own line.
+- **If they do hold full addresses.** They are kept for Workers Logs' retention, unless `invocation_logs` is turned off.
