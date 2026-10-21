@@ -7,10 +7,11 @@
  *   men vs women: 100.0 vs 66.67, difference +33.33 (SE 11.785…).
  *   2019 sleep: 240.0. 2020 under multiyear weights: unavailable.
  */
-import { readFile } from 'node:fs/promises'
 
 import AxeBuilder from '@axe-core/playwright'
 import { type Download, type Page, expect } from '@playwright/test'
+
+import { browserPlatform, tabReachesAllControls as tabReachesAll } from './browserServer'
 
 /** Axe check: no serious or critical violations on the current page. */
 export async function expectNoSeriousViolations(page: Page) {
@@ -79,10 +80,16 @@ export async function tabTo(
   await expect(target).toBeFocused()
 }
 
-/** The text of a downloaded file, byte-order mark included. */
+/**
+ * The text of a downloaded file, byte-order mark included. The bytes are
+ * streamed from wherever the browser saved them: `download.path()` throws
+ * when the browser runs remotely (scripts/e2e_in_container.sh), the stream
+ * works in both places.
+ */
 export async function downloadedText(download: Download) {
-  const path = await download.path()
-  return new TextDecoder('utf-8', { ignoreBOM: true }).decode(await readFile(path))
+  const chunks: Buffer[] = []
+  for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer)
+  return new TextDecoder('utf-8', { ignoreBOM: true }).decode(Buffer.concat(chunks))
 }
 
 /** CSV rows as header → value records (RFC 4180 quoting; the file starts with a BOM). */
@@ -146,11 +153,14 @@ export async function collectPolicyErrors(page: Page): Promise<string[]> {
 export const CORE = { tag: '@core' }
 
 /**
- * Whether Tab reaches every link and button. WebKit on macOS follows
- * Safari's default keyboard setting, where Tab moves only between text
- * fields and menus, so Tab-order checks are skipped there; focused controls
- * are still operated with the keyboard.
+ * Whether Tab reaches every link and button in this run's `browserName`
+ * (e2e/browserServer.ts): not in WebKit on macOS, which tabs only between
+ * text fields there. The platform is the browsers' own — Linux when they run
+ * in the container (E2E_BROWSER_SERVER), wherever the test runner is.
  */
 export function tabReachesAllControls(browserName: string): boolean {
-  return !(browserName === 'webkit' && process.platform === 'darwin')
+  return tabReachesAll(
+    browserName,
+    browserPlatform(process.env.E2E_BROWSER_SERVER, process.platform),
+  )
 }

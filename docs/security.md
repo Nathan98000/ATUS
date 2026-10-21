@@ -549,7 +549,7 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
   - unit and integration tests;
   - container tests (`ATUS_DOCKER_TESTS=1`; in CI, `.github/workflows/image.yml` runs them);
   - Worker tests in workerd;
-  - Playwright in Chromium and WebKit (the last recorded run is in stack mode, through the local edge; [frontend.md](frontend.md#testing)); Firefox does not launch on the development machine;
+  - Playwright in Chromium and WebKit (the last recorded run is in stack mode, through the local edge; [frontend.md](frontend.md#testing)), and in Firefox, which does not launch natively on the development machine, through the official Playwright Linux image (vite-preview mode, `scripts/e2e_in_container.sh`);
   - the production compose stack behind `wrangler dev`: `scripts/smoke_stack.sh --edge`, with the checks in `deploy/stack/edge_probe.py`.
 - **Not done yet on GitHub:** the CI workflows that run all of the above, including the Firefox projects, have no recorded run.
 - **Not done, because nothing is deployed:**

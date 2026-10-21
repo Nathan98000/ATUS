@@ -17,10 +17,17 @@
  * --e2e): the Worker under `wrangler dev` serving this build plus the static
  * snapshot, in front of the production API on a serving database built from
  * the same fixture, with every production limit in place (e2e/fixtures.ts
- * makes each test its own visitor). No server is started then. Firefox
- * cannot launch on macOS 27 (`npx playwright test --project firefox` exits at
- * launch, in and out of the sandbox), so locally stack mode runs `desktop`,
- * `mobile` and `webkit`; CI runs Firefox on Linux.
+ * makes each test its own visitor). No server is started then.
+ *
+ * Container browsers: Firefox cannot launch on macOS 27 (`npx playwright
+ * test --project firefox` exits at launch, in and out of the sandbox).
+ * scripts/e2e_in_container.sh runs the browsers in the official Playwright
+ * Linux image of this lockfile's version instead: with E2E_BROWSER_SERVER set
+ * to its `playwright run-server` endpoint, every project connects there
+ * (e2e/browserServer.ts) while the test runner and both servers stay on this
+ * machine, and the browsers reach them through the runner (exposeNetwork
+ * '<loopback>'), so the app is the same origin as in every other run. CI
+ * launches every browser natively on Linux.
  *
  * Environment:
  * - E2E_BASE_URL selects stack mode (e.g. http://127.0.0.1:8541);
@@ -28,12 +35,19 @@
  *   servers when several checkouts run E2E at once;
  * - ATUS_E2E_DATABASE_URL selects the disposable database the backend loads
  *   (read by scripts/e2e_backend.py; default `atus_e2e` on localhost:5434);
- * - E2E_BACKEND_PYTHON names the backend's Python (default ../.venv/bin/python).
+ * - E2E_BACKEND_PYTHON names the backend's Python (default ../.venv/bin/python);
+ * - E2E_BROWSER_SERVER (ws://127.0.0.1:<port>/, set by
+ *   scripts/e2e_in_container.sh) connects every project to the container's
+ *   browsers.
  */
 import { defineConfig, devices } from '@playwright/test'
 
+import { browserServerConnectOptions } from './e2e/browserServer'
+
 /** Stack mode: the production-mode stack's edge (see above). */
 const STACK_BASE_URL = process.env.E2E_BASE_URL || undefined
+/** Container browsers: `playwright run-server` in the official image (see above). */
+const BROWSER_SERVER = browserServerConnectOptions(process.env.E2E_BROWSER_SERVER)
 const FRONTEND_PORT = Number(process.env.E2E_FRONTEND_PORT ?? 4173)
 const BACKEND_PORT = Number(process.env.E2E_BACKEND_PORT ?? 8137)
 const FRONTEND_ORIGIN = `http://localhost:${FRONTEND_PORT}`
@@ -52,6 +66,9 @@ export default defineConfig({
   use: {
     baseURL: STACK_BASE_URL ?? FRONTEND_ORIGIN,
     trace: 'retain-on-failure',
+    // Every project connects to the container instead of launching locally;
+    // its requests for localhost come back through this runner (same origin).
+    ...(BROWSER_SERVER ? { connectOptions: BROWSER_SERVER } : {}),
   },
   projects: [
     {
