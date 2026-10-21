@@ -172,6 +172,10 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--no-gets", action="store_true", help="Skip the GET endpoints.")
     parser.add_argument("--category", action="append", default=[],
                         help="Replay only specs of this category (repeatable).")
+    parser.add_argument("--id", dest="ids", action="append", default=[],
+                        help="Replay only the spec with this id (repeatable).")
+    parser.add_argument("--failed-from", type=Path, default=None,
+                        help="Replay only the specs that failed in this earlier report.json.")
     parser.add_argument("--limit", type=int, default=None, help="Replay only the first N specs.")
     parser.add_argument("--save-responses", choices=("none", "failures", "all"),
                         default="failures", help="Which answers to keep under responses/.")
@@ -200,6 +204,32 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         if args.baseline_python is None:
             args.baseline_python = args.baseline_dir / ".venv" / "bin" / "python"
     return args
+
+
+def select_specs(specs: list[Spec], args: argparse.Namespace) -> list[Spec]:
+    """The specs to replay after --category, --id, --failed-from and --limit."""
+    if args.category:
+        specs = [s for s in specs if s.category in set(args.category)]
+    wanted = set(args.ids)
+    if args.failed_from is not None:
+        try:
+            earlier = json.loads(args.failed_from.read_text())
+            wanted |= {str(s["id"]) for s in earlier["specs"] if not s["passed"]}
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            raise SetupError(f"cannot read failed specs from {args.failed_from}: "
+                             f"{type(exc).__name__}") from None
+        if not wanted:
+            raise SetupError(f"{args.failed_from} has no failed specs")
+    if wanted:
+        unknown = wanted - {s.id for s in specs}
+        if unknown:
+            raise SetupError(f"no spec with id {', '.join(sorted(unknown)[:5])}")
+        specs = [s for s in specs if s.id in wanted]
+    if args.limit is not None:
+        specs = specs[: args.limit]
+    if not specs:
+        raise SetupError("no specs left after --category/--id/--failed-from/--limit")
+    return specs
 
 
 def database_urls(args: argparse.Namespace) -> dict[str, tuple[str, str]]:
@@ -431,12 +461,7 @@ def fetch_all(group: ServerGroup, pool: ThreadPoolExecutor, request: RequestInfo
 
 def run(args: argparse.Namespace) -> int:
     specs, spec_files = httpdiff.load_specs(args.specs)
-    if args.category:
-        specs = [s for s in specs if s.category in set(args.category)]
-    if args.limit is not None:
-        specs = specs[: args.limit]
-    if not specs:
-        raise SetupError("no specs left after --category/--limit")
+    specs = select_specs(specs, args)
     out: Path = args.out
     out.mkdir(parents=True, exist_ok=True)
     urls = database_urls(args)
@@ -546,6 +571,9 @@ def run(args: argparse.Namespace) -> int:
             "spec_dir": str(args.specs.resolve()),
             "spec_files": spec_files,
             "categories": args.category or None,
+            "ids": args.ids or None,
+            "failed_from": str(args.failed_from) if args.failed_from else None,
+            "specs_selected": len(specs),
             "limit": args.limit,
             "targets": "".join(args.targets),
             "jobs": args.jobs,

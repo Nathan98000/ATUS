@@ -28,7 +28,8 @@ scripts/equivalence/run.sh --specs DIR --out OUT \
 `run.sh` prepares the baseline (at `$ATUS_EQ_BASELINE_DIR`, default
 `~/.cache/atus/baseline-387fc2d`) and then runs `replay.py`, which you can also call
 directly (`python scripts/equivalence/replay.py --help`). Useful options:
-`--targets bc` (full vs serving only, no baseline needed), `--category NAME`,
+`--targets bc` (full vs serving only, no baseline needed), `--category NAME`, `--id ID`,
+`--failed-from OLD/report.json` (replay only what failed before),
 `--limit N`, `--jobs N` (specs in flight, default 1; each goes to all servers at once.
 `a` and `b` share the full database, and 2 jobs once filled its container's 64 MiB
 `/dev/shm`, audit F33),

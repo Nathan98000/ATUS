@@ -896,6 +896,35 @@ def test_ports_are_validated(tmp_path, ports):
                            "--ports", ports])
 
 
+def test_specs_can_be_selected_by_category_id_or_an_earlier_report(tmp_path):
+    specs = [httpdiff.Spec(f"s{i}", "estimate", {}, "odd" if i % 2 else "even", "ok", f"f:{i}")
+             for i in range(6)]
+
+    def select(*extra):
+        args = replay.parse_args(["--specs", str(tmp_path), "--out", str(tmp_path),
+                                  "--targets", "bc", *extra])
+        return [s.id for s in replay.select_specs(specs, args)]
+
+    assert select() == ["s0", "s1", "s2", "s3", "s4", "s5"]
+    assert select("--category", "odd", "--limit", "2") == ["s1", "s3"]
+    assert select("--id", "s4", "--id", "s1") == ["s1", "s4"]
+    earlier = tmp_path / "report.json"
+    earlier.write_text(json.dumps({"specs": [{"id": "s2", "passed": False},
+                                             {"id": "s3", "passed": True}]}))
+    assert select("--failed-from", str(earlier)) == ["s2"]
+    assert select("--failed-from", str(earlier), "--id", "s5") == ["s2", "s5"]
+    with pytest.raises(replay.SetupError, match="no spec with id nope"):
+        select("--id", "nope")
+    with pytest.raises(replay.SetupError, match="no specs left"):
+        select("--category", "none")
+    earlier.write_text(json.dumps({"specs": [{"id": "s3", "passed": True}]}))
+    with pytest.raises(replay.SetupError, match="has no failed specs"):
+        select("--failed-from", str(earlier))
+    earlier.write_text("{broken")
+    with pytest.raises(replay.SetupError, match="cannot read failed specs"):
+        select("--failed-from", str(earlier))
+
+
 def test_the_serving_url_prefers_the_api_role(tmp_path, monkeypatch):
     monkeypatch.delenv(replay.SERVING_URL_ENV, raising=False)
     monkeypatch.setenv(replay.FULL_URL_ENV, "postgresql://atus:atus@localhost:5434/atus")
