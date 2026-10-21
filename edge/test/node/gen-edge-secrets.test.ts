@@ -143,6 +143,25 @@ if (process.argv[2] === 'child') {
     expect(() => lstatSync(dirname(seen.path))).toThrow() // the private copy is gone
   })
 
+  it('prints what a fresh clone needs before the first deploy: the SPA build and the locked tools', () => {
+    // Regression: wrangler.jsonc publishes ../frontend/dist, which is
+    // gitignored, so the printed first deploy failed on a fresh clone (or
+    // published a stale local build); without `npm ci` in edge/, npx fetched
+    // an unlocked wrangler.
+    const { stdout } = run('--render-origin', 'https://atus-api-abc123.onrender.com')
+    const lines = stdout.split('\n')
+    const frontendDir = fileURLToPath(new URL('../../../frontend', import.meta.url))
+    const edgeDir = fileURLToPath(new URL('../..', import.meta.url)).replace(/\/$/, '')
+    const deploy = lines.findIndex((line) => line.includes('npx wrangler deploy'))
+    const build = lines.indexOf(
+      `  (cd ${frontendDir} && npm ci && VITE_API_BASE_URL= npm run build)`,
+    )
+    const install = lines.indexOf(`  cd ${edgeDir} && npm ci`)
+    expect(build, stdout).toBeGreaterThanOrEqual(0)
+    expect(install, stdout).toBeGreaterThan(build)
+    expect(deploy).toBeGreaterThan(install)
+  })
+
   it('generates the API ops token for Render only, never for the Worker or GitHub', () => {
     const { stdout } = run()
     expect(stdout).toContain('ATUS_OPS_TOKEN: created')

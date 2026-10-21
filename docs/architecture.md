@@ -355,7 +355,9 @@ deferred (ADR-016).
   data version (ADR-008).
 - **Cold start and service states** (`api/resilience.ts`,
   `domain/presentError.ts`): retries within a 150 s budget that honours
-  `Retry-After`, a "waking up" notice in a polite live region after 3 s, a
+  `Retry-After`, a "waking up" notice in a polite live region (after 3 s of
+  pending metadata, when an attempt fails as waking, or within 90 s of a
+  prewake that answered "waking"), a
   check that the API's `api_version` is compatible (`api/compat.ts`),
   full-page states for paused quotas and an incompatible API, and a prewake
   request on user intent (`api/prewake.ts`).

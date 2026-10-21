@@ -185,7 +185,15 @@ done
 # only stdin, stdout and stderr open, so wrangler's CLI process (which npx and
 # wrangler's own launcher start) cannot open /dev/fd/N and the deploy fails.
 worker_names="^(${WORKER_SECRETS// /|}|RENDER_ORIGIN)="
-printf '\nA new Worker'"'"'s first deploy must carry its required secrets (Worker names only):\n\n'
+# The deploy publishes ../frontend/dist (wrangler.jsonc assets), which a fresh
+# clone lacks (gitignored): build it same-origin first, and install edge/'s
+# locked tools so that npx runs the pinned version, not a fresh download.
+frontend_dir="$(cd -- "$edge_dir/.." && pwd)/frontend"
+printf '\nA new Worker'"'"'s first deploy must carry its required secrets (Worker names only).\n'
+printf 'It publishes the SPA build, which a fresh clone lacks, with the versions locked in\n'
+printf 'edge/package-lock.json, so first:\n\n'
+printf '  (cd %q && npm ci && VITE_API_BASE_URL= npm run build)\n' "$frontend_dir"
+printf '  cd %q && npm ci\n' "$edge_dir"
 # shellcheck disable=SC2016  # $tmp expands when the owner runs the printed command
 printf '  (umask 077 && tmp=$(mktemp -d) && trap %s EXIT && grep -E %s %s > "$tmp/worker.env" && npx wrangler deploy --secrets-file "$tmp/worker.env")\n' \
   "'rm -rf -- \"\$tmp\"'" "'${worker_names}'" "$quoted_file"

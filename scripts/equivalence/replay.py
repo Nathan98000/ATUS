@@ -46,7 +46,7 @@ Usage (``scripts/equivalence/run.sh`` also prepares the baseline checkout):
 
     python scripts/equivalence/replay.py --specs DIR --out DIR \\
         --baseline-dir /path/to/checkout-of-387fc2d \\
-        --serving-secrets-file ~/.config/atus/neon.env
+        --serving-secrets-file ~/.config/atus/neon-<release>-<build8>.env
 
 Nothing is timed. Exit status: 0 every spec and GET passed, 1 a failure
 (see summary.md), 2 a usage, input or start-up error.

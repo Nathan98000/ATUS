@@ -643,9 +643,12 @@ takes `CF-Connecting-IP` from the request when one is sent, so every test
 sends its own address from 198.19.0.0/16, and the per-visitor limits apply
 per test rather than to the whole suite), and tests that inject failures
 into `/api/v1/meta` first hide the snapshot (`withoutSnapshot`), since the
-deployed SPA would otherwise read `/meta` from `/snap/`. On 2026-10-20 all
-50 runs passed in stack mode (Chromium desktop 35, mobile 2, WebKit 13);
-Firefox cannot launch on macOS 27 and ran in vite-preview mode through the
+deployed SPA would otherwise read `/meta` from `/snap/`. On 2026-10-21, at
+f208719, all 52 runs passed in stack mode (Chromium desktop 37, mobile 2,
+WebKit 13), `e2e/new-survey-year.spec.ts` and the static `/openapi.json`
+test of `e2e/service-states.spec.ts` included, after the stack smoke (15/15)
+and the edge probe (13/13); the first stack-mode run, on 2026-10-20, passed
+50 of 50 before those two tests existed. Firefox cannot launch on macOS 27 and ran in vite-preview mode through the
 container browsers (above); a stack-mode Firefox run has not been made yet.
 - An adversarial review fleet (96 agents: 8 code-dimension reviewers,
   3 live browser probes, an aggregator, and two independent refuters per

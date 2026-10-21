@@ -61,8 +61,9 @@ with a message naming the variable, and the message never echoes a secret.
 
 | Variable | Default (dev) | Production | Meaning |
 | --- | --- | --- | --- |
-| `ATUS_ENV` | `development` | `production` | production requires `ATUS_DATABASE_URL` and `ATUS_EDGE_SECRETS` (refuses to start otherwise); JSON logs, docs off, HSTS |
-| `ATUS_DATABASE_URL` | compose instance on :5434 | **required** | analytical database; production never falls back to the development URL and refuses it if set explicitly |
+| `ATUS_ENV` | `development` | `production` | production requires `ATUS_DATABASE_URL` and `ATUS_EDGE_SECRETS` (refuses to start otherwise) and refuses an `ATUS_DATABASE_URL` whose `sslmode` does not verify the server; JSON logs, docs off, HSTS |
+| `ATUS_DATABASE_URL` | compose instance on :5434 | **required** | analytical database; production never falls back to the development URL and refuses it if set explicitly. In production the URL itself must set `sslmode=verify-full` (with `sslrootcert=system` for a public CA) or `verify-ca`, or the API refuses to start ([deployment.md, "TLS to the database"](deployment.md#tls-to-the-database)) |
+| `ATUS_DATABASE_TLS` | `verify` | *(unset: `verify`)*; never set on Render | `local-stack-only` lifts the `sslmode` rule for the local production-mode stack, whose Postgres has no TLS. It is itself refused unless every host in `ATUS_DATABASE_URL` is a compose service name without dots, `localhost` or a loopback address, `host.docker.internal`, or a Unix socket ([deployment.md](deployment.md#tls-to-the-database)) |
 | `ATUS_LOG_LEVEL` | `INFO` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 | `ATUS_LOG_FORMAT` | `text` | `json` | `text` or `json` (one object per line; [ADR-014](adr/ADR-014-observability.md)) |
 | `ATUS_API_DOCS` | `on` | `off` | `/docs`, `/docs/oauth2-redirect`, `/redoc`, `/openapi.json` |

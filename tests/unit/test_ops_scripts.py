@@ -59,3 +59,14 @@ def test_the_restore_wrapper_never_traces_and_writes_privately():
     assert "set +x" in text and "umask 077" in text
     assert 'restore-serving-db --roles-sql "$repo/scripts/ops/roles.sql"' in text
     assert DEFAULT_ROLES_SQL == OPS / "roles.sql"
+
+
+def test_the_restore_wrapper_recommends_only_the_hash_locked_install():
+    """The wrapper handles the neondb_owner DSN, so the environment it tells the
+    owner to create must be the hash-locked one (docs/deployment.md step 3,
+    security.md C19), never an unpinned `uv pip install -e .`."""
+    text = RESTORE_SH.read_text()
+    assert not re.search(r"pip install (?!--)", text), "an install without its lock flags"
+    # the header comment and the error message
+    assert text.count("pip install --require-hashes --no-deps -r requirements/dev.lock.txt") == 2
+    assert text.count("pip install --no-deps --no-build-isolation -e .") == 2

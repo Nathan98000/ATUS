@@ -152,7 +152,7 @@ In short:
 **Coldest path for a novel analysis.** PROJECTION: Render spin-up (~1 min, documented) + app start (7–11 s, measured; whether Render's minute includes it is unknown) + Neon wake (a few hundred ms to a few s) + the query (0.4–3.4 s if the autoscaler reaches 2 CU; up to ~52 s at 0.25 CU). That is about 65–80 s in the typical case and up to ~125 s in the worst.
 
 - Prewake overlaps the spin-up with the time the user spends building a spec.
-- The SPA shows the waking message after 3 s in a polite live region. It retries within a 150 s budget and honours `Retry-After`.
+- The SPA shows the waking message in a polite live region when a metadata request has been pending for 3 s, when an attempt fails as waking, or while a prewake that answered "waking" is under 90 s old ([frontend.md](../frontend.md)). An analysis has no 3 s timer of its own. The SPA retries within a 150 s budget and honours `Retry-After`.
 
 ### Proxy chain and client-IP trust
 
@@ -179,7 +179,7 @@ visitor ──TLS──▶ Cloudflare edge (sets CF-Connecting-IP = visitor)
 |---|---|---|---|---|
 | **L0 static snapshot** `/snap/<SNAPSHOT_ID>/` | all SPA metadata, about 556 activity-detail files, about 130 prewarmed analyses (4 starters, presets, tier-1 trends, compares by sex, pandemic windows), and a manifest | everything, including Worker daily exhaustion and Render or Neon pauses | `SNAPSHOT_ID = <api_build12>-<sha256(DATA_VERSION)[:16]>`; the manifest is keyed by the same request hash the Worker computes | CI at each deploy. It restores the sha256-verified release dump into `postgres:16` with the production role settings, then runs the exact deployed image digest read-only against it |
 | **L1 Workers KV** | runtime analysis results | Render spin-down and Render or Neon monthly pauses; not Worker daily exhaustion | `r1/<CACHE_SCOPE>/<k>`, where `CACHE_SCOPE = hash(EPOCH, api_version, ANALYTICS_VERSION, DATA_VERSION, RESPONSE_FORMAT)`. The git SHA is deliberately excluded, so code deploys don't orphan the keyspace | the Worker, through `waitUntil` |
-| **L2 API in-process LRU** | recent results while the instance is awake | nothing (lost on spin-down) | the resolved computation (the F15 fix) | the API |
+| **L2 API in-process LRU** | recent results while the instance is awake | nothing (lost on spin-down) | operation, canonical spec, analytics version and data version (`src/atus_pipeline/api/cache.py`); keying on the resolved computation (F15) is deferred (ADR-012) | the API |
 
 - **KV store gate.** The Worker writes to KV only when all of these hold:
   - a POST to one of the three analysis paths;
@@ -738,11 +738,11 @@ Status codes:
 | Render outbound and Neon `data_transfer_bytes` per uncached analysis (checks the ~40 KB and ~80 KB estimates) | dashboards after the replay | 0 |
 | Render behaviour during an env-var switch; whether image pulls consume pipeline minutes; hook digest encoding | the first release switch; Billing page | 0 |
 | GHCR visibility after the first `GITHUB_TOKEN` push | packages page | 0 |
-| Worker CPU ms per request; Workers Logs events per request; whether invocation logs record client IPs or headers | Workers Logs | 0 |
+| Worker CPU ms per request; Workers Logs events per request; whether invocation logs, off until this is known ([ADR-014](ADR-014-observability.md)), would record client IPs or headers | the Worker's metrics; Workers Logs | 0 |
 | Minimal Cloudflare token for `wrangler deploy` with assets, KV and a Durable Object binding | dry run | 0 |
 | Whether Render offers Virginia for Free | the creation form, before creating the Neon project | 0 |
 | Cost of Neon's availability-check wakes (`compute_time_seconds` drift with no traffic, 3–7 days) | project GET | 0 |
-| Cannot be tested without exhausting a quota: the exact response after 100k/day (429 or a 1027 page) and Neon's error when exhausted | both handled in code; never induced | — |
+| Cannot be tested without exhausting a quota: the exact response after 100k/day (a 429, or a 1027 page whose status is undocumented) and Neon's error when exhausted | never induced. Only a non-JSON 429 gets the SPA's daily-allowance page; a 1027 page with a 5xx status is retried as a cold start and one with another 4xx is a generic error. Neon's error maps to `database_paused` | — |
 
 ## Amendments (implementation, 2026-10-21)
 
@@ -830,7 +830,7 @@ The decision is unchanged. This section records where the implementation (code, 
 
 - Step 2 ("CI builds the snapshot … but does not deploy it yet") is the `snapshot` job of a `deploy.yml` run. That run needs `releases/current.json`, updated for the new release, committed first. No snapshot-only workflow exists.
 - Step 4 is the same run's `deploy` job, after approval. It also redeploys the API image by digest through the hook.
-- Data rollback restores the two Render variables, then runs `deploy.yml` at the commit whose `releases/current.json` names the previous release.
+- Data rollback restores the two Render variables, then restores the previous `releases/current.json` on `main` and runs `deploy.yml` from `main` ([operations.md, "Rollback"](../operations.md#rollback)). Preflight runs only `main` or a `vX.Y.Z` tag, and an old commit's run would roll the code back too.
 - The governor's `NEON_PROJECT_ID` and `NEON_API_KEY` must move with the project (ADR-015).
 
 ### Verified locally only

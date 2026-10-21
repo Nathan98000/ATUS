@@ -82,8 +82,11 @@
     "bindings": [{ "name": "GOVERNOR", "class_name": "Governor" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Governor"] }],
+  // Workers Logs keeps the Worker's own JSON line (no client IP). Invocation
+  // logs stay off: Cloudflare's per-request records can carry request headers,
+  // CF-Connecting-IP included (ADR-014, "Workers invocation logs").
   "observability": {
     "enabled": true,
-    "logs": { "enabled": true, "invocation_logs": true }
+    "logs": { "enabled": true, "invocation_logs": false }
   }
 }
