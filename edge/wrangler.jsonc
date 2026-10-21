@@ -59,7 +59,9 @@
   //   IP_HMAC_KEY       key for the governor's HMAC of client IP prefixes
   //   NEON_API_KEY      optional, project-scoped key for the governor's usage poll
   // `wrangler deploy` refuses to publish while a required secret is missing; a
-  // Worker's very first deploy therefore uses `--secrets-file ~/.config/atus/edge.env`.
+  // Worker's very first deploy therefore passes them with `--secrets-file`,
+  // filtered to these names exactly as gen_edge_secrets.sh prints it. Never
+  // the whole edge.env: it also holds the API's ATUS_OPS_TOKEN.
   "secrets": {
     "required": ["EDGE_AUTH_SECRET", "RENDER_ORIGIN", "OPS_TOKEN", "IP_HMAC_KEY"]
   },

@@ -10,6 +10,7 @@ import { spawnSync } from 'node:child_process'
 import {
   chmodSync,
   lstatSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -17,7 +18,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
@@ -90,10 +91,56 @@ describe('gen_edge_secrets.sh', () => {
     }
     // The first deploy uploads the Worker's names only (--secrets-file sends every line).
     expect(commands).toContain(
-      `  npx wrangler deploy --secrets-file <(grep -E '^(EDGE_AUTH_SECRET|OPS_TOKEN|IP_HMAC_KEY|RENDER_ORIGIN)=' ${envFile})`,
+      `  (umask 077 && tmp=$(mktemp -d) && trap 'rm -rf -- "$tmp"' EXIT && grep -E '^(EDGE_AUTH_SECRET|OPS_TOKEN|IP_HMAC_KEY|RENDER_ORIGIN)=' ${envFile} > "$tmp/worker.env" && npx wrangler deploy --secrets-file "$tmp/worker.env")`,
     )
     expect(stdout).not.toContain('needs RENDER_ORIGIN first')
     expect(values.RENDER_ORIGIN).toBe('https://atus-api-abc123.onrender.com')
+  })
+
+  it("prints a first-deploy command that works: wrangler's CLI process reads the Worker's names only, and the copy is removed", () => {
+    // Regression: the command was `npx wrangler deploy --secrets-file <(grep ...)`.
+    // npx and wrangler's own launcher start the CLI as child processes, and on
+    // macOS Node opens only stdin/stdout/stderr in a child, so /dev/fd/N was
+    // gone (EBADF) by the time wrangler read it. This stand-in for npx starts
+    // a child process exactly like wrangler's launcher (bin/wrangler.js) and
+    // reports what that child could read.
+    const { stdout } = run('--render-origin', 'https://atus-api-abc123.onrender.com')
+    const command = stdout.split('\n').find((line) => line.includes('wrangler deploy'))
+    expect(command).toBeDefined()
+    writeFileSync(envFile, readFileSync(envFile, 'utf8') + 'NEON_API_KEY=owner-added\n')
+
+    const bin = join(home, 'bin')
+    mkdirSync(bin)
+    const launcher = join(bin, 'fake-wrangler.cjs')
+    writeFileSync(
+      launcher,
+      `const { spawn } = require('node:child_process')
+if (process.argv[2] === 'child') {
+  const args = process.argv.slice(3)
+  const path = args[args.indexOf('--secrets-file') + 1]
+  const names = require('node:fs').readFileSync(path, 'utf8').split('\\n')
+    .filter(Boolean).map((line) => line.split('=')[0])
+  process.stdout.write(JSON.stringify({ args, path, names }))
+} else {
+  const child = spawn(process.execPath, [__filename, 'child', ...process.argv.slice(2)],
+    { stdio: ['inherit', 'inherit', 'inherit', 'ipc'] })
+  child.on('exit', (code) => process.exit(code ?? 1))
+}
+`,
+    )
+    const npx = join(bin, 'npx')
+    writeFileSync(npx, `#!/bin/sh\nexec "${process.execPath}" "${launcher}" "$@"\n`)
+    chmodSync(npx, 0o755)
+
+    const result = spawnSync('bash', ['-c', command!], {
+      env: { PATH: `${bin}:${process.env.PATH ?? '/usr/bin:/bin'}`, HOME: home },
+      encoding: 'utf8',
+    })
+    expect(result.status, result.stderr).toBe(0)
+    const seen = JSON.parse(result.stdout) as { args: string[]; path: string; names: string[] }
+    expect(seen.args.slice(0, 2)).toEqual(['wrangler', 'deploy'])
+    expect(seen.names).toEqual([...WORKER_SECRETS, 'RENDER_ORIGIN'])
+    expect(() => lstatSync(dirname(seen.path))).toThrow() // the private copy is gone
   })
 
   it('generates the API ops token for Render and GitHub, never for the Worker', () => {

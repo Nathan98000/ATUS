@@ -175,10 +175,16 @@ done
 # A brand-new Worker's first `wrangler deploy` must carry the secrets that
 # wrangler.jsonc lists as required. --secrets-file uploads every line of the
 # file it reads, so it gets the Worker's names only, never ATUS_OPS_TOKEN or
-# EDGE_AUTH_SECRET_PREVIOUS.
+# EDGE_AUTH_SECRET_PREVIOUS: a filtered copy in a private temporary directory
+# (umask 077), removed when the command ends. Not a process substitution
+# (`--secrets-file <(grep ...)`): on macOS, Node starts child processes with
+# only stdin, stdout and stderr open, so wrangler's CLI process (which npx and
+# wrangler's own launcher start) cannot open /dev/fd/N and the deploy fails.
+worker_names="^(${WORKER_SECRETS// /|}|RENDER_ORIGIN)="
 printf '\nA new Worker'"'"'s first deploy must carry its required secrets (Worker names only):\n\n'
-printf "  npx wrangler deploy --secrets-file <(grep -E '^(%s)=' %s)\n" \
-  "${WORKER_SECRETS// /|}|RENDER_ORIGIN" "$quoted_file"
+# shellcheck disable=SC2016  # $tmp expands when the owner runs the printed command
+printf '  (umask 077 && tmp=$(mktemp -d) && trap %s EXIT && grep -E %s %s > "$tmp/worker.env" && npx wrangler deploy --secrets-file "$tmp/worker.env")\n' \
+  "'rm -rf -- \"\$tmp\"'" "'${worker_names}'" "$quoted_file"
 [[ -n "$origin" ]] || printf '  (needs RENDER_ORIGIN first: rerun with --render-origin)\n'
 printf '\nThe API must accept the same edge secret: set Render env ATUS_EDGE_SECRETS to the\n'
 printf 'EDGE_AUTH_SECRET value, copied from the file (never pasted into chat).\n'
