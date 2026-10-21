@@ -410,6 +410,43 @@ def test_a_failing_roles_sql_says_why(restored, cluster, tmp_path):
     assert cluster.owner_password not in output
 
 
+def test_a_restore_that_failed_after_pg_restore_is_finished_with_roles_only(
+        restored, cluster, tmp_path):
+    """Review r1 (no-resume-after-partial-restore): roles.sql failed after
+    pg_restore had committed. The documented rerun refuses the database (not
+    empty), and --roles-only skipped VACUUM (ANALYZE), so its statistics
+    checks failed: no documented command finished the restore. Now the
+    refusal names --roles-only, which analyzes a database that has no
+    planner statistics yet."""
+    name, owner_url = cluster.new_owned_database("srvr_partial")
+    role = f"{cluster.prefix}_srvr_partial_api"
+    secrets_file = tmp_path / "neon.env"
+    secrets_file.write_text(f"ATUS_OWNER_DATABASE_URL={owner_url}\n")
+    secrets_file.chmod(0o600)
+    bad = tmp_path / "roles.sql"
+    bad.write_text("DO $$ BEGIN RAISE EXCEPTION 'simulated provider refusal'; END $$;\n")
+    try:
+        failed = restore(restored["dump"], secrets_file, role, "--roles-sql", str(bad))
+        assert failed.returncode != 0
+        assert "simulated provider refusal" in failed.stdout + failed.stderr
+        rerun = restore(restored["dump"], secrets_file, role)
+        assert rerun.returncode != 0
+        assert "--roles-only" in rerun.stdout + rerun.stderr     # how to finish it
+        finished = restore(restored["dump"], secrets_file, role, "--roles-only")
+        output = finished.stdout + finished.stderr
+        assert finished.returncode == 0, output
+        assert "VACUUM (ANALYZE):" in output
+        assert "[PASS] serving: planner statistics" in output
+        assert "[PASS] serving: activities stored in activity_code order" in output
+        api_url = read_env_file(secrets_file)[API_URL_KEY]
+        with psycopg.connect(api_url) as conn:
+            assert conn.execute("SELECT count(*) FROM atus.respondents").fetchone()[0] > 0
+    finally:
+        with cluster.admin() as conn:
+            conn.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+            conn.execute(f'DROP ROLE IF EXISTS "{role}"')
+
+
 def test_roles_only_refuses_a_database_that_is_not_a_serving_database(
         restored, cluster, tmp_path):
     """``--roles-only`` skips the emptiness check, so it must not apply

@@ -896,7 +896,9 @@ This step **(wakes Neon)**. Do not pass `--verify-content-hash` on Neon: it re-r
 scripts/ops/restore_serving_db.sh --artifact <the release dump> --secrets-file <that project's file> --roles-only
 ```
 
-It refuses a database without the serving marker.
+It refuses a database without the serving marker. Its checks read the planner statistics from `pg_stats`, which a Neon suspend keeps, so it passes after a suspend too. If a check fails after `roles.sql` set a new password (`--rotate-api-password`, or a first run), the new password is in effect anyway: the output ends with a note saying so, and only the file's `ATUS_API_DATABASE_URL` works from then on.
+
+**Finish a restore that failed after `pg_restore`** (for example `roles.sql` refused by the provider: the error shows PostgreSQL's reason). `pg_restore` had committed, so rerunning the restore is refused ("the target database is not empty", with a pointer to this). Fix the cause, then run the same command with `--roles-only`: it applies `roles.sql`, writes the API credentials, runs `VACUUM (ANALYZE)` because the tables have no planner statistics yet, and runs every check. A new database (a new Neon project) is never needed for this.
 
 ### Data release
 

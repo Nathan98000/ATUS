@@ -11,7 +11,9 @@ The procedure of brief §9 and ADR-013, in order:
 3. refuse a target database that is not empty (each release goes into a new
    database: on Neon a new project, because one project's 1 GB covers every
    database and branch in it); ``--roles-only`` skips the restore and instead
-   refuses a database without the serving marker (``serving/guard.py``);
+   refuses a database without the serving marker (``serving/guard.py``). It
+   also finishes a restore that failed after ``pg_restore`` committed: step 6
+   runs then too, when tables lack planner statistics;
 4. ``pg_restore --no-owner --no-acl --single-transaction --exit-on-error``
    over the connection given (Neon: the direct endpoint), with a client at
    least as new as the server's major version;
@@ -47,7 +49,7 @@ from ..database.dsn import describe, redact
 from ..validation.results import CheckResult
 from . import pgtools
 from .artifact import manifest_for, read_manifest, verify_artifact
-from .checks import explain_worst_cases, serving_checks
+from .checks import explain_worst_cases, serving_checks, tables_without_statistics
 from .guard import serving_marker
 from .secrets_file import (
     API_PASSWORD_KEY,
@@ -236,6 +238,9 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
         raise RestoreError(
             "the target database is not empty: restore each release into a new, empty "
             "database (on Neon, a new project)"
+            + (". It holds a restored serving database: if an earlier restore into it "
+               "failed after pg_restore (at roles.sql, say), finish that one with "
+               "--roles-only" if marker else "")
         )
 
     if not options.roles_only:
@@ -276,7 +281,10 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
     say(f"Wrote {API_PASSWORD_KEY} and {API_URL_KEY} to {path} (mode 600)")
 
     with psycopg.connect(url, autocommit=True) as conn:
-        if not options.roles_only:
+        # --roles-only also finishes a restore that failed after pg_restore
+        # (roles.sql refused, say): that database has no planner statistics
+        # yet. A suspend never loses them (pg_stats is catalog data).
+        if not options.roles_only or tables_without_statistics(conn):
             started = time.perf_counter()
             tables = conn.execute(
                 "SELECT format('%I.%I', schemaname, tablename) FROM pg_tables "
