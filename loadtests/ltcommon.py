@@ -563,13 +563,173 @@ def safe_env(env_list: list[str]) -> dict:
 LOAD_GENERATORS = re.compile(r"(^|/)(k6|locust|wrk|wrk2|hey|vegeta|oha|bombardier|ab|jmeter|"
                              r"artillery|siege|gatling)$")
 
+# Other ATUS workloads that must not overlap a timed run (the measurement
+# agent's precondition): the equivalence replay, test suites, browsers driven
+# by Playwright, another k6, the Worker's dev server.
+OTHER_WORKLOADS = re.compile(r"scripts/equivalence/replay\.py|pytest|playwright|"
+                             r"(^|[\s/])k6(\s|$)|wrangler")
+# The project's long-lived databases: never started, stopped or written by
+# these tools; a timed run needs them idle (no active query but our own).
+PROTECTED_DBS = {"atus-postgres": "atus", "atus-wsb-drill": "postgres",
+                 "atus-wsb-build": "postgres", "atus-emu-pg": "atus"}
+OWN_DB_APPS = ("atus-api", "atus-lt-marker")
+
+
+def _protected_db_activity(own_apps: tuple[str, ...]) -> dict:
+    """Client backends of each protected database (no query text is recorded)."""
+    sql = ("SELECT coalesce(json_agg(json_build_object("
+           "'pid', pid, 'user', usename, 'db', datname, 'app', application_name, "
+           "'state', state, 'wait', wait_event_type, "
+           "'query_age_s', round(extract(epoch FROM now() - query_start)::numeric, 1), "
+           "'xact_age_s', round(extract(epoch FROM now() - xact_start)::numeric, 1))), '[]') "
+           "FROM pg_stat_activity WHERE backend_type = 'client backend' "
+           "AND pid <> pg_backend_pid()")
+    result = {}
+    for container, user in PROTECTED_DBS.items():
+        proc = run(["docker", "exec", "-e", f"PGAPPNAME={MARKER_APP}", container, "psql", "-X",
+                    "-q", "-U", user, "-d", "postgres", "-Atc", sql], check=False, timeout=60)
+        if proc.returncode != 0:
+            result[container] = {"error": f"psql exited {proc.returncode}"}
+            continue
+        try:
+            backends = json.loads(proc.stdout.strip() or "[]")
+        except ValueError:
+            result[container] = {"error": "unparsable"}
+            continue
+        busy = [b for b in backends if b.get("state") not in ("idle", None)
+                and b.get("app") not in own_apps]
+        result[container] = {"client_backends": len(backends),
+                             "by_state": dict(Counter(str(b.get("state")) for b in backends)),
+                             "active_not_ours": busy}
+    return result
+
+
+def docker_stats_all() -> list[dict]:
+    """One `docker stats --no-stream` sample of every running container."""
+    rows = []
+    for line in out(["docker", "stats", "--no-stream", "--format", "{{json .}}"],
+                    check=False).splitlines():
+        try:
+            sample = json.loads(line)
+        except ValueError:
+            continue
+        used, _, _ = (sample.get("MemUsage") or "").partition("/")
+        rows.append({"name": sample.get("Name"),
+                     "cpu_pct": float((sample.get("CPUPerc") or "0%").rstrip("%") or 0),
+                     "mem_mib": None if parse_size(used) is None
+                     else round(parse_size(used) / 2 ** 20, 1)})
+    return rows
+
+
+def precondition_snapshot(own_containers: set[str],
+                          own_apps: tuple[str, ...] = OWN_DB_APPS) -> dict:
+    """The measurement precondition, as evidence.
+
+    ok requires: no process matching OTHER_WORKLOADS (the replay, pytest,
+    Playwright, another k6, wrangler); no running atus-* container other than
+    the four protected databases and this run's own atus-lt-* containers; and
+    no active query in a protected database except ours. Processes are
+    recorded by pid, age and a truncated command line only when they match;
+    no query text is recorded.
+    """
+    table: dict[int, tuple[int, str, str]] = {}
+    for line in run(["ps", "-Ao", "pid=,ppid=,etime=,command="], check=False).stdout.splitlines():
+        parts = line.split(None, 3)
+        if len(parts) == 4 and parts[0].isdigit() and parts[1].isdigit():
+            table[int(parts[0])] = (int(parts[1]), parts[2], parts[3])
+    ours = set()  # this process and its ancestors (the shell that started it)
+    pid = os.getpid()
+    while pid and pid not in ours:
+        ours.add(pid)
+        pid = table.get(pid, (0, "", ""))[0]
+    matches = [{"pid": pid, "etime": etime, "command": command[:120]}
+               for pid, (_ppid, etime, command) in sorted(table.items())
+               if pid not in ours and OTHER_WORKLOADS.search(command)]
+    containers = docker_ps()
+    unexpected = [c["name"] for c in containers
+                  if c["name"].startswith("atus") and c["name"] not in PROTECTED_DBS
+                  and c["name"] not in own_containers and not c["name"].startswith("atus-lt-")]
+    other_lt = [c["name"] for c in containers
+                if c["name"].startswith("atus-lt-") and c["name"] not in own_containers]
+    activity = _protected_db_activity(own_apps)
+    busy_dbs = {name: item["active_not_ours"] for name, item in activity.items()
+                if item.get("active_not_ours")}
+    reasons = []
+    if matches:
+        reasons.append(f"other workload processes: {[m['pid'] for m in matches]}")
+    if unexpected:
+        reasons.append(f"other atus containers running: {unexpected}")
+    if busy_dbs:
+        reasons.append(f"active queries in protected databases: {sorted(busy_dbs)}")
+    return {
+        "checked_at": now_utc(),
+        "ok": not reasons,
+        "reasons": reasons,
+        "criteria": "no process matching scripts/equivalence/replay.py|pytest|playwright|k6|"
+                    "wrangler (other than this run's); no atus-* container besides "
+                    f"{sorted(PROTECTED_DBS)} and this run's own; no active query in those "
+                    "databases except this run's",
+        "workload_processes": matches,
+        "other_atus_lt_containers": other_lt,
+        "protected_db_activity": activity,
+        "load_average_1_5_15": [round(x, 2) for x in os.getloadavg()],
+        "docker_ps": containers,
+        "docker_stats": docker_stats_all(),
+    }
+
+
+class BackgroundSampler:
+    """Every `period_s`, one `docker stats --no-stream` sample of the containers
+    that are not ours (other projects' idle services): background noise."""
+
+    def __init__(self, own: set[str], path: Path, period_s: float = 60.0):
+        self.own = own
+        self.path = path
+        self.period_s = period_s
+        self.stop_event = threading.Event()
+        self.thread: threading.Thread | None = None
+
+    def start(self) -> None:
+        self.thread = threading.Thread(target=self._loop, daemon=True)
+        self.thread.start()
+
+    def _loop(self) -> None:
+        with open(self.path, "w") as sink:
+            while True:
+                now = round(time.time(), 3)
+                for row in docker_stats_all():
+                    if row["name"] not in self.own:
+                        sink.write(json.dumps({"ts": now, **row}) + "\n")
+                sink.flush()
+                if self.stop_event.wait(self.period_s):
+                    return
+
+    def stop(self) -> None:
+        self.stop_event.set()
+        if self.thread:
+            self.thread.join(timeout=30)
+
+
+def summarize_background(path: Path) -> dict:
+    per: dict[str, list[float]] = {}
+    if not path.exists():
+        return {}
+    for line in path.read_text().splitlines():
+        row = json.loads(line)
+        per.setdefault(row["name"], []).append(row["cpu_pct"])
+    return {"samples_per_container": max((len(v) for v in per.values()), default=0),
+            "cpu_pct_max": {name: max(v) for name, v in sorted(per.items())},
+            "cpu_pct_sum_of_means": round(sum(sum(v) / len(v) for v in per.values()), 2)}
+
 
 def ran_alone_check(own_projects: set[str], own_containers: set[str]) -> dict:
     """Is this the only load workload? Checked before (and after) a run.
 
     "yes" requires: no other load generator process on the host, no other
-    atus-lt-* compose project, and no other container above 5% of one core in
-    a `docker stats` sample. Other containers that are merely running (idle
+    atus-lt-* compose project, no other container above 5% of one core in
+    a `docker stats` sample, and the measurement precondition
+    (precondition_snapshot: no other ATUS workload process or container, the
+    protected databases idle). Other containers that are merely running (idle
     databases of other projects) and host apps are recorded, not disqualifying.
     """
     reasons = []
@@ -620,13 +780,17 @@ def ran_alone_check(own_projects: set[str], own_containers: set[str]) -> dict:
     if busy:
         reasons.append(f"other containers busy (> 5% of a core in two samples 3 s apart): "
                        f"{busy}")
+    precondition = precondition_snapshot(own_containers)
+    reasons.extend(f"precondition: {reason}" for reason in precondition["reasons"])
     top.sort(reverse=True)
     return {
         "checked_at": now_utc(),
         "ran_alone": "no" if reasons else "yes",
         "reasons": reasons,
         "criteria": "no other load generator process; no other atus-lt-* stack; no other "
-                    "container above 5% of one core in two docker stats samples 3 s apart",
+                    "container above 5% of one core in two docker stats samples 3 s apart; "
+                    "the measurement precondition (see precondition.criteria)",
+        "precondition": precondition,
         "other_container_blips": blips,
         "load_average_1_5_15": [round(x, 2) for x in os.getloadavg()],
         "top_host_processes_pcpu": [{"pcpu": p, "comm": c} for p, c in top[:8]],

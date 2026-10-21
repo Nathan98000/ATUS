@@ -186,3 +186,24 @@ def test_raw_output_stays_out_of_the_repository(tmp_path):
     assert stage.dir == tmp_path / "s1"
     with pytest.raises(lt.LoadTestError):
         runner.Stage(tmp_path, "Bad Name")
+
+
+def test_other_workloads_are_recognised_by_command_line():
+    hits = ["/x/.venv/bin/python scripts/equivalence/replay.py --all",
+            "/x/.venv/bin/python -m pytest tests/unit", "node /x/playwright/cli.js test",
+            "/opt/homebrew/bin/k6 run x.js", "k6 run --quiet y.js", "node /x/wrangler dev"]
+    misses = ["python3 loadtests/run.py profile --set EXECUTOR=duration",
+              "cat loadtests/k6/uncached.js", "postgres: atus atus 172.18.0.3 idle"]
+    assert all(lt.OTHER_WORKLOADS.search(cmd) for cmd in hits)
+    assert not any(lt.OTHER_WORKLOADS.search(cmd) for cmd in misses)
+
+
+def test_background_noise_is_summarised_per_container(tmp_path):
+    path = tmp_path / "bg.jsonl"
+    path.write_text('{"ts": 1, "name": "a", "cpu_pct": 1.0, "mem_mib": 5}\n'
+                    '{"ts": 2, "name": "a", "cpu_pct": 3.0, "mem_mib": 5}\n'
+                    '{"ts": 1, "name": "b", "cpu_pct": 0.5, "mem_mib": 1}\n')
+    summary = lt.summarize_background(path)
+    assert summary["cpu_pct_max"] == {"a": 3.0, "b": 0.5}
+    assert summary["cpu_pct_sum_of_means"] == 2.5
+    assert summary["samples_per_container"] == 2

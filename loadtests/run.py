@@ -152,7 +152,11 @@ class Stage:
 
 
 def image_tag() -> tuple[str, str]:
-    sha = lt.out(["git", "rev-parse", "HEAD"])
+    """The tag follows the last commit that changed the image's inputs, not
+    HEAD: a commit to the load-test tooling (or the docs) mid-campaign keeps
+    the API image under test, and its build SHA, unchanged."""
+    sha = lt.out(["git", "log", "-1", "--format=%H", "--", *lt.IMAGE_INPUTS]) or \
+        lt.out(["git", "rev-parse", "HEAD"])
     dirty = lt.git_snapshot()["image_inputs_dirty"]
     return f"atus-api:lt-{sha[:12]}{'-dirty' if dirty else ''}", sha
 
@@ -379,6 +383,7 @@ class StackTarget(Target):
             # a password; it must never reach a statement log).
             print("== restore the serving dump (pg_restore --no-owner --no-acl, VACUUM ANALYZE)")
             self.write_override("laptop", api, pg_log=False)
+            self.stage.state.pop("profile", None)
             self.compose("up", "-d", "--wait", "--wait-timeout", "300", "db")
             started = time.time()
             self.compose("run", "--rm", "--no-deps", "restore", profiles=("dump",), timeout=7200)
@@ -390,11 +395,33 @@ class StackTarget(Target):
             self.stage.save()
         self.apply_profile(profile, api, pg_log=not args.no_pg_log)
 
+    def db_profile_applied(self, profile: str, pg_log: bool) -> bool:
+        """The running database container already has this profile's limits
+        and logging: keep it (and its warm caches) instead of recreating it."""
+        if self.stage.state.get("profile") != profile or self.stage.state.get("pg_log") != pg_log:
+            return False
+        try:
+            info = lt.docker_inspect(self.db_container)
+        except lt.LoadTestError:
+            return False
+        host = info["HostConfig"]
+        prof = PROFILES[profile]
+        want_mem = 0 if not prof["db_memory"] else int(prof["db_memory"].rstrip("g")) * 2 ** 30
+        logging = "log_min_duration_statement=0" in (info.get("Args") or [])
+        return bool(info["State"].get("Running")) and logging == pg_log and \
+            (host.get("NanoCpus") or 0) == int(prof["db_cpus"] * 1e9) and \
+            (host.get("Memory") or 0) == want_mem
+
     def apply_profile(self, profile: str, api: dict, *, pg_log: bool) -> None:
-        print(f"== DB profile {profile}: {PROFILES[profile]['label']}")
+        keep = self.db_profile_applied(profile, pg_log)
         self.write_override(profile, api, pg_log=pg_log)
-        self.compose("up", "-d", "--no-deps", "--force-recreate", "--wait",
-                     "--wait-timeout", "300", "db")
+        if keep:
+            print(f"== DB profile {profile} already applied; database container kept "
+                  "(warm caches); API recreated with the requested settings")
+        else:
+            print(f"== DB profile {profile}: {PROFILES[profile]['label']}")
+            self.compose("up", "-d", "--no-deps", "--force-recreate", "--wait",
+                         "--wait-timeout", "300", "db")
         self.profile = profile
         self.stage.state.update({"profile": profile, "api": api, "pg_log": pg_log})
         self.stage.save()
@@ -427,6 +454,8 @@ class StackTarget(Target):
             "profile_label": PROFILES[self.stage.state["profile"]]["label"],
             "api_container_limits": lt.container_limits(self.api_container),
             "db_container_limits": lt.container_limits(self.db_container),
+            "db_container_started_at": lt.docker_inspect(self.db_container)["State"].get(
+                "StartedAt"),
             "db_settings": settings,
             "cluster_bytes": int(self.psql(
                 "SELECT sum(pg_database_size(datname)) FROM pg_database")),
@@ -687,7 +716,7 @@ def run_bundle(target: Target, stage: Stage, args, *, cold_start_runs: int = 0) 
     # This stage's own stack counts as ours even when idle beside a baseline run;
     # its containers are still checked for CPU use like any other.
     own_projects = {getattr(target, "project", None) or f"atus-lt-{stage.name}"}
-    own_containers = {target.api_container, target.db_container}
+    own_containers = {target.api_container, target.db_container, f"atus-lt-{stage.name}-cold"}
     meta = {"bundle": bundle.name, "stage": stage.name, "timed": timed,
             "dry_run": args.dry_run, "profile": target.profile,
             "ran_alone_before": lt.ran_alone_check(own_projects, own_containers),
@@ -696,6 +725,10 @@ def run_bundle(target: Target, stage: Stage, args, *, cold_start_runs: int = 0) 
             "scenarios": []}
     lt.write_json(bundle / "environment.json", meta)
     print(f"== bundle {bundle} (ran alone: {meta['ran_alone_before']['ran_alone']})")
+    if meta["ran_alone_before"]["ran_alone"] != "yes":
+        print(f"   NOT ALONE: {meta['ran_alone_before']['reasons']}")
+    background = lt.BackgroundSampler(own_containers, bundle / "background_stats.jsonl")
+    background.start()
     if cold_start_runs:
         import cold_start
         meta["cold_start"] = cold_start.run_cold_start(
@@ -707,6 +740,13 @@ def run_bundle(target: Target, stage: Stage, args, *, cold_start_runs: int = 0) 
                                                   restart=not args.no_api_restart))
             lt.write_json(bundle / "environment.json", meta)
     finally:
+        background.stop()
+        meta["background_noise"] = {
+            "what": "docker stats --no-stream of every container that is not this run's, "
+                    "once a minute during the bundle (other projects' services)",
+            **lt.summarize_background(bundle / "background_stats.jsonl")}
+        if (bundle / "background_stats.jsonl").exists():
+            lt.gzip_file(bundle / "background_stats.jsonl")
         meta["ran_alone_after"] = lt.ran_alone_check(own_projects, own_containers)
         meta["host_after"] = lt.host_snapshot()
         meta["docker_ps_after"] = lt.docker_ps()

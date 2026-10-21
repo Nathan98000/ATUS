@@ -18,6 +18,7 @@ Reproducible load tests for the ATUS API, run **locally** against the production
 | `run.py` | the orchestrator: stack, restore, DB profiles, scenarios, bundles, export |
 | `cold_start.py` | container start → first `200` on `/health` and on `/api/v1/meta`, N times |
 | `analyze.py` | prints a bundle (or an exported results directory) as tables |
+| `precondition.py` | waits (polling, up to 3 h) until no other ATUS workload runs and the project's databases are idle, and writes the evidence |
 | `ltcommon.py` | shared helpers: PostgreSQL log attribution, `docker stats` sampling, statistics, the "ran alone" check, secret scan |
 | `results/` | committed, compact results (see [`results/README.md`](results/README.md)) |
 
@@ -69,10 +70,10 @@ python3 loadtests/run.py down --stage s1            # --purge also deletes the d
   - sets the API's CPU and RAM (default 0.1 CPU / 512 MB, no swap: Render Free) and the database's (the profile);
   - adds statement-duration logging to the database container's command;
   - disables the API image's Docker `HEALTHCHECK`, which starts a Python process inside the 0.1-CPU container every 30 s. Render ignores it and probes `/health` over HTTP, as run.py does.
-- **Image.** `atus-api:lt-<commit>` is built from this checkout's `Dockerfile`, with a `-dirty` suffix when the files the image copies have uncommitted changes. On this Mac it is a native arm64 build; Render runs linux/amd64. The CPU quota emulates Render's CPU share, not its micro-architecture.
+- **Image.** `atus-api:lt-<commit>` is built from this checkout's `Dockerfile`, with a `-dirty` suffix when the files the image copies have uncommitted changes. `<commit>` is the last commit that changed those files (not HEAD), so committing tooling or documents mid-campaign keeps the image under test. On this Mac it is a native arm64 build; Render runs linux/amd64. The CPU quota emulates Render's CPU share, not its micro-architecture.
 - **Restore, once per stage.** The dump's sha256 is checked against its `.sha256` file and its manifest. The `restore` service then runs `pg_restore --no-owner --no-acl` as the non-superuser `neondb_owner`, followed by `VACUUM (ANALYZE)` (`deploy/stack/restore_dump.sh`). The `roles` service applies `scripts/ops/roles.sql`.
   - The restore runs unconstrained and without statement logging, because `roles.sql` sets a password.
-  - The volume `atus-lt-<stage>_pgdata` is reused across profiles. Switching profile recreates only the `db` container with the new limits, then a fresh API.
+  - The volume `atus-lt-<stage>_pgdata` is reused across profiles. Switching profile recreates only the `db` container with the new limits, then a fresh API. When the requested profile (limits and statement logging, read back from `docker inspect`) is already applied, the `db` container is kept with its warm caches and only the API is recreated, for example to change `--api-env` between bundles.
 - **DB profiles.** Neon's own ratio is 1 CU = 1 vCPU + 4 GB.
 
   | Profile | Database container | Stands for |
@@ -172,7 +173,8 @@ One `profile`, `scenario` or `baseline` invocation writes one bundle, `<out-root
 - the dump's sha256 and manifest;
 - the host: model, CPU, memory, load averages before and after, Docker and k6 versions;
 - `docker ps` before and after;
-- **ran alone: yes/no**, checked before and after the run. "yes" requires no other load-generator process, no other `atus-lt-*` stack, and no other container above 5% of a core in two `docker stats` samples 3 s apart. Idle containers of other projects and host apps are listed, not disqualifying.
+- **ran alone: yes/no**, checked before and after the run. "yes" requires no other load-generator process, no other `atus-lt-*` stack, no other container above 5% of a core in two `docker stats` samples 3 s apart, and the measurement precondition (`precondition`): no process matching the equivalence replay, pytest, Playwright, another k6 or wrangler; no `atus-*` container besides the four protected databases and the run's own; those databases without an active query but the run's own (`pg_stat_activity` by state, no query text). Idle containers of other projects and host apps are listed, not disqualifying;
+- **background noise**: a `docker stats` sample of every other container once a minute during the bundle (`background_stats.jsonl.gz`, summarized in `background_noise`).
 
 **Per scenario** (`<label>/`):
 
