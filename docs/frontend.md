@@ -179,11 +179,22 @@ data swap by itself: every later response's `X-Data-Version` is compared
 with the loaded one (`serviceStatus.ts`), and a difference shows a polite
 "different data release — reload" notice. (Before Phase 5 the docs said the
 key invalidated "by construction"; that only held after a reload, and only
-with a globally unique data version — audit F06/F27.) The notice offers
-"Reload page" only when a reload would load that release: without a static
-snapshot (the page's `/meta` came from the API), or when the snapshot
-pointer, read again with `no-cache`, now names it
-(`snapshot.ts reloadLoadsVersion`). During a release switch the API serves
+with a globally unique data version — audit F06/F27.) The statistical
+implementation is tracked the same way (review round 2): the page's `/meta`
+`analytics_version` is compared with every later `X-Analytics-Version` and
+with every result's own `analytics_version`, so a release that changes only
+`ANALYTICS_VERSION` shows a notice in its own words ("a different version of
+its statistical methods"). The cache key keeps the page's versions; a result
+of another release or implementation is not hidden by it but announced by
+the notice, and each result still shows its own `analytics_version` (the
+methodology panels of all three views, and the exports). The notice offers
+"Reload page" only when a reload would load that release: when the snapshot
+pointer, read again with `no-cache`, now names it, or, without a usable
+pointer, when the site's own `/api/v1/meta` (also `no-cache`) already
+reports it (`snapshot.ts reloadLoadsVersion`). That is what a reload reads:
+through the site the edge Worker answers a plain `/api/v1/meta` from its own
+deployed snapshot, not from the API, so "no snapshot loaded" does not mean
+"the reload gets the API's release" (review round 2). During a release switch the API serves
 the new release before the deploy job publishes the new snapshot (ADR-013
 step 8); every page load, a reload or a new tab alike, then reads the old
 snapshot, so the notice instead says the service is switching releases,

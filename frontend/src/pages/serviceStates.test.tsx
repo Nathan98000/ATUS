@@ -547,10 +547,15 @@ describe('data release changes (F27)', () => {
   })
 
   it('offers a reload when a response comes from a different data release', async () => {
+    // The page loaded serving-a; the switched API now answers serving-b, its
+    // /meta included (what a reload would read).
+    let metaReads = 0
     server.use(
-      http.get(api('/meta'), () =>
-        HttpResponse.json(metaFixture, { headers: { 'X-Data-Version': '0325:serving-a:111' } }),
-      ),
+      http.get(api('/meta'), () => {
+        metaReads += 1
+        const version = metaReads === 1 ? '0325:serving-a:111' : '0325:serving-b:222'
+        return HttpResponse.json(metaFixture, { headers: { 'X-Data-Version': version } })
+      }),
       http.post(api('/analysis/estimate'), () =>
         HttpResponse.json(estimateSleepFixture, {
           headers: { ...analysisHeaders(), 'X-Data-Version': '0325:serving-b:222' },
@@ -579,6 +584,152 @@ describe('data release changes (F27)', () => {
     renderApp(sleepRoute)
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
     expect(screen.queryByText(/different data release/)).not.toBeInTheDocument()
+  })
+
+  // Review round 2 (known issue from round 1): without a snapshot the reload
+  // check assumed the page's /meta came from the API, which already serves
+  // the new release. Through the site the edge Worker answers a plain
+  // /api/v1/meta from its own deployed snapshot, so a reload can load the
+  // old release again: the check asks what a reload would read.
+  it('without a loaded snapshot, offers no reload while the site’s /meta still reports the old release', async () => {
+    server.use(
+      http.get(api('/meta'), () =>
+        HttpResponse.json(metaFixture, { headers: { 'X-Data-Version': '0325:serving-a:111' } }),
+      ),
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(estimateSleepFixture, {
+          headers: { ...analysisHeaders(), 'X-Data-Version': '0325:serving-b:222' },
+        }),
+      ),
+    )
+    const requests = countRequests()
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    const notice = await screen.findByText(/switching to a different data release/)
+    expect(notice).toHaveTextContent('reloading the page does not change that yet')
+    expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
+    // The check read the site's /meta (one more GET), never through the HTTP cache.
+    expect(requests('GET /api/v1/meta')).toBe(2)
+  })
+
+  it('a page whose snapshot manifest failed to load asks the pointer a reload would read', async () => {
+    // The pointer still names the old release; this page fell back to the
+    // API because the manifest could not be read when it loaded.
+    let manifestReads = 0
+    server.use(
+      http.get(SNAPSHOT_POINTER_PATH, () =>
+        HttpResponse.json({
+          snapshot_id: SNAPSHOT_ID,
+          data_version: '0325:serving-a:111',
+          analytics_version: '0.2',
+          api_version: 'v1',
+        }),
+      ),
+      http.get(`/snap/${SNAPSHOT_ID}/manifest.json`, () => {
+        manifestReads += 1
+        return new HttpResponse('unavailable', { status: 503 })
+      }),
+      http.get(api('/meta'), () =>
+        HttpResponse.json(metaFixture, { headers: { 'X-Data-Version': '0325:serving-a:111' } }),
+      ),
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(estimateSleepFixture, {
+          headers: { ...analysisHeaders(), 'X-Data-Version': '0325:serving-b:222' },
+        }),
+      ),
+    )
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(manifestReads).toBe(1)
+    expect(await screen.findByText(/switching to a different data release/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
+  })
+
+  // Review round 2: only X-Data-Version was compared, so a release that
+  // changed only ANALYTICS_VERSION mixed two statistical implementations on
+  // one page under the old version tag, without any notice.
+  it('a result from another analytics version offers a reload (header)', async () => {
+    let metaReads = 0
+    server.use(
+      http.get(api('/meta'), () => {
+        metaReads += 1
+        const analytics = metaReads === 1 ? '0.2' : '0.3'
+        return HttpResponse.json(
+          { ...metaFixture, analytics_version: analytics },
+          {
+            headers: {
+              'X-Data-Version': '0325:serving-a:111',
+              'X-Analytics-Version': analytics,
+            },
+          },
+        )
+      }),
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(
+          { ...estimateSleepFixture, analytics_version: '0.3' },
+          {
+            headers: {
+              ...analysisHeaders(),
+              'X-Data-Version': '0325:serving-a:111',
+              'X-Analytics-Version': '0.3',
+            },
+          },
+        ),
+      ),
+    )
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    const notice = await screen.findByText(/different version of its statistical methods/)
+    expect(notice.closest('output')).toBe(noticeRegions()[1])
+    expect(notice).toHaveTextContent('analytics 0.3')
+    expect(screen.getByRole('button', { name: 'Reload page' })).toBeInTheDocument()
+    expect(screen.queryByText(/different data release/)).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(document.body)
+  })
+
+  it('a result whose body names another analytics version is noticed too', async () => {
+    // A cached or snapshot answer carries its version in the body.
+    server.use(
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(
+          { ...estimateSleepFixture, analytics_version: '0.3' },
+          { headers: analysisHeaders() },
+        ),
+      ),
+    )
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(await screen.findByText(/statistical methods/)).toHaveTextContent('analytics 0.3')
+  })
+
+  it('mid-switch, an analytics change the snapshot does not have yet offers no reload', async () => {
+    // The API was switched first (deploy.yml deploys it before the Worker):
+    // a reload would load the deployed snapshot, still analytics 0.2.
+    await installSnapshot({
+      get: { '/api/v1/meta': metaFixture, '/api/v1/activities/presets': presetsFixture },
+    })
+    server.use(
+      http.get(api('/wake'), () => HttpResponse.json({ origin: 'warm' })),
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(
+          { ...estimateSleepFixture, analytics_version: '0.3' },
+          {
+            headers: {
+              ...analysisHeaders(),
+              'X-Data-Version': SNAPSHOT_DATA_VERSION,
+              'X-Analytics-Version': '0.3',
+            },
+          },
+        ),
+      ),
+    )
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    const notice = await screen.findByText(
+      /switching to a different version of its statistical/,
+    )
+    expect(notice).toHaveTextContent('reloading the page does not change that yet')
+    expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
   })
 })
 

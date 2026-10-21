@@ -16,7 +16,11 @@ import { API_VERSION_PREFIX, apiRequest, type ApiResult } from './client'
 import { checkMetaCompatibility } from './compat'
 import { prewake } from './prewake'
 import { COLD_START_BUDGET_MS, withRetries } from './resilience'
-import { setLoadedDataVersion } from './serviceStatus'
+import {
+  noteServedAnalyticsVersion,
+  setLoadedAnalyticsVersion,
+  setLoadedDataVersion,
+} from './serviceStatus'
 import { snapshotGet, snapshotPost } from './snapshot'
 import type {
   ActivityDetailResponse,
@@ -73,6 +77,7 @@ export async function fetchMeta(signal?: AbortSignal): Promise<LoadedMeta> {
   const reported = result.dataVersion ?? bodyDataVersion(result.data)
   const dataVersion = reported ?? `${meta.data.release}:run${meta.data.ingestion_run_id ?? 0}`
   setLoadedDataVersion(dataVersion, reported !== null)
+  setLoadedAnalyticsVersion(meta.analytics_version)
   return { meta, dataVersion }
 }
 
@@ -112,18 +117,31 @@ export async function runAnalysis<Op extends Operation>(
   const body = stableStringify(spec satisfies AnalysisRequest)
 
   const fromSnapshot = await snapshotPost<Response>(API_VERSION_PREFIX + path, body)
-  if (fromSnapshot) return fromSnapshot
+  if (fromSnapshot) return notedAnalyticsVersion(fromSnapshot)
 
   // Not prewarmed: this analysis needs the API, which may be asleep.
   void prewake()
-  return withRetries(
-    () =>
-      apiRequest<Response>(path, {
-        method: 'POST',
-        jsonBody: body,
-        signal,
-        timeoutMs: ANALYSIS_ATTEMPT_TIMEOUT_MS,
-      }),
-    { kind: 'analysis', signal },
+  return notedAnalyticsVersion(
+    await withRetries(
+      () =>
+        apiRequest<Response>(path, {
+          method: 'POST',
+          jsonBody: body,
+          signal,
+          timeoutMs: ANALYSIS_ATTEMPT_TIMEOUT_MS,
+        }),
+      { kind: 'analysis', signal },
+    ),
   )
+}
+
+/**
+ * A result names the statistical implementation that computed it; one from
+ * another implementation than the page's is noticed like a data release
+ * change (review round 2), whether it came with `X-Analytics-Version` or not.
+ */
+function notedAnalyticsVersion<T>(result: ApiResult<T>): ApiResult<T> {
+  const version = (result.data as { analytics_version?: unknown } | null)?.analytics_version
+  noteServedAnalyticsVersion(typeof version === 'string' ? version : null)
+  return result
 }

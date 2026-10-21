@@ -24,7 +24,7 @@
  * reading the snapshot also falls back to the API: the snapshot can only make
  * the site faster and more available, never break it.
  */
-import type { ApiResult } from './client'
+import { API_VERSION_PREFIX, apiBaseUrl, type ApiResult } from './client'
 import { SUPPORTED_API_VERSION, apiMajorVersion } from './compat'
 
 export const SNAPSHOT_POINTER_PATH = '/snap/current.json'
@@ -40,6 +40,8 @@ export interface SnapshotPostEntry {
 export interface Snapshot {
   id: string
   dataVersion: string
+  /** The statistical implementation that computed the snapshot, when it says. */
+  analyticsVersion: string | null
   /** API path (e.g. `/api/v1/meta`) → file, relative to the snapshot directory. */
   get: Record<string, string>
   /** Request hash → analysis response entry. */
@@ -91,6 +93,8 @@ function parseSnapshot(pointer: unknown, manifest: unknown, id: string): Snapsho
   if (manifest.snapshot_id !== id) return null
   const dataVersion = manifest.data_version ?? pointer.data_version
   if (typeof dataVersion !== 'string' || dataVersion === '') return null
+  const analytics = manifest.analytics_version ?? pointer.analytics_version
+  const analyticsVersion = typeof analytics === 'string' && analytics !== '' ? analytics : null
   if (!isRecord(manifest.get) || !isRecord(manifest.post)) return null
 
   const get: Record<string, string> = {}
@@ -108,7 +112,7 @@ function parseSnapshot(pointer: unknown, manifest: unknown, id: string): Snapsho
       x_cache: typeof entry.x_cache === 'string' ? entry.x_cache : undefined,
     }
   }
-  return { id, dataVersion, get, post }
+  return { id, dataVersion, analyticsVersion, get, post }
 }
 
 async function fetchSnapshot(): Promise<Snapshot | null> {
@@ -138,26 +142,81 @@ export function loadSnapshot(): Promise<Snapshot | null> {
   return loading
 }
 
-/**
- * Whether reloading the page would load metadata of data version `version`.
- * Without a snapshot the page's `/meta` comes from the API, which already
- * serves `version`. With one, the reload loads whatever snapshot the pointer
- * names now: during a release switch (ADR-013 step 8) the API serves the new
- * release before the deploy job publishes the new snapshot, and a reload
- * then loads the old snapshot again. An unreadable or foreign pointer means
- * the reload would fall back to the API.
- */
-export async function reloadLoadsVersion(version: string): Promise<boolean> {
-  if (!(await loadSnapshot())) return true
+/** What identifies a release to the page; null where unknown (or, as a target, unchanged). */
+export interface ReleaseVersions {
+  dataVersion: string | null
+  analyticsVersion: string | null
+}
+
+function nonEmpty(value: unknown): string | null {
+  return typeof value === 'string' && value !== '' ? value : null
+}
+
+/** The release the snapshot pointer names now, or null when it is unusable. */
+async function pointerVersions(): Promise<ReleaseVersions | null> {
   let pointer: unknown
   try {
     pointer = await fetchJson(SNAPSHOT_POINTER_PATH, { cache: 'no-cache' })
   } catch {
-    return true
+    return null
   }
-  if (!isRecord(pointer) || typeof pointer.data_version !== 'string') return true
-  if (apiMajorVersion(pointer.api_version) !== SUPPORTED_API_VERSION) return true
-  return pointer.data_version === version
+  if (!isRecord(pointer) || typeof pointer.data_version !== 'string') return null
+  if (apiMajorVersion(pointer.api_version) !== SUPPORTED_API_VERSION) return null
+  return {
+    dataVersion: pointer.data_version,
+    analyticsVersion: nonEmpty(pointer.analytics_version),
+  }
+}
+
+/**
+ * The release the site's own `/api/v1/meta` reports now (headers, else the
+ * body), as a reload without a snapshot reads it; null when it cannot be read.
+ */
+async function siteMetaVersions(): Promise<ReleaseVersions | null> {
+  try {
+    const response = await fetch(`${apiBaseUrl()}${API_VERSION_PREFIX}/meta`, {
+      cache: 'no-cache',
+      headers: { Accept: 'application/json' },
+    })
+    if (!response.ok) return null
+    const body = (await response.json()) as unknown
+    const record = isRecord(body) ? body : {}
+    const data = isRecord(record.data) ? record.data : {}
+    return {
+      dataVersion:
+        nonEmpty(response.headers.get('X-Data-Version')) ??
+        nonEmpty(record.data_version) ??
+        nonEmpty(data.data_version),
+      analyticsVersion:
+        nonEmpty(response.headers.get('X-Analytics-Version')) ??
+        nonEmpty(record.analytics_version),
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Whether reloading the page would load metadata of the release the service
+ * now serves (`target`: the versions that changed; null fields are not
+ * compared). A reload reads the snapshot pointer first and loads whatever
+ * snapshot it names: during a release switch (ADR-013 step 8) the API serves
+ * the new release before the deploy job publishes the new snapshot, and a
+ * reload then loads the old one again. Without a usable pointer the reload's
+ * `/meta` is the site's `/api/v1/meta`, so that is asked: through the site
+ * the edge Worker answers it from its own deployed snapshot, not from the
+ * API, so it can be the old release too (review round 2; it was assumed to
+ * be the API's). Whatever cannot be read counts as "the reload helps".
+ */
+export async function reloadLoadsVersion(target: ReleaseVersions): Promise<boolean> {
+  const reloaded = (await pointerVersions()) ?? (await siteMetaVersions())
+  if (reloaded === null) return true
+  const agrees = (wanted: string | null, found: string | null) =>
+    wanted === null || found === null || wanted === found
+  return (
+    agrees(target.dataVersion, reloaded.dataVersion) &&
+    agrees(target.analyticsVersion, reloaded.analyticsVersion)
+  )
 }
 
 /** Test isolation: forget the loaded snapshot. */

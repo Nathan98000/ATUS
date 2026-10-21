@@ -5,10 +5,13 @@ import {
   ORIGIN_WAKING_TTL_MS,
   SLOW_METADATA_MS,
   isServiceWaking,
+  noteServedAnalyticsVersion,
   noteServedDataVersion,
+  setLoadedAnalyticsVersion,
   setLoadedDataVersion,
   setOriginState,
   trackApiCall,
+  useChangedAnalyticsVersion,
   useChangedDataVersion,
 } from './serviceStatus'
 import { act, renderHook } from '@testing-library/react'
@@ -143,6 +146,30 @@ describe('data version', () => {
   it('ignores responses that arrive before metadata is loaded', () => {
     const { result } = renderHook(() => useChangedDataVersion())
     act(() => noteServedDataVersion('0325:serving-b:222'))
+    expect(result.current).toBeNull()
+  })
+})
+
+describe('analytics version (review round 2)', () => {
+  // Only X-Data-Version was compared: a release that changed only
+  // ANALYTICS_VERSION put results of two statistical implementations on one
+  // page under the old version, without any notice.
+  it('reports a served analytics version that differs from the loaded one', () => {
+    const { result } = renderHook(() => useChangedAnalyticsVersion())
+    act(() => setLoadedAnalyticsVersion('0.2'))
+    act(() => noteServedAnalyticsVersion('0.2'))
+    expect(result.current).toBeNull()
+    act(() => noteServedAnalyticsVersion(null))
+    expect(result.current).toBeNull()
+    act(() => noteServedAnalyticsVersion('0.3'))
+    expect(result.current).toBe('0.3')
+    act(() => setLoadedAnalyticsVersion('0.3'))
+    expect(result.current).toBeNull()
+  })
+
+  it('ignores responses that arrive before metadata is loaded', () => {
+    const { result } = renderHook(() => useChangedAnalyticsVersion())
+    act(() => noteServedAnalyticsVersion('0.3'))
     expect(result.current).toBeNull()
   })
 })

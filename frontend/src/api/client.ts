@@ -19,7 +19,7 @@
  * (`resilience.ts`, `snapshot.ts`, `endpoints.ts`).
  */
 import { resolveApiBase } from './apiBase'
-import { noteServedDataVersion } from './serviceStatus'
+import { noteServedAnalyticsVersion, noteServedDataVersion } from './serviceStatus'
 
 export const API_VERSION_PREFIX = '/api/v1'
 
@@ -263,6 +263,7 @@ export async function apiRequest<T>(
 
     const dataVersion = response.headers.get('X-Data-Version')
     noteServedDataVersion(dataVersion)
+    noteServedAnalyticsVersion(response.headers.get('X-Analytics-Version'))
 
     if (!response.ok) {
       throw await parseErrorEnvelope(response)

@@ -140,6 +140,20 @@ describe('long group labels (review round 1)', () => {
     for (const label of chartLabels) expect(Array.from(label).length).toBeLessThanOrEqual(48)
   })
 
+  it('a comparison names the analytics version that computed it (review round 2)', () => {
+    // The page's footer names the version of the page's /meta; each result
+    // names its own, the comparison too (its methodology panel).
+    const result: CompareResponse = {
+      ...compareChildrenFixture,
+      analytics_version: '0.3',
+      group_a: { ...compareChildrenFixture.group_a, analytics_version: '0.3' },
+      group_b: { ...compareChildrenFixture.group_b, analytics_version: '0.3' },
+    }
+    render(<CompareView result={result} analysisKey={null} />)
+    const term = screen.getByText('Analytics version')
+    expect(term.nextElementSibling).toHaveTextContent('0.3')
+  })
+
   it('labels that are distinct once shortened are drawn without a group prefix', () => {
     const { container } = render(
       <CompareView result={compareChildrenFixture} analysisKey={null} />,

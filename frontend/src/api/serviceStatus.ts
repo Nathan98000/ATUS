@@ -18,6 +18,10 @@
  * - **Data version.** The release the page was loaded with, compared with the
  *   `X-Data-Version` of every later response. A difference means the service
  *   switched releases under an open tab, and the UI offers a reload (F27).
+ * - **Analytics version.** The same for the statistical implementation: the
+ *   page's `/meta` `analytics_version`, compared with every later
+ *   `X-Analytics-Version` and every result's own `analytics_version`. A
+ *   release can change it alone, with the same data (review round 2).
  */
 import { useSyncExternalStore } from 'react'
 
@@ -196,6 +200,41 @@ export function useChangedDataVersion(): string | null {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Analytics version
+
+let loadedAnalyticsVersion: string | null = null
+let changedAnalyticsVersion: string | null = null
+
+/** The analytics version of the page's metadata (`/meta` `analytics_version`). */
+export function setLoadedAnalyticsVersion(version: string): void {
+  loadedAnalyticsVersion = version
+  if (changedAnalyticsVersion !== null && changedAnalyticsVersion === loadedAnalyticsVersion) {
+    changedAnalyticsVersion = null
+  }
+  notifyVersion()
+}
+
+/**
+ * Called with the `X-Analytics-Version` of every API response and the
+ * `analytics_version` of every analysis result (null when absent).
+ */
+export function noteServedAnalyticsVersion(version: string | null): void {
+  if (version === null || version === '' || loadedAnalyticsVersion === null) return
+  if (version === loadedAnalyticsVersion || version === changedAnalyticsVersion) return
+  changedAnalyticsVersion = version
+  notifyVersion()
+}
+
+/** The analytics version the service now runs, when it differs from the loaded one. */
+export function useChangedAnalyticsVersion(): string | null {
+  return useSyncExternalStore(
+    subscribeVersion,
+    () => changedAnalyticsVersion,
+    () => null,
+  )
+}
+
 /** Test isolation: forget every call, timer, and version. */
 export function resetServiceStatus(): void {
   for (const timer of timers) clearTimeout(timer)
@@ -206,6 +245,8 @@ export function resetServiceStatus(): void {
   waking = false
   loadedDataVersion = null
   changedDataVersion = null
+  loadedAnalyticsVersion = null
+  changedAnalyticsVersion = null
   for (const listener of wakingListeners) listener()
   notifyVersion()
 }

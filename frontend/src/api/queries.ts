@@ -9,8 +9,11 @@
  *
  * Analysis results are cached under a key that includes the canonical spec
  * AND the analytics version plus the data version the page was loaded with,
- * so a result computed under one data release or statistical implementation
- * is never silently presented as coming from another.
+ * so results of different page loads never share an entry. A response from
+ * another data release or statistical implementation than the page's is
+ * never silent either: `serviceStatus.ts` compares every response's
+ * versions with the page's and the page shows a notice (review round 2 added
+ * the analytics version), and each result shows its own `analytics_version`.
  *
  * Retries are not TanStack Query's: `endpoints.ts` runs every API call through
  * a time-budgeted retry loop that understands cold starts and `Retry-After`.
