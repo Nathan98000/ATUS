@@ -45,13 +45,21 @@ def test_a_failed_smoke_says_how_to_move_the_live_tags():
     runs = [step.get("run", "") for step in jobs["deploy"]["steps"]]
     (hook,) = [i for i, run in enumerate(runs)
                if run.startswith("python scripts/ops/render_deploy.py trigger")]
+    (wait,) = [i for i, run in enumerate(runs)
+               if run.startswith("python scripts/ops/render_deploy.py wait")]
+    (edge,) = [i for i, run in enumerate(runs)
+               if run.startswith("npx --no-install wrangler deploy")]
     (smoke,) = [i for i, run in enumerate(runs) if "scripts/ops/deploy_smoke.py" in run]
-    assert hook < smoke                       # Render runs the new digest before the smoke
+    # Render runs the new digest before the wait, the edge deploy and the smoke: a failure
+    # of any of them, or of the browser journey, skips promote
+    assert hook < wait < edge < smoke
 
     operations = _read(OPERATIONS)
     step = _flat(_step(_section(operations, "### Deploy", "### Rollback"), 6))
     for text in ("the Render hook and the Worker deploy both come before the smoke",
                  "A failed smoke skips browser-smoke and promote",
+                 "a failed browser journey, in browser-smoke, skips promote",
+                 "(only the last two after a failed browser journey)",
                  "Re-run failed jobs", "gh run rerun <run id> --failed",
                  "both live and deployed-<commit> by hand",
                  "roll back the API as well as the edge",
@@ -73,13 +81,17 @@ def test_a_failed_smoke_says_how_to_move_the_live_tags():
     assert "After a deploy whose smoke failed, promote never ran" in rollback
     row = _flat(_row(operations, "deep check fails with `[FAIL] api_health: build <X>, "
                                  "expected <Y>`"))
-    assert "a deploy whose smoke failed (promote skipped)" in row and "step 6" in row
+    assert ("a deploy that failed after its Render hook (a smoke, or the wait or wrangler "
+            "deploy; promote skipped)") in row and "step 6" in row
     assert "without deployed-<commit>" in _flat(_section(
         operations, "### The deep check cannot read the live tag", "### Scheduled"))
 
     deployment = _flat(_read(DEPLOYMENT))
-    assert "A failed smoke skips browser-smoke and promote" in deployment
+    assert "A failed smoke skips browser-smoke and promote (a failed browser journey skips " \
+        "promote)" in deployment
     assert "After a deploy whose smoke failed, promote never ran" in deployment
+    assert "stays bound to its old data, and promote does not run, so live keeps naming the " \
+        "previous image" in deployment
 
 
 # --- pgbouncer-rehearsal-now-fails ------------------------------------------------------
