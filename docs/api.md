@@ -265,7 +265,7 @@ One envelope everywhere:
 | other 4xx | `http_<status>` | any other framework-generated status (none is expected from the documented routes) | |
 | 413 | `payload_too_large` | body over `ATUS_API_MAX_BODY_BYTES`, declared or streamed (the connection is then closed) | |
 | 415 | `unsupported_media_type` | a POST (or a body-carrying PUT/PATCH/DELETE) whose `Content-Type` is not `application/json` | |
-| 422 | `validation_error` | schema violation: wrong types, enums or unknown fields, or control characters in query parameters. `details.errors` locates each problem: at most 20, with `details.truncated` and `details.error_count` when there were more | |
+| 422 | `validation_error` | schema violation: wrong types, enums or unknown fields, or control characters in query parameters. `details.errors` locates each problem as `{location, message, type}` (not FastAPI's `{loc, msg}`; the OpenAPI schema documents this envelope for every 422): at most 20, with `details.truncated` and `details.error_count` when there were more | |
 | 422 | `invalid_spec` | structurally valid but domain-invalid (age_min > age_max, duplicate years, unknown preset) | |
 | 422 | `unknown_activity` | activity code not in the harmonized lexicon | |
 | 422 | `unsupported_analysis` | methodologically unsupported (e.g. 2020 under `multiyear`); the message explains the alternative | |

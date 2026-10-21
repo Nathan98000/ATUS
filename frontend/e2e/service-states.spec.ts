@@ -54,11 +54,26 @@ test(
       await route.continue()
     })
     await page.goto('/explore')
+    // Before the 3 s timer fires, the region is already in the page, empty:
+    // text added to an existing live region is announced, a region mounted
+    // together with its text often is not (review round 1).
+    await expect(page.getByText('Loading the analysis builder…')).toBeVisible()
+    const regions = page.locator('output.service-notice-region')
+    await expect(regions).toHaveCount(2)
+    await expect(regions.first()).toBeEmpty()
+    const region = await regions.first().elementHandle()
 
     // <output> has the implicit role "status": a polite live region.
     const notice = page.getByRole('status').filter({ hasText: WAKING })
     await expect(notice).toBeVisible({ timeout: 6_000 })
     expect(await notice.evaluate((element) => element.tagName)).toBe('OUTPUT')
+    // The same element received the text.
+    expect(
+      await region?.evaluate(
+        (element, text) => element.isConnected && element.textContent === text,
+        WAKING,
+      ),
+    ).toBe(true)
     await expect(page.getByRole('progressbar')).toHaveCount(0)
     expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true)
     await expectNoSeriousViolations(page)
@@ -179,15 +194,18 @@ test('an API that is mid-switch (data_version_mismatch) is a temporary, accessib
   page,
 }) => {
   const posts = countPosts(page)
+  let switching = true
   await page.route('**/api/v1/analysis/**', (route) =>
-    route.fulfill({
-      status: 503,
-      contentType: 'application/json',
-      headers: { 'Retry-After': '1' },
-      body: JSON.stringify({
-        error: { code: 'data_version_mismatch', message: 'Switching.', details: null },
-      }),
-    }),
+    switching
+      ? route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          headers: { 'Retry-After': '1' },
+          body: JSON.stringify({
+            error: { code: 'data_version_mismatch', message: 'Switching.', details: null },
+          }),
+        })
+      : route.fallback(),
   )
   await page.goto(sleep2023)
   const alert = page.getByRole('alert')
@@ -200,6 +218,16 @@ test('an API that is mid-switch (data_version_mismatch) is a temporary, accessib
   const retry = page.getByRole('button', { name: 'Try again' })
   await expect(retry).toBeEnabled({ timeout: 5_000 })
   await tabTo(page, retry)
+
+  // Activating it replaces the panel that holds it: focus moves to the
+  // analysis heading, and stays there through the result (review round 1).
+  switching = false
+  await page.keyboard.press('Enter')
+  const heading = page.getByRole('heading', { level: 1 })
+  await expect(heading).toBeFocused()
+  await expect(page.locator('.stat-value')).toHaveText('1h 15m', { timeout: 15_000 })
+  await expect(heading).toBeFocused()
+  expect(posts()).toBe(2)
 })
 
 test('an exhausted database quota is one honest, accessible page', async ({ page }) => {
@@ -207,9 +235,14 @@ test('an exhausted database quota is one honest, accessible page', async ({ page
     route.fulfill({
       status: 503,
       contentType: 'application/json',
-      headers: { 'Retry-After': '86400' },
+      // The API's own value (errors.py): it paces retries, it is no reset date.
+      headers: { 'Retry-After': '3600' },
       body: JSON.stringify({
-        error: { code: 'database_paused', message: 'Quota exceeded.', details: null },
+        error: {
+          code: 'database_paused',
+          message: 'Quota exceeded.',
+          details: { scope: 'monthly', retry_after_seconds: 3600 },
+        },
       }),
     }),
   )
@@ -218,6 +251,8 @@ test('an exhausted database quota is one honest, accessible page', async ({ page
     page.getByRole('heading', { name: 'The analysis database is paused' }),
   ).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('alert')).toHaveCount(1)
+  await expect(page.getByRole('alert')).toContainText('when the allowance resets.')
+  await expect(page.getByRole('alert')).not.toContainText('around')
   await expectNoSeriousViolations(page)
 
   const home = page.getByRole('link', { name: 'Go to the home page' })

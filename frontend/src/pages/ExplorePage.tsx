@@ -18,6 +18,7 @@ import {
 import { isOperation, type Operation } from '../api/types'
 import { ErrorPanel } from '../components/ErrorPanel'
 import { LoadingPanel } from '../components/LoadingPanel'
+import { useRetryFocus } from '../components/useRetryFocus'
 import { analysisPath, decodeSpec, explorePath } from '../domain/urlSpec'
 import { ActivityPicker } from '../features/activities/ActivityPicker'
 import {
@@ -51,6 +52,7 @@ export function ExplorePage() {
   // parallel with /meta, instead of after it (audit I14).
   useActivities()
   useActivityPresets()
+  const retry = useRetryFocus(meta.isFetching || populationMetadata.isFetching)
 
   useEffect(() => {
     document.title = 'Explore · ATUS Explorer'
@@ -75,7 +77,10 @@ export function ExplorePage() {
     if (failure !== null) {
       // "Try again" refetches every failed query, not just the one shown (F63).
       return (
-        <ErrorPanel error={failure} onRetry={() => refetchFailed(meta, populationMetadata)} />
+        <ErrorPanel
+          error={failure}
+          onRetry={() => retry(() => refetchFailed(meta, populationMetadata))}
+        />
       )
     }
     return (
@@ -153,7 +158,7 @@ function Builder({
 
   return (
     <div className="explore-page">
-      <h1>Build an analysis</h1>
+      <h1 tabIndex={-1}>Build an analysis</h1>
       <p className="field-hint" style={{ marginTop: '-0.3rem' }}>
         Doing what · for whom · when · measured how — then Analyze.
       </p>

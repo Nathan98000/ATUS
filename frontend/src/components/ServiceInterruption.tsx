@@ -9,7 +9,8 @@ import { presentError } from '../domain/presentError'
  * One honest explanation replaces the page's content instead of a cascade of
  * error panels, says what still works, and offers the one useful action
  * (reload for an incompatible API; the home page and a retry otherwise).
- * Focus is not moved; the alert role announces it.
+ * Focus is not moved; the alert role announces it. The heading takes focus
+ * only when a "Try again" lands here again (`useRetryFocus`).
  */
 export function ServiceInterruption({
   error,
@@ -24,7 +25,9 @@ export function ServiceInterruption({
   return (
     <section className="service-interruption" aria-labelledby="service-interruption-heading">
       <div className="error-banner" role="alert">
-        <h1 id="service-interruption-heading">{presented.heading}</h1>
+        <h1 id="service-interruption-heading" tabIndex={-1}>
+          {presented.heading}
+        </h1>
         <p>{presented.message}</p>
         {presented.hint ? <p>{presented.hint}</p> : null}
         <p className="service-interruption__actions">

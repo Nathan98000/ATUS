@@ -81,3 +81,23 @@ test(
     await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
   },
 )
+
+test('a link nested thousands of levels deep is an invalid link, not an app error (review round 1)', async ({
+  page,
+}) => {
+  // ~8 KB, within URL limits; it used to overflow the stack in the
+  // canonical serialization and show the application's error boundary.
+  let posts = 0
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().includes('/api/v1/analysis/')) posts += 1
+  })
+  const arrays = `${'['.repeat(3_000)}${']'.repeat(3_000)}`
+  const json = `{"activity":{"preset":"sleep"},"years":[2023],"population":{"x":${arrays}}}`
+  await page.goto(`/analysis/estimate?spec=${Buffer.from(json).toString('base64url')}`)
+  await expect(
+    page.getByRole('heading', { name: 'This analysis link cannot be opened' }),
+  ).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByText(/nested too deeply/)).toBeVisible()
+  await expect(page.getByText(/Something went wrong in the application/)).toHaveCount(0)
+  expect(posts).toBe(0)
+})

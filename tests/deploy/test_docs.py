@@ -387,3 +387,32 @@ def test_adr_015_says_estimates_can_be_passed_and_settles_with_timing_can_oversh
     assert "at most 61,892 B" not in model and "may pass 64 KiB" in model
     assert "such a settle can overshoot too" in adr
     assert "light at most 61,892 B" not in CONSTANTS.read_text()
+
+
+def _spa_source_text() -> str:
+    """The SPA's shipped source (tests excluded): the only copy visitors can see."""
+    files = sorted((REPO_ROOT / "frontend" / "src").rglob("*.ts*"))
+    return "\n".join(path.read_text(encoding="utf-8") for path in files
+                     if ".test." not in path.name)
+
+
+@pytest.mark.parametrize("phrase", ["paused until the 1st"])
+def test_the_docs_promise_no_page_the_spa_does_not_show(phrase):
+    """Review round 1 (render-suspension-shown-as-waking): deployment.md and
+    operations.md said the SPA shows "Analysis service paused until the 1st"
+    when Render suspends the API. No such copy exists: a suspension looks like
+    a cold start (security.md R13)."""
+    if phrase in _spa_source_text().lower():
+        return
+    quoted = [f"{_name(path)}:{number}" for path in DOCS
+              for number, line in _lines_outside_fences(path) if phrase in line.lower()]
+    assert quoted == []
+
+
+def test_the_render_suspension_gap_is_a_recorded_accepted_risk():
+    security = (REPO_ROOT / "docs" / "security.md").read_text(encoding="utf-8")
+    risks = _section(security, "## Accepted risks", "\n## ")
+    assert "**R13. A Render suspension looks like a cold start.**" in risks
+    adr_011 = (ADR / "ADR-011-hosting.md").read_text(encoding="utf-8")
+    accepted = _section(adr_011, "### Accepted risks", "\n### ")
+    assert "**A Render suspension is presented as a cold start**" in accepted

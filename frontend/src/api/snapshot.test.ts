@@ -6,7 +6,7 @@
 import { createHash } from 'node:crypto'
 
 import { HttpResponse, http } from 'msw'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { EstimateRequest } from './types'
 import { estimateSleepFixture, metaFixture } from '../test/fixtures'
@@ -20,7 +20,7 @@ import {
 } from '../test/server'
 import { stableStringify } from '../utils/stableStringify'
 import { fetchMeta, runAnalysis } from './endpoints'
-import { SNAPSHOT_POINTER_PATH, requestKey } from './snapshot'
+import { SNAPSHOT_POINTER_PATH, loadSnapshot, reloadLoadsVersion, requestKey } from './snapshot'
 
 const sleepSpec: EstimateRequest = {
   measure: 'average_minutes_per_day',
@@ -34,7 +34,22 @@ const sleepSpec: EstimateRequest = {
 
 afterEach(() => {
   server.events.removeAllListeners()
+  vi.restoreAllMocks()
 })
+
+/** The fetch `cache` mode of every request, by URL path, in the order sent. */
+function recordCacheModes() {
+  const modes = new Map<string, string[]>()
+  const send = globalThis.fetch
+  vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+    const url = input instanceof Request ? input.url : String(input)
+    const path = new URL(url, 'http://localhost').pathname
+    const mode = init?.cache ?? (input instanceof Request ? input.cache : 'default')
+    modes.set(path, [...(modes.get(path) ?? []), mode])
+    return send(input, init)
+  })
+  return (path: string) => modes.get(path) ?? []
+}
 
 /** Counts API calls per method+path. */
 function countApiCalls() {
@@ -177,6 +192,97 @@ describe('with a snapshot', () => {
     const calls = countApiCalls()
     await fetchMeta()
     expect(calls('GET /api/v1/meta')).toBe(1)
+  })
+})
+
+describe('a snapshot file cached as the SPA fallback (review round 1)', () => {
+  // The host answers a missing /snap/<id>/ file with index.html and a 200
+  // that carries the snapshot's one-year immutable Cache-Control (_headers
+  // matches the request path). A browser that asked for a file during a
+  // deploy gap keeps that HTML for a year — also after a rollback deploys
+  // that snapshot again — and the snapshot entry then silently went to the
+  // API (which may be asleep or out of quota).
+  function servedHtmlFirst(path: string, body: unknown) {
+    let reads = 0
+    server.use(
+      http.get(path, () => {
+        reads += 1
+        return reads === 1
+          ? new HttpResponse('<!doctype html><title>ATUS Explorer</title>', {
+              headers: { 'Content-Type': 'text/html' },
+            })
+          : HttpResponse.json(body as Record<string, unknown>)
+      }),
+    )
+  }
+
+  it('fetches a data file once more, bypassing the HTTP cache', async () => {
+    await installSnapshot({ get: { '/api/v1/meta': metaFixture } })
+    servedHtmlFirst(`/snap/${SNAPSHOT_ID}/get/0.json`, metaFixture)
+    const modes = recordCacheModes()
+    const calls = countApiCalls()
+    const loaded = await fetchMeta()
+    expect(loaded.dataVersion).toBe(SNAPSHOT_DATA_VERSION)
+    expect(calls('GET /api/v1/meta')).toBe(0)
+    expect(modes(`/snap/${SNAPSHOT_ID}/get/0.json`)).toEqual(['default', 'reload'])
+  })
+
+  it('fetches the manifest once more, bypassing the HTTP cache', async () => {
+    await installSnapshot({ get: { '/api/v1/meta': metaFixture } })
+    servedHtmlFirst(`/snap/${SNAPSHOT_ID}/manifest.json`, {
+      snapshot_id: SNAPSHOT_ID,
+      data_version: SNAPSHOT_DATA_VERSION,
+      get: { '/api/v1/meta': 'get/0.json' },
+      post: {},
+    })
+    const modes = recordCacheModes()
+    const calls = countApiCalls()
+    expect((await fetchMeta()).dataVersion).toBe(SNAPSHOT_DATA_VERSION)
+    expect(calls('GET /api/v1/meta')).toBe(0)
+    expect(modes(`/snap/${SNAPSHOT_ID}/manifest.json`)).toEqual(['default', 'reload'])
+  })
+
+  it('never re-fetches the no-cache pointer, which is not cached that way', async () => {
+    // Development and E2E have no snapshot: the pointer is the SPA fallback.
+    server.use(
+      http.get(
+        SNAPSHOT_POINTER_PATH,
+        () => new HttpResponse('<!doctype html><title>x</title>'),
+      ),
+    )
+    const modes = recordCacheModes()
+    await fetchMeta()
+    expect(modes(SNAPSHOT_POINTER_PATH)).toEqual(['no-cache'])
+  })
+})
+
+describe('revalidation across releases (F27, review round 1)', () => {
+  // A reload must never pair a /meta (or snapshot pointer) from the browser's
+  // HTTP cache with data of a newer release: both are revalidated.
+  it('fetches the snapshot pointer and the API /meta with cache "no-cache"', async () => {
+    const modes = recordCacheModes()
+    await fetchMeta()
+    expect(modes(SNAPSHOT_POINTER_PATH)).toEqual(['no-cache'])
+    expect(modes('/api/v1/meta')).toEqual(['no-cache'])
+  })
+
+  it('reads the pointer with cache "no-cache" to decide whether a reload helps (review round 1 verification)', async () => {
+    // During a release switch the answer changes when the deploy job
+    // publishes the new snapshot: a pointer from the HTTP cache would hide it.
+    await installSnapshot({ get: { '/api/v1/meta': metaFixture } })
+    expect(await loadSnapshot()).not.toBeNull()
+    const modes = recordCacheModes()
+    expect(await reloadLoadsVersion(SNAPSHOT_DATA_VERSION)).toBe(true)
+    expect(await reloadLoadsVersion('0326:serving-new:aaa')).toBe(false)
+    expect(modes(SNAPSHOT_POINTER_PATH)).toEqual(['no-cache', 'no-cache'])
+  })
+
+  it('revalidates the pointer when the snapshot serves /meta', async () => {
+    await installSnapshot({ get: { '/api/v1/meta': metaFixture } })
+    const modes = recordCacheModes()
+    const loaded = await fetchMeta()
+    expect(loaded.dataVersion).toBe(SNAPSHOT_DATA_VERSION)
+    expect(modes(SNAPSHOT_POINTER_PATH)).toEqual(['no-cache'])
   })
 })
 

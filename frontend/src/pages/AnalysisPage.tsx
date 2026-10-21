@@ -33,6 +33,7 @@ import { isOperation } from '../api/types'
 import { ErrorPanel } from '../components/ErrorPanel'
 import { LoadingPanel } from '../components/LoadingPanel'
 import { ServiceInterruption } from '../components/ServiceInterruption'
+import { useRetryFocus } from '../components/useRetryFocus'
 import { activityLabelFromSpec, analysisTitle, populationPhrase } from '../domain/describe'
 import { isFullPageError } from '../domain/presentError'
 import {
@@ -119,6 +120,8 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
   const queryClient = useQueryClient()
   const query = useAnalysis(operation, spec)
   const waking = useServiceWaking()
+  // "Try again" keeps focus on the page (the panel holding the button unmounts).
+  const retry = useRetryFocus(meta.isFetching || query.isFetching)
 
   const presetLabels = useMemo(() => {
     const map = new Map<string, string>()
@@ -159,19 +162,20 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
   // background refetch never hides a displayed result (audit F26).
   const metaFailed = meta.data === undefined && meta.isError
   const blockingError = metaFailed ? meta.error : query.isError ? query.error : null
+  // What the page announces while it loads: the site-wide notice already
+  // announces the waking state, so the persistent live region below keeps
+  // the operation's own message and only the visible text says "waking".
+  const announcedLoadingMessage =
+    meta.data === undefined ? PREPARING_MESSAGE : LOADING_MESSAGES[operation]
   const loadingMessage =
-    meta.data === undefined
-      ? PREPARING_MESSAGE
-      : waking
-        ? WAKING_LOADING_MESSAGE
-        : LOADING_MESSAGES[operation]
+    meta.data !== undefined && waking ? WAKING_LOADING_MESSAGE : announcedLoadingMessage
 
   // A paused quota or an incompatible API replaces the whole page.
   if (blockingError !== null && isFullPageError(blockingError)) {
     return (
       <ServiceInterruption
         error={blockingError}
-        onRetry={() => void (metaFailed ? meta.refetch() : query.refetch())}
+        onRetry={() => retry(() => (metaFailed ? meta.refetch() : query.refetch()))}
       />
     )
   }
@@ -187,7 +191,7 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
                 ? 'Trend'
                 : 'Comparison'}
           </p>
-          <h1>{title}</h1>
+          <h1 tabIndex={-1}>{title}</h1>
           {operation !== 'compare' ? (
             <p className="field-hint">
               {populationPhrase(spec.population)} · {formatYears(spec.years)}
@@ -219,9 +223,12 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
         // The analysis query is version-keyed on /meta and stays disabled
         // while it has no version tag — a failing /meta must surface here,
         // or a cold deep link would show the loading state forever.
-        <ErrorPanel error={meta.error} onRetry={() => meta.refetch()} />
+        <ErrorPanel error={meta.error} onRetry={() => retry(() => meta.refetch())} />
       ) : meta.data === undefined || query.isPending ? (
+        // Not a live region itself: the persistent one below announces each
+        // state once (a second region with the same text is read twice).
         <LoadingPanel
+          announce={false}
           message={loadingMessage}
           hint={
             meta.data !== undefined && !waking && spec.variance !== 'none'
@@ -232,7 +239,7 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
       ) : query.isError ? (
         <ErrorPanel
           error={query.error}
-          onRetry={() => query.refetch()}
+          onRetry={() => retry(() => query.refetch())}
           adjustHref={adjustHref}
         />
       ) : (
@@ -261,7 +268,7 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
         {metaFailed || query.isError
           ? 'The analysis could not be completed.'
           : meta.data === undefined || query.isPending
-            ? loadingMessage
+            ? announcedLoadingMessage
             : 'Analysis ready.'}
       </p>
     </div>

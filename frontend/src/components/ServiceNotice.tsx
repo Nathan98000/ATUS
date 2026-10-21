@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react'
+
 import { useChangedDataVersion, useServiceWaking } from '../api/serviceStatus'
+import { reloadLoadsVersion } from '../api/snapshot'
 
 export const WAKING_MESSAGE =
   'Waking up the analysis service — free hosting sleeps when idle; this can take up to a minute.'
@@ -11,12 +14,19 @@ export const WAKING_MESSAGE =
  *
  * - Waking: shown while an API call waits on a sleeping free-tier host
  *   (`serviceStatus.ts` decides when; audit F11).
- * - Reload: shown when a response came from a different data release than
- *   the one this page loaded, e.g. after a release switch (F27).
+ * - Release change: shown when a response came from a different data release
+ *   than the one this page loaded (F27). It offers a reload only when a
+ *   reload would load that release: during a release switch the API serves
+ *   the new release while the deployed snapshot, which every page load reads,
+ *   is still the old one, and reloading cannot help until the deploy job
+ *   publishes the new snapshot (ADR-013 step 8). While that is so, the
+ *   snapshot pointer is read again every minute, so the notice offers the
+ *   reload once the new snapshot is published.
  */
 export function ServiceNotice() {
   const waking = useServiceWaking()
   const changedVersion = useChangedDataVersion()
+  const reloadHelps = useReloadHelps(changedVersion)
 
   return (
     <>
@@ -24,7 +34,7 @@ export function ServiceNotice() {
         {waking ? <span className="service-notice">{WAKING_MESSAGE}</span> : null}
       </output>
       <output className="service-notice-region">
-        {changedVersion ? (
+        {changedVersion && reloadHelps === true ? (
           <span className="service-notice service-notice--reload">
             <span>
               The analysis service now serves a different data release than the one this page
@@ -38,8 +48,58 @@ export function ServiceNotice() {
               Reload page
             </button>
           </span>
+        ) : changedVersion && reloadHelps === false ? (
+          <span className="service-notice service-notice--reload">
+            <span>
+              The analysis service is switching to a different data release: new results already
+              come from it, while this page’s examples and descriptions still come from the
+              previous one, and reloading the page does not change that yet. The switch usually
+              completes within minutes; this notice then offers a reload.
+            </span>
+          </span>
         ) : null}
       </output>
     </>
   )
+}
+
+/**
+ * While a reload would not help, the snapshot pointer is read again this
+ * often. It is a static file (no Worker request, never the API), and it is
+ * read only while the page is visible.
+ */
+const RELOAD_RECHECK_MS = 60_000
+
+/**
+ * Whether a reload would load `version` (null while unknown or without a
+ * change). A "no" is checked again every `RELOAD_RECHECK_MS`: the release
+ * switch ends when the deploy job publishes the new snapshot, and a page
+ * left open through it should then offer the reload (review round 1).
+ */
+function useReloadHelps(version: string | null): boolean | null {
+  const [answer, setAnswer] = useState<{ version: string; helps: boolean } | null>(null)
+  useEffect(() => {
+    if (version === null) return
+    let current = true
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const recheckLater = () => {
+      timer = setTimeout(() => {
+        if (document.visibilityState === 'hidden') recheckLater()
+        else check()
+      }, RELOAD_RECHECK_MS)
+    }
+    const check = () => {
+      void reloadLoadsVersion(version).then((helps) => {
+        if (!current) return
+        setAnswer({ version, helps })
+        if (!helps) recheckLater()
+      })
+    }
+    check()
+    return () => {
+      current = false
+      clearTimeout(timer)
+    }
+  }, [version])
+  return answer !== null && answer.version === version ? answer.helps : null
 }

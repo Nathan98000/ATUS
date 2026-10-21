@@ -59,7 +59,33 @@ export function decodeSpec(encoded: string, operation: Operation): AnalysisReque
     throw new InvalidShareLinkError('The analysis link does not contain a valid specification.')
   }
 
+  if (exceedsDepth(parsed, MAX_SPEC_DEPTH)) {
+    throw new InvalidShareLinkError(
+      'The analysis link does not contain a valid specification (it is nested too deeply).',
+    )
+  }
   return validateRequestShape(parsed, operation)
+}
+
+/**
+ * Objects and arrays in a specification nest at most 3 deep (spec → activity
+ * → include). A link far deeper is not a specification, and one deep enough
+ * (thousands of levels fit in a URL) overflowed the stack in the recursive
+ * canonical serialization (`stableStringify`), so the app's error boundary
+ * replaced the page instead of this module's invalid-link message.
+ */
+const MAX_SPEC_DEPTH = 10
+
+/** Whether objects/arrays in `value` nest deeper than `limit` (iterative: no recursion). */
+function exceedsDepth(value: unknown, limit: number): boolean {
+  const pending: [unknown, number][] = [[value, 1]]
+  for (let next = pending.pop(); next !== undefined; next = pending.pop()) {
+    const [item, depth] = next
+    if (item === null || typeof item !== 'object') continue
+    if (depth > limit) return true
+    for (const child of Object.values(item)) pending.push([child, depth + 1])
+  }
+  return false
 }
 
 /**

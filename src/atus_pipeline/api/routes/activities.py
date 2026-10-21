@@ -27,7 +27,7 @@ from ..schemas.activities import (
     ActivityPreset,
     ActivityPresetsResponse,
 )
-from ..schemas.errors import DATA_ROUTE_503, ErrorResponse
+from ..schemas.errors import DATA_ROUTE_503, PARAMETER_422, ErrorResponse
 from ..snapshot import LEXICON_SQL, LexiconEntry, SnapshotStore
 
 router = APIRouter(prefix="/activities", tags=["activities"])
@@ -64,7 +64,7 @@ def lexicon_query(
 @router.get(
     "",
     response_model=ActivityListResponse,
-    responses={503: DATA_ROUTE_503},
+    responses={422: PARAMETER_422, 503: DATA_ROUTE_503},
     summary="List/search the activity lexicon",
     description=(
         "Flat listing of the harmonized multi-year activity coding lexicon of "
@@ -130,6 +130,7 @@ async def list_presets(response: Response) -> ActivityPresetsResponse:
     response_model=ActivityDetailResponse,
     responses={
         404: {"model": ErrorResponse, "description": "Unknown activity code"},
+        422: PARAMETER_422,
         503: DATA_ROUTE_503,
     },
     summary="One lexicon code with its ancestry and children",

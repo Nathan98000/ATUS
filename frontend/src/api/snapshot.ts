@@ -66,6 +66,25 @@ async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
   return (await response.json()) as unknown
 }
 
+/**
+ * A file under `/snap/<snapshot_id>/`: immutable, so the browser keeps it for
+ * a year. The host answers a missing file with the SPA's index.html and a 200
+ * that carries the same one-year immutable Cache-Control (`_headers` matches
+ * the request path), so a page that asked for a file of a snapshot that was
+ * not deployed at that moment (a deploy gap; a rollback can deploy that
+ * snapshot again later) would keep that HTML for a year. A body that is not
+ * JSON is therefore fetched once more with `cache: 'reload'`, which bypasses
+ * the cached copy and replaces it.
+ */
+async function fetchImmutableJson(url: string): Promise<unknown> {
+  try {
+    return await fetchJson(url)
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error
+    return await fetchJson(url, { cache: 'reload' })
+  }
+}
+
 /** Validates the pointer and manifest; null means "no usable snapshot". */
 function parseSnapshot(pointer: unknown, manifest: unknown, id: string): Snapshot | null {
   if (!isRecord(pointer) || !isRecord(manifest)) return null
@@ -106,7 +125,7 @@ async function fetchSnapshot(): Promise<Snapshot | null> {
   if (apiMajorVersion(pointer.api_version) !== SUPPORTED_API_VERSION) return null
   let manifest: unknown
   try {
-    manifest = await fetchJson(`${SNAPSHOT_ROOT}${id}/manifest.json`)
+    manifest = await fetchImmutableJson(`${SNAPSHOT_ROOT}${id}/manifest.json`)
   } catch {
     return null
   }
@@ -117,6 +136,28 @@ async function fetchSnapshot(): Promise<Snapshot | null> {
 export function loadSnapshot(): Promise<Snapshot | null> {
   loading ??= fetchSnapshot().catch(() => null)
   return loading
+}
+
+/**
+ * Whether reloading the page would load metadata of data version `version`.
+ * Without a snapshot the page's `/meta` comes from the API, which already
+ * serves `version`. With one, the reload loads whatever snapshot the pointer
+ * names now: during a release switch (ADR-013 step 8) the API serves the new
+ * release before the deploy job publishes the new snapshot, and a reload
+ * then loads the old snapshot again. An unreadable or foreign pointer means
+ * the reload would fall back to the API.
+ */
+export async function reloadLoadsVersion(version: string): Promise<boolean> {
+  if (!(await loadSnapshot())) return true
+  let pointer: unknown
+  try {
+    pointer = await fetchJson(SNAPSHOT_POINTER_PATH, { cache: 'no-cache' })
+  } catch {
+    return true
+  }
+  if (!isRecord(pointer) || typeof pointer.data_version !== 'string') return true
+  if (apiMajorVersion(pointer.api_version) !== SUPPORTED_API_VERSION) return true
+  return pointer.data_version === version
 }
 
 /** Test isolation: forget the loaded snapshot. */
@@ -134,7 +175,7 @@ export async function snapshotGet<T>(apiPath: string): Promise<ApiResult<T> | nu
   const file = snapshot?.get[apiPath]
   if (!snapshot || file === undefined) return null
   try {
-    const data = (await fetchJson(fileUrl(snapshot, file))) as T
+    const data = (await fetchImmutableJson(fileUrl(snapshot, file))) as T
     return { data, analysisKey: null, cache: 'snapshot', dataVersion: snapshot.dataVersion }
   } catch {
     return null
@@ -179,7 +220,7 @@ export async function snapshotPost<T>(
   const entry = key === null ? undefined : snapshot.post[key]
   if (!entry || entry.path !== apiPath) return null
   try {
-    const data = (await fetchJson(fileUrl(snapshot, entry.file))) as T
+    const data = (await fetchImmutableJson(fileUrl(snapshot, entry.file))) as T
     return {
       data,
       analysisKey: entry.analysis_key,

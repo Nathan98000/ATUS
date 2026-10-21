@@ -24,7 +24,16 @@ import {
   presetsFixture,
 } from '../test/fixtures'
 import { testQueryClient, withFakeClock } from '../test/render'
-import { analysisHeaders, api, errorResponse, installSnapshot, server } from '../test/server'
+import {
+  SNAPSHOT_DATA_VERSION,
+  SNAPSHOT_ID,
+  analysisHeaders,
+  api,
+  errorResponse,
+  installSnapshot,
+  server,
+} from '../test/server'
+import { SNAPSHOT_POINTER_PATH } from '../api/snapshot'
 
 const sleepSpec: EstimateRequest = {
   measure: 'average_minutes_per_day',
@@ -62,6 +71,13 @@ afterEach(() => {
   server.events.removeAllListeners()
 })
 
+/** ServiceNotice's two persistent live regions: [waking, reload]. */
+function noticeRegions(): HTMLOutputElement[] {
+  return Array.from(
+    document.querySelectorAll<HTMLOutputElement>('output.service-notice-region'),
+  )
+}
+
 describe('cold start (F11, F12)', () => {
   it('announces the waking message after ~3 s without /meta, politely and without moving focus', async () => {
     await withFakeClock(async () => {
@@ -73,14 +89,22 @@ describe('cold start (F11, F12)', () => {
       )
       renderApp('/explore')
       expect(screen.getByText('Loading the analysis builder…')).toBeInTheDocument()
+      // The live region exists, empty, before its text arrives: text added to
+      // a region already in the page is announced; a region mounted together
+      // with its text often is not (review round 1).
+      const [wakingRegion] = noticeRegions()
+      expect(noticeRegions()).toHaveLength(2)
+      expect(wakingRegion).toBeEmptyDOMElement()
 
       await vi.advanceTimersByTimeAsync(2_900)
       expect(screen.queryByText(WAKING_MESSAGE)).not.toBeInTheDocument()
+      expect(noticeRegions()[0]).toBe(wakingRegion)
 
       await vi.advanceTimersByTimeAsync(200)
       const message = screen.getByText(WAKING_MESSAGE)
       // A persistent polite live region (<output> = role "status"), no progress bar.
-      expect(message.closest('output')).not.toBeNull()
+      expect(message.closest('output')).toBe(wakingRegion)
+      expect(wakingRegion).toBeInTheDocument()
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
       expect(document.activeElement).toBe(document.body)
 
@@ -353,6 +377,136 @@ describe('analysis errors (F13, F64)', () => {
 })
 
 describe('data release changes (F27)', () => {
+  /**
+   * ADR-013 step 8: the API already serves `served` while the deployed
+   * snapshot, which the page's /meta came from, is the old release. The
+   * pointer names `deployedLater` from its second read on (the deploy job
+   * published the new snapshot after the page loaded).
+   */
+  async function releaseSwitch(served: string, deployedLater: string) {
+    await installSnapshot({
+      get: { '/api/v1/meta': metaFixture, '/api/v1/activities/presets': presetsFixture },
+    })
+    let pointerReads = 0
+    server.use(
+      http.get(SNAPSHOT_POINTER_PATH, () => {
+        pointerReads += 1
+        return HttpResponse.json({
+          snapshot_id: SNAPSHOT_ID,
+          data_version: pointerReads === 1 ? SNAPSHOT_DATA_VERSION : deployedLater,
+          api_version: 'v1',
+        })
+      }),
+      http.get(api('/wake'), () => HttpResponse.json({ origin: 'warm' })),
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(estimateSleepFixture, {
+          headers: { ...analysisHeaders(), 'X-Data-Version': served },
+        }),
+      ),
+    )
+  }
+
+  it('mid-switch, when a reload would load the same old snapshot, does not offer one (review round 1)', async () => {
+    // Every uncached analysis, every reload and every new tab showed "Reload
+    // so that every number comes from the same release", which reloading
+    // could not do until the deploy job published the new snapshot.
+    await releaseSwitch('0326:serving-new:aaa', SNAPSHOT_DATA_VERSION)
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    const notice = await screen.findByText(/different data release/)
+    expect(notice).toHaveTextContent('reloading the page does not change that yet')
+    expect(notice.closest('output')).not.toBeNull()
+    expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
+  })
+
+  it('a page left open through the switch offers the reload once the new snapshot is published (review round 1 verification)', async () => {
+    // The pointer was read once per changed version: a tab that saw the
+    // "switching" notice kept it after the deploy job had published the new
+    // snapshot, although operations.md step 6.2 says it then offers a reload.
+    await withFakeClock(async () => {
+      const served = '0326:serving-new:aaa'
+      let published = SNAPSHOT_DATA_VERSION
+      let pointerReads = 0
+      await installSnapshot({
+        get: { '/api/v1/meta': metaFixture, '/api/v1/activities/presets': presetsFixture },
+      })
+      server.use(
+        http.get(SNAPSHOT_POINTER_PATH, () => {
+          pointerReads += 1
+          return HttpResponse.json({
+            snapshot_id: SNAPSHOT_ID,
+            data_version: published,
+            api_version: 'v1',
+          })
+        }),
+        http.get(api('/wake'), () => HttpResponse.json({ origin: 'warm' })),
+        http.post(api('/analysis/estimate'), () =>
+          HttpResponse.json(estimateSleepFixture, {
+            headers: { ...analysisHeaders(), 'X-Data-Version': served },
+          }),
+        ),
+      )
+      renderApp(sleepRoute)
+      expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+      const switching = await screen.findByText(/switching to a different data release/)
+      const region = switching.closest('output')
+      expect(region).not.toBeNull()
+      expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
+      const readsWhileSwitching = pointerReads
+
+      // Still mid-switch a minute later: one more read, same notice.
+      await vi.advanceTimersByTimeAsync(60_000)
+      await waitFor(() => expect(pointerReads).toBe(readsWhileSwitching + 1))
+      expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
+
+      // The deploy job publishes the new snapshot: the next read offers the reload,
+      // in the same live region.
+      published = served
+      await vi.advanceTimersByTimeAsync(60_000)
+      const reload = await screen.findByRole('button', { name: 'Reload page' })
+      expect(reload.closest('output')).toBe(region)
+      expect(region).toHaveTextContent(
+        'Reload so that every number comes from the same release.',
+      )
+
+      // Once a reload helps, the pointer is not read again.
+      const readsAfter = pointerReads
+      await vi.advanceTimersByTimeAsync(180_000)
+      expect(pointerReads).toBe(readsAfter)
+    })
+  })
+
+  it('once the new snapshot is deployed, offers the reload', async () => {
+    await releaseSwitch('0326:serving-new:aaa', '0326:serving-new:aaa')
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Reload page' })).toBeInTheDocument()
+    expect(screen.getByText(/different data release/)).toHaveTextContent(
+      'Reload so that every number comes from the same release.',
+    )
+  })
+
+  it('announces the change in the live region that was already there, empty (review round 1)', async () => {
+    server.use(
+      http.get(api('/meta'), () =>
+        HttpResponse.json(metaFixture, { headers: { 'X-Data-Version': '0325:serving-a:111' } }),
+      ),
+      http.post(api('/analysis/estimate'), async () => {
+        await delay(100)
+        return HttpResponse.json(estimateSleepFixture, {
+          headers: { ...analysisHeaders(), 'X-Data-Version': '0325:serving-b:222' },
+        })
+      }),
+    )
+    renderApp(sleepRoute)
+    const reloadRegion = noticeRegions()[1]
+    expect(noticeRegions()).toHaveLength(2)
+    expect(reloadRegion).toBeEmptyDOMElement()
+    const notice = await screen.findByText(/different data release/)
+    expect(notice.closest('output')).toBe(reloadRegion)
+    expect(reloadRegion).toBeInTheDocument()
+  })
+
   it('offers a reload when a response comes from a different data release', async () => {
     server.use(
       http.get(api('/meta'), () =>
@@ -411,6 +565,217 @@ describe('no background metadata refetch (F62)', () => {
       expect(requests('GET /api/v1/population/metadata')).toBe(1)
       focusManager.setFocused(undefined)
     })
+  })
+})
+
+describe('one announcement per state (review round 1)', () => {
+  /** Live regions (polite or assertive) whose text matches: each is announced on change. */
+  function liveRegionsWith(text: RegExp): Element[] {
+    return Array.from(
+      document.querySelectorAll('output, [role="status"], [role="alert"], [aria-live]'),
+    )
+      .filter((element) => element.getAttribute('aria-live') !== 'off')
+      .filter((element) => text.test(element.textContent ?? ''))
+  }
+
+  it('the waking state is announced by the notice alone, not by three regions', async () => {
+    await installSnapshot({
+      get: {
+        '/api/v1/meta': metaFixture,
+        '/api/v1/activities/presets': presetsFixture,
+      },
+    })
+    server.use(
+      http.get(api('/wake'), () => HttpResponse.json({ origin: 'waking' })),
+      http.post(api('/analysis/estimate'), async () => {
+        await delay(1_500)
+        return HttpResponse.json(estimateSleepFixture, { headers: analysisHeaders() })
+      }),
+    )
+    renderApp(sleepRoute)
+    // The visible loading text still says what the page waits for…
+    await waitFor(() =>
+      expect(document.querySelector('.loading-panel')).toHaveTextContent(
+        'Waiting for the analysis service to wake up…',
+      ),
+    )
+    // …but only the site-wide notice announces the waking state.
+    expect(liveRegionsWith(/wak/i)).toEqual([
+      screen.getByText(WAKING_MESSAGE).closest('output'),
+    ])
+    expect(await screen.findByText('8h 49m', {}, { timeout: 4_000 })).toBeInTheDocument()
+  })
+
+  it('each loading message is announced once', async () => {
+    server.use(
+      http.post(api('/analysis/estimate'), async () => {
+        await delay(500)
+        return HttpResponse.json(estimateSleepFixture, { headers: analysisHeaders() })
+      }),
+    )
+    renderApp(sleepRoute)
+    await waitFor(() => expect(liveRegionsWith(/Calculating estimate…/)).not.toHaveLength(0))
+    expect(liveRegionsWith(/Calculating estimate…/)).toHaveLength(1)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(liveRegionsWith(/Analysis ready\./)).toHaveLength(1)
+  })
+})
+
+describe('focus after "Try again" (review round 1)', () => {
+  // "Try again" sends a query without data back to "pending": the panel that
+  // held the focused button unmounts, and focus used to fall to <body>.
+  it('keeps focus on the analysis heading while it reloads and after the result', async () => {
+    const user = userEvent.setup()
+    let posts = 0
+    server.use(
+      http.post(api('/analysis/estimate'), async () => {
+        posts += 1
+        if (posts === 1) return errorResponse(503, 'data_version_mismatch', 'Switching.')
+        await delay(200)
+        return HttpResponse.json(estimateSleepFixture, { headers: analysisHeaders() })
+      }),
+    )
+    renderApp(sleepRoute)
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    retry.focus()
+    await user.keyboard('{Enter}')
+    const heading = screen.getByRole('heading', { level: 1 })
+    await waitFor(() => expect(document.querySelector('.loading-panel')).not.toBeNull())
+    expect(document.activeElement).toBe(heading)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(document.activeElement).toBe(heading)
+  })
+
+  it('a retry from the full-page paused state lands on the page it returns to', async () => {
+    const user = userEvent.setup()
+    let paused = true
+    server.use(
+      http.post(api('/analysis/estimate'), async () => {
+        if (paused) return errorResponse(503, 'database_paused', 'Paused.')
+        await delay(200)
+        return HttpResponse.json(estimateSleepFixture, { headers: analysisHeaders() })
+      }),
+    )
+    renderApp(sleepRoute)
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    paused = false
+    retry.focus()
+    await user.keyboard('{Enter}')
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 }))
+    expect(document.activeElement).toHaveTextContent('Sleeping')
+  })
+
+  it('a retry that ends on the paused page again leaves focus on its heading', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post(api('/analysis/estimate'), async () => {
+        await delay(100)
+        return errorResponse(503, 'database_paused', 'Paused.')
+      }),
+    )
+    renderApp(sleepRoute)
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    retry.focus()
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(document.querySelector('.loading-panel')).not.toBeNull())
+    const heading = await screen.findByRole('heading', {
+      name: 'The analysis database is paused',
+    })
+    await waitFor(() => expect(document.activeElement).toBe(heading))
+  })
+
+  it('Explore: a retry from the page-level error lands on "Build an analysis"', async () => {
+    const user = userEvent.setup()
+    let failing = true
+    server.use(
+      http.get(api('/meta'), () =>
+        failing
+          ? errorResponse(500, 'internal_error', 'Boom.')
+          : HttpResponse.json(metaFixture),
+      ),
+    )
+    renderApp('/explore')
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    failing = false
+    retry.focus()
+    await user.keyboard('{Enter}')
+    const heading = await screen.findByRole('heading', { name: 'Build an analysis' })
+    await waitFor(() => expect(document.activeElement).toBe(heading))
+  })
+
+  it('Home: a retry of the starter examples lands on their heading', async () => {
+    const user = userEvent.setup()
+    let failing = true
+    server.use(
+      http.get(api('/meta'), () =>
+        failing
+          ? errorResponse(500, 'internal_error', 'Boom.')
+          : HttpResponse.json(metaFixture),
+      ),
+    )
+    renderApp('/')
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    failing = false
+    retry.focus()
+    await user.keyboard('{Enter}')
+    expect(await screen.findByText('How much do Americans sleep?')).toBeInTheDocument()
+    expect(document.activeElement).toBe(
+      screen.getByRole('heading', { name: 'Start from a question' }),
+    )
+  })
+})
+
+describe('offline (review round 1)', () => {
+  /** The browser's own offline state, as its 'offline' event leaves it. */
+  function goOffline() {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    act(() => onlineManager.setOnline(false))
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    onlineManager.setOnline(true)
+  })
+
+  it('a new analysis started offline says so instead of "Calculating…" forever', async () => {
+    // TanStack Query's default networkMode ('online') pauses a query that
+    // starts offline before its queryFn runs: no request, no error, and the
+    // loading panel stayed up for as long as the browser was offline.
+    const user = userEvent.setup()
+    const requests = countRequests()
+    renderApp('/')
+    const starter = await screen.findByRole('link', { name: /How much do Americans sleep\?/ })
+    goOffline()
+    server.use(http.post(api('/analysis/estimate'), () => HttpResponse.error()))
+    await user.click(starter)
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('could not be reached')
+    expect(alert).toHaveTextContent('Check your internet connection')
+    expect(screen.queryByText('Calculating estimate…')).not.toBeInTheDocument()
+    // Offline is final: one attempt, not the cold-start budget.
+    expect(requests('POST /api/v1/analysis/estimate')).toBe(1)
+
+    // Back online, the failed analysis runs by itself. (networkMode 'always'
+    // turns TanStack Query's refetchOnReconnect off unless it is set.)
+    server.resetHandlers()
+    vi.restoreAllMocks()
+    act(() => onlineManager.setOnline(true))
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('a page opened offline says so instead of "Preparing…" forever', async () => {
+    goOffline()
+    server.use(http.get(api('/meta'), () => HttpResponse.error()))
+    renderApp(sleepRoute)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Check your internet connection')
+    server.resetHandlers()
+    vi.restoreAllMocks()
+    act(() => onlineManager.setOnline(true))
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(screen.queryByText('Preparing the analysis…')).not.toBeInTheDocument()
   })
 })
 

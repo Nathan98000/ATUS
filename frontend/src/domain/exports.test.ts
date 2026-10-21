@@ -356,6 +356,28 @@ describe('JSON export', () => {
     expect(document.warnings).toEqual(compareChildrenFixture.warnings)
   })
 
+  it('names the release of the data version that produced the response (review round 1)', () => {
+    // During a release switch the API already serves the new release while
+    // the page's /meta (or snapshot) still names the old one: one export
+    // must not name two releases.
+    const document = analysisExport(
+      estimateSleepFixture,
+      context({ dataVersion: '0326:serving-20261101T000000Z-0a1b2c3d:aabbccddeeff' }),
+    )
+    expect(document.data_version).toBe('0326:serving-20261101T000000Z-0a1b2c3d:aabbccddeeff')
+    expect(document.data_release).toBe('0326')
+    // Every data version format starts with "<release>:" (versions.py).
+    for (const [version, release] of [
+      ['0325:load-7-20261020T120000Z-abc123', '0325'],
+      ['0325:run3:1700000000000000', '0325'],
+      ['unloaded:run0', '0325'],
+    ]) {
+      expect(
+        analysisExport(estimateSleepFixture, context({ dataVersion: version })).data_release,
+      ).toBe(release)
+    }
+  })
+
   it('reports null, not a guess, for facts the page does not know', () => {
     const document = analysisExport(
       estimateSleepFixture,

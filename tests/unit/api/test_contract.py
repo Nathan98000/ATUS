@@ -146,6 +146,32 @@ class TestOpenAPI:
                       "warnings", "spec", "analytics_version"):
             assert field in estimate_fields, field
 
+    def test_every_422_is_documented_as_the_error_envelope(self, client):
+        """Review round 1 (validation-details-dropped): every 422 the API sends
+        is its envelope (errors.py validation_details: details.errors[] =
+        {location, message, type}), but the GET /activities routes documented
+        FastAPI's own HTTPValidationError ({loc, msg})."""
+        spec = client.get("/openapi.json").json()
+        documented = {
+            f"{method.upper()} {path}": operation["responses"]["422"]
+            for path, item in spec["paths"].items()
+            for method, operation in item.items()
+            if "422" in operation.get("responses", {})
+        }
+        assert "GET /api/v1/activities" in documented
+        for name, response in documented.items():
+            schema = response["content"]["application/json"]["schema"]
+            assert schema == {"$ref": "#/components/schemas/ErrorResponse"}, name
+        assert "HTTPValidationError" not in spec["components"]["schemas"]
+
+    def test_a_query_validation_error_is_the_envelope(self, client):
+        response = client.get("/api/v1/activities", params={"level": 9})
+        assert response.status_code == 422
+        error = response.json()["error"]
+        assert error["code"] == "validation_error"
+        assert error["details"]["errors"][0]["location"] == ["query", "level"]
+        assert set(error["details"]["errors"][0]) == {"location", "message", "type"}
+
     def test_documented_request_examples_validate(self, client):
         for model, examples in (
             (EstimateRequest, EstimateRequest.model_config["json_schema_extra"]["examples"]),

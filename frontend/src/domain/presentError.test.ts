@@ -195,6 +195,142 @@ describe('presentError: every contract code is specific', () => {
   })
 })
 
+describe('presentError: review round 1', () => {
+  const now = Date.UTC(2026, 9, 21, 12, 0, 0)
+
+  it('database_paused names no reset date: its fixed Retry-After (3600 s) is not the reset', () => {
+    // The API always sends Retry-After 3600 with database_paused (errors.py);
+    // the provider's allowance resets at its next billing period, not in an hour.
+    const presented = presentError(
+      apiError(503, 'database_paused', {
+        retryAfter: 3600,
+        details: { scope: 'monthly', retry_after_seconds: 3600 },
+      }),
+      now,
+    )
+    expect(presented.message).not.toMatch(/around/)
+    expect(presented.message).toMatch(/when the allowance resets\./)
+  })
+
+  it('database_paused names the date only when the service says when the pause ends', () => {
+    const presented = presentError(
+      apiError(503, 'database_paused', {
+        retryAfter: 3600,
+        details: { scope: 'monthly', resumes_at: '2026-11-05T00:00:00Z' },
+      }),
+      now,
+    )
+    const date = new Date(Date.UTC(2026, 10, 5)).toLocaleDateString(undefined, {
+      month: 'long',
+      day: 'numeric',
+    })
+    expect(presented.message).toContain(`(around ${date})`)
+  })
+
+  it('every retryable presentation carries the Retry-After the service sent', () => {
+    for (const [status, code] of [
+      [429, 'rate_limited'],
+      [503, 'overloaded'],
+      [503, 'analysis_timeout'],
+      [503, 'capacity_unavailable'],
+      [503, 'data_version_mismatch'],
+      [503, 'service_waking'],
+      [502, 'upstream_unavailable'],
+      [503, 'database_unavailable'],
+      [503, 'schema_not_initialized'],
+      [503, 'data_not_loaded'],
+      [500, 'internal_error'],
+    ] as const) {
+      const presented = presentError(apiError(status, code, { retryAfter: 7 }))
+      expect(presented.retryable, code).toBe(true)
+      expect(presented.retryAfterSeconds, code).toBe(7)
+    }
+  })
+
+  it('invalid_analysis (a 422 domain rejection) is a request problem in the API’s words', () => {
+    const presented = presentError(apiError(422, 'invalid_analysis'))
+    expect(presented.kind).toBe('request')
+    expect(presented.message).toBe('server message for invalid_analysis')
+    expect(presented.adjustable).toBe(true)
+    expect(presented.retryable).toBe(false)
+    expect(presented.message).not.toMatch(/not in your request/)
+    expect(presented.heading).not.toBe(GENERIC_HEADING)
+  })
+
+  it('validation details in the API’s own shape ({location, message}) become field lines', () => {
+    const presented = presentError(
+      apiError(422, 'validation_error', {
+        details: {
+          errors: [
+            {
+              location: ['body', 'measure'],
+              message: "Input should be 'average_minutes_per_day' or 'participation_rate'",
+              type: 'literal_error',
+            },
+            { location: ['body', 'population', 'age_min'], message: 'Too small', type: 'x' },
+          ],
+        },
+      }),
+    )
+    expect(presented.detailLines).toEqual([
+      "measure: Input should be 'average_minutes_per_day' or 'participation_rate'",
+      'population.age_min: Too small',
+    ])
+    // FastAPI's default shape ({loc, msg}) still reads.
+    expect(
+      presentError(
+        apiError(422, 'validation_error', {
+          details: { errors: [{ loc: ['query', 'level'], msg: 'Too big' }] },
+        }),
+      ).detailLines,
+    ).toEqual(['query.level: Too big'])
+  })
+
+  it('upstream_unavailable says what happened, from details.reason', () => {
+    const present = (reason: string | null) =>
+      presentError(
+        apiError(502, 'upstream_unavailable', { details: reason === null ? null : { reason } }),
+      )
+    // Nothing answered: no hosting provider page was involved.
+    for (const reason of ['connect_failed', 'circuit_open']) {
+      const presented = present(reason)
+      expect(presented.heading, reason).toBe('The analysis service could not be reached')
+      expect(presented.message, reason).not.toMatch(/answered/)
+    }
+    expect(present('not_configured').message).toMatch(/not set up/)
+    expect(present('not_configured').message).not.toMatch(/answered/)
+    // The API took the request: say so, not "the hosting provider answered".
+    expect(present('origin_timeout').heading).toBe(
+      'The analysis service did not answer in time',
+    )
+    expect(present('broken_response').message).toMatch(/broke off/)
+    // A platform page, or a non-JSON 5xx the client mapped itself.
+    for (const reason of ['platform_error', null]) {
+      expect(present(reason).message, String(reason)).toMatch(/hosting provider answered/)
+    }
+  })
+
+  it('a host that stays down past the cold-start budget is not promised to be "temporary"', () => {
+    // These are shown only after the 150 s budget of automatic retries ran
+    // out; free hosting can also be suspended for the rest of the month.
+    const cases = [
+      apiError(503, 'service_waking', { retryAfter: 5 }),
+      apiError(502, 'upstream_unavailable', { details: { reason: 'connect_failed' } }),
+      apiError(503, 'upstream_unavailable', { details: { reason: 'circuit_open' } }),
+      apiError(502, 'upstream_unavailable', { details: { reason: 'platform_error' } }),
+      apiError(503, 'upstream_unavailable'),
+    ]
+    for (const error of cases) {
+      const presented = presentError(error)
+      expect(presented.message, error.code).not.toMatch(/in a moment|usually temporary/)
+      expect(presented.message, error.code).toMatch(/more than 2 minutes/)
+      expect(presented.hint, error.code).toMatch(/paused/)
+      expect(presented.hint, error.code).toMatch(/Starter examples/)
+      expect(presented.kind).toBe('service')
+    }
+  })
+})
+
 describe('presentError: client-side failures', () => {
   it('an incompatible API is a full-page state naming both versions', () => {
     const error = new IncompatibleApiError('The service speaks API v2.', 'v2')

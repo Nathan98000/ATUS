@@ -689,6 +689,7 @@ Status codes:
    - **Mitigation:** an unpublished name with a random suffix, a minimal 403 response, and Render's own Cloudflare DDoS layer.
 9. **Plain HTTP inside Render**, between its load balancer and the container (documented by Render).
 10. **Mixed-version windows** of a few minutes during deploys and data releases. Results always carry their own `data_version`, and the version gate prevents cache poisoning.
+11. **A Render suspension is presented as a cold start** (review round 1; [`../security.md`](../security.md#accepted-risks), R13). What a suspended Free service answers is undocumented, so the Worker maps it to `service_waking` or `upstream_unavailable`. The SPA waits out its 150 s budget per novel analysis, then says the service is still not answering and may be paused until next month; it has no dedicated page saying that the API host is paused for the month. The static floor keeps serving.
 
 ### Other risks and their mitigations
 
@@ -698,7 +699,7 @@ Status codes:
 - **Neon compute update restarts** drop connections. `check_connection` replaces them; a test terminates backends and expects no 5xx.
 - **The governor's model can drift.** Ground-truth polling and reconciliation correct it, and the owner can apply the brake manually.
 - **GitHub scheduled workflows** auto-disable after 60 days without repo activity and may be delayed or dropped. A monthly runbook check covers this.
-- **`_headers` may not apply to the SPA-fallback `index.html`.** A meta CSP is the backstop; check with curl after deploy.
+- **`_headers` may not apply to the SPA-fallback `index.html`.** A meta CSP is the backstop; check with curl after deploy. Under `wrangler dev`, whose asset worker is Cloudflare's, the rules are chosen by request path after the fallback: a missing `/assets/*` or `/snap/<id>/*` file gets `index.html` with that path's one-year `immutable` Cache-Control (review round 1; the SPA re-fetches such a snapshot file once with `cache: "reload"`, [`../frontend.md`](../frontend.md#static-snapshot)).
 - **KV eventual consistency** costs extra misses, never wrong results, because keys are version-scoped.
 - **Snapshot coverage of real traffic is unknown.** If most users build novel specs, the latency gain is limited to the home and starter paths.
 - **Complexity for a junior engineer:** four tiers plus a governor. Every tier fails toward the next one, has its own tests, and is covered by a runbook.

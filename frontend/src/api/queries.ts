@@ -14,6 +14,17 @@
  *
  * Retries are not TanStack Query's: `endpoints.ts` runs every API call through
  * a time-budgeted retry loop that understands cold starts and `Retry-After`.
+ *
+ * Every query runs with `networkMode: 'always'`. TanStack Query's default
+ * ('online') pauses a query that starts while the browser is offline before
+ * its function runs: the page then showed "Calculating…" for as long as the
+ * browser stayed offline, with no request and no message. Running the
+ * function lets the request fail at once, and `resilience.ts` presents being
+ * offline as final ("check your internet connection"); a query that failed
+ * is fetched again when the browser comes back online. That needs
+ * `refetchOnReconnect: true` stated: with networkMode 'always' TanStack Query
+ * turns it off by default. Loaded data never goes stale (`staleTime:
+ * Infinity`), so a reconnect refetches only queries that have no data.
  */
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -39,6 +50,8 @@ const METADATA_QUERY = {
   staleTime: Infinity,
   retry: false,
   refetchOnWindowFocus: false,
+  networkMode: 'always',
+  refetchOnReconnect: true,
 } as const
 
 const META_QUERY_KEY = ['meta'] as const
@@ -159,6 +172,8 @@ export function useAnalysis<Op extends Operation>(
     // 503); anything else waits for the visitor's "Try again".
     retry: false,
     refetchOnWindowFocus: false,
+    networkMode: 'always',
+    refetchOnReconnect: true,
   })
 }
 

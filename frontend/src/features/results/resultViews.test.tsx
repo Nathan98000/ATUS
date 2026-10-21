@@ -104,3 +104,18 @@ describe('non-adjacent trend years', () => {
     }
   })
 })
+
+describe('long group labels (review round 1)', () => {
+  it('the chart draws at most 48 characters of a label; the cards keep it whole', () => {
+    // label_a/label_b may be up to 80 characters (the API's limit), and SVG
+    // text does not wrap: a long label ran off the chart, cut mid-glyph.
+    const longA = 'M'.repeat(80)
+    const result: CompareResponse = { ...compareChildrenFixture, label_a: longA }
+    const { container } = render(<CompareView result={result} analysisKey={null} />)
+    const chartLabels = Array.from(container.querySelectorAll('.chart-group-label'))
+    expect(chartLabels[0]?.textContent).toBe(`${'M'.repeat(47)}…`)
+    expect(chartLabels[1]?.textContent).toBe(compareChildrenFixture.label_b)
+    expect(screen.getByRole('heading', { name: longA })).toBeInTheDocument()
+    expect(screen.getByRole('img').getAttribute('aria-label')).toContain(longA)
+  })
+})

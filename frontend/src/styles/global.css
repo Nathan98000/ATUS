@@ -1002,6 +1002,21 @@ details.panel > .panel__body {
   margin-bottom: 0.15rem;
 }
 
+/*
+ * Activity and group labels come from share links and may be one long word
+ * (up to 120 characters within the API's limits). They wrap anywhere instead
+ * of widening the page at phone width, and the flex and grid items holding
+ * them may shrink below such a word (review round 1).
+ */
+.analysis-page :is(h1, h2, h3, p, li, dd) {
+  overflow-wrap: anywhere;
+}
+
+.analysis-header > div,
+.compare-cards > * {
+  min-width: 0;
+}
+
 .eyebrow {
   text-transform: uppercase;
   letter-spacing: 0.08em;

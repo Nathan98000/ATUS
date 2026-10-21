@@ -385,7 +385,7 @@ Tests:
   - `/api/health` and `/api/v1/wake` reach only origin `/health`, never Neon.
   - The prewake sends at most one origin call per isolate per 10 minutes once the origin answered warm, and at most one a minute while it is waking; `PREWAKE=off` disables it (`edge/test/worker/wake.test.ts`).
   - A per-isolate circuit breaker skips the origin for 30 s after two connection failures (`edge/test/worker/resilience.test.ts`).
-- **Remaining:** R1, R2, R3.
+- **Remaining:** R1, R2, R3; and R13, a Render suspension that visitors see as a cold start.
 
 ### 2. Expensive-query DoS
 
@@ -548,6 +548,11 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 - The owner copies that value to Render.
 
 **R12. The owner machine is fully trusted.** It holds the `neondb_owner` DSN, every generated secret and the provider logins. The repository can only keep those files private (mode 0600) and never print them. Protecting the machine and the accounts is the owner's job.
+
+**R13. A Render suspension looks like a cold start.** When Render suspends the API until next month (outbound bandwidth or instance hours used up) or at its discretion (R3; ADR-011, accepted risk 1), what the suspended service answers is undocumented ([free](https://render.com/docs/free), accessed 2026-10-21). The Worker therefore maps it like any non-API answer, to 503 `service_waking` or 502 `upstream_unavailable` (`edge/src/proxy.ts`, `judge`), and the SPA cannot tell it from a sleeping host.
+- **What visitors see.** Each novel analysis shows the waking notice for the 150 s cold-start budget, then "The analysis service is still not answering", which says that the free hosting may be paused, for example until next month, and that starter examples and earlier analyses still open, with "Try again" (`frontend/src/domain/presentError.ts`; `presentError.test.ts`, "a host that stays down past the cold-start budget"). There is no dedicated page saying that the API host is paused for the month, which brief §14 asks for. Static and KV-cached results keep working.
+- **Quota side effect.** Each such analysis makes about 15–30 Worker requests, KV reads and governor admissions. They are refunded from the global count but count toward the network's 300 daily admissions (`PREFIX_DAILY_ADMISSIONS`), so after roughly 10–20 analyses a visitor's network sees the per-network daily-limit page instead. The edge breaker does not open, because Render does answer.
+- **What would remove it.** A suspension marker verified on the first real suspension, or an owner-set Worker var that refuses analyses with a "paused" envelope before the governor. Neither exists today. Runbook: [operations.md, "A quota is exhausted"](operations.md#a-quota-is-exhausted).
 
 ## Verification status
 
