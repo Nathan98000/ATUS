@@ -11,6 +11,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import re
+import shlex
 import sys
 import threading
 import uuid
@@ -240,11 +241,65 @@ def test_the_response_format_is_the_one_the_caller_names(probe, stub_api, monkey
     assert _failed(capsys) == ["analysis_headers"]
 
 
-def test_the_response_format_is_required_for_the_contract_checks(probe, monkeypatch):
+def test_the_response_format_is_required_where_the_package_is_missing(probe, monkeypatch):
+    """Outside the API image (no atus_pipeline to read the constant from), the contract
+    checks need --response-format."""
     monkeypatch.setenv("ATUS_SMOKE_EDGE_SECRET", SECRET)
+    monkeypatch.setitem(sys.modules, "atus_pipeline.api", None)  # import fails
     with pytest.raises(SystemExit) as exit_info:
         probe.main(["--base-url", "http://127.0.0.1:9"])
     assert exit_info.value.code == 2
+
+
+def test_without_the_flag_the_images_own_response_format_is_expected(probe, stub_api,
+                                                                     monkeypatch, capsys):
+    """stack-smoke-probe-usage-error (review round 3): the compose `smoke` service runs
+    the probe inside the API image with no arguments of its own (`command: []`), so
+    every documented `run --rm smoke` stopped at the --response-format usage error. The
+    probe now expects the image's atus_pipeline.api.RESPONSE_FORMAT by default."""
+    from atus_pipeline.api import RESPONSE_FORMAT
+
+    monkeypatch.setenv("ATUS_SMOKE_EDGE_SECRET", SECRET)
+    monkeypatch.setenv("ATUS_SMOKE_OPS_TOKEN", OPS_TOKEN)
+    url = stub_api(response_format=RESPONSE_FORMAT)
+    assert probe.main(["--base-url", url, "--timeout", "5", "--fixture"]) == 0
+    assert f"[PASS] analysis_headers  format {RESPONSE_FORMAT}," in capsys.readouterr().out
+    other = stub_api(response_format=RESPONSE_FORMAT + "0")
+    assert probe.main(["--base-url", other, "--timeout", "5"]) == 1
+    assert _failed(capsys) == ["analysis_headers"]
+
+
+#: Every place that tells the owner to run the compose `smoke` service by hand.
+SMOKE_RUN_DOCS = ("docker-compose.prod.yml", "docs/deployment.md", "docs/operations.md")
+
+
+def documented_smoke_runs() -> list[tuple[str, list[str]]]:
+    """(file:line, the probe's arguments) of every documented `run --rm smoke`: the
+    compose service has `command: []`, so these are exactly the probe's argv."""
+    runs = []
+    for name in SMOKE_RUN_DOCS:
+        lines = (REPO_ROOT / name).read_text(encoding="utf-8").splitlines()
+        for number, line in enumerate(lines, 1):
+            match = re.search(r"\brun --rm smoke\b([^`]*)", line)
+            if match:
+                runs.append((f"{name}:{number}", shlex.split(match.group(1).rstrip(" \\"))))
+    return runs
+
+
+def test_every_documented_smoke_run_passes_against_a_compliant_api(probe, stub_api,
+                                                                   monkeypatch, capsys):
+    """stack-smoke-probe-usage-error: the compose header, deployment.md steps 0 and 2 and
+    operations.md's restore drill step 6 run the probe with the arguments shown there;
+    each must get past argument parsing and pass a compliant API (as in the image, the
+    package is importable here)."""
+    runs = documented_smoke_runs()
+    assert len(runs) >= 4, runs
+    monkeypatch.setenv("ATUS_SMOKE_EDGE_SECRET", SECRET)
+    monkeypatch.setenv("ATUS_SMOKE_OPS_TOKEN", OPS_TOKEN)
+    url = stub_api()
+    for where, args in runs:
+        assert probe.main([*args, "--base-url", url, "--timeout", "5"]) == 0, where
+        assert "smoke: 0 failed" in capsys.readouterr().out, where
 
 
 def test_unreachable_api_fails(probe, monkeypatch):

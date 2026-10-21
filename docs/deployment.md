@@ -270,9 +270,18 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 4. **Worker → Settings → Builds:** leave it **disconnected**. Never use "Connect to Git". The config sets `preview_urls = false`, so no extra Version URLs exist.
 5. **Account API Tokens → Create Token → Custom token** for CI:
    - Workers role **Editor**, scoped to the single Worker `<worker>`.
-   - Add **Account Settings: Read** only if a `wrangler deploy --dry-run` with the token fails without it.
    - Account resources: only this account. TTL 90 days.
    - If the UI forces a template, use **Edit Cloudflare Workers** restricted to this account. It is broader: it includes KV, R2 and routes.
+   - **Check the token before you save it**, from `edge/`, once the Worker exists (step 3.4). Not with `wrangler deploy --dry-run`: a dry run never authenticates (wrangler 4.148 skips its login check and stops before any API call), so it passes with any token. This check authenticates and changes nothing:
+
+     ```bash
+     read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN   # paste the token, then Enter; nothing is shown
+     export CLOUDFLARE_ACCOUNT_ID=<Account ID>
+     test -n "$CLOUDFLARE_API_TOKEN" && npx --no-install wrangler deployments status   # must print the Worker's current deployment
+     unset CLOUDFLARE_API_TOKEN
+     ```
+
+     The `test -n` matters: with an empty `CLOUDFLARE_API_TOKEN` (nothing pasted), wrangler falls back to your own OAuth login from step 3.1 and the check would pass without testing the token. It proves that the token is active, belongs to this account and can read the Worker. Whether it may also deploy (the Editor role) shows only when it deploys: the first approved deploy's `wrangler deploy` (Bootstrap, step 5, which sends Render the digest it already runs, so a failure there leaves nothing half-switched). If that step fails with an authentication or permission error, add **Account Settings: Read** to the token, update the secret and re-run the job. Every Deploy run repeats the read check before the Render hook and stops there, with nothing changed, once the token has expired or been revoked.
    - Save the token as GitHub environment secret `CLOUDFLARE_API_TOKEN`, and the Account ID (Workers overview sidebar) as `CLOUDFLARE_ACCOUNT_ID`.
 
 ### 2. Render (Free web service)
@@ -613,7 +622,7 @@ The snapshot is built before anything deploys, so a failed restore or snapshot d
 **The deploy job.**
 
 1. It checks that the environment holds its four secrets and that `PUBLIC_BASE_URL` is set. It installs only what its steps run: the API's runtime lock and the package, binary wheels only (`--only-binary=:all:`), for the smoke's §9 comparison, and the edge's lockfile for `wrangler`. The `wrangler.jsonc` invariant tests ran in `edge-config`, and the browser journey runs in `browser-smoke`: their test and browser tooling never runs next to the deploy secrets.
-2. It records the rollback targets: the build the origin runs now, that build's GHCR digest, and the Worker's current deployment (`wrangler deployments status`).
+2. It checks the Cloudflare token before the Render hook, while nothing has changed: `wrangler deployments status` must succeed, so an expired, revoked or wrong-account token stops the job here instead of at `wrangler deploy` after Render has switched (review round 3). Its output is the Worker's rollback target. The read cannot prove that the token may deploy (the Editor role); that shows only at step 5. Then, best effort, it records the build the origin runs now and that build's GHCR digest. Those may fail without stopping the job, because a forward fix must deploy while the API is down, so a wrong `RENDER_ORIGIN` shows only at the wait (step 4), after the hook.
 3. `scripts/ops/render_deploy.py trigger` POSTs `RENDER_DEPLOY_HOOK_URL` with `imgURL=<URL-encoded digest reference>`. The URL is read from the environment and never printed; anything but an `https://api.render.com/deploy/srv-...` URL is refused.
 4. `scripts/ops/render_deploy.py wait` polls the origin's `/health` until `build` equals `GITHUB_SHA`. It allows 15 minutes: the image pull, Render's ~1 minute spin-up and the app start. The app start took about 6 s at 0.1 CPU in the emulation ([cold-start A/B](../loadtests/results/2026-10-21-cold-start-ab.md); about 13 s before commit 5844ab7).
    - `/health` reports the commit, not the image digest. If the origin already ran this commit before the hook (for example "Re-run all jobs", which rebuilds and pushes a new digest of the same commit), the wait cannot see the switch. The step then shows a warning, and you confirm the deploy in Render → Events.
@@ -869,7 +878,7 @@ Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_se
 
 | File | Holds | Written by | Feeds |
 |---|---|---|---|
-| `edge.env` | `EDGE_AUTH_SECRET` (and `EDGE_AUTH_SECRET_PREVIOUS` while rotating), `OPS_TOKEN`, `IP_HMAC_KEY`, the API's `ATUS_OPS_TOKEN`, then `RENDER_ORIGIN`; optionally `NEON_API_KEY`, which you add and the script keeps | `scripts/ops/gen_edge_secrets.sh`: 256-bit hex values, re-runs keep them, `--rotate NAME` replaces one, `--render-origin URL` records the origin | `wrangler secret put` (piped) for the Worker's names only; `ATUS_OPS_TOKEN` goes to Render env only; `OPS_TOKEN` also to the GitHub secret `EDGE_OPS_TOKEN` (`ops`, optionally `production`) |
+| `edge.env` | `EDGE_AUTH_SECRET` (and, once it has been rotated, `EDGE_AUTH_SECRET_PREVIOUS` with the rotation's state `EDGE_AUTH_SECRET_ROTATION`, `pending` or `finished`), `OPS_TOKEN`, `IP_HMAC_KEY`, the API's `ATUS_OPS_TOKEN`, then `RENDER_ORIGIN`; optionally `NEON_API_KEY`, which you add and the script keeps | `scripts/ops/gen_edge_secrets.sh`: 256-bit hex values, re-runs keep them, `--rotate NAME` replaces one (not `EDGE_AUTH_SECRET` while its rotation is pending), `--finish-rotation` ends that rotation, `--render-origin URL` records the origin | `wrangler secret put` (piped) for the Worker's names only; `ATUS_OPS_TOKEN` goes to Render env only; `OPS_TOKEN` also to the GitHub secret `EDGE_OPS_TOKEN` (`ops`, optionally `production`) |
 | `neon-<release>-<build8>.env` | one file per Neon project, named like the project: `ATUS_OWNER_DATABASE_URL`, the `neondb_owner` direct DSN (pasted from Neon → Connect, pooling off; a bare `postgresql://` line also counts), then `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` | you (the owner DSN) and `scripts/ops/restore_serving_db.sh --secrets-file <it>` (the two `ATUS_API_*` lines) | restores, the API password rotation, Render's `ATUS_DATABASE_URL` (= `ATUS_API_DATABASE_URL`). Keep the previous project's file until that project's deletion is approved: a data rollback needs its `atus_api` DSN |
 
 ### Local stack (`deploy/stack/stack.env.example`)
@@ -912,6 +921,7 @@ Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_se
 | `E2E_BACKEND_PYTHON` | `../.venv/bin/python` | `python` | interpreter Playwright uses for the E2E backend |
 | `PUBLIC_BASE_URL` | unset (required) | `http://127.0.0.1:8541` | the site `frontend/playwright.deployed.config.ts` and `scripts/ops/monitors.py` check: the deployed origin, or the local stack's edge |
 | `TRIVY_VERSION`, `TRIVY_SHA256` | `image.yml` | `0.75.0`, `c6e65abd…` | the pinned scanner (an immutable release); bump both together after checking the release's checksums |
+| BuildKit image (`driver-opts` of `docker/setup-buildx-action`) | `image.yml` | `moby/buildkit:v0.33.1@sha256:cec9f139…` | the daemon that builds the image, pinned by digest (review round 3); Dependabot does not update it: bump the tag and digest together to a release at least two weeks old (`docker buildx imagetools inspect moby/buildkit:vX.Y.Z` prints the digest) |
 | `ACTIONLINT_VERSION`, `ACTIONLINT_SHA256` | `ci.yml` | `1.7.12`, `8aca8db9…` | the pinned workflow linter; locally: `uvx --from actionlint-py actionlint` |
 
 ### Rotation
@@ -919,10 +929,11 @@ Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_se
 Every secret has one procedure.
 
 1. **Edge secret.** This one is designed so that no request fails.
-   1. `scripts/ops/gen_edge_secrets.sh --rotate EDGE_AUTH_SECRET` writes the new value into `edge.env` and keeps the old one as `EDGE_AUTH_SECRET_PREVIOUS`.
-   2. Render `ATUS_EDGE_SECRETS=<old>,<new>`, then "Save and deploy". Wait until Render → Events shows the deploy as live.
+   1. `scripts/ops/gen_edge_secrets.sh --rotate EDGE_AUTH_SECRET` writes the new value into `edge.env` and keeps the old one as `EDGE_AUTH_SECRET_PREVIOUS`: the value the Worker sends until step 3. It records the rotation as pending, and refuses another `--rotate EDGE_AUTH_SECRET` until step 5: a second rotation would replace that value with one that was never deployed, and step 2 would then lock the Worker out (403 `forbidden_origin` on every proxied request; review round 3). If you lost track of where you are, Render's current `ATUS_EDGE_SECRETS` shows which values the API accepts.
+   2. Render `ATUS_EDGE_SECRETS=<old>,<new>` (`<old>` is `EDGE_AUTH_SECRET_PREVIOUS`, `<new>` is `EDGE_AUTH_SECRET`), then "Save and deploy". Wait until Render → Events shows the deploy as live.
    3. `npx --no-install wrangler secret put EDGE_AUTH_SECRET` with `<new>`.
    4. Render `ATUS_EDGE_SECRETS=<new>`, then "Save and deploy".
+   5. `scripts/ops/gen_edge_secrets.sh --finish-rotation` records that the Worker and the API use only `<new>`. `EDGE_AUTH_SECRET_PREVIOUS` stays in `edge.env` for an edge rollback to a version from before the rotation ("Rollback", Edge, step 2).
 2. **`atus_api` database password.**
    1. `scripts/ops/restore_serving_db.sh --artifact <the release dump> --secrets-file <that project's file> --roles-only --rotate-api-password` re-applies `scripts/ops/roles.sql` as `neondb_owner` with a new generated 192-bit password (sent as a SCRAM verifier) and rewrites `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` in that file.
    2. Update Render's `ATUS_DATABASE_URL`, then "Save and deploy". Do this even if step 1 ended with `Restore FAILED.` after the note "the API role's password was changed before the checks ran", or with an error after the note "the API role's password was changed before the restore stopped with an error": the new password is already in effect.
@@ -937,9 +948,10 @@ Every secret has one procedure.
 4. **`IP_HMAC_KEY`.** `npx --no-install wrangler secret put IP_HMAC_KEY` at any time.
 5. **Cloudflare API token** (90-day TTL).
    1. Before it expires, create a new Custom token with the same scope.
-   2. Replace the GitHub secret `CLOUDFLARE_API_TOKEN`.
-   3. Delete the old token in Cloudflare.
-   4. **If it may have leaked**, or the Cloudflare account was compromised, the Worker's secrets are disclosed too: Worker code deployed with the token can read every one of them from `env` and send it anywhere, and the version can then be rolled back. So also:
+   2. Check it as in owner step 1.5: from `edge/`, `read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN` (paste it; nothing is shown), `test -n "$CLOUDFLARE_API_TOKEN" && CLOUDFLARE_ACCOUNT_ID=<Account ID> npx --no-install wrangler deployments status` (the `test -n` stops an empty paste, which would fall back to your OAuth login and prove nothing), then `unset CLOUDFLARE_API_TOKEN`. In the dashboard's token list, it must show the same permissions as the old token: the check proves that it authenticates, not that it may deploy.
+   3. Replace the GitHub secret `CLOUDFLARE_API_TOKEN`.
+   4. Delete the old token in Cloudflare.
+   5. **If it may have leaked**, or the Cloudflare account was compromised, the Worker's secrets are disclosed too: Worker code deployed with the token can read every one of them from `env` and send it anywhere, and the version can then be rolled back. So also:
       - rotate `EDGE_AUTH_SECRET` (item 1), `OPS_TOKEN` (item 3), `IP_HMAC_KEY` (item 4) and, if set, `NEON_API_KEY`, which calls for a restore into a new project (item 7);
       - treat `RENDER_ORIGIN` as known: it is not a credential, and direct requests still need the edge secret ([security.md R3](security.md#accepted-risks));
       - set the pause switch (`API_PAUSED_UNTIL`, `API_PAUSED_REASON`) again with `deploy.yml` operation `pause-api` or `resume-api`: it holds no secret values, but the token can set or clear it;
@@ -968,7 +980,7 @@ Every secret has one procedure.
 
 ## Rollback and runbooks
 
-The general runbooks live in [`operations.md`](operations.md#runbooks): deploy, rollback, a deploy blocked by the image scan, serving-DB build and restore, data release and new ATUS year, restore drill, incident first steps, token rotation, quota exhausted, and provider free-tier changes. The procedures below are the ones the workflows implement.
+The general runbooks live in [`operations.md`](operations.md#runbooks): deploy, rollback, a deploy blocked by the image scan or a dependency audit, serving-DB build and restore, data release and new ATUS year, restore drill, incident first steps, token rotation, quota exhausted, and provider free-tier changes. The procedures below are the ones the workflows implement.
 
 ### Rollback
 
@@ -977,7 +989,7 @@ Every deploy run's summary records what ran before it and what it deployed, what
 - **API.** Export `RENDER_DEPLOY_HOOK_URL` from your password manager into your shell (never paste it into chat), then:
   1. `python scripts/ops/render_deploy.py trigger --image-ref ghcr.io/nathan98000/atus-api@sha256:<previous>`;
   2. `RENDER_ORIGIN=... python scripts/ops/render_deploy.py wait --expect-build <previous build>`;
-  3. move the GHCR tag `live` back to that digest: within 30 days of the Deploy run that deployed it, Actions → that run → job `promote` → Re-run (GitHub re-runs a job only "up to 30 days after its initial run", docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs, read 2026-10-21); later, or while another Deploy run is in progress or waiting for approval (the re-run would wait behind it in `deploy.yml`'s one concurrency group, and a later dispatch would cancel it), by hand with `docker buildx imagetools create --prefer-index=false`, or after rejecting that pending run ([operations.md, Rollback](operations.md#rollback) has the commands). Until then `deep-check.yml` reports the build mismatch, and a Render deploy not made through the hook would bring back the image you rolled away from.
+  3. move the GHCR tag `live` back to that digest: within 30 days of the Deploy run that deployed it, Actions → that run → job `promote` → Re-run (GitHub re-runs a job only "up to 30 days after its initial run", docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs, read 2026-10-21); later, or while another Deploy run is in progress or waiting for approval (the re-run would wait behind it in the deploys' concurrency group (`deploy-production`), and a later deploy dispatch would cancel it), by hand with `docker buildx imagetools create --prefer-index=false`, or after rejecting that pending run ([operations.md, Rollback](operations.md#rollback) has the commands). Until then `deep-check.yml` reports the build mismatch, and a Render deploy not made through the hook would bring back the image you rolled away from.
 
   The previous image in the summary is the digest that commit was last deployed as (its `deployed-<commit>` tag, which only `promote` moves), so a re-run of the running commit, whose push moves `sha-<commit>`, still names the right one. GHCR keeps the newest 20 digests and the one tagged `live`. Render's dashboard can also roll back to a previous deploy.
 - **Edge (SPA, snapshot, Worker and its vars):**

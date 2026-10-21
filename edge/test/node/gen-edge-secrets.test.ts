@@ -237,6 +237,92 @@ if (process.argv[2] === 'child') {
     for (const name of GENERATED) expect(after[name]).not.toBe(before[name])
   })
 
+  describe('a pending edge-secret rotation (review round 3, double-edge-secret-rotation-outage)', () => {
+    // A second `--rotate EDGE_AUTH_SECRET` before the first was finished moved a value
+    // that was never deployed into EDGE_AUTH_SECRET_PREVIOUS and dropped the one the
+    // Worker sends, still printing "rotated". The documented next step,
+    // ATUS_EDGE_SECRETS=<new>,<previous>, then made the API refuse every proxied
+    // request (403 forbidden_origin) until the Worker got the new value.
+
+    it('refuses a second rotation while one is pending, and writes nothing', () => {
+      run()
+      const deployed = readValues().EDGE_AUTH_SECRET
+      expect(run('--rotate', 'EDGE_AUTH_SECRET').status).toBe(0)
+      const pending = readFileSync(envFile, 'utf8')
+      for (const args of [
+        ['--rotate', 'EDGE_AUTH_SECRET'],
+        ['--rotate', 'all'],
+      ]) {
+        const { status, stdout, stderr } = run(...args)
+        expect(status, args.join(' ')).not.toBe(0)
+        expect(stderr).toContain('rotation of EDGE_AUTH_SECRET is pending')
+        expect(stderr).toContain('--finish-rotation')
+        expect(stdout).not.toContain('rotated')
+        expect(readFileSync(envFile, 'utf8')).toBe(pending)
+      }
+      expect(readValues().EDGE_AUTH_SECRET_PREVIOUS).toBe(deployed)
+    })
+
+    it('says so on every run, with the steps that finish it', () => {
+      run()
+      run('--rotate', 'EDGE_AUTH_SECRET')
+      const { status, stdout } = run()
+      expect(status).toBe(0)
+      expect(stdout).toContain('EDGE_AUTH_SECRET rotation: pending')
+      expect(stdout).toContain('Rotation order')
+      expect(stdout).toContain('--finish-rotation')
+    })
+
+    it('--finish-rotation records that it is done; the next rotation keeps the deployed value', () => {
+      run()
+      run('--rotate', 'EDGE_AUTH_SECRET')
+      const second = readValues()
+      const finish = run('--finish-rotation')
+      expect(finish.status, finish.stderr).toBe(0)
+      expect(finish.stdout).toContain('EDGE_AUTH_SECRET rotation: finished')
+      const finished = readValues()
+      expect(finished.EDGE_AUTH_SECRET).toBe(second.EDGE_AUTH_SECRET)
+      // Kept: an edge rollback to a version from before the rotation needs it.
+      expect(finished.EDGE_AUTH_SECRET_PREVIOUS).toBe(second.EDGE_AUTH_SECRET_PREVIOUS)
+      expect(run().stdout).not.toContain('Rotation order')
+      expect(run('--rotate', 'EDGE_AUTH_SECRET').status).toBe(0)
+      // The previous value is now the one the Worker sends, never an undeployed one.
+      expect(readValues().EDGE_AUTH_SECRET_PREVIOUS).toBe(second.EDGE_AUTH_SECRET)
+    })
+
+    it('finishing one rotation and starting the next can be one command', () => {
+      run()
+      run('--rotate', 'EDGE_AUTH_SECRET')
+      const before = readValues()
+      const { status, stdout } = run('--finish-rotation', '--rotate', 'EDGE_AUTH_SECRET')
+      expect(status).toBe(0)
+      expect(stdout).toContain('EDGE_AUTH_SECRET: rotated')
+      expect(readValues().EDGE_AUTH_SECRET_PREVIOUS).toBe(before.EDGE_AUTH_SECRET)
+    })
+
+    it('counts a previous value without a recorded state as pending (files from older versions)', () => {
+      run()
+      writeFileSync(
+        envFile,
+        readFileSync(envFile, 'utf8') + `EDGE_AUTH_SECRET_PREVIOUS=${'a'.repeat(64)}\n`,
+      )
+      expect(run('--rotate', 'EDGE_AUTH_SECRET').status).not.toBe(0)
+    })
+
+    it('blocks no other rotation, and --finish-rotation alone changes no value', () => {
+      run()
+      run('--rotate', 'EDGE_AUTH_SECRET')
+      expect(run('--rotate', 'OPS_TOKEN').status).toBe(0)
+      const before = readValues()
+      run('--finish-rotation')
+      const after = readValues()
+      for (const name of GENERATED) expect(after[name]).toBe(before[name])
+      expect(run('--finish-rotation').stdout).toContain(
+        'EDGE_AUTH_SECRET rotation: none pending',
+      )
+    })
+  })
+
   it('re-tightens a loosened file to 0600', () => {
     run()
     chmodSync(envFile, 0o644)

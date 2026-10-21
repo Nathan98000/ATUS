@@ -586,16 +586,20 @@ def test_ci_backend_covers_both_pythons_and_the_openapi_drift():
 
 def test_ci_audits_and_lints():
     text = flat(jobs(by_name("ci.yml"))["supply-chain"])
-    assert "pip-audit --strict --require-hashes" in text and "api.lock.txt" in text
+    # pip-audit through its allowlist gate (review round 3, test_infra_review_r3.py)
+    assert "audit_gate.py pip --ignore-file .pip-audit-ignore -- --strict --require-hashes" \
+        in text and "api.lock.txt" in text
     assert "actionlint" in text and "sha256sum --check" in text
 
 
 @pytest.mark.parametrize("job, commands", [
     ("frontend", ["npm ci", "npm run typecheck", "npm run lint", "npm run format:check",
                   "npm test", "npm run build", "npm run check:bundle",
-                  "npm run check:api-types", "npm audit --omit=dev --audit-level=high"]),
+                  "npm run check:api-types",
+                  "audit_gate.py npm --ignore-file .npm-audit-ignore --audit-level high "
+                  "-- --omit=dev"]),
     ("edge", ["npm ci", "npm run typecheck", "npm run lint", "npm run format:check",
-              "npm test", "npm audit --omit=dev"]),
+              "npm test", "audit_gate.py npm --ignore-file .npm-audit-ignore -- --omit=dev"]),
     ("e2e", ["npx playwright install --with-deps chromium firefox webkit",
              "npm run test:e2e"]),
     ("e2e-stack", ["npm ci", "npx playwright install --with-deps chromium firefox webkit",
@@ -645,6 +649,28 @@ def test_the_image_job_follows_the_documented_recipe():
     build = next(s for s in steps(image) if "build-push-action" in str(s.get("uses")))
     assert build["with"]["platforms"] == "linux/amd64"
     assert build["with"]["push"] is False and build["with"]["load"] is True
+
+
+BUILDKIT_PIN = re.compile(r"image=moby/buildkit:v\d+\.\d+\.\d+@sha256:[0-9a-f]{64}")
+
+
+def test_every_buildx_builder_runs_a_buildkit_pinned_by_digest():
+    """buildkit-daemon-unpinned (review round 3): setup-buildx-action without
+    driver-opts starts buildx's default BuildKit, the mutable Docker Hub tag
+    moby/buildkit:buildx-stable-1, and that daemon runs every Dockerfile step of the
+    image deploy.yml pushes and Render runs by digest (and supplies the Dockerfile
+    frontend, which test_packaging_files.py forbids pulling by tag)."""
+    builders = [(path.name, step) for path in WORKFLOWS
+                for job in jobs(load(path)).values() for step in steps(job)
+                if uses_action(step, "docker/setup-buildx-action")]
+    assert builders
+    for name, step in builders:
+        options = step.get("with") or {}
+        assert options.get("driver", "docker-container") == "docker-container", name
+        assert BUILDKIT_PIN.fullmatch(str(options.get("driver-opts", "")).strip()), name
+    # Dependabot does not update driver-opts: the workflow says how to bump it.
+    image = (WORKFLOWS_DIR / "image.yml").read_text()
+    assert "docker buildx imagetools inspect moby/buildkit:" in image
 
 
 def test_trivy_is_a_pinned_binary_never_the_hijacked_actions():

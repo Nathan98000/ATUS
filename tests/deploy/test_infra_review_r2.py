@@ -351,7 +351,10 @@ def test_the_rollback_says_a_promote_rerun_waits_behind_a_pending_deploy():
     awaiting approval, and a later dispatch cancels it. Every place that gives that step
     says so and offers the way out (reject the pending run, or move the tag by hand)."""
     deploy = yaml.safe_load(_read(WORKFLOWS / "deploy.yml"))
-    assert deploy["concurrency"] == {"group": "deploy-production", "cancel-in-progress": False}
+    # Deploys, whose promote job the re-run belongs to, share deploy-production; only
+    # the pause switch has a group of its own (round 3, test_infra_review_r3.py).
+    assert deploy["concurrency"]["cancel-in-progress"] is False
+    assert deploy["concurrency"]["group"].endswith("|| 'deploy-production' }}")
     assert all("concurrency" not in job for job in deploy["jobs"].values())
     api = _flat(_section(_read(OPERATIONS), "### Rollback", "- **Edge**"))
     assert "no other Deploy run is in progress or waiting for approval" in api
