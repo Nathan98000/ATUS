@@ -37,7 +37,8 @@ def client(tmp_path_factory, migrated_db):
 
 class TestSystemEndpoints:
     def test_health(self, client):
-        assert client.get("/health").json() == {"status": "ok", "build": "dev"}
+        assert client.get("/health").json() == {"status": "ok", "build": "dev",
+                                                 "expected_data_version": None}
 
     def test_ready_with_loaded_data(self, client):
         response = client.get("/ready", headers=OPS)

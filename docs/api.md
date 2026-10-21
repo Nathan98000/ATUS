@@ -109,7 +109,7 @@ process.
 | `GET /api/v1/activities/{code}` | one code with ancestry, children, leaf count |
 | `GET /api/v1/population/metadata` | supported population filters + valid values |
 | `GET /api/v1/meta` | API/analytics/data versions + capability discovery |
-| `GET /health` | liveness and build (unversioned, public, no database) |
+| `GET /health` | liveness, build and the configured data version (`expected_data_version`, from `ATUS_EXPECTED_DATA_VERSION`, null when unset); unversioned, public, no database |
 | `GET /ready` | readiness, operators only (`Authorization: Bearer <ATUS_OPS_TOKEN>`) |
 | `GET /metrics` | Prometheus metrics, operators only (same bearer) |
 

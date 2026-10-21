@@ -180,6 +180,40 @@ def test_wait_gives_up_after_its_budget(fake_server, monkeypatch, capsys):
     assert "not ready" in capsys.readouterr().err
 
 
+DV_OLD = "0325:serving-20261020T224252Z-a7420a5c:de834e672474"
+DV_NEW = "0325:serving-20261101T120000Z-0a1b2c3d:0123456789ab"
+
+
+def wait_for_release(server, monkeypatch, body: dict) -> int:
+    server.routes[("GET", "/health")] = json_reply(200, {"status": "ok", "build": SHA, **body})
+    monkeypatch.setenv("RENDER_ORIGIN", server.base)
+    return render.main(["wait", "--expect-build", SHA, "--expect-data-version", DV_NEW,
+                        "--timeout", "60", "--interval", "5"])
+
+
+def test_wait_refuses_an_origin_bound_to_another_release(fake_server, monkeypatch, capsys):
+    """no-prepublish-data-version-check: once releases/current.json names a new release,
+    a deploy approved before the Render switch published that release's snapshot and
+    DATA_VERSION over an API still serving the old one; only the smoke, after publishing,
+    noticed. The wait now fails first, at once: waiting cannot change Render's settings."""
+    assert wait_for_release(fake_server, monkeypatch, {"expected_data_version": DV_OLD}) == 1
+    assert fake_server.count("GET", "/health") == 1
+    err = capsys.readouterr().err
+    assert DV_OLD in err and DV_NEW in err and "ATUS_EXPECTED_DATA_VERSION" in err
+    assert fake_server.base not in err
+
+
+@pytest.mark.parametrize("body", [{"expected_data_version": None}, {}])
+def test_wait_refuses_an_origin_without_a_data_binding(fake_server, monkeypatch, capsys, body):
+    assert wait_for_release(fake_server, monkeypatch, body) == 1
+    assert "not bound to a data version" in capsys.readouterr().err
+
+
+def test_wait_passes_an_origin_bound_to_the_release(fake_server, monkeypatch, capsys):
+    assert wait_for_release(fake_server, monkeypatch, {"expected_data_version": DV_NEW}) == 0
+    assert f"bound to data version {DV_NEW}" in capsys.readouterr().out
+
+
 def test_current_build_is_written_as_a_step_output(fake_server, monkeypatch, tmp_path):
     fake_server.routes[("GET", "/health")] = json_reply(200, {"status": "ok", "build": SHA})
     output = tmp_path / "out"

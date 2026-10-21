@@ -12,6 +12,8 @@ import re
 from datetime import date, timedelta
 from pathlib import Path
 
+import yaml
+
 from .conftest import REPO_ROOT
 
 DOCS_DIR = REPO_ROOT / "docs"
@@ -128,3 +130,32 @@ def test_a_scan_blocked_deploy_has_a_runbook_and_rollbacks_skip_the_pipeline():
     deployment = _section(_read(DEPLOYMENT), "- **Data:** the release switch in reverse",
                           "- **API host:**")
     assert deployment.index("wrangler rollback") < deployment.index("gh workflow run deploy.yml")
+
+
+# --- no-prepublish-data-version-check ----------------------------------------------------
+
+
+def _workflow(name: str) -> dict:
+    return yaml.safe_load(_read(WORKFLOWS / name))
+
+
+def _steps(job: dict) -> list[dict]:
+    return job.get("steps") or []
+
+
+def test_the_edge_release_is_published_only_over_an_origin_bound_to_it():
+    """no-prepublish-data-version-check: the deploy checked only the origin's build before
+    wrangler deploy, so a run approved before the Render switch published the new
+    release's snapshot and DATA_VERSION over an API still serving the old one."""
+    deploy = _workflow("deploy.yml")["jobs"]["deploy"]
+    runs = [step.get("run", "") for step in _steps(deploy)]
+    (wait,) = [i for i, run in enumerate(runs)
+               if run.startswith("python scripts/ops/render_deploy.py wait")]
+    (publish,) = [i for i, run in enumerate(runs) if re.search(r"wrangler deploy(?!ments)", run)]
+    assert wait < publish
+    assert '--expect-data-version "$DATA_VERSION"' in runs[wait]
+    assert deploy["env"]["DATA_VERSION"] == "${{ needs.snapshot.outputs.data_version }}"
+    source = _read(REPO_ROOT / "src" / "atus_pipeline" / "api" / "routes" / "health.py")
+    assert "expected_data_version=settings.expected_data_version" in source
+    step = _flat(_section(_read(DEPLOYMENT), "**The deploy job.**", "A push to `main`"))
+    assert "expected_data_version" in step and "nothing is published at the edge" in step

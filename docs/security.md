@@ -435,7 +435,7 @@ Tests:
 - **The origin lock.** Without the edge secret, every request gets 403 `forbidden_origin`, with no database work (C2), except `/health`, and `/ready` and `/metrics` with a valid `ATUS_OPS_TOKEN` bearer (C14). The one earlier check is the body cap: a declared body over the cap gets 413 first.
   - Checked locally by the `origin_lock` check in `deploy/stack/edge_probe.py`.
   - After deploy, `scripts/ops/deploy_smoke.py --origin-lock` checks it; that has not run yet.
-- **`/health`.** It answers anyone with `{"status": "ok", "build": <git SHA>}` and touches nothing. The SHA is public in the repository anyway.
+- **`/health`.** It answers anyone with `{"status": "ok", "build": <git SHA>, "expected_data_version": <data version or null>}` and touches nothing. The SHA is public in the repository anyway, and the data version is in every API response's `X-Data-Version` and in `/api/_edge/health`.
 - **Remaining:** R3.
 
 ### 7. Cache poisoning (KV, snapshot, API cache)
@@ -494,7 +494,7 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 | `/openapi.json` | 404 | as above | **Off.** The same schema is committed as `frontend/openapi.json` and exported by `scripts/export_openapi.py`; `tests/unit/api/test_exposure.py::TestDocumentationSwitch::test_published_snapshot_is_current` keeps it current. The public site publishes that committed copy as a static asset at `/openapi.json` (the site root, outside `/api`): it holds no secrets, and serving it runs neither the Worker nor the API |
 | `/ready` | 404, never routed | 403 without the edge secret; 404 with it; 200 or 503 with `Authorization: Bearer <ATUS_OPS_TOKEN>` | **Operator only.** It queries the database on every call and names data versions, so without a token it must not be a way to wake Neon (audit F16). Its failures are ordinary envelopes; hints go to the log |
 | `/metrics` | 404, never routed | same as `/ready` | **Operator only.** Prometheus text with bounded label values (route templates, codes), no client input or addresses |
-| `/health` | `/api/health` → origin `/health` | 200 `{status, build}` | **Public.** Render's health check and the monitors need it. It touches no database and needs no edge auth; it is exempt from rate limiting |
+| `/health` | `/api/health` → origin `/health` | 200 `{status, build, expected_data_version}` | **Public.** Render's health check and the monitors need it. It touches no database and needs no edge auth; it is exempt from rate limiting |
 | `/api/_edge/health` | answered by the Worker | — | **Public.** Versions, snapshot ID and cache scope, none of them secret. No origin call |
 | `/api/_ops/budget` | 200 with `Authorization: Bearer <OPS_TOKEN>`, otherwise the 404 envelope | — | **Owner and the daily quota report.** Counts and budgets only |
 | `/api/v1/wake` | answered by the Worker | — | **Public.** At most one origin `/health` call per isolate per 10 minutes once the origin is warm, one a minute while it is waking; never touches Neon |

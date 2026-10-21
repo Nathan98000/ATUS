@@ -470,15 +470,20 @@ jobs:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: python scripts/ops/render_deploy.py trigger --image-ref "$IMAGE_REF" --image-repo "$GHCR_REPOSITORY"
 
-      - name: Wait until Render serves this build (cold start, image pull)
+      - name: Wait until Render serves this build, bound to this release (cold start, image pull)
         env:
           RENDER_ORIGIN: ${{ secrets.RENDER_ORIGIN }}
           # When the origin already ran this commit (a re-run that rebuilt the
           # image), /health cannot show the new digest going live: the script
           # then says so as a warning.
           PREVIOUS_BUILD: ${{ steps.before.outputs.build }}
+        # The origin must be bound to the release this run publishes (/health's
+        # expected_data_version is Render's ATUS_EXPECTED_DATA_VERSION) before
+        # wrangler deploy: a run approved before the release switch on Render
+        # fails here, with nothing published at the edge.
         run: |
           python scripts/ops/render_deploy.py wait --expect-build "$GITHUB_SHA" \
+            --expect-data-version "$DATA_VERSION" \
             --previous-build "$PREVIOUS_BUILD" --timeout 900 --interval 15
 
       - name: Deploy the edge (SPA, snapshot, Worker and its release vars)
