@@ -718,9 +718,17 @@ def _lexicon_wording(a: Response, b: Response, request: RequestInfo) -> bool:
 
 
 def _health_build(a: Response, b: Response, request: RequestInfo) -> bool:
-    return (urlsplit(request.path).path == "/health" and a.status == b.status == 200
+    if not (urlsplit(request.path).path == "/health" and a.status == b.status == 200
             and a.payload == {"status": "ok"} and isinstance(b.payload, dict)
-            and set(b.payload) == {"status", "build"} and b.payload["status"] == "ok")
+            and b.payload.get("status") == "ok"):
+        return False
+    # Review round 2 (infra) added the deployment's data binding, a string or
+    # null; a Phase 5 build from before it reports `build` alone.
+    keys = set(b.payload)
+    if keys == {"status", "build"}:
+        return True
+    return (keys == {"status", "build", "expected_data_version"}
+            and isinstance(b.payload["expected_data_version"], str | None))
 
 
 INTENDED_DIFFERENCES: tuple[IntendedDifference, ...] = (
@@ -772,7 +780,9 @@ INTENDED_DIFFERENCES: tuple[IntendedDifference, ...] = (
     ),
     IntendedDifference(
         "health_reports_build", "Phase 5 contract (ATUS_BUILD_SHA)",
-        "GET /health also reports `build`, which the deploy workflow polls.",
+        "GET /health also reports `build`, which the deploy workflow polls, and "
+        "`expected_data_version` (ATUS_EXPECTED_DATA_VERSION or null), which the deploy "
+        "job checks before it publishes the edge's release (review round 2).",
         _health_build,
     ),
 )

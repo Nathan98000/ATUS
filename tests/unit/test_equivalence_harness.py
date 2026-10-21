@@ -430,6 +430,18 @@ def test_the_lexicon_wording_and_health_build_are_intended():
                health).classification["id"] == "health_reports_build"
     assert a_b(response(200, {"status": "ok"}), response(200, {"status": "ok", "x": 1}),
                health).outcome == "mismatch"
+    # Review round 2: the deployment's data binding, a string or null
+    for bound in ("0325:serving-x:abc", None):
+        assert a_b(response(200, {"status": "ok"}),
+                   response(200, {"status": "ok", "build": "abc",
+                                  "expected_data_version": bound}),
+                   health).classification["id"] == "health_reports_build"
+    assert a_b(response(200, {"status": "ok"}),
+               response(200, {"status": "ok", "build": "abc", "expected_data_version": 1}),
+               health).outcome == "mismatch"
+    assert a_b(response(200, {"status": "ok"}),
+               response(200, {"status": "ok", "expected_data_version": None}),
+               health).outcome == "mismatch"
 
 
 @pytest.mark.parametrize("details", [[1, 2], {"errors": "bad"}, {"errors": [1, None]}, "x"])
