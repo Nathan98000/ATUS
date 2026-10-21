@@ -285,7 +285,7 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 4. Do **not** create branches or read replicas, and do not run an instant restore on this project. Each would add to the project's 1 GB.
 5. *(After implementation provides the restore script.)*
    1. **Connect**, with connection pooling **off** (the direct host, without `-pooler`). Copy the `neondb_owner` connection string into `~/.config/atus/neon.env`. Keep that file outside the repo, `chmod 600`.
-   2. Run the restore script yourself. It runs `pg_restore --no-owner --no-acl` with a client of version 16 or newer, creates `atus_api` with a generated password of at least 60 bits, applies grants and role settings, runs `VACUUM (ANALYZE)` and checks the metered size. It writes the `atus_api` DSN back into the same file. Nothing is printed or pasted.
+   2. Run the restore script yourself. It runs `pg_restore --no-owner --no-acl` with a client of version 16 or newer (a local one, or the `postgres:16` image through docker; on macOS no client install is needed), creates `atus_api` with a generated password of at least 60 bits, applies grants and role settings, runs `VACUUM (ANALYZE)` and checks the metered size. It writes the `atus_api` DSN back into the same file. Nothing is printed or pasted.
 6. *(Optional; strengthens the quota governor.)* **Organization settings → API keys → Create → Project-scoped key** for this project only, if the Free plan offers it.
    - Load it with `npx wrangler secret put NEON_API_KEY`. The project id goes in as the Worker var `NEON_PROJECT_ID`.
    - Never use a personal or organization-wide key here.
@@ -529,6 +529,7 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
   5. writes the `atus_api` DSN back into the same file.
 - **Then on Render:** set `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` (see [Configuration reference](#configuration-reference)).
 - **First real TLS check.** This is the first connection with `sslmode=verify-full&sslrootcert=system` against Neon's real certificate.
+- **CA roots on your machine.** `system` means the operating system's CA bundle, which neither the Python driver's bundled OpenSSL nor the `postgres:16` image finds by itself. The `atus` commands (the restore, `atus api`, `verify-serving-db`, `compare-serving-db`, `build-serving-db`) set `SSL_CERT_FILE` to the system bundle when it is unset (macOS: `/etc/ssl/cert.pem`; Debian/Ubuntu: `/etc/ssl/certs/ca-certificates.crt`), and the docker fallback mounts that file read-only. On a system with none of these, `export SSL_CERT_FILE=<CA bundle>` first; without roots the restore fails closed ("certificate verify failed"), it never connects unverified. See [TLS to the database](#tls-to-the-database).
 - **The command:** `scripts/ops/restore_serving_db.sh --artifact <the release's .dump> --report restore-report.json`, with `ATUS_OWNER_DATABASE_URL` in `~/.config/atus/neon.env`.
 - **Not verifiable before this step:** whether Neon accepts `ALTER ROLE atus_api SET ...` from `neondb_owner` (ADR-011 "Unknowns"; the local drill emulates a non-superuser `CREATEROLE` owner, where it works). The restore's role checks fail loudly if it does not.
 
@@ -775,7 +776,7 @@ Never set on Render. The data commands (`atus load`, `atus build-serving-db`, `a
 | `ATUS_BUILD_SHA` (build arg → env) | `dev` | `$(git rev-parse HEAD)` | every build. `/health` reports it as `build`; `deploy.yml` waits until it equals `GITHUB_SHA` |
 | `ATUS_VERSION` (build arg → OCI label) | `unknown` | `0.1.0` (`atus_pipeline.__version__`) | every release |
 | `PYTHON_BASE`, `PYTHON_DIGEST` (build args) | `python:3.12-slim`, `sha256:a6e34c59…` | — | base-image updates. Both `FROM` lines are literal (`python:3.12-slim@sha256:…`), so Dependabot's `docker` ecosystem proposes digest bumps; these two ARGs only feed the OCI labels and must be updated with them (`tests/deploy/test_dependabot.py` fails otherwise) |
-| `SSL_CERT_FILE` (env) | `/etc/ssl/certs/ca-certificates.crt` | — | never: `sslrootcert=system` depends on it ([TLS](#tls-to-the-database)) |
+| `SSL_CERT_FILE` (env) | `/etc/ssl/certs/ca-certificates.crt` | — | never: `sslrootcert=system` depends on it ([TLS](#tls-to-the-database)). Outside the image the `atus` commands set it to the system bundle when unset |
 | `ATUS_ENV`, `PORT`, `WEB_CONCURRENCY` (env) | `production`, `10000`, `1` | — | never; see the API table |
 
 ### Cloudflare Worker
@@ -912,6 +913,7 @@ Every secret has one procedure.
   - the image connects with `verify-full` + `system`;
   - it rejects a certificate whose CA is not in the bundle;
   - with `SSL_CERT_FILE` unset it fails even when the CA is in the bundle.
+- **Outside the image (the owner's machine).** The same wheel has the same build path on macOS (`/tmp/libpq.build/cert.pem`, missing), and the `postgres:16` image the restore falls back to has no CA bundle at all (`ca-certificates` is not installed). So the `atus` commands point `SSL_CERT_FILE` at the system bundle when it is unset (`src/atus_pipeline/database/dsn.py::ensure_system_roots`), and `serving/pgtools.py` mounts that bundle read-only into the container and sets `SSL_CERT_FILE` there; an `sslrootcert=<file>` is mounted the same way. `tests/deploy/test_owner_tls.py` (opt-in) proves, against a TLS-only Postgres, that the host driver and the docker `psql` both connect with `verify-full` + `system` once the bundle holds the CA, that the docker client still rejects a CA the bundle lacks, and that without any bundle the docker fallback refuses with advice instead of connecting.
 - **Not yet verified:** the live Neon certificate. It is checked at the first restore (step 5).
 - **Fallback** if `system` ever fails: `sslrootcert=<bundled CA file>` with `verify-full` (ADR-011).
 

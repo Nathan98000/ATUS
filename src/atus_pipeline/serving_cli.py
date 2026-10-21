@@ -21,7 +21,7 @@ import psycopg
 from psycopg.conninfo import conninfo_to_dict
 
 from .cli import _print_results, _settings
-from .database.dsn import describe, redact
+from .database.dsn import describe, ensure_system_roots, redact
 
 SERVING_URL_ENV = "ATUS_SERVING_DATABASE_URL"
 
@@ -67,6 +67,7 @@ def build_serving_db(source_url, target_url, artifact_dir, allow_unvalidated, bu
     target_url = target_url or os.environ.get(SERVING_URL_ENV)
     if not target_url:
         raise click.ClickException(f"pass --target or set {SERVING_URL_ENV}")
+    ensure_system_roots(source_url, target_url)
     click.echo(f"Source (read only): {describe(source_url)}")
     click.echo(f"Target:             {describe(target_url)}")
     try:
@@ -117,6 +118,7 @@ def verify_serving_db(database_url, manifest_path, content_hash, explain) -> Non
     settings = _settings()
     url = database_url or settings.database_url
     manifest = read_manifest(manifest_path) if manifest_path else None
+    ensure_system_roots(url)
     click.echo(f"Serving database: {describe(url)}")
     try:
         with psycopg.connect(url, autocommit=True,
@@ -231,6 +233,7 @@ def compare_serving_db(full_url, serving_url, n_specs, seed, report_path) -> Non
     serving_url = serving_url or os.environ.get(SERVING_URL_ENV)
     if not serving_url:
         raise click.ClickException(f"pass --serving or set {SERVING_URL_ENV}")
+    ensure_system_roots(full_url, serving_url)
     click.echo(f"Full:    {describe(full_url)}")
     click.echo(f"Serving: {describe(serving_url)}")
     options = "-c default_transaction_read_only=on -c jit=off"

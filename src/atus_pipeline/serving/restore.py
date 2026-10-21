@@ -13,7 +13,8 @@ The procedure of brief §9 and ADR-013, in order:
    refuses a database without the serving marker (``serving/guard.py``);
 4. ``pg_restore --no-owner --no-acl --single-transaction --exit-on-error``
    over the connection given (Neon: the direct endpoint), with a client at
-   least as new as the server's major version;
+   least as new as the server's major version and the artifact's
+   ``pg_dump``;
 5. apply ``scripts/ops/roles.sql`` with the API role's password (reused from
    the secrets file, or newly generated: 192 bits), sent as a SCRAM verifier,
    and write the password and the API's connection string back into the
@@ -42,7 +43,7 @@ from pathlib import Path
 import psycopg
 from psycopg.conninfo import conninfo_to_dict
 
-from ..database.dsn import describe, redact
+from ..database.dsn import describe, ensure_system_roots, redact
 from ..validation.results import CheckResult
 from . import pgtools
 from .artifact import manifest_for, read_manifest, verify_artifact
@@ -167,10 +168,22 @@ def _check(name: str, passed: bool, observed: str, detail: str = "") -> CheckRes
                        observed=observed, detail=detail)
 
 
+def restore_client_major(server_major: int, manifest: dict) -> int:
+    """The oldest ``pg_restore`` major that can read this artifact: the
+    server's, or the recorded ``pg_dump``'s if newer (an archive written by a
+    newer ``pg_dump`` has a header an older ``pg_restore`` rejects)."""
+    recorded = (manifest.get("tools") or {}).get("pg_dump") or ""
+    return max(server_major, pgtools.parse_major(recorded) or 0)
+
+
 def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> RestoreReport:
     url = owner_url(options)
     owner_password = conninfo_to_dict(url).get("password") or ""
     secrets: list[str] = [owner_password]
+    # sslrootcert=system needs the system's CA bundle on the owner's machine
+    # (docs/deployment.md "TLS to the database"); the API role's URL uses it
+    # for any remote host, whatever the owner's URL says.
+    ensure_system_roots(url, api_database_url(url, options.api_role, "unused"))
 
     def say(message: str) -> None:
         echo(redact(message, *secrets))
@@ -221,7 +234,8 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
         )
 
     if not options.roles_only:
-        pg_restore = pgtools.resolve("pg_restore", url, server_major=server_major,
+        pg_restore = pgtools.resolve("pg_restore", url,
+                                     server_major=restore_client_major(server_major, manifest),
                                      image=options.pg_client_image)
         report.tools["pg_restore"] = f"{pg_restore.version()} ({pg_restore.origin})"
         say(f"Restoring with {report.tools['pg_restore']} ...")

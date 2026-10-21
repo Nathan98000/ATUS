@@ -121,6 +121,30 @@ class TestApiCommand:
         assert settings.is_production and kwargs == {"host": None, "port": 8517,
                                                      "reload": False}
 
+    def test_sslrootcert_system_finds_the_ca_bundle_before_the_server_starts(
+        self, monkeypatch, tmp_path
+    ):
+        # Data release step 5 runs `atus api` on the owner's Mac against Neon
+        # (verify-full + system); the psycopg wheel's OpenSSL has no roots of
+        # its own there. The image sets SSL_CERT_FILE itself.
+        import os
+
+        from atus_pipeline.database import dsn
+
+        bundle = tmp_path / "cert.pem"
+        bundle.write_text("roots")
+        monkeypatch.setattr(dsn, "SYSTEM_CA_BUNDLES", (str(bundle),), raising=False)
+        monkeypatch.delenv("SSL_CERT_FILE", raising=False)
+        seen = []
+        monkeypatch.setattr(uvicorn, "run", lambda **k: seen.append(os.environ.get(
+            "SSL_CERT_FILE")))
+        url = "postgresql://atus_api:pw@ep-1.us-east-1.aws.neon.tech/atus" \
+              "?sslmode=verify-full&sslrootcert=system"
+        result = CliRunner().invoke(cli.cli, ["api"], env={"ATUS_ENV": "development",
+                                                           "ATUS_DATABASE_URL": url})
+        assert result.exit_code == 0, result.output
+        assert seen == [str(bundle)]
+
     def test_module_entry_point_reports_configuration_errors(self, monkeypatch, capsys):
         monkeypatch.setenv("ATUS_ENV", "production")
         monkeypatch.delenv("ATUS_DATABASE_URL", raising=False)

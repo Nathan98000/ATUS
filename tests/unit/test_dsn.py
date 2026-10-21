@@ -4,7 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from atus_pipeline.database.dsn import describe, libpq_env, redact, same_database
+from atus_pipeline.database import dsn
+from atus_pipeline.database.dsn import (
+    describe,
+    ensure_system_roots,
+    libpq_env,
+    redact,
+    same_database,
+)
 
 
 @pytest.mark.parametrize("text, expected", [
@@ -52,3 +59,46 @@ def test_same_database_treats_loopback_names_alike():
     assert not same_database("postgresql://a@localhost:5434/atus",
                              "postgresql://a@localhost:5465/atus")
     assert not same_database("postgresql://a@h/atus", "postgresql://a@h/atus_serving")
+
+
+NEON = "postgresql://atus_api:pw@ep-1.us-east-1.aws.neon.tech/atus"
+
+
+def test_sslrootcert_system_gets_the_operating_systems_ca_bundle(tmp_path, monkeypatch):
+    # The psycopg[binary] wheel's OpenSSL looks for its roots under a build
+    # path (/tmp/libpq.build) that does not exist on the owner's Mac, so
+    # `system` alone finds none: the bundle must come from SSL_CERT_FILE.
+    bundle = tmp_path / "cert.pem"
+    bundle.write_text("roots")
+    monkeypatch.setattr(dsn, "SYSTEM_CA_BUNDLES", (str(tmp_path / "absent.pem"), str(bundle)))
+    environ: dict[str, str] = {}
+    assert ensure_system_roots(f"{NEON}?sslmode=verify-full&sslrootcert=system",
+                               environ=environ) == str(bundle)
+    assert environ == {"SSL_CERT_FILE": str(bundle)}
+
+
+def test_an_explicit_ssl_cert_file_is_kept(tmp_path, monkeypatch):
+    monkeypatch.setattr(dsn, "SYSTEM_CA_BUNDLES", (str(tmp_path),))
+    environ = {"SSL_CERT_FILE": "/owner/choice.pem"}
+    assert ensure_system_roots(f"{NEON}?sslrootcert=system", environ=environ) == \
+        "/owner/choice.pem"
+    assert environ == {"SSL_CERT_FILE": "/owner/choice.pem"}
+
+
+def test_connections_without_sslrootcert_system_leave_the_environment_alone(tmp_path,
+                                                                           monkeypatch):
+    bundle = tmp_path / "cert.pem"
+    bundle.write_text("roots")
+    monkeypatch.setattr(dsn, "SYSTEM_CA_BUNDLES", (str(bundle),))
+    environ: dict[str, str] = {}
+    for url in (f"{NEON}?sslmode=require", "postgresql://atus:atus@localhost:5434/atus",
+                f"{NEON}?sslmode=verify-full&sslrootcert=/path/ca.pem"):
+        assert ensure_system_roots(url, environ=environ) is None
+    assert environ == {}
+
+
+def test_without_any_bundle_nothing_is_set(tmp_path, monkeypatch):
+    monkeypatch.setattr(dsn, "SYSTEM_CA_BUNDLES", (str(tmp_path / "absent.pem"),))
+    environ: dict[str, str] = {}
+    assert ensure_system_roots(f"{NEON}?sslrootcert=system", environ=environ) is None
+    assert environ == {}

@@ -138,6 +138,11 @@ def test_api_url_for_a_local_server_keeps_the_owner_ssl_choice():
     assert api_database_url("postgresql://o:p@[::1]:5466/atus?sslmode=disable", "r", "pw") == (
         "postgresql://r:pw@[::1]:5466/atus?sslmode=disable"
     )
+    # A local TLS server verified like Neon (tests/deploy/test_owner_tls.py).
+    assert api_database_url("postgresql://o:p@localhost:5466/atus?sslmode=verify-full"
+                            "&sslrootcert=system", "r", "pw") == (
+        "postgresql://r:pw@localhost:5466/atus?sslmode=verify-full&sslrootcert=system"
+    )
 
 
 def test_the_written_file_can_be_sourced_by_a_shell(tmp_path):

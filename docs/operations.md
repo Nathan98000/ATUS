@@ -877,6 +877,8 @@ scripts/ops/restore_serving_db.sh --artifact ~/atus-artifacts/<dir>/atus-serving
 
 This step **(wakes Neon)**. Do not pass `--verify-content-hash` on Neon: it re-reads every row, which costs about the data's size in egress. The script writes `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` into the secrets file. The report has the checks, the metered size and each step's duration (`seconds`).
 
+TLS needs the system's CA roots on your machine. The script finds them itself (macOS `/etc/ssl/cert.pem`) unless `SSL_CERT_FILE` names another bundle, and hands them to the `postgres:16` docker client when there is no local `pg_restore`/`psql` 16 or newer ([deployment.md, "TLS to the database"](deployment.md#tls-to-the-database)). On a machine without a system bundle, `export SSL_CERT_FILE=<CA bundle>` first. "certificate verify failed" means no roots were found; never work around it with `sslmode=require`.
+
 **Restore after a lost project.** The release artifact is the backup.
 
 1. Create a new Neon project ([owner steps 3.2–3.4](deployment.md#3-neon-free)).
@@ -928,7 +930,7 @@ The normative procedure is ADR-013 "Release procedure on the free stack (§15)".
 
    Commit `releases/current.json` (and `NEON_PROJECT_ID` in `edge/wrangler.jsonc` if used). Data release tags do not match `v*`, so they deploy nothing.
 4. **New Neon project and restore (owner):** [Serving-DB build and restore](#serving-db-build-and-restore). Never restore a second copy into the current project: two copies exceed its 1 GB.
-5. **Smoke a local API against the new project (wakes Neon).** Start `atus api` (development mode, loopback) with `ATUS_DATABASE_URL` set to that project's `ATUS_API_DATABASE_URL`, then:
+5. **Smoke a local API against the new project (wakes Neon).** Start `atus api` (development mode, loopback) with `ATUS_DATABASE_URL` set to that project's `ATUS_API_DATABASE_URL` (`verify-full` + `system`: `atus api` sets `SSL_CERT_FILE` to the system bundle when it is unset, as the restore does), then:
 
    ```bash
    python scripts/replay_deployed.py --base-url http://127.0.0.1:8000 \

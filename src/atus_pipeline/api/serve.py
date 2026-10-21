@@ -28,6 +28,7 @@ from __future__ import annotations
 import sys
 
 from ..config import ConfigError, Settings, check_api_settings, load_settings
+from ..database.dsn import ensure_system_roots
 from ..logging_setup import configure_logging
 
 APP_FACTORY = "atus_pipeline.api.app:create_app"
@@ -90,6 +91,9 @@ def run(
     settings = settings or load_settings()
     check_api_settings(settings)
     configure_logging(settings.log_level, settings.log_format)
+    # Outside the image (which sets SSL_CERT_FILE), sslrootcert=system needs
+    # the system's CA bundle: docs/deployment.md "TLS to the database".
+    ensure_system_roots(settings.database_url)
     uvicorn.run(**uvicorn_options(settings, host=host, port=port, reload=reload))
 
 
