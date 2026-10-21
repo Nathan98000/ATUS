@@ -153,3 +153,26 @@ def test_the_pooler_rehearsal_leaves_out_what_no_transaction_pooler_supports():
     f18 = _flat(_row(_section(_read(OPERATIONS), "### Findings F01", "### Recorded facts"),
                      "F18"))
     assert "direct_connection" in f18
+
+
+# --- equivalence-harness-readme-targets-neon --------------------------------------------
+
+
+def test_the_equivalence_harness_is_documented_against_the_local_drill_only():
+    """equivalence-harness-readme-targets-neon: the README (and replay.py's docstring) gave
+    the Neon project's secrets file as the serving target of the 544-spec replay, a
+    high-volume probe of a free provider (brief §5). Both now name the local drill, the
+    harness refuses a database that is not on this machine (tests/unit/
+    test_equivalence_harness.py), and the README says so."""
+    readme = _read(SCRIPTS / "equivalence" / "README.md")
+    replay = _read(SCRIPTS / "equivalence" / "replay.py")
+    docstring = ast.get_docstring(ast.parse(replay))
+    for text in (readme, docstring):
+        targets = re.findall(r"--serving-secrets-file\s+(\S+)", text)
+        assert targets and all("neon" not in t for t in targets), targets
+        assert "~/.config/atus/drill.env" in targets
+        assert "replay_deployed.py" in text and "--allow-remote-database" in text
+    assert '"--allow-remote-database"' in replay and "def is_local_database" in replay
+    flat = _flat(readme)
+    assert "Never point it at a provider's database (Neon)" in flat
+    assert "refuses a database that is not on this machine" in flat

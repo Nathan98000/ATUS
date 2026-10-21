@@ -42,11 +42,18 @@ printed and never written; reports name ``user@host:port/dbname``):
   writes: ``ATUS_API_DATABASE_URL``, the read-only API role, else
   ``ATUS_OWNER_DATABASE_URL``) or ``$ATUS_EQ_SERVING_DATABASE_URL``.
 
+Every database must be on this machine (a Unix socket, localhost or a
+loopback address): the replay sends hundreds of full analyses, a
+high-volume probe that brief §5 forbids against a free provider such as
+Neon. Replay a release against its local restore drill (docs/operations.md
+"Restore drill"); a deployed release is checked with the budgeted
+scripts/replay_deployed.py. ``--allow-remote-database`` overrides this.
+
 Usage (``scripts/equivalence/run.sh`` also prepares the baseline checkout):
 
     python scripts/equivalence/replay.py --specs DIR --out DIR \\
         --baseline-dir /path/to/checkout-of-387fc2d \\
-        --serving-secrets-file ~/.config/atus/neon-<release>-<build8>.env
+        --serving-secrets-file ~/.config/atus/drill.env
 
 Nothing is timed. Exit status: 0 every spec and GET passed, 1 a failure
 (see summary.md), 2 a usage, input or start-up error.
@@ -57,12 +64,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import http.client
+import ipaddress
 import json
 import os
 import re
 import subprocess
 import sys
 import time
+from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
@@ -81,6 +90,7 @@ from httpdiff import (
     Spec,
     SpecError,
 )
+from psycopg.conninfo import conninfo_to_dict
 from servers import (
     DEFAULT_MAX_BODY_BYTES,
     ManagedServer,
@@ -98,7 +108,7 @@ from servers import (
 )
 
 from atus_pipeline.config import DEFAULT_DATABASE_URL
-from atus_pipeline.database.dsn import describe, redact, same_database
+from atus_pipeline.database.dsn import describe, ensure_system_roots, redact, same_database
 from atus_pipeline.database.versions import read_data_version
 from atus_pipeline.serving.secrets_file import (
     API_URL_KEY,
@@ -155,6 +165,10 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--serving-secrets-file", type=Path, default=None,
                         help=f"KEY=value file with {API_URL_KEY} (or {OWNER_URL_KEY}) of the "
                              f"serving database (default ${SERVING_URL_ENV}).")
+    parser.add_argument("--allow-remote-database", action="store_true",
+                        help="Allow a database that is not on this machine. Never a free "
+                             "provider's (Neon): the replay is a high-volume probe (brief §5); "
+                             "check a deployed release with scripts/replay_deployed.py.")
     parser.add_argument("--ports", default=DEFAULT_PORTS,
                         help=f"Loopback ports of a,b,c (default {DEFAULT_PORTS}).")
     parser.add_argument("--jobs", type=int, default=1,
@@ -256,7 +270,45 @@ def database_urls(args: argparse.Namespace) -> dict[str, tuple[str, str]]:
             # b vs c would then compare a database with itself and prove nothing.
             raise SetupError(f"the full and the serving database are the same database "
                              f"({describe(urls['c'][0])})")
-    return {key: urls[key] for key in args.targets}
+    selected = {key: urls[key] for key in args.targets}
+    if not args.allow_remote_database:
+        for url, source in selected.values():
+            if not is_local_database(url):
+                raise SetupError(
+                    f"{describe(url)} ({source}) is not on this machine. The replay sends "
+                    "every spec, hundreds of full analyses, to it: a high-volume probe that "
+                    "brief §5 forbids against a free provider. Replay a release against its "
+                    "local restore drill (docs/operations.md \"Restore drill\"); check a "
+                    "deployed release with scripts/replay_deployed.py. "
+                    "--allow-remote-database overrides this")
+    return selected
+
+
+def is_local_database(url: str, environ: Mapping[str, str] | None = None) -> bool:
+    """Whether ``url`` can only reach a database on this machine: every host a
+    Unix-socket directory, ``localhost`` or a loopback address, every
+    ``hostaddr`` a loopback address, and no service file. libpq takes what the
+    URL leaves out from ``PGHOST``, ``PGHOSTADDR`` and ``PGSERVICE``, so those
+    count as well; no host at all is the local socket."""
+    environ = os.environ if environ is None else environ
+    try:
+        params = conninfo_to_dict(url)
+    except psycopg.Error:
+        return False
+    if params.get("service") or environ.get("PGSERVICE"):
+        return False
+
+    def loopback(address: str) -> bool:
+        try:
+            return ipaddress.ip_address(address).is_loopback
+        except ValueError:
+            return False
+
+    hosts = str(params.get("host") or environ.get("PGHOST") or "").split(",")
+    addresses = str(params.get("hostaddr") or environ.get("PGHOSTADDR") or "").split(",")
+    return (all(not h or h.startswith(("/", "@")) or h.lower() == "localhost" or loopback(h)
+                for h in (h.strip() for h in hosts))
+            and all(loopback(a) for a in (a.strip() for a in addresses) if a))
 
 
 def database_facts(url: str) -> dict:
@@ -470,6 +522,9 @@ def run(args: argparse.Namespace) -> int:
     configs = server_configs(args, urls, out, build_sha)
     check_setup(args, configs)
 
+    # sslrootcert=system needs SSL_CERT_FILE with psycopg's bundled libpq (the
+    # other owner commands do the same; the servers do it themselves).
+    ensure_system_roots(*(url for url, _ in urls.values()))
     facts = {key: database_facts(url) for key, (url, _) in urls.items()}
     servers_info: dict[str, dict] = {}
     for config in configs:
