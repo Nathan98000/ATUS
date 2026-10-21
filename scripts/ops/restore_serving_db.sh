@@ -30,7 +30,9 @@
 # --verify-content-hash (re-reads every row: egress on a metered host),
 # --report restore-report.json. `--help` lists them all.
 #
-# Needs the repository's Python environment (`uv venv && uv pip install -e .`)
+# Needs the repository's hash-locked Python environment (docs/deployment.md, step 3):
+#   uv venv && uv pip install --require-hashes --no-deps -r requirements/dev.lock.txt \
+#     && uv pip install --no-deps --no-build-isolation -e .
 # or ATUS_BIN pointing at an `atus` executable.
 
 set -euo pipefail
@@ -45,7 +47,7 @@ if [[ -z "$atus" ]]; then
   elif command -v atus >/dev/null 2>&1; then
     atus="$(command -v atus)"
   else
-    echo "restore_serving_db.sh: no 'atus' executable; run 'uv venv && uv pip install -e .' in $repo or set ATUS_BIN" >&2
+    echo "restore_serving_db.sh: no 'atus' executable; in $repo run 'uv venv && uv pip install --require-hashes --no-deps -r requirements/dev.lock.txt && uv pip install --no-deps --no-build-isolation -e .' (the hash-locked install), or set ATUS_BIN" >&2
     exit 2
   fi
 fi
