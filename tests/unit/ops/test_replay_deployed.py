@@ -250,10 +250,15 @@ def test_transient_answers_are_retried_and_paced(fake_server, _no_real_sleep):
     assert _no_real_sleep.count(10.5) == 2  # paced before each later analysis
 
 
-def test_a_capacity_refusal_stops_the_run(fake_server, capsys):
+@pytest.mark.parametrize("code", [
+    "daily_capacity_reached",
+    # Review round 2 (api-paused-owner-switch): the owner's pause switch at the edge.
+    "api_paused",
+])
+def test_a_capacity_refusal_stops_the_run(fake_server, capsys, _no_real_sleep, code):
     fake_api(fake_server)
     fake_server.routes[("POST", "/api/v1/analysis/estimate")] = envelope(
-        503, "daily_capacity_reached", {"Retry-After": "40000"})
+        503, code, {"Retry-After": "40000"})
     assert replay.main(["--base-url", fake_server.base]) == 1
     assert fake_server.count("POST") == 1  # nothing more is spent once refused
     out = capsys.readouterr().out

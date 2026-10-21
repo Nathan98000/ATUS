@@ -36,11 +36,11 @@ like any other and comes out of the same budget. Analyses are paced
 refills one analysis every 10 s, ADR-012) and retried only on transient
 answers (waking, overloaded, a short ``Retry-After``). A capacity or quota
 refusal (``daily_capacity_reached``, ``capacity_paused``, ``database_paused``,
-the per-network daily cap) stops the run: the governor is saying no, and
-retrying would only spend Worker requests. The edge result cache makes a
-second run of the same requests cost no Render or Neon work (``X-Cache:
-edge``). Each run sends 26 analyses (plus any retries) of the per-network 60
-daily uncached analyses (ADR-015).
+the per-network daily cap) or the owner's pause switch (``api_paused``) stops
+the run: the site is saying no, and retrying would only spend Worker requests.
+The edge result cache makes a second run of the same requests cost no Render
+or Neon work (``X-Cache: edge``). Each run sends 26 analyses (plus any
+retries) of the per-network 60 daily uncached analyses (ADR-015).
 
 Nothing secret is sent or printed. Exit status: 0 every check passed, 1 a
 check failed (or the budget ran out), 2 usage error or refused plan.
@@ -85,7 +85,9 @@ MAX_RETRY_WAIT_S = 120.0
 TRANSIENT = frozenset({"service_waking", "overloaded", "database_unavailable",
                        "upstream_unavailable", "capacity_unavailable", "rate_limited"})
 #: Answers that say "not today / not this month": stop spending requests.
-REFUSALS = frozenset({"daily_capacity_reached", "capacity_paused", "database_paused"})
+#: ``api_paused`` is the owner's pause switch at the edge (edge/src/pause.ts).
+REFUSALS = frozenset({"daily_capacity_reached", "capacity_paused", "database_paused",
+                      "api_paused"})
 
 # Same extraction semantics as tests/data_quality/test_api_benchmarks.py.
 EXTRACTORS: dict[Callable, Callable[[dict], float]] = {

@@ -70,6 +70,36 @@ test('capacity_paused (the governor’s monthly stop) is one honest, accessible 
   await tabTo(page, page.getByRole('button', { name: 'Try again' }))
 })
 
+test('api_paused (the owner’s pause switch) is one honest, accessible page with the date', async ({
+  page,
+}) => {
+  // Review round 2: a suspended API host looked like a cold start (150 s of
+  // waking notices per analysis); the edge's api_paused is shown at once.
+  const posts = countPosts(page)
+  const until = new Date(Date.now() + 12 * 24 * 3600 * 1000).toISOString()
+  await page.route('**/api/v1/analysis/**', (route) =>
+    envelope(route, 503, 'api_paused', {
+      retryAfter: 12 * 24 * 3600,
+      details: { until, reason: 'render_quota' },
+    }),
+  )
+  await page.goto(sleep2023)
+  await expect(
+    page.getByRole('heading', { name: 'The analysis service is paused' }),
+  ).toBeVisible({ timeout: 15_000 })
+  const alert = page.getByRole('alert')
+  await expect(alert).toHaveCount(1)
+  await expect(alert).toContainText('this month’s allowance')
+  await expect(alert).toContainText(/\(around .+\)/)
+  await expect(alert).toContainText('Starter examples')
+  await expect(page.getByText(WAKING)).toHaveCount(0)
+  expect(posts()).toBe(1) // never retried automatically
+  await expectFocusUnmoved(page)
+  await expectNoSeriousViolations(page)
+  await tabTo(page, page.getByRole('link', { name: 'Go to the home page' }))
+  await tabTo(page, page.getByRole('button', { name: 'Try again' }))
+})
+
 test('daily_capacity_reached names the reset and offers no retry', async ({ page }) => {
   const posts = countPosts(page)
   await page.route('**/api/v1/analysis/**', (route) =>

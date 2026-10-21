@@ -410,12 +410,39 @@ def test_the_docs_promise_no_page_the_spa_does_not_show(phrase):
 
 
 def test_the_render_suspension_gap_is_a_recorded_accepted_risk():
+    """Review round 2 (api-paused-owner-switch) narrowed R13: the owner's pause
+    switch gives visitors an honest paused page; what remains is the time before
+    the owner sets it."""
     security = (REPO_ROOT / "docs" / "security.md").read_text(encoding="utf-8")
     risks = _section(security, "## Accepted risks", "\n## ")
-    assert "**R13. A Render suspension looks like a cold start.**" in risks
+    r13 = _section(risks, "**R13.", "**R14.")
+    assert r13.startswith("**R13. A Render suspension looks like a cold start until the owner "
+                          "sets the pause switch.**")
+    for needle in ("`pause-api`", "`api_paused`", "edge/test/worker/pause.test.ts",
+                   "frontend/e2e/service-codes.spec.ts", "**What remains.**"):
+        assert needle in r13, needle
+    assert "There is no dedicated page" not in r13 and "Neither exists today" not in r13
     adr_011 = (ADR / "ADR-011-hosting.md").read_text(encoding="utf-8")
     accepted = _section(adr_011, "### Accepted risks", "\n### ")
-    assert "**A Render suspension is presented as a cold start**" in accepted
+    assert "**A Render suspension is presented as a cold start until the owner sets the " \
+        "pause switch**" in accepted
+    assert "it has no dedicated page" not in accepted
+
+
+def test_the_pause_switch_is_documented_where_operators_look():
+    """api-paused-owner-switch: the runbook, the config reference, the error table and
+    the levers paragraph name the switch; none says there is no runtime switch."""
+    operations = (REPO_ROOT / "docs" / "operations.md").read_text()
+    assert "There is no runtime switch that stops new analyses at the edge." not in operations
+    runbook = _section(operations, "### Pausing the API", "\n### ")
+    for needle in ("operation=pause-api", "operation=resume-api", "wrangler secret bulk",
+                   "`unknown`", "**Deploys keep it.**", "**Edge rollbacks**"):
+        assert needle in runbook, needle
+    assert "| 503 | `api_paused` |" in API_DOC.read_text()
+    secrets = _row(DEPLOYMENT.read_text(), "| `API_PAUSED_UNTIL`, `API_PAUSED_REASON` |")
+    assert "`pause-api`" in secrets
+    assert "`api_paused`" in _row((REPO_ROOT / "docs" / "frontend.md").read_text(),
+                                  "| `database_paused`, `capacity_paused`, `api_paused`")
 
 
 # --- Review round 2 -----------------------------------------------------------------------

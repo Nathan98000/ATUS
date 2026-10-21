@@ -34,7 +34,10 @@ One `workers.dev` origin serves the SPA build (`../frontend/dist`) as static ass
   governor cannot be reached, uncached analyses and metadata lookups get 503 `capacity_unavailable`;
   everything else keeps working;
 - answers `GET /api/_ops/budget` with the governor's budget state for `Authorization: Bearer <OPS_TOKEN>`
-  (404 for anything else).
+  (404 for anything else);
+- while the owner's pause switch is on (optional secrets `API_PAUSED_UNTIL` and `API_PAUSED_REASON`,
+  set by `deploy.yml` operation `pause-api`; `src/pause.ts`), answers every request that would reach
+  Render with 503 `api_paused` and the date, and reports the switch in `/api/_edge/health`.
 
 ## Commands
 

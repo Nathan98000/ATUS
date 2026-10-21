@@ -267,6 +267,35 @@ describe('quota exhausted: one honest full-page state', () => {
   })
 })
 
+describe('the owner’s pause switch (api_paused)', () => {
+  it('an analysis gets one honest page with the date, and is never retried', async () => {
+    // Review round 2 (api-paused-owner-switch): a suspended host looked like
+    // a cold start (150 s of waking notices); the edge's api_paused is final.
+    let posts = 0
+    const until = new Date(Date.now() + 12 * 24 * 3600 * 1000).toISOString()
+    server.use(
+      http.post(api('/analysis/estimate'), () => {
+        posts += 1
+        return errorResponse(503, 'api_paused', 'Paused.', {
+          until,
+          reason: 'render_quota',
+          retry_after_seconds: 12 * 24 * 3600,
+        })
+      }),
+    )
+    renderApp(sleepRoute)
+    expect(
+      await screen.findByRole('heading', { name: 'The analysis service is paused' }),
+    ).toBeInTheDocument()
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent('this month’s allowance')
+    expect(alert).toHaveTextContent(/\(around .+\)/)
+    expect(alert).toHaveTextContent('Starter examples')
+    expect(screen.queryByText(WAKING_MESSAGE)).not.toBeInTheDocument()
+    expect(posts).toBe(1)
+  })
+})
+
 describe('analysis errors (F13, F64)', () => {
   it('a rate limit is not retried automatically and counts down its Retry-After', async () => {
     await withFakeClock(async () => {

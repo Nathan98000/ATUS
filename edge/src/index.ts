@@ -13,7 +13,9 @@
  *    holds them;
  * 4. limits on analysis POSTs: `application/json` only (415), 64 KiB (413);
  * 5. analysis POSTs: the KV result cache (cache.ts) — a hit is answered
- *    here — then admission by the quota governor (admission.ts), which can
+ *    here — then, for everything that would reach Render (the prewake
+ *    included), the owner's pause switch (pause.ts: 503 `api_paused`), then
+ *    admission by the quota governor (admission.ts), which can
  *    refuse with 429/503 or, when unreachable, fail closed; metadata GETs
  *    the snapshot could not answer are admitted as governed lookups (counted,
  *    and charged compute when the API reports DB time);
@@ -67,6 +69,7 @@ import {
   readCapped,
 } from './http'
 import { capacityUnavailable, handleBudget } from './ops'
+import { apiPause, apiPausedResponse } from './pause'
 import { buildUpstreamHeaders, relayResponse, upstreamUnavailable } from './proxy'
 import { isApiPath, matchRoute, upstreamPathFor, type Route } from './routes'
 import { readSnapshot } from './snapshot'
@@ -81,7 +84,7 @@ interface LogRecord {
   method: string
   route: string | null
   status?: number
-  /** edge | pass | waking | overloaded | unavailable | circuit_open | connect_failed | rejected | denied | error */
+  /** edge | pass | waking | overloaded | unavailable | circuit_open | connect_failed | rejected | denied | paused | error */
   outcome?: string
   /** For `unavailable`: the `upstream_unavailable` reason. */
   reason?: string
@@ -211,6 +214,14 @@ async function dispatch(
       }
       log.cache = cached
     }
+  }
+
+  // The owner's pause switch: while it is on, nothing below reaches Render.
+  const pause = apiPause(env, Date.now())
+  if (pause !== null) {
+    log.outcome = 'paused'
+    if (pause.unreadable) log.error = 'api_paused_until_unreadable'
+    return apiPausedResponse(pause, requestId)
   }
 
   const target = originUrl(
@@ -444,6 +455,7 @@ function denialResponse(denial: Denied, requestId: string, lookup: boolean): Res
 
 /** GET /api/_edge/health: answered here, never touching Render or Neon. */
 async function edgeHealth(env: Env, requestId: string): Promise<Response> {
+  const pause = apiPause(env, Date.now())
   return jsonResponse(
     200,
     {
@@ -455,6 +467,7 @@ async function edgeHealth(env: Env, requestId: string): Promise<Response> {
       response_format: env.RESPONSE_FORMAT,
       snapshot_id: env.SNAPSHOT_ID || null,
       cache_scope: await cacheScope(env),
+      api_paused: pause === null ? null : { until: pause.until, reason: pause.reason },
     },
     requestId,
   )

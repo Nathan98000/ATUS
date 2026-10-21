@@ -140,6 +140,30 @@ def test_a_stale_worker_or_api_is_caught(fake_server, capsys):
     assert "expected " + SHA in out and "DATA_VERSION old" in out
 
 
+def test_a_deploy_while_the_pause_switch_is_on_fails_at_once(fake_server, capsys,
+                                                             _no_real_sleep):
+    """Review round 2 (api-paused-owner-switch): with the owner's pause switch on,
+    everything that would reach Render answers 503 api_paused at the edge. The
+    smoke says so and how to clear it, instead of waiting out the cold-start
+    budget on /api/health and failing the recomputes."""
+    deployed_site(fake_server)
+    paused = {"until": "2026-11-01T00:00:00.000Z", "reason": "render_quota"}
+    fake_server.routes[("GET", "/api/_edge/health")] = json_reply(200, {
+        "status": "ok", "edge_version": "0.1.0", "data_version": DV, "snapshot_id": SNAP,
+        "cache_scope": "abc", "api_paused": paused})
+    for key in [("GET", "/api/health"), *[k for k in fake_server.routes if k[0] == "POST"]]:
+        fake_server.routes[key] = envelope(503, "api_paused", {"Retry-After": "864000"})
+    assert smoke.main(args(fake_server, "--recompute", "2")) == 1
+    out = capsys.readouterr().out
+    assert "[FAIL] api_paused" in out and "resume-api" in out and "render_quota" in out
+    # Nothing that would reach Render is sent once the edge reports the switch.
+    sent = {(c["method"], c["path"]) for c in fake_server.calls}
+    assert ("GET", "/api/health") not in sent
+    assert not any(method == "POST" for method, _path in sent)
+    assert "[FAIL] api_health: not checked" in out
+    assert _no_real_sleep == []
+
+
 def _old_then_new(old, new, *, old_replies: int):
     """A route answering ``old`` for the first ``old_replies`` requests: a colo
     that still serves the previous release right after `wrangler deploy`."""

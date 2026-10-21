@@ -177,5 +177,8 @@ export const NEON_API_BASE = 'https://console.neon.tech/api/v2'
 /** How long a request waits for the governor before failing closed. */
 export const GOVERNOR_TIMEOUT_MS = 5_000
 
+/** `Retry-After` for `api_paused` when the owner's switch names no end (pause.ts). */
+export const RETRY_AFTER_API_PAUSED_UNKNOWN_S = 3_600
+
 /** `Retry-After` for `capacity_unavailable` (the governor could not be reached). */
 export const RETRY_AFTER_GOVERNOR_S = 60

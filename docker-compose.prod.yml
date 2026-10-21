@@ -270,6 +270,9 @@ services:
       EDGE_AUTH_SECRET: ${ATUS_STACK_EDGE_SECRET:?set it in the stack env file (deploy/stack/stack.env.example)}
       OPS_TOKEN: ${ATUS_STACK_EDGE_OPS_TOKEN:-}
       IP_HMAC_KEY: ${ATUS_STACK_IP_HMAC_KEY:-}
+      # The owner's pause switch (edge/src/pause.ts; optional secrets), off when empty.
+      API_PAUSED_UNTIL: ${ATUS_STACK_API_PAUSED_UNTIL:-}
+      API_PAUSED_REASON: ${ATUS_STACK_API_PAUSED_REASON:-}
       # Worker vars that deploy.yml publishes; empty ones keep wrangler.jsonc
       # (an empty DATA_VERSION or ANALYTICS_VERSION turns the KV cache off).
       DATA_VERSION: ${ATUS_EXPECTED_DATA_VERSION:-}

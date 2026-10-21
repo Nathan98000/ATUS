@@ -1080,7 +1080,8 @@ Restore every release artifact once, as production will, into a fresh cluster wi
 |---|---|---|
 | `$SITE/` fails | Cloudflare, or a broken Worker deploy | Cloudflare status; Deployments; edge [rollback](#rollback) |
 | `/api/*` gives a non-JSON 429 (the SPA says "daily request allowance reached"), or Cloudflare's Error 1027 page with another status (a 5xx looks like a cold start to the SPA, another 4xx like a generic error) | Worker 100,000 requests/day used | [quota runbook](#a-quota-is-exhausted) |
-| 503 `service_waking` | Render spinning up, or suspended (its answer then is undocumented; [security.md R13](security.md#accepted-risks)) | normal if it lasts about a minute; if it persists, Render → Events and [Render suspends the service](#render-suspends-the-service) |
+| 503 `service_waking` | Render spinning up, or suspended (its answer then is undocumented; [security.md R13](security.md#accepted-risks)) | normal if it lasts about a minute; if it persists, Render → Events and [Render suspends the service](#render-suspends-the-service), and set the [pause switch](#pausing-the-api) |
+| 503 `api_paused` | the owner's pause switch is on (`/api/_edge/health` shows `api_paused`) | intended while the API is paused; [Pausing the API](#pausing-the-api) to clear it |
 | 502 `upstream_unavailable`, `reason` `not_configured` (Workers Logs: `origin_not_configured`, for either cause) | Worker secret `RENDER_ORIGIN` missing or invalid, or `EDGE_AUTH_SECRET` missing | `npx wrangler secret list` in `edge/` shows which name is absent; put it from `edge.env` (`wrangler secret put RENDER_ORIGIN` or `EDGE_AUTH_SECRET`) |
 | `upstream_unavailable`, `reason` `connect_failed`, `circuit_open` or `platform_error` | Render down, suspended, or image pull failed | Render → Events; [Render suspends the service](#render-suspends-the-service) |
 | `upstream_unavailable`, `reason` `origin_timeout` | a 524: the origin held the request past the proxy timeout | Render logs for `analysis_timeout` and `db_ms` |
@@ -1125,26 +1126,48 @@ Every exhaustion degrades toward the static floor: the SPA, the snapshot (starte
 | Governor monthly pacing | 503 `capacity_paused` (`budget` `egress` or `cu_month`) with `resumes_at` | Wait for `resumes_at`. If it happens every month, apply the calibration lever ([deployment.md step 10](deployment.md#10-week-1-calibration)): lower the compute's maximum CU and set `NEON_MAX_CU` in `edge/src/constants.ts` to match |
 | Neon compute (100 CU-h) or egress (5 GB) | 503 `database_paused`; the SPA's paused page | Wait for the next Neon consumption period (Neon console, or the Neon `period_end` in `/api/_ops/budget` when `NEON_API_KEY` is set). Then find out why the governor did not stop first |
 | Neon storage (1 GB per project) | owner writes fail (`validate-analytics`); the API is unaffected | Never keep two copies in one project; a release goes into a new project |
-| Render outbound (5 GB/month) | Before: nothing automated (no monitor can read it without an account-wide Render API key); the weekly schedules-check summary reminds you to look at the workspace's usage. After: services suspended until the 1st (Render email or dashboard). Render's answer while suspended is undocumented: the Worker answers `service_waking` or `upstream_unavailable`, and the SPA shows the waking notice, then "still not answering … may be paused" — it cannot tell a suspension from a cold start ([security.md R13](security.md#accepted-risks)) | Wait. Find the cause in Render logs (direct hits show `edge_authenticated: false` and 403) and in `/api/_ops/budget` (`metadata.origin_calls`, `analyses.refunded`; ADR-015 "Render outbound through the Worker"). Never pay; never recreate the service |
+| Render outbound (5 GB/month) | Before: nothing automated (no monitor can read it without an account-wide Render API key); the weekly schedules-check summary reminds you to look at the workspace's usage. After: services suspended until the 1st (Render email or dashboard). Render's answer while suspended is undocumented: the Worker answers `service_waking` or `upstream_unavailable`, and the SPA shows the waking notice, then "still not answering … may be paused" — it cannot tell a suspension from a cold start ([security.md R13](security.md#accepted-risks)) | Set the [pause switch](#pausing-the-api) until the 1st (UTC) with reason `render_quota`: visitors then get one page saying the API is paused until then. Wait. Find the cause in Render logs (direct hits show `edge_authenticated: false` and 403) and in `/api/_ops/budget` (`metadata.origin_calls`, `analyses.refunded`; ADR-015 "Render outbound through the Worker"). Never pay; never recreate the service |
 | Render pipeline minutes | deploys wait; the running service keeps serving | Wait for the next month. Image deploys build nothing; whether pulls count is undocumented |
 | Render instance hours | cannot run out with one service | never add a second Free web service |
 | Workers Logs | edge logs stop until 00:00 UTC | none needed |
 
-**Levers that need no code change** (Render env, "Save and deploy"): `ATUS_API_DAILY_ANALYSIS_CAP` (minimum 1), `ATUS_API_RATE_ANALYSIS` and `ATUS_API_MAX_INFLIGHT`. They are per process and reset on every restart. The governor's limits are constants in `edge/src/constants.ts`; changing them is a code change and a deploy. There is no runtime switch that stops new analyses at the edge.
+**Levers that need no code change** (Render env, "Save and deploy"): `ATUS_API_DAILY_ANALYSIS_CAP` (minimum 1), `ATUS_API_RATE_ANALYSIS` and `ATUS_API_MAX_INFLIGHT`. They are per process and reset on every restart. The governor's limits are constants in `edge/src/constants.ts`; changing them is a code change and a deploy. The [pause switch](#pausing-the-api) stops everything that would reach Render at the edge without a code change; it is meant for a known API outage (a Render suspension, maintenance), not for pacing a quota.
 
 ### Render suspends the service
 
 This means Render's discretionary suspension for "uncommonly high" traffic that the service initiates (ADR-011 accepted risk 1). It is not the monthly bandwidth pause, which ends on the 1st.
 
-1. **Confirm** in Render → the service, and in Render's email. The deep monitor fails, and analyses answer `service_waking` or `upstream_unavailable`: what a suspended service answers is undocumented. Visitors see the waking notice for 150 s per novel analysis, then "The analysis service is still not answering … may be paused"; there is no dedicated paused page ([security.md R13](security.md#accepted-risks)).
-2. **Do not:**
+1. **Confirm** in Render → the service, and in Render's email. The deep monitor fails, and analyses answer `service_waking` or `upstream_unavailable`: what a suspended service answers is undocumented. Visitors see the waking notice for 150 s per novel analysis, then "The analysis service is still not answering … may be paused" ([security.md R13](security.md#accepted-risks)).
+2. **Set the pause switch** with reason `render_suspended` and `paused_until=unknown` ([Pausing the API](#pausing-the-api)): visitors then get one page saying the API is paused, instead of those waits. Clear it with `resume-api` when the service is back.
+3. **Do not:**
    - pay, add a card or upgrade;
    - recreate the service, or create another one in this or a new workspace. Render's AUP forbids attempts to "bypass, circumvent, or defeat" its restrictions (ADR-011 "Must-not-do list").
 
    Delete nothing without the owner's approval.
-3. **What keeps working:** the static SPA, the snapshot and KV-cached results. Neon and the release are unaffected.
-4. **Owner decision: fail over to the ADR-011 fallback** (Vercel Hobby; [ADR-011 "Fallback"](adr/ADR-011-hosting.md#fallback-the-runner-up-p3s-api-host-vercel-hobby)). **The fallback is not implemented** ([ADR-011 amendment](adr/ADR-011-hosting.md#fallback-p3-vercel-hobby-a-documented-procedure-not-ready)). The repository has none of its preconditions: no Vercel entry module, no `vercel.json`, no `deploy-vercel` job, no Vercel budgets or in-flight gating in the governor, no origin mode with the protection-bypass header. The Worker reads its origin only from the secret `RENDER_ORIGIN` (`edge/src/upstream.ts`), not `API_ORIGIN` or `GATE_INFLIGHT`. `wrangler secret put RENDER_ORIGIN` can point it at another HTTPS origin, but for Vercel that alone is not enough. Failing over is therefore implementation work first, then ADR-011's switch procedure, which includes the owner accepting Vercel's terms and stopping at any card prompt.
-5. Until then, the site serves only the static floor and cached results.
+4. **What keeps working:** the static SPA, the snapshot and KV-cached results. Neon and the release are unaffected.
+5. **Owner decision: fail over to the ADR-011 fallback** (Vercel Hobby; [ADR-011 "Fallback"](adr/ADR-011-hosting.md#fallback-the-runner-up-p3s-api-host-vercel-hobby)). **The fallback is not implemented** ([ADR-011 amendment](adr/ADR-011-hosting.md#fallback-p3-vercel-hobby-a-documented-procedure-not-ready)). The repository has none of its preconditions: no Vercel entry module, no `vercel.json`, no `deploy-vercel` job, no Vercel budgets or in-flight gating in the governor, no origin mode with the protection-bypass header. The Worker reads its origin only from the secret `RENDER_ORIGIN` (`edge/src/upstream.ts`), not `API_ORIGIN` or `GATE_INFLIGHT`. `wrangler secret put RENDER_ORIGIN` can point it at another HTTPS origin, but for Vercel that alone is not enough. Failing over is therefore implementation work first, then ADR-011's switch procedure, which includes the owner accepting Vercel's terms and stopping at any card prompt.
+6. Until then, the site serves only the static floor and cached results, and the paused page for anything else.
+
+### Pausing the API
+
+The owner's switch for a known API outage: Render suspended the service until next month (its outbound allowance used up) or at its discretion, or it is down for maintenance. What a suspended Render service answers is undocumented, so without the switch visitors get the cold-start flow, up to 150 s of waking notices per novel analysis ([security.md R13](security.md#accepted-risks)). With it, the Worker answers every request that would reach Render with 503 `api_paused` and the date, without calling Render or the governor, and the SPA shows one page: "The analysis service is paused", why, until when, and what still works. The static site, the snapshot (starters, presets, metadata, prewarmed analyses), KV-cached results, `/api/_edge/health` and `/api/_ops/budget` keep working.
+
+```bash
+# Render's outbound allowance is used up: paused until the 1st of next month (UTC midnight)
+gh workflow run deploy.yml --ref main -f operation=pause-api -f paused_until=2026-12-01 -f pause_reason=render_quota
+# A discretionary suspension, no end known
+gh workflow run deploy.yml --ref main -f operation=pause-api -f paused_until=unknown -f pause_reason=render_suspended
+# Clear it
+gh workflow run deploy.yml --ref main -f operation=resume-api
+```
+
+Then approve the `production` environment. Only job `api-switch` runs: it checks the inputs (`scripts/ops/api_pause.py secrets`), changes the optional Worker secrets `API_PAUSED_UNTIL` and `API_PAUSED_REASON` with `wrangler secret bulk` (one new Worker version with the same code, site and snapshot; nothing is built and Render is not called, so it works while Render is suspended), and waits until `/api/_edge/health` reports the new `api_paused` state (`api_pause.py verify`, at most 6 requests).
+
+- **`paused_until`** is a UTC date (`YYYY-MM-DD`, meaning midnight) or time (`YYYY-MM-DDTHH:MMZ`), or `unknown`. From that time on the Worker forwards requests again by itself, with no new version: give the time Render's allowance resets. With `unknown`, the switch stays on until `resume-api`.
+- **`pause_reason`** picks the wording: `render_quota` (the host used up this month's allowance; new analyses resume when it resets), `render_suspended` (the host suspended the service), `maintenance`.
+- **Deploys keep it.** `wrangler deploy` keeps every secret, the switch included. A deploy's post-deploy smoke goes through the Worker, so while the switch is on it fails at once (`[FAIL] api_paused`, with `api_health` and the starters not checked; `scripts/ops/deploy_smoke.py`). Clear the switch (`resume-api`) before deploying once Render is back.
+- **Monitors** report it as `WARN`, not as a failure: `edge-check.yml` from `/api/_edge/health`, and `deep-check.yml` stops after one `api_paused` answer instead of waiting out its budget.
+- **Edge rollbacks** bring back the switch of the version rolled back to ([deployment.md "Rollback"](deployment.md#rollback), step 4). After a rollback, `wrangler secret bulk` refuses to change secrets until the latest version is deployed again.
 
 ### A provider changes its free tier
 

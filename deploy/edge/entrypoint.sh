@@ -18,7 +18,8 @@ fi
 
 umask 077
 : > .dev.vars
-for name in EDGE_AUTH_SECRET OPS_TOKEN IP_HMAC_KEY RENDER_ORIGIN NEON_API_KEY; do
+for name in EDGE_AUTH_SECRET OPS_TOKEN IP_HMAC_KEY RENDER_ORIGIN NEON_API_KEY \
+            API_PAUSED_UNTIL API_PAUSED_REASON; do
   eval "value=\${$name:-}"
   if [ -n "$value" ]; then
     printf '%s=%s\n' "$name" "$value" >> .dev.vars

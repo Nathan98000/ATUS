@@ -50,7 +50,8 @@ const STILL_WORKS = 'Starter examples and analyses that were computed earlier st
  * long, which a normal cold start does not take. Free hosting can also be
  * suspended for the rest of the month, and its answer then is undocumented
  * (docs/security.md, accepted risk R13), so the copy says that this may be
- * the cause instead of promising that the problem is temporary.
+ * the cause instead of promising that the problem is temporary. Once the
+ * owner sets the edge's pause switch, the answer is `api_paused` instead.
  */
 const NOT_ANSWERING_FOR = `more than ${Math.floor(COLD_START_BUDGET_MS / 60_000)} minutes`
 const MAYBE_PAUSED = `If it stays unavailable for hours, its free hosting may be paused, for example until next month after a monthly allowance ran out. ${STILL_WORKS}`
@@ -223,6 +224,17 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         kind: 'paused',
         heading: 'New analyses are paused for now',
         message: `ATUS Explorer runs entirely on free hosting. This month’s database allowance is nearly used up, so new analyses are paused until it resets${resetPhrase(resumesAtSeconds(error, now) ?? retryAfter, now)}.`,
+        hint: STILL_WORKS,
+      }
+    case 'api_paused':
+      // The owner's pause switch at the edge (docs/api.md): set when the API's
+      // free host is known to be suspended, which the edge cannot detect
+      // itself. `details.until` is when it is expected back, or null.
+      return {
+        ...common,
+        kind: 'paused',
+        heading: 'The analysis service is paused',
+        message: apiPausedMessage(error, now),
         hint: STILL_WORKS,
       }
     case 'database_paused':
@@ -420,6 +432,30 @@ function upstreamUnavailable(
 function detailString(error: ApiError, name: string): string | null {
   const value = (error.details as Record<string, unknown> | null)?.[name]
   return typeof value === 'string' ? value : null
+}
+
+/** `api_paused` by `details.reason`, with `details.until` as a date when it is known. */
+function apiPausedMessage(error: ApiError, now: number): string {
+  const until = detailString(error, 'until')
+  const at = until === null ? Number.NaN : Date.parse(until)
+  const date =
+    Number.isNaN(at) || at <= now
+      ? null
+      : new Date(at).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })
+  const back =
+    date === null
+      ? 'It is not known yet when it will be back.'
+      : `It is expected back around ${date}.`
+  switch (detailString(error, 'reason')) {
+    case 'render_quota':
+      return `ATUS Explorer runs entirely on free hosting. The analysis service’s host has used up this month’s allowance, so new analyses are paused until it resets${date === null ? '' : ` (around ${date})`}.`
+    case 'render_suspended':
+      return `ATUS Explorer runs entirely on free hosting, and the analysis service’s host has suspended it, so new analyses are paused. ${back}`
+    case 'maintenance':
+      return `The analysis service is paused for maintenance, so new analyses cannot run for now. ${back}`
+    default:
+      return `The analysis service is paused, so new analyses cannot run for now. ${back}`
+  }
 }
 
 /** Seconds until `details.resumes_at` (an ISO timestamp), when the service sent one. */

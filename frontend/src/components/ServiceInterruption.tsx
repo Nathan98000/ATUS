@@ -5,7 +5,8 @@ import { presentError } from '../domain/presentError'
 /**
  * Full-page state for problems no single panel can fix: the free hosting
  * quota is exhausted (`database_paused`, `capacity_paused`, the edge's daily
- * request limit) or this page cannot talk to the service's API version.
+ * request limit), the owner has paused the API at the edge (`api_paused`),
+ * or this page cannot talk to the service's API version.
  * One honest explanation replaces the page's content instead of a cascade of
  * error panels, says what still works, and offers the one useful action
  * (reload for an incompatible API; the home page and a retry otherwise).

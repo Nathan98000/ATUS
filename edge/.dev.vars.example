@@ -6,3 +6,6 @@ EDGE_AUTH_SECRET=dev-only-edge-secret-change-me
 RENDER_ORIGIN=http://127.0.0.1:8571
 OPS_TOKEN=dev-only-ops-token
 IP_HMAC_KEY=dev-only-ip-hmac-key
+# The owner's pause switch (src/pause.ts), off when absent or empty:
+# API_PAUSED_UNTIL=2036-11-01
+# API_PAUSED_REASON=maintenance
