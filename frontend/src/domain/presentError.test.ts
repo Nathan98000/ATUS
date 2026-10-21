@@ -404,7 +404,7 @@ describe('presentError: review round 2', () => {
     expect(presented.message).not.toMatch(/nearly used up/)
     expect(presented.message).not.toMatch(/until it resets/)
     expect(presented.message).toMatch(/spread/)
-    expect(presented.message).toMatch(/resume (tomorrow )?at about \d{1,2}:\d\d/)
+    expect(presented.message).toMatch(/resume automatically (tomorrow )?at about \d{1,2}:\d\d/)
   })
 
   it('a pause at the monthly compute cap names the day it lifts', () => {
@@ -419,7 +419,7 @@ describe('presentError: review round 2', () => {
       }),
       now,
     )
-    expect(presented.message).toMatch(/resume around October 25/)
+    expect(presented.message).toMatch(/resume automatically \(around October 25\)/)
     expect(presented.message).not.toMatch(/nearly used up/)
   })
 
@@ -461,6 +461,7 @@ describe('presentError: review round 2', () => {
     expect(presented.message).not.toMatch(/only accepts requests sent through/)
     expect(presented.message).toMatch(/problem in ATUS Explorer’s deployment/)
     expect(presented.message).toMatch(/not in your analysis/)
+    expect(presented.message).toMatch(/connection to the analysis service is misconfigured/)
     expect(presented.hint).toMatch(/Starter examples/)
     expect(presented.retryable).toBe(false)
   })

@@ -269,7 +269,7 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
           ...common,
           kind: 'paused',
           heading: 'New analyses are paused for now',
-          message: `ATUS Explorer runs entirely on free hosting. To spread this month’s free database allowance over the whole month, new analyses are paused for a while${resumePhrase(resumesAtSeconds(error, now) ?? retryAfter, now)}.`,
+          message: `ATUS Explorer runs entirely on free hosting. To spread this month’s free database allowance over the whole month, new analyses are paused for now and resume automatically${resumePhrase(resumesAtSeconds(error, now) ?? retryAfter, now)}.`,
           hint: STILL_WORKS,
         }
       }
@@ -380,7 +380,7 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
       return {
         ...common,
         kind: 'app',
-        heading: 'The analysis service refused this request',
+        heading: 'This request was refused',
         message:
           'The site’s connection to the analysis service is misconfigured, so new analyses cannot run. This is a problem in ATUS Explorer’s deployment, not in your analysis.',
         hint: STILL_WORKS,
@@ -520,17 +520,13 @@ function utcMidnightPhrase(now: number): string {
 }
 
 /**
- * "; they resume at about 3:45 PM" within a day, "; they resume around
- * October 31" later, '' when the service did not say.
+ * " at about 3:45 PM" (local) within the day, " (around October 31)" later,
+ * '' when the service did not say.
  */
 function resumePhrase(seconds: number | null, now: number): string {
   if (seconds === null || seconds <= 0) return ''
-  if (seconds < 20 * 60 * 60) return `; they resume ${resumeTimePhrase(seconds, now)}`
-  const date = new Date(now + seconds * 1000).toLocaleDateString(undefined, {
-    month: 'long',
-    day: 'numeric',
-  })
-  return `; they resume around ${date}`
+  if (seconds < 20 * 60 * 60) return ` ${resumeTimePhrase(seconds, now)}`
+  return resetPhrase(seconds, now)
 }
 
 /** " (around October 1)" when the service said how long; '' otherwise. */
