@@ -3,7 +3,7 @@
  * printed, idempotent re-runs, explicit rotation, and only `wrangler secret
  * put` / `gh secret set` commands that read from the file. The API's
  * ATUS_OPS_TOKEN is generated into the same file but never offered to the
- * Worker. Every run uses a throwaway HOME.
+ * Worker or to GitHub. Every run uses a throwaway HOME.
  */
 
 import { spawnSync } from 'node:child_process'
@@ -143,15 +143,16 @@ if (process.argv[2] === 'child') {
     expect(() => lstatSync(dirname(seen.path))).toThrow() // the private copy is gone
   })
 
-  it('generates the API ops token for Render and GitHub, never for the Worker', () => {
+  it('generates the API ops token for Render only, never for the Worker or GitHub', () => {
     const { stdout } = run()
     expect(stdout).toContain('ATUS_OPS_TOKEN: created')
     expect(stdout).not.toContain('secret put ATUS_OPS_TOKEN')
+    // Only the GitHub secret the workflows read (.github/workflows/quota-report.yml,
+    // deploy.yml): EDGE_OPS_TOKEN, in `ops` and optionally `production`.
     const gh = stdout.split('\n').filter((line) => line.includes('gh secret set'))
     expect(gh).toEqual([
-      `    grep '^ATUS_OPS_TOKEN=' ${envFile} | cut -d= -f2- | gh secret set ATUS_OPS_TOKEN --env production`,
-      `    grep '^OPS_TOKEN=' ${envFile} | cut -d= -f2- | gh secret set EDGE_OPS_TOKEN --env production`,
       `    grep '^OPS_TOKEN=' ${envFile} | cut -d= -f2- | gh secret set EDGE_OPS_TOKEN --env ops`,
+      `    grep '^OPS_TOKEN=' ${envFile} | cut -d= -f2- | gh secret set EDGE_OPS_TOKEN --env production`,
     ])
     expect(stdout).toContain('Render -> Environment: ATUS_OPS_TOKEN')
     const values = readValues()

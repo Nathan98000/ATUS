@@ -188,7 +188,7 @@ if [ "$mode" = smoke ]; then
       cp -R "$assets_src" "$assets"
     else
       echo "== build the SPA (same origin, production build)"
-      (cd frontend && VITE_API_BASE_URL= npm run build --silent)
+      (cd frontend && VITE_API_BASE_URL='' npm run build --silent)
       cp -R frontend/dist "$assets"
     fi
     rm -rf "$assets/snap"

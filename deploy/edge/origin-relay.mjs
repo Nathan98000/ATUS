@@ -9,7 +9,8 @@
 // container and pipes every TCP connection, unchanged, to the API service, so
 // the Worker runs exactly as deployed with RENDER_ORIGIN=http://127.0.0.1:10000.
 //
-//   ATUS_EDGE_RELAY_LISTEN  host:port to listen on (default 127.0.0.1:10000)
+//   ATUS_EDGE_RELAY_LISTEN  host:port to listen on (default 127.0.0.1:10000;
+//                           loopback only, so the relay never exposes the API)
 //   ATUS_EDGE_RELAY_TARGET  host:port of the API (required, e.g. api:10000)
 //
 // Bytes are never inspected or logged; a failed connection to the API closes
@@ -19,7 +20,7 @@ import net from 'node:net'
 
 function hostPort(value, name) {
   const match = /^(.+):(\d{1,5})$/.exec(value ?? '')
-  if (match === null) {
+  if (match === null || Number(match[2]) > 65535) {
     process.stderr.write(`origin-relay: ${name} must be host:port\n`)
     process.exit(2)
   }
@@ -28,6 +29,10 @@ function hostPort(value, name) {
 
 const listen = hostPort(process.env.ATUS_EDGE_RELAY_LISTEN ?? '127.0.0.1:10000', 'ATUS_EDGE_RELAY_LISTEN')
 const target = hostPort(process.env.ATUS_EDGE_RELAY_TARGET, 'ATUS_EDGE_RELAY_TARGET')
+if (!['127.0.0.1', 'localhost', '::1'].includes(listen.host)) {
+  process.stderr.write('origin-relay: ATUS_EDGE_RELAY_LISTEN must be a loopback address\n')
+  process.exit(2)
+}
 
 const server = net.createServer((client) => {
   const upstream = net.connect(target.port, target.host)

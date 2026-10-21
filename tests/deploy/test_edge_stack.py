@@ -4,7 +4,8 @@ Without Docker:
 
 - deploy/edge/origin-relay.mjs, the loopback relay that lets the Worker reach
   the API container exactly as deployed (plain HTTP only on loopback), moves
-  bytes both ways unchanged and refuses to start without a target (needs node);
+  bytes both ways unchanged, listens on loopback only and refuses to start
+  without a valid target (needs node); the edge image starts it first;
 - deploy/stack/edge_probe.py's visitor addresses and checks of the
   governor's denial shape;
 - scripts/smoke_stack.sh refuses --e2e without --edge before touching Docker.
@@ -146,6 +147,31 @@ class TestOriginRelay:
                                 timeout=10, check=False)
         assert result.returncode == 2
         assert "ATUS_EDGE_RELAY_TARGET must be host:port" in result.stderr
+
+    @pytest.mark.parametrize("listen, target, message", [
+        ("0.0.0.0:10000", "api:10000", "ATUS_EDGE_RELAY_LISTEN must be a loopback address"),
+        ("api:10000", "api:10000", "ATUS_EDGE_RELAY_LISTEN must be a loopback address"),
+        ("127.0.0.1", "api:10000", "ATUS_EDGE_RELAY_LISTEN must be host:port"),
+        ("127.0.0.1:10000", "api:99999", "ATUS_EDGE_RELAY_TARGET must be host:port"),
+    ])
+    def test_listens_on_loopback_only_and_validates_its_addresses(self, node, listen, target,
+                                                                  message):
+        env = dict(os.environ, ATUS_EDGE_RELAY_LISTEN=listen, ATUS_EDGE_RELAY_TARGET=target)
+        result = subprocess.run([node, str(RELAY)], env=env, capture_output=True, text=True,
+                                timeout=10, check=False)
+        assert result.returncode == 2
+        assert message in result.stderr
+
+    def test_the_edge_image_starts_it_before_the_worker(self):
+        entrypoint = (REPO_ROOT / "deploy" / "edge" / "entrypoint.sh").read_text()
+        dockerfile = (REPO_ROOT / "deploy" / "edge" / "Dockerfile").read_text()
+        assert ("COPY --chmod=0755 deploy/edge/origin-relay.mjs "
+                "/usr/local/bin/atus-edge-origin-relay.mjs") in dockerfile
+        relay = entrypoint.index("node /usr/local/bin/atus-edge-origin-relay.mjs &")
+        assert entrypoint.rindex('"${ATUS_EDGE_RELAY_TARGET:-}"', 0, relay) > 0
+        assert relay < entrypoint.index("exec npx --no-install wrangler dev")
+        # one relay only (a second, p5/ci's relay.mjs, was folded into this one)
+        assert not (REPO_ROOT / "deploy" / "edge" / "relay.mjs").exists()
 
 
 class TestEdgeProbeHelpers:

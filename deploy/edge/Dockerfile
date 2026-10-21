@@ -11,11 +11,9 @@
 # fallback is used).
 
 # node:22-slim (Debian bookworm, glibc: workerd has no musl build), pinned by
-# its multi-arch index digest.
-ARG NODE_BASE=node:22-slim
-ARG NODE_DIGEST=sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
-
-FROM ${NODE_BASE}@${NODE_DIGEST}
+# its multi-arch index digest. A literal FROM line, so Dependabot's docker
+# ecosystem can propose digest bumps (it cannot follow ARG-based FROM lines).
+FROM node:22-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
 
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
     NPM_CONFIG_FUND=false \

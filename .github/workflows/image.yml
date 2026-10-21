@@ -1,0 +1,178 @@
+# Reusable: build the API image once, gate it, smoke it, scan it, and hand the
+# exact tested bytes on as an artifact (ADR-011 "Deploy: the exact CI image").
+#
+# Called by ci.yml (every PR and push to main) and deploy.yml (tags and manual
+# runs). Nothing here pushes or deploys: the artifact `atus-api-image` holds
+# `docker save` output plus the image ID, and only deploy.yml's push job (the
+# one job with `packages: write`) sends it to GHCR. Order follows
+# docs/deployment.md "3. The image": lint, build, strict gate, deployment
+# tests, stack smoke (plain and under free-tier emulation), vulnerability scan.
+name: Image
+
+on:
+  workflow_call:
+    inputs:
+      build-sha:
+        description: Commit the image is built from (baked in as ATUS_BUILD_SHA; /health reports it)
+        type: string
+        required: true
+      use-cache:
+        description: Use the GitHub Actions build cache (deploy builds from scratch)
+        type: boolean
+        default: true
+    outputs:
+      image-id:
+        description: The tested image's ID (docker image inspect .Id)
+        value: ${{ jobs.image.outputs.image-id }}
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: Build, gate, smoke and scan the API image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    outputs:
+      image-id: ${{ steps.save.outputs.image-id }}
+    env:
+      IMAGE: atus-api:ci
+      # Trivy is installed from its immutable GitHub release, pinned by version
+      # and by the SHA-256 of the archive (also published in the release's
+      # trivy_<version>_checksums.txt). Not trivy-action/setup-trivy: their tags
+      # were hijacked in March 2026 (GHSA-69fq-xp46-6x23); v0.69.4 was malicious
+      # and v0.69.5/v0.69.6 were malicious Docker Hub images. To bump: pick an
+      # immutable release at least two weeks old, read its checksums.txt (or
+      # verify the .sigstore.json bundle with cosign) and update both values.
+      TRIVY_VERSION: "0.75.0"
+      TRIVY_SHA256: c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f
+      TRIVY_NO_PROGRESS: "true"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock.txt
+
+      - name: Install the hash-locked dev environment
+        run: |
+          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --no-deps --no-build-isolation -e .
+
+      - name: Lint the packaging files (Dockerfiles, compose, shell, ShellCheck)
+        run: deploy/ci/lint.sh
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Read the package version
+        id: version
+        run: echo "version=$(python -c 'import atus_pipeline; print(atus_pipeline.__version__)')" >> "$GITHUB_OUTPUT"
+
+      - name: Build the image (linux/amd64, loaded into Docker, not pushed)
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ env.IMAGE }}
+          build-args: |
+            ATUS_BUILD_SHA=${{ inputs.build-sha }}
+            ATUS_VERSION=${{ steps.version.outputs.version }}
+          # One plain image manifest per build: every GHCR version is then one
+          # deployable digest, and the cleanup job can count them (keep 20).
+          provenance: false
+          sbom: false
+          no-cache: ${{ !inputs.use-cache }}
+          cache-from: ${{ inputs.use-cache && 'type=gha,scope=atus-api' || '' }}
+          cache-to: ${{ inputs.use-cache && 'type=gha,mode=max,scope=atus-api' || '' }}
+
+      - name: Image gate, strict (non-root, no build tools, /health never touches the DB)
+        run: python deploy/ci/check_image.py "$IMAGE" --name-prefix "atus-ci-${GITHUB_RUN_ID}-gate"
+
+      - name: Deployment tests against this image
+        env:
+          ATUS_DOCKER_TESTS: "1"
+          ATUS_TEST_IMAGE: ${{ env.IMAGE }}
+          ATUS_DOCKER_TEST_PREFIX: atus-ci-${{ github.run_id }}
+        # The stack smoke runs as its own two steps below (plain and emulated),
+        # the edge cycle (smoke_stack.sh --edge --e2e) as ci.yml's e2e-stack job.
+        run: |
+          python -m pytest tests/deploy -q -p no:cacheprovider \
+            --deselect tests/deploy/test_stack_smoke.py::test_stack_smoke \
+            --deselect tests/deploy/test_edge_stack.py::test_edge_cycle
+
+      - name: Production stack smoke (strict)
+        env:
+          ATUS_STACK_IMAGE: ${{ env.IMAGE }}
+          ATUS_BUILD_SHA: ${{ inputs.build-sha }}
+        run: scripts/smoke_stack.sh --no-build --project "atus-ci-smoke-${GITHUB_RUN_ID}"
+
+      - name: Production stack smoke under free-tier emulation (0.1 CPU API, 0.25 CU DB)
+        env:
+          ATUS_STACK_IMAGE: ${{ env.IMAGE }}
+          ATUS_BUILD_SHA: ${{ inputs.build-sha }}
+        run: scripts/smoke_stack.sh --no-build --emulation --project "atus-ci-emu-${GITHUB_RUN_ID}"
+
+      - name: Install Trivy (pinned version, verified checksum)
+        id: trivy
+        run: |
+          archive="$RUNNER_TEMP/trivy.tar.gz"
+          curl -fsSL --retry 3 -o "$archive" \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  ${archive}" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/trivy-bin"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/trivy-bin" trivy
+          echo "$RUNNER_TEMP/trivy-bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/trivy-bin/trivy" --version
+
+      - name: Scan the image (fails on HIGH or CRITICAL vulnerabilities that have a fix)
+        env:
+          TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
+        run: trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --format table "$IMAGE"
+
+      - name: Scan report (SARIF, every severity)
+        if: ${{ !cancelled() && steps.trivy.outcome == 'success' }}
+        env:
+          TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
+        run: trivy image --scanners vuln --skip-db-update --format sarif --output trivy-image.sarif "$IMAGE"
+
+      - name: Upload the scan report
+        if: ${{ !cancelled() && steps.trivy.outcome == 'success' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: trivy-image-sarif
+          path: trivy-image.sarif
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Save the tested image
+        id: save
+        env:
+          BUILD_SHA: ${{ inputs.build-sha }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/image"
+          docker save "$IMAGE" -o "$RUNNER_TEMP/image/atus-api.tar"
+          image_id=$(docker image inspect --format '{{.Id}}' "$IMAGE")
+          echo "$image_id" > "$RUNNER_TEMP/image/atus-api.id"
+          echo "image-id=$image_id" >> "$GITHUB_OUTPUT"
+          echo "Tested image: \`$image_id\` (build $BUILD_SHA)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Hand the image to later jobs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: atus-api-image
+          path: ${{ runner.temp }}/image/
+          retention-days: 3
+          if-no-files-found: error

@@ -6,10 +6,11 @@
 # Debian) instead of a third-party image. The configuration is rendered from
 # the environment at start (entrypoint.sh) because secrets must not be baked
 # into the image.
-ARG POSTGRES_BASE=postgres:16
-ARG POSTGRES_DIGEST=sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
-
-FROM ${POSTGRES_BASE}@${POSTGRES_DIGEST}
+#
+# A literal FROM line, pinned by the multi-arch index digest, so Dependabot's
+# docker ecosystem can propose digest bumps (it cannot follow ARG-based FROM
+# lines; .github/dependabot.yml).
+FROM postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends pgbouncer \

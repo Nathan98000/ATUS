@@ -71,7 +71,7 @@ def _pins(name: str) -> dict[str, Version]:
     return pins
 
 
-LOCKS = ["api.lock.txt", "dev.lock.txt", "build.lock.txt"]
+LOCKS = ["api.lock.txt", "dev.lock.txt", "build.lock.txt", "ci-tools.lock.txt"]
 
 
 @pytest.mark.parametrize("lock", LOCKS)
@@ -135,6 +135,19 @@ def test_api_lock_uses_exactly_the_dev_lock_versions():
 
 def test_build_lock_uses_the_dev_lock_setuptools():
     assert _pins("build.lock.txt") == {"setuptools": _pins("dev.lock.txt")["setuptools"]}
+
+
+def test_ci_tools_lock_pins_each_tool_within_its_range():
+    pins = _pins("ci-tools.lock.txt")
+    for name, req in _input_file("ci-tools.in").items():
+        assert name in pins, f"{name} missing from ci-tools.lock.txt"
+        assert req.specifier.contains(pins[name], prereleases=True), (name, pins[name])
+
+
+def test_ci_tools_stay_out_of_the_application_locks():
+    """CI tools live in their own virtualenv (ci.yml job supply-chain)."""
+    for lock in ("api.lock.txt", "dev.lock.txt"):
+        assert "pip-audit" not in _pins(lock)
 
 
 def test_pipeline_only_packages_stay_out_of_the_api_lock():

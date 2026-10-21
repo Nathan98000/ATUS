@@ -23,12 +23,16 @@
 # falling back to the development database URL (audit F44).
 
 # The multi-arch index digest of python:3.12-slim (3.12.15, Debian trixie),
-# so linux/amd64 and linux/arm64 builds both start from a pinned base. Bump
-# both values together.
+# so linux/amd64 and linux/arm64 builds both start from a pinned base. Both
+# FROM lines are literal so Dependabot's docker ecosystem can propose digest
+# bumps (it cannot follow ARG-based FROM lines); the two ARGs only feed the
+# OCI base-image labels. Keep all four values equal: tests/deploy/
+# test_dependabot.py fails when they drift (a Dependabot bump needs the ARG
+# updated by hand).
 ARG PYTHON_BASE=python:3.12-slim
 ARG PYTHON_DIGEST=sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
 
-FROM ${PYTHON_BASE}@${PYTHON_DIGEST} AS build
+FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 AS build
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -63,7 +67,7 @@ RUN /opt/buildenv/bin/pip wheel --no-deps --no-build-isolation --wheel-dir /dist
     fi
 
 
-FROM ${PYTHON_BASE}@${PYTHON_DIGEST} AS runtime
+FROM python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 AS runtime
 
 ARG PYTHON_BASE
 ARG PYTHON_DIGEST

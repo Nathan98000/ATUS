@@ -11,8 +11,10 @@
 #
 # The first three are Worker secrets. ATUS_OPS_TOKEN is the API's bearer for
 # /ready and /metrics: it is never loaded into the Worker, and goes to the
-# Render environment (ATUS_OPS_TOKEN) and the GitHub `production` secret of
-# the same name. Every generated secret thus has one home: this file.
+# Render environment only (no GitHub workflow calls the origin's /ready or
+# /metrics). The Worker's OPS_TOKEN is also the GitHub secret EDGE_OPS_TOKEN
+# (environment `ops`; optionally `production`), the names .github/workflows/
+# reads. Every generated secret thus has one home: this file.
 #
 # Re-running keeps every existing value. `--rotate NAME` (EDGE_AUTH_SECRET,
 # OPS_TOKEN, IP_HMAC_KEY, ATUS_OPS_TOKEN or all; repeatable) replaces one.
@@ -32,7 +34,7 @@ umask 077
 
 MANAGED_RE='^(EDGE_AUTH_SECRET|EDGE_AUTH_SECRET_PREVIOUS|OPS_TOKEN|IP_HMAC_KEY|ATUS_OPS_TOKEN|RENDER_ORIGIN)='
 GENERATED="EDGE_AUTH_SECRET OPS_TOKEN IP_HMAC_KEY ATUS_OPS_TOKEN"
-# Loaded into the Worker; ATUS_OPS_TOKEN belongs to the API (Render, GitHub).
+# Loaded into the Worker; ATUS_OPS_TOKEN belongs to the API (Render only).
 WORKER_SECRETS="EDGE_AUTH_SECRET OPS_TOKEN IP_HMAC_KEY"
 
 die() {
@@ -139,6 +141,8 @@ fi
 
 tmp="$(mktemp "${dir}/.edge.env.XXXXXX")"
 trap 'rm -f -- "$tmp"' EXIT
+# The value_* variables are assigned by `printf -v` in the loop above.
+# shellcheck disable=SC2154
 {
   printf '# ATUS edge Worker secrets (ADR-011), written by scripts/ops/gen_edge_secrets.sh.\n'
   printf '# Never commit, paste or print these values.\n'
@@ -188,12 +192,13 @@ printf '  (umask 077 && tmp=$(mktemp -d) && trap %s EXIT && grep -E %s %s > "$tm
 [[ -n "$origin" ]] || printf '  (needs RENDER_ORIGIN first: rerun with --render-origin)\n'
 printf '\nThe API must accept the same edge secret: set Render env ATUS_EDGE_SECRETS to the\n'
 printf 'EDGE_AUTH_SECRET value, copied from the file (never pasted into chat).\n'
-printf '\nATUS_OPS_TOKEN is the API'"'"'s ops bearer (/ready, /metrics), never a Worker secret:\n'
+printf '\nATUS_OPS_TOKEN is the API'"'"'s ops bearer (/ready, /metrics), never a Worker secret\n'
+printf 'and never a GitHub secret (no workflow calls the origin'"'"'s /ready or /metrics):\n'
 printf '  Render -> Environment: ATUS_OPS_TOKEN, copied from the file\n'
-printf '  GitHub environment production, secret ATUS_OPS_TOKEN (post-deploy /ready check):\n'
-printf "    grep '^ATUS_OPS_TOKEN=' %s | cut -d= -f2- | gh secret set ATUS_OPS_TOKEN --env production\n" "$quoted_file"
-printf 'The Worker'"'"'s OPS_TOKEN is also the GitHub secret EDGE_OPS_TOKEN (environments production and ops):\n'
-for environment in production ops; do
+printf 'The Worker'"'"'s OPS_TOKEN is also the GitHub secret EDGE_OPS_TOKEN: environment ops\n'
+printf '(the daily quota report) and, optionally, production (the post-deploy smoke then\n'
+printf 'also reads the governor'"'"'s budget):\n'
+for environment in ops production; do
   printf "    grep '^OPS_TOKEN=' %s | cut -d= -f2- | gh secret set EDGE_OPS_TOKEN --env %s\n" \
     "$quoted_file" "$environment"
 done
@@ -205,6 +210,6 @@ if [[ "$rotated" == *" OPS_TOKEN "* ]]; then
   printf 'Also update every copy of OPS_TOKEN that monitors use (GitHub secret EDGE_OPS_TOKEN).\n'
 fi
 if [[ "$rotated" == *" ATUS_OPS_TOKEN "* ]]; then
-  printf 'Set the new ATUS_OPS_TOKEN on Render ("Save and deploy") and in GitHub; until both\n'
-  printf 'match, only the ops checks see 404.\n'
+  printf 'Set the new ATUS_OPS_TOKEN on Render ("Save and deploy"); until it is live there,\n'
+  printf 'only the ops checks see 404.\n'
 fi
