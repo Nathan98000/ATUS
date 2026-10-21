@@ -2,13 +2,14 @@
 
 The 3-way HTTP replay of the generated equivalence corpus, run with `scripts/equivalence`.
 
-**Result: FAIL, with one blocking finding.** 543 of 544 specs and 84 of 84 GET requests passed. No statistic differs in any pair. In the one failure, `population-071`, the Phase 5 API on the full database answered 503 `analysis_timeout` while the other two servers answered 200. The cause is a query-plan regression from the Phase 5 year pushdown; see [Finding](#finding-year-pushdown-plan-regression-blocking).
+**Result: FAIL, with one blocking finding.** 543 of 544 specs and 84 of 84 GET requests passed. No statistic differs in any pair. In the one failure, `population-071`, the Phase 5 API on the full database answered 503 `analysis_timeout` while the other two servers answered 200. The cause is a query-plan regression from the Phase 5 year pushdown; see [Finding](#finding-year-pushdown-plan-regression-blocking). The timeout is intermittent: a supplementary run against the `phase5` head (`ca2f5cc`, same SQL) passed 544 of 544, but the plan hazard is unchanged there.
 
 | File | Content |
 |---|---|
 | [`summary.md`](summary.md) | The harness's summary of this run, unedited |
 | [`report.json`](report.json) | The per-spec report: each target's status and code, and per pair the outcome, values compared, `max_relative`, `max_scaled` and mismatches with JSON paths |
 | [`specs/`](specs/) | The 544 replayed specs, byte-identical to the run's input (sha256 in `report.json` → `inputs.spec_files`) |
+| [`phase5-ca2f5cc/`](phase5-ca2f5cc/) | A supplementary run of the same corpus against the `phase5` branch head (see the [last section](#supplementary-run-on-the-phase5-head-ca2f5cc)) |
 
 ## Provenance
 
@@ -52,7 +53,18 @@ The output was checked before it was copied here. `report.json`, `summary.md` an
 
 **What fails.** `population-071` is a participants-per-day estimate of `eating_and_drinking` for 2019 under the pandemic weights, with diary dates 2019-05-10 to 2019-12-31. The Phase 5 API on the full database answered 503 `analysis_timeout` after its 600 s statement timeout. The production default is 85 s (`api_statement_timeout_ms`), so a production server on that database would refuse it too.
 
-`measures-weights-043` has the same plan and population size (watching TV, 2020, pandemic weights, 2020-05-10 to 2020-12-31). It hit the 600 s timeout in the harness author's earlier corpus run (`--jobs 2`), but answered within it in this run (`--jobs 1`). This is the same defect, near the 600 s limit.
+`measures-weights-043` has the same plan and population size (watching TV, 2020, pandemic weights, 2020-05-10 to 2020-12-31).
+
+The engine SQL and the plan of these two specs are the same in every run, but whether they pass the 600 s limit varies:
+
+| Run | `measures-weights-043` | `population-071` |
+|---|---|---|
+| Harness author's corpus run (`--jobs 2`, `5139a2b`) | timed out | timed out |
+| Harness author's rerun of those two (`--failed-from`) | timed out (from that run's server log) | no answer recorded; the run was stopped |
+| This run (`--jobs 1`, `1bb1d6f`) | answered | timed out |
+| Supplementary run (`--jobs 1`, `ca2f5cc`) | answered | answered |
+
+So the failure is intermittent at the harness's 600 s limit. At the 85 s production default, it is a latency defect that the later timed run has to size. Whenever b answered, its statistics were equivalent to a and c.
 
 **Root cause: the Phase 5 SQL change, the year pushdown** (`9769f52`, `_YEAR_PUSHDOWN` in `src/atus_pipeline/analytics/queries.py`). The evidence comes from EXPLAIN (no ANALYZE) and read-only counts:
 
@@ -90,3 +102,13 @@ The other 25 hazard specs have 0-39 respondents, or are refused with `insufficie
 - Extended statistics on `respondents (data_year, diary_date, pandemic_weight)`. These would need a schema change on both databases, and their effect on range predicates is unproven.
 
 Any fix needs this run repeated (`scripts/equivalence/run.sh`, or `--failed-from` plus the 32 hazard specs). It also needs the later timed run on the hazard specs above.
+
+## Supplementary run on the `phase5` head (`ca2f5cc`)
+
+Since `p5/eq` branched from `400cb6f`, the `phase5` branch has moved to `ca2f5cc`, which changes API code (`snapshot.py`, `middleware.py`, `protection.py`, and `routes/activities.py` and `routes/health.py`). For example, lexicon search now runs fully in memory, including non-ASCII terms. Engine and SQL code are unchanged: `git diff 400cb6f ca2f5cc -- src/atus_pipeline/analytics` is empty.
+
+The same corpus and GETs were replayed against that code with the same harness, settings, databases and data versions. The run used a detached worktree of `ca2f5cc` with this branch's `scripts/equivalence` copied in, a venv installed offline from `ca2f5cc`'s `requirements/api.lock.txt`, and ports 8664-8666.
+
+**Result: PASS.** All 544 specs and 84 GETs passed. a vs b: 621 equivalent and 7 intended differences, the same 7 GET differences as above. b vs c: 628 equivalent. Max scaled SE/CI difference: 7.25e-15 for a vs b and 5.13e-15 for b vs c. No whitelisted value differed, and b met every expectation.
+
+Both hazard specs answered in this run. The finding above still applies, because the SQL and plan are unchanged. [`phase5-ca2f5cc/summary.md`](phase5-ca2f5cc/summary.md) and [`phase5-ca2f5cc/report.json`](phase5-ca2f5cc/report.json) are that run's unedited output, checked for secrets like the main run.
