@@ -340,7 +340,7 @@ Tests:
   - Trivy, from a pinned release binary checked against its SHA-256, which fails on HIGH or CRITICAL vulnerabilities that have a fix;
   - `pip-audit --strict` on `requirements/api.lock.txt`;
   - `npm audit --omit=dev` (the frontend's at `--audit-level=high`).
-- **Updates.** Dependabot proposes weekly updates for pip, npm (frontend and edge), GitHub Actions, Docker and Compose, each after a 7-day cooldown.
+- **Updates.** Dependabot proposes weekly updates for pip, npm (frontend and edge), GitHub Actions, Docker and Compose, each after a 7-day cooldown. The `postgres:16` digest also has copies no ecosystem updates (the workflows' `services:` images, `deploy/ci/check_image.py`, `tests/deploy/test_container_image.py`): `tests/deploy/test_dependabot.py::test_every_postgres_16_pin_names_the_same_digest` fails a pull request that bumps only some of them, so CI, the deploy snapshot and the stack keep one PostgreSQL build.
 - **Deploy.** It pushes exactly the tested image ID, and Render deploys it by digest.
 
 Code: `.github/workflows/`, `.github/dependabot.yml`, `Dockerfile`, `deploy/*/Dockerfile`, `requirements/*.lock.txt`.

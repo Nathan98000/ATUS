@@ -77,6 +77,43 @@ def test_the_api_image_labels_name_its_real_base():
         "update ARG PYTHON_BASE/PYTHON_DIGEST together with the FROM lines"
 
 
+POSTGRES_PIN = re.compile(r"postgres:16@sha256:([0-9a-f]{64})")
+#: Where the stack's postgres:16 is pinned. Dependabot bumps only the compose
+#: files (docker-compose) and deploy/pgbouncer/Dockerfile (docker), in
+#: separate pull requests; the workflows' `services:` images and the Python
+#: constants are copies no ecosystem updates.
+POSTGRES_PINS = {
+    "docker-compose.yml": 1, "docker-compose.prod.yml": 3, "deploy/pgbouncer/Dockerfile": 1,
+    ".github/workflows/ci.yml": 2, ".github/workflows/deploy.yml": 1,
+    "deploy/ci/check_image.py": 1, "tests/deploy/test_container_image.py": 1,
+}
+# Recorded evidence quotes the digest of its day and is never updated.
+EVIDENCE = ("docs/", "loadtests/results/")
+
+
+def test_every_postgres_16_pin_names_the_same_digest():
+    """A Dependabot compose or docker bump changes only its own files: CI, the
+    deploy snapshot and the image gate would then run another PostgreSQL
+    build than the stack. Finish such a pull request by updating every copy
+    listed in POSTGRES_PINS (the comment in .github/dependabot.yml says so)."""
+    found: dict[str, list[str]] = {}
+    for path in REPO_ROOT.rglob("*"):
+        relative = path.relative_to(REPO_ROOT)
+        if set(relative.parts) & SKIP or relative.as_posix().startswith(EVIDENCE) \
+                or not path.is_file() or path.suffix in (".png", ".gz", ".dump", ".tar"):
+            continue
+        try:
+            digests = POSTGRES_PIN.findall(path.read_text())
+        except (UnicodeDecodeError, OSError):
+            continue
+        if digests:
+            found[relative.as_posix()] = digests
+    assert {name: len(digests) for name, digests in found.items()} == POSTGRES_PINS
+    assert len({d for digests in found.values() for d in digests}) == 1, found
+    note = (REPO_ROOT / ".github" / "dependabot.yml").read_text()
+    assert "test_every_postgres_16_pin_names_the_same_digest" in note
+
+
 def test_compose_images_are_digest_pinned_for_the_compose_ecosystem():
     for name in ("docker-compose.yml", "docker-compose.prod.yml"):
         images = re.findall(r"^\s+image:\s*(\S+)", (REPO_ROOT / name).read_text(), re.MULTILINE)
