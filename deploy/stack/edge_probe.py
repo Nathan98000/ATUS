@@ -370,7 +370,8 @@ def check_governor(probe: Probe) -> None:
     for host in range(1, 62):
         reply = probe.get(ESTIMATE, method="POST", body=analysis_body(f"gov {run} {host}"),
                           headers={"Content-Type": "application/json", **visitor(2, host),
-                                   **forged_address(1000 + host)})
+                                   # 198.18.101.1 to .161.1: the probe's own /16
+                                   **forged_address(100 + host)})
         statuses.append(reply.status)
         if reply.status != 200:
             denial = reply
