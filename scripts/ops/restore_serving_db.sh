@@ -9,7 +9,8 @@
 #   1. reads the owner's connection string (Neon: neondb_owner, direct endpoint,
 #      not the -pooler host) from $ATUS_OWNER_DATABASE_URL or from the secrets
 #      file (default ~/.config/atus/neon.env, a line
-#      ATUS_OWNER_DATABASE_URL=postgresql://...); it is never printed;
+#      ATUS_OWNER_DATABASE_URL=postgresql://...); it is never printed. When both
+#      are set they must name the same database, or nothing is changed;
 #   2. verifies the dump's SHA-256 against its .sha256 file and its manifest;
 #   3. refuses a database that is not empty (one new Neon project per release);
 #   4. pg_restore --no-owner --no-acl --single-transaction --exit-on-error,

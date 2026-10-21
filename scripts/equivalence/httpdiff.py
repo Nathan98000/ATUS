@@ -46,6 +46,7 @@ import hashlib
 import json
 import math
 import random
+import re
 from collections import Counter
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
@@ -694,15 +695,26 @@ def _control_characters(a: Response, b: Response, request: RequestInfo) -> bool:
                     for e in _error_list(eb)))
 
 
+_LABELLED_LEXICON = re.compile(r" in the \S+ lexicon\.$")
+
+
 def _lexicon_wording(a: Response, b: Response, request: RequestInfo) -> bool:
     ea, eb = a.error, b.error
-    return (
+    if not (
         a.status == b.status == 404 and ea is not None and eb is not None
         and ea.get("code") == eb.get("code") == "activity_not_found"
         and ea.get("details") == eb.get("details")
-        and isinstance(eb.get("message"), str)
-        and eb["message"].replace(" activity lexicon.", " lexicon.") == ea.get("message")
-    )
+        and isinstance(eb.get("message"), str) and isinstance(ea.get("message"), str)
+    ):
+        return False
+    if eb["message"].replace(" activity lexicon.", " lexicon.") == ea["message"]:
+        return True
+    # A malformed code (not 2, 4 or 6 digits) is answered release-neutrally,
+    # whether or not the process has read its data snapshot (review r1).
+    code = str((ea.get("details") or {}).get("code", ""))
+    malformed = not (code.isdigit() and len(code) in (2, 4, 6))
+    return malformed and eb["message"] == _LABELLED_LEXICON.sub(
+        " in the activity lexicon.", ea["message"])
 
 
 def _health_build(a: Response, b: Response, request: RequestInfo) -> bool:
@@ -754,7 +766,8 @@ INTENDED_DIFFERENCES: tuple[IntendedDifference, ...] = (
     IntendedDifference(
         "lexicon_wording", "audit F23",
         "`activity_not_found` names the loaded release's lexicon as 'the <span> activity "
-        "lexicon' (release-neutral text); code and details unchanged.",
+        "lexicon', and a malformed code (not 2, 4 or 6 digits) 'the activity lexicon' "
+        "(release-neutral text); code and details unchanged.",
         _lexicon_wording,
     ),
     IntendedDifference(

@@ -142,10 +142,9 @@ async def activity_detail(
     snapshots: SnapshotStore = Depends(get_snapshots),
 ) -> ActivityDetailResponse:
     if not (code.isdigit() and len(code) in (2, 4, 6)):
-        # Malformed codes never need the data; name the lexicon only when
-        # the snapshot already knows it.
-        current = snapshots.current
-        raise ActivityNotFoundError(code, current.lexicon_label if current else None)
+        # Malformed codes never need the data, and their answer never depends
+        # on whether this process has read the snapshot yet: release-neutral.
+        raise ActivityNotFoundError(code)
     snapshot = await snapshots.get(db)
     detail = snapshot.detail(code)
     if detail is None:

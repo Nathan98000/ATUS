@@ -48,6 +48,17 @@ the shadow data's commit remains (``pg_stat_activity.xact_start``; the
 loading role needs to see other roles' sessions there, which a superuser or a
 member of ``pg_read_all_stats`` does, and is warned otherwise).
 
+A REPEATABLE READ transaction that starts after that commit but takes its
+snapshot before the switch commits, and first touches a table after it,
+would see the old ``ingestion_runs`` rows (the publish step's update is not
+in its snapshot) next to the new tables (moved in by name, their rows
+committed before the snapshot): the old data version with the new data. The
+guard above cannot see such a reader coming. A REPEATABLE READ reader must
+therefore lock ``ingestion_runs`` (ACCESS SHARE) before any statement that
+takes its snapshot, as the API's snapshot read does
+(``api.database.SNAPSHOT_LOCK``): the switch, which locks that table first,
+then either committed before the snapshot or waits for the reader.
+
 The guarantee is per transaction, so it holds for clients that run each
 request in one transaction, as the API does (one pooled connection and one
 transaction per request).

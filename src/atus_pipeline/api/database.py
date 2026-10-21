@@ -10,8 +10,15 @@ Pool (audit F05, F17, F18, F36, I08):
   configurable ``prepare_threshold`` (``None`` behind transaction poolers).
 * Every checkout runs ``ConnectionPool.check_connection`` (one empty query).
   When it finds a dead connection — the server restarted or the compute
-  suspended — the pool is drained, because the other idle connections died
-  the same way; the next attempt gets a fresh connection.
+  suspended — every idle connection is closed and none is reopened in its
+  place (:meth:`_ApiPool.discard_idle`), because the others died the same
+  way. psycopg_pool replaces the failed connection and retries the checkout
+  at once (then after about 1 s, doubling); while the request waits for a
+  connection the pool also grows by one, so a wake opens at most two new
+  connections, whatever the pool held.
+* psycopg_pool closes at most one idle connection per ``max_idle`` period,
+  so idle connections can outlive Neon's 5-minute suspend (four of them
+  take four periods to go); the check above is what makes that harmless.
 
 Checkout (audit F34): when every connection is busy, a request waits
 ``ATUS_API_POOL_TIMEOUT_S`` and then gets 503 ``overloaded``. When the pool
@@ -26,10 +33,16 @@ Transactions: each request's work runs in one transaction whose first
 statement applies the request's limits with ``set_config(..., true)`` — the
 function form of ``SET LOCAL``, so the values end with the transaction and
 are safe behind a transaction-mode pooler (never a session ``SET`` or a
-startup ``options`` parameter). Analyses also get a wall-clock deadline that
-cancels the running query, so a request issuing several statements is
-bounded too. The transaction ends (commit/rollback) and the connection goes
-back to the pool before the HTTP response is sent (audit I10).
+startup ``options`` parameter). The data snapshot's REPEATABLE READ
+transaction sends the same limits as ``SET LOCAL`` statements instead, in
+the same single query, followed by a share lock on ``atus.ingestion_runs``:
+neither takes the transaction snapshot, so the snapshot is fixed only after
+the lock is held, and a concurrent ``atus load`` switch either committed
+before it or waits for it (:data:`SNAPSHOT_LOCK`). Analyses also get a
+wall-clock deadline that cancels the running query, so a request issuing
+several statements is bounded too. The transaction ends (commit/rollback)
+and the connection goes back to the pool before the HTTP response is sent
+(audit I10).
 
 Every transaction is ``READ ONLY`` (psycopg sends ``BEGIN READ ONLY``; no
 extra statement): the API never writes (audit I05), so even a role that
@@ -48,6 +61,7 @@ from dataclasses import dataclass
 from time import monotonic
 
 import psycopg
+from psycopg import sql as pgsql
 from psycopg_pool import ConnectionPool, PoolTimeout
 
 from ..config import Settings
@@ -72,6 +86,11 @@ CLIENT_CONNECTION_CHECK_INTERVAL_MS = 5_000
 DEADLINE_MARGIN_S = 5.0
 """An analysis may run ``statement_timeout + DEADLINE_MARGIN_S`` in total
 before its current query is cancelled (85 s + 5 s = the ADR's 90 s)."""
+
+DEADLINE_RECANCEL_S = 1.0
+"""After the deadline, the cancel is repeated this often until the
+transaction ends: PostgreSQL ignores a cancel that reaches a backend between
+statements, and one sent just as a statement starts can arrive first."""
 
 _ACQUIRE_SLICE_S = 1.0  # while a connection is being opened, re-check for failures this often
 
@@ -120,6 +139,33 @@ def session_limits_statement(limits: list[tuple[str, str]]) -> tuple[str, list[s
     return sql, [value for _, value in limits]
 
 
+SNAPSHOT_LOCK = "LOCK TABLE atus.ingestion_runs IN ACCESS SHARE MODE"
+"""Taken by a REPEATABLE READ transaction before its snapshot exists. The
+loader's switch locks ``ingestion_runs`` (ACCESS EXCLUSIVE) before it swaps
+the tables in, so it either committed before the snapshot is taken or waits
+for this transaction to end: the snapshot never pairs one data version with
+another version's tables."""
+
+
+def snapshot_limits_statement(limits: list[tuple[str, str]]) -> pgsql.Composed:
+    """The limits as ``SET LOCAL`` statements followed by
+    :data:`SNAPSHOT_LOCK`, sent as one query (simple protocol: no parameters,
+    and ``Database`` executes it with ``prepare=False``, because PostgreSQL
+    cannot prepare several statements and ``ATUS_API_PREPARE_THRESHOLD=0``
+    would make psycopg try at once). Neither ``SET`` nor
+    ``LOCK`` takes the transaction snapshot, which a ``SELECT set_config(...)``
+    would: a REPEATABLE READ transaction's snapshot is fixed by its first
+    other statement, after the lock is held (``PlannedStmtRequiresSnapshot``
+    in PostgreSQL). The lock wait is bounded by the ``lock_timeout`` set just
+    before it."""
+    statements = [
+        pgsql.SQL("SET LOCAL {} = {}").format(pgsql.SQL(name), pgsql.Literal(value))
+        for name, value in limits
+    ]
+    statements.append(pgsql.SQL(SNAPSHOT_LOCK))
+    return pgsql.SQL("; ").join(statements)
+
+
 @dataclass
 class _ConnectEvent:
     at: float
@@ -160,23 +206,39 @@ class ConnectTracker:
 
 class CountingCursor(psycopg.Cursor):
     """Counts every statement it sends against the current request
-    (``Connection.execute`` goes through the connection's cursor factory)."""
+    (``Connection.execute`` goes through the connection's cursor factory),
+    and sends none once the transaction was cancelled (``refused_because``:
+    the request deadline passed, or shutdown): a cancel that reached the
+    server between two statements was ignored there, so the next statement
+    would otherwise run bounded only by ``statement_timeout``."""
+
+    def _check_not_cancelled(self) -> None:
+        reason = getattr(self.connection, "refused_because", None)
+        if reason is not None:
+            raise psycopg.errors.QueryCanceled(f"statement not sent: {reason}")
 
     def execute(self, *args, **kwargs):
+        self._check_not_cancelled()
         observability.note_statement()
         return super().execute(*args, **kwargs)
 
     def executemany(self, *args, **kwargs):
+        self._check_not_cancelled()
         observability.note_statement()
         return super().executemany(*args, **kwargs)
 
     def stream(self, *args, **kwargs):
+        self._check_not_cancelled()
         observability.note_statement()
         return super().stream(*args, **kwargs)
 
 
 def _tracking_connection_class(base: type[psycopg.Connection], tracker: ConnectTracker):
     class TrackedConnection(base):  # type: ignore[valid-type, misc]
+        # Set when the current transaction was cancelled (CountingCursor);
+        # cleared when that transaction releases the connection.
+        refused_because: str | None = None
+
         @classmethod
         def connect(cls, conninfo: str = "", **kwargs):
             try:
@@ -192,6 +254,36 @@ def _tracking_connection_class(base: type[psycopg.Connection], tracker: ConnectT
     return TrackedConnection
 
 
+class _ApiPool(ConnectionPool):
+    """psycopg_pool's ``ConnectionPool`` plus :meth:`discard_idle`."""
+
+    def discard_idle(self) -> int:
+        """Close every idle connection and shrink the pool by as many,
+        opening none in their place; returns how many were closed.
+
+        ``drain()`` instead reopens one connection for each it closes and
+        replaces every connection checked out at the time when it comes
+        back, so after a suspend it rebuilt the whole pool, and one more
+        (review r1). This uses the pool's private state the way
+        ``_shrink_pool`` does for one connection (``_lock``, ``_pool``,
+        ``_nconns``, ``_nconns_min``); the requirements pin psycopg_pool 3.3,
+        an integration test checks the accounting, and if the internals ever
+        differ the pool is drained as before."""
+        try:
+            with self._lock:
+                idle = list(self._pool)
+                self._pool.clear()
+                self._nconns -= len(idle)
+                self._nconns_min = 0
+        except AttributeError:  # another psycopg_pool: its own, costlier way
+            log.warning("psycopg_pool internals changed; draining the pool instead")
+            self.drain()
+            return 0
+        for conn in idle:
+            self._close_connection(conn)
+        return len(idle)
+
+
 class Database:
     """Pool owner and the per-request transaction context manager."""
 
@@ -201,7 +293,7 @@ class Database:
     ):
         self._settings = settings
         self.tracker = ConnectTracker()
-        self.pool = ConnectionPool(
+        self.pool = _ApiPool(
             conninfo=settings.database_url,
             connection_class=_tracking_connection_class(connection_class, self.tracker),
             kwargs=connection_kwargs(settings),
@@ -219,6 +311,7 @@ class Database:
         )
         self._active_lock = threading.Lock()
         self._active: set[psycopg.Connection] = set()
+        self._closing = False  # shutdown began: no new transaction (begin_shutdown)
         self.query_timeouts = 0  # queries cancelled by statement_timeout or the deadline
         if open:
             self.pool.open(wait=False)  # min_size=0: starts workers, opens nothing
@@ -231,10 +324,11 @@ class Database:
         try:
             ConnectionPool.check_connection(conn)
         except Exception:
-            log.info("pooled connection failed its check; draining idle connections")
-            drain = getattr(self.pool, "drain", None)  # psycopg_pool >= 3.3
-            if drain is not None:
-                drain()
+            # The other idle connections died the same way (a restart or a
+            # suspend): close them, without reopening any. psycopg_pool then
+            # replaces the failed one, and the checkout gets that.
+            closed = self.pool.discard_idle()
+            log.info("pooled connection failed its check; closed %d idle connections", closed)
             raise
 
     # ------------------------------------------------------------------ #
@@ -298,11 +392,25 @@ class Database:
 
     @contextmanager
     def _transaction(self, kind: str, repeatable_read: bool) -> Iterator[psycopg.Connection]:
-        sql, params = session_limits_statement(session_limits(self._settings, kind))
+        limits = session_limits(self._settings, kind)
+        if repeatable_read:
+            # The snapshot must not exist before the lock (SNAPSHOT_LOCK).
+            sql, params = snapshot_limits_statement(limits), None
+        else:
+            sql, params = session_limits_statement(limits)
+        if self._closing:
+            raise OverloadedError("server shutting down")
         conn = self.acquire()
         deadline: _Deadline | None = None
         with self._active_lock:
-            self._active.add(conn)
+            # Under the lock that begin_shutdown takes: a transaction is either
+            # registered before it (and cancelled by it) or refused here.
+            closing = self._closing
+            if not closing:
+                self._active.add(conn)
+        if closing:
+            self.pool.putconn(conn)
+            raise OverloadedError("server shutting down")
         try:
             if repeatable_read:
                 conn.isolation_level = psycopg.IsolationLevel.REPEATABLE_READ
@@ -311,17 +419,29 @@ class Database:
                     conn, self._settings.api_statement_timeout_ms / 1000 + DEADLINE_MARGIN_S
                 )
             with conn:
-                conn.execute(sql, params)
+                # Never prepared: the snapshot's statement is several
+                # statements, which PostgreSQL cannot prepare, and
+                # ATUS_API_PREPARE_THRESHOLD=0 would prepare it at once.
+                conn.execute(sql, params, prepare=False if repeatable_read else None)
                 yield conn
-        except psycopg.errors.QueryCanceled:
+        except psycopg.errors.QueryCanceled as exc:
             with self._active_lock:
                 self.query_timeouts += 1
+            if kind == "metadata":
+                # Classified here, where the kind is known: a metadata read
+                # (the data snapshot, a lexicon search) is cancelled for
+                # capacity or shutdown on any route, analysis routes included,
+                # whose handler would otherwise call it analysis_timeout.
+                raise OverloadedError("metadata query canceled") from exc
             raise
         finally:
             if deadline is not None:
                 deadline.stop()  # after this, no cancel can reach the reused connection
             with self._active_lock:
                 self._active.discard(conn)
+                # The cancel belonged to this transaction: the pool's own
+                # check and the next transaction may use the connection.
+                conn.refused_because = None
             if repeatable_read:
                 try:
                     conn.isolation_level = None  # back to the server default
@@ -345,13 +465,26 @@ class Database:
     # ------------------------------------------------------------------ #
 
     def cancel_active(self) -> int:
-        """Cancel every query in flight (process shutdown). Returns how many
-        connections were signalled."""
+        """Cancel every query in flight (process shutdown); their
+        transactions send no further statement. Returns how many connections
+        were signalled."""
         with self._active_lock:
             active = list(self._active)
+            for conn in active:
+                conn.refused_because = "shutting down"
         for conn in active:
             cancel_query(conn, "shutting down")
         return len(active)
+
+    def begin_shutdown(self) -> int:
+        """Shutdown's first step: from now on no transaction starts (503
+        ``overloaded``), and every query in flight is cancelled, so nothing
+        that is admitted later (an analysis waiting for a lane, say) can
+        start a query that outlives the process. Returns how many
+        connections were signalled."""
+        with self._active_lock:
+            self._closing = True
+        return self.cancel_active()
 
     def close(self) -> None:
         self.pool.close(timeout=5.0)
@@ -366,27 +499,43 @@ def cancel_query(conn: psycopg.Connection, reason: str) -> None:
 
 
 class _Deadline:
-    """Cancels a connection's running query once ``seconds`` have passed,
-    unless :meth:`stop` was called first (a cancel can never reach the
-    connection after it went back to the pool)."""
+    """Ends a connection's transaction once ``seconds`` have passed, unless
+    :meth:`stop` was called first (a cancel can never reach the connection
+    after it went back to the pool).
+
+    At the deadline the connection refuses further statements
+    (``refused_because``, checked by :class:`CountingCursor`) and its running
+    query is cancelled; the cancel is repeated every
+    :data:`DEADLINE_RECANCEL_S` until :meth:`stop`, because PostgreSQL drops a
+    cancel that reaches the backend between statements, including one that
+    overtakes a statement just being sent."""
 
     def __init__(self, conn: psycopg.Connection, seconds: float):
         self._conn = conn
         self._lock = threading.Lock()
         self._done = False
         self.fired = False
-        self._timer = threading.Timer(seconds, self._fire)
-        self._timer.daemon = True
-        self._timer.start()
+        self._timer = self._schedule(seconds)
+
+    def _schedule(self, seconds: float) -> threading.Timer:
+        timer = threading.Timer(seconds, self._fire)
+        timer.daemon = True
+        timer.start()
+        return timer
 
     def _fire(self) -> None:
         with self._lock:
             if self._done:
                 return
+            repeated = self.fired
             self.fired = True
-            cancel_query(self._conn, "request deadline exceeded")
+            self._conn.refused_because = "request deadline exceeded"
+            cancel_query(self._conn, "request deadline exceeded"
+                         + (" (repeated)" if repeated else ""))
+            self._timer = self._schedule(DEADLINE_RECANCEL_S)
 
     def stop(self) -> None:
         self._timer.cancel()
         with self._lock:
             self._done = True
+            self._timer.cancel()  # one scheduled by a fire that ran meanwhile

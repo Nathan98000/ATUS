@@ -5,12 +5,15 @@ The procedure of brief §9 and ADR-013, in order:
 
 1. read the owner's connection string from ``$ATUS_OWNER_DATABASE_URL`` or the
    owner's secrets file (default ``~/.config/atus/neon.env``); it is never
-   printed;
+   printed, and when both are set they must name the same database
+   (:func:`owner_url`);
 2. verify the dump against its ``.sha256`` file and its manifest;
 3. refuse a target database that is not empty (each release goes into a new
    database: on Neon a new project, because one project's 1 GB covers every
    database and branch in it); ``--roles-only`` skips the restore and instead
-   refuses a database without the serving marker (``serving/guard.py``);
+   refuses a database without the serving marker (``serving/guard.py``). It
+   also finishes a restore that failed after ``pg_restore`` committed: step 6
+   runs then too, when tables lack planner statistics;
 4. ``pg_restore --no-owner --no-acl --single-transaction --exit-on-error``
    over the connection given (Neon: the direct endpoint), with a client at
    least as new as the server's major version and the artifact's
@@ -47,7 +50,7 @@ from ..database.dsn import describe, ensure_system_roots, redact
 from ..validation.results import CheckResult
 from . import pgtools
 from .artifact import manifest_for, read_manifest, verify_artifact
-from .checks import explain_worst_cases, serving_checks
+from .checks import explain_worst_cases, serving_checks, tables_without_statistics
 from .guard import serving_marker
 from .secrets_file import (
     API_PASSWORD_KEY,
@@ -116,6 +119,9 @@ class RestoreReport:
     checks: list[dict] = field(default_factory=list)
     sizes: dict = field(default_factory=dict)
     seconds: dict[str, float] = field(default_factory=dict)
+    # roles.sql set a password the secrets file did not hold before: from then
+    # on only the file's ATUS_API_DATABASE_URL works, whatever the checks say.
+    api_password_changed: bool = False
     passed: bool = False
 
     def as_dict(self) -> dict:
@@ -123,20 +129,34 @@ class RestoreReport:
 
 
 def owner_url(options: RestoreOptions) -> str:
-    """The owner's connection string: the environment first, then the file."""
+    """The owner's connection string: the environment first, then the file.
+
+    The API role's password and connection string are written into the
+    secrets file, which the runbooks keep one per Neon project. So when both
+    the environment and the file name the owner's database, they must name
+    the same one (user, host, port, database): a stale exported variable
+    would otherwise rotate another project's password and write its DSN
+    into this project's file (review r1). Nothing is changed then."""
     from_env = os.environ.get(OWNER_URL_KEY)
-    if from_env:
-        return from_env
     path = options.secrets_file.expanduser()
+    from_file = read_env_file(path).get(OWNER_URL_KEY) if path.is_file() else None
+    if from_env:
+        if from_file and describe(from_file) != describe(from_env):
+            raise RestoreError(
+                f"${OWNER_URL_KEY} names {describe(from_env)}, but {path} names "
+                f"{describe(from_file)}; the API role's credentials are written to {path}, "
+                f"so both must name the same database. Unset {OWNER_URL_KEY}, or pass "
+                "that database's --secrets-file. Nothing was changed."
+            )
+        return from_env
     if not path.is_file():
         raise RestoreError(
             f"set {OWNER_URL_KEY}, or put {OWNER_URL_KEY}=<owner connection string> "
             f"in {path} (chmod 600)"
         )
-    values = read_env_file(path)
-    if OWNER_URL_KEY not in values:
+    if from_file is None:
         raise RestoreError(f"{path} has no {OWNER_URL_KEY}")
-    return values[OWNER_URL_KEY]
+    return from_file
 
 
 def _role_settings(conn: psycopg.Connection) -> dict[str, str]:
@@ -231,6 +251,9 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
         raise RestoreError(
             "the target database is not empty: restore each release into a new, empty "
             "database (on Neon, a new project)"
+            + (". It holds a restored serving database: if an earlier restore into it "
+               "failed after pg_restore (at roles.sql, say), finish that one with "
+               "--roles-only" if marker else "")
         )
 
     if not options.roles_only:
@@ -252,6 +275,7 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
     password = stored.get(API_PASSWORD_KEY)
     if options.rotate_api_password or not password:
         password = new_password()
+    changed = password != stored.get(API_PASSWORD_KEY)
     verifier = scram_sha256_verifier(password)
     api_url = api_database_url(url, options.api_role, password)
     secrets += [password, verifier, api_url]
@@ -265,12 +289,16 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
                        f"--dbname={dbname}", "-f", "-"],
                       input_bytes=options.roles_sql.read_bytes(), secrets=tuple(secrets))
     step("roles.sql", started)
+    report.api_password_changed = changed
     say(result.stdout.decode(errors="replace").strip())
     update_env_file(path, {API_PASSWORD_KEY: password, API_URL_KEY: api_url})
     say(f"Wrote {API_PASSWORD_KEY} and {API_URL_KEY} to {path} (mode 600)")
 
     with psycopg.connect(url, autocommit=True) as conn:
-        if not options.roles_only:
+        # --roles-only also finishes a restore that failed after pg_restore
+        # (roles.sql refused, say): that database has no planner statistics
+        # yet. A suspend never loses them (pg_stats is catalog data).
+        if not options.roles_only or tables_without_statistics(conn):
             started = time.perf_counter()
             tables = conn.execute(
                 "SELECT format('%I.%I', schemaname, tablename) FROM pg_tables "

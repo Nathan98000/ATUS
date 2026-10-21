@@ -37,7 +37,7 @@ from atus_pipeline.api.routes.activities import lexicon_query
 from atus_pipeline.api.snapshot import CASED_RANGES, LEXICON_SQL, load_snapshot
 from atus_pipeline.database.versions import read_data_version
 from atus_pipeline.loading.loader import load_all
-from tests.integration.analytics_dataset import analytics_settings
+from tests.integration.analytics_dataset import E1, E3, analytics_settings
 
 pytestmark = pytest.mark.integration
 
@@ -319,6 +319,22 @@ class TestTransactions:
                 with database.transaction("metadata", repeatable_read=True) as conn:
                     conn.execute("CREATE TEMP TABLE scratch (x int)")
 
+    @pytest.mark.parametrize("threshold", [0, 1, 5, None])
+    def test_the_snapshot_read_works_with_every_prepare_threshold(self, loaded_settings,
+                                                                  threshold):
+        """The snapshot's opening query is several statements (SET LOCAL ...;
+        LOCK ...), which PostgreSQL cannot prepare; with
+        ATUS_API_PREPARE_THRESHOLD=0 psycopg prepared it on first use and
+        every snapshot read failed (review r1 verification). Repeated on one
+        connection past psycopg's default threshold of 5."""
+        with api(loaded_settings, api_prepare_threshold=threshold, api_pool_max_size=3,
+                 api_snapshot_ttl_s=0) as (client, app):
+            statuses = [client.get("/api/v1/meta").status_code for _ in range(8)]
+            assert client.post(ESTIMATE, json={"activity": {"include": ["0101"]},
+                                               "years": [2023]}).status_code == 200
+            assert app.state.database.pool.get_stats()["connections_num"] == 1
+        assert statuses == [200] * 8
+
 
 # --------------------------------------------------------------------------- #
 # statements per request, as the API counts them                              #
@@ -376,7 +392,7 @@ class TestStatementCounts:
             "activities non-ASCII search": (200, 0),  # the database's lowering, in memory
             "activity detail": (200, 0),
             "unknown activity 404": (404, 0),
-            # check, limits, the statistics query, the data-version recheck
+            # check, limits, the data-version read, the statistics query
             "estimate miss": (200, ANALYSIS_TXN + 2),
             "estimate hit": (200, 0),
             "trend miss": (200, ANALYSIS_TXN + 2),
@@ -487,3 +503,63 @@ class TestDatabaseOutage:
                 assert client.get("/api/v1/activities/0101").status_code == 200
             assert app.state.snapshots.refreshes == 1
             assert app.state.snapshots.refresh_failures == 0
+
+
+# --------------------------------------------------------------------------- #
+# data changed in place after the snapshot was read (non-pinned)              #
+# --------------------------------------------------------------------------- #
+
+SLEEP_TIER2 = {"activity": {"include": ["0101"]}, "years": [2023], "variance": "none"}
+NEW_VERSION = "0325:load-in-place-test"
+
+
+def _change_data_in_place(url: str) -> None:
+    """One committed change, as a switch makes it: a new leaf 010150 under
+    0101, 60 minutes of it for E3, E1's weight 1.0 -> 5.0, and a new data
+    version. Sleep (0101), 2023: old data 75.0; new data 102.5; the new
+    data read with the old lexicon (no 010150) 87.5."""
+    with psycopg.connect(url) as conn:
+        conn.execute("INSERT INTO atus.activity_codes (code, tier2_code, name) "
+                     "VALUES ('010150', '0101', 'Sleeping (in-place test leaf)')")
+        n = conn.execute("SELECT max(activity_number) + 1 FROM atus.activities "
+                         "WHERE tucaseid = %s", (E3,)).fetchone()[0]
+        conn.execute(
+            "INSERT INTO atus.activities (tucaseid, activity_number, activity_code, tier1_code, "
+            "tier2_code, start_time, stop_time, duration_minutes, duration_uncapped_minutes, "
+            "cumulative_minutes) VALUES (%s, %s, '010150', '01', '0101', '04:00', '05:00', "
+            "60, 60, 60)", (E3, n))
+        conn.execute("UPDATE atus.respondents SET final_weight = 5.0 WHERE tucaseid = %s", (E1,))
+        conn.execute(
+            "INSERT INTO atus.ingestion_runs (release, pipeline_version, started_at, finished_at, "
+            "status, data_version) VALUES ('0325', 'test', now(), now(), 'succeeded', %s)",
+            (NEW_VERSION,))
+
+
+class TestDataChangedAfterTheSnapshot:
+    def test_an_uncached_analysis_is_computed_and_labelled_on_one_version(
+        self, tmp_path, scratch_database
+    ):
+        """Review r1 (stale-snapshot-mixed-bypass): the snapshot (TTL 600 s)
+        predates the change. The next uncached analysis used the snapshot's
+        lexicon on the new tables (87.5, neither version's answer) and
+        carried the old X-Data-Version and X-Analysis-Key. Now it is computed
+        on the new data with the new lexicon (102.5), labelled with the new
+        version, and not cached."""
+        url = scratch_database("inplace")
+        settings = analytics_settings(tmp_path, url)
+        with psycopg.connect(url) as conn:
+            load_all(conn, settings)
+        with api(settings, api_snapshot_ttl_s=600.0) as (client, _):
+            old_version = client.get("/api/v1/meta").headers["X-Data-Version"]
+            _change_data_in_place(url)
+            during = client.post(ESTIMATE, json=SLEEP_TIER2)
+            after = client.post(ESTIMATE, json=SLEEP_TIER2)
+        assert old_version != NEW_VERSION
+        assert during.status_code == 200 and during.headers["X-Cache"] == "bypass"
+        assert during.headers["X-Data-Version"] == NEW_VERSION
+        assert during.json()["estimate"]["value"] == pytest.approx(102.5)
+        assert during.json()["activity"]["leaf_code_count"] == 4
+        assert after.headers["X-Cache"] == "miss"            # the bypass was not cached
+        assert after.headers["X-Data-Version"] == NEW_VERSION
+        assert after.headers["X-Analysis-Key"] == during.headers["X-Analysis-Key"]
+        assert after.json() == during.json()

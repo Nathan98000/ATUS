@@ -71,8 +71,8 @@ with a message naming the variable, and the message never echoes a secret.
 | `ATUS_OPS_TOKEN` | *(empty)* | set | bearer token for `/ready` and `/metrics`; empty, both answer like unknown paths. At least 32 characters in production |
 | `ATUS_API_CORS_ORIGINS` | *(empty: no cross-origin access)* | *(empty: same origin)* | comma-separated exact origins, e.g. `http://localhost:5173` (the ATUS Explorer dev server); never `*` |
 | `ATUS_API_CACHE_SIZE` | `256` | `256` | analysis-result cache entries (LRU) |
-| `ATUS_API_POOL_MAX_SIZE` | `4` | `4` | pool connections |
-| `ATUS_API_POOL_MAX_IDLE_S` | `240` | `240` | a pooled connection unused this long is closed (below Neon's 300 s suspend); the pool keeps no minimum |
+| `ATUS_API_POOL_MAX_SIZE` | `4` | `4` | pool connections; must exceed `ATUS_API_MAX_INFLIGHT` (startup refuses otherwise), so metadata reads and cache lookups always find a connection |
+| `ATUS_API_POOL_MAX_IDLE_S` | `240` | `240` | psycopg_pool closes at most one idle connection per period of this length (the pool keeps no minimum), so idle connections can outlive Neon's 300 s suspend; the first checkout after a suspend finds them dead, closes them all and opens at most two |
 | `ATUS_API_POOL_TIMEOUT_S` | `5` | `5` | wait for a connection while every pool connection is busy, then 503 `overloaded`; while a new connection is being opened the wait is this plus `ATUS_API_CONNECT_TIMEOUT_S` |
 | `ATUS_API_CONNECT_TIMEOUT_S` | `10` | `10` | libpq `connect_timeout` |
 | `ATUS_API_STATEMENT_TIMEOUT_MS` | `85000` | `85000` | per-transaction `statement_timeout` for analyses |
@@ -206,7 +206,9 @@ Response headers:
   - `hit`: served from the cache;
   - `miss`: computed and cached;
   - `join`: shared an identical computation that was already running;
-  - `bypass`: computed during a data reload and not cached;
+  - `bypass`: computed after a data reload that the snapshot did not know
+    yet (on the new data, labelled with its version) and not cached; a
+    request that joined such a computation gets `bypass` too;
   - `edge`: answered by the edge Worker's result cache (Worker only).
 - `X-Data-Version`, `X-Analytics-Version` and `X-Response-Format` (`1`) on
   successful analyses: what the response bytes depend on. Edge caches key on
@@ -260,7 +262,7 @@ One envelope everywhere:
 | 400 | `malformed_json` | body is not valid JSON, or the parser gave up on it (e.g. nested too deeply) | |
 | 403 | `forbidden_origin` | edge authentication is on and the request has no valid `X-ATUS-Edge-Auth` (every path except `/health`; `/ready` and `/metrics` also pass with a valid ops bearer) | |
 | 404 | `not_found` | no such route, including a trailing-slash spelling; also `/ready` and `/metrics` without a valid ops bearer, for every method | |
-| 404 | `activity_not_found` | `GET /activities/{code}` for a nonexistent or malformed code; `details.code` repeats it | |
+| 404 | `activity_not_found` | `GET /activities/{code}` for a nonexistent or malformed code; `details.code` repeats it. The message names the loaded lexicon ("... the 2003-25 activity lexicon.") for a well-formed code, and is release-neutral ("... the activity lexicon.") for a code that is not 2, 4 or 6 digits, which never needs the data | |
 | 405 | `method_not_allowed` | wrong method; the `Allow` header lists the right one | |
 | other 4xx | `http_<status>` | any other framework-generated status (none is expected from the documented routes) | |
 | 413 | `payload_too_large` | body over `ATUS_API_MAX_BODY_BYTES`, declared or streamed (the connection is then closed) | |
@@ -272,7 +274,7 @@ One envelope everywhere:
 | 422 | `insufficient_data` | empty population / subgroup too small for replicate variance | |
 | 422 | `invalid_analysis` | fallback for an engine domain error without its own code; the current engine raises none | |
 | 429 | `rate_limited` | this client's request or analysis bucket is empty | until the bucket holds a token; `client` |
-| 503 | `overloaded` | no analysis lane within the admission wait; every pool connection busy past `ATUS_API_POOL_TIMEOUT_S`; the database refused a connection or a query for capacity (lock timeout, deadlock, SQLSTATE class 53 such as too many connections or a full `/dev/shm`); a metadata query was cancelled; or the server shut down while the analysis waited | 10; `global` |
+| 503 | `overloaded` | no analysis lane within the admission wait; every pool connection busy past `ATUS_API_POOL_TIMEOUT_S`; the database refused a connection or a query for capacity (lock timeout, deadlock, SQLSTATE class 53 such as too many connections or a full `/dev/shm`); a metadata query was cancelled (also the data snapshot read an analysis request triggered); or the server shut down while the analysis waited | 10; `global` |
 | 503 | `analysis_timeout` | the analysis hit the statement timeout or the request deadline; never cached | 60; `global` |
 | 503 | `daily_capacity_reached` | the day's uncached-analysis cap is used | until 00:00 UTC; `daily` |
 | 503 | `database_paused` | the database provider refuses connections because a usage quota is exhausted or the endpoint is disabled (matched on Neon's refusal texts, `NEON_PAUSED_MARKERS` in `src/atus_pipeline/api/errors.py`) | 3600; `monthly` |
@@ -330,18 +332,21 @@ store later.
 The data version used in the key comes from the in-process data snapshot
 (below), so a cache hit costs no database statement.
 
-Concurrent-reload guard: if `atus load` finishes while a request is
-computing, the data version is re-read in the computation's own transaction
-before storing. If it differs from the snapshot's, the result is returned
-uncached (`X-Cache: bypass`) instead of being stored under the pre-reload
-key, and the snapshot is read again on the next request. With
-`ATUS_EXPECTED_DATA_VERSION` set, such a result is refused with 503
-`data_version_mismatch` instead. Residual caveat: a computation that started
-from a snapshot taken before the reload can use that snapshot's years and
-lexicon, and a request whose statements straddle the reload commit can
-*observe* mixed data once (standard READ COMMITTED behavior); such results
-are never cached, so they cannot persist. In production the data never
-changes in place (ADR-013).
+Concurrent-reload guard: the computation's own transaction reads the data
+version first. That read holds a share lock on `ingestion_runs` until the
+transaction ends, and the `atus load` switch must lock that table before it
+swaps any table in, so every statement of the computation reads the version
+it read first. If that version is the snapshot's, the result is cached under
+the snapshot's key (`X-Cache: miss`). If the data changed after the snapshot
+was read (a local, in-place `atus load`), the snapshot is invalidated and the
+engine reads its own lexicon and years in that transaction instead of the
+snapshot's: the result is computed entirely on the new data, labelled with
+the version it read (`X-Data-Version`, and `X-Analysis-Key` for that
+version), and returned once, uncached (`X-Cache: bypass`; requests that
+joined it also get `bypass`). The next request reads the snapshot again.
+With `ATUS_EXPECTED_DATA_VERSION` set, such a request is refused with 503
+`data_version_mismatch` before anything is computed. In production the data
+never changes in place (ADR-013).
 
 Single-flight: concurrent requests for the same key share one computation.
 Every request after the first gets `X-Cache: join`.
@@ -407,7 +412,7 @@ snapshot is usable:
 - analysis cache hits and every 4xx decided before the statistics query run
   no statement;
 - uncached analyses reuse its activity resolver and years, so they run only
-  their statistics queries and the version recheck.
+  the data-version read and their statistics queries.
 
 The lexicon search returns exactly what the SQL `ILIKE` returned, for ASCII
 and non-ASCII terms alike (proved by an integration test over thousands of
@@ -428,7 +433,7 @@ response format, is sent only as a header on analyses:
 | `api_version` (`v1`, path prefix) | HTTP contract | request/response semantics change incompatibly |
 | `analytics_version` (`0.2`) | statistical implementation | computed numbers could differ. Engine changes that keep every number equal under the §9 equivalence criterion (Phase 5: the year pushdown and its materialized CTE) keep the version; see the version history in [analytics.md](analytics.md) |
 | data version (`X-Data-Version` on analyses and metadata) | loaded BLS data | `atus load` or a serving-DB build produces new data (forms under [Caching](#caching)) |
-| `X-Response-Format` (`1`) | the serialized bytes of an analysis response | the serialization changes without an `analytics_version` change (`RESPONSE_FORMAT` in `src/atus_pipeline/api/__init__.py`) |
+| `X-Response-Format` (`1`) | the serialized bytes of an analysis response | any change to analysis response bytes (fields, their order or formatting, warning or label text) without an `analytics_version` change, as in ADR-015: edge KV entries survive code-only deploys. `RESPONSE_FORMAT` in `src/atus_pipeline/api/__init__.py`, with the Worker's var; `tests/unit/api/test_response_format.py` pins the response schemas and bytes to it, so a change without a bump fails CI |
 
 ## Protection and limits
 
@@ -473,13 +478,18 @@ a request meets them:
    doubled for compare). Others wait up to 5 s, then get 503 `overloaded`.
 10. **Bounded queries.** Each transaction is `READ ONLY` and starts with
     one statement that sets transaction-local limits (`set_config(..., true)`,
-    the function form of `SET LOCAL`): `statement_timeout` 85 s for analyses
+    the function form of `SET LOCAL`; the data snapshot's REPEATABLE READ
+    read sends them as `SET LOCAL` statements plus a share lock on
+    `atus.ingestion_runs`, in one query, so its snapshot is taken only after
+    the lock): `statement_timeout` 85 s for analyses
     and 10 s for metadata, `lock_timeout` 5 s,
     `idle_in_transaction_session_timeout` 30 s,
     `client_connection_check_interval` 5 s, `jit` off, and
     `max_parallel_workers_per_gather` when `ATUS_API_MAX_PARALLEL_WORKERS` is
     set. An analysis is also cancelled after a 90 s deadline (statement
-    timeout + 5 s), giving 503 `analysis_timeout`.
+    timeout + 5 s), giving 503 `analysis_timeout`: its running query is
+    cancelled and it sends no further statement, so the deadline holds even
+    when it passes between two statements.
 
 **Development convenience.** Without edge secrets (never the case in
 production), loopback peers and in-process test clients are not per-client
@@ -506,7 +516,7 @@ psycopg sends around each transaction.
 | `/meta`, `/activities` (any search term), `/activities/{code}` (also 404), `/activities/presets`, `/population/metadata` | 0 | 0 |
 | analysis cache hit, or single-flight join | 0 | 0 |
 | any 400, 403, 404, 405, 413, 415 or 429, and every 422 decided before the statistics query | 0 | 0 |
-| uncached estimate or trend: check, limits, statistics query, version recheck | 4 | 6 |
+| uncached estimate or trend: check, limits, data-version read, statistics query | 4 | 6 |
 | uncached compare: one statistics query per group | 5 | 7 |
 | `/health`, `/metrics`; `/ready` with a fresh snapshot | 0 | 0 |
 

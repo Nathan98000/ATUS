@@ -17,7 +17,9 @@ was hit (``client``, ``global``, ``daily`` or ``monthly``). Database errors
 are classified by what the client should do about them, not by driver class:
 
 * the query hit the statement timeout or the request deadline -> 503
-  ``analysis_timeout`` (never cached);
+  ``analysis_timeout`` (never cached); a cancelled metadata transaction is
+  ``overloaded`` on every route, which ``Database`` decides itself, because
+  the path cannot tell an analysis from the snapshot read it triggered;
 * lock waits, deadlocks, out-of-resources (SQLSTATE class 53, e.g. a full
   ``/dev/shm``), a pool with every connection busy -> 503 ``overloaded``;
 * Neon's quota/suspension refusals -> 503 ``database_paused``;

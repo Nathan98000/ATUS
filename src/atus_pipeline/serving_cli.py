@@ -24,11 +24,27 @@ from .cli import _print_results, _settings
 from .database.dsn import describe, ensure_system_roots, redact
 
 SERVING_URL_ENV = "ATUS_SERVING_DATABASE_URL"
+TOOL_ERROR_LINES = 20
+"""How many of a failed client tool's last stderr lines the error shows."""
 
 
 def _fail(exc: Exception, *secrets: str) -> click.ClickException:
-    first_line = str(exc).splitlines()[0] if str(exc) else type(exc).__name__
-    return click.ClickException(redact(first_line, *secrets))
+    """The error's first line; for a failed ``pg_dump``/``pg_restore``/``psql``,
+    also the last :data:`TOOL_ERROR_LINES` lines of its (already redacted)
+    stderr, which say why it failed (e.g. Neon refusing ``ALTER ROLE ... SET``)."""
+    from .serving.pgtools import PgToolError
+
+    lines = str(exc).splitlines()
+    if not lines:
+        message = type(exc).__name__
+    elif isinstance(exc, PgToolError):
+        reason = lines[1:]
+        if len(reason) > TOOL_ERROR_LINES:
+            reason = ["...", *reason[-TOOL_ERROR_LINES:]]
+        message = "\n".join([lines[0], *reason])
+    else:
+        message = lines[0]
+    return click.ClickException(redact(message, *secrets))
 
 
 @click.command(
@@ -58,7 +74,7 @@ def _fail(exc: Exception, *secrets: str) -> click.ClickException:
               default=None, help="Write the build report (JSON) here.")
 def build_serving_db(source_url, target_url, artifact_dir, allow_unvalidated, build_id,
                      pg_client_image, report_path) -> None:
-    from .serving.artifact import ArtifactError, write_artifact
+    from .serving.artifact import ArtifactError, dump_tool, write_artifact
     from .serving.builder import ServingBuildError, build_serving_database
     from .serving.pgtools import PgToolError
 
@@ -70,6 +86,17 @@ def build_serving_db(source_url, target_url, artifact_dir, allow_unvalidated, bu
     ensure_system_roots(source_url, target_url)
     click.echo(f"Source (read only): {describe(source_url)}")
     click.echo(f"Target:             {describe(target_url)}")
+    if artifact_dir:
+        # Before the build: a built target refuses a second build, so a dump
+        # that cannot run must be found while the target is still empty.
+        try:
+            tool = dump_tool(target_url, image=pg_client_image)
+        except (PgToolError, psycopg.Error) as exc:
+            error = _fail(exc, source_url, target_url)
+            error.message += ("\nNothing was built: --artifact-dir needs pg_dump, which is "
+                              "checked before the build.")
+            raise error from exc
+        click.echo(f"pg_dump:            {tool.version()} ({tool.origin})")
     try:
         report = build_serving_database(
             source_url, target_url, build_id=build_id, require_validated=not allow_unvalidated
@@ -88,17 +115,22 @@ def build_serving_db(source_url, target_url, artifact_dir, allow_unvalidated, bu
     click.echo("Omitted rows (excluded by every estimate): "
                + ", ".join(f"{k.removesuffix('.omitted')} {v:,}" for k, v in omitted.items()))
     click.echo(f"Database size: {report.sizes['database_bytes']:,} B")
+    if report_path:  # before the dump, so a failed dump keeps the build report
+        report_path.write_text(json.dumps(report.as_dict(), indent=2, default=str) + "\n")
     if artifact_dir:
         try:
             manifest = write_artifact(target_url, artifact_dir, report, image=pg_client_image)
         except (ArtifactError, PgToolError, psycopg.Error) as exc:
-            raise _fail(exc, source_url, target_url) from exc
+            error = _fail(exc, source_url, target_url)
+            error.message += (
+                "\nThe target was built but not dumped, and a built target refuses a second "
+                "build: recreate it as an empty database and run the build again."
+            )
+            raise error from exc
         info = json.loads(manifest.read_text())["artifact"]
         click.echo(f"Artifact:      {artifact_dir / info['file']} ({info['bytes']:,} B)")
         click.echo(f"SHA-256:       {info['sha256']}")
         click.echo(f"Manifest:      {manifest}")
-    if report_path:
-        report_path.write_text(json.dumps(report.as_dict(), indent=2, default=str) + "\n")
 
 
 @click.command("verify-serving-db",
@@ -196,6 +228,11 @@ def restore_serving_db(artifact, secrets_file, api_role, rotate_api_password, ro
         write_report(report, report_path, url)
     click.echo("Restore " + ("passed." if report.passed else "FAILED."))
     if not report.passed:
+        if report.api_password_changed:
+            # The checks run after roles.sql: a failure does not undo it.
+            click.echo(f"Note: the API role's password was changed before the checks ran; "
+                       f"only ATUS_API_DATABASE_URL in {secrets_file} works now (update the "
+                       "API's ATUS_DATABASE_URL).")
         sys.exit(1)
 
 

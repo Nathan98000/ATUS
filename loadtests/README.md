@@ -86,7 +86,7 @@ python3 loadtests/run.py down --stage s1            # --purge also deletes the d
 
 - **API settings that differ from production**, all visible in each bundle's `environment.json`:
   - `ATUS_API_DAILY_ANALYSIS_CAP=10000000`. The production 600/day backstop would end a capacity run after 600 analyses. The cap itself is tested functionally (`tests/unit/api/test_protection.py` and the integration suite).
-  - Optional, per run: `--max-parallel-workers` (`ATUS_API_MAX_PARALLEL_WORKERS`), `--statement-timeout-ms` (to see latencies beyond the production 85 s; raise k6's `REQ_TIMEOUT` with it), and `--api-env ATUS_API_X=VALUE` for any other `ATUS_API_*` setting, for example the lane sizes `ATUS_API_MAX_INFLIGHT` / `ATUS_API_MAX_INFLIGHT_HEAVY` when calibrating the concurrency cap (ADR-012).
+  - Optional, per run: `--max-parallel-workers` (`ATUS_API_MAX_PARALLEL_WORKERS`), `--statement-timeout-ms` (to see latencies beyond the production 85 s; raise k6's `REQ_TIMEOUT` with it), and `--api-env ATUS_API_X=VALUE` for any other `ATUS_API_*` setting, for example the lane sizes `ATUS_API_MAX_INFLIGHT` / `ATUS_API_MAX_INFLIGHT_HEAVY` when calibrating the concurrency cap (ADR-012). Raise `ATUS_API_POOL_MAX_SIZE` with them: it must exceed `ATUS_API_MAX_INFLIGHT`, or the API refuses to start.
   - Everything else is production's: `ATUS_ENV=production`, edge authentication, per-client buckets, lanes, statement timeout and `ATUS_EXPECTED_DATA_VERSION` (pinned to the dump's data version, as the release switch does).
 - **Before each scenario** the API container is recreated (`--no-api-restart` keeps it). This empties its result cache, as a Render spin-down does. A `GET /api/v1/meta` then makes the process read its data snapshot, so the measured requests start from a warm snapshot. Cold start is measured separately.
 - **Secrets.**
@@ -110,7 +110,7 @@ The full database keeps its own server settings (`jit=on`, `shared_buffers=128MB
 |---|---|---|---|
 | metadata | the API process alone: with the snapshot fresh, these routes run no SQL (ADR-012) | `200` | a new address every 100 requests (bucket: 120/min) |
 | cached | validation, cache lookup and response for repeated analyses: hits run no SQL | `200`, `X-Cache: hit` | every 100 |
-| uncached | one statistics query (plus a version recheck) per request, single-year with replicate SEs | `200`, or `422 insufficient_data` for a rare generated selection | every 5 analyses (bucket: 6/min) |
+| uncached | one statistics query (plus the data-version read) per request, single-year with replicate SEs | `200`, or `422 insufficient_data` for a rare generated selection | every 5 analyses (bucket: 6/min) |
 | worstcase | the requests that size `statement_timeout` (ADR-012 "Calibration": `clamp(3 × p99, 30 s, 85 s)`) | `200`; under concurrency also `503 overloaded` from the heavy lane, which is the protection working | every 5 |
 | mix | a demo visit's requests (see below) | `200`, `422 insufficient_data` | one address per visit |
 

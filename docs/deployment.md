@@ -537,7 +537,7 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 - **First real TLS check.** This is the first connection with `sslmode=verify-full&sslrootcert=system` against Neon's real certificate.
 - **CA roots on your machine.** `system` means the operating system's CA bundle, which neither the Python driver's bundled OpenSSL nor the `postgres:16` image finds by itself. The `atus` commands (the restore, `atus api`, `verify-serving-db`, `compare-serving-db`, `build-serving-db`) set `SSL_CERT_FILE` to the system bundle when it is unset (macOS: `/etc/ssl/cert.pem`; Debian/Ubuntu: `/etc/ssl/certs/ca-certificates.crt`), and the docker fallback mounts that file read-only. On a system with none of these, `export SSL_CERT_FILE=<CA bundle>` first; without roots the restore fails closed ("certificate verify failed"), it never connects unverified. See [TLS to the database](#tls-to-the-database).
 - **The command:** `scripts/ops/restore_serving_db.sh --artifact <the release's .dump> --report restore-report.json`, with `ATUS_OWNER_DATABASE_URL` in `~/.config/atus/neon.env`.
-- **Not verifiable before this step:** whether Neon accepts `ALTER ROLE atus_api SET ...` from `neondb_owner` (ADR-011 "Unknowns"; the local drill emulates a non-superuser `CREATEROLE` owner, where it works). The restore's role checks fail loudly if it does not.
+- **Not verifiable before this step:** whether Neon accepts `ALTER ROLE atus_api SET ...` from `neondb_owner` (ADR-011 "Unknowns"; the local drill emulates a non-superuser `CREATEROLE` owner, where it works). The restore fails loudly if it does not, and prints PostgreSQL's reason. `pg_restore` has committed by then: after fixing the cause, finish with the same command plus `--roles-only` ([operations.md](operations.md), "Finish a restore that failed after `pg_restore`").
 
 ### 6. First Worker deploy (owner)
 
@@ -738,8 +738,8 @@ This lists every variable and secret the deployed system uses: where it is set, 
 | `ATUS_API_DOCS` | `on` → `off` | `off` | the API's `/docs`, `/redoc` and `/openapi.json` routes. In production the site publishes the committed schema (`frontend/openapi.json`) as a static asset at `/openapi.json` instead, outside `/api`, so neither the Worker nor the API runs for it |
 | `ATUS_API_CORS_ORIGINS` | empty | `http://localhost:5173` (development only) | allowed cross-origin callers; empty behind the same-origin Worker |
 | `ATUS_API_CACHE_SIZE` | `256` | `512` | in-process result LRU entries (lost at every spin-down) |
-| `ATUS_API_POOL_MAX_SIZE` | `4` | `4` | connections at most (Neon allows 839 at 0.25–2 CU) |
-| `ATUS_API_POOL_MAX_IDLE_S` | `240` | `240` | close idle connections before Neon suspends at 300 s |
+| `ATUS_API_POOL_MAX_SIZE` | `4` | `4` | connections at most (Neon allows 839 at 0.25–2 CU); must exceed `ATUS_API_MAX_INFLIGHT`, or the API refuses to start |
+| `ATUS_API_POOL_MAX_IDLE_S` | `240` | `240` | psycopg_pool closes at most one idle connection per 240 s period, so a pool of 4 idle connections takes up to 16 min to empty and connections can outlive Neon's 300 s suspend. The first checkout after a wake finds them dead, closes every idle one and opens at most two (ADR-012 "Pool") |
 | `ATUS_API_POOL_TIMEOUT_S` | `5` | `5` | pool acquire timeout → 503 `overloaded` |
 | `ATUS_API_CONNECT_TIMEOUT_S` | `10` | `15` | libpq `connect_timeout` (covers a Neon wake) |
 | `ATUS_API_STATEMENT_TIMEOUT_MS` | `85000` | `85000` | per-request `SET LOCAL statement_timeout` for analyses; the request deadline is this plus 5 s. Calibrated on the emulation profile (ADR-012 "Calibration (§13)"): keep 85000 while the compute's minimum is 0.25 CU, where the F66 compare takes up to 71 s. The week-1 replay may revise it (deploy guide, step 10) |
@@ -768,7 +768,7 @@ Never set on Render. The data commands (`atus load`, `atus build-serving-db`, `a
 | `ATUS_RELEASE` | the pipeline | `0325` | `0326` | the BLS multi-year release code (ADR-013 "New ATUS year") |
 | `ATUS_MIGRATIONS_DIR` | `atus migrate`/`load`, `build-serving-db` | the checkout's `migrations/` | `/workspace/migrations` | where the migration files are when not running from a checkout (the image ships none, F56) |
 | `ATUS_SERVING_DATABASE_URL` | `build-serving-db --target`, `verify-serving-db`, `compare-serving-db` | unset | `postgresql://neondb_owner:...@localhost:5465/atus` | the new, empty database the serving build writes |
-| `ATUS_OWNER_DATABASE_URL` | `restore-serving-db` (`scripts/ops/restore_serving_db.sh`) | unset: read from `neon.env` | `postgresql://neondb_owner:<password>@ep-<id>.us-east-1.aws.neon.tech:5432/atus?sslmode=verify-full&sslrootcert=system` | **secret**, the owner's direct DSN (never the `-pooler` host). A bare `postgresql://` line in `neon.env` counts as this key. In `deploy.yml`'s snapshot job: a throwaway owner on the runner's `postgres:16` |
+| `ATUS_OWNER_DATABASE_URL` | `restore-serving-db` (`scripts/ops/restore_serving_db.sh`) | unset: read from `neon.env` | `postgresql://neondb_owner:<password>@ep-<id>.us-east-1.aws.neon.tech:5432/atus?sslmode=verify-full&sslrootcert=system` | **secret**, the owner's direct DSN (never the `-pooler` host). A bare `postgresql://` line in `neon.env` counts as this key. When it is exported and the `--secrets-file` also holds one, both must name the same database (user, host, port, database), or the restore refuses before changing anything: the API role's credentials are written to that file. In `deploy.yml`'s snapshot job: a throwaway owner on the runner's `postgres:16` |
 | `ATUS_API_DB_PASSWORD` | written by `restore-serving-db` into `neon.env` | — | 192 random bits, URL-safe | **secret**, the generated `atus_api` password; reused by later restores unless `--rotate-api-password` |
 | `ATUS_API_DATABASE_URL` | written by `restore-serving-db` into `neon.env` | — | `postgresql://atus_api:<password>@ep-<id>...:5432/atus?sslmode=verify-full&sslrootcert=system` | **secret**, the DSN to copy into Render's `ATUS_DATABASE_URL` |
 | `ATUS_API_ROLE_PASSWORD` | `scripts/ops/roles.sql` (psql `\getenv`) | — | a SCRAM-SHA-256 verifier | set by the restore only while psql applies roles.sql, so the plaintext never reaches the server; the local stack passes its own throwaway password |
@@ -894,7 +894,7 @@ Every secret has one procedure.
    4. Render `ATUS_EDGE_SECRETS=<new>`, then "Save and deploy".
 2. **`atus_api` database password.**
    1. `scripts/ops/restore_serving_db.sh --artifact <the release dump> --roles-only --rotate-api-password` re-applies `scripts/ops/roles.sql` as `neondb_owner` with a new generated 192-bit password (sent as a SCRAM verifier) and rewrites `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` in `neon.env`.
-   2. Update Render's `ATUS_DATABASE_URL`, then "Save and deploy".
+   2. Update Render's `ATUS_DATABASE_URL`, then "Save and deploy". Do this even if step 1 ended with `Restore FAILED.` after the note "the API role's password was changed before the checks ran": the new password is already in effect.
 
    A Postgres role has only one password. Between steps 1 and 2, new connections fail, so uncached analyses may get 503 `database_unavailable` with `Retry-After`; open connections keep working. Rotate when the service is idle.
 3. **Ops tokens** (`ATUS_OPS_TOKEN`; the Worker's `OPS_TOKEN`).

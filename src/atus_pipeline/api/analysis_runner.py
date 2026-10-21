@@ -1,7 +1,8 @@
 """How one analysis request is served: cache, single-flight, admission, compute.
 
     data snapshot -> cache lookup --------------------------> hit  (X-Cache: hit)
-                  -> identical computation already running -> join (X-Cache: join)
+                  -> identical computation already running -> join (X-Cache: join,
+                                                                   or the leader's bypass)
                   -> dry run of the engine up to its first statement (422s)
                   -> daily cap, per-client analysis bucket
                   -> lane (bounded wait) -> pool connection -> engine
@@ -9,7 +10,12 @@
 
 The data version, loaded years and activity resolver come from the
 in-process data snapshot (``snapshot.py``), so everything before the lane
-costs no database statement while the snapshot is fresh (audit F14).
+costs no database statement while the snapshot is fresh (audit F14). The
+computation's own transaction reads the data version first and keeps
+``atus load``'s switch out until it ends, so a result is computed on one
+version and labelled (``X-Data-Version``, ``X-Analysis-Key``) with that
+version, even when the data changed after the snapshot was read
+(``_compute``).
 
 **Dry run.** Before a request is charged, the real ``AnalysisEngine`` runs
 the request on the snapshot's resolver and years with a stand-in connection
@@ -36,7 +42,6 @@ its result exactly as before.
 from __future__ import annotations
 
 import asyncio
-import functools
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -80,6 +85,17 @@ class AnalysisJob:
         return is_heavy(self.operation, self.years)
 
 
+@dataclass(frozen=True)
+class _Outcome:
+    """A computation's result and what it was computed on: the data version
+    its transaction read, and the cache key for that version."""
+
+    payload: dict
+    cache_status: str                       # miss | bypass
+    data_version: str
+    key: str
+
+
 class _Flight:
     """One in-progress computation that identical requests can join."""
 
@@ -119,6 +135,14 @@ def dry_run(job: AnalysisJob, snapshot: DataSnapshot) -> None:
         log.debug("analysis dry run inconclusive", exc_info=True)
 
 
+def _label(headers, key: str, data_version: str) -> None:
+    """The headers saying what an analysis response's bytes depend on."""
+    headers["X-Analysis-Key"] = key
+    headers["X-Data-Version"] = data_version
+    headers["X-Analytics-Version"] = ANALYTICS_VERSION
+    headers["X-Response-Format"] = RESPONSE_FORMAT
+
+
 def _respondents_loaded(conn: psycopg.Connection) -> bool:
     return bool(conn.execute("SELECT EXISTS (SELECT 1 FROM atus.respondents)").fetchone()[0])
 
@@ -147,10 +171,7 @@ class AnalysisRunner:
         data_version = snapshot.data_version
         key = cache_key(job.operation, job.spec_payload, ANALYTICS_VERSION, data_version)
         headers = response.headers
-        headers["X-Analysis-Key"] = key
-        headers["X-Data-Version"] = data_version
-        headers["X-Analytics-Version"] = ANALYTICS_VERSION
-        headers["X-Response-Format"] = RESPONSE_FORMAT
+        _label(headers, key, data_version)
 
         try:
             hit = cache.get(key)
@@ -165,9 +186,11 @@ class AnalysisRunner:
         if flight is not None:
             flight.joiners += 1
             self.joins += 1
-            payload, _ = await asyncio.shield(flight.future)
-            headers["X-Cache"] = "join"
-            return payload
+            outcome = await asyncio.shield(flight.future)
+            # The leader's labels: a bypass stays visible to its joiners.
+            _label(headers, outcome.key, outcome.data_version)
+            headers["X-Cache"] = "bypass" if outcome.cache_status == "bypass" else "join"
+            return outcome.payload
 
         # Requests the engine would refuse before querying stop here, free.
         dry_run(job, snapshot)
@@ -187,20 +210,20 @@ class AnalysisRunner:
         flight.future.add_done_callback(_mark_retrieved)
         self._flights[key] = flight
         task = loop.create_task(
-            self._lead(flight, key, job, rate_key, cache, db,
-                       functools.partial(engine_factory, **snapshot.engine_kwargs()),
-                       data_version)
+            self._lead(flight, key, job, rate_key, cache, db, engine_factory, snapshot)
         )
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
 
-        payload, cache_status = await asyncio.shield(flight.future)
-        headers["X-Cache"] = cache_status
-        return payload
+        outcome = await asyncio.shield(flight.future)
+        _label(headers, outcome.key, outcome.data_version)
+        headers["X-Cache"] = outcome.cache_status
+        return outcome.payload
 
     async def _lead(
         self, flight: _Flight, key: str, job: AnalysisJob, rate_key: str | None,
-        cache: AnalysisCache, db: Database, engine_factory: EngineFactory, data_version: str,
+        cache: AnalysisCache, db: Database, engine_factory: EngineFactory,
+        snapshot: DataSnapshot,
     ) -> None:
         protection = self.protection
         try:
@@ -209,7 +232,7 @@ class AnalysisRunner:
                     raise protection.daily_cap.refuse()
                 self.computations += 1
                 result = await anyio.to_thread.run_sync(
-                    self._compute, job, key, cache, db, engine_factory, data_version
+                    self._compute, job, key, cache, db, engine_factory, snapshot
                 )
         except (OverloadedError, DailyCapacityReachedError) as exc:
             if rate_key is not None:  # refused before computing: give the token back
@@ -228,20 +251,40 @@ class AnalysisRunner:
 
     def _compute(
         self, job: AnalysisJob, key: str, cache: AnalysisCache, db: Database,
-        engine_factory: Callable[[psycopg.Connection], AnalysisEngine], data_version: str,
-    ) -> tuple[dict, str]:
+        engine_factory: EngineFactory, snapshot: DataSnapshot,
+    ) -> _Outcome:
         """Runs in a worker thread: one analysis transaction, then the cache.
 
-        Concurrent-reload guard: the data version is re-read in the same
-        transaction after computing, and the result is cached only if it
-        equals the snapshot's. Otherwise the data changed since the snapshot
-        was read (its years and lexicon may be stale too): the snapshot is
-        invalidated and the result is returned once, uncached, as
-        ``X-Cache: bypass`` — or, when the deployment expects a specific data
-        version, refused as ``data_version_mismatch``.
+        Concurrent-reload guard: the transaction reads the data version
+        first. That read holds a share lock on ``ingestion_runs`` until the
+        transaction ends, and ``atus load``'s switch must lock that table
+        (ACCESS EXCLUSIVE) before it swaps any table in, so every later
+        statement reads the tables of the version read here. When it equals
+        the snapshot's, the engine reuses the snapshot's resolver and years
+        and the result is cached (``miss``). Otherwise the data changed since
+        the snapshot was read: the snapshot is invalidated and, when the
+        deployment expects a specific data version, the request is refused as
+        ``data_version_mismatch`` before computing. If not, the engine reads
+        its own resolver and years in this transaction, so the whole result
+        is computed on the version just read; it is labelled with that
+        version and returned once, uncached, as ``X-Cache: bypass``.
         """
         with db.transaction("analysis") as conn:
-            engine = engine_factory(conn)
+            current_version = versions.read_data_version(conn)
+            changed = current_version != snapshot.data_version
+            if changed:
+                self.snapshots.invalidate()
+                if self.snapshots.expected_version is not None:
+                    raise DataVersionMismatchError(
+                        f"data version changed to {current_version!r} since the snapshot"
+                    )
+                log.warning(
+                    "data version changed since the snapshot; %s computed on the new data "
+                    "and returned uncached", job.operation,
+                )
+                engine = engine_factory(conn)
+            else:
+                engine = engine_factory(conn, **snapshot.engine_kwargs())
             try:
                 payload = job.compute(engine)
             except InsufficientDataError:
@@ -250,23 +293,16 @@ class AnalysisRunner:
                 if not _respondents_loaded(conn):
                     raise DataNotLoadedError("database has no respondents") from None
                 raise
-            current_version = versions.read_data_version(conn)
-        if current_version != data_version:
-            self.snapshots.invalidate()
-            if self.snapshots.expected_version is not None:
-                raise DataVersionMismatchError(
-                    f"data version changed to {current_version!r} during the computation"
-                )
-            log.warning(
-                "data version changed during %s computation; result returned uncached",
-                job.operation,
+        if changed:
+            return _Outcome(
+                payload, "bypass", current_version,
+                cache_key(job.operation, job.spec_payload, ANALYTICS_VERSION, current_version),
             )
-            return payload, "bypass"
         try:
             cache.put(key, payload)
         except Exception:
             log.exception("analysis cache put failed; returning uncached result")
-        return payload, "miss"
+        return _Outcome(payload, "miss", current_version, key)
 
     async def shutdown(self, timeout_s: float = 5.0) -> None:
         """Wait (bounded) for detached computations; the caller cancels their

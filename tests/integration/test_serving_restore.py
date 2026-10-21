@@ -357,6 +357,100 @@ def test_roles_only_rotates_the_api_password(restored, cluster):
     restored["api_url"] = new_url
 
 
+def test_roles_only_passes_after_the_cumulative_statistics_are_lost(restored, cluster):
+    """Review r1 (roles-only-fails-after-neon-suspend): Neon discards the
+    cumulative statistics (``pg_stat_user_tables.last_analyze``) at every
+    compute suspend; ``pg_stat_reset()`` does the same here. ``--roles-only``
+    (the password rotation procedure) then failed its error-severity
+    "planner statistics" check, after the rotation had taken effect. The
+    check now reads the planner statistics themselves (``pg_stats``,
+    catalog data that a restart keeps)."""
+    dbname = urlsplit(restored["owner_url"]).path.lstrip("/")
+    with psycopg.connect(cluster.url(dbname), autocommit=True) as admin:  # superuser
+        admin.execute("SELECT pg_stat_reset()")
+        assert admin.execute(
+            "SELECT count(*) FROM pg_stat_user_tables WHERE schemaname = 'atus' "
+            "AND (last_analyze IS NOT NULL OR last_autoanalyze IS NOT NULL)"
+        ).fetchone()[0] == 0
+    result = restore(restored["dump"], restored["secrets_file"], cluster.api_role,
+                     "--roles-only")
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    assert "[PASS] serving: planner statistics" in output
+    assert "Restore passed." in output
+
+
+def test_a_failed_check_after_a_rotation_says_the_new_password_is_in_effect(
+        restored, cluster):
+    """The checks run after roles.sql: when one fails, the rotation has still
+    happened, and the verdict says so (an operator who stops at FAILED would
+    otherwise leave the API on the old password)."""
+    result = restore(restored["dump"], restored["secrets_file"], cluster.api_role,
+                     "--roles-only", "--rotate-api-password", "--size-limit-bytes", "1")
+    output = result.stdout + result.stderr
+    restored["api_url"] = read_env_file(restored["secrets_file"])[API_URL_KEY]
+    assert result.returncode == 1
+    assert "[FAIL] restore: metered size under the limit" in output
+    assert "Restore FAILED." in output
+    assert "the API role's password was changed before the checks ran" in output
+    with psycopg.connect(restored["api_url"]) as conn:
+        assert conn.execute("SELECT 1").fetchone() == (1,)
+
+
+def test_a_failing_roles_sql_says_why(restored, cluster, tmp_path):
+    """Review r1 (cli-drops-pg-tool-error-reason): only the first line of
+    psql's failure reached the operator, never PostgreSQL's reason, which is
+    what the first Neon restore needs to see (ADR-011 "Unknowns")."""
+    bad = tmp_path / "roles.sql"
+    bad.write_text("DO $$ BEGIN RAISE EXCEPTION 'simulated provider refusal'; END $$;\n")
+    before = restored["secrets_file"].read_text()
+    result = restore(restored["dump"], restored["secrets_file"], cluster.api_role,
+                     "--roles-only", "--roles-sql", str(bad))
+    output = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "psql failed (exit 3" in output
+    assert "simulated provider refusal" in output
+    assert restored["secrets_file"].read_text() == before   # nothing written
+    assert cluster.owner_password not in output
+
+
+def test_a_restore_that_failed_after_pg_restore_is_finished_with_roles_only(
+        restored, cluster, tmp_path):
+    """Review r1 (no-resume-after-partial-restore): roles.sql failed after
+    pg_restore had committed. The documented rerun refuses the database (not
+    empty), and --roles-only skipped VACUUM (ANALYZE), so its statistics
+    checks failed: no documented command finished the restore. Now the
+    refusal names --roles-only, which analyzes a database that has no
+    planner statistics yet."""
+    name, owner_url = cluster.new_owned_database("srvr_partial")
+    role = f"{cluster.prefix}_srvr_partial_api"
+    secrets_file = tmp_path / "neon.env"
+    secrets_file.write_text(f"ATUS_OWNER_DATABASE_URL={owner_url}\n")
+    secrets_file.chmod(0o600)
+    bad = tmp_path / "roles.sql"
+    bad.write_text("DO $$ BEGIN RAISE EXCEPTION 'simulated provider refusal'; END $$;\n")
+    try:
+        failed = restore(restored["dump"], secrets_file, role, "--roles-sql", str(bad))
+        assert failed.returncode != 0
+        assert "simulated provider refusal" in failed.stdout + failed.stderr
+        rerun = restore(restored["dump"], secrets_file, role)
+        assert rerun.returncode != 0
+        assert "--roles-only" in rerun.stdout + rerun.stderr     # how to finish it
+        finished = restore(restored["dump"], secrets_file, role, "--roles-only")
+        output = finished.stdout + finished.stderr
+        assert finished.returncode == 0, output
+        assert "VACUUM (ANALYZE):" in output
+        assert "[PASS] serving: planner statistics" in output
+        assert "[PASS] serving: activities stored in activity_code order" in output
+        api_url = read_env_file(secrets_file)[API_URL_KEY]
+        with psycopg.connect(api_url) as conn:
+            assert conn.execute("SELECT count(*) FROM atus.respondents").fetchone()[0] > 0
+    finally:
+        with cluster.admin() as conn:
+            conn.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+            conn.execute(f'DROP ROLE IF EXISTS "{role}"')
+
+
 def test_roles_only_refuses_a_database_that_is_not_a_serving_database(
         restored, cluster, tmp_path):
     """``--roles-only`` skips the emptiness check, so it must not apply

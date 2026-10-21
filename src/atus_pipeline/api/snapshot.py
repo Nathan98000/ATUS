@@ -13,15 +13,20 @@ database. The API now keeps in memory:
   together with the years instead of reading them again.
 
 All of it is read in one REPEATABLE READ metadata transaction, so the parts
-describe the same committed data. The snapshot is read when a request needs
+describe the same committed data. That transaction locks ``ingestion_runs``
+(ACCESS SHARE) before its snapshot is taken (``Database.read_snapshot``), so
+a concurrent ``atus load`` switch, which locks that table first, has either
+committed before the snapshot or waits until the read ends: the data
+version and run are never paired with another version's tables, which the
+switch moves in by name. The snapshot is read when a request needs
 it; there is no background refresh, so an idle API never touches the database
 (I08). Concurrent requests that need a read share one refresh.
 
 While the snapshot is usable, analysis cache hits, every 4xx, ``/meta``,
 ``/activities*`` and ``/population/metadata`` cost no database statement.
-Uncached analyses still re-read the data version inside their own
-transaction after computing (the concurrent-reload guard in
-``analysis_runner``); a changed version invalidates the snapshot.
+Uncached analyses still read the data version first in their own
+transaction (the concurrent-reload guard in ``analysis_runner``); a changed
+version invalidates the snapshot.
 
 **When it is read again** (ADR-012, "Metadata reads and the quota"):
 

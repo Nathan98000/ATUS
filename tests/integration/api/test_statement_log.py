@@ -154,7 +154,7 @@ DOCUMENTED = [
     ("activities, non-ASCII search", lambda c: c.get("/api/v1/activities",
                                                      params={"search": "DÉCOR"}), 0),
     ("activity detail", lambda c: c.get("/api/v1/activities/0101"), 0),
-    # BEGIN, check, limits, statistics query, data-version recheck, COMMIT
+    # BEGIN, check, limits, data-version read, statistics query, COMMIT
     ("estimate, uncached", lambda c: c.post(ESTIMATE, json=SLEEP), 6),
     ("estimate, cache hit", lambda c: c.post(ESTIMATE, json=SLEEP), 0),
     ("trend, uncached", lambda c: c.post("/api/v1/analysis/trend",

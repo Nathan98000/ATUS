@@ -19,6 +19,7 @@ from atus_pipeline.api.database import (
     connection_kwargs,
     session_limits,
     session_limits_statement,
+    snapshot_limits_statement,
 )
 from atus_pipeline.api.errors import (
     DatabasePausedError,
@@ -54,6 +55,16 @@ class TestSessionLimits:
         assert sql.startswith("SELECT set_config('statement_timeout', %s, true), ")
         assert sql.count("set_config(") == len(params) == 5
         assert ";" not in sql
+
+    def test_snapshot_transactions_lock_before_any_snapshot_taking_statement(self, tmp_path):
+        """REPEATABLE READ: only SET and LOCK before the snapshot exists (a
+        SELECT would fix it before the lock; review r1)."""
+        limits = session_limits(make_settings(tmp_path), "metadata")
+        text = snapshot_limits_statement(limits).as_string(None)
+        statements = text.split("; ")
+        assert statements[:-1] == [f"SET LOCAL {name} = '{value}'" for name, value in limits]
+        assert statements[-1] == "LOCK TABLE atus.ingestion_runs IN ACCESS SHARE MODE"
+        assert "SELECT" not in text and "%s" not in text
 
     def test_unknown_kind_is_rejected(self, tmp_path):
         with pytest.raises(ValueError):
@@ -188,6 +199,20 @@ class TestCheckout:
         finally:
             db.close()
 
+    def test_no_transaction_starts_after_shutdown_began(self, tmp_path):
+        """Review r1: whatever is admitted after the shutdown cancel (an
+        analysis that waited for a lane) gets 503 overloaded, not a query."""
+        failing = _failing_connection_class("must not connect during shutdown")
+        db = self._database(tmp_path, failing)
+        try:
+            assert db.begin_shutdown() == 0
+            for kind in ("analysis", "metadata"):
+                with pytest.raises(OverloadedError, match="shutting down"), db.transaction(kind):
+                    pass
+            assert failing.attempts == 0
+        finally:
+            db.close()
+
     def test_pool_starts_without_connecting(self, tmp_path):
         failing = _failing_connection_class("must not connect at startup")
         db = self._database(tmp_path, failing)
@@ -243,6 +268,23 @@ class TestDeadline:
         finish.set()
         stopper.join(5)
         assert conn.cancels == 1
+
+    def test_marks_the_transaction_and_repeats_the_cancel_until_stopped(self, monkeypatch):
+        """Review r1: a cancel that reaches the server between statements is
+        ignored, so the deadline makes the connection refuse further
+        statements and keeps cancelling until the transaction ends."""
+        monkeypatch.setattr(dbmod, "DEADLINE_RECANCEL_S", 0.02)
+        conn = _FakeConn()
+        deadline = _Deadline(conn, 0.01)
+        give_up = time.monotonic() + 5
+        while conn.cancels < 3:
+            assert time.monotonic() < give_up, "the cancel was not repeated"
+            time.sleep(0.01)
+        deadline.stop()
+        assert conn.refused_because == "request deadline exceeded"
+        after_stop = conn.cancels
+        time.sleep(0.1)
+        assert conn.cancels == after_stop
 
     def test_margin_constant(self):
         assert dbmod.DEADLINE_MARGIN_S == 5.0

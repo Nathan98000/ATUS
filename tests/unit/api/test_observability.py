@@ -111,7 +111,7 @@ class TestAccessLog:
             "status": 200,
             "latency_ms": first["latency_ms"],
             "db_ms": first["db_ms"],
-            "db_statements": 2,  # the snapshot read and the version recheck (fake DB)
+            "db_statements": 2,  # the snapshot read and the version read (fake DB)
             "cache": "miss",
             "analysis_key": miss.headers["X-Analysis-Key"],
             "error": None,

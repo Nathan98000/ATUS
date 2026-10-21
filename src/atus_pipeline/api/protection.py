@@ -268,8 +268,13 @@ class AdmissionLanes:
     lane (taken first, so a light request never holds the heavy lane and the
     two cannot deadlock). A request waits at most ``wait_s`` in total, then
     gets 503 ``overloaded``. Lanes are taken before any pool connection is
-    checked out, so the pool (sized above the lane count) always has
-    connections left for metadata and cache lookups.
+    checked out, so the pool (sized above the lane count, which
+    ``config.load_settings`` enforces) always has connections left for
+    metadata and cache lookups.
+
+    :meth:`close` (shutdown) admits nothing more: a request still waiting
+    for a lane, or arriving later, gets 503 ``overloaded`` instead of taking
+    a lane that a cancelled query frees.
 
     Create inside the running event loop (the application lifespan).
     """
@@ -284,6 +289,11 @@ class AdmissionLanes:
         self.heavy_in_flight = 0
         self.waits = 0        # admissions that found no free lane and waited
         self.rejections = 0   # ... and were shed after the wait
+        self.closed = False
+
+    def close(self) -> None:
+        """Admit nothing from now on (process shutdown)."""
+        self.closed = True
 
     @asynccontextmanager
     async def admit(self, heavy: bool) -> AsyncIterator[None]:
@@ -292,6 +302,8 @@ class AdmissionLanes:
         waited = False
         try:
             for semaphore in ((self._heavy, self._general) if heavy else (self._general,)):
+                if self.closed:
+                    raise OverloadedError("server shutting down")
                 if not waited and semaphore.value == 0:
                     waited = True
                     self.waits += 1
@@ -301,6 +313,8 @@ class AdmissionLanes:
                         f"no {'heavy ' if heavy else ''}analysis lane within {self.wait_s:g} s"
                     )
                 acquired.append(semaphore)
+            if self.closed:  # closed while this request waited for a lane
+                raise OverloadedError("server shutting down")
         except BaseException:
             for semaphore in acquired:
                 semaphore.release()

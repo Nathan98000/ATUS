@@ -453,6 +453,15 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
         raise ConfigError(
             "ATUS_API_MAX_INFLIGHT_HEAVY must not exceed ATUS_API_MAX_INFLIGHT"
         )
+    pool_max_size = env.integer("ATUS_API_POOL_MAX_SIZE", 4, 1, 50)
+    if pool_max_size <= max_inflight:
+        # Lanes come before pool checkouts (ADR-012) so that metadata reads
+        # and cache lookups always find a connection: the pool must hold at
+        # least one connection beyond what the computations can take.
+        raise ConfigError(
+            f"ATUS_API_POOL_MAX_SIZE ({pool_max_size}) must exceed ATUS_API_MAX_INFLIGHT "
+            f"({max_inflight}), so metadata reads always find a connection"
+        )
 
     build_sha = env.raw("ATUS_BUILD_SHA") or "dev"
     if not _BUILD_SHA_PATTERN.match(build_sha):
@@ -480,7 +489,7 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
         ops_token=_ops_token(env, production),
         build_sha=build_sha,
         port=env.integer("PORT", 8000, 1, 65_535),
-        api_pool_max_size=env.integer("ATUS_API_POOL_MAX_SIZE", 4, 1, 50),
+        api_pool_max_size=pool_max_size,
         api_pool_max_idle_s=env.number("ATUS_API_POOL_MAX_IDLE_S", 240.0, 1.0, 86_400.0),
         api_pool_timeout_s=env.number("ATUS_API_POOL_TIMEOUT_S", 5.0, 0.1, 120.0),
         api_connect_timeout_s=env.integer("ATUS_API_CONNECT_TIMEOUT_S", 10, 2, 120),

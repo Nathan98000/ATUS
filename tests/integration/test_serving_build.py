@@ -566,6 +566,53 @@ def test_verify_reports_a_database_that_does_not_match_its_manifest(builds, tmp_
     assert "[FAIL] serving: rows in activities" in result.output
 
 
+def test_a_missing_pg_dump_is_found_before_the_build(full, target, tmp_path, monkeypatch):
+    """Review r1 (pg-dump-resolved-after-build): pg_dump was looked for only
+    after the whole build. Without a usable client the build completed, the
+    dump failed, and the target, now a serving database, refused a rerun.
+    Now the client is resolved and run first, and the target stays empty."""
+    from atus_pipeline.serving import pgtools
+
+    def no_client(tool, conninfo, **kwargs):
+        raise pgtools.PgToolError(
+            f"{tool} 16 or newer is needed (none found) and docker is not available "
+            "to run it from the postgres image")
+
+    monkeypatch.setattr(pgtools, "resolve", no_client)
+    result = _cli("build-serving-db", "--source", full, "--target", target,
+                  "--allow-unvalidated", "--artifact-dir", str(tmp_path / "artifact"))
+    assert result.exit_code == 1
+    assert "pg_dump 16 or newer is needed" in result.output
+    assert "Nothing was built" in result.output
+    with psycopg.connect(target) as conn:
+        assert serving_marker(conn) is None
+        assert conn.execute("SELECT count(*) FROM atus.respondents").fetchone()[0] == 0
+    monkeypatch.undo()
+    rebuilt = _cli("build-serving-db", "--source", full, "--target", target,
+                   "--allow-unvalidated", "--artifact-dir", str(tmp_path / "artifact"))
+    assert rebuilt.exit_code == 0, rebuilt.output   # the same target, once the client is there
+
+
+def test_a_failed_dump_keeps_the_build_report_and_says_how_to_recover(
+        full, target, tmp_path, monkeypatch):
+    """A dump can still fail after the build (a full disk, an image pull): the
+    build report is written first, and the error says how to recover."""
+    from atus_pipeline.serving import artifact
+
+    def failing_dump(*args, **kwargs):
+        raise artifact.ArtifactError("simulated: no space left on device")
+
+    monkeypatch.setattr(artifact, "write_artifact", failing_dump)
+    report_path = tmp_path / "report.json"
+    result = _cli("build-serving-db", "--source", full, "--target", target,
+                  "--allow-unvalidated", "--artifact-dir", str(tmp_path / "artifact"),
+                  "--report", str(report_path))
+    assert result.exit_code == 1
+    assert "simulated: no space left on device" in result.output
+    assert "recreate it as an empty database and run the build again" in result.output
+    assert VERSION.match(json.loads(report_path.read_text())["data_version"])
+
+
 def test_the_build_command_explains_a_refusal_without_a_traceback(full, target):
     result = _cli("build-serving-db", "--source", full, "--target", target)
     assert result.exit_code != 0

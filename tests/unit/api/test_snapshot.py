@@ -16,6 +16,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from atus_pipeline.analytics.activities import ActivityResolver
+from atus_pipeline.api.dependencies import get_engine_factory
 from atus_pipeline.api.errors import DataVersionMismatchError
 from atus_pipeline.api.snapshot import (
     CASED_RANGES,
@@ -712,6 +713,18 @@ class TestZeroStatementPaths:
         assert error["message"] == "Activity code 'abc' does not exist in the activity lexicon."
         assert fake_db.transactions == []
 
+    @pytest.mark.parametrize("code", ["abc", "0101011", "1", "01x1"])
+    def test_a_malformed_code_gets_the_same_404_from_a_cold_or_warm_process(self, build, code):
+        """Review r1 (activity-404-text-depends-on-process-state): the body
+        named the lexicon only once the process held a snapshot."""
+        client, fake_db, _ = build()
+        cold = client.get(f"/api/v1/activities/{code}")
+        assert client.get("/api/v1/meta").status_code == 200   # the snapshot is read
+        warm = client.get(f"/api/v1/activities/{code}")
+        assert cold.status_code == warm.status_code == 404
+        assert cold.content == warm.content
+        assert fake_db.transactions == ["metadata"]           # only /meta's read
+
 
 class TestDryRun:
     """Domain errors the engine raises before its first statement cost no
@@ -775,25 +788,67 @@ class TestExpectedDataVersion:
         client, _, _ = build(expected_data_version="0325:run1")
         assert client.post(ESTIMATE, json=BODY).status_code == 200
 
-    def test_version_change_during_a_computation_is_refused_when_bound(self, build):
-        """Snapshot says run0 (= expected); the computation's own recheck sees
-        run1: with a bound version the result is refused, not returned."""
+    def test_version_change_during_a_computation_is_refused_when_bound(self, build,
+                                                                       stub_engine):
+        """Snapshot says run0 (= expected); the computation's own transaction
+        reads run1 first: with a bound version the request is refused before
+        anything is computed."""
+        computed = []
+        stub_engine.estimate_behavior = lambda spec: computed.append(spec)
         client, fake_db, _ = build(fake_db=FakeDatabase(data_version="0325:run0"),
                                    expected_data_version="0325:run0")
         response = client.post(ESTIMATE, json=BODY)
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "data_version_mismatch"
+        assert computed == []
         # the snapshot was invalidated: the next request reads it again
         count = fake_db.transactions.count("metadata")
         client.get("/api/v1/meta")
         assert fake_db.transactions.count("metadata") == count + 1
 
-    def test_unbound_version_change_bypasses_and_invalidates(self, build):
-        client, fake_db, _ = build(fake_db=FakeDatabase(data_version="0325:run0"))
-        assert client.post(ESTIMATE, json=BODY).headers["X-Cache"] == "bypass"
+    def test_unbound_version_change_bypasses_and_invalidates(self, build, stub_engine):
+        """Snapshot says run0; the computation's transaction reads run1. The
+        result is computed by an engine that reads its own lexicon and years
+        (no snapshot parts), labelled with run1 and its key, and not cached
+        (review r1, stale-snapshot-mixed-bypass: it carried run0's labels and
+        the run0 snapshot's resolver and years)."""
+        client, fake_db, app = build(fake_db=FakeDatabase(data_version="0325:run0"))
+        parts = []
+        app.dependency_overrides[get_engine_factory] = lambda: (
+            lambda conn, **snapshot_parts: parts.append(snapshot_parts) or stub_engine
+        )
+        response = client.post(ESTIMATE, json=BODY)
+        assert response.status_code == 200
+        assert response.headers["X-Cache"] == "bypass"
+        assert parts == [{}]
+        assert response.headers["X-Data-Version"] == "0325:run1"
+        current, _, _ = build()              # a process whose snapshot is run1
+        same = current.post(ESTIMATE, json=BODY)
+        assert same.headers["X-Cache"] == "miss"
+        assert same.headers["X-Data-Version"] == "0325:run1"
+        assert response.headers["X-Analysis-Key"] == same.headers["X-Analysis-Key"]
         count = fake_db.transactions.count("metadata")
         client.get("/api/v1/meta")
         assert fake_db.transactions.count("metadata") == count + 1
+
+    def test_the_data_version_is_read_before_the_computation(self, build, stub_engine):
+        """Its share lock on ingestion_runs keeps the switch out of the rest of
+        the transaction, so it must come first (review r1)."""
+        order = []
+
+        class Recording(FakeVersionConnection):
+            def execute(self, sql, params=None):
+                order.append("version" if "ingestion_runs" in sql else sql)
+                return super().execute(sql, params)
+
+        def compute(spec):
+            order.append("engine")
+            return known_estimate_result()
+
+        stub_engine.estimate_behavior = compute
+        client, _, _ = build(fake_db=FakeDatabase(Recording, data_version="0325:run1"))
+        assert client.post(ESTIMATE, json=BODY).headers["X-Cache"] == "miss"
+        assert order == ["version", "engine"]
 
 
 class TestProductionWithoutAnExpectedVersion:

@@ -151,6 +151,61 @@ class TestTimeouts:
         assert response.json()["error"]["code"] == "analysis_timeout"
         assert elapsed < 1.1  # 0.4 s + 0.1 s deadline, not 1.2 s of sleeps
 
+    def test_a_cancelled_snapshot_read_is_overloaded_on_every_route(
+        self, loaded_settings, monkeypatch
+    ):
+        """Review r1 (snapshot-timeout-reported-as-analysis-timeout): the
+        snapshot read is a metadata transaction. Cancelled while an analysis
+        route triggered it, it was answered 503 analysis_timeout ("narrow the
+        request", Retry-After 60, not retried by the SPA); /meta answered the
+        same failure as overloaded. Both are now overloaded."""
+        real_load = dbmod.load_snapshot
+
+        def slow_snapshot(conn):
+            conn.execute("SELECT pg_sleep(1)")  # past the 100 ms metadata timeout
+            return real_load(conn)
+
+        monkeypatch.setattr(dbmod, "load_snapshot", slow_snapshot)
+        with api(loaded_settings, api_meta_statement_timeout_ms=100,
+                 api_snapshot_ttl_s=0) as (client, _):
+            responses = [client.post(ESTIMATE, json=body()), client.get("/api/v1/meta")]
+        for response in responses:
+            assert response.status_code == 503
+            assert response.json()["error"]["code"] == "overloaded"
+            assert response.headers["Retry-After"] == "10"
+
+    def test_a_deadline_that_passes_between_statements_still_ends_the_analysis(
+        self, loaded_settings, monkeypatch
+    ):
+        """Review r1 (deadline-lost-between-statements): the deadline passes
+        while the transaction is idle between statements, where PostgreSQL
+        ignores a cancel. It used to be lost: the later statements ran,
+        each under statement_timeout, and the answer was 200. Now no
+        statement is sent after the deadline."""
+        monkeypatch.setattr(dbmod, "DEADLINE_MARGIN_S", 0.1)   # deadline 0.4 + 0.1 s
+
+        class GapEngine(SlowEngine):
+            def estimate(self, spec):
+                time.sleep(1.0)  # work between statements: the deadline passes here
+                for _ in range(3):
+                    self._conn.execute("SELECT pg_sleep(0.3)")  # each under 0.4 s
+                return self._engine.estimate(spec)
+
+        with api(loaded_settings, lambda conn, **parts: GapEngine(conn, **parts),
+                 api_statement_timeout_ms=400) as (client, app):
+            response = client.post(ESTIMATE, json=body())
+            database = app.state.database
+            assert database.query_timeouts == 1
+            # the refusal ended with that transaction: every pooled connection
+            # passes its check and serves the next ones without a reconnect
+            opened = database.pool.get_stats()["connections_num"]
+            for _ in range(database.pool.get_stats()["pool_size"] + 1):
+                with database.transaction("metadata") as conn:
+                    assert conn.execute("SELECT 1").fetchone() == (1,)
+            assert database.pool.get_stats()["connections_num"] == opened
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "analysis_timeout"
+
 
 LONG_SLEEP_S = 60.0
 """Longer than any wait below: a query that ends before it was cancelled."""
@@ -229,6 +284,93 @@ class TestShutdownCancel:
         assert len(app.state.cache) == 0  # errors are never cached
         assert "shutdown: cancelled 1 running queries" in caplog.text
         assert running_sleeps(url) == 0
+
+    def test_an_analysis_queued_for_a_lane_never_starts_during_shutdown(self, loaded_settings):
+        """Review r1 (shutdown-admits-queued-analyses-after-cancel): with the
+        only lane busy, a second analysis waits for it. Shutdown cancelled
+        the running query; the queued analysis then took the freed lane and
+        started a query that nothing cancelled, which outlived the app. Now
+        shutdown closes the lanes and the database to new work first."""
+        def sleeping(conn, **snapshot_parts):
+            return SlowEngine(conn, sleeps=(LONG_SLEEP_S,), **snapshot_parts)
+
+        url = loaded_settings.database_url
+        try:
+            with ThreadPoolExecutor(3) as pool:
+                context = api(loaded_settings, sleeping, api_max_inflight=1,
+                              api_max_inflight_heavy=1, api_admission_wait_s=60)
+                client, app = context.__enter__()
+                first = pool.submit(client.post, ESTIMATE, json=body(2023))
+                wait_for(lambda: running_sleeps(url) == 1, "the first analysis query")
+                second = pool.submit(client.post, ESTIMATE, json=body(2019))
+                wait_for(lambda: app.state.protection.lanes.waits == 1,
+                         "the second analysis to queue for the lane")
+                context.__exit__(None, None, None)              # the lifespan shutdown
+                still_running = running_sleeps(url)
+                responses = first.result(30), second.result(30)
+        finally:
+            with psycopg.connect(url, autocommit=True) as admin:  # never leave one behind
+                admin.execute(
+                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                    "WHERE datname = current_database() AND application_name = %s",
+                    (dbmod.APPLICATION_NAME,))
+        assert still_running == 0
+        assert [r.json()["error"]["code"] for r in responses] == ["analysis_timeout",
+                                                                 "overloaded"]
+
+
+KILLED_CHILD = """
+import sys
+from atus_pipeline.api.database import Database
+from atus_pipeline.config import load_settings
+
+settings = load_settings({"ATUS_DATABASE_URL": sys.argv[1], "ATUS_LOG_LEVEL": "WARNING"})
+with Database(settings).transaction("analysis") as conn:
+    conn.execute("SELECT pg_sleep(60) /* " + sys.argv[2] + " */")
+"""
+
+
+class TestKilledProcess:
+    """F52's other half: after SIGKILL nothing in the API can cancel its
+    query; the server must notice the dead client itself
+    (``client_connection_check_interval``, set per transaction). Review r1
+    (f52-sigkill-untested): only the setting's value was tested."""
+
+    def test_the_server_ends_the_query_of_a_killed_api_process(self, loaded_settings):
+        import os
+        import signal
+        import subprocess
+        import sys
+        import uuid
+
+        url = loaded_settings.database_url
+        marker = f"killed-api-{uuid.uuid4().hex}"
+
+        def running() -> int:
+            with psycopg.connect(url, autocommit=True) as admin:
+                return admin.execute(
+                    "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() "
+                    "AND application_name = %s AND state = 'active' AND query LIKE %s "
+                    "AND pid <> pg_backend_pid()",
+                    (dbmod.APPLICATION_NAME, f"%{marker}%"),
+                ).fetchone()[0]
+
+        child = subprocess.Popen([sys.executable, "-c", KILLED_CHILD, url, marker])
+        try:
+            wait_for(lambda: running() == 1, "the child's analysis query", 30)
+            os.kill(child.pid, signal.SIGKILL)
+            child.wait(10)
+            # 60 s of pg_sleep, an 85 s statement_timeout: only the server's
+            # check of the client connection (every 5 s) ends it this early
+            wait_for(lambda: running() == 0, "the server to end the dead client's query", 20)
+        finally:
+            if child.poll() is None:
+                child.kill()
+            with psycopg.connect(url, autocommit=True) as admin:
+                admin.execute(
+                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                    "WHERE datname = current_database() AND query LIKE %s "
+                    "AND pid <> pg_backend_pid()", (f"%{marker}%",))
 
 
 class TestPoolExhaustion:
@@ -309,6 +451,51 @@ class TestStaleConnections:
                 client.post(ESTIMATE, json=body(2023)).status_code,
             ]
         assert statuses == [200, 200, 200, 200]
+
+    def test_a_failed_check_closes_the_dead_connections_without_reopening_them(
+        self, loaded_settings
+    ):
+        """Review r1 (pool-drain-reopens-whole-pool): after the server ended
+        every pooled connection (a Neon suspend), the first checkout's failed
+        check drained the pool, which reopened a connection for each one it
+        closed: one metadata read took the pool from 3 idle connections to 4
+        and opened 4 (exp_drain). Now the dead idle ones are closed and not
+        replaced. psycopg_pool still replaces the connection that failed and,
+        while the request waits, grows by one: at most two new connections,
+        whatever the pool held."""
+        url = loaded_settings.database_url
+
+        def api_backends() -> int:
+            with psycopg.connect(url, autocommit=True) as admin:
+                return admin.execute(
+                    "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() "
+                    "AND application_name = %s", (dbmod.APPLICATION_NAME,)).fetchone()[0]
+
+        database = dbmod.Database(loaded_settings)
+        try:
+            held = [database.pool.getconn() for _ in range(3)]  # three idle connections
+            for conn in held:
+                database.pool.putconn(conn)
+            wait_for(lambda: database.pool.get_stats()["pool_size"]
+                     == database.pool.get_stats()["pool_available"], "the pool to settle")
+            idle = database.pool.get_stats()["pool_available"]
+            opened = database.pool.get_stats()["connections_num"]
+            with psycopg.connect(url, autocommit=True) as admin:
+                killed = admin.execute(
+                    "SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity "
+                    "WHERE datname = current_database() AND application_name = %s",
+                    (dbmod.APPLICATION_NAME,)).fetchone()[0]
+            assert killed == idle >= 3
+            with database.transaction("metadata") as conn:
+                assert conn.execute("SELECT 1").fetchone() == (1,)
+            wait_for(lambda: database.pool.get_stats()["pool_size"]
+                     == database.pool.get_stats()["pool_available"], "the pool to settle")
+            stats = database.pool.get_stats()
+            assert stats["pool_size"] <= 2 < idle
+            assert 1 <= stats["connections_num"] - opened <= 2
+            assert api_backends() == stats["pool_size"]
+        finally:
+            database.close()
 
 
 class TestSlowWakeAfterAnOldFailure:

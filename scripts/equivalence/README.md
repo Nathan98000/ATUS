@@ -158,7 +158,7 @@ Status codes must be identical in both pairs. Then:
 | `unsupported_media_type` | ADR-012 | A POST that is not `application/json` gets 415 |
 | `malformed_json_parser_limit` | error contract | The baseline answers `http_400` and Phase 5 answers `malformed_json` (the parser gave up, e.g. on deep nesting) |
 | `control_characters_rejected` | F50 | The query has a control character and Phase 5 answers 422 (the baseline answered 500) |
-| `lexicon_wording` | F23 | `activity_not_found` reads "... 2003-25 activity lexicon." instead of "... 2003-25 lexicon."; code and details are equal |
+| `lexicon_wording` | F23 | `activity_not_found` reads "... 2003-25 activity lexicon." instead of "... 2003-25 lexicon.", or, for a malformed code (not 2, 4 or 6 digits), "... the activity lexicon." whether or not the process has read its snapshot (review round 1); code and details are equal |
 | `health_reports_build` | contract | `/health` adds `build` |
 
 A request's status is one of the following. `equivalent` and `intended_difference`

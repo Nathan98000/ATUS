@@ -17,11 +17,15 @@ import shutil
 import threading
 import time
 from collections.abc import Callable
+from types import SimpleNamespace
 
 import psycopg
 import pytest
 
 from atus_pipeline.analytics import ActivitySelector, AnalysisEngine, AnalysisSpec, Measure
+from atus_pipeline.api import snapshot as snapshot_module
+from atus_pipeline.api.database import Database
+from atus_pipeline.database import versions
 from atus_pipeline.database.migrate import MigrationError
 from atus_pipeline.database.versions import read_data_version
 from atus_pipeline.loading import loader
@@ -613,6 +617,69 @@ class TestRepeatableRead:
             old.close()
         assert not errors
         assert live_state(db_url)[1] == V2_RESPONDENTS
+
+    def test_the_api_snapshot_read_never_pairs_the_old_version_with_the_new_data(
+        self, v1, v2, db_url, monkeypatch, caplog
+    ):
+        """The API's REPEATABLE READ snapshot read (``Database.read_snapshot``)
+        starts after the new data committed, so the guard above does not wait
+        for it, and is held right after its opening statement, before it
+        reads anything. Its snapshot must still describe one version: it
+        locks ``ingestion_runs`` before its snapshot is taken, so the switch
+        waits for it and it reads the old version with the old data. Before,
+        its first statement fixed the snapshot without a lock; the switch
+        committed, and the snapshot paired the old data version and run with
+        the new respondents (review r1, rr-snapshot-mixes-versions-across-switch)."""
+        load(v1)
+        version1, _ = live_state(db_url)
+        database = Database(v1)
+        held, resume = threading.Event(), threading.Event()
+        outcome: dict[str, object] = {}
+
+        def held_version_read(conn):
+            held.set()
+            assert resume.wait(60)
+            return versions.read_data_version(conn)
+
+        monkeypatch.setattr(snapshot_module, "versions", SimpleNamespace(
+            read_data_version=held_version_read, UNLOADED=versions.UNLOADED))
+
+        def read_snapshot():
+            try:
+                outcome["snapshot"] = database.read_snapshot()
+            except BaseException as exc:
+                outcome["error"] = exc
+
+        reader = threading.Thread(target=read_snapshot)
+
+        def start_reader(conn, schema):  # the new data has committed; no switch yet
+            reader.start()
+            assert held.wait(30)
+            return []
+
+        def run_load():
+            try:
+                load(v2, validate=start_reader, options=SwitchOptions(timeout_s=60))
+            except BaseException as exc:
+                outcome["load_error"] = exc
+
+        caplog.set_level(logging.DEBUG, logger="atus_pipeline.loading.switch")
+        loader_thread = threading.Thread(target=run_load)
+        loader_thread.start()
+        try:
+            # until the switch has given way to the reader, or has run without it
+            wait_for(lambda: not loader_thread.is_alive()
+                     or any("tables busy" in r.getMessage() for r in caplog.records))
+        finally:
+            resume.set()
+            reader.join(30)
+            loader_thread.join(90)
+            database.close()
+        assert "error" not in outcome and "load_error" not in outcome, outcome
+        snapshot = outcome["snapshot"]
+        assert (snapshot.data_version, snapshot.respondents) == (version1, V1_RESPONDENTS)
+        assert snapshot.run.id == int(LOAD_VERSION.match(version1).group(1))
+        assert live_state(db_url)[1] == V2_RESPONDENTS   # the switch went ahead afterwards
 
     def test_waiting_needs_a_role_that_sees_other_sessions(self, db_url):
         role = f"{db_url.rsplit('/', 1)[1]}_plain"
