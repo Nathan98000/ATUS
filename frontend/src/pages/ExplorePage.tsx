@@ -317,7 +317,14 @@ function Builder({
                   <PopulationFields
                     dimensions={dimensions}
                     value={state.population}
-                    onChange={(population) => update({ population })}
+                    onChange={(population) => {
+                      // An edit means the section is open: record it with the
+                      // edit itself, not via the toggle event of its
+                      // programmatic opening, which Chromium may deliver only
+                      // after the edit (it then collapsed when cleared at once).
+                      setSharedOpen(true)
+                      update({ population })
+                    }}
                     ageError={shownErrors.age}
                   />
                 </div>

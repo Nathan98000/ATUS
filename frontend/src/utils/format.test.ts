@@ -98,6 +98,12 @@ describe('uncertainty formatting', () => {
     expect(formatConfidenceLevel(0.999)).toBe('99.9%')
     expect(formatConfidenceLevel(0.99999)).toBe('99.999%')
     expect(formatConfidenceLevel(0.99)).toBe('99%')
+    // Binary × 100 noise never shows (0.57 × 100 is 56.99999999999999)…
+    expect(formatConfidenceLevel(0.57)).toBe('57%')
+    // …and no level the API accepts collapses onto 100% or 50%: the API
+    // computes 0.9999999999999996 (z ≈ 8.13), and these two are as exported.
+    expect(formatConfidenceLevel(0.9999999999999996)).toBe('99.99999999999996%')
+    expect(formatConfidenceLevel(0.5000000000000001)).toBe('50.00000000000001%')
   })
 })
 

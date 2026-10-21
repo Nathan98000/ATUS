@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HttpResponse, http } from 'msw'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router'
@@ -244,6 +244,29 @@ describe('confidence levels from a shared analysis (review round 3)', () => {
     expect(sent.confidence_level).toBe(0.975)
   })
 
+  it('after a prefilled 97.5% level, choosing 90% really selects and sends 0.9', async () => {
+    // In a browser, picking the option already shown fires no change: before
+    // the fix "90%" was shown for 0.975, so a real 90% was unreachable. jsdom
+    // fires change regardless, so the test above (97.5% is what is shown) is
+    // the regression check; this one pins that the extra option gives way.
+    const user = userEvent.setup()
+    const spec: EstimateRequest = {
+      activity: { preset: 'sleep' },
+      years: [2025],
+      confidence_level: 0.975,
+    }
+    renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
+    await waitForBuilder()
+    const select = screen.getByLabelText('Confidence level') as HTMLSelectElement
+    await user.selectOptions(select, '90%')
+    expect(select.selectedOptions[0]).toHaveTextContent('90%')
+
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    const location = screen.getByTestId('location').textContent ?? ''
+    const sent = decodeSpec(location.split('spec=')[1] as string, 'estimate') as EstimateRequest
+    expect(sent.confidence_level).toBe(0.9)
+  })
+
   it('a standard level adds no extra option', async () => {
     renderExplore()
     await waitForBuilder()
@@ -307,6 +330,26 @@ describe('shared filters of a comparison (review round 3)', () => {
     await user.clear(within(shared).getByLabelText('Minimum age'))
     expect(shared.open).toBe(true)
     expect(shared.querySelector('summary')).not.toHaveTextContent('(active)')
+  })
+
+  it('clearing it before the opening toggle event arrives does not collapse it either', async () => {
+    // The browser delivers the toggle event of the section's programmatic
+    // opening as a later task (Chromium sometimes only after the next edit).
+    // Switching and clearing in one go, before that task runs, collapsed the
+    // section under the cursor when "open" was learned from that event alone.
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await user.type(screen.getByLabelText('Minimum age'), '65')
+    fireEvent.click(screen.getByRole('radio', { name: 'Compare two groups' }))
+    const shared = sharedSection()
+    expect(shared.open).toBe(true)
+    fireEvent.change(within(shared).getByLabelText('Minimum age'), { target: { value: '' } })
+    expect(shared.open).toBe(true)
+    expect(shared.querySelector('summary')).not.toHaveTextContent('(active)')
+    // …and it stays open once the late toggle event has been delivered.
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(shared.open).toBe(true)
   })
 
   it('stays collapsed and unmarked when no shared filter is set', async () => {
