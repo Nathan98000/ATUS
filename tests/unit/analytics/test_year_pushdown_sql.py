@@ -1,5 +1,6 @@
 """Year pushdown (F39): the activity CTE is restricted to the requested
-years' respondents, and that is the only change to the Phase 2-4 SQL. The
+years' respondents and materialized, and those are the only changes to the
+Phase 2-4 SQL. The
 equivalence of the two queries is proven against a database in
 tests/integration/test_year_pushdown.py."""
 
@@ -48,7 +49,16 @@ def test_the_pushdown_is_the_only_difference_from_the_phase_4_query():
     ):
         new, old = _render(True, **dict(kwargs)), _render(False, **dict(kwargs))
         assert PUSHDOWN not in old
-        assert new.replace(PUSHDOWN, "") == old
+        assert "MATERIALIZED" not in old
+        assert new.replace(PUSHDOWN, "").replace("AS MATERIALIZED (", "AS (") == old
+
+
+def test_the_pushed_down_cte_is_materialized():
+    """Correlated respondent filters can make the planner expect a dozen rows
+    and re-run an inlined aggregate per respondent (the §9 equivalence run);
+    materializing computes it once."""
+    assert "WITH activity_minutes AS MATERIALIZED (" in _render(True)
+    assert "WITH activity_minutes AS (" in _render(False)
 
 
 def test_the_pushdown_reuses_the_years_parameter_only():
