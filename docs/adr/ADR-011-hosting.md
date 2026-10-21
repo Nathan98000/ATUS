@@ -279,7 +279,7 @@ visitor ──TLS──▶ Cloudflare edge (sets CF-Connecting-IP = visitor)
 - **Roles.**
   - `neondb_owner` (created by the console) restores and validates.
   - `atus_api` is created in SQL: LOGIN, SELECT only, password of at least 60 bits.
-  - Read-only is enforced by privileges, and a test proves the role cannot write.
+  - Read-only is enforced by privileges, and a test proves the role cannot write any table. Large objects need no privilege, so `roles.sql` removes the role's and the serving checks fail on any (amendment, review round 4; security.md R16).
 - **Projects and branches.**
   - Each data release gets its own project, with its own 1 GB and its own 100 CU-h.
   - There is one production branch. No child branches, read replicas or instant restores: storage counts each branch's logical size, and a restore leaves an extra root branch behind.

@@ -283,7 +283,7 @@ The normative text is in [`../operations.md`](../operations.md), "Equivalence cr
 - A load needs twice the canonical data's disk space while it runs, and an old open transaction can delay the switch.
 - A new release is a registry entry and a lexicon file; the tests above fail if any other code needs to change.
 - The hosted database is a 0.63 GB serving database that serves the same numbers (the §9 criterion), carries a unique data version, refuses full-database commands, and is restored from a checksummed release artifact that doubles as its backup.
-- The API reaches it as a role that can only read; a leaked API connection string cannot change data.
+- The API reaches it as a role that can only read tables; a leaked API connection string cannot change the served data. It can store large objects, which no privilege controls, until a rotation removes them (amendment, review round 4; [security.md R16](../security.md#accepted-risks)).
 
 ## Amendments (implementation, 2026-10-21)
 

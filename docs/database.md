@@ -259,6 +259,8 @@ Two roles use it (`scripts/ops/roles.sql`, run by the restore):
   served tables (the six data tables above, the three lexicon tables and
   `ingestion_runs`) and nothing else: no writes, no DDL, no temporary
   tables, no `source_files`, `validation_results` or `schema_migrations`.
+  Large objects are the exception: no privilege controls them, so the
+  script removes the role's and fails if any remain (security.md R16).
   Its role defaults are `statement_timeout` 85 s, `lock_timeout` 5 s,
   `idle_in_transaction_session_timeout` 30 s, `jit` off and
   `default_transaction_read_only` on; the API also sets its limits per

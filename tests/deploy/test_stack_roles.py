@@ -12,6 +12,8 @@ production restore applies it, so these checks hold for the deployed role:
   second guard), and it carries ADR-011's role defaults. Those defaults are
   a backstop, not a privilege boundary: any session may SET them (and
   Postgres lets a role change its own defaults);
+- no privilege stops it from creating large objects (security.md R16):
+  re-applying roles.sql removes the ones it stored (review r4);
 - `neondb_owner` owns the data but is not a superuser (as on Neon);
 - the database is a serving build (marker, serving data_version);
 - the server runs Neon's settings for the 0.25-2 CU compute with jit off (F37).
@@ -75,14 +77,14 @@ def stack(docker_daemon, api_image, docker_prefix, tmp_path_factory):
         assert "roles.sql: atus_api can log in and read the served tables" in result.stdout
         port = subprocess.run([*compose, "port", "db", "5432"], cwd=REPO_ROOT,
                               capture_output=True, text=True, check=True).stdout
-        yield int(port.strip().rsplit(":", 1)[1]), passwords
+        yield int(port.strip().rsplit(":", 1)[1]), passwords, compose
     finally:
         subprocess.run([*compose, "down", "-v", "--remove-orphans"], cwd=REPO_ROOT,
                        capture_output=True, check=False)
 
 
 def _connect(stack, user: str):
-    port, passwords = stack
+    port, passwords, _ = stack
     password = passwords["api" if user == "atus_api" else "owner"]
     return psycopg.connect(host="127.0.0.1", port=port, dbname="atus", user=user,
                            password=password, autocommit=True, connect_timeout=10)
@@ -100,6 +102,36 @@ def test_api_role_cannot_write(stack, statement):
         conn.execute("SET default_transaction_read_only = off")
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             conn.execute(statement)
+
+
+LARGE_OBJECT_WRITES = ["SELECT lo_from_bytea(0, '\\x00')", "SELECT lo_create(0)"]
+
+
+@pytest.mark.parametrize("statement", LARGE_OBJECT_WRITES)
+def test_api_role_can_still_create_large_objects(stack, statement):
+    """Review r4: lo_create, lo_from_bytea, lowrite and lo_put are EXECUTE to PUBLIC
+    and creating a large object needs no privilege, so once its read-only default
+    is off the role creates one (rolled back here). The documented exposure
+    (security.md R16), bounded by roles.sql, which removes the role's (below)."""
+    with _connect(stack, "atus_api") as conn:
+        conn.execute("SET default_transaction_read_only = off")
+        with conn.transaction(force_rollback=True):
+            assert conn.execute(statement).fetchone()[0] > 0
+
+
+def test_reapplying_roles_removes_the_api_roles_large_objects(stack):
+    with _connect(stack, "atus_api") as conn:
+        conn.execute("SET default_transaction_read_only = off")
+        for statement in LARGE_OBJECT_WRITES:
+            conn.execute(statement)
+    with _connect(stack, "neondb_owner") as conn:
+        assert conn.execute("SELECT count(*) FROM pg_largeobject_metadata").fetchone()[0] == 2
+    result = subprocess.run([*stack[2], "run", "--rm", "--no-deps", "roles"], cwd=REPO_ROOT,
+                            capture_output=True, text=True, timeout=300, check=False)
+    assert result.returncode == 0, result.stderr[-3000:]
+    assert "roles.sql: removed 2 large object(s) that atus_api had stored." in result.stdout
+    with _connect(stack, "neondb_owner") as conn:
+        assert conn.execute("SELECT count(*) FROM pg_largeobject_metadata").fetchone()[0] == 0
 
 
 def test_api_role_transactions_are_read_only_by_default(stack):
