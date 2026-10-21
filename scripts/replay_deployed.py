@@ -10,8 +10,13 @@ budget:
   distinct specifications; their canonical ``to_dict()`` is a valid request
   body), each checked against the published value with the benchmark's own
   tolerance, as ``tests/data_quality/test_api_benchmarks.py`` does in-process;
-* a handful of **HTTP replays**: ``/api/v1/meta``, a full-period trend and a
-  by-sex comparison checked against published BLS values;
+* a handful of **HTTP replays**: ``/api/v1/meta``, a full-period trend, a
+  by-sex comparison checked against published BLS values, and the **F66 broad
+  selector** (every tier-1 code pooled over every multi-year year, replicate
+  variance): the costliest specification on the serving DB, which ADR-011
+  adds to this replay so the timeouts are sized with it. It covers every
+  minute of the diary day, so its estimate must be exactly 1,440 minutes with
+  a zero standard error;
 * optionally **every response against a local full-database run** under the
   §9 equivalence criterion (``atus_pipeline.serving.equivalence``): record the
   expected responses once with ``--record`` against a local API serving the
@@ -34,8 +39,8 @@ refusal (``daily_capacity_reached``, ``capacity_paused``, ``database_paused``,
 the per-network daily cap) stops the run: the governor is saying no, and
 retrying would only spend Worker requests. The edge result cache makes a
 second run of the same requests cost no Render or Neon work (``X-Cache:
-edge``). Each run spends at most ~27 of the per-network 60 daily uncached
-analyses (ADR-015).
+edge``). Each run sends 26 analyses (plus any retries) of the per-network 60
+daily uncached analyses (ADR-015).
 
 Nothing secret is sent or printed. Exit status: 0 every check passed, 1 a
 check failed (or the budget ran out), 2 usage error or refused plan.
@@ -67,6 +72,7 @@ from httpcheck import (  # noqa: E402
 )
 
 from atus_pipeline.analytics import benchmarks as bm  # noqa: E402
+from atus_pipeline.analytics.spec import ActivitySelector, AnalysisSpec, Measure  # noqa: E402
 from atus_pipeline.serving.equivalence import compare_results  # noqa: E402
 
 HARD_MAX_REQUESTS = 40
@@ -94,6 +100,16 @@ EXTRACTORS: dict[Callable, Callable[[dict], float]] = {
 #: (also in tests/data_quality/test_api_benchmarks.py).
 COMPARE_PUBLISHED = {"group_a": 1.58, "group_b": 2.38}
 COMPARE_TOLERANCE = 0.006
+
+#: Every tier-1 code of the 2003-25 harmonized lexicon (atus.activity_tier1;
+#: there is no 17). Selected together and pooled over every multi-year year,
+#: this is audit F66's broad selector, the costliest analysis on the serving DB.
+F66_TIER1_CODES = ("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12",
+                   "13", "14", "15", "16", "18", "50")
+#: Every minute of the diary day belongs to some tier-1 code (F40/I12), so the
+#: broad selector's estimate is exactly this, with a zero standard error.
+MINUTES_PER_DAY = 1440.0
+EXACT_TOLERANCE = 1e-6
 
 
 class StopRun(OpsError):
@@ -138,12 +154,23 @@ def plan_requests(selected: list[bm.Benchmark], *, replays: bool,
                          "group_b": {"sex": "female"}, "label_a": "Men",
                          "label_b": "Women"}),
             replay="compare"))
+        # Last: the costliest request, so a slow or refused answer delays nothing else.
+        plan.append(PlannedRequest("replay:f66_broad_selector_pooled", "POST",
+                                   "/api/v1/analysis/estimate", None, replay="broad"))
     return plan
 
 
 def trend_body(years: list[int]) -> str:
     return stable_json({"activity": {"preset": "sleep"}, "years": sorted(years),
                         "variance": "none"})
+
+
+def broad_selector_body(years: list[int]) -> str:
+    """F66: every tier-1 code, every year the multi-year weight covers (not 2020),
+    replicate variance; the engine's canonical form, like the benchmarks."""
+    spec = AnalysisSpec(Measure.AVERAGE_MINUTES_PER_DAY, ActivitySelector(F66_TIER1_CODES),
+                        tuple(year for year in sorted(years) if year != 2020))
+    return stable_json(spec.to_dict())
 
 
 def strip_versions(payload: Any) -> Any:
@@ -246,11 +273,12 @@ class Replayer:
                         f"{reply.header('x-data-version')}")
             self.compare_expected(request, expected)
             return
-        if request.replay == "trend":
+        if request.replay in ("trend", "broad"):
             years = (self.meta.get("data") or {}).get("years") or []
             if not years:
-                raise OpsError("no years from /api/v1/meta for the trend replay")
-            request.body = trend_body(years)
+                raise OpsError(f"no years from /api/v1/meta for the {request.replay} replay")
+            request.body = trend_body(years) if request.replay == "trend" \
+                else broad_selector_body(years)
         reply = self.analysis(request)
         if not reply.is_json:
             raise OpsError(f"{request.id}: {reply.describe()} (not JSON)")
@@ -272,6 +300,8 @@ class Replayer:
                         f"X-Cache {reply.header('x-cache')})")
         if request.replay == "trend":
             self.check_trend(payload)
+        elif request.replay == "broad":
+            self.check_broad(payload)
         elif request.replay == "compare":
             for group, published in COMPARE_PUBLISHED.items():
                 hours = payload[group]["estimate"]["value"] / 60.0
@@ -292,6 +322,20 @@ class Replayer:
         else:
             self.record("replay sleep trend", "PASS", f"{len(points)} years, 2020 unavailable "
                         "under multiyear weights, every other year 8-10 h")
+
+    def check_broad(self, payload: dict) -> None:
+        estimate = payload.get("estimate") or {}
+        value, se = estimate.get("value"), estimate.get("standard_error")
+        exact = all(isinstance(v, (int, float)) and not isinstance(v, bool)
+                    for v in (value, se)) \
+            and abs(value - MINUTES_PER_DAY) <= EXACT_TOLERANCE and abs(se) <= EXACT_TOLERANCE
+        name = "replay F66 broad selector (every tier-1 code, pooled)"
+        if exact:
+            self.record(name, "PASS", f"{value:,.6f} min/day, SE {se:.2g}: the whole diary day")
+        else:
+            self.record(name, "FAIL", f"estimate {value!r} (SE {se!r}), expected exactly "
+                                      f"{MINUTES_PER_DAY:,.0f} with a zero SE: a tier-1 code "
+                                      "is missing from F66_TIER1_CODES, or the result is wrong")
 
     def compare_expected(self, request: PlannedRequest, expected: dict | None) -> None:
         if expected is None:

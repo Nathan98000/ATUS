@@ -630,8 +630,10 @@ What a rehearsal cannot show is Render's deploy hook, its image pull, and the re
      Keep the file outside the repository.
   2. Against the site:
      `python scripts/replay_deployed.py --base-url https://atus.<sub>.workers.dev --expected expected-<release>.json --report replay.json`.
-- **What it sends.** The 24 BLS benchmarks of `atus_pipeline.analytics.benchmarks` (23 distinct specifications), `/api/v1/meta`, a full-period sleep trend and a by-sex comparison: 27 requests.
+- **What it sends.** The 24 BLS benchmarks of `atus_pipeline.analytics.benchmarks` (23 distinct specifications), `/api/v1/meta`, a full-period sleep trend, a by-sex comparison, and last the F66 broad selector (every tier-1 code pooled over every multi-year year, with replicate variance): 28 requests.
+  - The broad selector is the costliest analysis on the serving DB. ADR-011 adds it to this replay so that the statement timeout is sized with it (ADR-012). Its response time is in the report.
 - **What it checks.** Every benchmark against BLS's published value and the benchmark's own tolerance, and every response against the full-database recording under §9.
+  - The broad selector covers every minute of the diary day, so its estimate must be exactly 1,440 minutes with a zero standard error.
 - **Quota safety.**
   - Analyses are paced 10.5 s apart, to stay inside the API's per-client bucket.
   - The hard budget is 40 requests; a larger budget is refused, and so is a plan that does not fit.
@@ -643,6 +645,7 @@ What a rehearsal cannot show is Render's deploy hook, its image pull, and the re
   - `--record` against `atus api` on the full local database (read only) passed all 24 benchmarks and both by-sex values.
   - The replay against `atus api` on the restored release, as the read-only `atus_api` role, passed the same checks, and all 26 responses compared equal under §9. The largest scaled SE/CI difference was 7.45e-16; `/meta` was identical apart from its data version.
   - Each run sent 27 requests.
+  - Re-run after the F66 broad selector was added (independent verification, same day, same method, against the WS-B restore drill's serving DB): 28 requests per run, 24/24 benchmarks, all 27 responses equal under §9 (largest scaled SE/CI difference 1.59e-15). The broad selector gave 1,440.000000 minutes on both databases.
 
 ### 10. Week-1 calibration
 

@@ -57,15 +57,23 @@ COMPARE = {"label_a": "Men", "label_b": "Women",
            "group_b": {"estimate": {"value": 2.38 * 60, "standard_error": 1.0}},
            "difference": {"value": 0.8 * 60, "standard_error": 1.4}, "warnings": []}
 META = {"api_version": "v1", "analytics_version": "0.2", "data": {"years": YEARS}}
+#: The F66 broad selector as the full database answers it (value and SE as computed
+#: by the engine on the full local database, pooled over the 22 multi-year years).
+BROAD = {"estimate": {"value": 1440.0, "standard_error": 2.5073038618011603e-12,
+                      "ci_lower": 1440.0, "ci_upper": 1440.0},
+         "n_respondents": 250172, "n_participants": 250172, "warnings": []}
 
 
 def fake_api(server, *, data_version: str = DV_SERVING, responses=None,
-             health_path: str = "/health") -> dict[str, dict]:
+             health_path: str = "/health", broad: dict | None = None) -> dict[str, dict]:
     responses = responses if responses is not None else benchmark_responses()
     headers = {"X-Data-Version": data_version, "X-Cache": "miss"}
+    broad_body = replay.broad_selector_body(YEARS)
 
     def estimate(req):
         body = req["body"].decode()
+        if body == broad_body:
+            return json_reply(200, broad if broad is not None else BROAD, headers)
         if body not in responses:
             return envelope(422, "invalid_request")
         return json_reply(200, responses[body], headers)
@@ -88,13 +96,38 @@ def record(server, tmp_path) -> str:
     return str(path)
 
 
-def test_the_plan_is_27_requests_for_24_benchmarks():
+def test_the_plan_is_28_requests_for_24_benchmarks():
     plan = replay.plan_requests(list(bm.build_benchmarks()), replays=True,
                                 health_path="/api/health")
     analyses = [p for p in plan if p.method == "POST"]
-    assert len(plan) == 27 and len(analyses) == 25
+    assert len(plan) == 28 and len(analyses) == 26
     assert sum(len(p.benchmarks) for p in plan) == 24
     assert plan[0].path == "/api/health" and plan[1].path == "/api/v1/meta"
+    # ADR-011 graft: the F66 broad selector is in the post-deploy replay, last.
+    assert plan[-1].id == "replay:f66_broad_selector_pooled" and plan[-1].replay == "broad"
+    assert "broad" not in {p.replay for p in replay.plan_requests(
+        list(bm.build_benchmarks()), replays=False, health_path="/api/health")}
+
+
+def test_the_broad_selector_is_every_tier1_code_pooled_with_replicates():
+    from atus_pipeline.api.schemas.analysis import EstimateRequest
+
+    body = json.loads(replay.broad_selector_body(YEARS))
+    assert body["activity"]["include"] == list(replay.F66_TIER1_CODES)
+    assert len(replay.F66_TIER1_CODES) == 18 and "17" not in replay.F66_TIER1_CODES
+    assert body["years"] == [y for y in YEARS if y != 2020]  # 22 multi-year years
+    assert body["variance"] == "replicate" and body["weights"] == "multiyear"
+    assert body["measure"] == "average_minutes_per_day"
+    # A valid request for the API (not a 422), and the same specification back.
+    spec = EstimateRequest.model_validate(body).to_spec()
+    assert replay.stable_json(spec.to_dict()) == replay.broad_selector_body(YEARS)
+
+
+def test_a_broad_selector_short_of_the_whole_day_fails(fake_server, capsys):
+    fake_api(fake_server, broad={**BROAD, "estimate": {**BROAD["estimate"], "value": 1380.0}})
+    assert replay.main(["--base-url", fake_server.base]) == 1
+    out = capsys.readouterr().out
+    assert "[FAIL] replay F66 broad selector" in out and "missing from F66_TIER1_CODES" in out
 
 
 def test_record_writes_every_response_and_needs_a_loopback_api(fake_server, tmp_path, capsys):
@@ -102,7 +135,7 @@ def test_record_writes_every_response_and_needs_a_loopback_api(fake_server, tmp_
     expected = json.loads(open(path).read())
     assert expected["format"] == 1 and expected["analytics_version"] == "0.2"
     assert expected["data_version"] == DV_FULL
-    assert len(expected["responses"]) == 26  # meta + 23 benchmarks + 2 replays
+    assert len(expected["responses"]) == 27  # meta + 23 benchmarks + 3 replays
     assert replay.main(["--base-url", "https://atus.example.workers.dev",
                         "--record", str(tmp_path / "x.json")]) == 2
     assert "only against a local API" in capsys.readouterr().err
@@ -118,9 +151,11 @@ def test_replay_passes_against_equivalent_responses(fake_server, tmp_path, capsy
     out = capsys.readouterr().out
     assert out.count("[PASS] BLS ") == 26  # 24 benchmarks + the two compare groups
     assert "[PASS] §9 benchmark:" in out and "[PASS] §9 meta" in out
-    assert len(fake_server.calls) == 27
+    assert "[PASS] replay F66 broad selector" in out
+    assert "[PASS] §9 replay:f66_broad_selector_pooled" in out
+    assert len(fake_server.calls) == 28
     data = json.loads(report.read_text())
-    assert data["requests_sent"] == 27 and data["data_version"] == DV_SERVING
+    assert data["requests_sent"] == 28 and data["data_version"] == DV_SERVING
     assert not [o for o in data["outcomes"] if o["status"] == "FAIL"]
 
 
@@ -172,9 +207,9 @@ def test_budgets_above_40_are_refused(fake_server, budget, capsys):
 
 def test_a_plan_over_the_budget_is_refused_before_sending(fake_server, capsys):
     fake_api(fake_server)
-    assert replay.main(["--base-url", fake_server.base, "--max-requests", "26"]) == 2
+    assert replay.main(["--base-url", fake_server.base, "--max-requests", "27"]) == 2
     assert fake_server.calls == []
-    assert "needs 27 requests" in capsys.readouterr().err
+    assert "needs 28 requests" in capsys.readouterr().err
 
 
 def test_a_subset_fits_a_small_budget(fake_server):
