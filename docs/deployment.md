@@ -419,6 +419,7 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
 
   `test_full_database.py` runs on the full DB before the build, never on the serving DB.
 - **Artifact.** A `pg_dump -Fc` of the serving DB plus its sha256. You attach both to an immutable GitHub Release; publishing is always your action.
+- **Name the release the site serves.** After publishing, run `python scripts/ops/release_manifest.py write --artifact-dir <the artifact directory> --tag <release tag>` and commit the resulting `releases/current.json`. It records the tag, the data version and every asset's name, size and SHA-256. `deploy.yml` downloads exactly those bytes and refuses to run while the file says `unpublished`; `python scripts/ops/release_manifest.py check --require-published` checks it.
 - **TODO(WS-B):** the builder command and flags; the dump, checksum and release-note names; the size check against Neon's 1 GB per project (whether that means 1e9 B or 1 GiB is undocumented, so budget for 1e9 B).
 
 ### 2. Restore drill
@@ -586,6 +587,15 @@ The snapshot is built before anything deploys, so a failed restore or snapshot d
 
 A push to `main` deploys nothing: deploy.yml has no branch trigger, which `tests/deploy/test_workflows.py` asserts along with the permissions above.
 
+**Rehearsed locally (2026-10-20; functional, nothing timed, no provider contacted).** The snapshot job and the deploy job's checks were run on this Mac against the real release artifact (build `20261020T224252Z-a7420a5c`):
+
+- `release_manifest.py fetch` from a loopback server verified all three assets;
+- `atus restore-serving-db` restored the dump into a fresh `postgres:16` as a non-superuser `neondb_owner`, and every restore check passed;
+- the image, read-only and in production mode, served `build_snapshot.py`: 560 metadata responses and 229 analyses, every prewarmed specification answered 200, and the snapshot verified;
+- `wrangler dev` (local mode) then served that `frontend/dist` with the Worker in front of the same API. `deploy_smoke.py --require-snapshot --recompute 2` passed every check in 13 requests: both starters were equivalent under §9 between snapshot and live. The browser smoke passed.
+
+What a rehearsal cannot show is Render's deploy hook, its image pull, and the real Cloudflare deploy.
+
 **Bootstrap: the very first deploy.** Nothing exists on Render yet, so the first run is split around your approval.
 
 1. Publish the release artifact and commit `releases/current.json` (step 1).
@@ -628,6 +638,10 @@ A push to `main` deploys nothing: deploy.yml has no branch trigger, which `tests
   - A capacity or quota refusal stops the run.
   - A second run is answered from the edge cache (`X-Cache: edge`).
 - **Measurements.** The report records each response's `X-Cache`, `Server-Timing` and elapsed time, so the latency matrix above can be read from it.
+- **Rehearsed locally (2026-10-20, functional).**
+  - `--record` against `atus api` on the full local database (read only) passed all 24 benchmarks and both by-sex values.
+  - The replay against `atus api` on the restored release, as the read-only `atus_api` role, passed the same checks, and all 26 responses compared equal under §9. The largest scaled SE/CI difference was 7.45e-16; `/meta` was identical apart from its data version.
+  - Each run sent 27 requests.
 
 ### 10. Week-1 calibration
 
