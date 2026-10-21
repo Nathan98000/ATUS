@@ -4,7 +4,8 @@
  * else — another major version, or a `/meta` whose shape this build cannot
  * read — is an `IncompatibleApiError`. That is never retried and never
  * papered over with defaults: the app shows one clear full-page state instead
- * of crashing a route or guessing (audit F25).
+ * of crashing a route or guessing (audit F25). A v1 `/meta` that reports no
+ * loaded data is a `DataNotLoadedError` instead.
  */
 import type { MetaResponse } from './types'
 
@@ -19,6 +20,18 @@ export class IncompatibleApiError extends Error {
     super(message)
     this.name = 'IncompatibleApiError'
     this.reportedVersion = reportedVersion
+  }
+}
+
+/**
+ * A compatible service with no survey data loaded: the API answers `/meta`
+ * with release `unloaded` and no years before the first load. That is "no
+ * data yet", not an API from another version (review round 2).
+ */
+export class DataNotLoadedError extends Error {
+  constructor(message = 'The service reports no loaded survey data (no years).') {
+    super(message)
+    this.name = 'DataNotLoadedError'
   }
 }
 
@@ -55,6 +68,12 @@ export function checkMetaCompatibility(value: unknown): MetaResponse {
     )
   }
   const data = value.data
+  if (
+    isRecord(data) &&
+    (data.release === 'unloaded' || (Array.isArray(data.years) && data.years.length === 0))
+  ) {
+    throw new DataNotLoadedError()
+  }
   const capabilities = value.capabilities
   const readable =
     typeof value.analytics_version === 'string' &&

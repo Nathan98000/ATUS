@@ -189,6 +189,33 @@ describe('result downloads', () => {
     )
   })
 
+  it('announces a repeated download of the same file again (review round 2)', async () => {
+    // The same text set twice changed nothing in the DOM, so the polite live
+    // region said nothing for the second download.
+    const user = userEvent.setup()
+    renderResult(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
+    await screen.findByText('8h 49m')
+    const message = 'Download started: atus-estimate-sleeping-2025.csv'
+    const region = document.querySelector('output.result-downloads__status') as HTMLElement
+    const button = screen.getByRole('button', { name: 'Download CSV' })
+    await user.click(button)
+    expect(region).toHaveTextContent(message)
+
+    for (const count of [2, 3]) {
+      const seen: string[] = []
+      const observer = new MutationObserver(() => seen.push(region.textContent ?? ''))
+      observer.observe(region, { childList: true, characterData: true, subtree: true })
+      await user.click(button)
+      await waitForSaved(count)
+      await vi.waitFor(() => expect(seen.at(-1)).toBe(message))
+      observer.disconnect()
+      // Emptied, then said again: a change the screen reader announces.
+      expect(seen).toContain('')
+      expect(region).toBe(document.querySelector('output.result-downloads__status'))
+    }
+    expect(button).toHaveFocus()
+  })
+
   it('releases each object URL after the download has started', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     try {

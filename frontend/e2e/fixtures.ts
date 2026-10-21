@@ -16,8 +16,19 @@
  * production limits stay untouched: the API's 6 new analyses a minute per
  * client and the governor's daily allowance per /24 apply per test, instead
  * of the whole suite counting as one visitor.
+ *
+ * In both modes every test also collects the Content-Security-Policy and
+ * Permissions-Policy violations of every page in its browser context and
+ * fails when there is one (`policyErrors`; brief §17 "no console violations
+ * in E2E"). Only one journey collected them before review round 2, so a
+ * violation on any other page — the compare view, the share and download
+ * actions, every error, quota, waking and version page, the boot fallback,
+ * the phone layout — would have passed. A test that opens another browser
+ * context collects that context's errors itself (`collectPolicyErrors`).
  */
-import { test as base, type Page } from '@playwright/test'
+import { test as base, expect, type Page } from '@playwright/test'
+
+import { collectPolicyErrors } from './helpers'
 
 export { expect } from '@playwright/test'
 
@@ -33,7 +44,7 @@ export function visitorAddress(key: string): string {
   return `198.19.${hash % 256}.${1 + ((hash >>> 8) % 254)}`
 }
 
-export const test = base.extend<{ visitor: string }>({
+export const test = base.extend<{ visitor: string; policyErrors: string[] }>({
   visitor: [
     async ({ context }, use, testInfo) => {
       const address = visitorAddress(
@@ -41,6 +52,14 @@ export const test = base.extend<{ visitor: string }>({
       )
       if (STACK_MODE) await context.setExtraHTTPHeaders({ 'CF-Connecting-IP': address })
       await use(address)
+    },
+    { auto: true },
+  ],
+  policyErrors: [
+    async ({ context }, use) => {
+      const errors = await collectPolicyErrors(context)
+      await use(errors)
+      expect(errors, 'Content-Security-Policy or Permissions-Policy violations').toEqual([])
     },
     { auto: true },
   ],

@@ -222,7 +222,7 @@ Code: `frontend/public/_headers`, `frontend/vite.config.ts`, `frontend/src/deplo
 Tests:
 - `frontend/src/checkBundle.test.ts`;
 - `frontend/src/deploy/staticHeaders.test.ts`;
-- `frontend/e2e/service-states.spec.ts` (headers and CSP violations under `vite preview`);
+- `frontend/e2e/service-states.spec.ts` (headers under `vite preview`), and every E2E test: each fails on a CSP violation or Permissions-Policy error in any page of its browser context (`frontend/e2e/fixtures.ts`, review round 2; before, only the core journeys were checked);
 - `edge/test/worker/headers.test.ts`;
 - `tests/unit/api/test_guard.py::TestHeaders`;
 - the `static_headers` and `api_headers` checks in `deploy/stack/edge_probe.py`. `static_headers` compares every header of the `/*` rule of the published `_headers` with its exact value on `/`, `/explore` and a hashed bundle; `tests/deploy/test_edge_probe.py` shows each check of the probe failing on its violation (a missing or changed `Referrer-Policy` or `Permissions-Policy` included) against a stub edge.
@@ -413,9 +413,9 @@ Tests:
 - **Decoding.** A share link is `/analysis/<operation>?spec=<base64url(JSON)>`, decoded only in the browser. Nothing is sent, and an "invalid link" page appears, for any of these:
   - invalid base64, UTF-8 or JSON;
   - the keys `__proto__`, `constructor` or `prototype`;
-  - a structurally wrong spec.
+  - a structurally wrong spec, including a field the page reads with the wrong type (a preset, label or measure that is not a string, an include list that is not strings, a population that is not an object of scalar values; review round 2: such values crashed the page into its error boundary or made Analyze throw).
 
-  Code: `frontend/src/domain/urlSpec.ts`. Tests: `frontend/src/domain/urlSpec.test.ts`, `frontend/e2e/share.spec.ts`.
+  The builder (`/explore?op=…&spec=…`) opens such a link as the default analysis with a visible note instead. Code: `frontend/src/domain/urlSpec.ts`. Tests: `frontend/src/domain/urlSpec.test.ts`, `frontend/src/pages/ExplorePage.test.tsx`, `frontend/e2e/share.spec.ts`.
 - **Plausible but invalid specs.** These are sent, and the API refuses them with a 422. Most cost no database statement (C4, C7); the exceptions are listed under abuse case 2.
 - **Labels.** Free-text labels are rendered as React text. The SPA's non-test sources contain no `dangerouslySetInnerHTML`, `innerHTML`, `outerHTML` assignment, `insertAdjacentHTML` or `document.write` (`tests/deploy/test_docs_accuracy_r2.py::test_the_spa_sets_no_cookies_uses_no_web_storage_and_writes_no_raw_html`; a component test may still read `innerHTML`), and the CSP forbids inline script.
 - **No stored content.** There is no link storage, so a link cannot plant content on the site ([ADR-016](adr/ADR-016-short-share-links.md)).

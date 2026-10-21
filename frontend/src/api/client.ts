@@ -19,7 +19,7 @@
  * (`resilience.ts`, `snapshot.ts`, `endpoints.ts`).
  */
 import { resolveApiBase } from './apiBase'
-import { noteServedDataVersion } from './serviceStatus'
+import { noteServedAnalyticsVersion, noteServedDataVersion } from './serviceStatus'
 
 export const API_VERSION_PREFIX = '/api/v1'
 
@@ -62,12 +62,26 @@ export class ApiError extends Error {
 export class NetworkError extends Error {
   /** The client stopped waiting (`timeoutMs`); the request may still be running. */
   readonly timedOut: boolean
+  /**
+   * The browser was offline (`navigator.onLine` false) when the request
+   * failed: the only failure a reconnect is allowed to retry (`queries.ts`).
+   */
+  readonly offline: boolean
 
-  constructor(message: string, options?: { cause?: unknown; timedOut?: boolean }) {
+  constructor(
+    message: string,
+    options?: { cause?: unknown; timedOut?: boolean; offline?: boolean },
+  ) {
     super(message, options)
     this.name = 'NetworkError'
     this.timedOut = options?.timedOut ?? false
+    this.offline = options?.offline ?? false
   }
+}
+
+/** The browser reports being offline (its 'offline' event sets this). */
+export function browserOffline(): boolean {
+  return typeof navigator !== 'undefined' && navigator.onLine === false
 }
 
 export interface ApiResult<T> {
@@ -230,7 +244,7 @@ export async function apiRequest<T>(
       })
     }
     if (isAbortError(cause)) return cause
-    return new NetworkError(message, { cause })
+    return new NetworkError(message, { cause, offline: browserOffline() })
   }
 
   try {
@@ -249,6 +263,7 @@ export async function apiRequest<T>(
 
     const dataVersion = response.headers.get('X-Data-Version')
     noteServedDataVersion(dataVersion)
+    noteServedAnalyticsVersion(response.headers.get('X-Analytics-Version'))
 
     if (!response.ok) {
       throw await parseErrorEnvelope(response)

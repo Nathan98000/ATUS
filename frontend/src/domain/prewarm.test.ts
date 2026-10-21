@@ -5,7 +5,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { activitiesFixture, metaFixture } from '../test/fixtures'
-import { defaultBuilderState, toRequest, type BuilderState } from '../features/builder/state'
+import {
+  defaultBuilderState,
+  fromRequest,
+  toRequest,
+  type BuilderState,
+} from '../features/builder/state'
 import { stableStringify } from '../utils/stableStringify'
 import { STARTER_EXAMPLES, prewarmedAnalyses, type PrewarmInput } from './prewarm'
 
@@ -23,7 +28,7 @@ describe('prewarmedAnalyses', () => {
   const list = prewarmedAnalyses(input)
 
   it('covers about 130 distinct analyses for the captured release', () => {
-    expect(list).toHaveLength(130)
+    expect(list).toHaveLength(132)
     const identities = new Set(
       list.map((item) => `${item.operation} ${stableStringify(item.spec)}`),
     )
@@ -31,6 +36,8 @@ describe('prewarmedAnalyses', () => {
     const counts = (prefix: string) =>
       list.filter((item) => item.name.startsWith(prefix)).length
     expect(counts('starter:')).toBe(4)
+    // The two comparison starters; the others equal builder entries above.
+    expect(counts('starter via the builder:')).toBe(2)
     expect(counts('estimate:')).toBe(9 * 4 + 18) // presets × measures, tier-1 categories
     expect(counts('trend:')).toBe(9 + 18)
     expect(counts('compare by sex:')).toBe(9 + 18)
@@ -78,6 +85,28 @@ describe('prewarmedAnalyses', () => {
     expect(bodyOf('pandemic weights: sleep, 2020')).toBe(
       builder({ activity: { preset: 'sleep' }, weights: 'pandemic', singleYear: 2020 }),
     )
+  })
+
+  it('every starter re-run unchanged from the builder is prewarmed too (review round 2)', () => {
+    // "Adjust analysis" then Analyze sends the builder's form of a starter
+    // (every default stated). For the comparison starters that body was in
+    // no snapshot: a cold start and a governor charge for a result the
+    // snapshot already held, and a second share link for it.
+    const years = input.years
+    const latest = Math.max(...years)
+    const identities = new Set(
+      list.map((item) => `${item.operation} ${stableStringify(item.spec)}`),
+    )
+    for (const starter of STARTER_EXAMPLES) {
+      const viaBuilder = toRequest(
+        fromRequest(starter.operation, starter.spec(years, latest), years),
+        years,
+      )
+      expect(
+        identities.has(`${starter.operation} ${stableStringify(viaBuilder)}`),
+        starter.question,
+      ).toBe(true)
+    }
   })
 
   it('a full-period trend has every reported year, 2020 included', () => {

@@ -4,7 +4,7 @@
  * one entry per run, not one per keystroke). Opening /explore?op=…&spec=…
  * prefills the builder from an existing analysis.
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import { prewake } from '../api/prewake'
@@ -19,6 +19,7 @@ import { isOperation, type Operation } from '../api/types'
 import { ErrorPanel } from '../components/ErrorPanel'
 import { LoadingPanel } from '../components/LoadingPanel'
 import { useRetryFocus } from '../components/useRetryFocus'
+import { isFullPageError } from '../domain/presentError'
 import { analysisPath, decodeSpec, explorePath } from '../domain/urlSpec'
 import { ActivityPicker } from '../features/activities/ActivityPicker'
 import {
@@ -45,6 +46,10 @@ const OPERATION_LABELS: { value: Operation; label: string; hint: string }[] = [
   },
 ]
 
+/** Shown when /explore?op=…&spec=… cannot be read (review round 2). */
+const UNUSABLE_PREFILL_NOTE =
+  'The analysis in this link could not be opened in the builder, so it starts from the default analysis instead.'
+
 export function ExplorePage() {
   const meta = useMeta()
   const populationMetadata = usePopulationMetadata()
@@ -67,6 +72,7 @@ export function ExplorePage() {
   // Page-level states only while something essential is missing. Once the
   // builder has its data, a failed background refetch never unmounts it and
   // loses the visitor's edits (audit F26).
+  let content: ReactNode
   if (meta.data === undefined || populationMetadata.data === undefined) {
     const failure =
       meta.data === undefined && meta.isError
@@ -74,29 +80,39 @@ export function ExplorePage() {
         : populationMetadata.data === undefined && populationMetadata.isError
           ? populationMetadata.error
           : null
-    if (failure !== null) {
-      // "Try again" refetches every failed query, not just the one shown (F63).
-      return (
-        <ErrorPanel
-          error={failure}
-          onRetry={() => retry(() => refetchFailed(meta, populationMetadata))}
+    // "Try again" refetches every failed query, not just the one shown (F63).
+    const onRetry = () => retry(() => refetchFailed(meta, populationMetadata))
+    // A paused quota or an incompatible API is a full page with its own heading.
+    if (failure !== null && isFullPageError(failure)) {
+      return <ErrorPanel error={failure} onRetry={onRetry} />
+    }
+    content =
+      failure !== null ? (
+        <ErrorPanel error={failure} onRetry={onRetry} />
+      ) : (
+        <LoadingPanel
+          message="Loading the analysis builder…"
+          hint="Fetching what the analytical service supports."
         />
       )
-    }
-    return (
-      <LoadingPanel
-        message="Loading the analysis builder…"
-        hint="Fetching what the analytical service supports."
+  } else {
+    content = (
+      <Builder
+        metaYears={meta.data.data.years}
+        meta={meta.data}
+        populationMetadata={populationMetadata.data}
       />
     )
   }
 
+  // The page heading stays mounted in every state — loading, error, builder —
+  // so "Try again" can keep keyboard focus on it while the retry runs and
+  // after one that fails again (review round 2; useRetryFocus).
   return (
-    <Builder
-      metaYears={meta.data.data.years}
-      meta={meta.data}
-      populationMetadata={populationMetadata.data}
-    />
+    <div className="explore-page">
+      <h1 tabIndex={-1}>Build an analysis</h1>
+      {content}
+    </div>
   )
 }
 
@@ -115,15 +131,17 @@ function Builder({
   const [state, setState] = useState<BuilderState>(() => {
     const operationParam = searchParams.get('op')
     const specParam = searchParams.get('spec')
-    if (isOperation(operationParam ?? undefined) && specParam) {
+    if (!specParam) return defaultBuilderState(metaYears)
+    if (isOperation(operationParam ?? undefined)) {
       try {
         const operation = operationParam as Operation
         return fromRequest(operation, decodeSpec(specParam, operation), metaYears)
       } catch {
-        // Fall through to the default analysis on a malformed prefill link.
+        // A malformed prefill link: the default analysis, with a note below.
       }
     }
-    return defaultBuilderState(metaYears)
+    // Never silently: the visitor followed a link to a particular analysis.
+    return { ...defaultBuilderState(metaYears), prefillNote: UNUSABLE_PREFILL_NOTE }
   })
   const [failedSubmits, setFailedSubmits] = useState(0)
   const attempted = failedSubmits > 0
@@ -157,8 +175,7 @@ function Builder({
   const dimensions = populationMetadata.dimensions
 
   return (
-    <div className="explore-page">
-      <h1 tabIndex={-1}>Build an analysis</h1>
+    <>
       <p className="field-hint" style={{ marginTop: '-0.3rem' }}>
         Doing what · for whom · when · measured how — then Analyze.
       </p>
@@ -351,6 +368,6 @@ function Builder({
           </p>
         </div>
       </div>
-    </div>
+    </>
   )
 }

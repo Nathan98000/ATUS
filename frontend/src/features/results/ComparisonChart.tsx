@@ -29,8 +29,24 @@ function chartLabel(label: string): string {
     : `${characters.slice(0, MAX_LABEL_CHARS - 1).join('')}…`
 }
 
+/**
+ * The labels the chart draws. Two labels that read the same once shortened
+ * (they share their first 47 characters, or are equal) would leave only the
+ * colour to tell the rows apart, so each is then prefixed with its group
+ * ("Group A: …"), as the cards above and the table below name them
+ * (review round 2).
+ */
+function chartLabels(groups: readonly { label: string; role?: string }[]): string[] {
+  const shortened = groups.map((group) => chartLabel(group.label))
+  if (new Set(shortened).size === shortened.length) return shortened
+  return groups.map((group) =>
+    group.role ? chartLabel(`${group.role}: ${group.label}`) : chartLabel(group.label),
+  )
+}
+
 interface ComparisonChartProps {
-  groups: { label: string; estimate: EstimateValue; colorVar: string }[]
+  /** `role` names the group ("Group A") where two drawn labels would otherwise read the same. */
+  groups: { label: string; estimate: EstimateValue; colorVar: string; role?: string }[]
   unit: string
 }
 
@@ -43,6 +59,7 @@ export function ComparisonChart({ groups, unit }: ComparisonChartProps) {
   const height = MARGIN.top + groups.length * ROW_HEIGHT + MARGIN.bottom
   const x = linearScale([xMin, xMax], [MARGIN.left, WIDTH - MARGIN.right])
   const ticks = niceTicks(xMin, xMax, 5)
+  const labels = chartLabels(groups)
 
   const summary = groups
     .map((group) => {
@@ -85,9 +102,9 @@ export function ComparisonChart({ groups, unit }: ComparisonChartProps) {
           const centerY = MARGIN.top + groupIndex * ROW_HEIGHT + ROW_HEIGHT / 2 + 8
           const { value, ci_lower, ci_upper, standard_error } = group.estimate
           return (
-            <g key={group.label} data-testid={`compare-row-${groupIndex}`}>
+            <g key={groupIndex} data-testid={`compare-row-${groupIndex}`}>
               <text x={MARGIN.left} y={centerY - 20} className="chart-group-label">
-                {chartLabel(group.label)}
+                {labels[groupIndex]}
               </text>
               {ci_lower != null && ci_upper != null ? (
                 <line

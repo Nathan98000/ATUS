@@ -15,9 +15,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../App'
 import type { EstimateRequest } from '../api/types'
 import { WAKING_MESSAGE } from '../components/ServiceNotice'
+import { STARTER_EXAMPLES, prewarmedAnalyses } from '../domain/prewarm'
 import { encodeSpec } from '../domain/urlSpec'
 import {
   activitiesFixture,
+  compareChildrenFixture,
   estimateSleepFixture,
   metaFixture,
   populationMetadataFixture,
@@ -34,6 +36,7 @@ import {
   server,
 } from '../test/server'
 import { SNAPSHOT_POINTER_PATH } from '../api/snapshot'
+import { stableStringify } from '../utils/stableStringify'
 
 const sleepSpec: EstimateRequest = {
   measure: 'average_minutes_per_day',
@@ -109,7 +112,7 @@ describe('cold start (F11, F12)', () => {
       expect(document.activeElement).toBe(document.body)
 
       await vi.advanceTimersByTimeAsync(17_000)
-      expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
       expect(screen.queryByText(WAKING_MESSAGE)).not.toBeInTheDocument()
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
@@ -134,7 +137,7 @@ describe('cold start (F11, F12)', () => {
       await vi.advanceTimersByTimeAsync(100)
       expect(screen.getByText(WAKING_MESSAGE)).toBeInTheDocument()
       await vi.advanceTimersByTimeAsync(10_000)
-      expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
       expect(calls).toBe(3)
       expect(screen.queryByText(WAKING_MESSAGE)).not.toBeInTheDocument()
     })
@@ -153,7 +156,7 @@ describe('cold start (F11, F12)', () => {
       )
       renderApp('/explore')
       await vi.advanceTimersByTimeAsync(16_000)
-      expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
   })
@@ -210,6 +213,45 @@ describe('API version check (F25)', () => {
     expect(
       screen.queryByText(/Something went wrong in the application/),
     ).not.toBeInTheDocument()
+    // Not "works with analysis API v1, but the service reported version v1" (review round 2).
+    expect(screen.getByRole('alert')).not.toHaveTextContent('reported version v1')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'metadata is not in the form this page reads',
+    )
+  })
+
+  it('an API with no data loaded is "no survey data", with Try again (review round 2)', async () => {
+    // The API's own /meta before any load: 200, release "unloaded", no years.
+    const user = userEvent.setup()
+    let loaded = false
+    server.use(
+      http.get(api('/meta'), () =>
+        HttpResponse.json(
+          loaded
+            ? metaFixture
+            : {
+                ...metaFixture,
+                data: {
+                  ...metaFixture.data,
+                  release: 'unloaded',
+                  years: [],
+                  ingestion_run_id: null,
+                },
+              },
+        ),
+      ),
+    )
+    renderApp('/explore')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('No survey data is loaded')
+    expect(
+      screen.queryByRole('heading', {
+        name: 'This page and the analysis service are out of step',
+      }),
+    ).not.toBeInTheDocument()
+    loaded = true
+    await user.click(within(alert).getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
   })
 })
 
@@ -537,10 +579,15 @@ describe('data release changes (F27)', () => {
   })
 
   it('offers a reload when a response comes from a different data release', async () => {
+    // The page loaded serving-a; the switched API now answers serving-b, its
+    // /meta included (what a reload would read).
+    let metaReads = 0
     server.use(
-      http.get(api('/meta'), () =>
-        HttpResponse.json(metaFixture, { headers: { 'X-Data-Version': '0325:serving-a:111' } }),
-      ),
+      http.get(api('/meta'), () => {
+        metaReads += 1
+        const version = metaReads === 1 ? '0325:serving-a:111' : '0325:serving-b:222'
+        return HttpResponse.json(metaFixture, { headers: { 'X-Data-Version': version } })
+      }),
       http.post(api('/analysis/estimate'), () =>
         HttpResponse.json(estimateSleepFixture, {
           headers: { ...analysisHeaders(), 'X-Data-Version': '0325:serving-b:222' },
@@ -570,6 +617,152 @@ describe('data release changes (F27)', () => {
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
     expect(screen.queryByText(/different data release/)).not.toBeInTheDocument()
   })
+
+  // Review round 2 (known issue from round 1): without a snapshot the reload
+  // check assumed the page's /meta came from the API, which already serves
+  // the new release. Through the site the edge Worker answers a plain
+  // /api/v1/meta from its own deployed snapshot, so a reload can load the
+  // old release again: the check asks what a reload would read.
+  it('without a loaded snapshot, offers no reload while the site’s /meta still reports the old release', async () => {
+    server.use(
+      http.get(api('/meta'), () =>
+        HttpResponse.json(metaFixture, { headers: { 'X-Data-Version': '0325:serving-a:111' } }),
+      ),
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(estimateSleepFixture, {
+          headers: { ...analysisHeaders(), 'X-Data-Version': '0325:serving-b:222' },
+        }),
+      ),
+    )
+    const requests = countRequests()
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    const notice = await screen.findByText(/switching to a different data release/)
+    expect(notice).toHaveTextContent('reloading the page does not change that yet')
+    expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
+    // The check read the site's /meta (one more GET), never through the HTTP cache.
+    expect(requests('GET /api/v1/meta')).toBe(2)
+  })
+
+  it('a page whose snapshot manifest failed to load asks the pointer a reload would read', async () => {
+    // The pointer still names the old release; this page fell back to the
+    // API because the manifest could not be read when it loaded.
+    let manifestReads = 0
+    server.use(
+      http.get(SNAPSHOT_POINTER_PATH, () =>
+        HttpResponse.json({
+          snapshot_id: SNAPSHOT_ID,
+          data_version: '0325:serving-a:111',
+          analytics_version: '0.2',
+          api_version: 'v1',
+        }),
+      ),
+      http.get(`/snap/${SNAPSHOT_ID}/manifest.json`, () => {
+        manifestReads += 1
+        return new HttpResponse('unavailable', { status: 503 })
+      }),
+      http.get(api('/meta'), () =>
+        HttpResponse.json(metaFixture, { headers: { 'X-Data-Version': '0325:serving-a:111' } }),
+      ),
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(estimateSleepFixture, {
+          headers: { ...analysisHeaders(), 'X-Data-Version': '0325:serving-b:222' },
+        }),
+      ),
+    )
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(manifestReads).toBe(1)
+    expect(await screen.findByText(/switching to a different data release/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
+  })
+
+  // Review round 2: only X-Data-Version was compared, so a release that
+  // changed only ANALYTICS_VERSION mixed two statistical implementations on
+  // one page under the old version tag, without any notice.
+  it('a result from another analytics version offers a reload (header)', async () => {
+    let metaReads = 0
+    server.use(
+      http.get(api('/meta'), () => {
+        metaReads += 1
+        const analytics = metaReads === 1 ? '0.2' : '0.3'
+        return HttpResponse.json(
+          { ...metaFixture, analytics_version: analytics },
+          {
+            headers: {
+              'X-Data-Version': '0325:serving-a:111',
+              'X-Analytics-Version': analytics,
+            },
+          },
+        )
+      }),
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(
+          { ...estimateSleepFixture, analytics_version: '0.3' },
+          {
+            headers: {
+              ...analysisHeaders(),
+              'X-Data-Version': '0325:serving-a:111',
+              'X-Analytics-Version': '0.3',
+            },
+          },
+        ),
+      ),
+    )
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    const notice = await screen.findByText(/different version of its statistical methods/)
+    expect(notice.closest('output')).toBe(noticeRegions()[1])
+    expect(notice).toHaveTextContent('analytics 0.3')
+    expect(screen.getByRole('button', { name: 'Reload page' })).toBeInTheDocument()
+    expect(screen.queryByText(/different data release/)).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(document.body)
+  })
+
+  it('a result whose body names another analytics version is noticed too', async () => {
+    // A cached or snapshot answer carries its version in the body.
+    server.use(
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(
+          { ...estimateSleepFixture, analytics_version: '0.3' },
+          { headers: analysisHeaders() },
+        ),
+      ),
+    )
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(await screen.findByText(/statistical methods/)).toHaveTextContent('analytics 0.3')
+  })
+
+  it('mid-switch, an analytics change the snapshot does not have yet offers no reload', async () => {
+    // The API was switched first (deploy.yml deploys it before the Worker):
+    // a reload would load the deployed snapshot, still analytics 0.2.
+    await installSnapshot({
+      get: { '/api/v1/meta': metaFixture, '/api/v1/activities/presets': presetsFixture },
+    })
+    server.use(
+      http.get(api('/wake'), () => HttpResponse.json({ origin: 'warm' })),
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(
+          { ...estimateSleepFixture, analytics_version: '0.3' },
+          {
+            headers: {
+              ...analysisHeaders(),
+              'X-Data-Version': SNAPSHOT_DATA_VERSION,
+              'X-Analytics-Version': '0.3',
+            },
+          },
+        ),
+      ),
+    )
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    const notice = await screen.findByText(
+      /switching to a different version of its statistical/,
+    )
+    expect(notice).toHaveTextContent('reloading the page does not change that yet')
+    expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
+  })
 })
 
 describe('no background metadata refetch (F62)', () => {
@@ -577,7 +770,7 @@ describe('no background metadata refetch (F62)', () => {
     await withFakeClock(async () => {
       const requests = countRequests()
       renderApp('/explore')
-      await screen.findByText('Build an analysis')
+      await screen.findByRole('button', { name: 'Analyze' })
       expect(requests('GET /api/v1/meta')).toBe(1)
       // Before Phase 5, /meta went stale after 5 minutes and refetched on focus.
       await vi.advanceTimersByTimeAsync(30 * 60_000)
@@ -733,6 +926,32 @@ describe('focus after "Try again" (review round 1)', () => {
     await waitFor(() => expect(document.activeElement).toBe(heading))
   })
 
+  it('Explore: focus stays on the page heading while a retry runs and after it fails again (review round 2)', async () => {
+    // Explore's loading and error states had no h1, so useRetryFocus found
+    // nothing to focus and focus sat on <body> for the whole retry.
+    const user = userEvent.setup()
+    let gets = 0
+    server.use(
+      http.get(api('/meta'), async () => {
+        gets += 1
+        if (gets > 1) await delay(200)
+        return errorResponse(500, 'internal_error', 'Boom.')
+      }),
+    )
+    renderApp('/explore')
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    retry.focus()
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(document.querySelector('.loading-panel')).not.toBeNull())
+    const heading = screen.getByRole('heading', { level: 1, name: 'Build an analysis' })
+    expect(document.activeElement).toBe(heading)
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument()
+    expect(gets).toBe(2)
+    expect(document.activeElement).toBe(
+      screen.getByRole('heading', { level: 1, name: 'Build an analysis' }),
+    )
+  })
+
   it('Home: a retry of the starter examples lands on their heading', async () => {
     const user = userEvent.setup()
     let failing = true
@@ -752,6 +971,49 @@ describe('focus after "Try again" (review round 1)', () => {
     expect(document.activeElement).toBe(
       screen.getByRole('heading', { name: 'Start from a question' }),
     )
+  })
+})
+
+describe('focus after in-app navigation (review round 2)', () => {
+  // Client-side navigation left focus on <body>: nothing said the page had
+  // changed, and the next Tab started from the top of the document.
+  it('moves focus to the new page’s heading, Home → Explore → result', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+    const build = await screen.findByRole('link', { name: 'Build your own analysis' })
+    build.focus()
+    await user.keyboard('{Enter}')
+    const exploreHeading = await screen.findByRole('heading', {
+      level: 1,
+      name: 'Build an analysis',
+    })
+    await waitFor(() => expect(document.activeElement).toBe(exploreHeading))
+
+    const analyze = await screen.findByRole('button', { name: 'Analyze' })
+    analyze.focus()
+    await user.keyboard('{Enter}')
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 })),
+    )
+    expect(document.activeElement).toHaveTextContent('Sleeping')
+  })
+
+  it('the canonical URL rewrite (a replace) does not move focus', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+    const starter = await screen.findByRole('link', { name: /How much do Americans sleep\?/ })
+    await user.click(starter)
+    const share = await screen.findByRole('button', { name: /Copy link|Share/ })
+    share.focus()
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(document.activeElement).toBe(share)
+  })
+
+  it('the first page of a visit keeps focus where the browser puts it', async () => {
+    renderApp('/explore')
+    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+    expect(document.activeElement).toBe(document.body)
   })
 })
 
@@ -806,19 +1068,77 @@ describe('offline (review round 1)', () => {
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
     expect(screen.queryByText('Preparing the analysis…')).not.toBeInTheDocument()
   })
+
+  /** The browser goes offline and back online (a Wi-Fi change, a laptop waking up). */
+  async function reconnect(times: number) {
+    for (let index = 0; index < times; index += 1) {
+      act(() => {
+        onlineManager.setOnline(false)
+        onlineManager.setOnline(true)
+      })
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+  }
+
+  // Review round 2: refetchOnReconnect re-sent every analysis that had
+  // failed, final answers included — another full analysis_timeout query, a
+  // rate-limited request while its "Try again" countdown still ran.
+  it.each([
+    ['analysis_timeout', 503, { scope: 'global' }, '60'],
+    ['rate_limited', 429, { scope: 'client' }, '60'],
+    ['daily_capacity_reached', 503, { scope: 'daily', budget: 'global' }, null],
+    ['capacity_paused', 503, { scope: 'monthly', budget: 'cu_month' }, null],
+    ['database_paused', 503, null, '3600'],
+    ['capacity_unavailable', 503, null, '60'],
+    ['data_version_mismatch', 503, null, '30'],
+    ['insufficient_data', 422, null, null],
+  ] as const)(
+    'a final %s is not sent again when the browser comes back online (review round 2)',
+    async (code, status, details, retryAfter) => {
+      let posts = 0
+      server.use(
+        http.post(api('/analysis/estimate'), () => {
+          posts += 1
+          return HttpResponse.json(
+            { error: { code, message: 'Refused.', details } },
+            { status, headers: retryAfter === null ? {} : { 'Retry-After': retryAfter } },
+          )
+        }),
+      )
+      renderApp(sleepRoute)
+      await screen.findByRole('alert')
+      expect(posts).toBe(1)
+      await reconnect(3)
+      expect(posts).toBe(1)
+    },
+  )
+
+  it('an incompatible /meta is not fetched again when the browser comes back online (review round 2)', async () => {
+    server.use(
+      http.get(api('/meta'), () => HttpResponse.json({ ...metaFixture, api_version: 'v2' })),
+    )
+    const requests = countRequests()
+    renderApp('/explore')
+    await screen.findByRole('heading', {
+      name: 'This page and the analysis service are out of step',
+    })
+    expect(requests('GET /api/v1/meta')).toBe(1)
+    await reconnect(2)
+    expect(requests('GET /api/v1/meta')).toBe(1)
+  })
 })
 
 describe('background failures and retries (F26, F63)', () => {
   it('a failed background /meta refetch keeps the builder and its edits', async () => {
     const user = userEvent.setup()
     const client = renderApp('/explore')
-    await screen.findByText('Build an analysis')
+    await screen.findByRole('button', { name: 'Analyze' })
     await user.selectOptions(screen.getByLabelText('Sex'), 'female')
 
     server.use(http.get(api('/meta'), () => errorResponse(500, 'internal_error', 'Boom.')))
     await client.refetchQueries({ queryKey: ['meta'] })
 
-    expect(screen.getByText('Build an analysis')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Analyze' })).toBeInTheDocument()
     expect(screen.getByLabelText('Sex')).toHaveValue('female')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
@@ -854,9 +1174,57 @@ describe('background failures and retries (F26, F63)', () => {
 
     failing = false
     await user.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
     expect(requests('GET /api/v1/meta')).toBe(2)
     expect(requests('GET /api/v1/population/metadata')).toBe(2)
+  })
+
+  // Review round 2: the picker said "Close and reopen to retry", but its
+  // query stayed mounted (staleTime Infinity, no retries, no focus
+  // refetch), so neither reopening nor anything else sent a request.
+  async function openFailedPicker() {
+    const user = userEvent.setup()
+    let failing = true
+    const requests = countRequests()
+    server.use(
+      http.get(api('/activities'), () =>
+        failing
+          ? errorResponse(500, 'internal_error', 'Boom.')
+          : HttpResponse.json(activitiesFixture),
+      ),
+    )
+    renderApp('/explore')
+    await screen.findByRole('button', { name: 'Analyze' })
+    await user.click(screen.getByRole('button', { name: 'Change activity' }))
+    expect(await screen.findByText(/The activity list could not be loaded/)).toBeInTheDocument()
+    const sent = requests('GET /api/v1/activities')
+    return {
+      user,
+      sent,
+      requests,
+      recover: () => {
+        failing = false
+      },
+    }
+  }
+
+  it('the activity picker’s "Try again" loads a failed activity list', async () => {
+    const { user, sent, requests, recover } = await openFailedPicker()
+    recover()
+    await user.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByLabelText('Search activities')).toBeInTheDocument()
+    expect(requests('GET /api/v1/activities')).toBe(sent + 1)
+    // Focus stays next to the panel, on its toggle, not on <body>.
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Close' }))
+  })
+
+  it('reopening the activity picker retries a failed activity list', async () => {
+    const { user, sent, requests, recover } = await openFailedPicker()
+    recover()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    await user.click(screen.getByRole('button', { name: 'Change activity' }))
+    expect(await screen.findByLabelText('Search activities')).toBeInTheDocument()
+    expect(requests('GET /api/v1/activities')).toBe(sent + 1)
   })
 
   it('the home page offers "Try again" when starter examples cannot load', async () => {
@@ -902,7 +1270,7 @@ describe('static snapshot and prewake', () => {
     )
     const requests = countRequests()
     renderApp('/explore')
-    expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
     await waitFor(() => expect(wakes).toBe(1))
     expect(requests('GET /api/v1/meta')).toBe(0)
     expect(requests('GET /api/v1/population/metadata')).toBe(0)
@@ -913,7 +1281,7 @@ describe('static snapshot and prewake', () => {
   it('without a snapshot (development, E2E) no prewake is sent', async () => {
     const requests = countRequests()
     renderApp('/explore')
-    expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
     expect(requests('GET /api/v1/wake')).toBe(0)
   })
 
@@ -934,4 +1302,62 @@ describe('static snapshot and prewake', () => {
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
     expect(screen.queryByText(WAKING_MESSAGE)).not.toBeInTheDocument()
   })
+
+  // Review round 2: "Adjust analysis" then Analyze on a comparison starter
+  // sends the builder's form of it (every default stated), which no prewarm
+  // entry held, so it went to the API although the snapshot had the result.
+  // This drives the real pages against a snapshot of the prewarm list, so it
+  // also catches the builder and the list drifting apart.
+  it.each(
+    STARTER_EXAMPLES.filter((starter) => starter.operation === 'compare').map(
+      (starter) => starter.question,
+    ),
+  )(
+    'the starter "%s" re-run unchanged from the builder is served by the snapshot',
+    async (question) => {
+      const years = metaFixture.data.years
+      const prewarmed = prewarmedAnalyses({
+        years,
+        presets: metaFixture.capabilities.activity_presets,
+        measures: metaFixture.capabilities.measures.map((measure) => measure.name),
+        weightSchemes: metaFixture.capabilities.weight_schemes.map((scheme) => scheme.name),
+        tier1: activitiesFixture.activities
+          .filter((activity) => activity.level === 1)
+          .map((activity) => ({ code: activity.code, name: activity.name })),
+      })
+      const requested = await installSnapshot({
+        get: {
+          '/api/v1/meta': metaFixture,
+          '/api/v1/population/metadata': populationMetadataFixture,
+          '/api/v1/activities': activitiesFixture,
+          '/api/v1/activities/presets': presetsFixture,
+        },
+        post: prewarmed
+          .filter((item) => item.operation === 'compare')
+          .map((item) => ({
+            path: '/api/v1/analysis/compare',
+            body: stableStringify(item.spec),
+            response: compareChildrenFixture,
+          })),
+      })
+      server.use(http.get(api('/wake'), () => HttpResponse.json({ origin: 'warm' })))
+      const requests = countRequests()
+      const user = userEvent.setup()
+      renderApp('/')
+
+      await user.click(
+        await screen.findByRole('link', { name: (name) => name.includes(question) }),
+      )
+      const resultHeading = { level: 3, name: compareChildrenFixture.label_a }
+      expect(await screen.findByRole('heading', resultHeading)).toBeInTheDocument()
+      await user.click(screen.getByRole('link', { name: 'Adjust analysis' }))
+      await user.click(await screen.findByRole('button', { name: 'Analyze' }))
+      expect(await screen.findByRole('heading', resultHeading)).toBeInTheDocument()
+
+      // Two snapshot entries (the starter's bytes, then the builder's), no API call.
+      const postFiles = new Set(requested.filter((file) => file.startsWith('post/')))
+      expect(postFiles.size).toBe(2)
+      expect(requests('POST /api/v1/analysis/compare')).toBe(0)
+    },
+  )
 })

@@ -88,19 +88,74 @@ function exceedsDepth(value: unknown, limit: number): boolean {
   return false
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+const isString = (value: unknown) => typeof value === 'string'
+const isNumber = (value: unknown) => typeof value === 'number'
+const isStringList = (value: unknown) => Array.isArray(value) && value.every(isString)
+/** A population filter: an object of scalar values (strings, numbers, booleans, null). */
+const isPopulation = (value: unknown) =>
+  isPlainObject(value) &&
+  Object.values(value).every(
+    (item) => item === null || ['string', 'number', 'boolean'].includes(typeof item),
+  )
+
+/**
+ * Fields the page reads, with the type it reads them as. A field may be
+ * absent or null (unset); any other type is refused here, because the page
+ * renders these values and calls string methods on them: a numeric preset
+ * crashed the result page into the error boundary, an object label crashed
+ * the builder, and a numeric group label made Analyze throw (review round 2).
+ */
+const FIELD_TYPES: readonly [path: string, check: (value: unknown) => boolean][] = [
+  ['activity.preset', isString],
+  ['activity.include', isStringList],
+  ['activity.exclude', isStringList],
+  ['activity.label', isString],
+  ['measure', isString],
+  ['weights', isString],
+  ['variance', isString],
+  ['confidence_level', isNumber],
+  ['population', isPopulation],
+]
+const COMPARE_FIELD_TYPES: typeof FIELD_TYPES = [
+  ['label_a', isString],
+  ['label_b', isString],
+]
+
+function fieldAt(spec: Record<string, unknown>, path: string): unknown {
+  const [first, second] = path.split('.') as [string, string | undefined]
+  const value = spec[first]
+  return second === undefined ? value : (value as Record<string, unknown>)[second]
+}
+
+function checkFieldTypes(spec: Record<string, unknown>, fields: typeof FIELD_TYPES): void {
+  for (const [path, check] of fields) {
+    const value = fieldAt(spec, path)
+    if (value !== undefined && value !== null && !check(value)) {
+      throw new InvalidShareLinkError(
+        `The analysis specification is not valid: its ${path} has the wrong type.`,
+      )
+    }
+  }
+}
+
 /**
  * Narrow structural validation — enough to reject nonsense links before
- * making a request. The API remains the authoritative validator; anything
- * structurally plausible is sent and the API's structured error is shown.
+ * making a request or rendering them. The API remains the authoritative
+ * validator; anything structurally plausible is sent and the API's
+ * structured error is shown.
  */
 export function validateRequestShape(value: unknown, operation: Operation): AnalysisRequest {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isPlainObject(value)) {
     throw new InvalidShareLinkError('The analysis specification must be an object.')
   }
-  const spec = value as Record<string, unknown>
+  const spec = value
 
   const activity = spec.activity
-  if (activity === null || typeof activity !== 'object' || Array.isArray(activity)) {
+  if (!isPlainObject(activity)) {
     throw new InvalidShareLinkError('The analysis specification is missing its activity.')
   }
 
@@ -113,13 +168,19 @@ export function validateRequestShape(value: unknown, operation: Operation): Anal
     throw new InvalidShareLinkError('The analysis specification is missing its years.')
   }
 
+  checkFieldTypes(spec, FIELD_TYPES)
+
   if (operation === 'compare') {
     for (const group of ['group_a', 'group_b'] as const) {
-      const g = spec[group]
-      if (g === null || typeof g !== 'object' || Array.isArray(g)) {
+      if (!isPlainObject(spec[group])) {
         throw new InvalidShareLinkError('A comparison link must define both groups.')
       }
     }
+    checkFieldTypes(spec, [
+      ...COMPARE_FIELD_TYPES,
+      ['group_a', isPopulation],
+      ['group_b', isPopulation],
+    ])
     return spec as unknown as CompareRequest
   }
 

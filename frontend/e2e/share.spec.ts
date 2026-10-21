@@ -4,7 +4,7 @@
  */
 import { expect, test } from './fixtures'
 
-import { CORE, analyze, setAge } from './helpers'
+import { CORE, analyze, collectPolicyErrors, setAge } from './helpers'
 
 test(
   'a shared analysis URL reproduces the analysis in a fresh browser context',
@@ -42,6 +42,7 @@ test(
 
     // A completely fresh context: new storage, new cache, nothing carried over.
     const freshContext = await browser.newContext()
+    const freshPolicyErrors = await collectPolicyErrors(freshContext)
     const freshPage = await freshContext.newPage()
     await freshPage.goto(sharedUrl)
 
@@ -54,6 +55,7 @@ test(
     await expect(freshPage.getByLabel('Minimum age')).toHaveValue('25')
     await expect(freshPage.getByLabel('Maximum age')).toHaveValue('54')
     await expect(freshPage.getByLabel('Year', { exact: true })).toHaveValue('2023')
+    expect(freshPolicyErrors).toEqual([])
     await freshContext.close()
   },
 )

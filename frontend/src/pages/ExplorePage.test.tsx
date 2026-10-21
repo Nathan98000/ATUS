@@ -38,7 +38,9 @@ function renderExplore(route = '/explore') {
 }
 
 async function waitForBuilder() {
-  await waitFor(() => expect(screen.getByText('Build an analysis')).toBeInTheDocument())
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Analyze' })).toBeInTheDocument(),
+  )
 }
 
 describe('builder defaults and discovery', () => {
@@ -153,6 +155,66 @@ describe('prefilling from a shared analysis', () => {
     expect(screen.getByRole('radio', { name: /Participation rate/ })).toBeChecked()
     expect(screen.getByLabelText('Year')).toHaveValue('2024')
     expect(screen.getByLabelText('Sex')).toHaveValue('female')
+  })
+
+  /** base64url of `spec` exactly as written (wrong types included). */
+  function rawSpec(spec: object): string {
+    return btoa(JSON.stringify(spec))
+      .replaceAll('+', '-')
+      .replaceAll('/', '_')
+      .replace(/=+$/, '')
+  }
+  const UNUSABLE = /could not be opened in the builder/
+
+  // Review round 2: wrongly typed fields crashed the page (an object preset,
+  // include list or label reached React as a child) or made Analyze throw
+  // (a numeric label_a), and a malformed link silently became the default.
+  it.each([
+    ['estimate', { activity: { preset: { a: 1 } }, years: [2023] }],
+    ['estimate', { activity: { include: [{ a: 1 }] }, years: [2023] }],
+    ['estimate', { activity: { include: ['01'], label: { a: 1 } }, years: [2023] }],
+    [
+      'compare',
+      {
+        activity: { preset: 'sleep' },
+        group_a: { sex: 'male' },
+        group_b: { sex: 'female' },
+        label_a: 7,
+        label_b: 'B',
+        years: [2023],
+      },
+    ],
+    [
+      'compare',
+      {
+        activity: { preset: 'sleep' },
+        group_a: 'men',
+        group_b: { sex: 'female' },
+        years: [2023],
+      },
+    ],
+  ] as const)(
+    'an unusable %s prefill link says so and starts from the default',
+    async (op, spec) => {
+      const user = userEvent.setup()
+      renderExplore(`/explore?op=${op}&spec=${rawSpec(spec)}`)
+      await waitForBuilder()
+      expect(screen.getByText(UNUSABLE)).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Analyze' }))
+      expect(screen.getByText('analysis page')).toBeInTheDocument()
+      const location = screen.getByTestId('location').textContent ?? ''
+      expect(decodeSpec(location.split('spec=')[1] as string, 'estimate').activity).toEqual({
+        preset: 'sleep',
+      })
+    },
+  )
+
+  it('a usable prefill link shows no such note', async () => {
+    renderExplore(
+      `/explore?op=estimate&spec=${rawSpec({ activity: { preset: 'sleep' }, years: [2023] })}`,
+    )
+    await waitForBuilder()
+    expect(screen.queryByText(UNUSABLE)).not.toBeInTheDocument()
   })
 })
 

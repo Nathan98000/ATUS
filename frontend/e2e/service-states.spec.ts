@@ -17,7 +17,6 @@ import {
   CORE,
   analysisUrl,
   analyze,
-  collectPolicyErrors,
   expectNoSeriousViolations,
   setAge,
   tabReachesAllControls,
@@ -82,7 +81,8 @@ test(
       await tabTo(page, page.getByRole('link', { name: 'Skip to content' }), 3)
     }
 
-    await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible({
+    // The builder itself (its heading is there in every state).
+    await expect(page.getByRole('button', { name: 'Analyze' })).toBeVisible({
       timeout: 15_000,
     })
     await expect(page.getByText(WAKING)).toHaveCount(0)
@@ -125,14 +125,22 @@ test('an incompatible API version is one clear, accessible full-page state', asy
 })
 
 test('a data release switch under an open page offers a reload, politely', async ({ page }) => {
-  // /meta reports one release; analyses then come from another (a switch
-  // happened after the page loaded).
+  // /meta reported one release when the page loaded; analyses, and /meta
+  // as a reload would read it now, come from another (a switch happened
+  // after the page loaded). While the site's /meta still reported the old
+  // release, a reload could not help, and the page says so instead (review
+  // round 2).
   await withoutSnapshot(page)
+  let metaReads = 0
   await page.route('**/api/v1/meta', async (route) => {
+    metaReads += 1
     const response = await route.fetch()
     await route.fulfill({
       response,
-      headers: { ...response.headers(), 'x-data-version': 'e2e-release-a' },
+      headers: {
+        ...response.headers(),
+        'x-data-version': metaReads === 1 ? 'e2e-release-a' : 'e2e-release-b',
+      },
     })
   })
   await page.route('**/api/v1/analysis/**', async (route) => {
@@ -317,8 +325,7 @@ test('if the app bundle cannot load, the page explains instead of staying blank'
 test(
   'the core journeys run same-origin under the deployed headers with no policy errors',
   CORE,
-  async ({ page, baseURL }) => {
-    const policyErrors = await collectPolicyErrors(page)
+  async ({ page, baseURL, policyErrors }) => {
     const apiOrigins = new Set<string>()
     const bundleCaching: string[] = []
     page.on('request', (request) => {
@@ -378,6 +385,27 @@ test(
     expect([...apiOrigins]).toEqual([new URL(baseURL as string).origin])
   },
 )
+
+test('every test collects policy violations, not only the journeys above (review round 2)', async ({
+  page,
+  policyErrors,
+}) => {
+  // The fixture's own check (e2e/fixtures.ts): without any setup of its own,
+  // this test's context collects the violation of an inline script, which
+  // the CSP refuses; the fixture's teardown fails any test whose list is
+  // not empty, so this one empties it after checking it.
+  await page.goto('/about')
+  await expect(page.getByRole('heading', { name: 'About ATUS Explorer' })).toBeVisible()
+  await page.evaluate(() => {
+    const script = document.createElement('script')
+    script.textContent = 'window.inlineRan = true'
+    document.head.append(script)
+  })
+  await expect.poll(() => policyErrors.length).toBeGreaterThan(0)
+  expect(policyErrors.join('\n')).toMatch(/Content[- ]Security[- ]Policy/i)
+  expect(await page.evaluate(() => 'inlineRan' in window)).toBe(false)
+  policyErrors.splice(0)
+})
 
 test('the OpenAPI schema is published at /openapi.json, a static file outside /api', async ({
   request,

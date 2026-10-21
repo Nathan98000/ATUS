@@ -138,8 +138,11 @@ frontend/public/
 Metadata queries load once per page (`staleTime: Infinity`) and loaded
 metadata never refetches in the background — not on window focus, not on
 reconnect — because a focus refetch could wake a sleeping free-tier host for
-nothing (audit F62); only a query that failed is retried when the browser
-comes back online. Every query runs with `networkMode: "always"`: TanStack
+nothing (audit F62). Coming back online refetches only a query whose last
+attempt failed because the browser was offline; a final answer (an
+`analysis_timeout`, a paused quota, a 422, an incompatible API) or a rate
+limit whose `Retry-After` still runs is never re-sent by a reconnect — the
+visitor decides (review round 2). Every query runs with `networkMode: "always"`: TanStack
 Query's default pauses a query that starts while the browser is offline
 before its function runs, which left a new analysis on "Calculating…" for as
 long as the browser stayed offline, with no request and no message (review
@@ -155,7 +158,10 @@ shape this build reads (`compat.ts`). Anything else — `v2`, a missing
 version, a renamed field — is an `IncompatibleApiError`: never retried,
 never papered over with defaults, and shown as one full-page state
 ("This page and the analysis service are out of step", with a reload
-button) instead of crashing a route into the error boundary (F25).
+button) instead of crashing a route into the error boundary (F25). A `v1`
+`/meta` that reports no loaded data (release `unloaded`, no years: the API's
+answer before the first load) is not an incompatibility: it is shown as "No
+survey data is loaded" with "Try again" (review round 2).
 
 **Data version.** Every page is tagged with the data version its metadata
 came from: `X-Data-Version` from the API (or the static snapshot's
@@ -173,11 +179,22 @@ data swap by itself: every later response's `X-Data-Version` is compared
 with the loaded one (`serviceStatus.ts`), and a difference shows a polite
 "different data release — reload" notice. (Before Phase 5 the docs said the
 key invalidated "by construction"; that only held after a reload, and only
-with a globally unique data version — audit F06/F27.) The notice offers
-"Reload page" only when a reload would load that release: without a static
-snapshot (the page's `/meta` came from the API), or when the snapshot
-pointer, read again with `no-cache`, now names it
-(`snapshot.ts reloadLoadsVersion`). During a release switch the API serves
+with a globally unique data version — audit F06/F27.) The statistical
+implementation is tracked the same way (review round 2): the page's `/meta`
+`analytics_version` is compared with every later `X-Analytics-Version` and
+with every result's own `analytics_version`, so a release that changes only
+`ANALYTICS_VERSION` shows a notice in its own words ("a different version of
+its statistical methods"). The cache key keeps the page's versions; a result
+of another release or implementation is not hidden by it but announced by
+the notice, and each result still shows its own `analytics_version` (the
+methodology panels of all three views, and the exports). The notice offers
+"Reload page" only when a reload would load that release: when the snapshot
+pointer, read again with `no-cache`, now names it, or, without a usable
+pointer, when the site's own `/api/v1/meta` (also `no-cache`) already
+reports it (`snapshot.ts reloadLoadsVersion`). That is what a reload reads:
+through the site the edge Worker answers a plain `/api/v1/meta` from its own
+deployed snapshot, not from the API, so "no snapshot loaded" does not mean
+"the reload gets the API's release" (review round 2). During a release switch the API serves
 the new release before the deploy job publishes the new snapshot (ADR-013
 step 8); every page load, a reload or a new tab alike, then reads the old
 snapshot, so the notice instead says the service is switching releases,
@@ -193,7 +210,9 @@ superseded requests are aborted via TanStack Query's signal, and stale
 responses cannot overwrite newer ones because every spec is its own key.
 A failed background refetch never unmounts the builder or hides a displayed
 result: pages show a page-level error only while nothing is loaded (F26),
-and Explore's "Try again" refetches every failed query (F63).
+and Explore's "Try again" refetches every failed query (F63). The activity
+picker fetches a failed activity list or preset list again when it opens
+and from its own "Try again" (review round 2).
 
 ## Cold start, retries and service states
 
@@ -248,12 +267,13 @@ contract and of the edge have public-facing copy:
 | --- | --- |
 | `invalid_spec`, `validation_error`, `malformed_json`, `invalid_analysis`, `unknown_activity`, `activity_not_found`, `unsupported_analysis`, `insufficient_data`, `payload_too_large` | the request is the problem: the API's own explanation, "Adjust analysis"; a 422's `details.errors[]` (`{location, message, type}`) become one line per field, e.g. "measure: Input should be …" |
 | `rate_limited` | "Too many new analyses in a short time" with a `Retry-After` countdown on "Try again" (the ticking seconds are hidden from assistive technology; the message states the wait). The edge's per-network daily allowance (`details.budget: "prefix"`) instead says that the network's new analyses for today are used up and that the limit resets at 00:00 UTC (in local time), with no countdown and no "Try again"; any other wait over 15 minutes names the local time it ends |
-| `daily_capacity_reached` | the service's shared capacity for new analyses is used up for today; resets at 00:00 UTC, shown in local time. Always a shared allowance: the API sends `details.scope: "daily"`, the edge governor `"global"` or `"daily"`; a per-network daily denial is `rate_limited` with budget `prefix` (above) |
+| `daily_capacity_reached` | the service's shared capacity for new analyses is used up for today; resets at 00:00 UTC, shown in local time. A shared allowance: the API sends `details.scope: "daily"`, the edge governor `"global"` or `"daily"`; a per-network daily denial is `rate_limited` with budget `prefix` (above). The governor's heavy-only cap (`details.budget: "heavy"`) instead says that today's long analyses (8 or more year queries: 8+ years, 4+ for a comparison) are used up while analyses of up to 7 years (3 for a comparison) still run, and offers "Adjust analysis" (review round 2) |
 | `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `schema_not_initialized`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); `analysis_timeout` also offers "Adjust analysis". `upstream_unavailable` follows `details.reason`: `connect_failed`/`circuit_open` "could not be reached", `origin_timeout` "did not answer in time", `broken_response` "broke off", `not_configured` "not set up"; only `platform_error` (or a non-JSON 5xx) says the hosting provider answered. `service_waking` and the waking-class `upstream_unavailable` are shown only after the 150 s budget, so they say the service has not answered for more than 2 minutes and that its free hosting may be paused, for example until next month, instead of promising a temporary problem: a Render suspension looks exactly like this until the owner sets the edge's pause switch (`api_paused`, below; [security.md R13](security.md#accepted-risks)) |
-| `database_paused`, `capacity_paused`, `api_paused`, `edge_daily_limit` | **full-page** "paused" state: free hosting quota used up, when it resets, what still works (starter examples and earlier analyses), a link home. A date is named only when the service says when the pause ends (`capacity_paused`: `resumes_at`/`Retry-After`; `api_paused`: `details.until`); `database_paused`'s fixed `Retry-After: 3600` only paces retries, so its page names no date. `api_paused` is the owner's pause switch at the edge: "The analysis service is paused", worded by `details.reason` (the host used up this month's allowance, the host suspended it, or maintenance), and "It is not known yet when it will be back" without a date (review round 2) |
+| `database_paused`, `capacity_paused`, `api_paused`, `edge_daily_limit` | **full-page** "paused" state: free hosting quota used up, when it resets, what still works (starter examples and earlier analyses), a link home. A date is named only when the service says when the pause ends (`capacity_paused`: `resumes_at`/`Retry-After`; `api_paused`: `details.until`); `database_paused`'s fixed `Retry-After: 3600` only paces retries, so its page names no date. The governor's monthly compute budget (`capacity_paused` with `details.budget: "cu_month"`) also pauses while usage runs ahead of its pacing line, often for an hour or two early in the month, so its page says the pause spreads the month's free allowance and names when it lifts (a local time within the day, else a date), not "nearly used up … until it resets" (review round 2). `api_paused` is the owner's pause switch at the edge: "The analysis service is paused", worded by `details.reason` (the host used up this month's allowance, the host suspended it, or maintenance), and "It is not known yet when it will be back" without a date (review round 2) |
 | `not_found`, `method_not_allowed`, `unsupported_media_type` | a request outside the HTTP contract, which the page never sends on purpose: most likely a page and a service from different versions, so the copy says to reload the page; no "Try again" (the retry policy treats these as final) |
-| `forbidden_origin` | the service accepts requests only through the site itself; no "Try again" |
-| incompatible API | **full-page** state with a reload button |
+| `forbidden_origin` | through the site the Worker always adds the edge secret, so this means the API does not accept it: the copy says the site's connection to the analysis service is misconfigured, a problem in the deployment and not in the visitor's analysis, and what still works; no "Try again" |
+| incompatible API | **full-page** state with a reload button; another major version is named, and a `v1` `/meta` in a shape this build cannot read says so instead of "works with v1, but the service reported v1" |
+| no data loaded (a `v1` `/meta` with release `unloaded` or no years, as the API answers before the first load) | the `data_not_loaded` copy ("No survey data is loaded") with "Try again", not the incompatible-API page |
 | no answer (`NetworkError`) | "could not be reached" or "did not answer in time", with "Try again" |
 | any other code (`internal_error`, `malformed_response`, `unknown_error`, a code this build does not know) | one generic "unexpected problem in the service" copy with "Try again" (honouring `Retry-After`) |
 
@@ -315,8 +335,11 @@ the four home-page starters, then — built by the analysis builder's own
 `toRequest`, so the bytes match what visitors send — every preset under every
 measure, a full-period trend per preset and per tier-1 category, a
 latest-year estimate per tier-1 category, men vs women per preset and per
-tier-1 category, and each preset under the pandemic weights in 2019 and
-2020 (130 for the 2003–2025 release). Two passes:
+tier-1 category, each preset under the pandemic weights in 2019 and
+2020, and each starter as the builder sends it after "Adjust analysis"
+without a change (every default stated; for the two comparison starters
+these bytes are otherwise in no list; review round 2) — 132 for the
+2003–2025 release. Two passes:
 
 ```bash
 node scripts/snapshot-requests.mjs --meta meta.json --activities activities.json
@@ -466,9 +489,18 @@ facts are `null`, never guessed. File names are
   focus to the page's heading (`<h1 tabIndex={-1}>`; on Home, the starter
   examples' heading) before the retry and, until it settles, back to the
   heading the page then shows whenever focus fell to `<body>` (review
-  round 1).
+  round 1). Explore keeps its "Build an analysis" heading mounted in the
+  loading and error states too, so focus stays on it while a retry runs and
+  after one that fails again (review round 2).
+- After an in-app navigation (a link, Analyze, Back/Forward) focus moves to
+  the new page's `<h1>` (`AppShell`), so the change of page is announced and
+  the next Tab continues from it. Not on the first page of a visit, and not
+  when the analysis page only replaces its query string with the canonical
+  spec (review round 2).
 - The download buttons are ordinary buttons; a persistent `<output>` says
-  which file was started, and focus stays on the button.
+  which file was started, and focus stays on the button. Downloading the
+  same file again empties the region and says it again 100 ms later, so the
+  repeat is announced too (review round 2).
 - Playwright runs axe checks (no serious or critical violations) on the five
   main screens, the About page, the waking state, the incompatible-API, paused-quota and
   edge-limit pages, the data-release reload notice, the
@@ -484,8 +516,9 @@ facts are `null`, never guessed. File names are
 
 ```bash
 npm test          # unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 80 Playwright runs: 51 tests in Chromium desktop, 3 mobile,
+npm run test:e2e  # 81 Playwright runs: 52 tests in Chromium desktop, 3 mobile,
                   # and the 13 @core journeys again in Firefox and in WebKit
+                  # (one desktop test runs only in stack mode)
 npx playwright install firefox webkit   # once, for the cross-browser projects
 ../scripts/e2e_in_container.sh --project firefox   # Firefox where it cannot launch
                   # natively (macOS 27): browsers in the official Linux image
@@ -559,8 +592,14 @@ listing wherever `frontend/node_modules` is installed.
   be deployed: every page carries the `_headers` rules and the `<meta>` CSP,
   bundles are served immutable, `/openapi.json` is served with its rules and
   equals `frontend/openapi.json`, and the core journeys (including a
-  download) produce no CSP violation or Permissions-Policy error, with every
-  API request on the page's own origin.
+  download) run with every API request on the page's own origin. Every E2E
+  test, in every project and in stack mode, collects the CSP violations and
+  Permissions-Policy errors of every page in its browser context and fails
+  on one (`e2e/fixtures.ts` `policyErrors`; the share test checks its fresh
+  context too). Before review round 2 only the core-journeys test and the
+  deployed smoke collected them, so the compare view, the share and JSON
+  actions, the error, quota, waking and version pages, the boot fallback and
+  the phone layout ran unchecked.
 - Cross-browser: tests tagged `@core` — the first-time-user estimate, the
   comparison, share links (copy, refresh, invalid), the 2020 gap and chart
   keyboard access, the exports, the waking notice, and the headers/CSP

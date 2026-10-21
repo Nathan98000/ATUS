@@ -11,7 +11,7 @@
 /* oxlint-disable jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-to-interactive-role */
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
-import { useActivities, useActivityPresets } from '../../api/queries'
+import { refetchFailed, useActivities, useActivityPresets } from '../../api/queries'
 import type { ActivityEntry, ActivitySelection } from '../../api/types'
 import { buildLexiconIndex, type LexiconIndex } from './lexicon'
 
@@ -43,6 +43,11 @@ export function ActivityPicker({ value, onChange, error }: ActivityPickerProps) 
     toggleRef.current?.focus()
   }
 
+  // The lists are fetched once per page and never refetched in the
+  // background, so a failed one is fetched again only from here: when the
+  // panel opens, and from its "Try again" (review round 2).
+  const retryFailedLists = () => refetchFailed(activities, presets)
+
   return (
     <div className="activity-picker">
       <div className="activity-picker__current">
@@ -52,7 +57,10 @@ export function ActivityPicker({ value, onChange, error }: ActivityPickerProps) 
           type="button"
           className="btn btn--small"
           aria-expanded={open}
-          onClick={() => setOpen((current) => !current)}
+          onClick={() => {
+            if (!open) retryFailedLists()
+            setOpen(!open)
+          }}
         >
           {open ? 'Close' : 'Change activity'}
         </button>
@@ -65,9 +73,20 @@ export function ActivityPicker({ value, onChange, error }: ActivityPickerProps) 
               Loading the activity list…
             </output>
           ) : activities.isError || !index ? (
-            <p className="error-text">
-              The activity list could not be loaded. Close and reopen to retry.
-            </p>
+            <>
+              <p className="error-text">The activity list could not be loaded.</p>
+              <button
+                type="button"
+                className="btn btn--small"
+                onClick={() => {
+                  // The button is replaced by the loading text: keep focus beside it.
+                  toggleRef.current?.focus()
+                  retryFailedLists()
+                }}
+              >
+                Try again
+              </button>
+            </>
           ) : (
             <PickerPanel
               index={index}

@@ -272,8 +272,9 @@ describe('revalidation across releases (F27, review round 1)', () => {
     await installSnapshot({ get: { '/api/v1/meta': metaFixture } })
     expect(await loadSnapshot()).not.toBeNull()
     const modes = recordCacheModes()
-    expect(await reloadLoadsVersion(SNAPSHOT_DATA_VERSION)).toBe(true)
-    expect(await reloadLoadsVersion('0326:serving-new:aaa')).toBe(false)
+    const data = (dataVersion: string) => ({ dataVersion, analyticsVersion: null })
+    expect(await reloadLoadsVersion(data(SNAPSHOT_DATA_VERSION))).toBe(true)
+    expect(await reloadLoadsVersion(data('0326:serving-new:aaa'))).toBe(false)
     expect(modes(SNAPSHOT_POINTER_PATH)).toEqual(['no-cache', 'no-cache'])
   })
 

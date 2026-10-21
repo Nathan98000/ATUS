@@ -9,8 +9,11 @@
  *
  * Analysis results are cached under a key that includes the canonical spec
  * AND the analytics version plus the data version the page was loaded with,
- * so a result computed under one data release or statistical implementation
- * is never silently presented as coming from another.
+ * so results of different page loads never share an entry. A response from
+ * another data release or statistical implementation than the page's is
+ * never silent either: `serviceStatus.ts` compares every response's
+ * versions with the page's and the page shows a notice (review round 2 added
+ * the analytics version), and each result shows its own `analytics_version`.
  *
  * Retries are not TanStack Query's: `endpoints.ts` runs every API call through
  * a time-budgeted retry loop that understands cold starts and `Retry-After`.
@@ -21,14 +24,19 @@
  * browser stayed offline, with no request and no message. Running the
  * function lets the request fail at once, and `resilience.ts` presents being
  * offline as final ("check your internet connection"); a query that failed
- * is fetched again when the browser comes back online. That needs
- * `refetchOnReconnect: true` stated: with networkMode 'always' TanStack Query
- * turns it off by default. Loaded data never goes stale (`staleTime:
- * Infinity`), so a reconnect refetches only queries that have no data.
+ * BECAUSE the browser was offline is fetched again when it comes back online
+ * (`refetchOnReconnect`, which networkMode 'always' turns off unless it is
+ * stated). Any other failure is an answer that coming back online does not
+ * change — an analysis time-out, a paused quota, a rate limit whose
+ * Retry-After still runs, a 422, an incompatible API — and is never re-sent
+ * by a reconnect: the visitor decides (review round 2). Loaded data never
+ * goes stale (`staleTime: Infinity`), so a reconnect refetches nothing that
+ * has data.
  */
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { ApiResult } from './client'
+import { isOfflineFailure } from './resilience'
 import {
   fetchActivities,
   fetchActivityDetail,
@@ -42,16 +50,25 @@ import type { MetaResponse, Operation, OperationContract } from './types'
 import { stableStringify } from '../utils/stableStringify'
 
 /**
+ * Coming back online refetches a query only when its last attempt failed
+ * because the browser was offline (or it has neither data nor an error).
+ * A final answer — or a rate limit still counting down — is not re-sent.
+ */
+function refetchOnReconnect(query: { state: { error: unknown } }): boolean {
+  return query.state.error === null || isOfflineFailure(query.state.error)
+}
+
+/**
  * Metadata describes one deployed release: fetch it once per page. Loaded
  * data never goes stale, so nothing refetches it; only a query that failed
- * is retried when the browser comes back online.
+ * because the browser was offline is retried when it comes back online.
  */
 const METADATA_QUERY = {
   staleTime: Infinity,
   retry: false,
   refetchOnWindowFocus: false,
   networkMode: 'always',
-  refetchOnReconnect: true,
+  refetchOnReconnect,
 } as const
 
 const META_QUERY_KEY = ['meta'] as const
@@ -173,7 +190,7 @@ export function useAnalysis<Op extends Operation>(
     retry: false,
     refetchOnWindowFocus: false,
     networkMode: 'always',
-    refetchOnReconnect: true,
+    refetchOnReconnect,
   })
 }
 

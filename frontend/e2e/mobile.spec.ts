@@ -23,6 +23,7 @@ test('the core workflow works on a phone without horizontal scrolling', async ({
 
   await page.getByRole('link', { name: 'Build your own analysis' }).click()
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Analyze' })).toBeVisible()
   await noHorizontalScroll()
 
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
