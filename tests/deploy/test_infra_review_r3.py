@@ -179,6 +179,18 @@ def test_every_documented_token_check_authenticates():
     assert "before the Render hook" in job and "nothing has changed" in job
     for text in (deployment, _read(OPERATIONS)):  # the old advice, anywhere
         assert "--dry-run with the token" not in _flat(text)
+    # An empty paste leaves CLOUDFLARE_API_TOKEN empty, and wrangler then falls back to
+    # the owner's own OAuth login (owner step 1.3.1, still active while the token
+    # is created): the check would pass without testing the token. Every owner-run
+    # check refuses an empty token first (verifier, review round 3).
+    for where, text in (("owner step 1.5", owner), ("rotation item 5", rotation),
+                        ("operations.md row", _flat(row))):
+        command = "npx --no-install wrangler deployments status"
+        before = [re.sub(r"CLOUDFLARE_ACCOUNT_ID=(<[^>]*>|\S+) $", "", text[:match.start()])[-40:]
+                  for match in re.finditer(re.escape(command), text)]
+        assert before, where
+        assert all(b.endswith('test -n "$CLOUDFLARE_API_TOKEN" && ') for b in before), \
+            (where, before)
 
 
 # --- audit-gates-have-no-exception-path ------------------------------------------------

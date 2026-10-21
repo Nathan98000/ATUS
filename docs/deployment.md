@@ -277,11 +277,11 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
      ```bash
      read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN   # paste the token, then Enter; nothing is shown
      export CLOUDFLARE_ACCOUNT_ID=<Account ID>
-     npx --no-install wrangler deployments status                    # must print the Worker's current deployment
+     test -n "$CLOUDFLARE_API_TOKEN" && npx --no-install wrangler deployments status   # must print the Worker's current deployment
      unset CLOUDFLARE_API_TOKEN
      ```
 
-     It proves that the token is active, belongs to this account and can read the Worker. Whether it may also deploy (the Editor role) shows only when it deploys: the first approved deploy's `wrangler deploy` (Bootstrap, step 5, which sends Render the digest it already runs, so a failure there leaves nothing half-switched). If that step fails with an authentication or permission error, add **Account Settings: Read** to the token, update the secret and re-run the job. Every Deploy run repeats the read check before the Render hook and stops there, with nothing changed, once the token has expired or been revoked.
+     The `test -n` matters: with an empty `CLOUDFLARE_API_TOKEN` (nothing pasted), wrangler falls back to your own OAuth login from step 3.1 and the check would pass without testing the token. It proves that the token is active, belongs to this account and can read the Worker. Whether it may also deploy (the Editor role) shows only when it deploys: the first approved deploy's `wrangler deploy` (Bootstrap, step 5, which sends Render the digest it already runs, so a failure there leaves nothing half-switched). If that step fails with an authentication or permission error, add **Account Settings: Read** to the token, update the secret and re-run the job. Every Deploy run repeats the read check before the Render hook and stops there, with nothing changed, once the token has expired or been revoked.
    - Save the token as GitHub environment secret `CLOUDFLARE_API_TOKEN`, and the Account ID (Workers overview sidebar) as `CLOUDFLARE_ACCOUNT_ID`.
 
 ### 2. Render (Free web service)
@@ -948,7 +948,7 @@ Every secret has one procedure.
 4. **`IP_HMAC_KEY`.** `npx --no-install wrangler secret put IP_HMAC_KEY` at any time.
 5. **Cloudflare API token** (90-day TTL).
    1. Before it expires, create a new Custom token with the same scope.
-   2. Check it as in owner step 1.5: from `edge/`, `read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN` (paste it; nothing is shown), `CLOUDFLARE_ACCOUNT_ID=<Account ID> npx --no-install wrangler deployments status`, then `unset CLOUDFLARE_API_TOKEN`. In the dashboard's token list, it must show the same permissions as the old token: the check proves that it authenticates, not that it may deploy.
+   2. Check it as in owner step 1.5: from `edge/`, `read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN` (paste it; nothing is shown), `test -n "$CLOUDFLARE_API_TOKEN" && CLOUDFLARE_ACCOUNT_ID=<Account ID> npx --no-install wrangler deployments status` (the `test -n` stops an empty paste, which would fall back to your OAuth login and prove nothing), then `unset CLOUDFLARE_API_TOKEN`. In the dashboard's token list, it must show the same permissions as the old token: the check proves that it authenticates, not that it may deploy.
    3. Replace the GitHub secret `CLOUDFLARE_API_TOKEN`.
    4. Delete the old token in Cloudflare.
    5. **If it may have leaked**, or the Cloudflare account was compromised, the Worker's secrets are disclosed too: Worker code deployed with the token can read every one of them from `env` and send it anywhere, and the version can then be rolled back. So also:
