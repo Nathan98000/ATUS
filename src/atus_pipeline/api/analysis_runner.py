@@ -23,9 +23,17 @@ that stops it the moment it touches the connection in any way. Everything
 the engine does before its first statement is deterministic given those
 inputs, so an analytics error raised there (unknown activity code, year not
 loaded, 2020 under the multi-year weights, ...) is exactly the error the
-computation would raise first; it is answered as the usual 422 without a
-token, a lane or a statement. Anything else the dry run meets is ignored and
-the request computes as before. The dry run never produces a result.
+computation would raise first on the snapshot's data; it is answered as the
+usual 422 without a token, a lane or a statement. Anything else the dry run
+meets is ignored and the request computes as before. The dry run never
+produces a result. It reads no data version, so it cannot see data that
+changed after the snapshot: in a process whose snapshot is not pinned
+(``ATUS_EXPECTED_DATA_VERSION`` unset), after an in-place ``atus load`` a
+year or activity code the load added is refused against the stale snapshot
+until the snapshot expires (``ATUS_API_SNAPSHOT_TTL_S``) or an uncached
+analysis's reload guard (``_compute``) invalidates it; such a 422 never
+invalidates it itself (review r2). Pinned production never changes data in
+place (ADR-012).
 
 Cache hits and joiners never take a lane or an analysis token; only a request
 that will actually compute does. The computation runs as a task detached from

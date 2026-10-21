@@ -9,9 +9,36 @@ Read-only; needs neither Docker nor the network.
 from __future__ import annotations
 
 from .conftest import REPO_ROOT
-from .test_docs_accuracy import DOCS, ENV_PRODUCTION, _name, _read
+from .test_docs_accuracy import ADR, DOCS, ENV_PRODUCTION, _flat, _name, _read, _section
 
 CONFIG = REPO_ROOT / "src" / "atus_pipeline" / "config.py"
+RUNNER = REPO_ROOT / "src" / "atus_pipeline" / "api" / "analysis_runner.py"
+ADR_012 = ADR / "ADR-012-load-and-quota-protection.md"
+SNAPSHOT_DB_TESTS = REPO_ROOT / "tests" / "integration" / "api" / "test_snapshot_db.py"
+
+
+# --- dry-run-stale-snapshot-422 --------------------------------------------------------
+
+
+def test_the_dry_run_is_not_said_to_see_a_data_change():
+    """dry-run-stale-snapshot-422: the dry run answers from the snapshot before the
+    reload guard runs, so "exactly the error the computation would raise first" held
+    only on the snapshot's data, and "uncached analyses detect a change themselves"
+    not for those the dry run refuses. Both statements now name the window."""
+    runner = _flat(_read(RUNNER).split('"""', 2)[1])
+    assert "exactly the error the computation would raise first on the snapshot's data" \
+        in runner
+    assert "a year or activity code the load added is refused against the stale snapshot" \
+        in runner and "never invalidates it itself" in runner
+    adr = _read(ADR_012)
+    dry_run = _flat(_section(adr, "- **Dry run.**", "- **Reload guard.**"))
+    assert "would raise first on the snapshot's data" in dry_run
+    assert "cannot see data that changed after the snapshot was read" in dry_run
+    stale = _flat(_section(adr, "- **A stale snapshot**", "- **Snapshot reads after"))
+    assert "but only those the dry run lets through" in stale
+    assert "that 422 never invalidates the snapshot itself" in stale
+    test = "test_a_code_the_load_added_is_refused_until_the_snapshot_is_renewed"
+    assert test in stale and f"def {test}(" in _read(SNAPSHOT_DB_TESTS)
 
 
 # --- verify-ca-accepted-without-hostname-check -----------------------------------------

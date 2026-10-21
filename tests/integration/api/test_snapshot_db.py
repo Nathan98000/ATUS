@@ -563,3 +563,31 @@ class TestDataChangedAfterTheSnapshot:
         assert after.headers["X-Data-Version"] == NEW_VERSION
         assert after.headers["X-Analysis-Key"] == during.headers["X-Analysis-Key"]
         assert after.json() == during.json()
+
+    def test_a_code_the_load_added_is_refused_until_the_snapshot_is_renewed(
+        self, tmp_path, scratch_database
+    ):
+        """Review r2 (dry-run-stale-snapshot-422), the documented window: the
+        dry run checks codes and years against the snapshot before any
+        version read, so in an unpinned process a code an in-place load added
+        gets a 422 until the snapshot expires or an uncached analysis's reload
+        guard sees the new version. The 422 itself never invalidates it, and
+        is never charged. (Pinned production never changes data in place.)"""
+        url = scratch_database("inplace_dryrun")
+        settings = analytics_settings(tmp_path, url)
+        with psycopg.connect(url) as conn:
+            load_all(conn, settings)
+        new_leaf = {"activity": {"include": ["010150"]}, "years": [2023], "variance": "none"}
+        with api(settings, api_snapshot_ttl_s=600.0) as (client, app):
+            assert client.get("/api/v1/meta").status_code == 200        # snapshot read
+            _change_data_in_place(url)
+            refused = [client.post(ESTIMATE, json=new_leaf) for _ in range(2)]
+            assert app.state.runner.computations == 0
+            guard = client.post(ESTIMATE, json=SLEEP_TIER2)              # sees the change
+            served = client.post(ESTIMATE, json=new_leaf)
+        for response in refused:
+            assert response.status_code == 422
+            assert response.json()["error"]["code"] == "unknown_activity"
+        assert guard.headers["X-Cache"] == "bypass"
+        assert served.status_code == 200 and served.headers["X-Cache"] == "miss"
+        assert served.headers["X-Data-Version"] == NEW_VERSION
