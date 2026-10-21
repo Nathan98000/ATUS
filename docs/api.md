@@ -204,6 +204,8 @@ Response headers:
   - `X-Content-Type-Options: nosniff`;
   - `Referrer-Policy: no-referrer`;
   - `Cross-Origin-Resource-Policy: same-origin`;
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()`
+    (the value the edge Worker also sets);
   - `Strict-Transport-Security`, in production only.
 - Errors carry `Cache-Control: no-store`, and so do `/health`, `/ready` and
   `/metrics`.

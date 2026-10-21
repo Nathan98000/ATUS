@@ -72,6 +72,7 @@ SECURITY_HEADERS = {
     "x-content-type-options": "nosniff",
     "referrer-policy": "no-referrer",
     "cross-origin-resource-policy": "same-origin",
+    "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
 }
 HSTS_PREFIX = "max-age=31536000"  # production only, which is what the stack runs
 CACHE_VERDICTS = {"hit", "miss", "bypass", "join"}

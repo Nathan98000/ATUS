@@ -222,6 +222,18 @@ describe('settleReportFor', () => {
     ).toEqual({ kind: 'not_reached', dbMs: null })
   })
 
+  it('charges a reused answer after a retry as computed: the first attempt may have computed it', () => {
+    const hit = json(200, { 'x-cache': 'hit', 'server-timing': 'db;dur=0, app;dur=1.0' })
+    expect(settleReportFor(hit, pass(), 1)).toEqual({ kind: 'reused', dbMs: 0 })
+    expect(settleReportFor(hit, pass(), 2)).toEqual({ kind: 'computed', dbMs: null })
+    const join = json(200, { 'x-cache': 'join', 'server-timing': 'db;dur=0, app;dur=9.0' })
+    expect(settleReportFor(join, pass(), 2)).toEqual({ kind: 'computed', dbMs: null })
+    // anything else keeps its kind after a retry
+    const miss = json(200, { 'x-cache': 'miss', 'server-timing': 'db;dur=40, app;dur=2' })
+    expect(settleReportFor(miss, pass(), 2)).toEqual({ kind: 'computed', dbMs: 40 })
+    expect(settleReportFor(json(422), pass('validation_error'), 2).kind).toBe('rejected')
+  })
+
   it('reports an API 2xx whose body broke mid-stream as computed', () => {
     const upstream = json(200, { 'x-cache': 'miss' })
     expect(

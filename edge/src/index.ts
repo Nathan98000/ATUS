@@ -354,7 +354,7 @@ async function forward(
   if (relayed.reason !== undefined) log.reason = relayed.reason
   const forwarded: Forwarded = {
     response: relayed.response,
-    settle: settleReportFor(upstream, relayed),
+    settle: settleReportFor(upstream, relayed, attempts),
   }
   if (storable && relayed.outcome === 'pass' && relayed.body !== undefined) {
     forwarded.store = {

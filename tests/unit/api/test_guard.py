@@ -8,6 +8,7 @@ record zero transactions and the stub engine must never run."""
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -227,6 +228,13 @@ class TestValidationOutput:
 
 
 class TestHeaders:
+    def test_permissions_policy_matches_the_edge_worker(self):
+        """One value on both layers: the Worker overwrites the API's on /api."""
+        from atus_pipeline.api.middleware import PERMISSIONS_POLICY
+
+        worker = (Path(__file__).resolve().parents[3] / "edge" / "src" / "http.ts").read_text()
+        assert f"'Permissions-Policy': '{PERMISSIONS_POLICY}'" in worker
+
     def test_security_headers_on_success_and_errors(self, build):
         client, _ = build()
         for response in (client.get("/health"), client.get("/api/v1/nope"),
@@ -237,6 +245,9 @@ class TestHeaders:
             assert response.headers["X-Content-Type-Options"] == "nosniff"
             assert response.headers["Referrer-Policy"] == "no-referrer"
             assert response.headers["Cross-Origin-Resource-Policy"] == "same-origin"
+            assert response.headers["Permissions-Policy"] == (
+                "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+            )
             assert "Strict-Transport-Security" not in response.headers  # development
             assert "server" not in response.headers
             assert response.headers["X-Request-ID"]

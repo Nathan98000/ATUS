@@ -81,6 +81,8 @@ def _stub_handler(behaviour: dict):
                 self.send_header("X-Content-Type-Options", "nosniff")
                 self.send_header("Referrer-Policy", "no-referrer")
                 self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+                self.send_header("Permissions-Policy",
+                                 "camera=(), microphone=(), geolocation=(), payment=(), usb=()")
                 self.send_header("Strict-Transport-Security", "max-age=31536000")
             if status >= 400 and behaviour["no_store"]:
                 self.send_header("Cache-Control", "no-store")

@@ -118,8 +118,8 @@ The second limit in row 1 exists because refunds (below) give the 60 back: witho
 | `not_reached` | Render waking, platform error page other than a 524, connection failure | refunded | refunded | not charged |
 | `shed` | API `overloaded`, `rate_limited`, `daily_capacity_reached` | refunded | refunded | charged unless `db;dur=0` |
 | `rejected` | API 400, 413, 415, 422 | refunded | kept (bounds invalid-request floods) | charged unless `db;dur=0` |
-| `reused` | 2xx with `X-Cache: hit` or `join` | refunded | kept | charged unless `db;dur=0` |
-| `computed` | 2xx `miss`/`bypass`, `analysis_timeout`, DB errors, a Cloudflare 524 | kept | kept | charged |
+| `reused` | 2xx with `X-Cache: hit` or `join`, on the first attempt | refunded | kept | charged unless `db;dur=0` |
+| `computed` | 2xx `miss`/`bypass`, `analysis_timeout`, DB errors, a Cloudflare 524; and a `hit`/`join` that came back on the Worker's retry, which may be the first attempt's own computation (its connection dropped before the headers), charged from admission | kept | kept | charged |
 
 Refunding waking and shed outcomes matters because the SPA retries during a cold start for up to 150 s. A 524 from Render's Cloudflare zone is charged: the origin took the request and kept it past the proxy read timeout, and the API runs an admitted analysis to the end even when its client is gone. While the per-isolate circuit breaker skips the origin, analyses get 503 `upstream_unavailable` before any governor call.
 

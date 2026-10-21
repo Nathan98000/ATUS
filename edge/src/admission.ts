@@ -227,8 +227,17 @@ export const NOT_REACHED: SettleReport = { kind: 'not_reached', dbMs: null }
  * platform page means the API never took the request, except a 524 (the
  * API was still computing); a 2xx JSON whose body broke mid-stream did come
  * from the API, which computed it.
+ *
+ * `attempts` is how many origin calls it took. After a retry, a `reused`
+ * answer (X-Cache hit or join, `db;dur=0`) may be the first attempt's own
+ * computation, which reached the API before its connection dropped: it is
+ * charged as computed, from admission, rather than refunded.
  */
-export function settleReportFor(upstream: Response, relayed: Relayed): SettleReport {
+export function settleReportFor(
+  upstream: Response,
+  relayed: Relayed,
+  attempts = 1,
+): SettleReport {
   const { status, headers } = upstream
   const dbMs = serverTimingDbMs(headers.get('server-timing'))
   const apiSuccess =
@@ -248,5 +257,6 @@ export function settleReportFor(upstream: Response, relayed: Relayed): SettleRep
   } else {
     kind = 'computed'
   }
+  if (kind === 'reused' && attempts > 1) return { kind: 'computed', dbMs: null }
   return { kind, dbMs }
 }

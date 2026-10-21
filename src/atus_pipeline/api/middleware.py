@@ -72,6 +72,9 @@ BODY_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 CONTENT_SECURITY_POLICY = "default-src 'none'; frame-ancestors 'none'"
 HSTS = "max-age=31536000"
+PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+"""The same value the edge Worker sets on /api responses (edge/src/http.ts):
+the brief asks for Permissions-Policy on the API origin too (§11)."""
 
 
 def edge_secret_matches(presented: str | None, secrets: tuple[str, ...]) -> bool:
@@ -117,6 +120,7 @@ def security_headers(settings: Settings, path: str) -> dict[str, str]:
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "no-referrer",
         "Cross-Origin-Resource-Policy": "same-origin",
+        "Permissions-Policy": PERMISSIONS_POLICY,
     }
     # The interactive docs pages (development only) load their own scripts.
     if not (settings.api_docs and path in DOCS_PATHS):
