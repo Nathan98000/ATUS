@@ -433,7 +433,7 @@ snapshot's), else the version the page's metadata reported — the legacy
 
 ```bash
 npm test          # unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 64 Playwright runs: 36 tests in Chromium desktop, 2 mobile,
+npm run test:e2e  # 65 Playwright runs: 37 tests in Chromium desktop, 2 mobile,
                   # and the 13 @core journeys again in Firefox and in WebKit
 npx playwright install firefox webkit   # once, for the cross-browser projects
 ```
@@ -475,6 +475,16 @@ The E2E counts are the tests declared in `e2e/*.spec.ts` and the projects in
   snapshot-served metadata, and the downloads (the saved file is built from
   the response on screen, through a Blob URL, with the page's analysis key,
   data version and canonical link).
+- New survey year (brief §15, `src/pages/newSurveyYear.test.tsx`): with a
+  `/meta` (or a static snapshot) announcing a release 0326 with years
+  2003–2026 and its own data version, and no code change, the year pickers
+  (single, pooled, trend) offer 2026 and default to it, the default trend is
+  2003–2026, the home page's starters, the footer, the "View … trend" link
+  and the prewarm list use 2026, results are cached under the 0326 version
+  tag, and a shared link through 2026 opens unchanged (under the 0325
+  release it loses 2026, with the note). The 2020 rules still hold: the
+  builder's gap note follows the range and the weights, a trend through 2026
+  shows the 2020 gap, pandemic weights stay 2019–2020 only.
 - E2E (real API + fixture database via `scripts/e2e_backend.py`; every
   expected number hand-computable; production build served same-origin
   under the production CSP): the full first-time-user scenario, the
@@ -486,11 +496,14 @@ The E2E counts are the tests declared in `e2e/*.spec.ts` and the projects in
   `data_version_mismatch` 503, paused database, edge daily limit, rate-limit
   countdown, the boot fallback with the bundle blocked; downloads read back
   from disk (CSV values equal to the JSON response's, `NA` for 2020, keyboard
-  operation); and the headers to be deployed: every page carries the `_headers`
-  rules and the `<meta>` CSP, bundles are served immutable, `/openapi.json`
-  is served with its rules and equals `frontend/openapi.json`, and the core
-  journeys (including a download) produce no CSP violation or
-  Permissions-Policy error, with every API request on the page's own origin.
+  operation); a release announcing 2026 through `/meta` (the year controls
+  and starters offer it, the default estimate asks the real API for 2026,
+  and the real 2019–2023 trend still shows the 2020 gap); and the headers to
+  be deployed: every page carries the `_headers` rules and the `<meta>` CSP,
+  bundles are served immutable, `/openapi.json` is served with its rules and
+  equals `frontend/openapi.json`, and the core journeys (including a
+  download) produce no CSP violation or Permissions-Policy error, with every
+  API request on the page's own origin.
 - Cross-browser: tests tagged `@core` — the first-time-user estimate, the
   comparison, share links (copy, refresh, invalid), the 2020 gap and chart
   keyboard access, the exports, the waking notice, and the headers/CSP
