@@ -222,7 +222,7 @@ Code: `frontend/public/_headers`, `frontend/vite.config.ts`, `frontend/src/deplo
 Tests:
 - `frontend/src/checkBundle.test.ts`;
 - `frontend/src/deploy/staticHeaders.test.ts`;
-- `frontend/e2e/service-states.spec.ts` (headers and CSP violations under `vite preview`);
+- `frontend/e2e/service-states.spec.ts` (headers under `vite preview`), and every E2E test: each fails on a CSP violation or Permissions-Policy error in any page of its browser context (`frontend/e2e/fixtures.ts`, review round 2; before, only the core journeys were checked);
 - `edge/test/worker/headers.test.ts`;
 - `tests/unit/api/test_guard.py::TestHeaders`;
 - the `static_headers` and `api_headers` checks in `deploy/stack/edge_probe.py`. `static_headers` compares every header of the `/*` rule of the published `_headers` with its exact value on `/`, `/explore` and a hashed bundle; `tests/deploy/test_edge_probe.py` shows each check of the probe failing on its violation (a missing or changed `Referrer-Policy` or `Permissions-Policy` included) against a stub edge.

@@ -516,8 +516,9 @@ facts are `null`, never guessed. File names are
 
 ```bash
 npm test          # unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 65 Playwright runs: 37 tests in Chromium desktop, 2 mobile,
-                  # and the 13 @core journeys again in Firefox and in WebKit
+npm run test:e2e  # 80 Playwright runs: 51 tests in Chromium desktop (one only in
+                  # stack mode), 3 mobile, and the 13 @core journeys again in
+                  # Firefox and in WebKit
 npx playwright install firefox webkit   # once, for the cross-browser projects
 ../scripts/e2e_in_container.sh --project firefox   # Firefox where it cannot launch
                   # natively (macOS 27): browsers in the official Linux image
@@ -588,8 +589,14 @@ The E2E counts are the tests declared in `e2e/*.spec.ts` and the projects in
   be deployed: every page carries the `_headers` rules and the `<meta>` CSP,
   bundles are served immutable, `/openapi.json` is served with its rules and
   equals `frontend/openapi.json`, and the core journeys (including a
-  download) produce no CSP violation or Permissions-Policy error, with every
-  API request on the page's own origin.
+  download) run with every API request on the page's own origin. Every E2E
+  test, in every project and in stack mode, collects the CSP violations and
+  Permissions-Policy errors of every page in its browser context and fails
+  on one (`e2e/fixtures.ts` `policyErrors`; the share test checks its fresh
+  context too). Before review round 2 only the core-journeys test and the
+  deployed smoke collected them, so the compare view, the share and JSON
+  actions, the error, quota, waking and version pages, the boot fallback and
+  the phone layout ran unchecked.
 - Cross-browser: tests tagged `@core` — the first-time-user estimate, the
   comparison, share links (copy, refresh, invalid), the 2020 gap and chart
   keyboard access, the exports, the waking notice, and the headers/CSP

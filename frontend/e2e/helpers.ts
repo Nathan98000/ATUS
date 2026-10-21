@@ -9,7 +9,13 @@
  */
 
 import AxeBuilder from '@axe-core/playwright'
-import { type Download, type Page, expect } from '@playwright/test'
+import {
+  type BrowserContext,
+  type ConsoleMessage,
+  type Download,
+  type Page,
+  expect,
+} from '@playwright/test'
 
 import { browserPlatform, tabReachesAllControls as tabReachesAll } from './browserServer'
 
@@ -130,22 +136,25 @@ export function csvRecords(text: string): Record<string, string>[] {
 
 /**
  * Collects Content-Security-Policy violations (console messages and
- * `securitypolicyviolation` events) and Permissions-Policy header errors.
- * Call before the first navigation.
+ * `securitypolicyviolation` events) and Permissions-Policy header errors of
+ * one page, or of every page of a browser context (e2e/fixtures.ts collects
+ * them for every test this way). Call before the first navigation.
  */
-export async function collectPolicyErrors(page: Page): Promise<string[]> {
+export async function collectPolicyErrors(target: Page | BrowserContext): Promise<string[]> {
   const errors: string[] = []
-  page.on('console', (message) => {
+  const onConsole = (message: ConsoleMessage) => {
     const text = message.text()
     if (/Content[- ]Security[- ]Policy|Permissions[- ]Policy|Feature[- ]Policy/i.test(text)) {
       errors.push(text)
     }
-  })
-  await page.addInitScript(() => {
+  }
+  const reportViolations = () => {
     document.addEventListener('securitypolicyviolation', (event) => {
       console.error(`Content-Security-Policy violation: ${event.violatedDirective}`)
     })
-  })
+  }
+  target.on('console', onConsole)
+  await target.addInitScript(reportViolations)
   return errors
 }
 
