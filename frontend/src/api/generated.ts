@@ -715,11 +715,6 @@ export interface components {
       /** Ci Upper */
       ci_upper?: number | null
     }
-    /** HTTPValidationError */
-    HTTPValidationError: {
-      /** Detail */
-      detail?: components['schemas']['ValidationError'][]
-    }
     /** HealthResponse */
     HealthResponse: {
       /**
@@ -948,19 +943,6 @@ export interface components {
       }
       /** Warnings */
       warnings: string[]
-    }
-    /** ValidationError */
-    ValidationError: {
-      /** Location */
-      loc: (string | number)[]
-      /** Message */
-      msg: string
-      /** Error Type */
-      type: string
-      /** Input */
-      input?: unknown
-      /** Context */
-      ctx?: Record<string, never>
     }
     /** WeightInfoModel */
     WeightInfoModel: {
@@ -1251,13 +1233,13 @@ export interface operations {
           'application/json': components['schemas']['ActivityListResponse']
         }
       }
-      /** @description Validation Error */
+      /** @description Invalid query or path parameter (validation_error; details.errors[] lists {location, message, type}) */
       422: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['HTTPValidationError']
+          'application/json': components['schemas']['ErrorResponse']
         }
       }
       /** @description Temporarily unable to read the data: database_unavailable, database_paused, overloaded, data_version_mismatch, schema_not_initialized; see Retry-After */
@@ -1320,13 +1302,13 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Validation Error */
+      /** @description Invalid query or path parameter (validation_error; details.errors[] lists {location, message, type}) */
       422: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['HTTPValidationError']
+          'application/json': components['schemas']['ErrorResponse']
         }
       }
       /** @description Temporarily unable to read the data: database_unavailable, database_paused, overloaded, data_version_mismatch, schema_not_initialized; see Retry-After */
