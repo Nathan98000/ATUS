@@ -55,7 +55,8 @@
 #   --e2e                     with --edge: also Playwright through the edge
 #   --assets DIR              with --edge: publish this SPA build (a copy of it)
 #                             instead of building frontend/
-#   --keep                    leave the stack running (prints how to remove it)
+#   --keep                    leave the stack running; prints the exact teardown
+#                             (env file, every profile) and its secrets directory
 #   --python PATH             interpreter for --integration-via-pgbouncer and the
 #                             host-side edge steps (default .venv/bin/python, then python3)
 set -euo pipefail
@@ -133,6 +134,10 @@ if [ "$emulation" = 1 ]; then
   files+=(-f docker-compose.emulation.yml)
 fi
 compose() { docker compose -p "$project" --env-file "$env_file" "${files[@]}" "$@"; }
+# Every profile, so an --edge stack's Worker goes too; the env file carries the
+# secrets compose needs to read docker-compose.prod.yml at all.
+teardown_args=(--profile pgbouncer --profile smoke --profile snapshot --profile edge
+               down -v --remove-orphans)
 
 cleanup() {
   status=$?
@@ -142,10 +147,13 @@ cleanup() {
       2>&1 | redact || true
   fi
   if [ "$keep" = 1 ]; then
-    echo "stack kept: docker compose -p $project ${files[*]} down -v  (env file: $env_file)"
+    echo "stack kept. To remove it, from $PWD, then delete its private work directory" \
+      "(it holds the stack's secrets):"
+    printf '  docker compose -p %q --env-file %q' "$project" "$env_file"
+    printf ' %q' "${files[@]}" "${teardown_args[@]}"
+    printf '\n  rm -rf %q\n' "$workdir"
   else
-    if ! teardown=$(compose --profile pgbouncer --profile smoke --profile snapshot \
-        --profile edge down -v --remove-orphans 2>&1); then
+    if ! teardown=$(compose "${teardown_args[@]}" 2>&1); then
       echo "teardown failed:" >&2
       echo "$teardown" | redact >&2
     fi
