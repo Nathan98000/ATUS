@@ -594,7 +594,7 @@ The snapshot is built before anything deploys, so a failed restore or snapshot d
    - `/health` reports the commit, not the image digest. If the origin already ran this commit before the hook (for example "Re-run all jobs", which rebuilds and pushes a new digest of the same commit), the wait cannot see the switch. The step then shows a warning, and you confirm the deploy in Render → Events.
 5. `npx --no-install wrangler deploy` (the version locked in `edge/package-lock.json`) publishes the SPA, the snapshot and the Worker, with `--var` `DATA_VERSION`, `ANALYTICS_VERSION`, `RESPONSE_FORMAT` and `SNAPSHOT_ID` read from the snapshot.
 6. The post-deploy smoke, at most 40 requests in all:
-   - `scripts/ops/deploy_smoke.py`, at most 30 requests: the SPA shell and its headers; the SPA fallback; the snapshot pointer and manifest; `/api/_edge/health`; `/api/health`, with a cold-start budget; `/api/v1/meta`; two home-page starters, served from the snapshot and recomputed live with different request bytes (so the edge cache cannot answer) and diffed under the §9 criterion; an unknown `/api` path; and the origin lock (the onrender.com URL answers 403 `forbidden_origin`);
+   - `scripts/ops/deploy_smoke.py`, at most 30 requests: the SPA shell and its headers; the SPA fallback; the snapshot pointer and manifest; `/api/_edge/health`; `/api/health`, with a cold-start budget; `/api/v1/meta` (which the Worker answers from the snapshot); two home-page starters, whose live answers also prove the API's `X-Data-Version`, served from the snapshot and recomputed live with different request bytes (so the edge cache cannot answer) and diffed under the §9 criterion; an unknown `/api` path; and the origin lock (the onrender.com URL answers 403 `forbidden_origin`);
    - one browser journey, `frontend/playwright.deployed.config.ts`: a starter renders, with no CSP errors and at most 6 `/api` requests.
 7. It writes the rollback notes (below) into the job summary, whatever the outcome.
 
@@ -627,7 +627,7 @@ What a rehearsal cannot show is Render's deploy hook, its image pull, and the re
 - A docs-only push to `main` deploys nothing. Check Render → Events and Cloudflare → Deployments.
 - The origin lock: `curl -s -o /dev/null -w '%{http_code}' https://<service>.onrender.com/api/v1/meta` prints `403`.
 - Security headers on both origins: the SPA's `_headers` and the Worker's own. Include the SPA-fallback `index.html`, where `_headers` may not apply (ADR-011 "Risks").
-- `/health`, then `/api/v1/meta` (allowing for the cold start), one cached analysis, the SPA shell and one starter analysis rendering, with no CSP violations in the console.
+- `/health` (allowing for the cold start), then `/api/v1/meta` (the Worker answers it from the snapshot; `/api/v1/meta?check=1` reaches the API as a counted lookup), one cached analysis, the SPA shell and one starter analysis rendering, with no CSP violations in the console.
 - At least 2 snapshot entries recomputed live and compared under §9.
 - The deploy job runs these checks (step 7). To repeat them by hand: `python scripts/ops/deploy_smoke.py --base-url https://atus.<sub>.workers.dev --require-snapshot --recompute 2`, then `PUBLIC_BASE_URL=... npx playwright test -c playwright.deployed.config.ts` in `frontend/`. The README gets the live URL only after this step passes.
 
