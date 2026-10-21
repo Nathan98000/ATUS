@@ -201,9 +201,11 @@ Phase 5 changes how the system runs, not what it computes:
   hash-locked requirements; the production-mode compose stack, the free-tier
   emulation profile and a PgBouncer profile; `scripts/smoke_stack.sh`. On
   2026-10-20 the stack smoke (plain and emulated), the edge probe and the
-  Playwright suite through the local edge passed; Firefox cannot launch on
-  the development machine and has not run yet ([deployment.md](deployment.md),
-  step 0).
+  Playwright suite through the local edge passed ([deployment.md](deployment.md),
+  step 0). Firefox, which cannot launch natively on the development machine,
+  passed on 2026-10-21 in vite-preview mode with its browser in the official
+  Playwright Linux image (`scripts/e2e_in_container.sh`,
+  [frontend.md](frontend.md#testing)); it has not run in stack mode yet.
 - **CI/CD** (`.github/workflows/`): CI for backend, supply chain, frontend,
   edge, the image (gate, deployment tests, stack smoke, Trivy) and both E2E
   modes; a deploy workflow that deploys the tested image by digest behind the
@@ -237,7 +239,7 @@ Each item must be done or verified before Phase 5 is marked complete and
    Worker var selects the API origin.
 4. **CI on GitHub**: the Phase 5 workflows have not yet run on GitHub-hosted
    runners; their steps were rehearsed locally. That first run is also the
-   first Firefox E2E result.
+   first native-Linux and first stack-mode Firefox E2E result.
 5. **Owner account steps** ([deployment.md](deployment.md#owner-account-setup-19)):
    Cloudflare, Render, Neon and GitHub on free plans; publish the serving-DB
    release artifact (`releases/current.json` says `unpublished`); restore it

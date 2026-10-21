@@ -204,6 +204,11 @@ when idle; this can take up to a minute." appears when a metadata request
 has been pending for 3 s, while an attempt has just failed as "waking" (or
 with `database_unavailable`, a database resuming), or for up to 90 s after
 the edge's prewake said the origin is waking, while an API call is pending.
+Both time limits are decided by their own timers firing, never by
+re-reading the clock in the timer (`serviceStatus.ts`): Firefox reduces and
+jitters the precision of `Date.now()`, so a 3 s timer can read 2999 ms, and
+the earlier re-check then left a Firefox cold start without its notice
+(found by the first Firefox E2E runs).
 It lives in a persistent `<output>` (polite live region) at the top of the
 page, never moves focus, and comes with no progress bar — the service
 reports no progress, so none is invented. A shared link whose analysis is
@@ -427,7 +432,9 @@ snapshot's), else the version the page's metadata reported — the legacy
   keyboard checks of the primary workflow and of every new state's action.
   WebKit on macOS follows Safari's default of tabbing only between text
   fields, so Tab-order checks are skipped there (`tabReachesAllControls`);
-  the controls are still operated from the keyboard.
+  the controls are still operated from the keyboard. WebKit on Linux (CI,
+  and the container browsers below) tabs to every control, so the checks run
+  there.
 
 ## Testing
 
@@ -436,6 +443,8 @@ npm test          # unit/component tests (Vitest + Testing Library + MSW)
 npm run test:e2e  # 63 Playwright runs: 35 tests in Chromium desktop, 2 mobile,
                   # and the 13 @core journeys again in Firefox and in WebKit
 npx playwright install firefox webkit   # once, for the cross-browser projects
+../scripts/e2e_in_container.sh --project firefox   # Firefox where it cannot launch
+                  # natively (macOS 27): browsers in the official Linux image
 ```
 
 The E2E counts are the tests declared in `e2e/*.spec.ts` and the projects in
@@ -446,7 +455,8 @@ The E2E counts are the tests declared in `e2e/*.spec.ts` and the projects in
   client error mapping (envelopes, non-JSON 429/5xx, `Retry-After`,
   `X-Data-Version`, time-outs, exact body bytes), the API base and build
   configuration, the API version check, the retry policy and budget (fake
-  clock), the waking and data-version stores, every error code's
+  clock), the waking and data-version stores (including a `Date.now()`
+  that reads short when a timer fires, as Firefox's does), every error code's
   presentation, the snapshot (hit, miss, SPA-fallback, unsafe manifest, key
   equal to Node's sha256), the prewarm list (equal to the builder's own
   output), `snapshot-requests.mjs`, `check-bundle.mjs` and `api-types.mjs`
@@ -493,13 +503,18 @@ The E2E counts are the tests declared in `e2e/*.spec.ts` and the projects in
 - Cross-browser: tests tagged `@core` — the first-time-user estimate, the
   comparison, share links (copy, refresh, invalid), the 2020 gap and chart
   keyboard access, the exports, the waking notice, and the headers/CSP
-  journey — also run in Firefox and WebKit (`playwright.config.ts`). The
-  Firefox runs have not passed anywhere yet: on the development machine
-  (macOS 27) Playwright's Firefox build exits at launch with "Could not find
-  profile folder", inside and outside the tool sandbox and with a persistent
-  profile, so the first CI run on Linux gives the first Firefox result.
-  The last recorded local result is the stack-mode run below, in which
-  Chromium and WebKit passed.
+  journey — also run in Firefox and WebKit (`playwright.config.ts`). On the
+  development machine (macOS 27) Playwright's Firefox build exits at launch
+  with "Could not find profile folder", so Firefox runs there in the
+  official Playwright Linux image (container browsers, below). On
+  2026-10-21 every project passed that way: 63 of 63 runs (Chromium desktop
+  35, mobile 2, Firefox 13, WebKit 13), and, as an extra check outside the
+  configured projects, all 35 tests passed in Firefox and in WebKit. The
+  first Firefox runs found one product bug, fixed with regression tests: the
+  waking notice could fail to appear in Firefox (see "Cold start, retries
+  and service states" — its 3 s timer re-read a `Date.now()` that Firefox
+  reduces in precision and jitters; 8 failures in 200 runs of the waking
+  journey before the fix, none in 200 after).
 - Post-deploy smoke: `playwright.deployed.config.ts` runs `e2e/deployed/`
   (one Chromium journey, no retries, against `PUBLIC_BASE_URL`; `deploy.yml`
   runs it after a deploy). It has never run against a public URL, because
@@ -510,6 +525,50 @@ E2E ports default to 4173 (frontend) and 8137 (backend);
 `ATUS_E2E_DATABASE_URL` selects the disposable database, and
 `E2E_BACKEND_PYTHON` the backend's Python (default `../.venv/bin/python`).
 `npx playwright test --project=desktop` runs Chromium only.
+
+**Container browsers** (Firefox on macOS 27). `scripts/e2e_in_container.sh`
+runs the same suite with its browsers in the official Playwright Linux image,
+`mcr.microsoft.com/playwright:v<version>-noble`, where `<version>` is
+`@playwright/test` in `frontend/package-lock.json` (now 1.63.0); the image is
+pulled on first use. Run `npm ci` in `frontend/` first, then from the repo
+root `scripts/e2e_in_container.sh --project firefox` (Firefox),
+`scripts/e2e_in_container.sh` (every project), or any other `playwright
+test` arguments. The container runs only `playwright run-server`, published
+on 127.0.0.1, using the checkout's own Playwright (`frontend/node_modules`,
+mounted read-only), so client, server and browser builds are one version; the
+script refuses a `node_modules` or an image (`E2E_PLAYWRIGHT_IMAGE`, for
+example pinned by digest) of another version. The test runner, the build,
+`vite preview` and `scripts/e2e_backend.py` stay on the host exactly as in
+`npm run test:e2e`: `E2E_BROWSER_SERVER` makes `playwright.config.ts` connect
+every project to the container (`e2e/browserServer.ts`) with
+`exposeNetwork: '<loopback>'`, so the browsers' requests for `localhost`
+come back through the test runner and the app is served from the same
+origin as in every other run (no `host.docker.internal`). The container is
+removed on exit. `E2E_BROWSER_SERVER_PORT` (default 8139) and
+`E2E_BROWSER_CONTAINER` (default `atus-e2e-browsers`) move it; the usual
+`E2E_FRONTEND_PORT`, `E2E_BACKEND_PORT` and `ATUS_E2E_DATABASE_URL` pass
+through, for example:
+
+```bash
+E2E_FRONTEND_PORT=4174 E2E_BACKEND_PORT=8138 E2E_BROWSER_SERVER_PORT=8140 \
+  ATUS_E2E_DATABASE_URL=postgresql://atus:atus@localhost:5434/atus_e2e_firefox \
+  scripts/e2e_in_container.sh --project firefox
+```
+
+Downloads are read through `download.createReadStream()`, which works for
+local and remote browsers alike (`download.path()` does not exist remotely).
+One known Playwright-Firefox limitation shows in long repeated runs: in a
+Firefox instance that has made many navigations into documents served with
+`Cross-Origin-Opener-Policy: same-origin`, `page.goto` sometimes never
+resolves although the page has loaded (`document.readyState` is
+`complete`) — rarely at first, then for about half of all loads after a few
+hundred. It reproduces with a static page that has only that header, served
+inside the container, without the app, the tunnel or the SPA's code (1,000
+fresh-context loads: Firefox 526 hangs, the first at load 142; Chromium 0;
+WebKit 1; the same pages without the header: Firefox 0 in 2,000), so it is
+not a product defect, and the header stays. A normal run makes about 20 such
+navigations per Firefox instance; across 1,365 Firefox test runs with
+`--repeat-each` (5 to 30) it caused 2 failures.
 
 **Stack mode** (wave 2). With `E2E_BASE_URL` set, the same suite runs
 against the production-mode stack through its edge and starts no server:
@@ -527,7 +586,8 @@ per test rather than to the whole suite), and tests that inject failures
 into `/api/v1/meta` first hide the snapshot (`withoutSnapshot`), since the
 deployed SPA would otherwise read `/meta` from `/snap/`. On 2026-10-20 all
 50 runs passed in stack mode (Chromium desktop 35, mobile 2, WebKit 13);
-Firefox cannot launch on macOS 27 and runs in Linux CI.
+Firefox cannot launch on macOS 27 and ran in vite-preview mode through the
+container browsers (above); a stack-mode Firefox run has not been made yet.
 - An adversarial review fleet (96 agents: 8 code-dimension reviewers,
   3 live browser probes, an aggregator, and two independent refuters per
   finding) audited the implementation; 37 confirmed findings — including

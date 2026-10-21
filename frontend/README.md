@@ -13,6 +13,9 @@ npm test               # unit/component tests (Vitest + MSW)
 npm run test:e2e       # Playwright: production build, same origin, deployed _headers;
                        # Chromium, plus the @core journeys in Firefox and WebKit
                        # (once: npx playwright install firefox webkit)
+../scripts/e2e_in_container.sh --project firefox
+                       # the same, browsers in the official Playwright Linux
+                       # image (Firefox does not launch on macOS 27)
 npm run build          # typecheck + static production build in dist/ (same-origin /api)
 npm run check:bundle   # deploy guard on dist/: no dev API address, no inline code,
                        # <meta> CSP, _headers rules

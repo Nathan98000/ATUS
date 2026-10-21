@@ -833,7 +833,7 @@ The decision is unchanged. This section records where the implementation (code, 
 
 - **The local Worker.** The production-mode local stack (`docker-compose.prod.yml`, profile `edge`) runs the Worker under `wrangler dev` in local mode (`deploy/edge/Dockerfile`). KV and the Durable Object are simulated on disk, and no Cloudflare account is involved.
 - **The local relay.** The Worker accepts a plain-HTTP origin only on loopback (`edge/src/upstream.ts`). In the stack, a TCP relay (`deploy/edge/origin-relay.mjs`) therefore forwards 127.0.0.1:10000 to the API container. The relay exists only there. Production has no relay: `RENDER_ORIGIN` is the HTTPS onrender.com URL.
-- **Browsers.** Chromium and WebKit pass locally ([`../frontend.md`](../frontend.md)).
-  - The Firefox projects run only in Linux CI (`ci.yml` jobs `e2e` and `e2e-stack`), because Playwright's Firefox does not launch on the development machine (macOS 27).
-  - No CI run of the Phase 5 workflows is recorded in the repository, and the remote-tracking `origin/main` in this clone is the Phase 4 commit `387fc2d`. No Firefox result exists yet.
+- **Browsers.** Chromium, WebKit and Firefox pass locally ([`../frontend.md`](../frontend.md)).
+  - Playwright's Firefox does not launch natively on the development machine (macOS 27), so there it runs in the official Playwright Linux image (`scripts/e2e_in_container.sh`; vite-preview mode, 13 of 13 on 2026-10-21). CI runs it natively on Linux (`ci.yml` jobs `e2e` and `e2e-stack`); no stack-mode Firefox result exists yet.
+  - No CI run of the Phase 5 workflows is recorded in the repository, and the remote-tracking `origin/main` in this clone is the Phase 4 commit `387fc2d`.
   - The post-deploy browser smoke runs in Chromium only.
