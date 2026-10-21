@@ -6,7 +6,7 @@
 import { createHash } from 'node:crypto'
 
 import { HttpResponse, http } from 'msw'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { EstimateRequest } from './types'
 import { estimateSleepFixture, metaFixture } from '../test/fixtures'
@@ -34,7 +34,22 @@ const sleepSpec: EstimateRequest = {
 
 afterEach(() => {
   server.events.removeAllListeners()
+  vi.restoreAllMocks()
 })
+
+/** The fetch `cache` mode of every request, by URL path, in the order sent. */
+function recordCacheModes() {
+  const modes = new Map<string, string[]>()
+  const send = globalThis.fetch
+  vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+    const url = input instanceof Request ? input.url : String(input)
+    const path = new URL(url, 'http://localhost').pathname
+    const mode = init?.cache ?? (input instanceof Request ? input.cache : 'default')
+    modes.set(path, [...(modes.get(path) ?? []), mode])
+    return send(input, init)
+  })
+  return (path: string) => modes.get(path) ?? []
+}
 
 /** Counts API calls per method+path. */
 function countApiCalls() {
@@ -177,6 +192,25 @@ describe('with a snapshot', () => {
     const calls = countApiCalls()
     await fetchMeta()
     expect(calls('GET /api/v1/meta')).toBe(1)
+  })
+})
+
+describe('revalidation across releases (F27, review round 1)', () => {
+  // A reload must never pair a /meta (or snapshot pointer) from the browser's
+  // HTTP cache with data of a newer release: both are revalidated.
+  it('fetches the snapshot pointer and the API /meta with cache "no-cache"', async () => {
+    const modes = recordCacheModes()
+    await fetchMeta()
+    expect(modes(SNAPSHOT_POINTER_PATH)).toEqual(['no-cache'])
+    expect(modes('/api/v1/meta')).toEqual(['no-cache'])
+  })
+
+  it('revalidates the pointer when the snapshot serves /meta', async () => {
+    await installSnapshot({ get: { '/api/v1/meta': metaFixture } })
+    const modes = recordCacheModes()
+    const loaded = await fetchMeta()
+    expect(loaded.dataVersion).toBe(SNAPSHOT_DATA_VERSION)
+    expect(modes(SNAPSHOT_POINTER_PATH)).toEqual(['no-cache'])
   })
 })
 

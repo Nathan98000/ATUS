@@ -62,6 +62,13 @@ afterEach(() => {
   server.events.removeAllListeners()
 })
 
+/** ServiceNotice's two persistent live regions: [waking, reload]. */
+function noticeRegions(): HTMLOutputElement[] {
+  return Array.from(
+    document.querySelectorAll<HTMLOutputElement>('output.service-notice-region'),
+  )
+}
+
 describe('cold start (F11, F12)', () => {
   it('announces the waking message after ~3 s without /meta, politely and without moving focus', async () => {
     await withFakeClock(async () => {
@@ -73,14 +80,22 @@ describe('cold start (F11, F12)', () => {
       )
       renderApp('/explore')
       expect(screen.getByText('Loading the analysis builder…')).toBeInTheDocument()
+      // The live region exists, empty, before its text arrives: text added to
+      // a region already in the page is announced; a region mounted together
+      // with its text often is not (review round 1).
+      const [wakingRegion] = noticeRegions()
+      expect(noticeRegions()).toHaveLength(2)
+      expect(wakingRegion).toBeEmptyDOMElement()
 
       await vi.advanceTimersByTimeAsync(2_900)
       expect(screen.queryByText(WAKING_MESSAGE)).not.toBeInTheDocument()
+      expect(noticeRegions()[0]).toBe(wakingRegion)
 
       await vi.advanceTimersByTimeAsync(200)
       const message = screen.getByText(WAKING_MESSAGE)
       // A persistent polite live region (<output> = role "status"), no progress bar.
-      expect(message.closest('output')).not.toBeNull()
+      expect(message.closest('output')).toBe(wakingRegion)
+      expect(wakingRegion).toBeInTheDocument()
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
       expect(document.activeElement).toBe(document.body)
 
@@ -353,6 +368,27 @@ describe('analysis errors (F13, F64)', () => {
 })
 
 describe('data release changes (F27)', () => {
+  it('announces the change in the live region that was already there, empty (review round 1)', async () => {
+    server.use(
+      http.get(api('/meta'), () =>
+        HttpResponse.json(metaFixture, { headers: { 'X-Data-Version': '0325:serving-a:111' } }),
+      ),
+      http.post(api('/analysis/estimate'), async () => {
+        await delay(100)
+        return HttpResponse.json(estimateSleepFixture, {
+          headers: { ...analysisHeaders(), 'X-Data-Version': '0325:serving-b:222' },
+        })
+      }),
+    )
+    renderApp(sleepRoute)
+    const reloadRegion = noticeRegions()[1]
+    expect(noticeRegions()).toHaveLength(2)
+    expect(reloadRegion).toBeEmptyDOMElement()
+    const notice = await screen.findByText(/different data release/)
+    expect(notice.closest('output')).toBe(reloadRegion)
+    expect(reloadRegion).toBeInTheDocument()
+  })
+
   it('offers a reload when a response comes from a different data release', async () => {
     server.use(
       http.get(api('/meta'), () =>

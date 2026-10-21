@@ -54,11 +54,23 @@ test(
       await route.continue()
     })
     await page.goto('/explore')
+    // Before the 3 s timer fires, the region is already in the page, empty:
+    // text added to an existing live region is announced, a region mounted
+    // together with its text often is not (review round 1).
+    await expect(page.getByText('Loading the analysis builder…')).toBeVisible()
+    const regions = page.locator('output.service-notice-region')
+    await expect(regions).toHaveCount(2)
+    await expect(regions.first()).toBeEmpty()
+    const region = await regions.first().elementHandle()
 
     // <output> has the implicit role "status": a polite live region.
     const notice = page.getByRole('status').filter({ hasText: WAKING })
     await expect(notice).toBeVisible({ timeout: 6_000 })
     expect(await notice.evaluate((element) => element.tagName)).toBe('OUTPUT')
+    // The same element received the text.
+    expect(
+      await region?.evaluate((element, text) => element.isConnected && element.textContent === text, WAKING),
+    ).toBe(true)
     await expect(page.getByRole('progressbar')).toHaveCount(0)
     expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true)
     await expectNoSeriousViolations(page)
