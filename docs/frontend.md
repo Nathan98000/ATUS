@@ -536,8 +536,8 @@ facts are `null`, never guessed. File names are
 
 ```bash
 npm test          # unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 81 Playwright runs: 52 tests in Chromium desktop, 3 mobile,
-                  # and the 13 @core journeys again in Firefox and in WebKit
+npm run test:e2e  # 84 Playwright runs: 53 tests in Chromium desktop, 3 mobile,
+                  # and the 14 @core journeys again in Firefox and in WebKit
                   # (one desktop test runs only in stack mode)
 npx playwright install firefox webkit   # once, for the cross-browser projects
 ../scripts/e2e_in_container.sh --project firefox   # Firefox where it cannot launch
@@ -706,12 +706,16 @@ sends its own address from 198.19.0.0/16, and the per-visitor limits apply
 per test rather than to the whole suite), and tests that inject failures
 into `/api/v1/meta` first hide the snapshot (`withoutSnapshot`), since the
 deployed SPA would otherwise read `/meta` from `/snap/`. On 2026-10-21, at
-3a984fa, all 68 runs passed in stack mode (Chromium desktop 52, mobile 3,
-WebKit 13), after the review-round-2 merges: the edge's `api_paused` test of
-`e2e/service-codes.spec.ts`, and the frontend's fixture that fails every test
-on a CSP or Permissions-Policy violation, with its own test of that fixture,
-included, after the stack smoke (15/15), the edge probe (13/13) and
-`deploy_smoke.py` (13/13). Earlier that day, at 9188bb6, 67 of 67 had passed
+46293d1, all 70 runs passed in stack mode (Chromium desktop 53, mobile 3,
+WebKit 14), with the review-round-4 test of `e2e/service-states.spec.ts`
+that reaches a paused page through Analyze and checks that its heading has
+focus, after the stack smoke (15/15), the edge probe (13/13) and
+`deploy_smoke.py` (13/13); the API image was built from 3dffe1a, whose API
+that commit does not change. Earlier that day, at 3a984fa, 68 of 68 had
+passed (Chromium desktop 52, mobile 3, WebKit 13), after the review-round-2
+merges: the edge's `api_paused` test of `e2e/service-codes.spec.ts`, and the
+frontend's fixture that fails every test on a CSP or Permissions-Policy
+violation, with its own test of that fixture, included; at 9188bb6, 67 of 67 had passed
 (Chromium desktop 51, mobile 3, WebKit 13), with the `api_paused` test; at
 5beb6a4, 66 of 66 had passed (Chromium desktop 50, mobile 3, WebKit 13),
 with the review-round-1 browser tests (`e2e/service-codes.spec.ts` and
