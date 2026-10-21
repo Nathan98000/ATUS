@@ -6,7 +6,7 @@ This is the **first version** of the deployment document. It was written with th
 
 - Nothing here has been verified against a live URL. The README will show a live URL only after it has been checked with curl and Playwright.
 - Numbers come in two kinds:
-  - **measured**: from the Phase 5 audit ([`operations.md`](operations.md), [`evidence/phase5/01-audit-timed.md`](evidence/phase5/01-audit-timed.md));
+  - **measured**: from the Phase 5 audit ([`operations.md`](operations.md), [`evidence/phase5/01-audit-timed.md`](evidence/phase5/01-audit-timed.md)), which measured the code before the fixes, and from the local load tests of the current code under free-tier emulation ([`../loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md));
   - **PROJECTION**: arithmetic on the traffic model below, with its assumptions stated.
 - Free-tier terms were read on the official pages listed in each table, all accessed 2026-10-20. ADR-011 has the full citation list with quotes.
 - **Environment-variable and secret names are final.** The [configuration reference](#configuration-reference) lists them; tests hold them to the code, the templates and the workflows.
@@ -65,7 +65,7 @@ Placeholders stay until the owner picks the names.
 | Image registry | GHCR, public package | `ghcr.io/nathan98000/atus-api@sha256:<digest>` | Yes (image only, no secrets or data) |
 | Backup artifact | GitHub Releases, immutable | `https://github.com/Nathan98000/ATUS/releases` | Yes (public BLS data) |
 | CI/CD and monitors | GitHub Actions, public repo | — | — |
-| Fallback API (**not provisioned**) | Vercel Hobby (see ADR-011 "Fallback") | `https://<project>.vercel.app` | Protected by Vercel Deployment Protection |
+| Fallback API (**not provisioned, not implemented**) | Vercel Hobby: a documented manual procedure whose preconditions are not built (ADR-011 "Fallback" and its amendment) | `https://<project>.vercel.app` | Would be protected by Vercel Deployment Protection |
 
 ## Realistic demo traffic (the model the budget uses)
 
@@ -118,7 +118,7 @@ Every source was accessed on 2026-10-20.
 |---|---|---|---|---|---|
 | Free instance hours | 750 per workspace per calendar month ([free](https://render.com/docs/free)) | ~220 h: 14 wake sessions/day × ~25 min (1 min spin-up + activity + 15 min idle) ≈ 5.8 h, plus 4 deep checks × ~16 min ≈ 1.1 h, plus ~14 h on the spike day | ≥ 70%. One service can use at most 744 h, so it cannot run out. **Rule: never add a second Free web service** | all Free web services suspended until next month | cannot happen with one service |
 | Outbound bandwidth (includes API→DB traffic the service initiates; inbound not billed) | 5 GB per Hobby workspace per month ([outbound bandwidth](https://render.com/docs/outbound-bandwidth)) | ~0.05 GB: 1,200 uncached × ≤ 40 KB (SQL text to Neon, estimated at 15–34 KB from the query shape, plus a gzipped response ≤ 3 KB) + ~2 MB of health and wake responses | ~99%. Hard bound from governor caps: 600/day × 40 KB × 31 ≈ 0.74 GB (85% free) | with no card on file, all services suspended until next month ([free](https://render.com/docs/free)). **With a card, overage would be billed at $0.15/GB, so a card is never added** | the Worker maps platform errors to `upstream_unavailable`; the SPA shows "analysis service paused until the 1st"; static snapshot and KV keep working |
-| Discretionary suspension for "uncommonly high" service-initiated traffic | no published threshold; restore only via a paid plan ([free](https://render.com/docs/free)) | ~1.6 MB/day of API→DB traffic (PROJECTION); ≤ ~24 MB/day at governor caps | unknown | indefinite suspension | as above, but indefinite. Runbook: owner decision → fallback API host via a Worker var (ADR-011). Never recreate the service on Render; never pay |
+| Discretionary suspension for "uncommonly high" service-initiated traffic | no published threshold; restore only via a paid plan ([free](https://render.com/docs/free)) | ~1.6 MB/day of API→DB traffic (PROJECTION); ≤ ~24 MB/day at governor caps | unknown | indefinite suspension | as above, but indefinite. Runbook: [Render suspends the service](operations.md#render-suspends-the-service). Failing over to the Vercel fallback is an owner decision and a manual procedure whose preconditions are not implemented (ADR-011 amendment), so until it is built only the static floor and KV-cached results serve. Never recreate the service on Render; never pay |
 | Pipeline minutes | 500/month (Hobby) ([free](https://render.com/docs/free)) | **0 builds**: image-backed. Whether image pulls count is undocumented | ~100% | new builds and deploys disabled for the rest of the month; the running service keeps serving | none for users; deploys wait |
 | Logs and metrics | 7 days on Hobby; latency percentiles need Pro ([logging](https://render.com/docs/logging), [metrics](https://render.com/docs/service-metrics)) | structured app logs plus a periodic metrics event (ADR-014) | n/a | n/a | n/a |
 
@@ -167,7 +167,7 @@ These figures line up with proposal P1's independent scenario analysis (A 17, B 
 
 ### Governor starting parameters
 
-To be finalized in ADR-012.
+Finalized in [ADR-015](adr/ADR-015-edge-cache-snapshot-and-governor.md) (the governor's values are constants in `edge/src/constants.ts`) and, for the API's own limits, [ADR-012](adr/ADR-012-load-and-quota-protection.md).
 
 | Budget | Starting value |
 |---|---|
@@ -175,7 +175,8 @@ To be finalized in ADR-012.
 | Neon CU-h per UTC day | ≤ 10. Without ground truth: ≤ (100 × 0.9)/31 ≈ 2.9, with every wake session charged at max CU for its whole 300 s tail |
 | Neon egress | stop at 4.5 GB month-to-date; heavy analyses ≤ 300/day |
 | Global uncached analyses | ≤ 600 per UTC day (also bounds KV writes and Render outbound) |
-| Per IP prefix (/24 or /48, HMAC with a daily key) | ≤ 60 uncached analyses per UTC day |
+| Per IP prefix (/24 or /48, HMAC with a daily key) | ≤ 60 uncached analyses per UTC day, and ≤ 300 admissions including refunded ones |
+| Governor unreachable | fail closed after 5 s: uncached analyses get 503 `capacity_unavailable` (`Retry-After: 60`); static, KV hits and metadata keep working |
 | API in-flight (in-process, global on one Render instance) | ≤ 2 uncached, ≤ 1 heavy; wait ≤ 5 s, then 503 `overloaded` (calibrated on the emulation profile, ADR-012 "Calibration (§13)") |
 | API per-IP token buckets | uncached analyses: 6 per 60 s (burst 6); every other request: 120 per 60 s (`ATUS_API_RATE_ANALYSIS`, `ATUS_API_RATE_REQUESTS`; ADR-012) |
 
@@ -208,7 +209,7 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 | Neon CU-h or egress exhausted anyway | connection failures, which the API maps to 503 `database_paused` | the same paused page | the next Neon billing period |
 | Neon storage over the cap | owner writes fail | none | free space, or restore into a new project |
 | Render bandwidth exhausted | platform errors, which the Worker maps to `upstream_unavailable` | "Analysis service paused until the 1st" (snapshot and KV work) | next month; find the cause in the logs |
-| Render discretionary suspension | same symptoms; Render email or dashboard notice | same, but indefinite | **owner decision**: fallback API host (ADR-011) by changing a Worker var. Never pay; never recreate on Render |
+| Render discretionary suspension | same symptoms; Render email or dashboard notice | same, but indefinite | **owner decision** ([runbook](operations.md#render-suspends-the-service)): the ADR-011 fallback is a documented manual procedure, not implemented; no Worker var selects the API origin. Until it is built, the static floor and KV-cached results serve. Never pay; never recreate on Render |
 | Render restart (can happen any time) | in-process caches and token buckets lost | none (edge tiers and the governor persist) | automatic |
 | Card prompt at any provider | sign-up or deploy screen | — | **stop and report** (constraint 1); owner decision |
 | GHCR image unavailable | Render "Image Pull Failed" on a restart or deploy | Render serves nothing; snapshot and KV still work | republish the image or switch registry; redeploy by digest |
@@ -407,7 +408,7 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
 - **Free-tier emulation** (`-f docker-compose.emulation.yml`): API 0.1 CPU / 512 MB, no swap (Render Free); database 0.25 vCPU / 1 GB, no swap (Neon's 0.25 CU floor). For the 2 CU ceiling set `ATUS_EMU_DB_CPUS=2 ATUS_EMU_DB_MEMORY=8g` (a Docker VM with less than 8 GB caps the RAM). `python deploy/emulation/neon_settings.py --help` prints the settings for other compute sizes from Neon's published formulas. Not emulated (F41): pageserver reads, wake from suspend, autoscaling itself, round trips between providers, Render's real CPU share and spin-up.
 
   The audit's emulation runs kept `shared_buffers` at 128 MB and Postgres's default `max_connections`/`max_worker_processes`. Neon's formula gives those values only for a fixed 0.25 CU compute; for ADR-011's 0.25–2 CU compute it gives 215 MB, 839 and 17, which the stack now uses. Later timed runs should state which settings they used.
-- **Load tests** (brief §13): [`loadtests/`](../loadtests/README.md) runs k6 scenarios (metadata, cached, uncached, worst case, demo mix) and container cold starts against this stack under the emulation profile, with the real serving dump restored. DB profiles are 0.25 CU, 2 CU (7 GiB, below the Docker VM's 7.75 GiB) and unconstrained, plus a laptop baseline against the full database. Every bundle records each scenario's environment and whether it ran alone. Local only; never against a provider. Committed results are in `loadtests/results/`.
+- **Load tests** (brief §13): [`loadtests/`](../loadtests/README.md) runs k6 scenarios (metadata, cached, uncached, worst case, demo mix) and container cold starts against this stack under the emulation profile, with the real serving dump restored. DB profiles are 0.25 CU, 2 CU (7 GiB, below the Docker VM's 7.75 GiB) and unconstrained, plus a laptop baseline against the full database. Every bundle records each scenario's environment and whether it ran alone. Local only; never against a provider. The committed results of the 2026-10-21 runs are [`../loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md), and ADR-012 "Calibration (§13)" applies them (step 10).
 - **Through a transaction pooler** (brief §10; production uses the direct endpoint): profile `pgbouncer` of the emulation file runs PgBouncer with Neon's pooler settings (`pool_mode=transaction`, `max_prepared_statements=1000`, `query_wait_timeout=120`).
 
   ```bash
@@ -443,7 +444,7 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
   - EXPLAIN of the worst cases;
   - a smoke test with a local API.
 
-  The definition of done requires the drill to be performed and timed. The timing belongs to the serialized measurement phase.
+  The definition of done requires the drill to be performed and timed. The timed drill ran alone on 2026-10-21, in a fresh unconstrained `postgres:16` with the stack's Neon settings and a non-superuser owner: the restore tool took 15.6 s of wall time (`pg_restore` 8.0 s, `VACUUM (ANALYZE)` 1.3 s, the serving checks with the full content hash 5.2 s), all 22 checks passed, and `sum(pg_database_size)` was 649,903,180 B, 65% of the 1,000,000,000 B budget ([`../loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md#3-a-restore-drill-timed), section 3). On Neon the restore runs over the network into remote storage, so this time does not transfer.
 - **What runs locally today.** The stack's `dump` profile does the restore half, then the probe runs against real data:
 
   ```bash
@@ -723,7 +724,7 @@ This lists every variable and secret the deployed system uses: where it is set, 
 |---|---|---|---|
 | `ATUS_LOG_LEVEL` | `INFO` | `DEBUG` (briefly, during an incident) | log threshold |
 | `ATUS_LOG_FORMAT` | `text` → `json` | `json` | log line format |
-| `ATUS_API_DOCS` | `on` → `off` | `off` | `/docs`, `/redoc`, `/openapi.json` (published as a static asset instead) |
+| `ATUS_API_DOCS` | `on` → `off` | `off` | the API's `/docs`, `/redoc` and `/openapi.json` routes. In production the site publishes the committed schema (`frontend/openapi.json`) as a static asset at `/openapi.json` instead, outside `/api`, so neither the Worker nor the API runs for it |
 | `ATUS_API_CORS_ORIGINS` | empty | `http://localhost:5173` (development only) | allowed cross-origin callers; empty behind the same-origin Worker |
 | `ATUS_API_CACHE_SIZE` | `256` | `512` | in-process result LRU entries (lost at every spin-down) |
 | `ATUS_API_POOL_MAX_SIZE` | `4` | `4` | connections at most (Neon allows 839 at 0.25–2 CU) |
@@ -784,11 +785,12 @@ Never set on Render. The data commands (`atus load`, `atus build-serving-db`, `a
 | `EDGE_AUTH_SECRET` | Worker secret (`~/.config/atus/edge.env`) | required | one value of the API's `ATUS_EDGE_SECRETS` | [Rotation](#rotation), with the API |
 | `OPS_TOKEN` | Worker secret (`edge.env`; GitHub secret `EDGE_OPS_TOKEN`) | `/api/_ops/budget` answers 404 | 32 random bytes, hex (64 characters) | [Rotation](#rotation) |
 | `IP_HMAC_KEY` | Worker secret (`edge.env`) | required | 32 random bytes, hex (64 characters) | `wrangler secret put IP_HMAC_KEY`. The governor's per-prefix counters restart, which they also do every UTC day |
-| `RENDER_ORIGIN` | Worker secret (`edge.env`; GitHub secret `RENDER_ORIGIN`) | required | `https://atus-api-k3x9q2.onrender.com` | only when the API host changes (fallback switch); update both places. Never published |
+| `RENDER_ORIGIN` | Worker secret (`edge.env`; GitHub secret `RENDER_ORIGIN`) | required | `https://atus-api-k3x9q2.onrender.com` | only when the API's origin URL changes; update both places. Never published. It is the only setting that selects the origin: no Worker var does |
 | `NEON_API_KEY` | Worker secret, optional; not kept: re-create it instead | the governor runs in its conservative mode | a Neon **project-scoped** key | revoke and re-create in Neon, then `wrangler secret put NEON_API_KEY`; a new key for each release project |
 
 | Var | Set by | Default | Example | When it changes |
 |---|---|---|---|---|
+| `API_VERSION` | `edge/wrangler.jsonc` | `v1` | `v1` | only with a new API major version; part of the cache scope |
 | `DATA_VERSION` | `deploy.yml` | — | equals `ATUS_EXPECTED_DATA_VERSION` | each data release; gates KV stores and the cache scope |
 | `ANALYTICS_VERSION` | `deploy.yml` (from `/api/v1/meta`) | — | `0.2` | when the engine version changes |
 | `RESPONSE_FORMAT` | `deploy.yml` | — | `1` | only with a new response format (the API's `RESPONSE_FORMAT`) |
@@ -796,7 +798,8 @@ Never set on Render. The data commands (`atus load`, `atus build-serving-db`, `a
 | `EPOCH` | `edge/wrangler.jsonc` | `1` | `2` | manually. Bumping it orphans every KV entry, a full edge-cache flush |
 | `PREWAKE` | `edge/wrangler.jsonc` | `on` | `off` | manually, to stop `GET /api/v1/wake` from waking Render |
 | `NEON_PROJECT_ID` | `edge/wrangler.jsonc`, optional | unset | `<neon-project-id>` | each release project, with `NEON_API_KEY` |
-| `API_ORIGIN`, `GATE_INFLIGHT`, the Vercel origin mode | fallback only (ADR-011 "Fallback") | unset | `https://<project>.vercel.app`, `on` | only on an owner decision to fail over |
+
+These are all the vars the Worker reads (`edge/src/`). None selects the API origin: that is the secret `RENDER_ORIGIN` alone. The Vercel fallback (ADR-011 "Fallback") is a documented manual procedure whose preconditions, its Worker settings included, are not implemented (ADR-011 amendment).
 
 Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_secrets.sh` and loaded with `npx wrangler secret put <NAME>`, piped from that file (owner step 1.3); the script prints each command. A brand-new Worker's first `wrangler deploy` must already carry the required secrets (`secrets.required` in `wrangler.jsonc`, so `RENDER_ORIGIN` must be known), and `--secrets-file` uploads every line of the file it reads: give it the Worker's names only, as the script prints (`grep -E '^(EDGE_AUTH_SECRET|OPS_TOKEN|IP_HMAC_KEY|RENDER_ORIGIN)=' ~/.config/atus/edge.env` into a private temporary file, which `--secrets-file` reads and the command then removes; not a process substitution, which fails on macOS), never the whole file, which also holds the API's `ATUS_OPS_TOKEN` and any `EDGE_AUTH_SECRET_PREVIOUS` or `NEON_API_KEY`.
 
@@ -929,7 +932,7 @@ Every deploy run's summary records what ran before it and what it deployed, what
 - **Data:** the release switch in reverse (ADR-013):
   1. restore the previous `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` on Render;
   2. run deploy.yml at the commit whose `releases/current.json` names the previous release, so the Worker's `DATA_VERSION` and snapshot follow.
-- **API host:** fail over to the Vercel fallback by changing a Worker var (owner decision; ADR-011 "Fallback").
+- **API host:** no failover is implemented. The Vercel fallback (ADR-011 "Fallback") is a documented manual procedure whose preconditions are not built, and no Worker var selects the API origin; the Worker reads it only from the secret `RENDER_ORIGIN`. See the runbook [Render suspends the service](operations.md#render-suspends-the-service) (owner decision).
 
 ### Monitoring and alerting ($0)
 

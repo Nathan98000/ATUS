@@ -6,6 +6,7 @@ Without Docker:
   the API container exactly as deployed (plain HTTP only on loopback), moves
   bytes both ways unchanged, listens on loopback only and refuses to start
   without a valid target (needs node); the edge image starts it first;
+- deploy/edge/entrypoint.sh forwards only vars and secrets the Worker reads;
 - deploy/stack/edge_probe.py's visitor addresses and checks of the
   governor's denial shape;
 - scripts/smoke_stack.sh refuses --e2e without --edge before touching Docker.
@@ -31,7 +32,7 @@ import time
 
 import pytest
 
-from .conftest import REPO_ROOT
+from .conftest import REPO_ROOT, worker_env_names, wrangler_vars
 from .test_stack_smoke import image_build_sha
 
 RELAY = REPO_ROOT / "deploy" / "edge" / "origin-relay.mjs"
@@ -172,6 +173,26 @@ class TestOriginRelay:
         assert relay < entrypoint.index("exec npx --no-install wrangler dev")
         # one relay only (a second, p5/ci's relay.mjs, was folded into this one)
         assert not (REPO_ROOT / "deploy" / "edge" / "relay.mjs").exists()
+
+
+def test_the_edge_entrypoint_passes_only_names_the_worker_reads():
+    """The wrangler dev entrypoint forwards Worker vars and secrets by name. Each name
+    must be one the Worker's code reads, and each var one wrangler.jsonc declares; the
+    Vercel fallback's API_ORIGIN and GATE_INFLIGHT were never read (ADR-011 amendment)."""
+    entrypoint = (REPO_ROOT / "deploy" / "edge" / "entrypoint.sh").read_text()
+    joined = entrypoint.replace("\\\n", " ")
+    secrets_loop, vars_loop = re.findall(r"^for name in ([A-Z0-9_ ]+); do$", joined,
+                                         re.MULTILINE)
+    secrets, variables = set(secrets_loop.split()), set(vars_loop.split())
+    read = worker_env_names()
+    assert secrets <= read, secrets - read
+    assert variables <= read, variables - read
+    assert variables <= wrangler_vars(), variables - wrangler_vars()
+    assert not secrets & wrangler_vars(), "a secret must never be passed as a --var"
+    # every release var deploy.yml publishes can also reach the local Worker
+    assert {"DATA_VERSION", "ANALYTICS_VERSION", "RESPONSE_FORMAT", "SNAPSHOT_ID"} <= variables
+    for dead in ("API_ORIGIN", "GATE_INFLIGHT"):
+        assert dead not in entrypoint, dead
 
 
 class TestEdgeProbeHelpers:

@@ -32,9 +32,11 @@
     // Both forms: "/api/*" alone does not match the bare "/api" path.
     "run_worker_first": ["/api", "/api/*"]
   },
-  // Non-secret configuration. The deploy workflow overrides the release-bound
-  // values (DATA_VERSION, ANALYTICS_VERSION, SNAPSHOT_ID) with `--var`; the
-  // empty defaults make the edge result cache store nothing (version gate).
+  // Non-secret configuration, and every var the Worker reads. The deploy
+  // workflow overrides the release-bound values (DATA_VERSION,
+  // ANALYTICS_VERSION, RESPONSE_FORMAT, SNAPSHOT_ID) with `--var`; the empty
+  // defaults make the edge result cache store nothing (version gate). No var
+  // selects the API origin: that is the RENDER_ORIGIN secret alone.
   "vars": {
     "API_VERSION": "v1",
     "ANALYTICS_VERSION": "",

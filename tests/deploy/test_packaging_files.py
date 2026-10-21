@@ -12,7 +12,7 @@ import subprocess
 
 import pytest
 
-from .conftest import REPO_ROOT
+from .conftest import REPO_ROOT, worker_env_names, wrangler_vars
 
 DOCKERFILES = ["Dockerfile", "deploy/pgbouncer/Dockerfile", "deploy/edge/Dockerfile"]
 DIGEST_ARG = re.compile(r"^ARG \w+_DIGEST=sha256:[0-9a-f]{64}$", re.MULTILINE)
@@ -307,6 +307,18 @@ def test_production_example_names_the_edge_and_github_settings():
         assert name in text, name
 
 
+def test_production_example_names_only_worker_vars_the_worker_reads():
+    """Section 3 lists Worker vars; each must be declared in wrangler.jsonc and read by
+    the Worker. The Vercel fallback's vars were never implemented (ADR-011 amendment)."""
+    text = _read(".env.production.example")
+    section = text[text.index("# 3. Cloudflare Worker vars"):text.index("# 4. GitHub")]
+    named = set(re.findall(r"^# ([A-Z][A-Z0-9_]*)=", section, re.MULTILINE))
+    assert set(WORKER_VARS) <= named
+    assert named <= wrangler_vars() & worker_env_names(), named - wrangler_vars()
+    for dead in ("API_ORIGIN", "GATE_INFLIGHT", "origin mode"):
+        assert dead not in text, dead
+
+
 def test_production_example_holds_no_secret_values():
     values = _assignments(_read(".env.production.example"))
     for name in ("ATUS_DATABASE_URL", "ATUS_EDGE_SECRETS", "ATUS_OPS_TOKEN",
@@ -352,6 +364,28 @@ def test_configuration_reference_covers_every_component_name():
     reference = _configuration_reference()
     for name in CONTRACT_API_VARIABLES + WORKER_SECRETS + WORKER_VARS + GITHUB_SECRETS:
         assert f"`{name}`" in reference or name in reference, name
+
+
+def test_configuration_reference_lists_exactly_the_worker_vars():
+    """The Worker-var table names every var in wrangler.jsonc and nothing else: no var
+    selects the API origin, and the Vercel fallback is not implemented (ADR-011)."""
+    reference = _configuration_reference()
+    worker = reference[reference.index("### Cloudflare Worker"):reference.index("### GitHub")]
+    rows = re.findall(r"^\| `([A-Z][A-Z0-9_]*)`", worker[worker.index("| Var |"):],
+                      re.MULTILINE)
+    assert len(rows) == len(set(rows))
+    assert set(rows) == wrangler_vars()
+    for dead in ("API_ORIGIN", "GATE_INFLIGHT", "origin mode"):
+        assert dead not in reference, dead
+
+
+def test_configuration_reference_matches_the_published_openapi_schema():
+    """`ATUS_API_DOCS` turns the API's routes off; the site serves the committed schema
+    statically instead (F43), so the reference says where it is published."""
+    row = next(line for line in _configuration_reference().splitlines()
+               if line.startswith("| `ATUS_API_DOCS` |"))
+    assert "static asset at `/openapi.json`" in row
+    assert "`frontend/openapi.json`" in row
 
 
 def test_every_secret_has_a_rotation_entry():

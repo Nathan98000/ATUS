@@ -42,7 +42,8 @@ contains the canonical `spec` (resubmittable verbatim) and the deterministic
 - Deep links, refresh, and bookmarks work with zero backend additions.
 - URLs are long-ish but stable and canonical; if analyses ever need short
   URLs, a Phase 5 redirect service can map keys → specs without changing
-  this contract.
+  this contract. (Phase 5 decided not to build one for now:
+  [ADR-016](ADR-016-short-share-links.md), "Short share links are deferred".)
 - If the data or analytics version changes, an old link re-runs the same
   spec against the new version — by design (the result page shows current
   versions in its methodology panel).

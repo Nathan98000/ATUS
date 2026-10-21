@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -124,3 +125,22 @@ def api_image(docker_daemon) -> str:
     )
     assert result.returncode == 0, result.stdout[-4000:] + result.stderr[-4000:]
     return image
+
+
+# --- the Worker's configuration names (static) ---------------------------------------
+
+
+def wrangler_vars() -> set[str]:
+    """The names under "vars" in edge/wrangler.jsonc (the Worker's non-secret settings)."""
+    text = (REPO_ROOT / "edge" / "wrangler.jsonc").read_text()
+    block = re.search(r'^\s*"vars":\s*\{(.*?)^\s*\}', text, re.MULTILINE | re.DOTALL)
+    assert block is not None, "edge/wrangler.jsonc has no vars block"
+    return set(re.findall(r'^\s*"([A-Z][A-Z0-9_]*)":', block.group(1), re.MULTILINE))
+
+
+def worker_env_names() -> set[str]:
+    """Every `env.NAME` the Worker's code reads (vars, secrets and bindings)."""
+    names: set[str] = set()
+    for path in sorted((REPO_ROOT / "edge" / "src").rglob("*.ts")):
+        names.update(re.findall(r"\benv\.([A-Z][A-Z0-9_]*)\b", path.read_text()))
+    return names
