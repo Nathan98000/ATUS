@@ -150,10 +150,11 @@ def test_the_pin_scan_reads_the_repository_not_ignored_local_data(tmp_path, monk
 
 
 def test_every_postgres_16_pin_names_the_same_digest():
-    """A Dependabot compose or docker bump changes only its own files: CI, the
-    deploy snapshot and the image gate would then run another PostgreSQL
+    """A Dependabot compose or docker digest refresh changes only its own files:
+    CI, the deploy snapshot and the image gate would then run another PostgreSQL
     build than the stack. Finish such a pull request by updating every copy
-    listed in POSTGRES_PINS (the comment in .github/dependabot.yml says so)."""
+    listed in POSTGRES_PINS (the comment in .github/dependabot.yml says so).
+    Version changes (16 to 17) are never proposed: they follow Neon's major."""
     found: dict[str, list[str]] = {}
     for path in repository_files():
         relative = path.relative_to(REPO_ROOT)
@@ -170,6 +171,50 @@ def test_every_postgres_16_pin_names_the_same_digest():
     assert len({d for digests in found.values() for d in digests}) == 1, found
     note = (REPO_ROOT / ".github" / "dependabot.yml").read_text()
     assert "test_every_postgres_16_pin_names_the_same_digest" in note
+
+
+#: Base images whose version is a platform contract: only their digests refresh.
+CONTRACT_VERSIONS = {
+    "postgres": {"version-update:semver-major"},          # Neon's Postgres major
+    "python": {"version-update:semver-major", "version-update:semver-minor"},  # the locks
+    "node": {"version-update:semver-major"},              # the edge runtime
+}
+
+
+def _ignored(ecosystem: str) -> dict[str, set[str]]:
+    (update,) = [u for u in CONFIG["updates"] if u["package-ecosystem"] == ecosystem]
+    rules: dict[str, set[str]] = {}
+    for rule in update.get("ignore", []):
+        # Without update-types a rule would ignore the digest refreshes too.
+        assert rule.get("update-types"), rule
+        assert "versions" not in rule, rule
+        rules.setdefault(rule["dependency-name"], set()).update(rule["update-types"])
+    return rules
+
+
+def _image_name(ref: str) -> str:
+    return ref.split("@")[0].rsplit(":", 1)[0]
+
+
+def test_base_image_versions_are_never_bumped_only_their_digests():
+    """dependabot-base-image-version-bumps (review round 2): the docker and compose
+    ecosystems had no ignore rules, so Dependabot could propose postgres 16 to 17 (off
+    Neon's major), python 3.12-slim to 3.13 (the locks and the Dockerfile's python3.12
+    path) or node 22 to 24, and the repository's only guidance was to update every copy.
+    Every base image is named here, so a new one needs a decision too."""
+    dockerfiles = [p for p in REPO_ROOT.rglob("Dockerfile")
+                   if not set(p.relative_to(REPO_ROOT).parts) & SKIP]
+    bases = {_image_name(ref) for path in dockerfiles for ref in FROM.findall(path.read_text())}
+    assert bases == set(CONTRACT_VERSIONS)
+    assert _ignored("docker") == CONTRACT_VERSIONS
+    composed = set()
+    for name in ("docker-compose.yml", "docker-compose.prod.yml"):
+        images = re.findall(r"^\s+image:\s*(\S+)", (REPO_ROOT / name).read_text(), re.MULTILINE)
+        composed |= {_image_name(i) for i in images if not i.startswith(("atus-", "*", "${"))}
+    assert composed == {"postgres"}
+    assert _ignored("docker-compose") == {"postgres": CONTRACT_VERSIONS["postgres"]}
+    note = " ".join((REPO_ROOT / ".github" / "dependabot.yml").read_text().split())
+    assert "postgres moves only when Neon's project does" in note.replace("# ", "")
 
 
 def test_compose_images_are_digest_pinned_for_the_compose_ecosystem():

@@ -90,9 +90,17 @@ updates:
   # and copies no ecosystem updates: the `services:` images of ci.yml and
   # deploy.yml, deploy/ci/check_image.py, tests/deploy/test_container_image.py
   # and src/atus_pipeline/serving/pgtools.py (the restore's docker client).
-  # A pull request that bumps one copy fails
+  # A digest refresh that bumps one copy fails
   # tests/deploy/test_dependabot.py::test_every_postgres_16_pin_names_the_same_digest
   # until every copy carries the new digest: update them in the same pull request.
+  #
+  # The base images' versions are platform contracts, so only their digests
+  # refresh here (the `ignore` rules, review round 2): postgres 16 is Neon's
+  # Postgres major (ADR-011), which CI, the deploy's snapshot restore and the
+  # stack must match; python 3.12 is what the locks are compiled for and the
+  # Dockerfile's /usr/local/lib/python3.12 path; node 22 is the edge's runtime
+  # in CI and the stack. A version change is a decision, made by hand: postgres
+  # moves only when Neon's project does, never because a new major exists.
   - package-ecosystem: docker
     directories:
       - "/"
@@ -105,6 +113,13 @@ updates:
       timezone: Etc/UTC
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "deps(docker)"
 
@@ -117,5 +132,8 @@ updates:
       timezone: Etc/UTC
     cooldown:
       default-days: 7
+    ignore:
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "deps(compose)"
