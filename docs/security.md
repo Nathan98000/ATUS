@@ -222,7 +222,7 @@ Tests:
 - `frontend/e2e/service-states.spec.ts` (headers and CSP violations under `vite preview`);
 - `edge/test/worker/headers.test.ts`;
 - `tests/unit/api/test_guard.py::TestHeaders`;
-- the `static_headers` and `api_headers` checks in `deploy/stack/edge_probe.py`.
+- the `static_headers` and `api_headers` checks in `deploy/stack/edge_probe.py`. `static_headers` compares every header of the `/*` rule of the published `_headers` with its exact value on `/`, `/explore` and a hashed bundle; `tests/deploy/test_edge_probe.py` shows each check of the probe failing on its violation (a missing or changed `Referrer-Policy` or `Permissions-Policy` included) against a stub edge.
 
 **C13. CORS off.**
 - CORS is off unless `ATUS_API_CORS_ORIGINS` lists exact origins. `*` and origins with paths are refused at startup, and credentials are never allowed.
