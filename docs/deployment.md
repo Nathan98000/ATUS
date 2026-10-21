@@ -946,13 +946,13 @@ Every deploy run's summary records what ran before it and what it deployed, what
 | `edge-check.yml` | every 30 min (`:17`, `:47`) | 4 (1 Worker) | SPA shell or its headers, `/api/_edge/health`, the snapshot pointer or manifest, or a Worker `SNAPSHOT_ID` that differs from the pointer | Cloudflare only |
 | `deep-check.yml` | every 6 h (`17 */6 * * *`) | 1–8 | `/api/health` through the Worker after a cold-start allowance of 4 min | Cloudflare and Render; never Neon |
 | `quota-report.yml` | daily, 22:05 UTC | 1 | any governor budget above 70% of its pro-rated value (see below) | the Worker's governor only |
-| `schedules-check.yml` | monthly (1st, 09:00 UTC) | GitHub API | a scheduled workflow not `active`; a monitor whose last scheduled run is far older than its cadence; no push for 28 days | GitHub only |
+| `schedules-check.yml` | weekly (Monday 09:41 UTC) | GitHub API | a scheduled workflow not `active`; a monitor whose last scheduled run is far older than its cadence; no commit on `main` for 28 days | GitHub only |
 | `ghcr-cleanup.yml` | weekly (Monday 04:23 UTC) | GitHub API | a failed deletion | GitHub only |
 
 - **Pro-rating in the quota report.** Daily budgets are pro-rated by the share of the UTC day elapsed: global and heavy analyses, and the Neon CU-hour ceiling. Monthly Neon CU-hours and egress are pro-rated by the share of Neon's consumption period. The rolling 31-day CU total is compared with the whole 100 CU-hour quota. The per-network cap is reported but never alerts.
 - **Email.** A failed scheduled run emails its owner when notifications are set as in owner step 4.4.
 - **Skipped monitors.** The monitors stay skipped until the repository variable `PUBLIC_BASE_URL` exists.
-- **Inactivity.** GitHub disables scheduled workflows after 60 days without repository activity, and then nothing alerts, not even the schedule check. Its 28-day threshold leaves room for one more monthly run before the cutoff. If it fails for inactivity, push a commit; if a workflow shows as disabled, re-enable it under Actions → *workflow* → "Enable workflow".
+- **Inactivity.** GitHub disables scheduled workflows after 60 days without repository activity, and then nothing alerts, not even the schedule check. GitHub does not say whether Dependabot's pushes to its update branches count as activity, so the check measures the newest commit on `main`, not the repository's `pushed_at` (which those branch pushes keep fresh). Its 28-day threshold leaves four more weekly runs before the cutoff, so one dropped run does not cost the warning. If it fails for inactivity, push a commit to `main`; if a workflow shows as disabled, re-enable it under Actions → *workflow* → "Enable workflow".
 - **Manual runs.** Every monitor can be run by hand (Actions → *workflow* → Run workflow). The same scripts run locally:
   - `python scripts/ops/monitors.py edge|deep --base-url ...`;
   - `EDGE_OPS_TOKEN=... python scripts/ops/monitors.py quota --base-url ...`.

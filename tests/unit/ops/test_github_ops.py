@@ -17,7 +17,11 @@ def iso(when: datetime) -> str:
     return when.isoformat().replace("+00:00", "Z")
 
 
-def github(server, *, state=None, last_runs=None, pushed=NOW - timedelta(days=3)):
+def github(server, *, state=None, last_runs=None, pushed=NOW - timedelta(days=3),
+           committed=None):
+    """``pushed``: the repository's pushed_at (any branch, Dependabot's
+    included); ``committed``: the newest commit on the default branch
+    (default: the same time)."""
     state = state or {}
     last_runs = last_runs or {}
     workflows = []
@@ -34,8 +38,13 @@ def github(server, *, state=None, last_runs=None, pushed=NOW - timedelta(days=3)
                       "state": "active"})
     server.routes[("GET", f"/repos/{REPO}/actions/workflows?per_page=100&page=1")] = \
         json_reply(200, {"total_count": len(workflows), "workflows": workflows}, api=False)
-    server.routes[("GET", f"/repos/{REPO}")] = json_reply(200, {"pushed_at": iso(pushed)},
-                                                          api=False)
+    server.routes[("GET", f"/repos/{REPO}")] = json_reply(
+        200, {"pushed_at": iso(pushed), "default_branch": "main"}, api=False)
+    commit = {"sha": "a" * 40, "commit": {
+        "author": {"date": iso((committed or pushed) - timedelta(hours=2))},
+        "committer": {"date": iso(committed or pushed)}}}
+    server.routes[("GET", f"/repos/{REPO}/commits?sha=main&per_page=1")] = json_reply(
+        200, [commit], api=False)
 
 
 def run_schedules(server, monkeypatch):
@@ -80,9 +89,24 @@ def test_repository_inactivity_alerts_before_the_60_day_cutoff(fake_server, monk
     assert "60 days" in out and "about 30 days left" in out
 
 
-def test_the_monthly_cadence_always_lands_before_the_cutoff():
-    """A check runs at most 31 days after the previous one."""
-    assert gh_ops.INACTIVITY_ALERT + timedelta(days=31) < gh_ops.INACTIVITY_CUTOFF
+def test_branch_pushes_by_dependabot_do_not_hide_an_idle_default_branch(
+        fake_server, monkeypatch, capsys):
+    """pushed_at counts pushes to any branch: Dependabot's weekly update
+    branches keep it days old. Whether GitHub counts those as activity is not
+    documented, so the check measures the default branch's newest commit."""
+    github(fake_server, pushed=NOW - timedelta(days=2), committed=NOW - timedelta(days=30))
+    assert run_schedules(fake_server, monkeypatch) == 1
+    out = capsys.readouterr().out
+    assert "last commit on main 30.0 days ago" in out and "about 30 days left" in out
+
+
+def test_the_weekly_cadence_leaves_several_runs_before_the_cutoff():
+    """The check runs weekly (off the hour): after the alert threshold, at
+    least four more scheduled runs come before the 60-day cutoff, so one
+    dropped run never costs the only warning."""
+    workflow = (OPS_DIR.parents[1] / ".github" / "workflows" / "schedules-check.yml").read_text()
+    assert '- cron: "41 9 * * 1"' in workflow
+    assert gh_ops.INACTIVITY_ALERT + 4 * timedelta(days=7) < gh_ops.INACTIVITY_CUTOFF
 
 
 def test_schedules_needs_a_token(fake_server):

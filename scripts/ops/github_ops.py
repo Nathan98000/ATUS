@@ -12,9 +12,10 @@ never printed.
           * a scheduled workflow is not ``active`` (disabled manually or for
             inactivity);
           * a monitor has had no scheduled run for much longer than its cadence;
-          * the repository has had no push for 28 days or more, so the next
-            monthly check could come after the 60-day cutoff.
-        Run monthly by .github/workflows/schedules-check.yml.
+          * the default branch has had no commit for 28 days or more (not
+            the repository's pushed_at, which Dependabot's branch pushes
+            keep fresh), leaving four weekly runs before the 60-day cutoff.
+        Run weekly (Mondays, off the hour) by .github/workflows/schedules-check.yml.
 
     github_ops.py ghcr-cleanup --owner nathan98000 --package atus-api --keep 20 [--dry-run]
         Deletes all but the newest ``--keep`` versions (digests) of the image.
@@ -51,10 +52,11 @@ SCHEDULED_WORKFLOWS: dict[str, timedelta | None] = {
     ".github/workflows/deep-check.yml": timedelta(hours=24),       # every 6 h
     ".github/workflows/quota-report.yml": timedelta(days=3),       # daily
     ".github/workflows/ghcr-cleanup.yml": timedelta(days=15),      # weekly
-    ".github/workflows/schedules-check.yml": None,                 # this check, monthly
+    ".github/workflows/schedules-check.yml": None,                 # this check, weekly
 }
-#: Alert this long after the last push: a monthly check then still runs
-#: before GitHub's 60-day inactivity cutoff (28 + 31 < 60).
+#: Alert this long after the default branch's newest commit: four more
+#: weekly checks still run before GitHub's 60-day inactivity cutoff
+#: (28 + 4 * 7 < 60), so a dropped run never costs the warning.
 INACTIVITY_ALERT = timedelta(days=28)
 INACTIVITY_CUTOFF = timedelta(days=60)
 
@@ -156,20 +158,30 @@ def check_schedules(gh: GitHub, repo: str, *, now: datetime) -> list[Finding]:
         else:
             findings.append(Finding(name, True, f"active; last scheduled run {_ago(now - last)} "
                                                 "ago"))
-    pushed = _time(gh.call("GET", f"/repos/{repo}").get("pushed_at"))
-    if pushed is None:
-        findings.append(Finding("repository activity", False, "no pushed_at reported"))
-    else:
-        idle = now - pushed
-        left = INACTIVITY_CUTOFF - idle
-        if idle >= INACTIVITY_ALERT:
-            findings.append(Finding("repository activity", False,
-                                    f"last push {_ago(idle)} ago: GitHub disables scheduled "
-                                    f"workflows after 60 days without activity "
-                                    f"(about {max(0, left.days)} days left). Push a commit."))
-        else:
-            findings.append(Finding("repository activity", True, f"last push {_ago(idle)} ago"))
+    findings.append(check_activity(gh, repo, now=now))
     return findings
+
+
+def check_activity(gh: GitHub, repo: str, *, now: datetime) -> Finding:
+    """Days since the newest commit on the default branch. Not ``pushed_at``:
+    that counts pushes to any branch, Dependabot's weekly update branches
+    included, and GitHub does not say whether those count as activity."""
+    branch = gh.call("GET", f"/repos/{repo}").get("default_branch")
+    if not isinstance(branch, str) or not NAME.match(branch):
+        return Finding("repository activity", False, "no default branch reported")
+    commits = gh.call("GET", f"/repos/{repo}/commits?sha={branch}&per_page=1")
+    latest = commits[0] if isinstance(commits, list) and commits else {}
+    committed = _time(((latest.get("commit") or {}).get("committer") or {}).get("date"))
+    if committed is None:
+        return Finding("repository activity", False, f"no commit date on {branch}")
+    idle = now - committed
+    left = INACTIVITY_CUTOFF - idle
+    if idle >= INACTIVITY_ALERT:
+        return Finding("repository activity", False,
+                       f"last commit on {branch} {_ago(idle)} ago: GitHub disables scheduled "
+                       f"workflows after 60 days without activity (about "
+                       f"{max(0, left.days)} days left). Push a commit to {branch}.")
+    return Finding("repository activity", True, f"last commit on {branch} {_ago(idle)} ago")
 
 
 def _ago(delta: timedelta) -> str:

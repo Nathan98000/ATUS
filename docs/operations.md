@@ -1130,7 +1130,7 @@ This means Render's discretionary suspension for "uncommonly high" traffic that 
 
 ### Scheduled workflows were disabled
 
-GitHub disables scheduled workflows after 60 days without repository activity, and it can delay or drop scheduled runs. `schedules-check.yml` (monthly) fails when a schedule is not active, when a monitor's last scheduled run is far older than its cadence, or when nothing has been pushed for 28 days. When it fails, or monitor runs stop:
+GitHub disables scheduled workflows after 60 days without repository activity, and it can delay or drop scheduled runs. `schedules-check.yml` (weekly) fails when a schedule is not active, when a monitor's last scheduled run is far older than its cadence, or when `main` has had no commit for 28 days (pushes to Dependabot's branches do not count: GitHub does not say whether they are activity). When it fails, or monitor runs stop:
 
 ```bash
 gh workflow list --all                      # which workflows are disabled
@@ -1140,4 +1140,4 @@ gh workflow run schedules-check.yml         # confirm, or locally:
 GH_TOKEN="$(gh auth token)" python scripts/ops/github_ops.py schedules --repo Nathan98000/ATUS
 ```
 
-If the cause was inactivity, push a commit. Failure emails for a scheduled workflow go to the user who last changed its `cron` line ([owner step 4.4](deployment.md#4-github-repository-nathan98000atus-stays-public)).
+If the cause was inactivity, push a commit to `main`. Failure emails for a scheduled workflow go to the user who last changed its `cron` line ([owner step 4.4](deployment.md#4-github-repository-nathan98000atus-stays-public)).

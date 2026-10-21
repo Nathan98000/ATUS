@@ -177,10 +177,10 @@ The decisions are unchanged. This section records where the implementation diffe
   - It runs daily at 22:05 UTC, so it reads the governor's counters before their 00:00 UTC reset.
   - It runs in the GitHub environment `ops`, with the Worker's ops token stored as `EDGE_OPS_TOKEN`, and alerts at a threshold of 0.7.
   - The pro-rating rules are in [`../deployment.md`](../deployment.md#monitoring-and-alerting-0). The per-network cap is reported but never alerts.
-- **Schedule check: a monthly workflow (1st, 09:00 UTC), not a runbook step.** It re-enables nothing: with a read-only token (`actions: read`) it can only fail, and so email the owner, when:
+- **Schedule check: a weekly workflow (Monday 09:41 UTC, off the hour), not a runbook step.** It re-enables nothing: with a read-only token (`actions: read`) it can only fail, and so email the owner, when:
   - a scheduled workflow is not active;
   - a monitor's last scheduled run is too old;
-  - the repository has had no push for 28 days.
+  - the default branch has had no commit for 28 days. (Amended in review round 1: it read the repository's `pushed_at` and ran monthly at minute 0. Dependabot's weekly branch pushes keep `pushed_at` fresh, GitHub does not say whether they count as activity, and one dropped monthly run removed the only warning.)
 
   Re-enabling a workflow stays manual (Actions → workflow → "Enable workflow"). If the schedule check itself has been disabled, it cannot alert.
 

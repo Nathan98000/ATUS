@@ -371,7 +371,7 @@ SCHEDULES = {
     "edge-check.yml": "17,47 * * * *",
     "deep-check.yml": "17 */6 * * *",
     "quota-report.yml": "5 22 * * *",
-    "schedules-check.yml": "0 9 1 * *",
+    "schedules-check.yml": "41 9 * * 1",
     "ghcr-cleanup.yml": "23 4 * * 1",
 }
 
