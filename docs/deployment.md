@@ -257,8 +257,8 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 
 1. Sign up at `dashboard.render.com`. Use the **Hobby workspace created automatically** at sign-up. **Never create another workspace**: that flow asks for a payment method. If any card prompt appears, stop.
 2. **Region check, before creating anything on Neon.** Open New → Web Service, choose **Free** as the instance type, and note which regions are offered. **Cancel without creating.** Tell Claude whether **Virginia** is offered. If it is, Neon goes to AWS US East 1. If not: Ohio pairs with AWS US East 2, Oregon with AWS US West 2.
-3. *(After the first CI image push and the GHCR package is made Public, step 4.4.)* **New → Web Service → Existing Image:**
-   - Image URL: `ghcr.io/nathan98000/atus-api@sha256:<digest printed by CI>` (public; no credentials).
+3. *(After the first deploy run has pushed the image and the GHCR package is made Public, step 4.5; see "Bootstrap" under step 7 of the deploy guide.)* **New → Web Service → Existing Image:**
+   - Image URL: `ghcr.io/nathan98000/atus-api@sha256:<digest>`, the digest the `push` job of that run prints in its summary (public; no credentials).
    - Name: `atus-api-<6 random chars>`. Never publish this hostname. Store the resulting URL as the Worker secret `RENDER_ORIGIN` and the GitHub secret `RENDER_ORIGIN`.
    - Region: as agreed in step 2. It cannot be changed later.
    - Instance type: **Free**. Health check path: **`/health`**.
@@ -293,22 +293,28 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 
 ### 4. GitHub (repository `Nathan98000/ATUS`, stays public)
 
-1. **Settings → Environments → New environment `production`:**
+The workflows in `.github/workflows/` read exactly these names; nothing else is needed.
+
+1. **Settings → Secrets and variables → Actions → Variables → New repository variable:** `PUBLIC_BASE_URL` = `https://<worker>.<account-subdomain>.workers.dev`.
+   - A repository variable, not an environment one: the monitors decide whether to run before they enter an environment.
+   - Until it is set (before the first deploy) the monitors are skipped instead of failing every 30 minutes.
+2. **Settings → Environments → New environment `production`:**
    - Required reviewers: yourself, with **Prevent self-review OFF** (otherwise nobody can approve).
-   - Deployment branches and tags: `main` and the tag pattern `v*`.
-   - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `RENDER_DEPLOY_HOOK_URL`, `RENDER_ORIGIN`, `ATUS_OPS_TOKEN`.
-   - Variables: `PUBLIC_BASE_URL=https://<worker>.<account-subdomain>.workers.dev`, `GHCR_IMAGE=ghcr.io/nathan98000/atus-api`.
-2. **New environment `ops`**, used by the scheduled monitors and the quota report:
-   - No reviewers. Branch: `main` only.
-   - Secret: `ATUS_OPS_TOKEN`. Variable: `PUBLIC_BASE_URL`.
-3. **Repository settings:**
-   - **Actions → General → Workflow permissions:** "Read repository contents". Jobs that push images request `packages: write` explicitly.
+   - Deployment branches and tags: "Selected branches and tags": `main` and the tag pattern `v*`.
+   - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `RENDER_DEPLOY_HOOK_URL`, `RENDER_ORIGIN`. Optionally `EDGE_OPS_TOKEN`: the post-deploy smoke then also reads the governor's budget.
+3. **New environment `ops`**, used by the daily quota report:
+   - No reviewers. Deployment branches: `main` only.
+   - Secret: `EDGE_OPS_TOKEN` (the Worker's `OPS_TOKEN`).
+   - `ATUS_OPS_TOKEN` and `GHCR_IMAGE` are **not** GitHub settings. No workflow reads the origin's `/ready` or `/metrics` (the post-deploy smoke checks the origin lock instead, which touches no database), and the workflows name the image repository themselves.
+4. **Repository settings:**
+   - **Actions → General → Workflow permissions:** "Read repository contents and packages permissions". Every job asks for what it needs; only deploy.yml's `push` job and the GHCR cleanup get `packages: write`.
+   - **Actions → General:** if your settings offer "Require actions to be pinned to a full-length commit SHA", turn it on. Every workflow already pins by SHA, and `tests/deploy/test_workflows.py` enforces it.
    - **General → Releases:** enable **release immutability**.
-   - **Advanced Security:** enable CodeQL default setup, Dependabot alerts and Dependabot security updates. Secret scanning and push protection are on by default for public repos; confirm they are.
-   - **Your profile → Settings → Notifications → System → Actions:** "Email", with "Only notify for failed workflows". Without this, monitor failures send no email.
-4. *(After the first CI image push.)* **Packages → `atus-api` → Package settings:**
+   - **Advanced Security:** enable CodeQL default setup, Dependabot alerts and Dependabot security updates (`.github/dependabot.yml` adds weekly version updates). Secret scanning and push protection are on by default for public repos; confirm they are.
+   - **Your profile → Settings → Notifications → System → Actions:** "Email", with "Only notify for failed workflows". This is what turns a failed monitor into an email. GitHub sends a scheduled workflow's notifications to the user who last changed its `cron` line, so the monitors' cron lines should last be changed in commits you push.
+5. *(After the first push to GHCR; see "Bootstrap" under step 7 of the deploy guide.)* **Packages → `atus-api` → Package settings:**
    - **Change visibility → Public.** This cannot be undone; the image contains no secrets or data.
-   - Connect the package to the repository.
+   - **Manage Actions access:** `Nathan98000/ATUS` with role **Admin**. Packages pushed by the repository's own workflow normally get it; the weekly cleanup (`ghcr-cleanup.yml`) needs it to delete old versions.
 
 ### 5. Verification
 
@@ -483,15 +489,16 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
     - it leaves no trace in a throwaway Postgres that logs every connection and statement from the API's role. A control `/api/v1/meta` request must leave a trace, so that a quiet log means something. This catches a health check that reaches the database in a way no static check can see; the tests prove it with a deliberately broken image.
   - **`--allow-startup-connection`** is needed until the lazy pool lands (TODO(WS-A): ADR-011 `min_size=0`). Today the pool opens one connection at start-up; in strict mode the check reports `startup_db_quiet` as FAIL.
   - **`lint.sh`** runs `docker build --check` on every Dockerfile, `docker compose config` on every compose set, and `sh -n`/`bash -n` on every script. It runs hadolint and shellcheck only if they are already installed. Neither was installed where this was written, so neither has run on these files. The script never installs anything.
-- **TODO(wave 2): the CI image job,** in this order:
-  1. `deploy/ci/lint.sh`;
-  2. `docker buildx build --platform linux/amd64` with `ATUS_BUILD_SHA=$GITHUB_SHA`;
-  3. `python deploy/ci/check_image.py <image>`, without `--allow-startup-connection` after the WS-A merge;
-  4. `ATUS_DOCKER_TESTS=1 ATUS_TEST_IMAGE=<image> pytest tests/deploy`;
-  5. `scripts/smoke_stack.sh --no-build` with `ATUS_STACK_IMAGE=<image>`, once plain and once with `--emulation`;
-  6. a Trivy scan, pinned to a commit;
-  7. push to `ghcr.io/nathan98000/atus-api` by digest, with `packages: write` on that job only. GHCR keeps the last 20 digests for rollback.
-- **First push and GHCR visibility:** owner step 4.4. The package starts private.
+- **CI: `.github/workflows/image.yml`**, called by `ci.yml` (every pull request and push to `main`) and by `deploy.yml`, in this order:
+  1. `deploy/ci/lint.sh`. ShellCheck runs here, because the GitHub-hosted runners have it;
+  2. `docker/build-push-action` for `linux/amd64`, loaded into Docker and never pushed, with `ATUS_BUILD_SHA=$GITHUB_SHA`. Provenance and SBOM attestations are off, so every GHCR version is one deployable manifest;
+  3. `python deploy/ci/check_image.py atus-api:ci` in strict mode (no `--allow-startup-connection`);
+  4. `ATUS_DOCKER_TESTS=1 ATUS_TEST_IMAGE=atus-api:ci pytest tests/deploy`; the stack smoke runs as the next two steps;
+  5. `scripts/smoke_stack.sh --no-build` with `ATUS_STACK_IMAGE=atus-api:ci`, once plain and once with `--emulation`;
+  6. Trivy, installed from its immutable GitHub release and pinned by version and SHA-256, never through `aquasecurity/trivy-action` or `setup-trivy`, whose tags were hijacked in March 2026 ([GHSA-69fq-xp46-6x23](https://github.com/advisories/GHSA-69fq-xp46-6x23)). It fails on HIGH or CRITICAL vulnerabilities that have a fix, and keeps the full SARIF report as an artifact;
+  7. `docker save` of the tested image plus its ID, handed on as the workflow artifact `atus-api-image`.
+- **Push: `deploy.yml` only.** Its `push` job, the one job with `packages: write`, loads that artifact, checks that the image ID is the one the build job tested, and pushes it as `ghcr.io/nathan98000/atus-api:sha-<commit>` (plus `:<tag>` for a tag run). Its output is the digest reference. `ghcr-cleanup.yml` keeps the newest 20 versions, weekly.
+- **First push and GHCR visibility:** owner step 4.5. The package starts private.
 
 ### 4. Accounts (owner)
 
@@ -501,7 +508,7 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 2. Render 2.1–2.2: the account and the region check. Create nothing yet.
 3. Neon 3.1–3.4: the project in the paired region, compute 0.25–2 CU.
 4. GitHub 4.1–4.3: environments and repository settings.
-5. After the first CI image push (step 3): GitHub 4.4 (package public), then Render 2.3–2.6 (service by digest, environment, deploy hook).
+5. After the first deploy run has pushed the image (step 7, "Bootstrap"): GitHub 4.5 (package public), then Render 2.3–2.6 (service by digest, environment, deploy hook).
 
 ### 5. Load the serving DB into Neon (owner)
 
@@ -545,8 +552,50 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 4. `wrangler deploy` with the vars `DATA_VERSION`, `ANALYTICS_VERSION`, `RESPONSE_FORMAT` and `SNAPSHOT_ID`.
 5. Run a smoke test of at most 40 requests.
 
-- **TODO(wave 2):** `deploy.yml` and its smoke list.
-- **TODO(WS-D2):** `scripts/build_snapshot.py`, which reads `--requests` from WS-D1's `frontend/scripts/snapshot-requests.mjs`.
+**`deploy.yml`** runs on a `vMAJOR.MINOR.PATCH` tag or a manual run from `main`. Its jobs, each with only the permissions it needs:
+
+| Job | Permissions | What it does |
+|---|---|---|
+| `preflight` | `contents: read` | refuses any other ref; `releases/current.json` must name a published release |
+| `build` | `contents: read` | `image.yml` from scratch (no build cache) |
+| `push` | `contents: read`, `packages: write` | pushes exactly the tested image; outputs `ghcr.io/nathan98000/atus-api@sha256:<hex>` |
+| `snapshot` | `contents: read`, `packages: read` | builds the static snapshot from the committed release with that digest (below) |
+| `deploy` | environment `production` (your approval); `contents: read`, `packages: read` | deploys and verifies (below) |
+
+**The snapshot job.**
+
+1. `scripts/ops/release_manifest.py fetch` downloads the assets named in `releases/current.json` from the GitHub release. Each must have exactly the recorded size and SHA-256, and the artifact's own manifest must agree with `current.json`.
+2. It restores the dump into a `postgres:16` service with `atus restore-serving-db`, as a non-superuser `neondb_owner`. That applies `scripts/ops/roles.sql`, so `atus_api` has exactly its production privileges and role defaults; then it runs `VACUUM (ANALYZE)` and the restore checks.
+3. It pulls the pushed digest and runs it read-only: `--read-only`, every capability dropped, production mode, the release's `ATUS_EXPECTED_DATA_VERSION`, and generous per-client limits for the builder. The image must report `build` = `GITHUB_SHA`.
+4. It builds the same-origin SPA, then `scripts/build_snapshot.py --requests-script frontend/scripts/snapshot-requests.mjs --data-version <release>` writes and verifies `frontend/dist/snap`.
+5. It runs `npm run check:bundle` and checks the Workers static-asset limits (20,000 files, 25 MiB each), then hands `frontend/dist` to the deploy job.
+
+The snapshot is built before anything deploys, so a failed restore or snapshot deploys nothing.
+
+**The deploy job.**
+
+1. It checks that the environment holds its four secrets and that `PUBLIC_BASE_URL` is set. It runs the `wrangler.jsonc` invariant tests (`npx vitest run --project node` in `edge/`) and refuses the placeholder KV namespace id.
+2. It records the rollback targets: the build the origin runs now, that build's GHCR digest, and the Worker's current deployment (`wrangler deployments status`).
+3. `scripts/ops/render_deploy.py trigger` POSTs `RENDER_DEPLOY_HOOK_URL` with `imgURL=<URL-encoded digest reference>`. The URL is read from the environment and never printed; anything but an `https://api.render.com/deploy/srv-...` URL is refused.
+4. `scripts/ops/render_deploy.py wait` polls the origin's `/health` until `build` equals `GITHUB_SHA`. It allows 15 minutes: the image pull, Render's ~1 minute spin-up and the 7–11 s app start (F67).
+5. `npx --no-install wrangler deploy` (the version locked in `edge/package-lock.json`) publishes the SPA, the snapshot and the Worker, with `--var` `DATA_VERSION`, `ANALYTICS_VERSION`, `RESPONSE_FORMAT` and `SNAPSHOT_ID` read from the snapshot.
+6. The post-deploy smoke, at most 40 requests in all:
+   - `scripts/ops/deploy_smoke.py`, at most 30 requests: the SPA shell and its headers; the SPA fallback; the snapshot pointer and manifest; `/api/_edge/health`; `/api/health`, with a cold-start budget; `/api/v1/meta`; two home-page starters, served from the snapshot and recomputed live with different request bytes (so the edge cache cannot answer) and diffed under the §9 criterion; an unknown `/api` path; and the origin lock (the onrender.com URL answers 403 `forbidden_origin`);
+   - one browser journey, `frontend/playwright.deployed.config.ts`: a starter renders, with no CSP errors and at most 6 `/api` requests.
+7. It writes the rollback notes (below) into the job summary, whatever the outcome.
+
+A push to `main` deploys nothing: deploy.yml has no branch trigger, which `tests/deploy/test_workflows.py` asserts along with the permissions above.
+
+**Bootstrap: the very first deploy.** Nothing exists on Render yet, so the first run is split around your approval.
+
+1. Publish the release artifact and commit `releases/current.json` (step 1).
+2. **Actions → Deploy → Run workflow** on `main`. `preflight`, `build`, `push` and `snapshot` run; `deploy` waits for your approval, for up to 30 days.
+3. Meanwhile:
+   - make the package public (owner step 4.5);
+   - create the Render service from the digest in the `push` job's summary (owner steps 2.3–2.6);
+   - add the GitHub secrets (owner step 4.2);
+   - run the first Worker deploy yourself (owner step 1.3; `RENDER_ORIGIN` must exist by then).
+4. Approve `deploy`. It deploys the same digest through the hook, publishes the Worker with the release vars and runs the smoke.
 
 ### 8. Prove the deployment
 
@@ -557,14 +606,28 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 - Security headers on both origins: the SPA's `_headers` and the Worker's own. Include the SPA-fallback `index.html`, where `_headers` may not apply (ADR-011 "Risks").
 - `/health`, then `/api/v1/meta` (allowing for the cold start), one cached analysis, the SPA shell and one starter analysis rendering, with no CSP violations in the console.
 - At least 2 snapshot entries recomputed live and compared under §9.
-- **TODO(wave 2):** the URL-targeted, quota-budgeted check script (brief §16). The README gets the live URL only after this step passes.
+- The deploy job runs these checks (step 7). To repeat them by hand: `python scripts/ops/deploy_smoke.py --base-url https://atus.<sub>.workers.dev --require-snapshot --recompute 2`, then `PUBLIC_BASE_URL=... npx playwright test -c playwright.deployed.config.ts` in `frontend/`. The README gets the live URL only after this step passes.
 
 ### 9. Quota-budgeted post-deploy replay
 
 - Measure what ADR-011 lists under "Unknowns to measure after deploy".
 - Budget, in total: at most 150 Worker requests, 3 Neon CU-h and 15 Render wakes. No load tests against a provider.
 - Results go into ADR-011, ADR-012 and this document, labelled as measured.
-- **TODO(wave 2):** the replay script.
+- **The replay script: `scripts/replay_deployed.py`.** It is the URL-targeted, quota-budgeted full-data quality suite (brief §16).
+  1. Once per release, on your machine, against `atus api` serving the **full** database (loopback only):
+     `python scripts/replay_deployed.py --base-url http://127.0.0.1:8000 --record expected-<release>.json`.
+     Keep the file outside the repository.
+  2. Against the site:
+     `python scripts/replay_deployed.py --base-url https://atus.<sub>.workers.dev --expected expected-<release>.json --report replay.json`.
+- **What it sends.** The 24 BLS benchmarks of `atus_pipeline.analytics.benchmarks` (23 distinct specifications), `/api/v1/meta`, a full-period sleep trend and a by-sex comparison: 27 requests.
+- **What it checks.** Every benchmark against BLS's published value and the benchmark's own tolerance, and every response against the full-database recording under §9.
+- **Quota safety.**
+  - Analyses are paced 10.5 s apart, to stay inside the API's per-client bucket.
+  - The hard budget is 40 requests; a larger budget is refused, and so is a plan that does not fit.
+  - Retries come out of the same budget.
+  - A capacity or quota refusal stops the run.
+  - A second run is answered from the edge cache (`X-Cache: edge`).
+- **Measurements.** The report records each response's `X-Cache`, `Server-Timing` and elapsed time, so the latency matrix above can be read from it.
 
 ### 10. Week-1 calibration
 
@@ -639,8 +702,20 @@ This lists every variable and secret the deployed system uses: where it is set, 
 | `ATUS_API_MAX_BODY_BYTES` | `65536` | `65536` | larger bodies get 413 `payload_too_large` |
 | `ATUS_API_THREADS` | `16` | `16` | anyio worker-thread limit |
 | `ATUS_API_SNAPSHOT_TTL_S` | `2` → `600` | `600` | refresh interval of the in-process `data_version`, years and lexicon |
+| `ATUS_API_PREPARE_THRESHOLD` | `5` | `none` | psycopg's auto-prepare threshold; `none` (or `off`) disables server-side prepared statements, needed only behind a transaction pooler without prepared-statement support (production uses Neon's direct endpoint) |
 
 `ATUS_DATA_DIR` and `ATUS_RELEASE` (and a full-DB `ATUS_DATABASE_URL`) are pipeline-only. They are set in `.env` on your machine for `atus load` and the serving build; the API never reads them.
+
+### Pipeline and release tooling (your machine; never on Render)
+
+| Variable | Where it comes from | Meaning |
+|---|---|---|
+| `ATUS_MIGRATIONS_DIR` | your shell, when not running from a checkout | migrations directory for `atus migrate` / `atus load` (the image ships none, F56) |
+| `ATUS_SERVING_DATABASE_URL` | your shell | default target of `atus build-serving-db`, `verify-serving-db` and `compare-serving-db` |
+| `ATUS_OWNER_DATABASE_URL` | `~/.config/atus/neon.env` (you paste the `neondb_owner` direct string) | the owner connection `atus restore-serving-db` restores with; in `deploy.yml`, a throwaway owner on the runner's `postgres:16` |
+| `ATUS_API_DB_PASSWORD`, `ATUS_API_DATABASE_URL` | written back into the same file by the restore | the generated `atus_api` password and the DSN to put on Render as `ATUS_DATABASE_URL` |
+| `ATUS_API_ROLE_PASSWORD` | set by the restore while it runs `scripts/ops/roles.sql` | never set by hand |
+| `ATUS_PG_CLIENT_IMAGE` | your shell, optional | the `postgres` image for `pg_dump`/`pg_restore`/`psql` when no local client is new enough (default `postgres:<server major>`) |
 
 ### Image (build arguments and baked environment)
 
@@ -648,7 +723,7 @@ This lists every variable and secret the deployed system uses: where it is set, 
 |---|---|---|---|
 | `ATUS_BUILD_SHA` (build arg → env) | `dev` | `$(git rev-parse HEAD)` | every build. `/health` reports it as `build`; `deploy.yml` waits until it equals `GITHUB_SHA` |
 | `ATUS_VERSION` (build arg → OCI label) | `unknown` | `0.1.0` (`atus_pipeline.__version__`) | every release |
-| `PYTHON_BASE`, `PYTHON_DIGEST` (build args) | `python:3.12-slim`, `sha256:a6e34c59…` | — | base-image updates; bump both together. **TODO(wave 2):** Dependabot's `docker` ecosystem proposes them |
+| `PYTHON_BASE`, `PYTHON_DIGEST` (build args) | `python:3.12-slim`, `sha256:a6e34c59…` | — | base-image updates. Both `FROM` lines are literal (`python:3.12-slim@sha256:…`), so Dependabot's `docker` ecosystem proposes digest bumps; these two ARGs only feed the OCI labels and must be updated with them (`tests/deploy/test_dependabot.py` fails otherwise) |
 | `SSL_CERT_FILE` (env) | `/etc/ssl/certs/ca-certificates.crt` | — | never: `sslrootcert=system` depends on it ([TLS](#tls-to-the-database)) |
 | `ATUS_ENV`, `PORT`, `WEB_CONCURRENCY` (env) | `production`, `10000`, `1` | — | never; see the API table |
 
@@ -677,27 +752,25 @@ This lists every variable and secret the deployed system uses: where it is set, 
 
 Secrets are generated into `~/.config/atus/edge.env` and loaded with `npx wrangler secret put <NAME>`, piped from that file (owner step 1.3).
 
-### GitHub environments
+### GitHub (repository variable and environments)
 
-| Name | Kind and environment | Your copy | Example | Rotation |
+| Name | Kind and where | Your copy | Example | Rotation |
 |---|---|---|---|---|
+| `PUBLIC_BASE_URL` | **repository** variable | — | `https://atus.<account-subdomain>.workers.dev` | never (every share link contains it) |
 | `CLOUDFLARE_API_TOKEN` | secret, `production` | none (Cloudflare shows it once) | Custom token: Workers Editor on the one Worker, this account only, 90-day TTL | [Rotation](#rotation), before it expires |
 | `CLOUDFLARE_ACCOUNT_ID` | secret, `production` (not sensitive) | — | 32 hex characters | never |
 | `RENDER_DEPLOY_HOOK_URL` | secret, `production` | none | `https://api.render.com/deploy/srv-<id>?key=<key>` | [Rotation](#rotation) |
 | `RENDER_ORIGIN` | secret, `production` | `edge.env` | as the Worker secret | with the API host |
-| `ATUS_OPS_TOKEN` | secret, `production` | `edge.env` | equals the API's `ATUS_OPS_TOKEN` | with the API's token |
-| `EDGE_OPS_TOKEN` | secret, `production` and `ops` | `edge.env` | equals the Worker's `OPS_TOKEN` | with the Worker's token |
-| `PUBLIC_BASE_URL` | variable, `production` and `ops` | — | `https://atus.<account-subdomain>.workers.dev` | never (every share link contains it) |
-| `GHCR_IMAGE` | variable, `production` | — | `ghcr.io/nathan98000/atus-api` | never |
+| `EDGE_OPS_TOKEN` | secret, `ops`; optionally also `production` | `edge.env` | equals the Worker's `OPS_TOKEN` | with the Worker's token |
+| `ATUS_OPS_TOKEN` | **not stored in GitHub** | `edge.env` | — | no workflow calls the origin's `/ready` or `/metrics` |
+| `GHCR_IMAGE` | **not a setting** | — | — | the workflows name `ghcr.io/nathan98000/atus-api` themselves (Render requires that repository anyway) |
 
-**Which job uses which token.**
+**Which workflow uses which name.**
 
-- **`deploy.yml`** uses `ATUS_OPS_TOKEN` for origin `/ready` in its post-deploy smoke, and `EDGE_OPS_TOKEN` to read `/api/_ops/budget`.
-- **The `ops` monitors:**
-  - the edge check calls `/api/_edge/health` and needs no token;
-  - the deep check calls `/api/health` and needs no token;
-  - the daily quota report reads `/api/_ops/budget` with `EDGE_OPS_TOKEN`.
-- **TODO(wave 2):** owner step 4.2 lists `ATUS_OPS_TOKEN` for `ops`, and neither step 4.1 nor 4.2 lists `EDGE_OPS_TOKEN`. Align those steps with the workflows. `ops` needs `ATUS_OPS_TOKEN` only if a monitor reads the origin's `/metrics`.
+- **`deploy.yml`, job `deploy` (environment `production`):** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` (wrangler), `RENDER_DEPLOY_HOOK_URL` (the deploy), `RENDER_ORIGIN` (the build wait and the origin-lock check), `PUBLIC_BASE_URL` (the smoke) and, when set, `EDGE_OPS_TOKEN` (the smoke's budget read). No other job of any workflow can read them; `tests/deploy/test_workflows.py` asserts it.
+- **`edge-check.yml`, `deep-check.yml`:** `PUBLIC_BASE_URL` only. The edge check calls `/api/_edge/health`; the deep check calls `/api/health`.
+- **`quota-report.yml` (environment `ops`):** `PUBLIC_BASE_URL` and `EDGE_OPS_TOKEN`, for `/api/_ops/budget`.
+- **`schedules-check.yml`, `ghcr-cleanup.yml`:** only the run's own `GITHUB_TOKEN` (`actions: read`; `packages: write`).
 
 ### Owner files (`~/.config/atus/`, `chmod 600`)
 
@@ -737,6 +810,9 @@ Secrets are generated into `~/.config/atus/edge.env` and loaded with `npx wrangl
 | `ATUS_SMOKE_ARGS` | empty | `--emulation` | extra `scripts/smoke_stack.sh` options for `test_stack_smoke.py` |
 | `ATUS_SMOKE_EDGE_SECRET`, `ATUS_SMOKE_OPS_TOKEN` | set by the `smoke` service | — | the probe's credentials |
 | `E2E_BACKEND_PYTHON` | `../.venv/bin/python` | `python` | interpreter Playwright uses for the E2E backend |
+| `PUBLIC_BASE_URL` | unset (required) | `http://127.0.0.1:8541` | the site `frontend/playwright.deployed.config.ts` and `scripts/ops/monitors.py` check: the deployed origin, or the local stack's edge |
+| `TRIVY_VERSION`, `TRIVY_SHA256` | `image.yml` | `0.75.0`, `c6e65abd…` | the pinned scanner (an immutable release); bump both together after checking the release's checksums |
+| `ACTIONLINT_VERSION`, `ACTIONLINT_SHA256` | `ci.yml` | `1.7.12`, `8aca8db9…` | the pinned workflow linter; locally: `uvx --from actionlint-py actionlint` |
 
 ### Rotation
 
@@ -782,11 +858,39 @@ Every secret has one procedure. **TODO(wave 2):** the "rotating tokens" runbook 
 
 ## Rollback and runbooks
 
-**PLACEHOLDER.** The runbooks live in [`operations.md`](operations.md#runbooks) and are written during implementation: deploy, rollback, serving-DB build and restore, data release and new ATUS year, restore drill, incident first steps, token rotation, quota exhausted, and provider free-tier changes.
+The general runbooks live in [`operations.md`](operations.md#runbooks): deploy, rollback, serving-DB build and restore, data release and new ATUS year, restore drill, incident first steps, token rotation, quota exhausted, and provider free-tier changes. The procedures below are the ones the workflows implement.
 
-Summary of the rollback paths decided in ADR-011:
+### Rollback
 
-- **API:** call the Render deploy hook with the previous GHCR digest.
-- **Edge (SPA, snapshot, Worker):** `wrangler rollback`.
-- **Data:** the reverse of the release switch. The previous Neon project is kept until you approve deleting it.
-- **API host:** fail over to the Vercel fallback by changing a Worker var (owner decision).
+Every deploy run's summary records what ran before it and what it deployed, whatever the outcome.
+
+- **API.** Export `RENDER_DEPLOY_HOOK_URL` from your password manager into your shell (never paste it into chat), then:
+  1. `python scripts/ops/render_deploy.py trigger --image-ref ghcr.io/nathan98000/atus-api@sha256:<previous>`;
+  2. `RENDER_ORIGIN=... python scripts/ops/render_deploy.py wait --expect-build <previous build>`.
+
+  GHCR keeps the newest 20 digests. Render's dashboard can also roll back to a previous deploy.
+- **Edge (SPA, snapshot, Worker and its vars):**
+  1. `cd edge && npx wrangler rollback <previous version id> --message "rollback"`. Without an id, wrangler offers the version before the current one.
+  2. Check with `python scripts/ops/monitors.py edge --base-url https://atus.<sub>.workers.dev`.
+- **Data:** the release switch in reverse (ADR-013):
+  1. restore the previous `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` on Render;
+  2. run deploy.yml at the commit whose `releases/current.json` names the previous release, so the Worker's `DATA_VERSION` and snapshot follow.
+- **API host:** fail over to the Vercel fallback by changing a Worker var (owner decision; ADR-011 "Fallback").
+
+### Monitoring and alerting ($0)
+
+| Workflow | When | Requests | What fails it | Reaches |
+|---|---|---|---|---|
+| `edge-check.yml` | every 30 min (`:17`, `:47`) | 4 (1 Worker) | SPA shell or its headers, `/api/_edge/health`, the snapshot pointer or manifest, or a Worker `SNAPSHOT_ID` that differs from the pointer | Cloudflare only |
+| `deep-check.yml` | every 6 h (`17 */6 * * *`) | 1–8 | `/api/health` through the Worker after a cold-start allowance of 4 min | Cloudflare and Render; never Neon |
+| `quota-report.yml` | daily, 22:05 UTC | 1 | any governor budget above 70% of its pro-rated value (see below) | the Worker's governor only |
+| `schedules-check.yml` | monthly (1st, 09:00 UTC) | GitHub API | a scheduled workflow not `active`; a monitor whose last scheduled run is far older than its cadence; no push for 28 days | GitHub only |
+| `ghcr-cleanup.yml` | weekly (Monday 04:23 UTC) | GitHub API | a failed deletion | GitHub only |
+
+- **Pro-rating in the quota report.** Daily budgets are pro-rated by the share of the UTC day elapsed: global and heavy analyses, and the Neon CU-hour ceiling. Monthly Neon CU-hours and egress are pro-rated by the share of Neon's consumption period. The rolling 31-day CU total is compared with the whole 100 CU-hour quota. The per-network cap is reported but never alerts.
+- **Email.** A failed scheduled run emails its owner when notifications are set as in owner step 4.4.
+- **Skipped monitors.** The monitors stay skipped until the repository variable `PUBLIC_BASE_URL` exists.
+- **Inactivity.** GitHub disables scheduled workflows after 60 days without repository activity, and then nothing alerts, not even the schedule check. Its 28-day threshold leaves room for one more monthly run before the cutoff. If it fails for inactivity, push a commit; if a workflow shows as disabled, re-enable it under Actions → *workflow* → "Enable workflow".
+- **Manual runs.** Every monitor can be run by hand (Actions → *workflow* → Run workflow). The same scripts run locally:
+  - `python scripts/ops/monitors.py edge|deep --base-url ...`;
+  - `EDGE_OPS_TOKEN=... python scripts/ops/monitors.py quota --base-url ...`.
