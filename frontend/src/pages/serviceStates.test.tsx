@@ -15,9 +15,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../App'
 import type { EstimateRequest } from '../api/types'
 import { WAKING_MESSAGE } from '../components/ServiceNotice'
+import { STARTER_EXAMPLES, prewarmedAnalyses } from '../domain/prewarm'
 import { encodeSpec } from '../domain/urlSpec'
 import {
   activitiesFixture,
+  compareChildrenFixture,
   estimateSleepFixture,
   metaFixture,
   populationMetadataFixture,
@@ -34,6 +36,7 @@ import {
   server,
 } from '../test/server'
 import { SNAPSHOT_POINTER_PATH } from '../api/snapshot'
+import { stableStringify } from '../utils/stableStringify'
 
 const sleepSpec: EstimateRequest = {
   measure: 'average_minutes_per_day',
@@ -1270,4 +1273,62 @@ describe('static snapshot and prewake', () => {
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
     expect(screen.queryByText(WAKING_MESSAGE)).not.toBeInTheDocument()
   })
+
+  // Review round 2: "Adjust analysis" then Analyze on a comparison starter
+  // sends the builder's form of it (every default stated), which no prewarm
+  // entry held, so it went to the API although the snapshot had the result.
+  // This drives the real pages against a snapshot of the prewarm list, so it
+  // also catches the builder and the list drifting apart.
+  it.each(
+    STARTER_EXAMPLES.filter((starter) => starter.operation === 'compare').map(
+      (starter) => starter.question,
+    ),
+  )(
+    'the starter "%s" re-run unchanged from the builder is served by the snapshot',
+    async (question) => {
+      const years = metaFixture.data.years
+      const prewarmed = prewarmedAnalyses({
+        years,
+        presets: metaFixture.capabilities.activity_presets,
+        measures: metaFixture.capabilities.measures.map((measure) => measure.name),
+        weightSchemes: metaFixture.capabilities.weight_schemes.map((scheme) => scheme.name),
+        tier1: activitiesFixture.activities
+          .filter((activity) => activity.level === 1)
+          .map((activity) => ({ code: activity.code, name: activity.name })),
+      })
+      const requested = await installSnapshot({
+        get: {
+          '/api/v1/meta': metaFixture,
+          '/api/v1/population/metadata': populationMetadataFixture,
+          '/api/v1/activities': activitiesFixture,
+          '/api/v1/activities/presets': presetsFixture,
+        },
+        post: prewarmed
+          .filter((item) => item.operation === 'compare')
+          .map((item) => ({
+            path: '/api/v1/analysis/compare',
+            body: stableStringify(item.spec),
+            response: compareChildrenFixture,
+          })),
+      })
+      server.use(http.get(api('/wake'), () => HttpResponse.json({ origin: 'warm' })))
+      const requests = countRequests()
+      const user = userEvent.setup()
+      renderApp('/')
+
+      await user.click(
+        await screen.findByRole('link', { name: (name) => name.includes(question) }),
+      )
+      const resultHeading = { level: 3, name: compareChildrenFixture.label_a }
+      expect(await screen.findByRole('heading', resultHeading)).toBeInTheDocument()
+      await user.click(screen.getByRole('link', { name: 'Adjust analysis' }))
+      await user.click(await screen.findByRole('button', { name: 'Analyze' }))
+      expect(await screen.findByRole('heading', resultHeading)).toBeInTheDocument()
+
+      // Two snapshot entries (the starter's bytes, then the builder's), no API call.
+      const postFiles = new Set(requested.filter((file) => file.startsWith('post/')))
+      expect(postFiles.size).toBe(2)
+      expect(requests('POST /api/v1/analysis/compare')).toBe(0)
+    },
+  )
 })
