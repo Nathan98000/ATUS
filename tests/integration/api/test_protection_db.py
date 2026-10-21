@@ -151,6 +151,29 @@ class TestTimeouts:
         assert response.json()["error"]["code"] == "analysis_timeout"
         assert elapsed < 1.1  # 0.4 s + 0.1 s deadline, not 1.2 s of sleeps
 
+    def test_a_cancelled_snapshot_read_is_overloaded_on_every_route(
+        self, loaded_settings, monkeypatch
+    ):
+        """Review r1 (snapshot-timeout-reported-as-analysis-timeout): the
+        snapshot read is a metadata transaction. Cancelled while an analysis
+        route triggered it, it was answered 503 analysis_timeout ("narrow the
+        request", Retry-After 60, not retried by the SPA); /meta answered the
+        same failure as overloaded. Both are now overloaded."""
+        real_load = dbmod.load_snapshot
+
+        def slow_snapshot(conn):
+            conn.execute("SELECT pg_sleep(1)")  # past the 100 ms metadata timeout
+            return real_load(conn)
+
+        monkeypatch.setattr(dbmod, "load_snapshot", slow_snapshot)
+        with api(loaded_settings, api_meta_statement_timeout_ms=100,
+                 api_snapshot_ttl_s=0) as (client, _):
+            responses = [client.post(ESTIMATE, json=body()), client.get("/api/v1/meta")]
+        for response in responses:
+            assert response.status_code == 503
+            assert response.json()["error"]["code"] == "overloaded"
+            assert response.headers["Retry-After"] == "10"
+
     def test_a_deadline_that_passes_between_statements_still_ends_the_analysis(
         self, loaded_settings, monkeypatch
     ):

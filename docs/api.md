@@ -274,7 +274,7 @@ One envelope everywhere:
 | 422 | `insufficient_data` | empty population / subgroup too small for replicate variance | |
 | 422 | `invalid_analysis` | fallback for an engine domain error without its own code; the current engine raises none | |
 | 429 | `rate_limited` | this client's request or analysis bucket is empty | until the bucket holds a token; `client` |
-| 503 | `overloaded` | no analysis lane within the admission wait; every pool connection busy past `ATUS_API_POOL_TIMEOUT_S`; the database refused a connection or a query for capacity (lock timeout, deadlock, SQLSTATE class 53 such as too many connections or a full `/dev/shm`); a metadata query was cancelled; or the server shut down while the analysis waited | 10; `global` |
+| 503 | `overloaded` | no analysis lane within the admission wait; every pool connection busy past `ATUS_API_POOL_TIMEOUT_S`; the database refused a connection or a query for capacity (lock timeout, deadlock, SQLSTATE class 53 such as too many connections or a full `/dev/shm`); a metadata query was cancelled (also the data snapshot read an analysis request triggered); or the server shut down while the analysis waited | 10; `global` |
 | 503 | `analysis_timeout` | the analysis hit the statement timeout or the request deadline; never cached | 60; `global` |
 | 503 | `daily_capacity_reached` | the day's uncached-analysis cap is used | until 00:00 UTC; `daily` |
 | 503 | `database_paused` | the database provider refuses connections because a usage quota is exhausted or the endpoint is disabled (matched on Neon's refusal texts, `NEON_PAUSED_MARKERS` in `src/atus_pipeline/api/errors.py`) | 3600; `monthly` |

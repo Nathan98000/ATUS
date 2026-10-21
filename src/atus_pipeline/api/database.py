@@ -382,9 +382,15 @@ class Database:
             with conn:
                 conn.execute(sql, params)
                 yield conn
-        except psycopg.errors.QueryCanceled:
+        except psycopg.errors.QueryCanceled as exc:
             with self._active_lock:
                 self.query_timeouts += 1
+            if kind == "metadata":
+                # Classified here, where the kind is known: a metadata read
+                # (the data snapshot, a lexicon search) is cancelled for
+                # capacity or shutdown on any route, analysis routes included,
+                # whose handler would otherwise call it analysis_timeout.
+                raise OverloadedError("metadata query canceled") from exc
             raise
         finally:
             if deadline is not None:

@@ -147,7 +147,7 @@ Further bounds:
 | Condition | Response |
 |---|---|
 | `QueryCanceled` on an analysis (statement timeout, deadline, shutdown) | 503 `analysis_timeout`, `Retry-After: 60` |
-| `QueryCanceled` on a metadata read | 503 `overloaded` |
+| `QueryCanceled` on a metadata read, on any route (the data snapshot read that an analysis request triggers included; classified by the transaction's kind, review round 1) | 503 `overloaded`, `Retry-After: 10` |
 | `LockNotAvailable` (55P03), `DeadlockDetected` (40P01), SQLSTATE class 53 (e.g. `DiskFull` from a 64 MiB `/dev/shm`, F33; too many connections) | 503 `overloaded`, `Retry-After: 10` |
 | text matching Neon's quota or disabled-endpoint refusals | 503 `database_paused`, `Retry-After: 3600` |
 | any other `OperationalError` or `InterfaceError` (lost connection, admin shutdown, refused) | 503 `database_unavailable`, `Retry-After: 5` |
