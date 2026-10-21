@@ -80,8 +80,8 @@ python3 loadtests/run.py down --stage s1            # --purge also deletes the d
 
   | Profile | Database container | Stands for |
   |---|---|---|
-  | `0.25cu` | 0.25 vCPU, 1 GB, no swap | Neon Free's autoscaling floor |
-  | `2cu` | 2 vCPU, **7 GB**, no swap | Neon Free's ceiling. Neon's ratio gives 8 GB, but the Docker VM has 7.75 GiB in total, so 7 GB is the cap. Postgres settings are the same at every profile: the stack's, from Neon's formula for a 0.25–2 CU compute (`shared_buffers=215MB` and so on) |
+  | `0.25cu` | 0.25 vCPU, 1 GiB (`1g`), no swap | Neon Free's autoscaling floor |
+  | `2cu` | 2 vCPU, **7 GiB** (`7g`), no swap | Neon Free's ceiling. Neon's ratio gives 8 GB, but the Docker VM has 7.75 GiB in total, so 7 GiB is the cap. Postgres settings are the same at every profile: the stack's, from Neon's formula for a 0.25–2 CU compute (`shared_buffers=215MB` and so on) |
   | `laptop` | unconstrained | the Docker VM (10 vCPU / 7.75 GiB here) |
 
 - **API settings that differ from production**, all visible in each bundle's `environment.json`:

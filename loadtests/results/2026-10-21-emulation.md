@@ -10,7 +10,7 @@ Brief §13 (performance under free-tier limits, measured only) and §10 (calibra
 
 - **Restore drill (A).** The production restore tool restored the release artifact into a fresh `postgres:16` with a non-superuser owner in **15.6 s** of wall time: `pg_restore` 8.0 s, `VACUUM (ANALYZE)` 1.3 s, the serving checks with the full content hash 5.2 s. All 22 checks passed. `sum(pg_database_size)` afterwards: **649,903,180 B**, which is 65% of the 1,000,000,000 B budget.
 - **Cold start (B).** From `docker run` to the first `200` from `/health` at 0.1 CPU: p50 **13.1 s** (n=5, DB at 0.25 CU) and 12.9 s (n=5, at 2 CU). The first `/api/v1/meta` followed 0.3–0.6 s later. Start-up costs 1.3–1.4 CPU-seconds of import, and at 0.1 CPU that takes about 13 s. This excludes Render's own spin-up.
-- **Metadata and cache hits.** These run no SQL. The 0.1-CPU API serves about **33 metadata requests/s** and **67–71 cache hits/s**, the same at both DB profiles. p50 is 1.6–1.9 ms with one client. p95 is about 90–100 ms, because the API's CPU quota (10 ms per 100 ms period) runs out and the process waits for the next period: it was throttled in 96% of periods during the metadata runs.
+- **Metadata and cache hits.** These run no SQL. The 0.1-CPU API serves **33–35 metadata requests/s** and **67–71 cache hits/s**, the same at both DB profiles. p50 is 1.6–1.9 ms with one client. p95 is about 90–100 ms, because the API's CPU quota (10 ms per 100 ms period) runs out and the process waits for the next period: it was throttled in 96–97% of periods during the metadata runs.
 - **Uncached single-year estimates with replicate SEs** (n=59 distinct specs, one at a time): p50 / p95 / p99 **0.99 / 3.19 / 4.43 s at 0.25 CU** and **79 / 142 / 211 ms at 2 CU** (laptop full DB: 0.34 / 0.63 / 0.98 s). PostgreSQL's log puts 96.6–99.1% of the summed latency in the database.
 - **Worst cases** (5 kinds × n=5, plus the F66 broad-selector compare, one at a time, parallel workers at the server default):
   - **0.25 CU:** pooled 22-year leisure and 23-year trends take **21–22 s** at p50. The F66 broad selectors take **33–35 s** pooled or trended, and **69–71 s** for the compare by sex. Overall p99 is **70.5 s**.
@@ -41,7 +41,7 @@ Brief §13 (performance under free-tier limits, measured only) and §10 (calibra
 - k6 v2.2.0 (always `--no-usage-report`; no remote imports). Host Python 3.14.7.
 
 **Code and image.**
-- The tooling ran at commit `f3e439d` on `phase5`. `loadtests/report.py` and `loadtests/export_raw.py` (read-only post-processing) were uncommitted during the runs and are committed with these results; that is why each bundle records `worktree_dirty: true`.
+- The tooling ran at commit `f3e439d` on `phase5`. `loadtests/report.py` and `loadtests/export_raw.py` (read-only post-processing) were uncommitted during the runs and are committed with these results; that is why every bundle after the first warm-up records `worktree_dirty: true` (`20261021T035629Z-0.25cu` records `false`).
 - API image `atus-api:lt-9afd1b4e2e0e` was built from this checkout at `9afd1b4`, the last commit that changed the image's inputs (`image_inputs_dirty: false`).
   - Local image id `sha256:059436d2576a…`, linux/arm64, 61 MB.
   - `/health` reported build `9afd1b4e2e0e1184e63b674a88cfc5500a6feb96`.
@@ -54,7 +54,7 @@ Brief §13 (performance under free-tier limits, measured only) and §10 (calibra
 - Restored once into the stack's fresh volume `atus-lt-timed_pgdata` by the stack's own path:
   - `deploy/stack/restore_dump.sh`: `pg_restore --no-owner --no-acl --single-transaction` as the non-superuser `neondb_owner`, then `vacuumdb --analyze`;
   - then `scripts/ops/roles.sql`.
-- Cluster size during the runs: 650,122,836 B.
+- Cluster size during the runs: 649,960,524 B in the warm-up bundles, 650,122,836 B in every other bundle.
 - PostgreSQL 16.15 (`postgres:16@sha256:f1c3376c…`) with the stack's Neon settings: `jit=off`, `shared_buffers=215MB`, `max_connections=839`, `max_worker_processes=17`, `max_parallel_workers=8`. The PostgreSQL defaults stayed in place: `max_parallel_workers_per_gather=2`, `work_mem=4MB`, `effective_cache_size=4GB`.
 - Statement-duration logging (`log_min_duration_statement=0`) was on, as in the audit.
 
@@ -67,7 +67,7 @@ Brief §13 (performance under free-tier limits, measured only) and §10 (calibra
 **API settings.**
 - Production's (`ATUS_ENV=production`, edge authentication, per-client buckets, lanes 2/1, 5 s admission wait, pool of 4, `statement_timeout` 85 s, `jit=off` per transaction, `ATUS_EXPECTED_DATA_VERSION` pinned), except:
   - `ATUS_API_DAILY_ANALYSIS_CAP=10000000` in every run. Production's 600/day would end a capacity run; it is tested functionally.
-  - Per run, as listed in section 11: `ATUS_API_STATEMENT_TIMEOUT_MS=600000` for the worst-case runs, so latencies beyond 85 s are seen instead of cut off. Also `ATUS_API_MAX_PARALLEL_WORKERS=0`, and the lane and pool sizes for the calibration runs.
+  - Per run, as listed in section 11: `ATUS_API_STATEMENT_TIMEOUT_MS=600000` for the worst-case runs, so latencies beyond 85 s are seen instead of cut off. The two `MAX_PARALLEL_WORKERS=0` uncached runs kept the API settings of the worst-case run before them, 600 s timeout included; none of their requests took more than 3.1 s. Also `ATUS_API_MAX_PARALLEL_WORKERS=0`, and the lane and pool sizes for the calibration runs.
 - Every bundle's `environment.json` lists the API environment, redacted, as read back from the container.
 
 **Method.**
@@ -82,14 +82,15 @@ Brief §13 (performance under free-tier limits, measured only) and §10 (calibra
   - cgroup v2 `cpu.stat` (CPU seconds, throttled periods) and `memory.peak`, read before and after each scenario, outside the measured window;
   - PID 1's `VmHWM` (the API process's peak RSS).
 - **Isolation per scenario.** Each scenario started a fresh API container, so the result cache was empty. A `GET /api/v1/meta` then read the data snapshot before the measured requests. The cached scenario's 1-VU and 4-VU levels shared one API process, so its warm set was computed once.
-- **Warm database.** Within a profile, the database container was kept running (the same `StartedAt` in every bundle of the profile).
-  - Each profile began with one warm-up bundle: 6 worst cases and 6 single-year estimates.
+- **Warm database.** Within a block of runs at one profile, the database container was kept running (the same `StartedAt` in every bundle of the block).
+  - 0.25 CU ran in two blocks, each with its own database container: from 03:55 (`20261021T035629Z` to `051548Z`) and from 06:36 (`063653Z` to `070335Z`). 2 CU ran in one block from 05:26; its container stayed up, idle, during the laptop baseline, and `062537Z` used it afterwards.
+  - Each block began with one warm-up bundle: 6 worst cases and 6 single-year estimates.
   - The warm-ups are listed in section 11 and are not reported as measurements.
 - **Defeating the cache.**
   - Uncached runs walk a deterministic list of distinct specs: the corpus's 128 single-year estimates with replicate SEs, then a generator.
   - Worst cases carry a confidence level unique to each request, which leaves the SQL unchanged but makes every request a cache miss.
   - In each 60-request uncached run, one corpus spec (`errors-weird-020`) has the same canonical cache key as an earlier one and was a `hit`. The uncached tables report the 59 misses (`estimate miss`).
-  - Generated specs answered `422 insufficient_data` 1–2% of the time. Those still ran their statistics query and are counted under "other" in the sweeps.
+  - Generated specs answered `422 insufficient_data` 2.2–2.4% of the time in the 2 CU sweeps (1,257–2,856 generated specs per level; the 0.25 CU levels ran too few to give a rate). Those still ran their statistics query and are counted under "other" in the sweeps.
 - **Client addresses.** Each k6 VU used its own addresses from 198.18.0.0/15, rotated every 5 analyses or every 100 other requests. The per-client buckets therefore never limited a capacity run: no `429` occurred anywhere.
 
 ## 2. Ran alone: precondition and attestation
@@ -149,7 +150,7 @@ Notes on the attestation:
 
 - The background column is the highest single once-a-minute sample of any other container. The sum of all other containers' mean CPU stayed between 0.5% and 11.0% of one core per bundle.
 - The host load average (1 min) ranged from 1.17 to 3.31 at bundle boundaries.
-- The host's busiest processes were the Docker VM itself and desktop apps (WindowServer, the Claude desktop app). Each bundle lists them under `top_host_processes_pcpu`.
+- The host's busiest processes were usually the Docker VM itself, Docker's backend, the orchestrator's own Python and desktop apps (coreaudiod, WindowServer, the Claude desktop app). At four bundle boundaries macOS's background indexers were busier: `mediaanalysisd` at 114% of a core after `20261021T040144Z-0.25cu` (the 0.25 CU worst cases) and before `042009Z`, and `corespotlightd` at 170% and 197% after `045348Z` and `053248Z`. Host processes were sampled only at the boundaries, so whether these ran during a bundle is unknown; the host has 10 cores and the database at most 2. Each bundle lists them under `top_host_processes_pcpu`.
 - The precondition snapshots taken before each step are in `raw/precondition/`.
 
 ## 3. A. Restore drill (timed)
@@ -192,8 +193,8 @@ The drill container was removed afterwards.
 
 | DB profile | to first `/health` 200: p50 / p95 / max (s) | to first `/api/v1/meta` 200: p50 / p95 / max (s) | start-up CPU (s) | throttled periods | VmHWM after `/meta` |
 |---|---|---|---|---|---|
-| 0.25 CU | 13.12 / 13.45 / 13.46 | 13.72 / 13.93 / 13.98 | 1.29–1.38 | 129–137 of 129–140 | 67.8 MB (67,756–67,772 kB) |
-| 2 CU | 12.88 / 13.79 / 13.85 | 13.21 / 14.20 / 14.28 | 1.29–1.43 | 127–141 of 129–143 | 67.8 MB (67,760–67,772 kB) |
+| 0.25 CU | 13.12 / 13.45 / 13.46 | 13.72 / 13.93 / 13.98 | 1.29–1.38 | 129–137 of 129–140 | 66.2 MiB (67,756–67,772 kB) |
+| 2 CU | 12.88 / 13.79 / 13.85 | 13.21 / 14.20 / 14.28 | 1.29–1.43 | 127–141 of 129–143 | 66.2 MiB (67,760–67,772 kB) |
 
 **What the numbers show.**
 - Start-up is CPU-bound import time: 1.3–1.4 CPU-seconds, delivered at 0.1 CPU, with the container throttled in nearly every scheduler period.
@@ -222,7 +223,7 @@ The drill container was removed afterwards.
 
 **What the numbers show.**
 - PostgreSQL logged 0 statements in every one of these runs.
-- The API is CPU-bound at 0.1 CPU: about 33 metadata requests/s and 67–71 hits/s, the same with 1 or 4 clients and at either DB profile.
+- The API is CPU-bound at 0.1 CPU: 33–35 metadata requests/s and 67–71 hits/s, about the same with 1 or 4 clients and at either DB profile.
 - With 4 clients, the extra clients only queue, so p50 rises to about 90–100 ms.
 - The p95 of about 90–100 ms even with one client is the CFS quota at work. The API was throttled in 75–97% of 100 ms periods (resources table, 5.7). Render's real CPU share may be enforced differently (not emulated).
 
@@ -323,7 +324,7 @@ Notes on the table:
   - W6 drops to 38.6 s at p50;
   - W4 and W5 drop to 28 s;
   - W1–W3 do not change (20.7–20.8 s against 21.4–21.8 s).
-- At 2 CU every kind takes 2.0–3.0 s, and parallel workers help slightly: turning them off adds 0.02–0.45 s per kind.
+- At 2 CU every kind takes 2.0–3.0 s, and parallel workers help slightly: turning them off adds 0.01–0.45 s per kind at p50.
 - PostgreSQL's log puts 99.7–99.9% of the worst cases' summed latency in the database. The API's `Server-Timing` app time was 1.1–2.6 ms per request at p50 (5.8).
 
 ### 5.4 Saturation through the real admission lanes
@@ -358,12 +359,12 @@ Notes on the table:
   - The API's own CPU stayed under 6% of a core.
 - **2 CU: 2 concurrent analyses.**
   - Throughput rises from 15.8/s at 1 client to 24.2/s at 2, where the database reaches its 2-vCPU quota (DB CPU 200%).
-  - It stays at 23.4–23.8/s up to 16 clients. Queued requests waited at most about 1 s for a lane (p99 0.98 s at 16 clients), so nothing was shed.
+  - It stays at 23.4–23.8/s up to 16 clients. Queued requests waited under 1 s for a lane, so nothing was shed: at 16 clients the time outside the database (`Server-Timing` `app`, which includes the lane wait) was 0.84 s at p99 and 0.95 s at most, and the whole latency 0.98 s at p99.
 - **Errors.**
   - `503 analysis_timeout`: 0 at every level.
   - `429`: 0.
   - Transport errors: 0.
-  - `422 insufficient_data`: 1–2% of the generated specs, as expected.
+  - `422 insufficient_data`: 2.2–2.4% of the generated specs at 2 CU, as expected (the same deterministic specs in every sweep).
   - Across every run in this record, all 640 `503 overloaded` answers carried `Retry-After: 10`. The API's `/metrics` counted 0 pool request errors, 0 connection errors or lost connections, and 0 query timeouts in every run.
 
 ### 5.5 Calibration runs for the lanes (not production settings)
@@ -435,7 +436,7 @@ Notes on the table:
 
 **Origin view, 2 visits/min.** `MIX_MODE=origin` sends only what reaches Render behind the Worker: novel analyses and wake calls. Snapshot views, metadata and KV-hit revisits are answered at the edge in production.
 
-**What the 2 visits/min rate stands for.** About 10× the spike day's average rate (300 visits over about 12 h), or a spike day's visits concentrated into about 2.5 hours. 21 visits ran per profile, so the percentiles below rest on 8 heavy and 13 light analyses.
+**What the 2 visits/min rate stands for.** About 5× the spike day's average rate if its 300 visits spread over about 12 h (25 per hour, against 120 per hour here), or a spike day's visits concentrated into about 2.5 hours. 21 visits ran per profile, so the percentiles below rest on 8 heavy and 13 light analyses.
 
 0.25 CU, by view kind (ms):
 
@@ -513,7 +514,7 @@ All mixes, overall:
 | 0.25 CU, API, 6 visits/min, 1 lane | 405 | 200×382 422×3 503×20 (insufficient_data 3, overloaded 20) | 4.7 | 6509 | 20696 | 21755 | 0.656 | 0.618 | 0.0 / 1.7 | 369.9 / 72.3% | 553 |
 | 2 CU, API, 6 visits/min | 427 | 200×424 422×3 (insufficient_data 3) | 4.7 | 846 | 2013 | 2198 | 0.704 | 0.699 | 0.0 / 1.6 | 51.0 / 94.8% | 672 |
 
-**What the numbers show.** At 2 visits/min (origin view), all 31 requests answered 200 at both profiles, with no shed: light novel analyses took 1.18 s p50 at 0.25 CU and 113 ms at 2 CU; heavy ones (full-period trends and 8–22-year pooled estimates) took 10.4 s and 1.02 s. In the API-view mix at 6 visits/min, 2 CU answered all 427 requests (424 × 200, 3 × `422 insufficient_data`). At 0.25 CU with production lanes, 11 of 405 were shed with `503 overloaded`, and every one of them was a heavy analysis: the heavy lane was busy for longer than the 5 s wait while a 23-year trend ran (trend misses p50 21.7 s). Every light novel analysis was answered (p50 1.68 s, p95 3.64 s). Metadata and cache hits stayed at p50 1.4–8.9 ms throughout. With one general lane on the same visits, sheds rose to 20, and 10 of them were light single-year analyses: 3 novel, 2 starters and 5 presets. Light analyses that got through were faster at p50 (1.27 s), but their p95 rose to 5.16 s. No `analysis_timeout`, `429` or transport error occurred in any mix.
+**What the numbers show.** At 2 visits/min (origin view), all 31 requests answered 200 at both profiles, with no shed: light novel analyses took 1.18 s p50 at 0.25 CU and 113 ms at 2 CU; heavy ones (full-period trends and 8–22-year pooled estimates) took 10.4 s and 1.02 s. In the API-view mix at 6 visits/min, 2 CU answered all 427 requests (424 × 200, 3 × `422 insufficient_data`). At 0.25 CU with production lanes, 11 of 405 were shed with `503 overloaded`, and every one of them was a heavy analysis: the heavy lane was busy for longer than the 5 s wait while a 23-year trend ran (trend misses p50 21.7 s). Every light novel analysis was answered (p50 1.68 s, p95 3.64 s). Metadata and cache hits stayed at p50 1.2–8.9 ms. With one general lane on the same visits, sheds rose to 20, and 10 of them were light single-year analyses: 3 novel, 2 starters and 5 presets. Light analyses that got through were faster at p50 (1.27 s), but their p95 rose to 5.16 s. No `analysis_timeout`, `429` or transport error occurred in any mix.
 
 ### 5.7 Memory and CPU
 
@@ -547,8 +548,8 @@ The cgroup deltas cover the whole k6 run, including `setup()`. That is why the c
 
 **Memory.**
 - The API process peaked at 76.1 MiB RSS. Its cgroup peaked at 59.3 MiB, against a 512 MiB limit.
-- These runs never filled the 256-entry result cache. The audit measured about 20 KB per entry (about 70 MB with the cache full), which still leaves more than 7 × headroom.
-- At 0.25 CU the database's `docker stats` working set was at most 419 MiB of its 1 GiB. Its page cache, which `docker stats` does not count, held the rest of the 0.65 GB cluster.
+- These peaks include a full result cache. Every 2 CU sweep level computed 1,355–2,914 analyses (cache misses, API metrics) in one API process, and the API's `atus_analysis_cache_entries` read 256 (the LRU's size) after each of them, the 76.1 MiB run included. That leaves 6.7 × headroom on RSS. The audit had measured about 20 KB per entry and about 70 MB with the cache full, on an earlier build.
+- At 0.25 CU the database's `docker stats` working set was at most 419 MiB of its 1 GiB. Its cgroup's `memory.peak`, which also counts the page cache and shared buffers, reached at most 567 MiB (`cgroup.json`), so the 0.25 CU database never came near its memory limit, and the 0.65 GB cluster was never fully cached either. Its latencies come from the CPU quota.
 
 **CPU.**
 - At 0.25 CU the database was throttled in 98–100% of periods in the runs that kept an analysis in flight (uncached, worst cases, sweeps), and in 65–91% in the mixes, which had idle gaps.
@@ -644,9 +645,9 @@ The rule, from ADR-011 and ADR-012: `statement_timeout = clamp(3 × p99 of the w
 
 | Setting | Today | Recommendation | Evidence |
 |---|---|---|---|
-| `ATUS_API_MAX_INFLIGHT` | 2 | **keep 2** | 2 CU: throughput peaks at 2 in flight (24.2/s against 15.8/s at 1, and 18.3/s at 4 without a cap). 0.25 CU: 1 in flight is best for throughput (1.14/s against 0.70/s at 2), but the API-view mix at 0.25 CU (5.6, the same visits) shows the cost of one lane. One lane shed 20 of 405 requests, 10 of them light single-year analyses. Two lanes shed 11, all heavy, and no light one. With 1 lane, one heavy analysis (21–71 s at 0.25 CU) would block every light one behind it, and they would be shed after 5 s. Two lanes let a light analysis run beside a heavy one. |
+| `ATUS_API_MAX_INFLIGHT` | 2 | **keep 2** | 2 CU: throughput peaks at 2 in flight (24.2/s against 15.8/s at 1, and 18.3/s at 4 without a cap). 0.25 CU: 1 in flight is best for throughput (1.14/s against 0.70/s at 2), but the API-view mix at 0.25 CU (5.6, the same visits) shows the cost of one lane. One lane shed 20 of 405 requests, 10 of them light single-year analyses. Two lanes shed 11, all heavy, and no light one. With 1 lane, one heavy analysis (at least 5.3 s at 0.25 CU, and 17–71 s for the worst cases) would block every light one behind it, and they would be shed after 5 s. Two lanes let a light analysis run beside a heavy one. |
 | `ATUS_API_MAX_INFLIGHT_HEAVY` | 1 | **keep 1** | Two heavy analyses at once at 0.25 CU took 2.6–3.6 × as long each, so throughput fell and F66 exceeded 85 s (88–106 s). At 2 CU a second heavy lane would nearly double heavy throughput, but the API cannot know the current CU. Revisit only if the compute's minimum is raised. |
-| `ATUS_API_ADMISSION_WAIT_S` | 5 | **keep 5** | A queued light analysis is admitted if a lane frees within the wait. At 0.25 CU a light analysis takes 0.99 s p50 and 3.19 s p95 when alone, so 5 s covers a queue of one behind a light request, and nothing behind a heavy one (≥ 20 s). At 2 CU no request waited more than about 1 s even at 16 clients. Shed requests were answered after 5.0 s at p50 (max 5.6 s). A longer wait would only lengthen the answer to a request that will be shed. |
+| `ATUS_API_ADMISSION_WAIT_S` | 5 | **keep 5** | A queued light analysis is admitted if a lane frees within the wait. At 0.25 CU a light analysis takes 0.99 s p50 and 3.19 s p95 when alone, so 5 s covers a queue of one behind a light request, and nothing behind a heavy one (at least 5.3 s of database time for an 8-year pooled estimate, 17–71 s for the worst cases). At 2 CU no request waited more than about 1 s even at 16 clients. Shed requests were answered after 5.0 s at p50 (max 5.6 s). A longer wait would only lengthen the answer to a request that will be shed. |
 | `ATUS_API_MAX_PARALLEL_WORKERS` | unset (server default 2) | **leave unset** (ADR-011 rule), and **set 0 if the compute is fixed at 0.25 CU** | 0.25 CU: 0 halves the F66 compare (69.2 → 38.6 s p50) and speeds up single-year estimates (0.99 → 0.70 s p50). 2 CU: 0 is slower (worst p99 3.03 → 3.53 s, single-year p95 142 → 209 ms). ADR-011 adopts 0 "only if it also wins at 2 CU in emulation", and it does not. Adoption in either case needs the §9 equivalence proof: the audit's probe found point sums identical and replicate sums within 1.34e-14 relative, which is not yet the §9 run. |
 | `ATUS_API_STATEMENT_TIMEOUT_MS` | 85000 | **keep 85000** | Section 8. |
 | `ATUS_API_POOL_MAX_SIZE` | 4 | **keep 4** | With 2 lanes, analyses hold at most 2 connections, and metadata, hits and the snapshot read need none or one. No pool timeout occurred in any run. |
