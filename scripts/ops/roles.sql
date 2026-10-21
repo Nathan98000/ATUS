@@ -118,7 +118,6 @@ SELECT EXISTS (
   WHERE lomowner = (SELECT oid FROM pg_roles WHERE rolname = current_user) \gset
   RESET ROLE;
   REVOKE :"api_role" FROM CURRENT_USER;
-  \echo roles.sql: removed :api_large_objects_removed large object(s) that :api_role had stored.
 \endif
 
 -- Database and schemas: connect and look up names, never create anything.
@@ -224,4 +223,8 @@ WHERE has_table_privilege(:'api_role', t.name, 'SELECT') \gset
 
 COMMIT;
 
+-- Reported only once committed: a failed check above rolls the removal back.
+\if :api_large_objects
+  \echo roles.sql: removed :api_large_objects_removed large object(s) that :api_role had stored.
+\endif
 \echo roles.sql: :api_role can log in and read the served tables; it cannot write any table, create tables or schemas, or use temporary tables. No privilege stops it from creating large objects (security.md R16); none exist now.

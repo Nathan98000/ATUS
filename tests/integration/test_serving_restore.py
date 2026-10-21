@@ -403,8 +403,13 @@ def test_a_rotation_removes_the_large_objects_a_leaked_api_password_stored(
 
 def test_a_large_object_roles_sql_cannot_remove_fails_every_check(restored, cluster):
     """One the API role does not own (here the owner's) is not removed: roles.sql
-    fails and says how to clean up, and so do the restore's checks."""
+    fails and says how to clean up (the serving checks fail on it too: the
+    rotation test above). The script is one transaction, so the API role's own
+    large objects stay as well, and no removal is reported."""
     role, owner_url = cluster.api_role, restored["owner_url"]
+    with psycopg.connect(restored["api_url"], autocommit=True) as conn:
+        conn.execute("SET default_transaction_read_only = off")
+        conn.execute("SELECT lo_create(0)")
     with psycopg.connect(owner_url, autocommit=True) as conn:
         conn.execute("SELECT lo_from_bytea(0, '\\x00')")
     try:
@@ -413,11 +418,30 @@ def test_a_large_object_roles_sql_cannot_remove_fails_every_check(restored, clus
         assert result.returncode != 0, output
         assert "roles.sql: the database holds large objects" in output
         assert "lo_unlink" in output
+        # Run by hand (psql prints its \echo lines, which the restore drops on
+        # failure): the rolled-back removal is not reported as done.
+        tool = pgtools.resolve("psql", owner_url, server_major=16, extra_env={
+            "ATUS_API_ROLE_PASSWORD": read_env_file(restored["secrets_file"])[API_PASSWORD_KEY]})
+        by_hand = subprocess.run(
+            [*tool.argv, "-X", "-q", "-v", "ON_ERROR_STOP=1", "-v", f"api_role={role}",
+             "-f", "-"],
+            input=ROLES_SQL.read_bytes(), capture_output=True, env=tool.env, check=False,
+        )
+        assert by_hand.returncode != 0
+        assert b"roles.sql: the database holds large objects" in by_hand.stderr
+        assert b"large object(s) that" not in by_hand.stdout, by_hand.stdout
+        with psycopg.connect(owner_url) as conn:
+            assert sorted(_large_objects(conn)) == sorted([role, cluster.owner])
     finally:
         with psycopg.connect(owner_url, autocommit=True) as conn:
-            conn.execute("SELECT lo_unlink(oid) FROM pg_largeobject_metadata")
+            conn.execute("SELECT lo_unlink(oid) FROM pg_largeobject_metadata "
+                         "WHERE lomowner = (SELECT oid FROM pg_roles WHERE rolname = current_user)")
     clean = restore(restored["dump"], restored["secrets_file"], role, "--roles-only")
-    assert clean.returncode == 0, clean.stdout + clean.stderr
+    output = clean.stdout + clean.stderr
+    assert clean.returncode == 0, output
+    assert f"roles.sql: removed 1 large object(s) that {role} had stored." in output
+    with psycopg.connect(owner_url) as conn:
+        assert _large_objects(conn) == []
 
 
 def test_a_restored_database_is_never_restored_over(restored, cluster):
