@@ -1,10 +1,15 @@
 # Example Analyses
 
 Real analyses run against the loaded 2003–2025 database (outputs captured
-September 2026). Each shows the CLI form; every one is equally expressible as
-a JSON spec (`atus analyze run --spec …`) or a direct
+September 2026, `analytics_version` 0.2). Each shows the CLI form; every one
+is equally expressible as a JSON spec (`atus analyze run --spec …`), an HTTP
+request (request bodies in [examples/api/](examples/api/)) or a direct
 `AnalysisEngine.estimate/trend/compare` call — same engine, same numbers.
-Definitions and caveats for every term: [analytics.md](analytics.md).
+Examples 1-5 match the API responses captured for the frontend tests
+(`frontend/src/test/fixtures/`). Phase 5 changed no statistic beyond
+floating-point summation noise in standard errors (see the version history
+in [analytics.md](analytics.md)). Definitions and caveats for every term:
+[analytics.md](analytics.md).
 
 ---
 
@@ -100,7 +105,7 @@ Matches the published 2020-results value (9.01 h) — this exact reproduction is
 part of `atus validate-analytics`. Asking for 2020 without `--weights pandemic`
 is refused with an explanation, never approximated.
 
-## 6. Machine-readable output (for the future API)
+## 6. Machine-readable output (the same object the API returns)
 
 ```bash
 atus analyze estimate --activity sleep --year 2025 --json

@@ -156,6 +156,27 @@ Extraction was verified two independent ways: the 431 codes exactly match the
 Activity Summary file's `t`-columns, and every `TRCODEP` in the 4,994,172
 episodes resolves against it (enforced permanently as an FK).
 
+## Serving database (Phase 5)
+
+The hosted API reads a serving database derived from these canonical tables,
+not from the BLS files (`atus build-serving-db`,
+`src/atus_pipeline/serving/builder.py`; structure in
+[database.md](database.md#the-serving-database)). Its lineage, column by
+column:
+
+| Serving column | Derived from |
+| --- | --- |
+| `respondents`: `tucaseid`, `data_year`, `diary_date`, `diary_day_of_week`, `labor_force_status`, `household_children`, `final_weight`, `pandemic_weight` | the canonical columns, copied unchanged (all rows) |
+| `household_members`: `tucaseid`, `lineno`, `age`, `sex` | the canonical rows with `lineno = 1` |
+| `cps_persons`: `tucaseid`, `lineno`, `region`, `state_fips`, `education` | the canonical rows with `lineno = 1` |
+| `activities.duration_minutes` | `sum(activities.duration_minutes)` per (`tucaseid`, `activity_code`), cast back to `smallint` |
+| `replicate_weights.*`, `pandemic_replicate_weights.*` | the canonical `numeric` values cast to `float8` (the build asserts the round trip changes no value); all-NULL and all-zero rows omitted |
+| lexicon tables | copied whole |
+| `ingestion_runs` | one `succeeded` row with the source run's id, release, pipeline version and timestamps, a serving `data_version` and a JSON note (build id, content hash, source data version) |
+| `source_files` | the source run's rows, unchanged |
+
+Every other canonical column and `activity_companions` are absent there.
+
 ## Provenance metadata
 
 `data/manifest.json` (working copy) and `atus.source_files` (in-database, per

@@ -149,17 +149,23 @@ episodes.
 - `ingestion_runs` — one row per `atus load` invocation: release, pipeline
   version, timestamps, `running/succeeded/failed`, error notes for failures,
   and (migration 0003) `data_version`: the globally unique identifier of the
-  data a successful run made live (`<release>:load-<run>-<UTC stamp>-<hex>`;
-  a serving build writes `<release>:serving-<build id>:<content hash>`).
-  `UNIQUE`, set only on `succeeded` rows, NULL on rows written before 0003.
-  The latest succeeded run's version is what every cache keys on
-  (`atus_pipeline.database.versions`).
+  data a successful run made live. `atus load` writes
+  `<release>:load-<run id>-<UTC YYYYMMDDTHHMMSSZ>-<6 hex>`; a serving build
+  writes `<release>:serving-<build id>:<first 12 hex of the content hash>`
+  with build id `<UTC YYYYMMDDTHHMMSSZ>-<8 hex>`. The column is `UNIQUE`
+  (`ingestion_runs_data_version_key`), set only on `succeeded` rows and never
+  blank (`data_version_only_on_success`), and NULL on rows written before
+  0003; for those, readers derive `<release>:run<id>:<started_at in epoch
+  microseconds>`. The latest succeeded run's version is what every cache keys
+  on (`src/atus_pipeline/database/versions.py`; `unloaded:run0` when no run
+  succeeded).
 - `source_files` — per run: every source file's URL, SHA-256, size, staged row
   count, loaded table and loaded row count. Answers "which exact bytes
   produced the data currently in this database?"
-- `validation_results` — every `atus validate-db` and `atus
-  validate-analytics` check outcome with severity, observed value, and
-  detail, timestamped. Both commands write here, so they need the
+- `validation_results` — check outcomes with severity, observed value, and
+  detail, timestamped. Writers: `atus validate-db`, `atus validate-analytics`
+  (unless `--no-persist`), and `atus load --validate`, which records its
+  checks of the shadow data together with the switch. Writing needs the
   owner/loader role; the read-only API role cannot. A serving database ships
   it empty (see below), and `atus build-serving-db` reads it on the full
   database as evidence that the loaded data was validated (results recorded
@@ -192,7 +198,9 @@ Operational notes:
 - A load needs free disk for a second copy of the canonical data until the
   switch.
 - The switch waits for transactions that began before the new data was
-  committed (they could otherwise see the new tables empty) and retries
+  committed (they could otherwise see the new tables empty; the loading role
+  must see other roles' sessions in `pg_stat_activity`, as a superuser or a
+  member of `pg_read_all_stats` does, and is warned otherwise) and retries
   while readers hold the tables; `--switch-timeout` (default 120 s) bounds
   both, and `--lock-timeout-ms` (default 50) bounds each lock wait a reader
   may experience. A forgotten idle-in-transaction session therefore delays
@@ -230,7 +238,7 @@ the same numbers (the equivalence criterion in
 | `pandemic_replicate_weights` | `float8` columns; the 1,466 all-zero rows (diaries in the 2019 gap window) omitted |
 | `activity_companions` | absent |
 | lexicon tables | complete |
-| `ingestion_runs` | one `succeeded` row: the source run's id, release, pipeline version and timestamps, and the serving `data_version` `<release>:serving-<build id>:<content hash prefix>` |
+| `ingestion_runs` | one `succeeded` row: the source run's id, release, pipeline version and timestamps (so `/meta` describes the same ingested data), the serving `data_version`, and a JSON note (build id, content hash, source data version) |
 | `source_files` | the source run's provenance rows |
 | `validation_results` | empty in the artifact; `atus validate-analytics` (owner role) records here |
 
@@ -238,9 +246,26 @@ Omitted rows are exactly those every estimate already excludes (`weight > 0`
 filters, line-1 inner joins); the builder asserts that on every build. The
 column types, NULL rules, CHECK constraints, keys and index names are derived
 from the canonical tables the migrations create, so they cannot drift from
-them. Two roles use it: the owner/loader (the role that restored it) and
-`atus_api`, which can only `SELECT` the ten served tables
-(`scripts/ops/roles.sql`). `atus validate-db` and
+them; `public.schema_migrations` records 0001-0003 as applied, which is why
+the serving marker exists. Indexes kept: `respondents(data_year)`,
+`respondents(diary_date)`, `activities(activity_code)` and
+`cps_persons(state_fips)`; the tier indexes went with their columns.
+
+Two roles use it (`scripts/ops/roles.sql`, run by the restore):
+
+- the owner/loader, the role that restored the dump: it owns every object
+  and runs `VACUUM (ANALYZE)` and `atus validate-analytics`;
+- `atus_api`: `LOGIN` with a connection limit of 10, `SELECT` on the ten
+  served tables (the six data tables above, the three lexicon tables and
+  `ingestion_runs`) and nothing else: no writes, no DDL, no temporary
+  tables, no `source_files`, `validation_results` or `schema_migrations`.
+  Its role defaults are `statement_timeout` 85 s, `lock_timeout` 5 s,
+  `idle_in_transaction_session_timeout` 30 s, `jit` off and
+  `default_transaction_read_only` on; the API also sets its limits per
+  transaction. The script verifies the result and refuses a database
+  without the serving marker.
+
+`atus validate-db` and
 `tests/data_quality/test_full_database.py` check the full database and fail on
 a serving database by design; run them on the full database before a build.
 
@@ -250,11 +275,14 @@ a serving database by design; run them on the full database before a build.
 | --- | --- |
 | `0001_core_schema.sql` | schema `atus`: metadata, lexicon and canonical data tables |
 | `0002_indexes.sql` | the secondary indexes below |
-| `0003_data_version.sql` | `ingestion_runs.data_version` (nullable for older rows, `UNIQUE`, only on `succeeded` runs, never blank) |
+| `0003_data_version.sql` | `ingestion_runs.data_version` (nullable for older rows; `UNIQUE` as `ingestion_runs_data_version_key`; CHECK `data_version_only_on_success`: only on `succeeded` runs, never blank) |
 
-`atus migrate` applies pending migrations; `atus load` refuses to run on a
-schema that is behind. The migrations are not packaged with the library: data
-commands need a checkout or `ATUS_MIGRATIONS_DIR` (the API never needs them).
+`atus migrate` applies pending migrations, each in its own transaction, and
+records each in `public.schema_migrations` with a SHA-256 of the file (an
+edited, already-applied migration fails). `atus load` refuses to run on a
+schema that is behind, and builds its shadow schema from the same files. The
+migrations are not packaged with the library: data commands need a checkout
+or `ATUS_MIGRATIONS_DIR` (the API never needs them).
 
 ## Indexes (migration 0002)
 
