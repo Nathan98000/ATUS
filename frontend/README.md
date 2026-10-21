@@ -13,9 +13,10 @@ npm test               # unit/component tests (Vitest + MSW)
 npm run test:e2e       # Playwright: production build, same origin, deployed _headers;
                        # Chromium, plus the @core journeys in Firefox and WebKit
                        # (once: npx playwright install firefox webkit)
-npm run build          # typecheck + static production build in dist/ (same-origin /api)
+npm run build          # typecheck + static production build in dist/ (same-origin /api),
+                       # with the API schema published at /openapi.json
 npm run check:bundle   # deploy guard on dist/: no dev API address, no inline code,
-                       # <meta> CSP, _headers rules
+                       # <meta> CSP, _headers rules, openapi.json = ./openapi.json
 npm run generate:api-types  # src/api/generated.ts from openapi.json
 npm run check:api-types     # fails if generated.ts is not what generation produces
 ```
