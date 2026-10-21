@@ -15,6 +15,19 @@ import { linearScale, niceTicks, padDomain } from './chartScale'
 const WIDTH = 720
 const ROW_HEIGHT = 64
 const MARGIN = { top: 12, right: 30, bottom: 34, left: 16 }
+/**
+ * Longest group label the chart draws. SVG text does not wrap, and a label
+ * may be 80 characters (the API's limit); the cards above, the chart's
+ * accessible summary and the table keep the whole label.
+ */
+const MAX_LABEL_CHARS = 48
+
+function chartLabel(label: string): string {
+  const characters = Array.from(label)
+  return characters.length <= MAX_LABEL_CHARS
+    ? label
+    : `${characters.slice(0, MAX_LABEL_CHARS - 1).join('')}…`
+}
 
 interface ComparisonChartProps {
   groups: { label: string; estimate: EstimateValue; colorVar: string }[]
@@ -74,7 +87,7 @@ export function ComparisonChart({ groups, unit }: ComparisonChartProps) {
           return (
             <g key={group.label} data-testid={`compare-row-${groupIndex}`}>
               <text x={MARGIN.left} y={centerY - 20} className="chart-group-label">
-                {group.label}
+                {chartLabel(group.label)}
               </text>
               {ci_lower != null && ci_upper != null ? (
                 <line
