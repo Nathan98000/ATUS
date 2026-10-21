@@ -73,6 +73,49 @@ describe('waking', () => {
     expect(isServiceWaking()).toBe(false)
     call.finish()
   })
+
+  it('a later "waking" answer restarts the expiry instead of keeping the first one', () => {
+    setOriginState('waking')
+    const call = trackApiCall('analysis')
+    vi.advanceTimersByTime(ORIGIN_WAKING_TTL_MS - 10)
+    setOriginState('waking')
+    vi.advanceTimersByTime(20)
+    expect(isServiceWaking()).toBe(true)
+    vi.advanceTimersByTime(ORIGIN_WAKING_TTL_MS)
+    expect(isServiceWaking()).toBe(false)
+    call.finish()
+  })
+
+  // Firefox reduces and jitters the precision of Date.now()
+  // (privacy.reduceTimerPrecision; coarser still under resistFingerprinting):
+  // in Firefox 155, about one setTimeout(…, 300) callback in eight read 299 ms
+  // elapsed. The notice must follow the timers, not a re-reading of the clock.
+  describe('with a Date.now() that reads short when a timer fires (Firefox)', () => {
+    function clockReadsShort(byMs: number) {
+      const fakeNow = Date.now
+      vi.spyOn(Date, 'now').mockImplementation(() => fakeNow.call(Date) - byMs)
+    }
+
+    it('a metadata call still becomes "waking" when its 3 s timer fires', () => {
+      const call = trackApiCall('metadata')
+      clockReadsShort(1)
+      vi.advanceTimersByTime(SLOW_METADATA_MS - 1)
+      expect(isServiceWaking()).toBe(false)
+      vi.advanceTimersByTime(1)
+      expect(isServiceWaking()).toBe(true)
+      call.finish()
+      expect(isServiceWaking()).toBe(false)
+    })
+
+    it('the prewake answer still expires when its timer fires', () => {
+      setOriginState('waking')
+      const call = trackApiCall('analysis')
+      clockReadsShort(100)
+      vi.advanceTimersByTime(ORIGIN_WAKING_TTL_MS + 1)
+      expect(isServiceWaking()).toBe(false)
+      call.finish()
+    })
+  })
 })
 
 describe('data version', () => {

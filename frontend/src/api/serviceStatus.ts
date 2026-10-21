@@ -10,7 +10,11 @@
  *   unexplained spinner or an error (audit F11, F12). A call counts as waking
  *   when a metadata request has been pending for `SLOW_METADATA_MS`, when an
  *   attempt failed in a way that means the host is not up yet, or when the
- *   edge's prewake answer said the origin is waking.
+ *   edge's prewake answer said the origin is waking. Both time limits are
+ *   decided by their own timers, never by re-reading the clock when a timer
+ *   fires: Firefox reduces and jitters the precision of `Date.now()`
+ *   (privacy.reduceTimerPrecision), so a 3 s timer can read 2999 ms elapsed,
+ *   and a re-check would then leave a cold start without its notice.
  * - **Data version.** The release the page was loaded with, compared with the
  *   `X-Data-Version` of every later response. A difference means the service
  *   switched releases under an open tab, and the UI offers a reload (F27).
@@ -27,8 +31,9 @@ export type CallKind = 'metadata' | 'analysis'
 
 interface TrackedCall {
   kind: CallKind
-  startedAt: number
   waking: boolean
+  /** A metadata call whose `SLOW_METADATA_MS` timer fired while it was pending. */
+  slow: boolean
 }
 
 export interface CallTracker {
@@ -42,39 +47,60 @@ export interface CallTracker {
 
 const calls = new Set<TrackedCall>()
 const timers = new Set<ReturnType<typeof setTimeout>>()
-let originWakingUntil = 0
+/** The prewake said "waking", and neither the API nor `ORIGIN_WAKING_TTL_MS` has since. */
+let originWaking = false
+let originTimer: ReturnType<typeof setTimeout> | null = null
 let waking = false
 const wakingListeners = new Set<() => void>()
 
-function computeWaking(now: number): boolean {
+function computeWaking(): boolean {
   for (const call of calls) {
-    if (call.waking || now < originWakingUntil) return true
-    if (call.kind === 'metadata' && now - call.startedAt >= SLOW_METADATA_MS) return true
+    if (call.waking || call.slow || originWaking) return true
   }
   return false
 }
 
 function refreshWaking(): void {
-  const next = computeWaking(Date.now())
+  const next = computeWaking()
   if (next === waking) return
   waking = next
   for (const listener of wakingListeners) listener()
 }
 
-function scheduleRefresh(delayMs: number): ReturnType<typeof setTimeout> {
+/** Runs `expire` after `delayMs`, then refreshes the waking state. */
+function schedule(delayMs: number, expire: () => void): ReturnType<typeof setTimeout> {
   const timer = setTimeout(() => {
     timers.delete(timer)
+    expire()
     refreshWaking()
   }, delayMs)
   timers.add(timer)
   return timer
 }
 
+function cancel(timer: ReturnType<typeof setTimeout> | null): void {
+  if (timer === null) return
+  clearTimeout(timer)
+  timers.delete(timer)
+}
+
+function clearOriginWaking(): void {
+  originWaking = false
+  cancel(originTimer)
+  originTimer = null
+}
+
 /** Registers one logical API call (all of its attempts) for the waking notice. */
 export function trackApiCall(kind: CallKind): CallTracker {
-  const call: TrackedCall = { kind, startedAt: Date.now(), waking: false }
+  const call: TrackedCall = { kind, waking: false, slow: false }
   calls.add(call)
-  const timer = kind === 'metadata' ? scheduleRefresh(SLOW_METADATA_MS) : null
+  // The timer firing is the fact "pending for SLOW_METADATA_MS" (see above).
+  const timer =
+    kind === 'metadata'
+      ? schedule(SLOW_METADATA_MS, () => {
+          call.slow = true
+        })
+      : null
   refreshWaking()
   return {
     setWaking(value) {
@@ -83,15 +109,12 @@ export function trackApiCall(kind: CallKind): CallTracker {
     },
     answered() {
       call.waking = false
-      originWakingUntil = 0
+      clearOriginWaking()
       refreshWaking()
     },
     finish() {
       calls.delete(call)
-      if (timer !== null) {
-        clearTimeout(timer)
-        timers.delete(timer)
-      }
+      cancel(timer)
       refreshWaking()
     },
   }
@@ -99,11 +122,13 @@ export function trackApiCall(kind: CallKind): CallTracker {
 
 /** Records the edge's prewake answer (`GET /api/v1/wake`). */
 export function setOriginState(origin: 'warm' | 'waking'): void {
+  clearOriginWaking()
   if (origin === 'waking') {
-    originWakingUntil = Date.now() + ORIGIN_WAKING_TTL_MS
-    scheduleRefresh(ORIGIN_WAKING_TTL_MS + 1)
-  } else {
-    originWakingUntil = 0
+    originWaking = true
+    originTimer = schedule(ORIGIN_WAKING_TTL_MS, () => {
+      originWaking = false
+      originTimer = null
+    })
   }
   refreshWaking()
 }
@@ -176,7 +201,8 @@ export function resetServiceStatus(): void {
   for (const timer of timers) clearTimeout(timer)
   timers.clear()
   calls.clear()
-  originWakingUntil = 0
+  originWaking = false
+  originTimer = null
   waking = false
   loadedDataVersion = null
   changedDataVersion = null
