@@ -644,11 +644,14 @@ sends its own address from 198.19.0.0/16, and the per-visitor limits apply
 per test rather than to the whole suite), and tests that inject failures
 into `/api/v1/meta` first hide the snapshot (`withoutSnapshot`), since the
 deployed SPA would otherwise read `/meta` from `/snap/`. On 2026-10-21, at
-f208719, all 52 runs passed in stack mode (Chromium desktop 37, mobile 2,
-WebKit 13), `e2e/new-survey-year.spec.ts` and the static `/openapi.json`
-test of `e2e/service-states.spec.ts` included, after the stack smoke (15/15)
-and the edge probe (13/13); the first stack-mode run, on 2026-10-20, passed
-50 of 50 before those two tests existed. Firefox cannot launch on macOS 27 and ran in vite-preview mode through the
+5beb6a4, all 66 runs passed in stack mode (Chromium desktop 50, mobile 3,
+WebKit 13), the review-round-1 browser tests (`e2e/service-codes.spec.ts`
+and others) included, after the stack smoke (15/15), the edge probe (13/13)
+and `deploy_smoke.py` (13/13). Earlier that day, at f208719, 52 of 52 had
+passed (Chromium desktop 37, mobile 2, WebKit 13), with
+`e2e/new-survey-year.spec.ts` and the static `/openapi.json` test of
+`e2e/service-states.spec.ts`; the first stack-mode run, on 2026-10-20,
+passed 50 of 50 before those two tests existed. Firefox cannot launch on macOS 27 and ran in vite-preview mode through the
 container browsers (above); a stack-mode Firefox run has not been made yet.
 - An adversarial review fleet (96 agents: 8 code-dimension reviewers,
   3 live browser probes, an aggregator, and two independent refuters per
