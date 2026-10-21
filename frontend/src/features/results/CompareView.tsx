@@ -91,8 +91,18 @@ export function CompareView({
         <ComparisonChart
           unit={unit}
           groups={[
-            { label: result.label_a, estimate: result.group_a.estimate, colorVar: '--group-a' },
-            { label: result.label_b, estimate: result.group_b.estimate, colorVar: '--group-b' },
+            {
+              label: result.label_a,
+              estimate: result.group_a.estimate,
+              colorVar: '--group-a',
+              role: 'Group A',
+            },
+            {
+              label: result.label_b,
+              estimate: result.group_b.estimate,
+              colorVar: '--group-b',
+              role: 'Group B',
+            },
           ]}
         />
 
