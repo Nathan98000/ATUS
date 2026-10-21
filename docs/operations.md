@@ -770,7 +770,7 @@ All runs below were local. Nothing has been compared on a deployed host.
   ```
 
   Never put a secret on a command line, in chat or in an issue. Values in `neon*.env` that contain `?` or `&` are stored single-quoted; copy them without the quotes.
-- **After every "Save and deploy"** (and any other Render deploy not made by `deploy.yml`): wait until Render → Events shows it live, then check that the API still runs the `live` build. Render does not document which image an image-backed service pulls then; with the Image URL at `:live` ([owner step 2.7](deployment.md#2-render-free-web-service)) it is the last digest a deploy verified, and `deep-check.yml` checks the build every 6 hours. By hand:
+- **After every "Save and deploy"** (and any other Render deploy not made by `deploy.yml`): wait until Render → Events shows it live, then check that the API still runs the `live` build. Render does not document which image an image-backed service pulls then; with the Image URL at `:live` ([owner step 2.7](deployment.md#2-render-free-web-service)) it is the last digest a deploy verified, and `deep-check.yml` checks the build every 6 hours. By hand (listing package versions needs the `read:packages` scope: `gh auth refresh -s read:packages` once):
 
   ```bash
   build="$(GH_TOKEN="$(gh auth token)" python scripts/ops/github_ops.py live-build --owner nathan98000 --package atus-api | cut -d= -f2)"
