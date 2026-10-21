@@ -284,11 +284,6 @@ def test_health_answers_without_a_database(api_image, unique):
         docker("rm", "-f", name, check=False)
 
 
-@pytest.mark.xfail(
-    reason="ATUS_ENV=production start-up checks land with WS-A (API workstream); "
-    "remove this marker once merged",
-    strict=False,
-)
 def test_production_mode_refuses_to_start_without_its_settings(api_image, unique):
     name = f"{unique}-refuse"
     try:

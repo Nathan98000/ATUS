@@ -307,11 +307,6 @@ def test_api_image_passes_the_gate(api_image, docker_prefix):
     _assert_no_leftovers(docker_prefix)
 
 
-@pytest.mark.xfail(
-    reason="the pool still connects at start-up (min_size=1) until the API workstream "
-    "makes it lazy (ADR-011: min_size=0); remove this marker once merged",
-    strict=False,
-)
 def test_api_image_opens_no_database_connection_at_start(api_image, docker_prefix):
     result = _gate(api_image, docker_prefix)
     assert result.returncode == 0, result.stdout
