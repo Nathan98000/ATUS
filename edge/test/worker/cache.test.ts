@@ -98,6 +98,8 @@ describe('miss, store, then edge hit', () => {
       response_format: '1',
       analysis_key: ANALYSIS_KEY,
       stored_at: expect.stringMatching(/^\d{4}-\d\d-\d\dT/),
+      // HMAC under IP_HMAC_KEY over key, fields and body (compromise.test.ts).
+      tag: expect.stringMatching(/^[0-9a-f]{64}$/),
     })
 
     const second = await callWorker(...post(), RELEASE)

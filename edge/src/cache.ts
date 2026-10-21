@@ -19,11 +19,28 @@
  * when the store gate holds — see `storeHeadersAllow` — and the complete
  * body is at most 16 KiB. A failed write is ignored. Errors are never
  * stored. With an empty `DATA_VERSION` or `ANALYTICS_VERSION` (a deploy
- * without release vars) the cache is off: no reads, no writes.
+ * without release vars), or without `IP_HMAC_KEY`, the cache is off: no
+ * reads, no writes.
+ *
+ * Every entry carries a tag: an HMAC over its key, its metadata and its body
+ * under a key derived from `IP_HMAC_KEY` (`entryTag`). An entry whose tag
+ * does not verify is a miss. Everything in the scope is public, `EPOCH`
+ * included, so a Worker version deployed with a leaked Cloudflare token
+ * could write entries under any scope, the next `EPOCH`'s too; the recovery
+ * rotates `IP_HMAC_KEY` (docs/deployment.md "Rotation", item 5), after which
+ * no entry tagged under the old key is served, wherever it was written.
  */
 
 import { KV_KEY_VERSION, KV_MAX_VALUE_BYTES, KV_TTL_SECONDS } from './constants'
-import { applySecurityHeaders, concatBytes, isJsonContentType, sha256Hex } from './http'
+import {
+  applySecurityHeaders,
+  concatBytes,
+  hmacSha256,
+  isJsonContentType,
+  sha256Hex,
+  timingSafeEqualText,
+  toHex,
+} from './http'
 
 /**
  * Origin `X-Cache` values a stored response may carry: computed by the API
@@ -37,8 +54,8 @@ const STORABLE_ORIGIN_CACHE = new Set(['miss'])
 /** KV's documented metadata limit (serialized JSON). */
 const MAX_METADATA_BYTES = 1024
 
-/** Stored with every entry and replayed as response headers on a hit. */
-export interface CachedMeta {
+/** What an entry records about the response; replayed as response headers on a hit. */
+export interface CachedFields {
   content_type: string
   data_version: string
   analytics_version: string
@@ -46,6 +63,14 @@ export interface CachedMeta {
   analysis_key: string | null
   stored_at: string
 }
+
+/** An entry's KV metadata: its fields and their tag (`entryTag`). */
+export interface CachedMeta extends CachedFields {
+  tag: string
+}
+
+/** Derives the tag key from `IP_HMAC_KEY` (the prefix HMAC uses other labels). */
+const TAG_KEY_LABEL = 'atus-kv-entry-tag'
 
 type ReleaseVars = Pick<
   Env,
@@ -80,15 +105,43 @@ export function kvKey(scope: string, hash: string): string {
 }
 
 /**
+ * The tag of an entry: HMAC-SHA256, as hex, over its KV key (scope and
+ * request hash), every field of its metadata and the SHA-256 of its body,
+ * under HMAC-SHA256(`secret`, "atus-kv-entry-tag"). An entry copied under
+ * another key, or given another body or field, no longer verifies; nor does
+ * any entry once `secret` (`IP_HMAC_KEY`) is rotated.
+ */
+export async function entryTag(
+  secret: string,
+  key: string,
+  fields: CachedFields,
+  body: Uint8Array,
+): Promise<string> {
+  const message = JSON.stringify([
+    key,
+    fields.content_type,
+    fields.data_version,
+    fields.analytics_version,
+    fields.response_format,
+    fields.analysis_key,
+    fields.stored_at,
+    await sha256Hex(body),
+  ])
+  return toHex(await hmacSha256(await hmacSha256(secret, TAG_KEY_LABEL), message))
+}
+
+/**
  * The stored response for `key` as a 200 with `X-Cache: edge`, `'miss'`, or
  * `'error'` when KV failed (also a miss for the caller). An entry whose
- * metadata does not match this deployment's release vars is a miss.
+ * metadata does not match this deployment's release vars, or whose tag does
+ * not verify under `secret` (`IP_HMAC_KEY`), is a miss.
  */
 export async function readCached(
   kv: KVNamespace,
   key: string,
   env: ReleaseVars,
   requestId: string,
+  secret: string,
 ): Promise<Response | 'miss' | 'error'> {
   let entry: KVNamespaceGetWithMetadataResult<ArrayBuffer, CachedMeta>
   try {
@@ -105,10 +158,18 @@ export async function readCached(
     !isJsonContentType(metadata.content_type) ||
     metadata.data_version !== env.DATA_VERSION ||
     metadata.analytics_version !== env.ANALYTICS_VERSION ||
-    metadata.response_format !== env.RESPONSE_FORMAT
+    metadata.response_format !== env.RESPONSE_FORMAT ||
+    typeof metadata.tag !== 'string'
   ) {
     return 'miss'
   }
+  let expected: string
+  try {
+    expected = await entryTag(secret, key, metadata, new Uint8Array(value))
+  } catch {
+    return 'miss'
+  }
+  if (!timingSafeEqualText(metadata.tag, expected)) return 'miss'
   const headers = new Headers({
     'Content-Type': metadata.content_type,
     'X-Data-Version': metadata.data_version,
@@ -142,8 +203,8 @@ export function storeHeadersAllow(upstream: Response, env: ReleaseVars): boolean
   )
 }
 
-/** The metadata to store with a response that passed `storeHeadersAllow`. */
-export function cachedMeta(upstream: Response, now: number): CachedMeta {
+/** The fields to store with a response that passed `storeHeadersAllow` (`storeCached` tags them). */
+export function cachedMeta(upstream: Response, now: number): CachedFields {
   const { headers } = upstream
   return {
     content_type: headers.get('content-type') ?? 'application/json',
@@ -156,17 +217,24 @@ export function cachedMeta(upstream: Response, now: number): CachedMeta {
 }
 
 /**
- * Store `body` under `key` for 30 days. Returns whether KV accepted it;
- * never rejects. Empty or oversized bodies and oversized metadata are not
- * stored.
+ * Store `body` under `key` for 30 days, with `fields` and their tag under
+ * `secret` (`IP_HMAC_KEY`). Returns whether KV accepted it; never rejects.
+ * Empty or oversized bodies and oversized metadata are not stored.
  */
 export async function storeCached(
   kv: KVNamespace,
   key: string,
   body: Uint8Array,
-  meta: CachedMeta,
+  fields: CachedFields,
+  secret: string,
 ): Promise<boolean> {
   if (body.byteLength === 0 || body.byteLength > KV_MAX_VALUE_BYTES) return false
+  let meta: CachedMeta
+  try {
+    meta = { ...fields, tag: await entryTag(secret, key, fields, body) }
+  } catch {
+    return false
+  }
   if (new TextEncoder().encode(JSON.stringify(meta)).byteLength > MAX_METADATA_BYTES)
     return false
   try {
