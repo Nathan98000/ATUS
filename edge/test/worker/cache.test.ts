@@ -119,10 +119,23 @@ describe('miss, store, then edge hit', () => {
     expect(report.analyses.admitted).toBe(1)
   })
 
-  it('stores an origin X-Cache: hit (the API served it from its own cache)', async () => {
-    mockOrigin(() => apiJson(RESULT, 200, { ...GATE_HEADERS, 'x-cache': 'hit' }))
-    await callWorker(...post(), RELEASE)
-    expect(await storedKeys()).toEqual([KEY])
+  it('does not store an origin X-Cache: hit, which the global cap refunds', async () => {
+    // Only a computation the admission paid for (X-Cache: miss) is stored, so
+    // KV writes stay within the 600 analyses a day the governor keeps. Hits
+    // for byte variants of one spec are refunded and would be unbounded.
+    mockOrigin(() =>
+      apiJson(RESULT, 200, {
+        ...GATE_HEADERS,
+        'x-cache': 'hit',
+        'server-timing': 'db;dur=0, app;dur=1',
+      }),
+    )
+    for (let i = 0; i < 5; i += 1) {
+      const response = await callWorker(...post(`${BODY}${' '.repeat(i)}`), RELEASE)
+      expect(await response.text()).toBe(RESULT)
+    }
+    expect(await storedKeys()).toEqual([])
+    expect((await governorStub().budget()).analyses).toMatchObject({ admitted: 0, refunded: 5 })
   })
 
   it('keys on the exact bytes: the same spec serialized differently misses', async () => {
@@ -195,6 +208,7 @@ describe('the store gate', () => {
 
   it.each([
     ['X-Cache: bypass (computed during a data reload)', { 'x-cache': 'bypass' }],
+    ['X-Cache: hit', { 'x-cache': 'hit' }],
     ['X-Cache: join', { 'x-cache': 'join' }],
     ['no X-Cache', { 'x-cache': '' }],
     ['another X-Data-Version', { 'x-data-version': 'other' }],

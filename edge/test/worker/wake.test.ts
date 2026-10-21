@@ -2,7 +2,7 @@
 
 import { waitOnExecutionContext } from 'cloudflare:test'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { WAKE_INTERVAL_MS } from '../../src/constants'
+import { WAKE_INTERVAL_MS, WAKE_RETRY_MS } from '../../src/constants'
 import {
   EDGE_SECRET,
   apiJson,
@@ -95,6 +95,47 @@ describe('wake', () => {
     const fresh = await callWorker('/api/v1/wake')
     expect(await fresh.json()).toEqual({ origin: 'warm', wake: 'sent' })
     expect(calls).toHaveLength(2)
+  })
+
+  it('probes an origin last seen waking again after a minute, a warm one after 10 minutes', async () => {
+    // Render is up about a minute after its hibernate answer; remembering
+    // "waking" for 10 minutes showed the cold-start notice on a warm service.
+    const clock = controlClock()
+    let warm = false
+    const calls = mockOrigin(() =>
+      warm
+        ? apiJson('{"status":"ok"}')
+        : new Response('', {
+            status: 503,
+            headers: { 'x-render-routing': 'dynamic-hibernate-error-503' },
+          }),
+    )
+    const wake = async (): Promise<unknown> => (await callWorker('/api/v1/wake')).json()
+    expect(await wake()).toEqual({ origin: 'waking', wake: 'sent' })
+    warm = true
+    clock.advance(WAKE_RETRY_MS - 1)
+    expect(await wake()).toEqual({ origin: 'waking', wake: 'recent' })
+    expect(calls).toHaveLength(1)
+    clock.advance(1)
+    expect(await wake()).toEqual({ origin: 'warm', wake: 'sent' })
+    expect(calls).toHaveLength(2)
+    clock.advance(WAKE_INTERVAL_MS - 1)
+    expect(await wake()).toEqual({ origin: 'warm', wake: 'recent' })
+    expect(calls).toHaveLength(2)
+  })
+
+  it('probes again after a minute when the last probe never finished (cut off with its request)', async () => {
+    const clock = controlClock()
+    const calls = mockOrigin(() => new Promise<Response>(() => {}))
+    const { response } = await callWorkerNoWait('/api/v1/wake')
+    expect(await response.json()).toEqual({ origin: 'waking', wake: 'sent' })
+    clock.advance(WAKE_RETRY_MS)
+    mockOrigin(() => apiJson('{"status":"ok"}'))
+    expect(await (await callWorker('/api/v1/wake')).json()).toEqual({
+      origin: 'warm',
+      wake: 'sent',
+    })
+    expect(calls).toHaveLength(1)
   })
 
   it('sends one origin call for concurrent wakes', async () => {

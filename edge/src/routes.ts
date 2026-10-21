@@ -32,6 +32,11 @@ export interface Route {
   upstreamPath?: string
   /** Analysis POSTs: JSON-only bodies, the edge cache and the governor. */
   analysis?: boolean
+  /**
+   * Metadata GETs: answered from the static snapshot when it holds them,
+   * otherwise sent to the origin as a governed lookup.
+   */
+  metadata?: boolean
   /** Not revealed: a wrong method is a 404, not a 405. */
   hidden?: boolean
 }
@@ -42,12 +47,15 @@ export type RouteMatch =
   | { error: 'method_not_allowed'; allow: Route['method'] }
 
 const ROUTES: ReadonlyMap<string, Route> = new Map<string, Route>([
-  ['/api/v1/meta', { name: 'meta', method: 'GET', kind: 'proxy' }],
-  ['/api/v1/activities', { name: 'activities', method: 'GET', kind: 'proxy' }],
-  ['/api/v1/activities/presets', { name: 'activities.presets', method: 'GET', kind: 'proxy' }],
+  ['/api/v1/meta', { name: 'meta', method: 'GET', kind: 'proxy', metadata: true }],
+  ['/api/v1/activities', { name: 'activities', method: 'GET', kind: 'proxy', metadata: true }],
+  [
+    '/api/v1/activities/presets',
+    { name: 'activities.presets', method: 'GET', kind: 'proxy', metadata: true },
+  ],
   [
     '/api/v1/population/metadata',
-    { name: 'population.metadata', method: 'GET', kind: 'proxy' },
+    { name: 'population.metadata', method: 'GET', kind: 'proxy', metadata: true },
   ],
   [
     '/api/v1/analysis/estimate',
@@ -77,7 +85,12 @@ const ROUTES: ReadonlyMap<string, Route> = new Map<string, Route>([
  */
 const ACTIVITY_DETAIL = /^\/api\/v1\/activities\/[A-Za-z0-9_-]{1,32}$/
 
-const ACTIVITY_DETAIL_ROUTE: Route = { name: 'activities.detail', method: 'GET', kind: 'proxy' }
+const ACTIVITY_DETAIL_ROUTE: Route = {
+  name: 'activities.detail',
+  method: 'GET',
+  kind: 'proxy',
+  metadata: true,
+}
 
 /** True for the paths `run_worker_first` sends to the Worker. */
 export function isApiPath(pathname: string): boolean {

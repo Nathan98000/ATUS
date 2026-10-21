@@ -90,6 +90,17 @@ describe('against a local origin', () => {
     }
   })
 
+  it('asks the origin for gzip over a real socket, even when the client accepts only identity', async () => {
+    const response = await callWorker(
+      '/api/v1/meta?scenario=echo',
+      { headers: { 'Accept-Encoding': 'identity' } },
+      local,
+    )
+    expect(response.status).toBe(200)
+    const echo = (await response.json()) as Echo
+    expect(echo.headers['accept-encoding']).toBe('gzip')
+  })
+
   it('strips the origin platform headers from a real response', async () => {
     const response = await callWorker('/api/v1/meta?scenario=echo', undefined, local)
     for (const name of ['server', 'rndr-id', 'x-render-origin-server', 'set-cookie']) {

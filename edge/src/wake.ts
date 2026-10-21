@@ -12,14 +12,20 @@
  * - `warm`: origin /health answered 2xx JSON within the race (now or, for
  *   `recent`, on the last wake); `waking`: it has not (yet); `unknown`: no
  *   wake was attempted or the origin could not be reached.
- * - The /health call outlives the reply through `waitUntil`, so a slow
- *   spin-up still completes.
- * - At most one wake per isolate per `WAKE_INTERVAL_MS`; later calls in the
- *   window report the last wake's result (`recent`) without an origin call.
+ * - The /health call outlives the reply through `waitUntil`, but only for
+ *   the 30 s Cloudflare allows after a response: a spin-up that answers
+ *   within that time is recorded; a longer one (Render documents about a
+ *   minute) is cut off with the probe and stays recorded as `waking`.
+ * - Later calls report the last wake's result (`recent`) without an origin
+ *   call: for `WAKE_INTERVAL_MS` once the origin answered warm, but only for
+ *   `WAKE_RETRY_MS` while it was `waking` or `unknown`, so a stale "waking"
+ *   does not keep the SPA's cold-start notice up on a warm service. At most
+ *   one wake per isolate per minute while the origin is waking, per 10
+ *   minutes once it is warm.
  * - The Worker var `PREWAKE=off` disables the origin call entirely.
  */
 
-import { WAKE_INTERVAL_MS, WAKE_RACE_MS } from './constants'
+import { WAKE_INTERVAL_MS, WAKE_RACE_MS, WAKE_RETRY_MS } from './constants'
 import { isJsonContentType, jsonResponse } from './http'
 import { buildUpstreamHeaders } from './proxy'
 import { fetchOrigin, originBreaker } from './upstream'
@@ -55,8 +61,11 @@ export async function handleWake(
     return jsonResponse(200, { origin: 'unknown', wake: 'off' }, requestId)
   }
   const now = Date.now()
-  if (lastWake !== null && now - lastWake.sentAt < WAKE_INTERVAL_MS) {
-    return jsonResponse(200, { origin: lastWake.origin, wake: 'recent' }, requestId)
+  if (lastWake !== null) {
+    const remembered = lastWake.origin === 'warm' ? WAKE_INTERVAL_MS : WAKE_RETRY_MS
+    if (now - lastWake.sentAt < remembered) {
+      return jsonResponse(200, { origin: lastWake.origin, wake: 'recent' }, requestId)
+    }
   }
   if (originBreaker.remainingOpenMs(now) > 0) {
     return jsonResponse(200, { origin: 'unknown', wake: 'circuit_open' }, requestId)

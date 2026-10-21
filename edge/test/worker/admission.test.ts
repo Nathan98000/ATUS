@@ -172,10 +172,26 @@ describe('settleReportFor', () => {
   it.each([
     [503, 'analysis_timeout'],
     [503, 'database_unavailable'],
-    [503, 'database_paused'],
     [500, 'internal_error'],
   ])('reports a %i %s as computed (the DB was busy)', (status, code) => {
     expect(settleReportFor(json(status), pass(code)).kind).toBe('computed')
+  })
+
+  it.each(['data_version_mismatch', 'data_not_loaded', 'schema_not_initialized'])(
+    'reports a %s refusal as shed (no analysis ran), with the DB time it reported',
+    (code) => {
+      const upstream = json(503, { 'server-timing': 'db;dur=3.5, app;dur=4' })
+      expect(settleReportFor(upstream, pass(code))).toEqual({ kind: 'shed', dbMs: 3.5 })
+    },
+  )
+
+  it('reports database_paused as shed with no DB time: Neon refused the connection', () => {
+    // The API times the failed connect as DB time (db;dur > 0); no compute ran.
+    const upstream = json(503, { 'server-timing': 'db;dur=12.0, app;dur=13' })
+    expect(settleReportFor(upstream, pass('database_paused'))).toEqual({
+      kind: 'shed',
+      dbMs: 0,
+    })
   })
 
   it('reports a platform response as not reached', () => {
