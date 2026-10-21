@@ -411,9 +411,9 @@ Tests:
 - **Decoding.** A share link is `/analysis/<operation>?spec=<base64url(JSON)>`, decoded only in the browser. Nothing is sent, and an "invalid link" page appears, for any of these:
   - invalid base64, UTF-8 or JSON;
   - the keys `__proto__`, `constructor` or `prototype`;
-  - a structurally wrong spec.
+  - a structurally wrong spec, including a field the page reads with the wrong type (a preset, label or measure that is not a string, an include list that is not strings, a population that is not an object of scalar values; review round 2: such values crashed the page into its error boundary or made Analyze throw).
 
-  Code: `frontend/src/domain/urlSpec.ts`. Tests: `frontend/src/domain/urlSpec.test.ts`, `frontend/e2e/share.spec.ts`.
+  The builder (`/explore?op=…&spec=…`) opens such a link as the default analysis with a visible note instead. Code: `frontend/src/domain/urlSpec.ts`. Tests: `frontend/src/domain/urlSpec.test.ts`, `frontend/src/pages/ExplorePage.test.tsx`, `frontend/e2e/share.spec.ts`.
 - **Plausible but invalid specs.** These are sent, and the API refuses them with a 422. Most cost no database statement (C4, C7); the exceptions are listed under abuse case 2.
 - **Labels.** Free-text labels are rendered as React text. By inspection, `frontend/src` contains no `dangerouslySetInnerHTML` or `innerHTML`, and the CSP forbids inline script.
 - **No stored content.** There is no link storage, so a link cannot plant content on the site ([ADR-016](adr/ADR-016-short-share-links.md)).

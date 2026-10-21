@@ -221,6 +221,24 @@ describe('error handling', () => {
     expect(screen.getByRole('link', { name: /Build an analysis/ })).toBeInTheDocument()
   })
 
+  it('a link with a wrongly typed field is an invalid link, not the app error page (review round 2)', async () => {
+    // `preset: 5` reached humanize() (replaceAll on a number) and the error
+    // boundary replaced the page.
+    for (const activity of [{ preset: 5 }, { preset: { a: 1 } }, { include: [{}] }]) {
+      const json = JSON.stringify({
+        activity,
+        measure: 'average_minutes_per_day',
+        years: [2023],
+      })
+      const encoded = btoa(json).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
+      const { unmount } = renderAnalysisRoute(`/analysis/estimate?spec=${encoded}`)
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'This analysis link cannot be opened',
+      )
+      unmount()
+    }
+  })
+
   it('rejects unknown analysis types in the URL', async () => {
     renderAnalysisRoute(`/analysis/median?spec=${encodeSpec(sleepSpec)}`)
     expect(await screen.findByRole('alert')).toHaveTextContent('unknown analysis type')

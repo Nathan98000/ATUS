@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import type { CompareRequest, EstimateRequest } from '../api/types'
+import type { CompareRequest, EstimateRequest, Operation } from '../api/types'
+import {
+  compareChildrenFixture,
+  estimatePandemicFixture,
+  estimateSleepFixture,
+  metaFixture,
+  trendLeisureFixture,
+} from '../test/fixtures'
+import { STARTER_EXAMPLES } from './prewarm'
 import { InvalidShareLinkError, analysisPath, decodeSpec, encodeSpec } from './urlSpec'
 
 const estimate: EstimateRequest = {
@@ -114,7 +122,90 @@ describe('deeply nested links (review round 1)', () => {
       group_b: { sex: 'female' },
     }
     expect(decodeSpec(encodeSpec(spec), 'compare')).toEqual(spec)
-    // A little nesting beyond that is left for the API to refuse (422).
-    expect(() => decodeSpec(nestedLink(5), 'estimate')).not.toThrow()
+    // A little nesting beyond that is left for the API to refuse (422). (In a
+    // field the page reads, such as a population value, a list is now the
+    // wrong type: review round 2.)
+    const nestedField = `{"activity":{"preset":"sleep"},"extra":${'['.repeat(5)}${']'.repeat(5)},"years":[2023]}`
+    const encoded = btoa(nestedField)
+      .replaceAll('+', '-')
+      .replaceAll('/', '_')
+      .replace(/=+$/, '')
+    expect(() => decodeSpec(encoded, 'estimate')).not.toThrow()
+    expect(() => decodeSpec(nestedLink(5), 'estimate')).toThrow(/population has the wrong type/)
+  })
+})
+
+describe('wrongly typed fields (review round 2)', () => {
+  /** base64url of `spec` exactly as written (no type checks on the way in). */
+  function link(spec: object): string {
+    return btoa(JSON.stringify(spec))
+      .replaceAll('+', '-')
+      .replaceAll('/', '_')
+      .replace(/=+$/, '')
+  }
+  const base = { activity: { preset: 'sleep' }, years: [2023] }
+  const compareBase = {
+    ...base,
+    group_a: { sex: 'male' },
+    group_b: { sex: 'female' },
+    label_a: 'A',
+    label_b: 'B',
+  }
+
+  // A wrongly typed value reached the page's rendering and event handlers:
+  // `preset: 5` threw in humanize() (the app's error page), and a numeric
+  // label_a made Analyze throw on labelA.trim().
+  it.each([
+    ['activity.preset a number', 'estimate', { ...base, activity: { preset: 5 } }],
+    ['activity.preset an object', 'estimate', { ...base, activity: { preset: { a: 1 } } }],
+    ['activity.include objects', 'estimate', { ...base, activity: { include: [{}] } }],
+    ['activity.include a string', 'estimate', { ...base, activity: { include: '0101' } }],
+    [
+      'activity.exclude numbers',
+      'estimate',
+      { ...base, activity: { include: ['01'], exclude: [1] } },
+    ],
+    [
+      'activity.label an object',
+      'estimate',
+      { ...base, activity: { include: ['01'], label: {} } },
+    ],
+    ['measure a number', 'estimate', { ...base, measure: 5 }],
+    ['weights an object', 'trend', { ...base, weights: {} }],
+    ['variance a list', 'estimate', { ...base, variance: [] }],
+    ['confidence_level a string', 'estimate', { ...base, confidence_level: '0.95' }],
+    ['population a number', 'estimate', { ...base, population: 5 }],
+    ['population a list', 'estimate', { ...base, population: [] }],
+    ['a population value an object', 'estimate', { ...base, population: { sex: {} } }],
+    ['a population value a list', 'trend', { ...base, population: { age_min: [25] } }],
+    ['label_a a number', 'compare', { ...compareBase, label_a: 7 }],
+    ['label_b an object', 'compare', { ...compareBase, label_b: {} }],
+    ['group_a a string', 'compare', { ...compareBase, group_a: 'men' }],
+    ['a group value an object', 'compare', { ...compareBase, group_b: { sex: { x: 1 } } }],
+  ] as const)('rejects a link with %s', (_label, operation, spec) => {
+    expect(() => decodeSpec(link(spec), operation as Operation)).toThrow(InvalidShareLinkError)
+  })
+
+  it('accepts every canonical spec the API returns and every starter link', () => {
+    for (const [operation, spec] of [
+      ['estimate', estimateSleepFixture.spec],
+      ['estimate', estimatePandemicFixture.spec],
+      ['trend', trendLeisureFixture.spec],
+      ['estimate', compareChildrenFixture.group_a.spec],
+    ] as const) {
+      expect(() => decodeSpec(link(spec), operation)).not.toThrow()
+    }
+    const years = metaFixture.data.years
+    for (const starter of STARTER_EXAMPLES) {
+      const spec = starter.spec(years, Math.max(...years))
+      expect(decodeSpec(encodeSpec(spec), starter.operation)).toEqual(spec)
+    }
+    // Unset optional fields may be null.
+    expect(() =>
+      decodeSpec(
+        link({ ...compareBase, measure: null, label_a: null, population: { sex: null } }),
+        'compare',
+      ),
+    ).not.toThrow()
   })
 })

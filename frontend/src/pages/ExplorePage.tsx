@@ -46,6 +46,10 @@ const OPERATION_LABELS: { value: Operation; label: string; hint: string }[] = [
   },
 ]
 
+/** Shown when /explore?op=…&spec=… cannot be read (review round 2). */
+const UNUSABLE_PREFILL_NOTE =
+  'The analysis in this link could not be opened in the builder, so it starts from the default analysis instead.'
+
 export function ExplorePage() {
   const meta = useMeta()
   const populationMetadata = usePopulationMetadata()
@@ -127,15 +131,17 @@ function Builder({
   const [state, setState] = useState<BuilderState>(() => {
     const operationParam = searchParams.get('op')
     const specParam = searchParams.get('spec')
-    if (isOperation(operationParam ?? undefined) && specParam) {
+    if (!specParam) return defaultBuilderState(metaYears)
+    if (isOperation(operationParam ?? undefined)) {
       try {
         const operation = operationParam as Operation
         return fromRequest(operation, decodeSpec(specParam, operation), metaYears)
       } catch {
-        // Fall through to the default analysis on a malformed prefill link.
+        // A malformed prefill link: the default analysis, with a note below.
       }
     }
-    return defaultBuilderState(metaYears)
+    // Never silently: the visitor followed a link to a particular analysis.
+    return { ...defaultBuilderState(metaYears), prefillNote: UNUSABLE_PREFILL_NOTE }
   })
   const [failedSubmits, setFailedSubmits] = useState(0)
   const attempted = failedSubmits > 0
