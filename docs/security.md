@@ -99,7 +99,7 @@ Tests:
 Code: `edge/src/index.ts` (`readJsonBody`), `src/atus_pipeline/api/middleware.py`, `src/atus_pipeline/api/schemas/analysis.py`, `src/atus_pipeline/api/errors.py`, `src/atus_pipeline/api/serve.py`.
 Tests:
 - `edge/test/worker/limits.test.ts`;
-- `tests/unit/api/test_guard.py` (`TestBodySize`, `TestMediaType`, `TestValidationOutput`, `TestRawHeaders`);
+- `tests/unit/api/test_guard.py` (`TestBodySize`, `TestMediaType`, `TestValidationOutput`, `TestRawHeaders`); the schema bounds: `TestValidationOutput::test_schema_bounds_are_422_before_any_work` (51 years, 101 include or exclude codes, a 121-character label, an 81-character `label_a` or `label_b`) and `::test_the_bounds_themselves_pass_the_schema`;
 - `tests/integration/api/test_protection_db.py::TestQueryParameters`;
 - `tests/integration/api_prod/test_server.py` (`test_body_caps_over_real_sockets`, `TestConnectionBound`).
 
