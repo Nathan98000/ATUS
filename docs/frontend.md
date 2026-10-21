@@ -465,6 +465,11 @@ facts are `null`, never guessed. File names are
   3). Estimate and comparison pages expose the raw full-precision API
   values under “View exact values”; the trend page's “View data” table uses
   display precision. Raw API values are never mutated in state.
+- Filters are never active yet invisible. A comparison's shared filters
+  restrict both groups: in the builder their section opens and is marked
+  “(active)” when set (from a link, or carried over from an estimate or
+  trend), and the result names them in its title and in a “Both groups: …”
+  line, not only inside the collapsed panels (review round 3).
 - The one-sentence interpretation on result pages is a deterministic
   template over response fields — descriptive wording only, no causal
   claims, no significance language.

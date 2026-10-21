@@ -253,6 +253,75 @@ describe('confidence levels from a shared analysis (review round 3)', () => {
   })
 })
 
+describe('shared filters of a comparison (review round 3)', () => {
+  // "Filters must never be active yet invisible": the comparison's shared
+  // population restricts both groups, so it must not hide in a closed section.
+  function sharedSection(): HTMLDetailsElement {
+    return screen.getByText(/^Shared filters/).closest('details') as HTMLDetailsElement
+  }
+
+  it('a prefilled shared filter opens its section and marks it active', async () => {
+    const spec: CompareRequest = {
+      activity: { preset: 'sleep' },
+      years: [2025],
+      population: { age_min: 65 },
+      group_a: { sex: 'male' },
+      group_b: { sex: 'female' },
+      label_a: 'Men',
+      label_b: 'Women',
+    }
+    renderExplore(`/explore?op=compare&spec=${encodeSpec(spec)}`)
+    await waitForBuilder()
+    const shared = sharedSection()
+    expect(shared.open).toBe(true)
+    expect(shared.querySelector('summary')).toHaveTextContent(
+      'Shared filters (apply to both groups) (active)',
+    )
+    expect(within(shared).getByLabelText('Minimum age')).toHaveValue(65)
+  })
+
+  it('filters carried over from an estimate stay visible after switching to compare', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await user.type(screen.getByLabelText('Minimum age'), '65')
+    await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
+    const shared = sharedSection()
+    expect(shared.open).toBe(true)
+    expect(shared.querySelector('summary')).toHaveTextContent('(active)')
+    expect(within(shared).getByLabelText('Minimum age')).toHaveValue(65)
+
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    const location = screen.getByTestId('location').textContent ?? ''
+    const sent = decodeSpec(location.split('spec=')[1] as string, 'compare') as CompareRequest
+    expect(sent.population).toEqual({ age_min: 65 })
+  })
+
+  it('editing the shared filter does not collapse its section under the cursor', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await user.type(screen.getByLabelText('Minimum age'), '65')
+    await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
+    const shared = sharedSection()
+    await user.clear(within(shared).getByLabelText('Minimum age'))
+    expect(shared.open).toBe(true)
+    expect(shared.querySelector('summary')).not.toHaveTextContent('(active)')
+  })
+
+  it('stays collapsed and unmarked when no shared filter is set', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
+    const shared = sharedSection()
+    expect(shared.open).toBe(false)
+    expect(shared.querySelector('summary')?.textContent).toBe(
+      'Shared filters (apply to both groups)',
+    )
+  })
+})
+
 describe('browser history (review finding: Back must not reset the builder)', () => {
   it('Back from a result returns to a prefilled builder, not defaults', async () => {
     const user = userEvent.setup()
