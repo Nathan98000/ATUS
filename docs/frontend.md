@@ -484,7 +484,7 @@ facts are `null`, never guessed. File names are
 
 ```bash
 npm test          # unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 79 Playwright runs: 50 tests in Chromium desktop, 3 mobile,
+npm run test:e2e  # 80 Playwright runs: 51 tests in Chromium desktop, 3 mobile,
                   # and the 13 @core journeys again in Firefox and in WebKit
 npx playwright install firefox webkit   # once, for the cross-browser projects
 ../scripts/e2e_in_container.sh --project firefox   # Firefox where it cannot launch

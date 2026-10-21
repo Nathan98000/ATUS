@@ -938,6 +938,7 @@ Every secret has one procedure.
    4. **If it may have leaked**, or the Cloudflare account was compromised, the Worker's secrets are disclosed too: Worker code deployed with the token can read every one of them from `env` and send it anywhere, and the version can then be rolled back. So also:
       - rotate `EDGE_AUTH_SECRET` (item 1), `OPS_TOKEN` (item 3), `IP_HMAC_KEY` (item 4) and, if set, `NEON_API_KEY` with its data check (item 7);
       - treat `RENDER_ORIGIN` as known: it is not a credential, and direct requests still need the edge secret ([security.md R3](security.md#accepted-risks));
+      - set the pause switch (`API_PAUSED_UNTIL`, `API_PAUSED_REASON`) again with `deploy.yml` operation `pause-api` or `resume-api`: it holds no secret values, but the token can set or clear it;
       - bump `EPOCH` in `edge/wrangler.jsonc` and deploy, since the token may write KV (ADR-015);
       - check `npx wrangler deployments list` in `edge/` for versions you did not deploy.
 6. **Render deploy hook.** Render → Settings → Deploy Hook → Regenerate. The old URL stops working at once. Then replace `RENDER_DEPLOY_HOOK_URL`.
