@@ -28,6 +28,9 @@
 --     ADR-012 "Calibration"), lock_timeout 5 s,
 --     idle_in_transaction_session_timeout 30 s, jit off (F37), and read-only
 --     transactions by default (a second guard; the privileges are the boundary).
+--     Every other setting of the role, role-wide or for this database, is
+--     reset first, and the script fails unless exactly these five remain
+--     (review r3: the role can set its own defaults).
 --     max_parallel_workers_per_gather is not set here: the emulation load
 --     tests left it at the server default, and the API can set it per
 --     request (ATUS_API_MAX_PARALLEL_WORKERS; F38).
@@ -71,6 +74,12 @@ WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = :'api_role') \gexec
 ALTER ROLE :"api_role" WITH LOGIN NOCREATEDB NOCREATEROLE CONNECTION LIMIT 10
     PASSWORD :'api_password';
 
+-- Only these defaults. A role may set its own (ALTER ROLE ... [IN DATABASE
+-- ...] SET), so whoever held its password could have left planner switches,
+-- work_mem or output settings that every later API session inherits: every
+-- setting of the role is reset first, here and in this database (review r3).
+ALTER ROLE :"api_role" RESET ALL;
+ALTER ROLE :"api_role" IN DATABASE :"DBNAME" RESET ALL;
 ALTER ROLE :"api_role" SET statement_timeout = '85s';
 ALTER ROLE :"api_role" SET lock_timeout = '5s';
 ALTER ROLE :"api_role" SET idle_in_transaction_session_timeout = '30s';
@@ -109,6 +118,21 @@ FROM pg_roles WHERE rolname = :'api_role' \gset
 \if :attributes_ok
 \else
   DO $$ BEGIN RAISE EXCEPTION 'roles.sql: the API role holds an attribute beyond LOGIN'; END $$;
+\endif
+
+-- Exactly the five defaults above, role-wide, and none for this database
+-- (the restore checks the same: serving/restore.py EXPECTED_ROLE_SETTINGS).
+SELECT coalesce((
+    SELECT array_agg(setting ORDER BY setting COLLATE "C")
+    FROM pg_db_role_setting s CROSS JOIN unnest(s.setconfig) AS setting
+    WHERE s.setrole = (SELECT oid FROM pg_roles WHERE rolname = :'api_role')
+      AND s.setdatabase IN (0, (SELECT oid FROM pg_database WHERE datname = current_database()))
+), '{}') = ARRAY['default_transaction_read_only=on', 'idle_in_transaction_session_timeout=30s',
+                 'jit=off', 'lock_timeout=5s', 'statement_timeout=85s']::text[]
+AS settings_ok \gset
+\if :settings_ok
+\else
+  DO $$ BEGIN RAISE EXCEPTION 'roles.sql: the API role has settings beyond its five defaults'; END $$;
 \endif
 
 SELECT NOT EXISTS (

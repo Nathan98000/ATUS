@@ -927,7 +927,7 @@ Every secret has one procedure.
    1. `scripts/ops/restore_serving_db.sh --artifact <the release dump> --secrets-file <that project's file> --roles-only --rotate-api-password` re-applies `scripts/ops/roles.sql` as `neondb_owner` with a new generated 192-bit password (sent as a SCRAM verifier) and rewrites `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` in that file.
    2. Update Render's `ATUS_DATABASE_URL`, then "Save and deploy". Do this even if step 1 ended with `Restore FAILED.` after the note "the API role's password was changed before the checks ran", or with an error after the note "the API role's password was changed before the restore stopped with an error": the new password is already in effect.
 
-   A Postgres role has only one password. Between steps 1 and 2, new connections fail, so uncached analyses may get 503 `database_unavailable` with `Retry-After`; open connections keep working. Rotate when the service is idle.
+   A Postgres role has only one password. Step 1 also resets every setting of the role (the role can set its own, so a leaked password could have left some) and ends the role's open sessions, the API's included, since a new password ends none (review round 3). Its checks fail if a setting beyond roles.sql's five remains, or if a session could not be ended: then restart the compute (Neon: the branch → Postgres database → Computes → the compute's menu → Restart compute, which ends every connection). Between steps 1 and 2 the API cannot connect, so uncached analyses get 503 `database_unavailable` with `Retry-After`. Rotate when the service is idle.
 3. **Ops tokens** (`ATUS_OPS_TOKEN`; the Worker's `OPS_TOKEN`).
    1. `scripts/ops/gen_edge_secrets.sh --rotate ATUS_OPS_TOKEN` (or `--rotate OPS_TOKEN`) writes the new value into `edge.env`.
    2. Set it on Render, or with `wrangler secret put OPS_TOKEN`.
@@ -940,7 +940,7 @@ Every secret has one procedure.
    2. Replace the GitHub secret `CLOUDFLARE_API_TOKEN`.
    3. Delete the old token in Cloudflare.
    4. **If it may have leaked**, or the Cloudflare account was compromised, the Worker's secrets are disclosed too: Worker code deployed with the token can read every one of them from `env` and send it anywhere, and the version can then be rolled back. So also:
-      - rotate `EDGE_AUTH_SECRET` (item 1), `OPS_TOKEN` (item 3), `IP_HMAC_KEY` (item 4) and, if set, `NEON_API_KEY` with its data check (item 7);
+      - rotate `EDGE_AUTH_SECRET` (item 1), `OPS_TOKEN` (item 3), `IP_HMAC_KEY` (item 4) and, if set, `NEON_API_KEY`, which calls for a restore into a new project (item 7);
       - treat `RENDER_ORIGIN` as known: it is not a credential, and direct requests still need the edge secret ([security.md R3](security.md#accepted-risks));
       - set the pause switch (`API_PAUSED_UNTIL`, `API_PAUSED_REASON`) again with `deploy.yml` operation `pause-api` or `resume-api`: it holds no secret values, but the token can set or clear it;
       - bump `EPOCH` in `edge/wrangler.jsonc` and deploy, since the token may write KV (ADR-015);
@@ -948,16 +948,10 @@ Every secret has one procedure.
 6. **Render deploy hook.** Render → Settings → Deploy Hook → Regenerate. The old URL stops working at once. Then replace `RENDER_DEPLOY_HOOK_URL`.
 7. **Neon owner password and project key.** Reset the password in the Neon console and update that project's `neon-<release>-<build8>.env`. Revoke and re-create `NEON_API_KEY`.
 
-   If `NEON_API_KEY` (editor rights on the project, R6) or that owner DSN may have leaked, the served statistics may have been changed. Reset the owner password, rotate the `atus_api` password (item 2), then check every served row against the release, as the owner, with `ATUS_OWNER_DATABASE_URL` exported from that file without printing it ([operations.md, Conventions](operations.md#conventions)). This wakes Neon and reads every served row, about the data's size in egress (up to 0.65 GB of the project's 5 GB a month):
-
-   ```bash
-   ATUS_DATABASE_URL="$ATUS_OWNER_DATABASE_URL" atus verify-serving-db --manifest <release manifest> --content-hash
-   ```
-
-   Or skip the check and restore the sha256-verified release dump into a new project ([operations.md, "Restore after a lost project"](operations.md#serving-db-build-and-restore)), which also leaves the leaked credentials behind with the old project.
+   If `NEON_API_KEY` (editor rights on the project, R6) or that owner DSN may have leaked, or the Cloudflare deploy token while `NEON_API_KEY` was set (item 5), the served statistics may have been changed, and possibly without changing any row: the owner can add a row-level security policy that filters what `atus_api` reads (the owner bypasses it), or a database setting such as `search_path` with a function of the same name as one the engine calls. Restore the sha256-verified release dump into a new project ([operations.md, "Restore after a lost project"](operations.md#serving-db-build-and-restore)) and switch the API to it; that also leaves the leaked credentials behind with the old project. Then ask to delete the old project. Do not rely on `atus verify-serving-db --content-hash` against the old project instead: it re-hashes the served rows, as the role that connects, so it passes on such a database, and resetting the passwords or re-running `roles.sql` removes none of these changes (review round 3).
 8. **Cloudflare analytics token** (optional, `ops` secret `CLOUDFLARE_ANALYTICS_TOKEN`, 90-day TTL). Before it expires, create a new Custom token with Account → Account Analytics → Read on this account only (owner step 4.3), replace the secret (`gh secret set CLOUDFLARE_ANALYTICS_TOKEN --env ops`, paste at the prompt), and delete the old token. Once it has expired, the daily quota report fails every day on its "Worker requests today" line. `CLOUDFLARE_ANALYTICS_ACCOUNT` is the Account ID and never changes.
 
-**If a secret leaks:** rotate it, and every secret it exposes ([security.md, "Leaked tokens"](security.md#10-leaked-tokens): the Cloudflare deploy token exposes the Worker's secrets, item 5; a Neon key or owner DSN calls for the data check, item 7), with the procedures above straight away. Then check the provider logs for use: Render logs, Workers Logs and Neon. GitHub secret scanning and push protection stay on (owner step 4.4).
+**If a secret leaks:** rotate it, and every secret it exposes ([security.md, "Leaked tokens"](security.md#10-leaked-tokens): the Cloudflare deploy token exposes the Worker's secrets, item 5; a Neon key or owner DSN calls for a restore into a new project, item 7), with the procedures above straight away. Then check the provider logs for use: Render logs, Workers Logs and Neon. GitHub secret scanning and push protection stay on (owner step 4.4).
 
 ### TLS to the database
 

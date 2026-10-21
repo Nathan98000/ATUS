@@ -98,20 +98,26 @@ def test_a_cloudflare_token_leak_rotates_every_worker_secret():
 
 def test_a_neon_key_or_owner_leak_checks_the_served_statistics():
     """cf-token-leak-keeps-worker-secrets: editor rights on the project (NEON_API_KEY) or
-    the owner DSN can alter the statistics; the runbooks must check them or restore."""
+    the owner DSN can alter the statistics; the runbooks must restore. Review round 3
+    (post-leak-check-blind-to-rls): the owner-run content-hash check they offered as the
+    alternative re-reads rows only and passes on a database altered through its catalog,
+    so a restore into a new project is now the only answer
+    (tests/deploy/test_docs_r3_backend.py)."""
     cli = _read(REPO_ROOT / "src" / "atus_pipeline" / "serving_cli.py")
     assert '@click.option("--content-hash"' in cli
     rotation = _flat(_section(_read(DEPLOYMENT), "### Rotation", "### TLS to the database"))
     item = _between(rotation, "7. **Neon owner password and project key.**", "8. **",
                     "**If a secret leaks:**")
-    assert "verify-serving-db --manifest" in item and "--content-hash" in item, item
+    assert "verify-serving-db --manifest" not in item, item
+    assert "Do not rely on atus verify-serving-db --content-hash" in item, item
     assert "atus_api" in item and "Restore after a lost project" in item
     security = _read(SECURITY)
     for first in ("`NEON_API_KEY` (optional)", "`neondb_owner` DSN"):
-        assert "verify-serving-db" in _row(security, first), first
+        row = _row(security, first)
+        assert "verify-serving-db" not in row and "new" in row and "project" in row, first
     neon = next(line for line in _read(OPERATIONS).splitlines()
                 if line.startswith("| Neon owner password"))
-    assert "verify-serving-db" in neon and "--content-hash" in neon
+    assert "verify-serving-db" not in neon and "Restore after a lost project" in neon
 
 
 # --- weekly-reminder-never-delivered ---------------------------------------------------

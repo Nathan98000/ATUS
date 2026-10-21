@@ -140,8 +140,9 @@ def build_serving_db(source_url, target_url, artifact_dir, allow_unvalidated, bu
 @click.option("--manifest", "manifest_path", type=click.Path(dir_okay=False, path_type=Path),
               default=None, help="Release manifest to check the data version and rows against.")
 @click.option("--content-hash", is_flag=True,
-              help="Re-hash every served row (reads the whole database: egress on a "
-                   "metered host).")
+              help="Re-hash every served row as the connecting role (reads the whole "
+                   "database: egress on a metered host). Row contents only: it cannot "
+                   "show that a database whose owner credentials leaked is unchanged.")
 @click.option("--explain", is_flag=True, help="Check the worst-case query plans.")
 def verify_serving_db(database_url, manifest_path, content_hash, explain) -> None:
     from .serving.artifact import ArtifactError, read_manifest

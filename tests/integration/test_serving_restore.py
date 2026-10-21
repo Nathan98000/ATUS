@@ -109,9 +109,12 @@ def cluster(test_db_url):
     with c.admin() as conn:
         for role in (c.api_role, c.owner):
             conn.execute(f'DROP ROLE IF EXISTS "{role}"')
-        # Neon's neondb_owner: LOGIN CREATEDB CREATEROLE, not a superuser.
+        # Neon's neondb_owner: LOGIN CREATEDB CREATEROLE, not a superuser, and
+        # a member of pg_signal_backend through neon_superuser
+        # (https://neon.com/docs/manage/roles, read 2026-10-21).
         conn.execute(f"CREATE ROLE \"{c.owner}\" LOGIN CREATEDB CREATEROLE "
                      f"PASSWORD '{c.owner_password}'")
+        conn.execute(f'GRANT pg_signal_backend TO "{c.owner}"')
     yield c
     with c.admin() as conn:
         for (name,) in conn.execute(
@@ -362,6 +365,119 @@ def test_roles_only_rotates_the_api_password(restored, cluster):
     with pytest.raises(psycopg.OperationalError):
         psycopg.connect(old_url).close()
     restored["api_url"] = new_url
+
+
+def _api_role_settings(owner_url: str, role: str) -> dict[str, list[str]]:
+    """``pg_db_role_setting`` of ``role``: ``"role"`` (every database) and
+    ``"database"`` (this one) -> its ``name=value`` entries."""
+    with psycopg.connect(owner_url) as conn:
+        rows = conn.execute(
+            "SELECT CASE WHEN setdatabase = 0 THEN 'role' ELSE 'database' END, setconfig "
+            "FROM pg_db_role_setting WHERE setrole = "
+            "(SELECT oid FROM pg_roles WHERE rolname = %s) AND setdatabase IN "
+            "(0, (SELECT oid FROM pg_database WHERE datname = current_database()))",
+            (role,)).fetchall()
+    return {scope: sorted(config) for scope, config in rows}
+
+
+ROLES_SQL_SETTINGS = sorted(f"{name}={value}" for name, value in EXPECTED_ROLE_SETTINGS.items())
+
+
+def test_a_rotation_undoes_what_a_leaked_api_password_could_change(restored, cluster):
+    """Review r3 (api-role-persists-changes-past-rotation): whoever holds the
+    ``atus_api`` password can turn its read-only default off for its own
+    session, then set the role's own defaults, role-wide and IN DATABASE
+    (planner switches, work_mem, output precision: every later API session
+    inherits them), and hold all 10 of its connections. The documented
+    rotation re-applied roles.sql, which set the five expected values only,
+    and ended no session; the restore's check SHOWed those five and passed.
+    Now roles.sql resets every setting of the role first and verifies the
+    exact set, the restore checks ``pg_db_role_setting`` too, and a rotation
+    ends the role's open sessions."""
+    role, owner_url = cluster.api_role, restored["owner_url"]
+    dbname = urlsplit(owner_url).path.lstrip("/")
+    leaked = restored["api_url"]
+    with psycopg.connect(leaked, autocommit=True) as conn:
+        conn.execute("SET default_transaction_read_only = off")
+        conn.execute(f'ALTER ROLE "{role}" SET enable_indexscan = off')
+        conn.execute(f"ALTER ROLE \"{role}\" SET work_mem = '64kB'")
+        conn.execute(f'ALTER ROLE "{role}" SET extra_float_digits = -15')
+        conn.execute(f'ALTER ROLE "{role}" IN DATABASE "{dbname}" SET enable_hashjoin = off')
+    injected = _api_role_settings(owner_url, role)
+    assert "enable_indexscan=off" in injected["role"]
+    assert injected["database"] == ["enable_hashjoin=off"]
+    held = [psycopg.connect(leaked, autocommit=True) for _ in range(10)]   # its whole limit
+    try:
+        with pytest.raises(psycopg.OperationalError, match="too many connections"):
+            psycopg.connect(leaked).close()
+        result = restore(restored["dump"], restored["secrets_file"], role,
+                         "--roles-only", "--rotate-api-password")
+        output = result.stdout + result.stderr
+        restored["api_url"] = read_env_file(restored["secrets_file"])[API_URL_KEY]
+        assert result.returncode == 0, output
+        assert "[PASS] restore: API role settings are roles.sql's alone" in output
+        assert "[PASS] restore: API role's earlier sessions ended  10 ended" in output
+        for conn in held:                          # the holder's sessions are gone
+            with pytest.raises(psycopg.OperationalError):
+                conn.execute("SELECT 1")
+    finally:
+        for conn in held:
+            conn.close()
+    assert _api_role_settings(owner_url, role) == {"role": ROLES_SQL_SETTINGS}
+    with psycopg.connect(restored["api_url"]) as conn:
+        assert conn.execute("SHOW enable_indexscan").fetchone()[0] == "on"
+        assert conn.execute("SHOW enable_hashjoin").fetchone()[0] == "on"
+        assert conn.execute("SHOW extra_float_digits").fetchone()[0] == "1"
+
+
+def test_the_restore_check_fails_on_a_setting_roles_sql_did_not_make(restored, cluster,
+                                                                       tmp_path):
+    """The other half of the check: a role setting left beside roles.sql's
+    (here by a roles.sql without the reset and its own check) fails the
+    restore."""
+    role, owner_url = cluster.api_role, restored["owner_url"]
+    lenient = ROLES_SQL.read_text()
+    for statement in ('ALTER ROLE :"api_role" RESET ALL;',
+                      'ALTER ROLE :"api_role" IN DATABASE :"DBNAME" RESET ALL;'):
+        assert statement in lenient
+        lenient = lenient.replace(statement, "")
+    assert "\nAS settings_ok " in lenient
+    lenient = lenient.replace("\nAS settings_ok ", "\nOR true AS settings_ok ")
+    roles_sql = tmp_path / "roles.sql"
+    roles_sql.write_text(lenient)
+    with cluster.admin() as conn:
+        conn.execute(f'ALTER ROLE "{role}" SET enable_seqscan = off')
+    result = restore(restored["dump"], restored["secrets_file"], role, "--roles-only",
+                     "--roles-sql", str(roles_sql))
+    output = result.stdout + result.stderr
+    assert result.returncode == 1, output
+    assert "[FAIL] restore: API role settings are roles.sql's alone" in output
+    assert "enable_seqscan=off" in output
+    clean = restore(restored["dump"], restored["secrets_file"], role, "--roles-only")
+    assert clean.returncode == 0, clean.stdout + clean.stderr
+    assert _api_role_settings(owner_url, role) == {"role": ROLES_SQL_SETTINGS}
+
+
+def test_a_rotation_says_so_when_it_cannot_end_the_old_sessions(restored, cluster):
+    """Without pg_signal_backend (a self-managed server, say) the rotation
+    cannot end the role's sessions: the check fails and says what to do."""
+    held = psycopg.connect(restored["api_url"], autocommit=True)
+    with cluster.admin() as conn:
+        conn.execute(f'REVOKE pg_signal_backend FROM "{cluster.owner}"')
+    try:
+        result = restore(restored["dump"], restored["secrets_file"], cluster.api_role,
+                         "--roles-only", "--rotate-api-password")
+        output = result.stdout + result.stderr
+        restored["api_url"] = read_env_file(restored["secrets_file"])[API_URL_KEY]
+        assert result.returncode == 1, output
+        assert "[FAIL] restore: API role's earlier sessions ended  0 ended, 1 still open" \
+            in output
+        assert "Restart" in output and "pg_signal_backend" in output
+        assert held.execute("SELECT 1").fetchone() == (1,)      # still open, as reported
+    finally:
+        held.close()
+        with cluster.admin() as conn:
+            conn.execute(f'GRANT pg_signal_backend TO "{cluster.owner}"')
 
 
 def test_roles_only_passes_after_the_cumulative_statistics_are_lost(restored, cluster):
