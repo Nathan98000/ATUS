@@ -9,12 +9,14 @@ import { Link } from 'react-router'
 
 import { useMeta } from '../api/queries'
 import { ServiceInterruption } from '../components/ServiceInterruption'
+import { useRetryFocus } from '../components/useRetryFocus'
 import { isFullPageError } from '../domain/presentError'
 import { STARTER_EXAMPLES } from '../domain/prewarm'
 import { analysisPath } from '../domain/urlSpec'
 
 export function HomePage() {
   const meta = useMeta()
+  const retry = useRetryFocus(meta.isFetching)
 
   useEffect(() => {
     document.title = 'ATUS Explorer'
@@ -25,13 +27,15 @@ export function HomePage() {
 
   // A paused quota or an incompatible API is one honest page, not a broken home page.
   if (meta.data === undefined && meta.isError && isFullPageError(meta.error)) {
-    return <ServiceInterruption error={meta.error} onRetry={() => void meta.refetch()} />
+    return (
+      <ServiceInterruption error={meta.error} onRetry={() => retry(() => meta.refetch())} />
+    )
   }
 
   return (
     <div className="home-page">
       <section className="home-hero">
-        <h1>Explore how Americans spend their time.</h1>
+        <h1 tabIndex={-1}>Explore how Americans spend their time.</h1>
         <p style={{ maxWidth: '44rem' }}>
           Every year, the{' '}
           <a href="https://www.bls.gov/tus/" rel="noreferrer">
@@ -54,7 +58,9 @@ export function HomePage() {
       </section>
 
       <section aria-labelledby="starter-heading" className="home-examples">
-        <h2 id="starter-heading">Start from a question</h2>
+        <h2 id="starter-heading" tabIndex={-1}>
+          Start from a question
+        </h2>
         {latest !== null ? (
           <div className="example-grid">
             {STARTER_EXAMPLES.map((example) => (
@@ -80,7 +86,7 @@ export function HomePage() {
                 <button
                   type="button"
                   className="btn btn--small"
-                  onClick={() => void meta.refetch()}
+                  onClick={() => retry(() => meta.refetch(), '#starter-heading')}
                 >
                   Try again
                 </button>

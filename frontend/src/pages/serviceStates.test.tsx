@@ -414,6 +414,205 @@ describe('no background metadata refetch (F62)', () => {
   })
 })
 
+describe('one announcement per state (review round 1)', () => {
+  /** Live regions (polite or assertive) whose text matches: each is announced on change. */
+  function liveRegionsWith(text: RegExp): Element[] {
+    return Array.from(
+      document.querySelectorAll('output, [role="status"], [role="alert"], [aria-live]'),
+    )
+      .filter((element) => element.getAttribute('aria-live') !== 'off')
+      .filter((element) => text.test(element.textContent ?? ''))
+  }
+
+  it('the waking state is announced by the notice alone, not by three regions', async () => {
+    await installSnapshot({
+      get: {
+        '/api/v1/meta': metaFixture,
+        '/api/v1/activities/presets': presetsFixture,
+      },
+    })
+    server.use(
+      http.get(api('/wake'), () => HttpResponse.json({ origin: 'waking' })),
+      http.post(api('/analysis/estimate'), async () => {
+        await delay(1_500)
+        return HttpResponse.json(estimateSleepFixture, { headers: analysisHeaders() })
+      }),
+    )
+    renderApp(sleepRoute)
+    // The visible loading text still says what the page waits for…
+    await waitFor(() =>
+      expect(document.querySelector('.loading-panel')).toHaveTextContent(
+        'Waiting for the analysis service to wake up…',
+      ),
+    )
+    // …but only the site-wide notice announces the waking state.
+    expect(liveRegionsWith(/wak/i)).toEqual([
+      screen.getByText(WAKING_MESSAGE).closest('output'),
+    ])
+    expect(await screen.findByText('8h 49m', {}, { timeout: 4_000 })).toBeInTheDocument()
+  })
+
+  it('each loading message is announced once', async () => {
+    server.use(
+      http.post(api('/analysis/estimate'), async () => {
+        await delay(500)
+        return HttpResponse.json(estimateSleepFixture, { headers: analysisHeaders() })
+      }),
+    )
+    renderApp(sleepRoute)
+    await waitFor(() => expect(liveRegionsWith(/Calculating estimate…/)).not.toHaveLength(0))
+    expect(liveRegionsWith(/Calculating estimate…/)).toHaveLength(1)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(liveRegionsWith(/Analysis ready\./)).toHaveLength(1)
+  })
+})
+
+describe('focus after "Try again" (review round 1)', () => {
+  // "Try again" sends a query without data back to "pending": the panel that
+  // held the focused button unmounts, and focus used to fall to <body>.
+  it('keeps focus on the analysis heading while it reloads and after the result', async () => {
+    const user = userEvent.setup()
+    let posts = 0
+    server.use(
+      http.post(api('/analysis/estimate'), async () => {
+        posts += 1
+        if (posts === 1) return errorResponse(503, 'data_version_mismatch', 'Switching.')
+        await delay(200)
+        return HttpResponse.json(estimateSleepFixture, { headers: analysisHeaders() })
+      }),
+    )
+    renderApp(sleepRoute)
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    retry.focus()
+    await user.keyboard('{Enter}')
+    const heading = screen.getByRole('heading', { level: 1 })
+    await waitFor(() => expect(document.querySelector('.loading-panel')).not.toBeNull())
+    expect(document.activeElement).toBe(heading)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(document.activeElement).toBe(heading)
+  })
+
+  it('a retry from the full-page paused state lands on the page it returns to', async () => {
+    const user = userEvent.setup()
+    let paused = true
+    server.use(
+      http.post(api('/analysis/estimate'), async () => {
+        if (paused) return errorResponse(503, 'database_paused', 'Paused.')
+        await delay(200)
+        return HttpResponse.json(estimateSleepFixture, { headers: analysisHeaders() })
+      }),
+    )
+    renderApp(sleepRoute)
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    paused = false
+    retry.focus()
+    await user.keyboard('{Enter}')
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 }))
+    expect(document.activeElement).toHaveTextContent('Sleeping')
+  })
+
+  it('a retry that ends on the paused page again leaves focus on its heading', async () => {
+    const user = userEvent.setup()
+    server.use(
+      http.post(api('/analysis/estimate'), async () => {
+        await delay(100)
+        return errorResponse(503, 'database_paused', 'Paused.')
+      }),
+    )
+    renderApp(sleepRoute)
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    retry.focus()
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(document.querySelector('.loading-panel')).not.toBeNull())
+    const heading = await screen.findByRole('heading', {
+      name: 'The analysis database is paused',
+    })
+    await waitFor(() => expect(document.activeElement).toBe(heading))
+  })
+
+  it('Explore: a retry from the page-level error lands on "Build an analysis"', async () => {
+    const user = userEvent.setup()
+    let failing = true
+    server.use(
+      http.get(api('/meta'), () =>
+        failing
+          ? errorResponse(500, 'internal_error', 'Boom.')
+          : HttpResponse.json(metaFixture),
+      ),
+    )
+    renderApp('/explore')
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    failing = false
+    retry.focus()
+    await user.keyboard('{Enter}')
+    const heading = await screen.findByRole('heading', { name: 'Build an analysis' })
+    await waitFor(() => expect(document.activeElement).toBe(heading))
+  })
+
+  it('Home: a retry of the starter examples lands on their heading', async () => {
+    const user = userEvent.setup()
+    let failing = true
+    server.use(
+      http.get(api('/meta'), () =>
+        failing
+          ? errorResponse(500, 'internal_error', 'Boom.')
+          : HttpResponse.json(metaFixture),
+      ),
+    )
+    renderApp('/')
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    failing = false
+    retry.focus()
+    await user.keyboard('{Enter}')
+    expect(await screen.findByText('How much do Americans sleep?')).toBeInTheDocument()
+    expect(document.activeElement).toBe(
+      screen.getByRole('heading', { name: 'Start from a question' }),
+    )
+  })
+})
+
+describe('offline (review round 1)', () => {
+  /** The browser's own offline state, as its 'offline' event leaves it. */
+  function goOffline() {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    act(() => onlineManager.setOnline(false))
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    onlineManager.setOnline(true)
+  })
+
+  it('a new analysis started offline says so instead of "Calculating…" forever', async () => {
+    // TanStack Query's default networkMode ('online') pauses a query that
+    // starts offline before its queryFn runs: no request, no error, and the
+    // loading panel stayed up for as long as the browser was offline.
+    const user = userEvent.setup()
+    const requests = countRequests()
+    renderApp('/')
+    const starter = await screen.findByRole('link', { name: /How much do Americans sleep\?/ })
+    goOffline()
+    server.use(http.post(api('/analysis/estimate'), () => HttpResponse.error()))
+    await user.click(starter)
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('could not be reached')
+    expect(alert).toHaveTextContent('Check your internet connection')
+    expect(screen.queryByText('Calculating estimate…')).not.toBeInTheDocument()
+    // Offline is final: one attempt, not the cold-start budget.
+    expect(requests('POST /api/v1/analysis/estimate')).toBe(1)
+  })
+
+  it('a page opened offline says so instead of "Preparing…" forever', async () => {
+    goOffline()
+    server.use(http.get(api('/meta'), () => HttpResponse.error()))
+    renderApp(sleepRoute)
+    expect(await screen.findByRole('alert')).toHaveTextContent('Check your internet connection')
+    expect(screen.queryByText('Preparing the analysis…')).not.toBeInTheDocument()
+  })
+})
+
 describe('background failures and retries (F26, F63)', () => {
   it('a failed background /meta refetch keeps the builder and its edits', async () => {
     const user = userEvent.setup()
