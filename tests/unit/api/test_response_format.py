@@ -15,9 +15,10 @@ reach the bytes, are left out: ``DOC_KEYWORDS``) and of the exact bytes the
 API serves for one known result per operation (field names and order, number
 formatting, null handling, warnings and labels as serialized). If it fails:
 
-1. the analysis response bytes changed. Bump ``RESPONSE_FORMAT`` in
-   ``src/atus_pipeline/api/__init__.py`` (and the Worker's ``RESPONSE_FORMAT``
-   var with it: ``edge/wrangler.jsonc``, ``deploy/stack/smoke_probe.py``), or
+1. the analysis response bytes changed. Bump ``RESPONSE_FORMAT`` in every
+   file of ``BUMP_FILES`` (the constant in ``src/atus_pipeline/api/__init__.py``,
+   the Worker's default var in ``edge/wrangler.jsonc`` and its config test;
+   the snapshot build, the stack smoke and the deploy follow the constant), or
    bump ``ANALYTICS_VERSION`` if the statistics changed;
 2. add the printed fingerprint under the new key. Never edit an existing
    entry: that is exactly the silent change this test exists to catch.
@@ -29,7 +30,11 @@ for a bump on any change to analysis response bytes.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
+import re
+import sys
+from pathlib import Path
 
 from atus_pipeline.analytics import ANALYTICS_VERSION
 from atus_pipeline.analytics.results import (
@@ -40,6 +45,18 @@ from atus_pipeline.analytics.results import (
 )
 from atus_pipeline.api import RESPONSE_FORMAT
 from tests.unit.api.test_contract import known_estimate_result
+
+ROOT = Path(__file__).resolve().parents[3]
+# Every file a RESPONSE_FORMAT bump edits; everything else follows the constant.
+BUMP_FILES = (
+    "src/atus_pipeline/api/__init__.py",
+    "edge/wrangler.jsonc",
+    "edge/test/node/config.test.ts",
+)
+BUMP_INSTRUCTIONS = (
+    f"bump RESPONSE_FORMAT in {', '.join(BUMP_FILES)} and add the new fingerprint under "
+    "the new key; never edit an existing entry"
+)
 
 PINNED: dict[tuple[str, str], str] = {
     ("1", "0.2"): "017328a7f8aeecbc48b759b2af6c601b4d8e6c359c0990c44ba7588569fa1645",
@@ -148,10 +165,48 @@ def test_analysis_response_bytes_are_pinned_to_the_response_format(client, stub_
     )
     assert PINNED[key] == digest, (
         "The bytes of an analysis response changed under the same RESPONSE_FORMAT and "
-        "ANALYTICS_VERSION. Edge KV entries survive code-only deploys (ADR-015): bump "
-        "RESPONSE_FORMAT (src/atus_pipeline/api/__init__.py and the Worker's var) and add "
-        f"the new fingerprint {digest!r} under the new key; never edit an existing entry."
+        "ANALYTICS_VERSION. Edge KV entries survive code-only deploys (ADR-015): "
+        f"{BUMP_INSTRUCTIONS}. New fingerprint: {digest!r}."
     )
+
+
+def _script(path: str, name: str):
+    spec = importlib.util.spec_from_file_location(name, ROOT / path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_every_copy_of_the_response_format_follows_the_constant():
+    """response-format-bump-breaks-snapshot (review round 2): build_snapshot.py's
+    ``--response-format`` default and smoke_probe.py's constant hard-coded "1", and the
+    bump instructions named neither, so a bump done as documented failed the snapshot
+    build (deploy.yml, smoke_stack.sh --edge) and the stack smokes. The scripts now
+    follow the constant; the copies a bump must edit are the ``BUMP_FILES``."""
+    build_snapshot = _script("scripts/build_snapshot.py", "build_snapshot_rf")
+    args = build_snapshot.parse_args(["--api-base", "http://127.0.0.1:1", "--out", "x"])
+    assert args.response_format is None          # the format the API reports
+    probe = _script("deploy/stack/smoke_probe.py", "smoke_probe_rf")
+    assert not hasattr(probe, "RESPONSE_FORMAT")  # smoke_stack.sh passes the constant
+    wrangler = (ROOT / "edge" / "wrangler.jsonc").read_text()
+    (default,) = re.findall(r'"RESPONSE_FORMAT":\s*"([^"]*)"', wrangler)
+    assert default == RESPONSE_FORMAT, f"edge/wrangler.jsonc: {BUMP_INSTRUCTIONS}"
+    config_test = (ROOT / "edge" / "test" / "node" / "config.test.ts").read_text()
+    (expected,) = re.findall(r"RESPONSE_FORMAT: '([^']*)'", config_test)
+    assert expected == RESPONSE_FORMAT, f"edge/test/node/config.test.ts: {BUMP_INSTRUCTIONS}"
+
+
+def test_the_bump_instructions_name_every_file_a_bump_edits():
+    constant = (ROOT / "src" / "atus_pipeline" / "api" / "__init__.py").read_text()
+    docstring = " ".join(constant[constant.index("RESPONSE_FORMAT = "):].split())
+    module = " ".join((__doc__ or "").split())
+    for path in BUMP_FILES:
+        assert path in BUMP_INSTRUCTIONS
+        assert path in docstring or path.endswith("api/__init__.py"), path
+    assert "BUMP_FILES" in module
+    api_doc = " ".join((ROOT / "docs" / "api.md").read_text().split())
+    assert "edge/wrangler.jsonc" in api_doc
 
 
 def test_every_pin_names_a_format_and_an_analytics_version():

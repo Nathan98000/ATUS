@@ -262,7 +262,7 @@ class TestProductionCompose:
         assert not {"ATUS_EDGE_UPSTREAM", "ATUS_EDGE_RELAY_LISTEN"} & set(env)
         assert env["EDGE_AUTH_SECRET"] == DUMMY_STACK_ENV["ATUS_STACK_EDGE_SECRET"]
         assert env["WRANGLER_SEND_METRICS"] == "false"
-        assert {"DATA_VERSION", "ANALYTICS_VERSION", "SNAPSHOT_ID"} <= set(env)
+        assert {"DATA_VERSION", "ANALYTICS_VERSION", "RESPONSE_FORMAT", "SNAPSHOT_ID"} <= set(env)
         (assets,) = edge["volumes"]
         assert assets["target"] == "/work/frontend/dist" and assets["read_only"] is True
         assert assets["source"] == str(REPO_ROOT / "frontend" / "dist")
@@ -277,11 +277,13 @@ class TestProductionCompose:
     def test_edge_assets_can_be_a_prepared_directory(self, compose_config, tmp_path):
         env = dict(DUMMY_STACK_ENV, ATUS_STACK_ASSETS_DIR=str(tmp_path),
                    ATUS_STACK_SNAPSHOT_ID="abc-123", ATUS_STACK_ANALYTICS_VERSION="0.2",
-                   ATUS_EXPECTED_DATA_VERSION="0325:serving-x")
+                   ATUS_STACK_RESPONSE_FORMAT="7", ATUS_EXPECTED_DATA_VERSION="0325:serving-x")
         edge = compose_config(PROD, env=env, profiles=("edge",))["services"]["edge"]
         assert edge["volumes"][0]["source"] == str(tmp_path)
         assert edge["environment"]["SNAPSHOT_ID"] == "abc-123"
         assert edge["environment"]["ANALYTICS_VERSION"] == "0.2"
+        # the snapshot's response format, as deploy.yml's --var (review round 2)
+        assert edge["environment"]["RESPONSE_FORMAT"] == "7"
         assert edge["environment"]["DATA_VERSION"] == "0325:serving-x"
 
     def test_snapshot_api_is_the_api_with_generous_limits_on_loopback(self, config):

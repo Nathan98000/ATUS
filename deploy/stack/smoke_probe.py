@@ -5,7 +5,7 @@ Standard library only, so it runs inside the API image on the compose network
 exits non-zero if any check fails. Never prints the edge secret or the ops
 token. Functional only: nothing here times anything.
 
-    python smoke_probe.py --base-url http://api:10000 --fixture
+    python smoke_probe.py --base-url http://api:10000 --fixture --response-format 1
 
 Environment: ATUS_SMOKE_EDGE_SECRET is sent as ``X-ATUS-Edge-Auth`` on the
 requests that model the edge (Worker -> API). Leave it unset when probing
@@ -32,7 +32,9 @@ API protection work landed):
                     ``Referrer-Policy: no-referrer``, CORP ``same-origin`` and HSTS
                     on a 200, a 403 and a 422; no ``Server`` header
   error_no_store    errors carry ``Cache-Control: no-store`` (never cached)
-  analysis_headers  the analysis carries X-Response-Format 1, X-Analytics-Version,
+  analysis_headers  the analysis carries X-Response-Format (--response-format, which
+                    scripts/smoke_stack.sh reads from the checkout's
+                    atus_pipeline.api.RESPONSE_FORMAT), X-Analytics-Version,
                     X-Analysis-Key, X-Data-Version, an X-Cache verdict and
                     Server-Timing with db and app durations
   request_id        an edge-authenticated, well-formed X-Request-ID is echoed; the
@@ -76,7 +78,6 @@ SECURITY_HEADERS = {
 }
 HSTS_PREFIX = "max-age=31536000"  # production only, which is what the stack runs
 CACHE_VERDICTS = {"hit", "miss", "bypass", "join"}
-RESPONSE_FORMAT = "1"
 # CONTRACT.md "data_version": written by `atus load` or by the serving builder.
 DATA_VERSION = re.compile(
     r"^[^:\s]+:(load-\d+-\d{8}T\d{6}Z-[0-9a-f]{6}|serving-\d{8}T\d{6}Z-[0-9a-f]{8}:[0-9a-f]{12})$"
@@ -162,10 +163,10 @@ def security_header_problems(headers: dict[str, str]) -> list[str]:
     return problems
 
 
-def analysis_header_problems(headers: dict[str, str]) -> list[str]:
+def analysis_header_problems(headers: dict[str, str], response_format: str) -> list[str]:
     """Contract headers missing or malformed on a successful analysis."""
     problems = []
-    if headers.get("x-response-format") != RESPONSE_FORMAT:
+    if headers.get("x-response-format") != response_format:
         problems.append(f"x-response-format={headers.get('x-response-format')!r}")
     for name in ("x-analytics-version", "x-analysis-key", "x-data-version"):
         if not headers.get(name):
@@ -178,7 +179,8 @@ def analysis_header_problems(headers: dict[str, str]) -> list[str]:
     return problems
 
 
-def run_contract_checks(probe: Probe, responses: dict, ops_token: str | None) -> None:
+def run_contract_checks(probe: Probe, responses: dict, ops_token: str | None,
+                        response_format: str) -> None:
     """The Phase 5 API contract, on the responses gathered above plus a few requests."""
     status, _, body = responses["no_edge"]
     probe.check(
@@ -205,9 +207,10 @@ def run_contract_checks(probe: Probe, responses: dict, ops_token: str | None) ->
                 bool(no_store) and all(v and "no-store" in v for v in no_store.values()),
                 ", ".join(f"{label}: cache-control={v!r}" for label, v in no_store.items()))
 
-    problems_list = analysis_header_problems(responses["analysis"][1])
+    problems_list = analysis_header_problems(responses["analysis"][1], response_format)
     probe.check("analysis_headers", not problems_list,
-                ", ".join(problems_list) or "format, versions, key, cache verdict, timing")
+                ", ".join(problems_list)
+                or f"format {response_format}, versions, key, cache verdict, timing")
 
     request_id = f"smoke-echo-{uuid.uuid4().hex[:16]}"
     _, edge_headers, _ = probe.request("GET", "/api/v1/meta",
@@ -297,7 +300,8 @@ def run(args: argparse.Namespace) -> int:
             probe.skip(name, "skipped (--skip-protection-checks)")
     else:
         responses["no_edge"] = probe.request("GET", "/api/v1/meta", as_edge=False)
-        run_contract_checks(probe, responses, os.environ.get("ATUS_SMOKE_OPS_TOKEN") or None)
+        run_contract_checks(probe, responses, os.environ.get("ATUS_SMOKE_OPS_TOKEN") or None,
+                            args.response_format)
 
     print(f"smoke: {probe.failures} failed", flush=True)
     return 1 if probe.failures else 0
@@ -312,9 +316,16 @@ def main(argv: list[str] | None = None) -> int:
                         help="the ATUS_BUILD_SHA /health must report")
     parser.add_argument("--skip-protection-checks", action="store_true",
                         help="report the Phase 5 API contract checks as SKIP (old images)")
+    parser.add_argument("--response-format", default=None,
+                        help="the X-Response-Format an analysis must carry: the image's "
+                             "atus_pipeline.api.RESPONSE_FORMAT (required unless "
+                             "--skip-protection-checks)")
     parser.add_argument("--timeout", type=float, default=120.0,
                         help="per-request timeout in seconds (cold starts are slow)")
-    return run(parser.parse_args(argv))
+    args = parser.parse_args(argv)
+    if args.response_format is None and not args.skip_protection_checks:
+        parser.error("--response-format is required (the API's RESPONSE_FORMAT)")
+    return run(args)
 
 
 if __name__ == "__main__":

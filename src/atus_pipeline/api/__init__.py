@@ -15,7 +15,12 @@ Edge caches key stored responses on it together with the data and analytics
 versions, and their entries survive code-only deploys (ADR-015); bump it
 whenever the bytes of an analysis response change (fields, their order or
 formatting, warning or label text) without a change in
-``ANALYTICS_VERSION``, together with the Worker's ``RESPONSE_FORMAT`` var.
+``ANALYTICS_VERSION``. A bump edits three files: this one,
+``edge/wrangler.jsonc`` (the Worker's ``RESPONSE_FORMAT`` default, used by
+``wrangler dev`` and the local stack) and ``edge/test/node/config.test.ts``.
+Everything else follows this constant: deploy.yml publishes the format the
+snapshot recorded, ``scripts/build_snapshot.py`` takes the one the API
+reports, and ``scripts/smoke_stack.sh`` reads it here for the stack probe.
 ``tests/unit/api/test_response_format.py`` pins the response schemas and
-bytes to this value.
+bytes to this value, and the copies to it.
 """

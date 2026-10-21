@@ -28,7 +28,7 @@ COMPLIANT = {
     "security_headers": True, "server_header": False, "no_store": True,
     "analysis_headers": True, "echo_request_id": True, "body_limit": True,
     "media_type": True, "ops_gate": True,
-    "data_version": "0325:load-7-20261020T120000Z-a1b2c3",
+    "data_version": "0325:load-7-20261020T120000Z-a1b2c3", "response_format": "1",
 }
 
 
@@ -127,7 +127,8 @@ def _stub_handler(behaviour: dict):
                 headers = {"X_Cache": "miss"}
                 if behaviour["analysis_headers"]:
                     headers.update(
-                        X_Response_Format="1", X_Analytics_Version="2.1.0",
+                        X_Response_Format=behaviour["response_format"],
+                        X_Analytics_Version="2.1.0",
                         X_Analysis_Key="k" * 16, X_Data_Version=behaviour["data_version"],
                         Server_Timing="db;dur=12.5, app;dur=3.1",
                     )
@@ -159,6 +160,8 @@ def _run(probe, base_url: str, monkeypatch, *extra: str, ops_token: bool = True)
         monkeypatch.setenv("ATUS_SMOKE_OPS_TOKEN", OPS_TOKEN)
     else:
         monkeypatch.delenv("ATUS_SMOKE_OPS_TOKEN", raising=False)
+    if "--response-format" not in extra and "--skip-protection-checks" not in extra:
+        extra = ("--response-format", "1", *extra)
     return probe.main(["--base-url", base_url, "--timeout", "5", *extra])
 
 
@@ -223,6 +226,25 @@ def test_skip_protection_checks_reports_them_as_skipped(probe, stub_api, monkeyp
                  "analysis_headers", "request_id", "body_limit", "media_type", "ops_gate",
                  "data_version"):
         assert f"[SKIP] {name}" in out
+
+
+def test_the_response_format_is_the_one_the_caller_names(probe, stub_api, monkeypatch,
+                                                         capsys):
+    """response-format-bump-breaks-snapshot (review round 2): the probe hard-coded
+    X-Response-Format "1", so a RESPONSE_FORMAT bump failed every stack smoke. It now
+    expects the format smoke_stack.sh reads from the checkout's constant."""
+    url = stub_api(response_format="2")
+    assert _run(probe, url, monkeypatch, "--response-format", "2") == 0
+    assert "[PASS] analysis_headers" in capsys.readouterr().out
+    assert _run(probe, url, monkeypatch, "--response-format", "1") == 1
+    assert _failed(capsys) == ["analysis_headers"]
+
+
+def test_the_response_format_is_required_for_the_contract_checks(probe, monkeypatch):
+    monkeypatch.setenv("ATUS_SMOKE_EDGE_SECRET", SECRET)
+    with pytest.raises(SystemExit) as exit_info:
+        probe.main(["--base-url", "http://127.0.0.1:9"])
+    assert exit_info.value.code == 2
 
 
 def test_unreachable_api_fails(probe, monkeypatch):
