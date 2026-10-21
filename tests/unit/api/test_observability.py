@@ -499,6 +499,64 @@ class TestMetrics:
         assert event["computations"] == 1 and event["daily_cap_used"] == 1
         assert event["snapshot_age_s"] is not None
 
+    def test_client_disconnects_during_an_analysis_are_counted(self, build, stub_engine):
+        """F53: an analysis whose client went away before the response started
+        is counted on /metrics and in the metrics event (it still completes)."""
+        import threading
+
+        client, app = build(ops_token=OPS_TOKEN)
+        gone = threading.Event()
+
+        def estimate(spec):
+            # Answer only after the client has gone (worker thread).
+            assert gone.wait(10), "the client never disconnected"
+            return known_estimate_result()
+
+        stub_engine.estimate_behavior = estimate
+        payload = json.dumps({**BODY, "years": [2024]}).encode()
+        sent: list[dict] = []
+
+        async def abandoned_request():
+            messages = [{"type": "http.request", "body": payload, "more_body": False}]
+
+            async def receive():
+                if messages:
+                    return messages.pop(0)
+                gone.set()  # read after the body: the client has gone
+                return {"type": "http.disconnect"}
+
+            async def send(message):
+                sent.append(message)
+
+            scope = {
+                "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
+                "method": "POST", "scheme": "http", "path": ESTIMATE,
+                "raw_path": ESTIMATE.encode(), "query_string": b"", "root_path": "",
+                "headers": [(b"host", b"testserver"), (b"content-type", b"application/json"),
+                            (b"content-length", str(len(payload)).encode())],
+                "client": ("127.0.0.1", 50000), "server": ("testserver", 80),
+            }
+            await app(scope, receive, send)
+
+        client.portal.call(abandoned_request)
+        assert sent[0]["status"] == 200  # the computation completed anyway
+        client.post(ESTIMATE, json=BODY)  # answered normally: not counted
+        lines = set(self.scrape(client).splitlines())
+        assert 'atus_client_disconnects_total{route="/api/v1/analysis/estimate"} 1' in lines
+        assert app.state.metrics.summary(app.state)["client_disconnects"] == 1
+
+    def test_disconnect_counter_is_labelled_by_route(self):
+        metrics = Metrics(build="dev")
+        assert metrics.summary(None)["client_disconnects"] == 0
+        for disconnected in (True, True, False):
+            metrics.observe_request(route=ESTIMATE, method="POST", status=200, seconds=0.1,
+                                    db_statements=4, cache="miss", error=None,
+                                    disconnected=disconnected)
+        assert metrics.disconnects.value(ESTIMATE) == 2
+        assert metrics.summary(None)["client_disconnects"] == 2
+        assert (f'atus_client_disconnects_total{{route="{ESTIMATE}"}} 2'
+                in metrics.render(None).splitlines())
+
     def test_unknown_methods_are_bucketed(self):
         metrics = Metrics(build="dev")
         metrics.observe_request(route="unmatched", method="PROPFIND", status=405, seconds=0.01,

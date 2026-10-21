@@ -10,7 +10,7 @@ Two kinds of series:
 
 * **recorded per request** by the request-context middleware: request
   counts and latency per route template, error codes, analysis cache
-  outcomes, database statements per request;
+  outcomes, database statements per request, client disconnects;
 * **read at scrape time** from the objects that already count them: the
   admission lanes, token buckets, daily cap, analysis runner, result cache,
   data snapshot and the psycopg pool.
@@ -182,10 +182,19 @@ class Metrics:
             "BEGIN/COMMIT excluded).",
             STATEMENT_BUCKETS, ("route",),
         )
+        # Audit F53: abandoned requests were indistinguishable from answered
+        # ones. Only requests with a body are watched (middleware.py), i.e.
+        # the analyses; an admitted analysis still completes and is cached.
+        self.disconnects = Counter(
+            "atus_client_disconnects_total",
+            "Requests whose client disconnected before the response started, by route "
+            "template (requests with a body are watched: the analyses).", ("route",),
+        )
 
     def observe_request(
         self, *, route: str, method: str, status: int | None, seconds: float,
         db_statements: int, cache: str | None, error: str | None,
+        disconnected: bool = False,
     ) -> None:
         method = method if method in _METHODS else "OTHER"
         with self._lock:
@@ -197,6 +206,8 @@ class Metrics:
                 self.errors.inc(error)
             if cache in CACHE_OUTCOMES:
                 self.cache.inc(cache)
+            if disconnected:
+                self.disconnects.inc(route)
 
     def render(self, state) -> str:
         """The exposition text. ``state`` is the application state (any of
@@ -205,7 +216,7 @@ class Metrics:
             lines = [*_sample("atus_build_info", "gauge", "Build of the running API.", 1,
                               [("build", self.build)])]
             for family in (self.requests, self.latency, self.errors, self.cache,
-                           self.db_statements):
+                           self.db_statements, self.disconnects):
                 lines += family.render()
         lines += _protection_lines(getattr(state, "protection", None))
         lines += _runner_lines(getattr(state, "runner", None))
@@ -230,6 +241,7 @@ class Metrics:
                 "responses": dict(sorted(by_class.items())),
                 "errors": {code: int(n) for (code,), n in sorted(self.errors._values.items())},
                 "cache": {r: int(n) for (r,), n in sorted(self.cache._values.items())},
+                "client_disconnects": int(sum(self.disconnects._values.values())),
             }
         protection = getattr(state, "protection", None)
         if protection is not None:

@@ -324,6 +324,7 @@ class RequestContextMiddleware:
                 self.metrics.observe_request(
                     route=route, method=method, status=status, seconds=latency_ms / 1000,
                     db_statements=stats.db_statements, cache=response["cache"], error=error,
+                    disconnected=disconnected,
                 )
         except Exception:  # observability must never break a response
             log.exception("request_id=%s access record failed", request_id)
