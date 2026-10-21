@@ -33,6 +33,8 @@ COMPLIANT = {
     "asset_immutable": True, "pointer_no_cache": True, "api_meta": META,
     "edge_snapshot_id": SNAPSHOT_ID, "allowlist": True, "api_no_store": True, "limits": True,
     "edge_cache": True, "wake": True, "ops_gate": True, "origin_lock": True, "governor": True,
+    # The header the governor keys on; the Worker's is CF-Connecting-IP (review r3).
+    "governor_key": "CF-Connecting-IP",
 }
 API_SECURITY = {
     "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
@@ -208,7 +210,9 @@ def _edge_handler(behaviour: dict, assets):
             if behaviour["edge_cache"] and body in cache:
                 return self._api(200, cache[body], **{"X-Cache": "edge",
                                                       "X-Data-Version": DATA_VERSION})
-            network = self.headers.get("CF-Connecting-IP", "127.0.0.1").rsplit(".", 1)[0]
+            client = (self.headers.get(behaviour["governor_key"])
+                      or self.headers.get("CF-Connecting-IP", "127.0.0.1"))
+            network = client.split(",")[0].strip().rsplit(".", 1)[0]
             with lock:
                 if behaviour["governor"] and admitted.get(network, 0) >= 60:
                     tomorrow = (datetime.now(UTC) + timedelta(days=1)).date()
@@ -298,6 +302,8 @@ def test_a_compliant_edge_passes_every_check(probe, stub_edge, assets, monkeypat
     ({"ops_gate": False}, "ops_budget"),
     ({"origin_lock": False}, "origin_lock"),
     ({"governor": False}, "governor_denial"),
+    ({"governor_key": "X-Forwarded-For"}, "governor_denial"),
+    ({"governor_key": "X-Real-IP"}, "governor_denial"),
 ])
 def test_each_violation_fails_its_check(probe, stub_edge, assets, monkeypatch, capsys,
                                         overrides, failing_check):

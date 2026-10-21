@@ -113,7 +113,10 @@ def server_timing(db_ms: float, total_ms: float, *, touched_db: bool = True) -> 
     the database did no work for this request (cache hit, single-flight
     join, 4xx, shed), so no compute is charged. It is therefore ``0`` only
     when the request opened no transaction, and at least ``0.1`` when it did,
-    however fast (rounding must never turn real work into "none").
+    however fast (rounding must never turn real work into "none"). A
+    transaction counts once the pool gave it a connection: one whose connect
+    failed, or whose only statement was the pool's check of an idle
+    connection that turned out dead, reached no server (review r3).
     """
     if not touched_db:
         return f"db;dur=0, app;dur={max(0.0, total_ms):.1f}"
@@ -131,8 +134,7 @@ def request_server_timing(stats: observability.RequestStats, started: float) -> 
     """:func:`server_timing` for a request so far (``started``: perf_counter)."""
     return server_timing(
         stats.db_ms, (time.perf_counter() - started) * 1000,
-        touched_db=(stats.transactions > 0 or stats.db_statements > 0
-                    or stats.open_since is not None),
+        touched_db=stats.transactions > 0 or stats.open_since is not None,
     )
 
 

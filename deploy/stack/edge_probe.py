@@ -352,15 +352,26 @@ def check_kv_cache(probe: Probe) -> None:
                 f"bytes {'identical' if second.body == first.body else 'DIFFER'}")
 
 
+def forged_address(network: int) -> dict[str, str]:
+    """Forwarding headers claiming another /24 (security.md abuse case 5)."""
+    address = visitor(network, 1)["CF-Connecting-IP"]
+    return {"X-Forwarded-For": address, "X-Real-IP": address, "True-Client-IP": address,
+            "Forwarded": f"for={address}"}
+
+
 def check_governor(probe: Probe) -> None:
     """61 new analyses from one /24 (distinct addresses, so the API's own
-    per-address buckets never shed them): the 61st is the governor's."""
+    per-address buckets never shed them): the 61st is the governor's. Each
+    also claims a different /24 in its forwarding headers, which must not
+    change the network the governor charges (review r3)."""
     run = secrets.token_hex(4)
     statuses: list[int] = []
     denial: Reply | None = None
     for host in range(1, 62):
         reply = probe.get(ESTIMATE, method="POST", body=analysis_body(f"gov {run} {host}"),
-                          headers={"Content-Type": "application/json", **visitor(2, host)})
+                          headers={"Content-Type": "application/json", **visitor(2, host),
+                                   # 198.18.101.1 to .161.1: the probe's own /16
+                                   **forged_address(100 + host)})
         statuses.append(reply.status)
         if reply.status != 200:
             denial = reply

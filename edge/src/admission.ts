@@ -35,16 +35,21 @@ import type { Relayed } from './proxy'
 
 /**
  * API error codes that mean "refused, no result": the API's own load
- * shedding, and the data-availability refusals (Neon's quota pause, a data
- * release switch, no data loaded), which depend on the deployment's state,
- * not on the request. Counts are refunded; DB time they report (a version
- * change found after computing) is still charged.
+ * shedding, and the data-availability refusals (Neon's quota pause or an
+ * unreachable database, a data release switch, no data loaded), which depend
+ * on the deployment's state, not on the request. Counts are refunded; DB time
+ * they report (a version change found after computing, a connection that
+ * broke after the checkout) is still charged. The API reports `db;dur=0` when
+ * it got no connection at all (refused, wrong credentials, TLS), so such a
+ * `database_unavailable` costs nothing (review r3: settled as computed, a run
+ * of them locked a network out and closed the day's compute for everyone).
  */
 const SHED_CODES = new Set([
   'overloaded',
   'rate_limited',
   'daily_capacity_reached',
   'database_paused',
+  'database_unavailable',
   'data_version_mismatch',
   'data_not_loaded',
   'schema_not_initialized',
@@ -52,8 +57,9 @@ const SHED_CODES = new Set([
 
 /**
  * Neon refused the connection because its quota is spent: its compute is
- * suspended, so nothing ran, although the API reports the failed connect as
- * DB time.
+ * suspended, so nothing ran, even when the API reports DB time (a refusal on
+ * a connection it already held, or an API from before review r3, which timed
+ * a failed connect as DB time).
  */
 const NO_COMPUTE_CODES = new Set(['database_paused'])
 

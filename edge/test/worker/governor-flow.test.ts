@@ -18,6 +18,7 @@ import {
   callWorker,
   controlClock,
   expectSecurityHeaders,
+  forgedAddressHeaders,
   governorSql,
   governorStub,
   mockOrigin,
@@ -168,6 +169,53 @@ describe('denials (no origin call)', () => {
     // Another network is still admitted.
     mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
     expect((await callWorker(...post('198.51.100.1'))).status).toBe(200)
+  })
+
+  it('charges the network of CF-Connecting-IP whatever forwarding headers the client adds', async () => {
+    // Brief §17 (proxy-chain client IP, trusted versus forged headers) and
+    // security.md abuse case 5. Review r3: no test sent a forged header to the
+    // governor, and keying it on X-Forwarded-For passed every Worker test,
+    // which would let one client claim a new network on every request.
+    controlClock(T)
+    const full = await prefixHmac(IP_KEY, T, '203.0.113.0/24')
+    await governorSql(
+      'INSERT INTO prefixes (day, prefix, count) VALUES (?, ?, 60)',
+      utcDay(T),
+      full,
+    )
+    const calls = mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    const forged = forgedAddressHeaders('198.51.100.1')
+    const withHeaders = (ip: string, extra: Record<string, string>): [string, RequestInit] => {
+      const [path, init] = post(ip)
+      return [
+        path,
+        { ...init, headers: { ...(init.headers as Record<string, string>), ...extra } },
+      ]
+    }
+    for (const [name, value] of [...forged, ['all of them', '']] as const) {
+      const extra = name === 'all of them' ? Object.fromEntries(forged) : { [name]: value }
+      const response = await callWorker(...withHeaders('203.0.113.9', extra))
+      expect(response.status, name).toBe(429)
+      expect((await readEnvelope(response)).details, name).toMatchObject({
+        scope: 'client',
+        budget: 'prefix',
+      })
+    }
+    expect(calls).toHaveLength(0)
+    // The other way round: naming the full network does not charge it either.
+    for (const [name, value] of forgedAddressHeaders('203.0.113.9')) {
+      const response = await callWorker(...withHeaders('192.0.2.77', { [name]: value }))
+      expect(response.status, name).toBe(200)
+    }
+    const rows = await governorSql<{ prefix: string; count: number }>(
+      'SELECT prefix, count FROM prefixes',
+    )
+    expect(new Map(rows.map((row) => [row.prefix, row.count]))).toEqual(
+      new Map([
+        [full, 60],
+        [await prefixHmac(IP_KEY, T, '192.0.2.0/24'), forged.length],
+      ]),
+    )
   })
 
   it('bounds admissions the API sheds (refunded), so one network cannot spend the governor', async () => {
@@ -429,6 +477,64 @@ describe('settling each origin outcome', () => {
     )
     expect(outcome).toEqual({ status: 503, admitted: 0, refunded: 1, prefix: 0 })
     expect((await report()).compute_today.settled_cu_hours).toBe(0)
+  })
+
+  it('refunds the counts and charges no compute when the API got no database connection (database_unavailable)', async () => {
+    // Neon unreachable, wrong credentials, a TLS failure: the API reports
+    // db;dur=0 because no connection was obtained, and Neon ran nothing.
+    const outcome = await settledAfter(() =>
+      apiJson(envelope('database_unavailable'), 503, {
+        'server-timing': 'db;dur=0, app;dur=1004.2',
+      }),
+    )
+    expect(outcome).toEqual({ status: 503, admitted: 0, refunded: 1, prefix: 0 })
+    expect((await report()).compute_today.settled_cu_hours).toBe(0)
+  })
+
+  it('refunds the counts but charges compute when the connection broke after the checkout', async () => {
+    const outcome = await settledAfter(() =>
+      apiJson(envelope('database_unavailable'), 503, {
+        'server-timing': 'db;dur=40.0, app;dur=2.0',
+      }),
+    )
+    expect(outcome).toEqual({ status: 503, admitted: 0, refunded: 1, prefix: 0 })
+    expect((await report()).compute_today.settled_cu_hours).toBeGreaterThan(0)
+  })
+
+  it('lets a run of failed database connections lock out neither a network nor the day', async () => {
+    // Review r3 (db-unavailable-settled-as-computed): each 503
+    // database_unavailable was settled as computed. In conservative mode one
+    // network trying every 6 minutes (an attempt and the SPA's retry) got 429
+    // rate_limited (prefix) from its fourth attempt, and about 16 networks
+    // closed the day's compute (cu_day) for everyone until 00:00 UTC, after
+    // the database was fixed.
+    const clock = controlClock(T)
+    const calls = mockOrigin(() =>
+      apiJson(envelope('database_unavailable'), 503, {
+        'retry-after': '5',
+        'server-timing': 'db;dur=0, app;dur=1004.2',
+      }),
+    )
+    // 35 rounds 6 minutes apart: 70 admissions for 203.0.113.7, past its 60.
+    for (let round = 0; round < 35; round += 1) {
+      for (const ip of ['203.0.113.7', `198.51.100.${round + 1}`]) {
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          const response = await callWorker(...post(ip))
+          expect(response.status).toBe(503)
+          expect((await readEnvelope(response)).code).toBe('database_unavailable')
+          clock.advance(5_000)
+        }
+      }
+      clock.advance(6 * 60_000)
+    }
+    expect(calls).toHaveLength(140)
+    const during = await report()
+    expect(during.analyses).toMatchObject({ admitted: 0, refunded: 140, in_flight: 0 })
+    expect(during.compute_today.settled_cu_hours).toBe(0)
+    // The operator fixes the connection: the same network and a new one are admitted.
+    mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    expect((await callWorker(...post('203.0.113.7'))).status).toBe(200)
+    expect((await callWorker(...post('192.0.2.50'))).status).toBe(200)
   })
 
   it.each(['data_version_mismatch', 'data_not_loaded', 'schema_not_initialized'])(

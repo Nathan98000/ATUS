@@ -20,6 +20,7 @@ import {
   callWorker,
   controlClock,
   expectSecurityHeaders,
+  forgedAddressHeaders,
   governorSql,
   governorStub,
   mockOrigin,
@@ -207,6 +208,34 @@ describe('metadata lookups the snapshot cannot answer', () => {
       headers: { 'cf-connecting-ip': '198.51.100.1' },
     })
     expect(other.status).toBe(200)
+  })
+
+  it('charge the network of CF-Connecting-IP whatever forwarding headers the client adds', async () => {
+    // Review r3 (security.md abuse case 5): as for analyses (governor-flow.test.ts).
+    controlClock(T)
+    await governorSql(
+      'INSERT INTO prefixes (day, prefix, count, attempts, lookups) VALUES (?, ?, 0, 0, ?)',
+      utcDay(T),
+      await prefixHmac('test-ip-hmac-key', T, '203.0.113.0/24'),
+      PREFIX_DAILY_LOOKUPS,
+    )
+    const calls = mockOrigin(() => apiJson('{}'))
+    const forged = forgedAddressHeaders('198.51.100.1')
+    for (const [name, value] of [...forged, ['all of them', '']] as const) {
+      const extra = name === 'all of them' ? Object.fromEntries(forged) : { [name]: value }
+      const response = await callWorker(
+        '/api/v1/meta?x=1',
+        { headers: { ...visitor.headers, ...extra } },
+        deployed(),
+      )
+      expect(response.status, name).toBe(429)
+      expect((await readEnvelope(response)).details, name).toMatchObject({
+        scope: 'client',
+        budget: 'metadata',
+      })
+    }
+    expect(calls).toHaveLength(0)
+    expect(await lookups()).toEqual({ day: 0, prefix: PREFIX_DAILY_LOOKUPS })
   })
 
   it('refuse everyone past the global daily lookups with 503, without an origin call', async () => {

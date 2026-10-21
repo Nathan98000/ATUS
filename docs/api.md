@@ -223,13 +223,15 @@ Response headers:
   `/activities/{code}`, and `X-Analytics-Version` on `/meta`. Error responses
   carry none of the analysis headers.
 - `Server-Timing: db;dur=<ms>, app;dur=<ms>` on every response: time spent
-  in database transactions (including waiting for a connection) and the rest,
-  up to the response start. `db;dur=0` exactly means the request opened no
-  database transaction (cache hits, single-flight joins, shed requests,
-  metadata from the snapshot, and every 4xx except a 422 that the statistics
-  query itself produces: `insufficient_data`, or a diary-date window outside
-  the requested years); any database work reports at least `0.1`. The edge
-  governor charges compute only when it is not 0.
+  in database transactions (including the wait for the connection, once the
+  pool gives one) and the rest, up to the response start. `db;dur=0` exactly
+  means the request opened no database transaction, or got no connection for
+  it (cache hits, single-flight joins, shed requests, a `database_unavailable`
+  or `database_paused` from a failed connect, metadata from the snapshot, and
+  every 4xx except a 422 that the statistics query itself produces:
+  `insufficient_data`, or a diary-date window outside the requested years);
+  any database work reports at least `0.1`. The edge governor charges compute
+  only when it is not 0.
 - `Retry-After` (seconds) on every 429 and every 503 the API answers. The
   one exception is uvicorn's own connection-limit 503 (beyond
   `limit_concurrency`, before any app code runs): plain text

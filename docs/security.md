@@ -128,7 +128,7 @@ Tests: `tests/unit/api/test_protection.py::TestTokenBucket`, `tests/unit/api/tes
   - a missing `IP_HMAC_KEY`.
 
 Code: `edge/src/governor.ts`, `edge/src/admission.ts`, `edge/src/budget.ts`, `edge/src/constants.ts`, `edge/src/snapshot.ts`.
-Tests: `edge/test/worker/governor.test.ts` (including "each network's share of the day's compute" and "Neon egress without ground truth"), `edge/test/worker/governor-flow.test.ts` ("failing closed"), `edge/test/worker/metadata.test.ts`, `edge/test/worker/budget.test.ts`, `edge/test/worker/cache.test.ts` ("serves a hit while the origin is unconfigured or the governor is down").
+Tests: `edge/test/worker/governor.test.ts` (including "each network's share of the day's compute" and "Neon egress without ground truth"), `edge/test/worker/governor-flow.test.ts` ("failing closed"; "charges the network of CF-Connecting-IP whatever forwarding headers the client adds"; "lets a run of failed database connections lock out neither a network nor the day"), `edge/test/worker/metadata.test.ts`, `edge/test/worker/budget.test.ts`, `edge/test/worker/cache.test.ts` ("serves a hit while the origin is unconfigured or the governor is down").
 
 **C7. Admission in the API.**
 - **Dry run.** Analytically invalid requests get a 422 before any token, lane or statement is spent.
@@ -429,7 +429,7 @@ Tests:
 - **Direct to the API.**
   - A forged `X-ATUS-Client-IP` without a valid secret gets a 403.
   - The API never reads the forwarding headers (C2, C3).
-- **Governor keys.** The governor keys on `CF-Connecting-IP`. That a client cannot override this header on workers.dev is a Cloudflare behaviour, not yet verified on a deployment (R8).
+- **Governor keys.** The governor keys on `CF-Connecting-IP` only. A network at its daily limit stays refused whatever `X-Forwarded-For`, `X-Real-IP`, `True-Client-IP`, `X-Client-IP`, `X-ATUS-Client-IP`, `Forwarded` or `CF-Connecting-IPv6` the client adds, and naming that network in them charges nothing to it (`edge/test/worker/governor-flow.test.ts`, "charges the network of CF-Connecting-IP whatever forwarding headers the client adds"; `edge/test/worker/metadata.test.ts`, the same for lookups; on the local stack, the `governor_denial` check in `deploy/stack/edge_probe.py` sends forged forwarding headers naming a new network with each request). Before review round 3 no test pinned this, and keying the governor on `X-Forwarded-For` passed every Worker test. That a client cannot override `CF-Connecting-IP` itself on workers.dev is a Cloudflare behaviour, not yet verified on a deployment (R8).
 - **Request IDs.** A client's `X-Request-ID` is replaced (C16).
 
 ### 6. Direct-origin access

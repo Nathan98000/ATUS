@@ -171,10 +171,28 @@ describe('settleReportFor', () => {
 
   it.each([
     [503, 'analysis_timeout'],
-    [503, 'database_unavailable'],
     [500, 'internal_error'],
   ])('reports a %i %s as computed (the DB was busy)', (status, code) => {
     expect(settleReportFor(json(status), pass(code)).kind).toBe('computed')
+  })
+
+  it('reports database_unavailable without a connection (db;dur=0) as shed with no DB time', () => {
+    // Review r3: it was settled as computed, keeping the counts and charging
+    // a wake session for a connect that Neon refused or never saw.
+    const upstream = json(503, { 'server-timing': 'db;dur=0, app;dur=1004.2' })
+    expect(settleReportFor(upstream, pass('database_unavailable'))).toEqual({
+      kind: 'shed',
+      dbMs: 0,
+    })
+  })
+
+  it('reports database_unavailable after a checkout (db;dur > 0) as shed, keeping its DB time', () => {
+    // The connection broke after the pool gave it: statements may have run.
+    const upstream = json(503, { 'server-timing': 'db;dur=40.0, app;dur=2' })
+    expect(settleReportFor(upstream, pass('database_unavailable'))).toEqual({
+      kind: 'shed',
+      dbMs: 40,
+    })
   })
 
   it.each(['data_version_mismatch', 'data_not_loaded', 'schema_not_initialized'])(

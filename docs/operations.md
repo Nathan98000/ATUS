@@ -1117,7 +1117,7 @@ Restore every release artifact once, as production will, into a fresh cluster wi
 | 503 `daily_capacity_reached`; 429 `rate_limited` with `budget: "prefix"` or `"metadata"` | the governor's daily caps (by design) | quota report; [deployment.md "Scraping-burst scenarios"](deployment.md#scraping-burst-scenarios) |
 | 503 `capacity_paused` | the governor's monthly Neon pacing | [quota runbook](#a-quota-is-exhausted) |
 | 503 `database_paused` | Neon compute or egress quota exhausted | [quota runbook](#a-quota-is-exhausted) |
-| 503 `database_unavailable` | Neon unreachable, wrong credentials or TLS failure | Neon console; Render logs (driver class, SQLSTATE); Render's `ATUS_DATABASE_URL` |
+| 503 `database_unavailable` | Neon unreachable, wrong credentials or TLS failure | Neon console; Render logs (driver class, SQLSTATE); Render's `ATUS_DATABASE_URL`. The governor refunds these answers, so no network is locked out and the day's compute is not spent while the connection fails (ADR-015 amendments, review round 3) |
 | 503 `data_version_mismatch` | Render's `ATUS_EXPECTED_DATA_VERSION` differs from the database's | finish or reverse the release switch ([Rollback](#rollback), "Data") |
 | 503 `data_not_loaded` or `schema_not_initialized` | `ATUS_DATABASE_URL` points at the wrong or an empty database | the DSN vs the restored project |
 | 503 `overloaded` or `analysis_timeout` | load, or a slow plan | Render logs `db_ms`; `/metrics`; compare with the emulation's numbers ([`../loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md): at 0.25 CU sheds start at 4 concurrent clients, and the F66 compare takes 69–71 s of the 85 s timeout) |
