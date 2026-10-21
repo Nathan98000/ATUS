@@ -4,12 +4,19 @@
  * response). Both are built in the browser from the response already on
  * screen (`domain/exports.ts`) — no request, no recomputed statistic.
  */
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
 import type { AnalysisRequest, AnalysisResponse, Operation } from '../../api/types'
 import { type ExportContext, exportFileName, resultCsv, resultJson } from '../../domain/exports'
 import { downloadText } from '../../utils/download'
+
+/**
+ * A repeated download of the same file sets the same status text, which
+ * changes nothing in the DOM, so the live region would stay silent: it is
+ * emptied first and given the text again after this delay (review round 2).
+ */
+const ANNOUNCE_AGAIN_MS = 100
 
 const ROW_DESCRIPTION: Record<Operation, string> = {
   estimate: 'one row',
@@ -35,8 +42,20 @@ export function ResultDownloads({
   dataRelease: string | null
 }) {
   const [status, setStatus] = useState('')
+  const announceAgain = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  useEffect(() => () => clearTimeout(announceAgain.current), [])
   // The current route, so the link follows the page's rewrite to the canonical spec.
   const location = useLocation()
+
+  const announce = (message: string) => {
+    clearTimeout(announceAgain.current)
+    if (message !== status) {
+      setStatus(message)
+      return
+    }
+    setStatus('')
+    announceAgain.current = setTimeout(() => setStatus(message), ANNOUNCE_AGAIN_MS)
+  }
 
   const save = (format: 'csv' | 'json') => {
     const context: ExportContext = {
@@ -55,7 +74,7 @@ export function ResultDownloads({
     } else {
       downloadText(fileName, resultJson(result, context), 'application/json')
     }
-    setStatus(`Download started: ${fileName}`)
+    announce(`Download started: ${fileName}`)
   }
 
   return (

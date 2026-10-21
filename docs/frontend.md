@@ -484,7 +484,9 @@ facts are `null`, never guessed. File names are
   when the analysis page only replaces its query string with the canonical
   spec (review round 2).
 - The download buttons are ordinary buttons; a persistent `<output>` says
-  which file was started, and focus stays on the button.
+  which file was started, and focus stays on the button. Downloading the
+  same file again empties the region and says it again 100 ms later, so the
+  repeat is announced too (review round 2).
 - Playwright runs axe checks (no serious or critical violations) on the five
   main screens, the About page, the waking state, the incompatible-API, paused-quota and
   edge-limit pages, the data-release reload notice, the
