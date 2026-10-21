@@ -95,8 +95,12 @@ def _close(a: float, b: float, scale: float, path: str, out: Comparison) -> None
 
 
 def _estimate_value(d) -> float:
+    """``|value|`` of an estimate for the floor ``S``: finite values only (a
+    non-finite point value is compared exactly and contributes nothing)."""
     if isinstance(d, dict) and _number(d.get("value")):
-        return abs(float(d["value"]))
+        value = abs(float(d["value"]))
+        if math.isfinite(value):
+            return value
     return 0.0
 
 

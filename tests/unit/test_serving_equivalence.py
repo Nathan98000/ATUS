@@ -149,6 +149,19 @@ def test_a_non_finite_point_value_does_not_widen_the_tolerance():
     assert not compare_results(a, b).equivalent
 
 
+def test_the_finite_point_values_still_set_the_floor_beside_a_non_finite_one():
+    """S is the largest *finite* point value: one group's infinite estimate
+    neither widens the bound nor drops the other group's floor (operations.md
+    §9 item 2)."""
+    def comparison(diff_se):
+        return {"group_a": _estimate(value=INF), "group_b": _estimate(),
+                "difference": {"value": 0.0, "unit": "minutes", "standard_error": diff_se,
+                               "confidence_level": 0.95, "ci_lower": -diff_se,
+                               "ci_upper": diff_se}}
+    assert compare_results(comparison(1e-13), comparison(2e-13)).equivalent
+    assert not compare_results(comparison(1e-6), comparison(2e-6)).equivalent
+
+
 @pytest.mark.parametrize("bad", [NAN, INF, -INF])
 def test_raw_statistics_reject_a_non_finite_replicate(bad):
     row = (2023, 10, 4, Decimal("12.5"), Decimal("100.25"), Decimal("4.5"),
