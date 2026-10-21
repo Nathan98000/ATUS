@@ -5,7 +5,8 @@ The procedure of brief §9 and ADR-013, in order:
 
 1. read the owner's connection string from ``$ATUS_OWNER_DATABASE_URL`` or the
    owner's secrets file (default ``~/.config/atus/neon.env``); it is never
-   printed;
+   printed, and when both are set they must name the same database
+   (:func:`owner_url`);
 2. verify the dump against its ``.sha256`` file and its manifest;
 3. refuse a target database that is not empty (each release goes into a new
    database: on Neon a new project, because one project's 1 GB covers every
@@ -125,20 +126,34 @@ class RestoreReport:
 
 
 def owner_url(options: RestoreOptions) -> str:
-    """The owner's connection string: the environment first, then the file."""
+    """The owner's connection string: the environment first, then the file.
+
+    The API role's password and connection string are written into the
+    secrets file, which the runbooks keep one per Neon project. So when both
+    the environment and the file name the owner's database, they must name
+    the same one (user, host, port, database): a stale exported variable
+    would otherwise rotate another project's password and write its DSN
+    into this project's file (review r1). Nothing is changed then."""
     from_env = os.environ.get(OWNER_URL_KEY)
-    if from_env:
-        return from_env
     path = options.secrets_file.expanduser()
+    from_file = read_env_file(path).get(OWNER_URL_KEY) if path.is_file() else None
+    if from_env:
+        if from_file and describe(from_file) != describe(from_env):
+            raise RestoreError(
+                f"${OWNER_URL_KEY} names {describe(from_env)}, but {path} names "
+                f"{describe(from_file)}; the API role's credentials are written to {path}, "
+                f"so both must name the same database. Unset {OWNER_URL_KEY}, or pass "
+                "that database's --secrets-file. Nothing was changed."
+            )
+        return from_env
     if not path.is_file():
         raise RestoreError(
             f"set {OWNER_URL_KEY}, or put {OWNER_URL_KEY}=<owner connection string> "
             f"in {path} (chmod 600)"
         )
-    values = read_env_file(path)
-    if OWNER_URL_KEY not in values:
+    if from_file is None:
         raise RestoreError(f"{path} has no {OWNER_URL_KEY}")
-    return values[OWNER_URL_KEY]
+    return from_file
 
 
 def _role_settings(conn: psycopg.Connection) -> dict[str, str]:

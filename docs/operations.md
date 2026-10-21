@@ -866,7 +866,7 @@ Background: ADR-013 Decisions 6–8 and [deployment.md steps 1, 2 and 5](deploym
    The build refuses a source that has no passing `validate-db` and `validate-analytics` results recorded for its loaded data. It writes the dump, `.sha256` and manifest right after the build. Run `atus validate-analytics` only on restored copies: it writes to `validation_results`.
 3. **Check the size.** Compare the manifest's sizes with the provider limit. The restore enforces `--size-limit-bytes`, default 1,000,000,000.
 
-**Restore into Neon** (owner; [deployment.md step 5](deployment.md#5-load-the-serving-db-into-neon-owner)). Use one new project per release, over the direct endpoint, never `-pooler`. Keep one secrets file per project, so that a rollback still has the previous project's DSN.
+**Restore into Neon** (owner; [deployment.md step 5](deployment.md#5-load-the-serving-db-into-neon-owner)). Use one new project per release, over the direct endpoint, never `-pooler`. Keep one secrets file per project, so that a rollback still has the previous project's DSN. Prefer the file to an exported `ATUS_OWNER_DATABASE_URL`: the restore takes the exported one first, and refuses when it names another database than the file's (the API role's credentials are written to the file).
 
 ```bash
 # ~/.config/atus/neon-<release>-<build8>.env (mode 600) holds
