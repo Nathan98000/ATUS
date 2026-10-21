@@ -88,6 +88,17 @@ describe('uncertainty formatting', () => {
     expect(formatConfidenceLevel(0.95)).toBe('95%')
     expect(formatConfidenceLevel(0.9)).toBe('90%')
   })
+
+  // Review round 3: the API accepts any level in (0.5, 1); rounding to a whole
+  // percent named a different level than the one computed (and exported).
+  it('never rounds a confidence level to a different one', () => {
+    expect(formatConfidenceLevel(0.975)).toBe('97.5%')
+    expect(formatConfidenceLevel(0.9545)).toBe('95.45%')
+    expect(formatConfidenceLevel(0.995)).toBe('99.5%')
+    expect(formatConfidenceLevel(0.999)).toBe('99.9%')
+    expect(formatConfidenceLevel(0.99999)).toBe('99.999%')
+    expect(formatConfidenceLevel(0.99)).toBe('99%')
+  })
 })
 
 describe('years and units', () => {

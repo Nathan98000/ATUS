@@ -218,6 +218,41 @@ describe('prefilling from a shared analysis', () => {
   })
 })
 
+describe('confidence levels from a shared analysis (review round 3)', () => {
+  // The builder offers 90/95/99%, but a hand-made link can carry any level
+  // the API accepts. The select showed "90%" while Analyze sent 0.975.
+  it('shows a prefilled 97.5% level as 97.5%, sends it unchanged, and still offers 90%', async () => {
+    const user = userEvent.setup()
+    const spec: EstimateRequest = {
+      activity: { preset: 'sleep' },
+      years: [2025],
+      confidence_level: 0.975,
+    }
+    renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
+    await waitForBuilder()
+    const select = screen.getByLabelText('Confidence level') as HTMLSelectElement
+    expect(select.selectedOptions[0]).toHaveTextContent('97.5%')
+    expect(
+      within(select)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['90%', '95%', '97.5%', '99%'])
+
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    const location = screen.getByTestId('location').textContent ?? ''
+    const sent = decodeSpec(location.split('spec=')[1] as string, 'estimate') as EstimateRequest
+    expect(sent.confidence_level).toBe(0.975)
+  })
+
+  it('a standard level adds no extra option', async () => {
+    renderExplore()
+    await waitForBuilder()
+    const select = screen.getByLabelText('Confidence level') as HTMLSelectElement
+    expect(select.selectedOptions[0]).toHaveTextContent('95%')
+    expect(within(select).getAllByRole('option')).toHaveLength(3)
+  })
+})
+
 describe('browser history (review finding: Back must not reset the builder)', () => {
   it('Back from a result returns to a prefilled builder, not defaults', async () => {
     const user = userEvent.setup()

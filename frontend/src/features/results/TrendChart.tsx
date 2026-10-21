@@ -15,6 +15,7 @@ import type { TrendPoint } from '../../api/types'
 import {
   formatAxisTicks,
   formatConfidenceInterval,
+  formatConfidenceLevel,
   formatStandardError,
   formatValueShort,
   unitLabel,
@@ -166,7 +167,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
     if (standard_error != null)
       text += `, standard error ${formatStandardError(standard_error, unit)}`
     if (ci_lower != null && ci_upper != null) {
-      text += `, ${Math.round((confidence_level ?? 0.95) * 100)}% CI ${formatConfidenceInterval(ci_lower, ci_upper, unit)}`
+      text += `, ${formatConfidenceLevel(confidence_level ?? 0.95)} CI ${formatConfidenceInterval(ci_lower, ci_upper, unit)}`
     }
     return text
   }
@@ -316,7 +317,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
                 ) : null}
                 {active.estimate.ci_lower != null && active.estimate.ci_upper != null ? (
                   <span>
-                    {Math.round((active.estimate.confidence_level ?? 0.95) * 100)}% CI{' '}
+                    {formatConfidenceLevel(active.estimate.confidence_level ?? 0.95)} CI{' '}
                     {formatConfidenceInterval(
                       active.estimate.ci_lower,
                       active.estimate.ci_upper,

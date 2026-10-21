@@ -12,7 +12,8 @@
  *   estimate they qualify;
  * - people counts: millions with one decimal above 1M, thousands separators
  *   below;
- * - sample sizes: exact integers with thousands separators.
+ * - sample sizes: exact integers with thousands separators;
+ * - confidence levels: every digit (97.5%), never rounded to another level.
  */
 
 const INTEGER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
@@ -20,6 +21,7 @@ const ONE_DECIMAL = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 })
+const CONFIDENCE_LEVEL = new Intl.NumberFormat('en-US', { maximumFractionDigits: 20 })
 
 /** 528.75 → "8h 49m"; 42.4 → "42m"; 0.2 → "0m". */
 export function formatMinutesAsDuration(minutes: number): string {
@@ -163,9 +165,14 @@ export function formatConfidenceInterval(lower: number, upper: number, unit: str
   }
 }
 
-/** 0.95 → "95%". */
+/**
+ * 0.95 → "95%"; 0.975 → "97.5%"; 0.999 → "99.9%". Every digit is kept: the
+ * API accepts any level in (0.5, 1), and rounding would name a different
+ * level than the one computed (0.975 as "98%", 0.999 as "100%") (review
+ * round 3). toPrecision(15) only removes the binary noise of × 100.
+ */
 export function formatConfidenceLevel(level: number): string {
-  return `${INTEGER.format(level * 100)}%`
+  return `${CONFIDENCE_LEVEL.format(Number((level * 100).toPrecision(15)))}%`
 }
 
 /** [2025] → "2025"; [2003..2025] → "2003–2025"; [2019, 2021] → "2019, 2021". */

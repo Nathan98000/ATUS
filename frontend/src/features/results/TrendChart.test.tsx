@@ -92,6 +92,33 @@ describe('TrendChart keyboard access', () => {
   })
 })
 
+describe('TrendChart confidence labels (review round 3)', () => {
+  it('names the level the API computed — 97.5% is never shown as 98%', async () => {
+    const user = userEvent.setup()
+    const atLevel = points.map((point) =>
+      point.estimate == null
+        ? point
+        : { ...point, estimate: { ...point.estimate, confidence_level: 0.975 } },
+    )
+    render(
+      <TrendChart
+        points={atLevel}
+        unit="minutes_per_day"
+        measureLabel="Average time per day"
+      />,
+    )
+    const chart = screen.getByRole('application', { name: /Average time per day by year/ })
+    chart.focus()
+    await user.keyboard('{ArrowRight}')
+    // Both the visible readout and the announced description.
+    const tooltip = chart.querySelector('.chart-tooltip') as HTMLElement
+    expect(tooltip).toHaveTextContent('97.5% CI')
+    const announced = chart.querySelector('[aria-live]') as HTMLElement
+    expect(announced).toHaveTextContent('97.5% CI')
+    expect(chart).not.toHaveTextContent('98% CI')
+  })
+})
+
 describe('degenerate trends', () => {
   it('explains when no year could be estimated', () => {
     const unavailable: TrendPoint[] = [

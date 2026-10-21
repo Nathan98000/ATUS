@@ -213,6 +213,19 @@ export function MeasureSelector({ measures, value, onChange }: MeasureSelectorPr
   )
 }
 
+const CONFIDENCE_LEVELS = [0.9, 0.95, 0.99]
+
+/**
+ * The offered levels, plus the current one when a shared analysis carries
+ * another level the API accepts (e.g. 0.975): without its own option the
+ * select showed "90%" while Analyze sent 0.975, and choosing 90% fired no
+ * change (review round 3).
+ */
+function confidenceLevelOptions(current: number): number[] {
+  if (CONFIDENCE_LEVELS.includes(current)) return CONFIDENCE_LEVELS
+  return [...CONFIDENCE_LEVELS, current].sort((a, b) => a - b)
+}
+
 interface AdvancedOptionsProps {
   state: BuilderState
   weightSchemes: readonly WeightSchemeInfo[]
@@ -312,7 +325,7 @@ export function AdvancedOptions({
             onChange={(event) => onChange({ confidenceLevel: Number(event.target.value) })}
             disabled={state.variance === 'none'}
           >
-            {[0.9, 0.95, 0.99].map((level) => (
+            {confidenceLevelOptions(state.confidenceLevel).map((level) => (
               <option key={level} value={level}>
                 {formatConfidenceLevel(level)}
               </option>
