@@ -15,10 +15,11 @@
  * 5. analysis POSTs: the KV result cache (cache.ts) — a hit is answered
  *    here — then admission by the quota governor (admission.ts), which can
  *    refuse with 429/503 or, when unreachable, fail closed; metadata GETs
- *    the snapshot could not answer are admitted as counted lookups;
+ *    the snapshot could not answer are admitted as governed lookups (counted,
+ *    and charged compute when the API reports DB time);
  * 6. the origin call (upstream.ts) with a fresh header set (proxy.ts); an
- *    admitted analysis's settle is queued (`waitUntil`) before it starts, so
- *    a client that disconnects meanwhile does not lose it;
+ *    admitted analysis's or lookup's settle is queued (`waitUntil`) before it
+ *    starts, so a client that disconnects meanwhile does not lose it;
  * 7. the response: API envelopes byte for byte, platform pages converted,
  *    security headers on every response this code produces (errors the
  *    runtime gives before the Worker runs — an unknown HTTP method, a
@@ -231,7 +232,8 @@ async function dispatch(
 
   // What reaches Render through here is admitted by the governor: uncached
   // analyses (Render and Neon), and metadata the snapshot could not answer
-  // (Render's outbound bandwidth). Health and wake are not.
+  // (Render's outbound bandwidth, and Neon when it is a freshly started API
+  // process's first data request). Health and wake are not.
   let leaseId: string | null = null
   const analysis = route.analysis === true && body !== undefined
   if (analysis || route.metadata) {
@@ -266,7 +268,7 @@ async function dispatch(
     if (admission.kind === 'denied') {
       log.governor = `denied:${admission.denial.budget}`
       log.outcome = 'denied'
-      return denialResponse(admission.denial, requestId)
+      return denialResponse(admission.denial, requestId, !analysis)
     }
     log.governor = 'admitted'
     leaseId = admission.leaseId
@@ -403,8 +405,11 @@ async function forward(
   return forwarded
 }
 
-/** A governor denial as the API's envelope: 429 for a client's budget, 503 for shared ones. */
-function denialResponse(denial: Denied, requestId: string): Response {
+/**
+ * A governor denial as the API's envelope: 429 for a client's budget, 503 for
+ * shared ones. A metadata lookup's says so, whichever budget refused it.
+ */
+function denialResponse(denial: Denied, requestId: string, lookup: boolean): Response {
   const messages: Record<Denied['code'], string> = {
     rate_limited:
       'Your network has started as many new analyses today as this free service allows. ' +
@@ -414,18 +419,21 @@ function denialResponse(denial: Denied, requestId: string): Response {
     capacity_paused:
       "New analyses are paused until this month's free database allowance allows more.",
   }
-  const metadata: Partial<Record<Denied['code'], string>> = {
+  const metadata: Record<Denied['code'], string> = {
     rate_limited:
       'Your network has made as many uncached metadata requests today as this free service ' +
       "allows. The site's metadata files still work; the limit resets at 00:00 UTC.",
     daily_capacity_reached:
       "Today's free capacity for uncached metadata requests is used up. The site's metadata " +
       'files still work; it resets at 00:00 UTC.',
+    capacity_paused:
+      "Uncached metadata requests are paused until this month's free database allowance " +
+      "allows more. The site's metadata files still work.",
   }
   return errorResponse(
     denial.code === 'rate_limited' ? 429 : 503,
     denial.code,
-    (denial.budget === 'metadata' ? metadata[denial.code] : undefined) ?? messages[denial.code],
+    (lookup ? metadata : messages)[denial.code],
     requestId,
     {
       retryAfterSeconds: denial.retryAfterSeconds,

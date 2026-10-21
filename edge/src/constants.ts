@@ -96,6 +96,15 @@ export const GLOBAL_DAILY_LOOKUPS = 2_000
 export const PREFIX_DAILY_LOOKUPS = 200
 
 /**
+ * Neon egress charged for a metadata lookup that reported DB time: the API's
+ * per-process snapshot read, the only database work a metadata request does
+ * (it runs on a freshly started process's first data request), measured at
+ * 108,005 B on the full database (review round 1). An estimate, like
+ * `EGRESS_ESTIMATE_BYTES`.
+ */
+export const SNAPSHOT_READ_EGRESS_BYTES = 128 * 1024
+
+/**
  * Year queries at which an analysis is heavy: `len(years)`, doubled for a
  * compare. The API's lane classifier uses the same rule.
  */

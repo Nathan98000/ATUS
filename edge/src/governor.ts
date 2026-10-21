@@ -29,9 +29,15 @@
  *      CU-h month to date < min(85, 10 + 75 x elapsed share of the period)
  *                                                    503 capacity_paused (monthly)
  *
- * A metadata lookup is only counted: 200 per prefix and 2,000 in all per UTC
- * day (`admitLookup`), which bounds what metadata costs Render's monthly
- * outbound bandwidth.
+ * A metadata lookup (`admitLookup`) is counted: 200 per prefix and 2,000 in
+ * all per UTC day, which bounds what metadata costs Render's monthly
+ * outbound bandwidth. It also passes checks 4-7 and holds a lease, settled
+ * like an analysis's but never refunding counts: the API answers metadata
+ * from memory (`db;dur=0`, free), except on a freshly started process's
+ * first data request, whose snapshot read can wake Neon. That one is charged
+ * its compute window and the snapshot read's egress (review round 2: before,
+ * one network sending a lookup after each Render spin-down woke Neon about
+ * 90 times a day uncharged, past every compute budget).
  *
  * Ground truth: when `NEON_API_KEY` and `NEON_PROJECT_ID` are set, an alarm
  * reads `GET /projects/{id}` at most every 5 minutes and only while analyses
@@ -84,6 +90,7 @@ import {
   PREFIX_DAILY_CU_SHARE,
   PREFIX_DAILY_LOOKUPS,
   PROVISIONAL_BUSY_MS,
+  SNAPSHOT_READ_EGRESS_BYTES,
 } from './constants'
 
 /** The one instance every Worker isolate talks to. */
@@ -97,6 +104,7 @@ const ADDED_COLUMNS: readonly (readonly [string, string, string])[] = [
   ['days', 'lookups', 'INTEGER NOT NULL DEFAULT 0'],
   ['prefixes', 'cu_s', 'REAL NOT NULL DEFAULT 0'],
   ['prefixes', 'lookups', 'INTEGER NOT NULL DEFAULT 0'],
+  ['leases', 'lookup', 'INTEGER NOT NULL DEFAULT 0'],
 ]
 
 export type CostClass = 'light' | 'heavy'
@@ -134,7 +142,8 @@ export interface Denied {
 
 export type AdmitResult = Admitted | Denied
 
-export type LookupResult = { ok: true } | Denied
+/** As for an analysis: a lookup holds a lease until the Worker settles it. */
+export type LookupResult = AdmitResult
 
 /**
  * How an admitted analysis ended, as the Worker saw it:
@@ -247,6 +256,8 @@ type LeaseRow = {
   heavy: number
   admitted_at: number
   egress_bytes: number
+  /** 1 for a metadata lookup's lease: its settle refunds no counts. */
+  lookup: number
 }
 
 /** The ops report (`GET /api/_ops/budget`). Contains no IPs and no prefix hashes. */
@@ -343,7 +354,8 @@ export class Governor extends DurableObject<Env> {
         prefix TEXT NOT NULL,
         heavy INTEGER NOT NULL,
         admitted_at INTEGER NOT NULL,
-        egress_bytes REAL NOT NULL
+        egress_bytes REAL NOT NULL,
+        lookup INTEGER NOT NULL DEFAULT 0
       );
       CREATE TABLE IF NOT EXISTS state (
         id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -372,14 +384,14 @@ export class Governor extends DurableObject<Env> {
     const heavy = costClass === 'heavy'
 
     // Cheapest checks first: a flood of denials reads one or two rows.
-    let prefixUse = this.prefixUse(today, request.prefix)
+    const prefixUse = this.prefixUse(today, request.prefix)
     if (
       prefixUse.count >= PREFIX_DAILY_ANALYSES ||
       prefixUse.attempts >= PREFIX_DAILY_ADMISSIONS
     ) {
       return deny('rate_limited', 'client', 'prefix', midnight, now)
     }
-    let day = this.dayRow(today)
+    const day = this.dayRow(today)
     if (day.admitted >= GLOBAL_DAILY_ANALYSES) {
       return deny('daily_capacity_reached', 'global', 'global', midnight, now)
     }
@@ -388,61 +400,9 @@ export class Governor extends DurableObject<Env> {
     }
 
     const state = this.loadState()
-    if (this.expireLeases(now, state)) {
-      this.saveState(state)
-      day = this.dayRow(today)
-      prefixUse = this.prefixUse(today, request.prefix)
-    }
-    const leases = this.leaseRows()
-    const todays = leases.filter((lease) => lease.day === today)
-    const candidate = provisionalInterval(now)
-    const ceilingS = dailyCeilingCuHours(state, now, this.neonConfigured()) * 3600
-
-    // The network's own share of the day's compute: its settled charges, plus
-    // what its in-flight analyses and this one would add. Counting analyses
-    // alone let one network that spaced cheap ones (~610 CU-s each, no shared
-    // wake session) spend the whole ceiling, and lock everyone else out.
-    const own = todays.filter((lease) => lease.prefix === request.prefix).map(leaseInterval)
-    const prefixCuS =
-      prefixUse.cu_s + cuSeconds(uncoveredLength([...own, candidate], state.charged))
-    if (prefixCuS > PREFIX_DAILY_CU_SHARE * ceilingS) {
-      return deny('rate_limited', 'client', 'prefix', midnight, now)
-    }
-
-    const dayCuS =
-      day.cu_s +
-      cuSeconds(uncoveredLength([...todays.map(leaseInterval), candidate], state.charged))
-    if (dayCuS > ceilingS) {
-      return deny('daily_capacity_reached', 'daily', 'cu_day', midnight, now)
-    }
-
-    const neon = currentNeon(state, now)
-    if (neon === null) {
-      // No monthly figure to check egress against: hold each day to 1/31 of the stop.
-      const dayEgress = day.egress_bytes + sumEgress(todays) + EGRESS_ESTIMATE_BYTES[costClass]
-      if (dayEgress > EGRESS_DAILY_CONSERVATIVE_BYTES) {
-        return deny('daily_capacity_reached', 'daily', 'egress_day', midnight, now)
-      }
-    } else {
-      const egress =
-        neon.dataTransferBytes +
-        (state.egressTotal - neon.egressBase) +
-        sumEgress(leases) +
-        EGRESS_ESTIMATE_BYTES[costClass]
-      if (egress >= EGRESS_STOP_BYTES) {
-        return deny('capacity_paused', 'monthly', 'egress', neon.periodEnd, now)
-      }
-      const provisionalS = cuSeconds(
-        uncoveredLength([...leases.map(leaseInterval), candidate], state.charged),
-      )
-      const monthCuHours =
-        (neon.computeTimeSeconds + (state.cuTotalS - neon.cuBaseS) + provisionalS) / 3600
-      const allowance = pacingAllowance(elapsedShare(now, neon.periodStart, neon.periodEnd))
-      if (monthCuHours > allowance) {
-        const resumesAt = pacingResumesAt(monthCuHours, neon.periodStart, neon.periodEnd)
-        return deny('capacity_paused', 'monthly', 'cu_month', resumesAt, now)
-      }
-    }
+    const estimate = EGRESS_ESTIMATE_BYTES[costClass]
+    const denial = this.computeDenial(state, now, request.prefix, estimate, { day, prefixUse })
+    if (denial !== null) return denial
 
     const leaseId = crypto.randomUUID()
     this.sql.exec(
@@ -474,20 +434,42 @@ export class Governor extends DurableObject<Env> {
 
   /**
    * Admit one metadata GET to the origin (the static snapshot could not
-   * answer it). Only counted: it never touches Neon (the API answers
-   * metadata from memory), but each costs Render outbound bandwidth.
+   * answer it). Each costs Render outbound bandwidth, so it is counted. A
+   * warm API answers it from memory, but the first data request on a freshly
+   * started process (after every Render spin-down) reads the API's data
+   * snapshot from Neon and can wake it: so a lookup also passes the compute
+   * and egress checks (4-7) and holds a lease, which the Worker settles with
+   * the API's `Server-Timing` like an analysis's. Its counts are never
+   * refunded.
    */
   async admitLookup(request: LookupRequest): Promise<LookupResult> {
     const now = Date.now()
     const today = utcDay(now)
     const midnight = nextUtcMidnight(now)
-    // As for analyses, a denial reads one or two rows and writes none.
-    if (this.prefixUse(today, request.prefix).lookups >= PREFIX_DAILY_LOOKUPS) {
+    // As for analyses, a count denial reads one or two rows and writes none.
+    const prefixUse = this.prefixUse(today, request.prefix)
+    if (prefixUse.lookups >= PREFIX_DAILY_LOOKUPS) {
       return deny('rate_limited', 'client', 'metadata', midnight, now)
     }
-    if (this.dayRow(today).lookups >= GLOBAL_DAILY_LOOKUPS) {
+    const day = this.dayRow(today)
+    if (day.lookups >= GLOBAL_DAILY_LOOKUPS) {
       return deny('daily_capacity_reached', 'global', 'metadata', midnight, now)
     }
+    const state = this.loadState()
+    const estimate = SNAPSHOT_READ_EGRESS_BYTES
+    const denial = this.computeDenial(state, now, request.prefix, estimate, { day, prefixUse })
+    if (denial !== null) return denial
+
+    const leaseId = crypto.randomUUID()
+    this.sql.exec(
+      `INSERT INTO leases (id, day, prefix, heavy, admitted_at, egress_bytes, lookup)
+       VALUES (?, ?, ?, 0, ?, ?, 1)`,
+      leaseId,
+      today,
+      request.prefix,
+      now,
+      SNAPSHOT_READ_EGRESS_BYTES,
+    )
     this.sql.exec(
       `INSERT INTO days (day, lookups) VALUES (?, 1)
        ON CONFLICT (day) DO UPDATE SET lookups = lookups + 1`,
@@ -499,10 +481,9 @@ export class Governor extends DurableObject<Env> {
       today,
       request.prefix,
     )
-    const state = this.loadState()
     if (state.purgedDay !== today) this.purge(now, state)
     await this.scheduleAlarm(state, now)
-    return { ok: true }
+    return { ok: true, leaseId }
   }
 
   async settle(leaseId: string, report: SettleReport): Promise<void> {
@@ -515,13 +496,16 @@ export class Governor extends DurableObject<Env> {
     this.sql.exec('DELETE FROM leases WHERE id = ?', leaseId)
 
     const { kind } = report
+    // A lookup's counts are never refunded; its compute is charged as an analysis's.
+    const analysis = lease.lookup !== 1
     // A refusal or reuse that ran statements keeps its counts (see `SettleKind`).
     const ranStatements = report.dbMs !== null && report.dbMs > 0
     const refundCounts =
-      kind === 'not_reached' ||
-      kind === 'shed' ||
-      ((kind === 'rejected' || kind === 'reused') && !ranStatements)
-    const refundPrefix = kind === 'not_reached' || kind === 'shed'
+      analysis &&
+      (kind === 'not_reached' ||
+        kind === 'shed' ||
+        ((kind === 'rejected' || kind === 'reused') && !ranStatements))
+    const refundPrefix = analysis && (kind === 'not_reached' || kind === 'shed')
     if (refundCounts) {
       this.sql.exec(
         `UPDATE days SET admitted = MAX(0, admitted - 1), heavy = MAX(0, heavy - ?),
@@ -632,7 +616,7 @@ export class Governor extends DurableObject<Env> {
         limit: GLOBAL_DAILY_ANALYSES,
         heavy: day.heavy,
         heavy_limit: HEAVY_DAILY_ANALYSES,
-        in_flight: leases.length,
+        in_flight: leases.filter((lease) => lease.lookup !== 1).length,
         refunded: day.refunded,
       },
       prefixes: {
@@ -704,6 +688,81 @@ export class Governor extends DurableObject<Env> {
     if (poll) await this.pollNeon(now)
     const latest = this.loadState()
     await this.scheduleAlarm(latest, Date.now())
+  }
+
+  /**
+   * Checks 4-7 (see the module comment) for a candidate that would start a
+   * provisional compute window now and is estimated at `egressBytes` of Neon
+   * egress, after expiring stale leases (and saving `state` if any did): the
+   * denial, or null when every check passes. `seen` holds the day and prefix
+   * rows the caller read for its count checks, re-read only after an expiry.
+   */
+  private computeDenial(
+    state: GovernorState,
+    now: number,
+    prefix: string,
+    egressBytes: number,
+    seen: { day: DayRow; prefixUse: PrefixRow },
+  ): Denied | null {
+    const today = utcDay(now)
+    const midnight = nextUtcMidnight(now)
+    let { day, prefixUse } = seen
+    if (this.expireLeases(now, state)) {
+      this.saveState(state)
+      day = this.dayRow(today)
+      prefixUse = this.prefixUse(today, prefix)
+    }
+    const leases = this.leaseRows()
+    const todays = leases.filter((lease) => lease.day === today)
+    const candidate = provisionalInterval(now)
+    const ceilingS = dailyCeilingCuHours(state, now, this.neonConfigured()) * 3600
+
+    // The network's own share of the day's compute: its settled charges, plus
+    // what its in-flight leases and this one would add. Counting analyses
+    // alone let one network that spaced cheap ones (~610 CU-s each, no shared
+    // wake session) spend the whole ceiling, and lock everyone else out.
+    const own = todays.filter((lease) => lease.prefix === prefix).map(leaseInterval)
+    const prefixCuS =
+      prefixUse.cu_s + cuSeconds(uncoveredLength([...own, candidate], state.charged))
+    if (prefixCuS > PREFIX_DAILY_CU_SHARE * ceilingS) {
+      return deny('rate_limited', 'client', 'prefix', midnight, now)
+    }
+
+    const dayCuS =
+      day.cu_s +
+      cuSeconds(uncoveredLength([...todays.map(leaseInterval), candidate], state.charged))
+    if (dayCuS > ceilingS) {
+      return deny('daily_capacity_reached', 'daily', 'cu_day', midnight, now)
+    }
+
+    const neon = currentNeon(state, now)
+    if (neon === null) {
+      // No monthly figure to check egress against: hold each day to 1/31 of the stop.
+      const dayEgress = day.egress_bytes + sumEgress(todays) + egressBytes
+      if (dayEgress > EGRESS_DAILY_CONSERVATIVE_BYTES) {
+        return deny('daily_capacity_reached', 'daily', 'egress_day', midnight, now)
+      }
+      return null
+    }
+    const egress =
+      neon.dataTransferBytes +
+      (state.egressTotal - neon.egressBase) +
+      sumEgress(leases) +
+      egressBytes
+    if (egress >= EGRESS_STOP_BYTES) {
+      return deny('capacity_paused', 'monthly', 'egress', neon.periodEnd, now)
+    }
+    const provisionalS = cuSeconds(
+      uncoveredLength([...leases.map(leaseInterval), candidate], state.charged),
+    )
+    const monthCuHours =
+      (neon.computeTimeSeconds + (state.cuTotalS - neon.cuBaseS) + provisionalS) / 3600
+    const allowance = pacingAllowance(elapsedShare(now, neon.periodStart, neon.periodEnd))
+    if (monthCuHours > allowance) {
+      const resumesAt = pacingResumesAt(monthCuHours, neon.periodStart, neon.periodEnd)
+      return deny('capacity_paused', 'monthly', 'cu_month', resumesAt, now)
+    }
+    return null
   }
 
   // --- storage -----------------------------------------------------------

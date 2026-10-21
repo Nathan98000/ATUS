@@ -213,11 +213,11 @@ visitor ──TLS──▶ Cloudflare edge (sets CF-Connecting-IP = visitor)
     - Admission continues while month-to-date plus the bridge estimate stays below `min(85, 10 + 75 × elapsed share of the consumption period)`.
     - There is also a ceiling of 10 CU-h per UTC day.
   - **Bridge estimate.** Between polls, and as the whole estimate when no ground truth is available, busy time and the full 300 s idle tail are charged at the compute's maximum (2 CU). This holds until at least 7 days of reconciled data justify a smaller factor.
-  - **Without ground truth.** The daily ceiling drops to `(100 × 0.9) / 31 ≈ 2.9` CU-h. That way no 30- or 31-day window can exceed the quota, wherever Neon's reset falls.
+  - **Without ground truth.** The daily ceiling drops to `(100 × 0.9) / 31 ≈ 2.9` CU-h. That way no 30- or 31-day window can exceed the quota, wherever Neon's reset falls, as long as everything that wakes Neon through the Worker is charged: analyses, and since review round 2 the metadata lookups that reach a freshly started API process (ADR-015, "Metadata lookups"). The model's own error is in ADR-015 ("Model error").
   - **Neon egress.** Stop at 4.5 GB month-to-date (ground truth only), and admit at most 300 heavy analyses per day. Without ground truth each day's estimated egress is held to 4.5 GB / 31 (ADR-015).
   - **Global.** At most 600 uncached analyses per UTC day. This also bounds KV writes (only computed answers are stored). It bounds Render outbound only for analyses that keep their count; refunded admissions are bounded per network, and metadata lookups by their own cap (ADR-015, "Render outbound through the Worker").
   - **Per IP prefix** (/24 or /48): at most 60 uncached analyses per day, and a fifth of the day's compute ceiling (ADR-015).
-  - **Metadata.** The Worker answers metadata GETs from the static snapshot; the rest reach Render as lookups, at most 200 per prefix and 2,000 in all per day (ADR-015).
+  - **Metadata.** The Worker answers metadata GETs from the static snapshot; the rest reach Render as lookups, at most 200 per prefix and 2,000 in all per day, each charged compute like an analysis when the API reports DB time (ADR-015).
 - **Failure behaviour.** The governor fails closed for uncached analyses and metadata lookups only. Static content, KV hits and the metadata the snapshot answers keep working.
 - **Credentials.** The Neon key is a **project-scoped** API key, stored as a Worker secret and used only by the alarm.
   - Such a key can edit one project but cannot delete it, and only organization admins can create one. Whether the Free plan offers it is undocumented.

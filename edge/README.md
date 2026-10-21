@@ -20,8 +20,9 @@ One `workers.dev` origin serves the SPA build (`../frontend/dist`) as static ass
 - answers `GET /api/_edge/health` itself and handles the `GET /api/v1/wake` prewake;
 - answers the metadata GETs (`/api/v1/meta`, `/activities`, `/activities/presets`,
   `/population/metadata`, `/activities/<code>`) without a query string from the deployed static
-  snapshot (`src/snapshot.ts`); the rest reach the origin as governor-counted lookups (200 per
-  client /24 or /48 and 2,000 in all per UTC day);
+  snapshot (`src/snapshot.ts`); the rest reach the origin as governed lookups (200 per client
+  /24 or /48 and 2,000 in all per UTC day, and the compute budgets below: a lookup that reaches
+  a freshly started API process reads from Neon, and is charged like an analysis);
 - answers analysis POSTs from Workers KV when the exact request bytes were answered before for the same
   release (`X-Cache: edge`; key `r1/<CACHE_SCOPE>/<k>`, `src/cache.ts`), and stores new 200 results
   the API computed (`X-Cache: miss`) that pass the store gate (≤ 16 KiB, 30-day TTL);

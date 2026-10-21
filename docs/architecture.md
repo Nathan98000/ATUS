@@ -398,7 +398,8 @@ assets and never run Worker code. Only `/api` and `/api/*` do
   one SQLite-backed Durable Object that admits uncached analyses against
   per-network, global and heavy daily caps, a per-network share of the
   daily Neon compute, Neon compute-hour and egress budgets, and counts
-  metadata lookups; it fails closed for those two only.
+  metadata lookups and charges those that wake Neon the same way; it fails
+  closed for those two only.
 - **Upstream** (`src/upstream.ts`): no timeout of its own, one retry only when
   the connection fails before response headers; non-API platform responses
   (Render's waking page, Cloudflare 52x) become JSON envelopes such as

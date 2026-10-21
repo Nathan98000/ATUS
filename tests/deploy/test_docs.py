@@ -416,3 +416,44 @@ def test_the_render_suspension_gap_is_a_recorded_accepted_risk():
     adr_011 = (ADR / "ADR-011-hosting.md").read_text(encoding="utf-8")
     accepted = _section(adr_011, "### Accepted risks", "\n### ")
     assert "**A Render suspension is presented as a cold start**" in accepted
+
+
+# --- Review round 2 -----------------------------------------------------------------------
+
+ADR_012 = ADR / "ADR-012-load-and-quota-protection.md"
+GOVERNOR = REPO_ROOT / "edge" / "src" / "governor.ts"
+
+
+def test_no_doc_says_a_metadata_lookup_cannot_wake_neon():
+    """lookup-wakes-neon-uncharged: the first lookup on a freshly started API process
+    runs its snapshot read on Neon; the governor now charges it, and the docs and the
+    governor's comment said lookups never touch Neon, or that the uncharged wakes showed
+    in the daily quota report (in conservative mode no figure it reads did)."""
+    stale = {
+        GOVERNOR: ["Only counted: it never touches Neon"],
+        ADR_015: ["A lookup is only counted (no lease, no settle)",
+                  "costs Render outbound, not Neon compute",
+                  "which the governor does not count but Neon's ground truth shows"],
+        ADR_012: ["The governor does not count these; Neon's ground truth (ADR-015) and the "
+                  "daily quota report would show them."],
+        SECURITY: ["**Metadata cannot keep Neon awake.**"],
+    }
+    for path, phrases in stale.items():
+        text = path.read_text()
+        for phrase in phrases:
+            assert phrase not in text, f"{_name(path)}: {phrase}"
+    lookups = _section(ADR_015.read_text(), "**Metadata lookups.**", "\n\n")
+    for needle in ("`SNAPSHOT_READ_EGRESS_BYTES`", "never refunded", "about 3 such wakes"):
+        assert needle in lookups, needle
+    assert "**Metadata cannot keep Neon awake for free.**" in SECURITY.read_text()
+    s5 = _row(DEPLOYMENT.read_text(), "| **S5. Replay of metadata GETs**")
+    assert "charges that wake session" in s5 and "Worker requests only, as in S3" not in s5
+    assert "export const SNAPSHOT_READ_EGRESS_BYTES = 128 * 1024" in CONSTANTS.read_text()
+
+
+def test_adr_015_says_a_preset_redefinition_needs_a_version_bump():
+    """preset-definitions-outside-kv-scope."""
+    staleness = _section(ADR_015.read_text(), "### Staleness across releases", "\n### ")
+    assert "**Preset definitions are not in the scope.**" in staleness
+    assert "tests/unit/analytics/test_preset_vocabulary.py" in staleness
+    assert (REPO_ROOT / "tests" / "unit" / "analytics" / "test_preset_vocabulary.py").is_file()
