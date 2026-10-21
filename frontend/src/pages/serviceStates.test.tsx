@@ -210,6 +210,45 @@ describe('API version check (F25)', () => {
     expect(
       screen.queryByText(/Something went wrong in the application/),
     ).not.toBeInTheDocument()
+    // Not "works with analysis API v1, but the service reported version v1" (review round 2).
+    expect(screen.getByRole('alert')).not.toHaveTextContent('reported version v1')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'metadata is not in the form this page reads',
+    )
+  })
+
+  it('an API with no data loaded is "no survey data", with Try again (review round 2)', async () => {
+    // The API's own /meta before any load: 200, release "unloaded", no years.
+    const user = userEvent.setup()
+    let loaded = false
+    server.use(
+      http.get(api('/meta'), () =>
+        HttpResponse.json(
+          loaded
+            ? metaFixture
+            : {
+                ...metaFixture,
+                data: {
+                  ...metaFixture.data,
+                  release: 'unloaded',
+                  years: [],
+                  ingestion_run_id: null,
+                },
+              },
+        ),
+      ),
+    )
+    renderApp('/explore')
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('No survey data is loaded')
+    expect(
+      screen.queryByRole('heading', {
+        name: 'This page and the analysis service are out of step',
+      }),
+    ).not.toBeInTheDocument()
+    loaded = true
+    await user.click(within(alert).getByRole('button', { name: 'Try again' }))
+    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
   })
 })
 
@@ -776,6 +815,64 @@ describe('offline (review round 1)', () => {
     act(() => onlineManager.setOnline(true))
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
     expect(screen.queryByText('Preparing the analysis…')).not.toBeInTheDocument()
+  })
+
+  /** The browser goes offline and back online (a Wi-Fi change, a laptop waking up). */
+  async function reconnect(times: number) {
+    for (let index = 0; index < times; index += 1) {
+      act(() => {
+        onlineManager.setOnline(false)
+        onlineManager.setOnline(true)
+      })
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+  }
+
+  // Review round 2: refetchOnReconnect re-sent every analysis that had
+  // failed, final answers included — another full analysis_timeout query, a
+  // rate-limited request while its "Try again" countdown still ran.
+  it.each([
+    ['analysis_timeout', 503, { scope: 'global' }, '60'],
+    ['rate_limited', 429, { scope: 'client' }, '60'],
+    ['daily_capacity_reached', 503, { scope: 'daily', budget: 'global' }, null],
+    ['capacity_paused', 503, { scope: 'monthly', budget: 'cu_month' }, null],
+    ['database_paused', 503, null, '3600'],
+    ['capacity_unavailable', 503, null, '60'],
+    ['data_version_mismatch', 503, null, '30'],
+    ['insufficient_data', 422, null, null],
+  ] as const)(
+    'a final %s is not sent again when the browser comes back online (review round 2)',
+    async (code, status, details, retryAfter) => {
+      let posts = 0
+      server.use(
+        http.post(api('/analysis/estimate'), () => {
+          posts += 1
+          return HttpResponse.json(
+            { error: { code, message: 'Refused.', details } },
+            { status, headers: retryAfter === null ? {} : { 'Retry-After': retryAfter } },
+          )
+        }),
+      )
+      renderApp(sleepRoute)
+      await screen.findByRole('alert')
+      expect(posts).toBe(1)
+      await reconnect(3)
+      expect(posts).toBe(1)
+    },
+  )
+
+  it('an incompatible /meta is not fetched again when the browser comes back online (review round 2)', async () => {
+    server.use(
+      http.get(api('/meta'), () => HttpResponse.json({ ...metaFixture, api_version: 'v2' })),
+    )
+    const requests = countRequests()
+    renderApp('/explore')
+    await screen.findByRole('heading', {
+      name: 'This page and the analysis service are out of step',
+    })
+    expect(requests('GET /api/v1/meta')).toBe(1)
+    await reconnect(2)
+    expect(requests('GET /api/v1/meta')).toBe(1)
   })
 })
 

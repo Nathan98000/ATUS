@@ -4,7 +4,7 @@
  */
 import { QueryClientProvider } from '@tanstack/react-query'
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, delay, http } from 'msw'
 import { MemoryRouter, Route, Routes } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
@@ -224,6 +224,35 @@ describe('error handling', () => {
   it('rejects unknown analysis types in the URL', async () => {
     renderAnalysisRoute(`/analysis/median?spec=${encodeSpec(sleepSpec)}`)
     expect(await screen.findByRole('alert')).toHaveTextContent('unknown analysis type')
+  })
+
+  it('the heavy-only daily cap offers a shorter analysis (review round 2)', async () => {
+    // The edge governor refuses only heavy analyses once 300 were admitted
+    // today; a full-period trend is heavy, a single year is not.
+    server.use(
+      http.post(api('/analysis/trend'), () =>
+        HttpResponse.json(
+          {
+            error: {
+              code: 'daily_capacity_reached',
+              message: 'Daily capacity reached.',
+              details: { scope: 'daily', budget: 'heavy', resumes_at: '2026-10-22T00:00:00Z' },
+            },
+          },
+          { status: 503, headers: { 'Retry-After': '3600' } },
+        ),
+      ),
+    )
+    const trendSpec = { ...sleepSpec, years: [2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023] }
+    renderAnalysisRoute(`/analysis/trend?spec=${encodeSpec(trendSpec)}`)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('Today’s capacity for long analyses is used up')
+    expect(alert).toHaveTextContent('Analyses of up to 7 years')
+    expect(within(alert).getByRole('link', { name: 'Adjust analysis' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/explore\?op=trend&spec=/),
+    )
+    expect(within(alert).queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
   })
 })
 

@@ -2,7 +2,12 @@
 import { describe, expect, it } from 'vitest'
 
 import { metaFixture } from '../test/fixtures'
-import { IncompatibleApiError, apiMajorVersion, checkMetaCompatibility } from './compat'
+import {
+  DataNotLoadedError,
+  IncompatibleApiError,
+  apiMajorVersion,
+  checkMetaCompatibility,
+} from './compat'
 
 describe('apiMajorVersion', () => {
   it.each([
@@ -41,7 +46,6 @@ describe('checkMetaCompatibility', () => {
   it.each([
     ['not an object', 'v1 please'],
     ['no version', { ...metaFixture, api_version: undefined }],
-    ['no years', { ...metaFixture, data: { ...metaFixture.data, years: [] } }],
     ['years not integers', { ...metaFixture, data: { ...metaFixture.data, years: ['2025'] } }],
     ['no data block', { ...metaFixture, data: null }],
     [
@@ -53,5 +57,40 @@ describe('checkMetaCompatibility', () => {
     ],
   ])('rejects an unreadable /meta (%s)', (_label, value) => {
     expect(() => checkMetaCompatibility(value)).toThrow(IncompatibleApiError)
+  })
+})
+
+function thrown(value: unknown): unknown {
+  try {
+    checkMetaCompatibility(value)
+  } catch (error) {
+    return error
+  }
+  return null
+}
+
+describe('checkMetaCompatibility: a service with no data loaded (review round 2)', () => {
+  it.each([
+    [
+      'the API’s own /meta before any load',
+      {
+        ...metaFixture,
+        data: { ...metaFixture.data, release: 'unloaded', years: [], ingestion_run_id: null },
+      },
+    ],
+    ['no years', { ...metaFixture, data: { ...metaFixture.data, years: [] } }],
+  ])('is data not loaded, not an incompatible API (%s)', (_label, value) => {
+    const failure = thrown(value)
+    expect(failure).not.toBeInstanceOf(IncompatibleApiError)
+    expect(failure).toBeInstanceOf(DataNotLoadedError)
+  })
+
+  it('another major version with no data is still incompatible', () => {
+    const value = {
+      ...metaFixture,
+      api_version: 'v2',
+      data: { release: 'unloaded', years: [] },
+    }
+    expect(thrown(value)).toBeInstanceOf(IncompatibleApiError)
   })
 })

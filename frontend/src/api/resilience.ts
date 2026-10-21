@@ -26,7 +26,7 @@
  * this loop replaces them so the budget, the delays and the waking notice
  * are decided in one place.
  */
-import { ApiError, NetworkError } from './client'
+import { ApiError, NetworkError, browserOffline } from './client'
 import { trackApiCall, type CallKind } from './serviceStatus'
 
 /** Total time a call keeps retrying while the service wakes (ADR-011: "within a 150 s budget"). */
@@ -71,7 +71,7 @@ const TRANSIENT_CODES = new Set(['overloaded', 'database_unavailable'])
 export function classifyFailure(error: unknown): FailureClass {
   if (error instanceof NetworkError) {
     // Offline is not a cold start; say so instead of waiting out the budget.
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'final'
+    if (error.offline || browserOffline()) return 'final'
     return 'waking'
   }
   if (!(error instanceof ApiError)) return 'final'
@@ -105,6 +105,16 @@ export function classifyFailure(error: unknown): FailureClass {
     return 'waking'
   }
   return 'final'
+}
+
+/**
+ * The request failed because the browser was offline. Coming back online is
+ * the one event that changes such an answer, so it is the only failure a
+ * reconnect retries (`queries.ts`); every other final answer waits for the
+ * visitor, and a rate limit for its `Retry-After` and the visitor.
+ */
+export function isOfflineFailure(error: unknown): boolean {
+  return error instanceof NetworkError && error.offline
 }
 
 /** Delay before attempt `attempt + 1`: Retry-After when given, else capped exponential backoff. */

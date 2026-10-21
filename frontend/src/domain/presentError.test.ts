@@ -4,9 +4,11 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { readFileSync } from 'node:fs'
+
 import { ApiError, NetworkError } from '../api/client'
-import { IncompatibleApiError } from '../api/compat'
-import { isFullPageError, presentError } from './presentError'
+import { DataNotLoadedError, IncompatibleApiError } from '../api/compat'
+import { HEAVY_YEAR_QUERIES, isFullPageError, presentError } from './presentError'
 
 const GENERIC_HEADING = 'The analysis service reported an unexpected problem'
 
@@ -139,7 +141,6 @@ describe('presentError: every contract code is specific', () => {
       null,
       { scope: 'daily', retry_after_seconds: 32400 },
       { scope: 'global', budget: 'global', resumes_at: '2026-10-21T00:00:00Z' },
-      { scope: 'daily', budget: 'heavy', resumes_at: '2026-10-21T00:00:00Z' },
       { scope: 'daily', budget: 'cu_day', resumes_at: '2026-10-21T00:00:00Z' },
     ]) {
       const presented = presentError(
@@ -354,5 +355,113 @@ describe('presentError: client-side failures', () => {
     expect(isFullPageError(apiError(503, 'daily_capacity_reached'))).toBe(false)
     expect(isFullPageError(apiError(429, 'rate_limited'))).toBe(false)
     expect(isFullPageError(new NetworkError('x'))).toBe(false)
+  })
+})
+
+describe('presentError: review round 2', () => {
+  const now = Date.UTC(2026, 9, 5, 12, 0, 0)
+
+  it('the heavy-only daily cap says that shorter analyses still run, and offers to adjust', () => {
+    // The governor refuses only heavy analyses (8 or more year queries) once
+    // 300 were admitted in the UTC day; light ones are still admitted.
+    const presented = presentError(
+      apiError(503, 'daily_capacity_reached', {
+        retryAfter: 12 * 3600,
+        details: { scope: 'daily', budget: 'heavy', resumes_at: '2026-10-06T00:00:00Z' },
+      }),
+      now,
+    )
+    expect(presented.kind).toBe('limit')
+    expect(presented.heading).toBe('Today’s capacity for long analyses is used up')
+    expect(presented.heading).not.toMatch(/new analyses/)
+    expect(presented.message).toMatch(/8 or more years \(4 or more for a comparison\)/)
+    expect(presented.message).toMatch(
+      /Analyses of up to 7 years \(up to 3 for a comparison\) still run/,
+    )
+    expect(presented.message).toMatch(/00:00 UTC \(.+ your time\)/)
+    expect(presented.adjustable).toBe(true)
+    expect(presented.retryable).toBe(false)
+  })
+
+  it('the heavy threshold is the edge governor’s', () => {
+    const constants = readFileSync('../edge/src/constants.ts', 'utf8')
+    expect(constants).toContain(`export const HEAVY_YEAR_QUERIES = ${HEAVY_YEAR_QUERIES}\n`)
+  })
+
+  it('a monthly pacing pause of hours names the time it lifts, not a monthly reset', () => {
+    const presented = presentError(
+      apiError(503, 'capacity_paused', {
+        retryAfter: 7200,
+        details: {
+          scope: 'monthly',
+          budget: 'cu_month',
+          resumes_at: new Date(now + 7200_000).toISOString(),
+        },
+      }),
+      now,
+    )
+    expect(presented.kind).toBe('paused')
+    expect(presented.message).not.toMatch(/nearly used up/)
+    expect(presented.message).not.toMatch(/until it resets/)
+    expect(presented.message).toMatch(/spread/)
+    expect(presented.message).toMatch(/resume (tomorrow )?at about \d{1,2}:\d\d/)
+  })
+
+  it('a pause at the monthly compute cap names the day it lifts', () => {
+    const presented = presentError(
+      apiError(503, 'capacity_paused', {
+        retryAfter: 20 * 24 * 3600,
+        details: {
+          scope: 'monthly',
+          budget: 'cu_month',
+          resumes_at: new Date(now + 20 * 24 * 3600_000).toISOString(),
+        },
+      }),
+      now,
+    )
+    expect(presented.message).toMatch(/resume around October 25/)
+    expect(presented.message).not.toMatch(/nearly used up/)
+  })
+
+  it('the egress budget keeps the "nearly used up until it resets" copy', () => {
+    const presented = presentError(
+      apiError(503, 'capacity_paused', {
+        details: {
+          scope: 'monthly',
+          budget: 'egress',
+          resumes_at: new Date(now + 20 * 24 * 3600_000).toISOString(),
+        },
+      }),
+      now,
+    )
+    expect(presented.message).toMatch(/nearly used up/)
+    expect(presented.message).toMatch(/until it resets \(around October 25\)/)
+  })
+
+  it('a v1 /meta in a shape this page cannot read does not claim "v1, but v1"', () => {
+    const presented = presentError(
+      new IncompatibleApiError('The service metadata does not have the shape…', 'v1'),
+    )
+    expect(presented.kind).toBe('incompatible')
+    expect(presented.message).not.toMatch(/reported version v1/)
+    expect(presented.message).toMatch(/metadata is not in the form this page reads/)
+    expect(presented.message).toMatch(/Reloading the page/)
+  })
+
+  it('a service without survey data loaded is "no data", with Try again', () => {
+    const presented = presentError(new DataNotLoadedError())
+    expect(presented.kind).toBe('service')
+    expect(presented.heading).toBe('No survey data is loaded')
+    expect(presented.retryable).toBe(true)
+    expect(isFullPageError(new DataNotLoadedError())).toBe(false)
+  })
+
+  it('forbidden_origin through the site is the deployment’s fault, not the visitor’s', () => {
+    const presented = presentError(apiError(403, 'forbidden_origin'))
+    expect(presented.message).not.toMatch(/only accepts requests sent through/)
+    expect(presented.message).toMatch(/problem in ATUS Explorer’s deployment/)
+    expect(presented.message).toMatch(/not in your analysis/)
+    expect(presented.hint).toMatch(/Starter examples/)
+    expect(presented.retryable).toBe(false)
   })
 })

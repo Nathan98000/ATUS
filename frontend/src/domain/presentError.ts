@@ -11,7 +11,12 @@
  * is kept for a collapsible developer section, never the primary explanation.
  */
 import { ApiError, NetworkError } from '../api/client'
-import { IncompatibleApiError, SUPPORTED_API_VERSION } from '../api/compat'
+import {
+  DataNotLoadedError,
+  IncompatibleApiError,
+  SUPPORTED_API_VERSION,
+  apiMajorVersion,
+} from '../api/compat'
 import { COLD_START_BUDGET_MS } from '../api/resilience'
 
 /**
@@ -45,6 +50,22 @@ export interface PresentedError {
 const STILL_WORKS = 'Starter examples and analyses that were computed earlier still open.'
 
 /**
+ * Year queries at which the edge governor counts an analysis as heavy:
+ * `len(years)`, doubled for a comparison (edge/src/constants.ts
+ * `HEAVY_YEAR_QUERIES`; a test keeps the two equal).
+ */
+export const HEAVY_YEAR_QUERIES = 8
+
+/** `data_not_loaded`, and a v1 `/meta` that reports no loaded data. */
+const DATA_NOT_LOADED = {
+  kind: 'service',
+  heading: 'No survey data is loaded',
+  message:
+    'The analysis service is running, but its survey data is not loaded yet. Please try again later.',
+  retryable: true,
+} as const
+
+/**
  * A "waking" failure (`resilience.ts`) is shown only after the automatic
  * retries used up the cold-start budget: the host has not answered for that
  * long, which a normal cold start does not take. Free hosting can also be
@@ -71,18 +92,27 @@ export function presentError(error: unknown, now: number = Date.now()): Presente
   }
 
   if (error instanceof IncompatibleApiError) {
+    // The right major version in a shape this page cannot read is not
+    // "works with v1, but the service reported v1" (review round 2).
+    const sameVersion = apiMajorVersion(error.reportedVersion) === SUPPORTED_API_VERSION
     return {
       ...base,
       kind: 'incompatible',
       heading: 'This page and the analysis service are out of step',
-      message: `This version of ATUS Explorer works with analysis API ${SUPPORTED_API_VERSION}, but the service reported ${
-        error.reportedVersion
-          ? `version ${error.reportedVersion}`
-          : 'something this page cannot read'
-      }. Reloading the page usually loads the matching version.`,
+      message: sameVersion
+        ? 'The analysis service’s metadata is not in the form this page reads. Reloading the page usually loads the matching version.'
+        : `This version of ATUS Explorer works with analysis API ${SUPPORTED_API_VERSION}, but the service reported ${
+            error.reportedVersion
+              ? `version ${error.reportedVersion}`
+              : 'something this page cannot read'
+          }. Reloading the page usually loads the matching version.`,
       hint: 'If it persists, the service is being updated; please try again later.',
       technical: error.message,
     }
+  }
+
+  if (error instanceof DataNotLoadedError) {
+    return { ...base, ...DATA_NOT_LOADED, technical: error.message }
   }
 
   if (error instanceof NetworkError) {
@@ -207,7 +237,19 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         retryAfterSeconds: retryAfter,
       }
     case 'daily_capacity_reached':
-      // Always a shared allowance: the API sends it with details.scope
+      // The edge governor's heavy-only cap: analyses below the heavy
+      // threshold are still admitted (review round 2).
+      if (budgetOf(error) === 'heavy') {
+        return {
+          ...common,
+          kind: 'limit',
+          heading: 'Today’s capacity for long analyses is used up',
+          message: `This free service can run a limited number of long analyses per day — those covering ${HEAVY_YEAR_QUERIES} or more years (${HEAVY_YEAR_QUERIES / 2} or more for a comparison) — and today’s are used up. Analyses of up to ${HEAVY_YEAR_QUERIES - 1} years (up to ${HEAVY_YEAR_QUERIES / 2 - 1} for a comparison) still run. The limit resets at ${utcMidnightPhrase(now)}.`,
+          hint: `Adjust the analysis to fewer years. ${STILL_WORKS}`,
+          adjustable: true,
+        }
+      }
+      // Otherwise a shared allowance: the API sends it with details.scope
       // 'daily', the edge governor with 'global' or 'daily'. A per-network
       // daily denial is `rate_limited` with budget 'prefix' (above).
       return {
@@ -218,6 +260,19 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         hint: STILL_WORKS,
       }
     case 'capacity_paused':
+      // The edge governor's monthly compute budget pauses whenever usage runs
+      // ahead of its pacing line — early in the month too, often for an hour
+      // or two — so it states neither "nearly used up" nor a monthly reset,
+      // only when the pause lifts (review round 2).
+      if (budgetOf(error) === 'cu_month') {
+        return {
+          ...common,
+          kind: 'paused',
+          heading: 'New analyses are paused for now',
+          message: `ATUS Explorer runs entirely on free hosting. To spread this month’s free database allowance over the whole month, new analyses are paused for a while${resumePhrase(resumesAtSeconds(error, now) ?? retryAfter, now)}.`,
+          hint: STILL_WORKS,
+        }
+      }
       return {
         ...common,
         kind: 'paused',
@@ -317,22 +372,18 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         retryAfterSeconds: retryAfter,
       }
     case 'data_not_loaded':
-      return {
-        ...common,
-        kind: 'service',
-        heading: 'No survey data is loaded',
-        message:
-          'The analysis service is running, but its survey data is not loaded yet. Please try again later.',
-        retryable: true,
-        retryAfterSeconds: retryAfter,
-      }
+      return { ...common, ...DATA_NOT_LOADED, retryAfterSeconds: retryAfter }
     case 'forbidden_origin':
+      // Through the site the edge Worker always adds its secret, so this
+      // answer means the API does not accept the Worker's secret: the
+      // deployment's configuration, never the visitor (review round 2).
       return {
         ...common,
         kind: 'app',
-        heading: 'This request was refused',
+        heading: 'The analysis service refused this request',
         message:
-          'The analysis service only accepts requests sent through ATUS Explorer’s own site.',
+          'The site’s connection to the analysis service is misconfigured, so new analyses cannot run. This is a problem in ATUS Explorer’s deployment, not in your analysis.',
+        hint: STILL_WORKS,
       }
     // The API and the edge answer these when a request does not fit the HTTP
     // contract at all (an unknown path, method or content type). The page
@@ -466,6 +517,20 @@ function utcMidnightPhrase(now: number): string {
     timeZoneName: 'short',
   })
   return `00:00 UTC (${local} your time)`
+}
+
+/**
+ * "; they resume at about 3:45 PM" within a day, "; they resume around
+ * October 31" later, '' when the service did not say.
+ */
+function resumePhrase(seconds: number | null, now: number): string {
+  if (seconds === null || seconds <= 0) return ''
+  if (seconds < 20 * 60 * 60) return `; they resume ${resumeTimePhrase(seconds, now)}`
+  const date = new Date(now + seconds * 1000).toLocaleDateString(undefined, {
+    month: 'long',
+    day: 'numeric',
+  })
+  return `; they resume around ${date}`
 }
 
 /** " (around October 1)" when the service said how long; '' otherwise. */

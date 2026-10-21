@@ -138,8 +138,11 @@ frontend/public/
 Metadata queries load once per page (`staleTime: Infinity`) and loaded
 metadata never refetches in the background — not on window focus, not on
 reconnect — because a focus refetch could wake a sleeping free-tier host for
-nothing (audit F62); only a query that failed is retried when the browser
-comes back online. Every query runs with `networkMode: "always"`: TanStack
+nothing (audit F62). Coming back online refetches only a query whose last
+attempt failed because the browser was offline; a final answer (an
+`analysis_timeout`, a paused quota, a 422, an incompatible API) or a rate
+limit whose `Retry-After` still runs is never re-sent by a reconnect — the
+visitor decides (review round 2). Every query runs with `networkMode: "always"`: TanStack
 Query's default pauses a query that starts while the browser is offline
 before its function runs, which left a new analysis on "Calculating…" for as
 long as the browser stayed offline, with no request and no message (review
