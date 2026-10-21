@@ -233,6 +233,76 @@ describe('governor state a compromised version wrote', () => {
     expect(result.ok).toBe(true)
   })
 
+  it('drops a lease whose admission time gives no date when an instance starts', async () => {
+    // SQLite has no date that far back, so the day check reads NULL there:
+    // such a lease must be dropped as mis-dated, not kept as "not impossible".
+    // Kept, it is charged a whole provisional window as soon as anything is
+    // admitted, and many of them close the day's compute.
+    controlClock(T)
+    await governorSql(
+      `INSERT INTO leases (id, day, prefix, heavy, admitted_at, egress_bytes)
+       VALUES ('undated', ?, ?, 0, ?, 1024)`,
+      TODAY,
+      PREFIX,
+      -1e16,
+    )
+    await runInDurableObject(governorStub(), (_instance, state) => {
+      expect(new GovernorClass(state, env)).toBeInstanceOf(GovernorClass)
+    })
+    expect(await governorSql('SELECT id FROM leases')).toEqual([])
+  })
+
+  it('keeps everything this code wrote when an instance starts', async () => {
+    // The checks run on every start, and an idle Durable Object is evicted and
+    // started again often, not only on deploys: a lease, a row or a charged
+    // window they dropped by mistake would let in-flight work go uncharged.
+    const clock = controlClock(T)
+    const first = (await governorStub().admit({
+      prefix: PREFIX,
+      costClass: 'heavy',
+    })) as AdmitResult
+    if (!first.ok) throw new Error('denied')
+    clock.advance(1000)
+    await governorStub().settle(first.leaseId, { kind: 'computed', dbMs: 80 })
+    clock.advance(1000)
+    const analysis = (await governorStub().admit({
+      prefix: PREFIX,
+      costClass: 'light',
+    })) as AdmitResult
+    const lookup = (await governorStub().admitLookup({ prefix: PREFIX })) as AdmitResult
+    if (!analysis.ok || !lookup.ok) throw new Error('denied')
+    const tables = async (): Promise<unknown[]> => [
+      await governorSql('SELECT * FROM days ORDER BY day'),
+      await governorSql('SELECT * FROM prefixes ORDER BY day, prefix'),
+      await governorSql('SELECT * FROM leases ORDER BY id'),
+      await governorSql('SELECT value FROM state'),
+    ]
+    const before = await tables()
+    expect(await governorSql('SELECT id FROM leases')).toHaveLength(2)
+
+    clock.advance(1000)
+    await runInDurableObject(governorStub(), (_instance, state) => {
+      expect(new GovernorClass(state, env)).toBeInstanceOf(GovernorClass)
+    })
+    expect(await tables()).toEqual(before)
+
+    // The kept charged window still covers the next settle's start, and the
+    // kept lease is still settled and charged.
+    const [{ cu_s: settled }] = (await governorSql<{ cu_s: number }>(
+      'SELECT cu_s FROM days WHERE day = ?',
+      TODAY,
+    )) as [{ cu_s: number }]
+    clock.advance(1000)
+    await governorStub().settle(analysis.leaseId, { kind: 'computed', dbMs: 80 })
+    const [{ cu_s: after }] = (await governorSql<{ cu_s: number }>(
+      'SELECT cu_s FROM days WHERE day = ?',
+      TODAY,
+    )) as [{ cu_s: number }]
+    expect(after).toBeGreaterThan(settled)
+    expect(after - settled).toBeLessThan(settled)
+    expect(await governorSql('SELECT id FROM leases')).toEqual([{ id: lookup.leaseId }])
+  })
+
   it.each([
     [
       'a negative global count',

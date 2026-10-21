@@ -945,10 +945,13 @@ export class Governor extends DurableObject<Env> {
     const today = utcDay(now)
     this.sql.exec('DELETE FROM days WHERE day > ?', today)
     this.sql.exec('DELETE FROM prefixes WHERE day > ?', today)
+    // `IS NOT 1`, not `NOT`: a condition that reads NULL (`strftime` gives no
+    // date for an admission outside SQLite's date range) deletes the row too.
     this.sql.exec(
-      `DELETE FROM leases WHERE NOT (
+      `DELETE FROM leases WHERE (
          admitted_at <= ? AND day = strftime('%Y-%m-%d', admitted_at / 1000, 'unixepoch')
-         AND egress_bytes >= 0 AND egress_bytes <= ? AND heavy IN (0, 1) AND lookup IN (0, 1))`,
+         AND egress_bytes >= 0 AND egress_bytes <= ? AND heavy IN (0, 1) AND lookup IN (0, 1)
+       ) IS NOT 1`,
       now,
       MAX_LEASE_EGRESS_BYTES,
     )
