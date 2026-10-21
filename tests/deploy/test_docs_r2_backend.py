@@ -8,13 +8,47 @@ Read-only; needs neither Docker nor the network.
 
 from __future__ import annotations
 
+import json
+
 from .conftest import REPO_ROOT
-from .test_docs_accuracy import ADR, DOCS, ENV_PRODUCTION, _flat, _name, _read, _section
+from .test_docs_accuracy import (
+    ADR,
+    DOCS,
+    DOCS_DIR,
+    ENV_PRODUCTION,
+    OPERATIONS,
+    _flat,
+    _name,
+    _read,
+    _row,
+    _section,
+)
 
 CONFIG = REPO_ROOT / "src" / "atus_pipeline" / "config.py"
+PHASE4_FIXTURE = "tests/unit/analytics/phase4_queries.json"
 RUNNER = REPO_ROOT / "src" / "atus_pipeline" / "api" / "analysis_runner.py"
 ADR_012 = ADR / "ADR-012-load-and-quota-protection.md"
 SNAPSHOT_DB_TESTS = REPO_ROOT / "tests" / "integration" / "api" / "test_snapshot_db.py"
+
+
+# --- phase24-sql-baseline-not-pinned ---------------------------------------------------
+
+
+def test_the_phase_2_4_sql_the_docs_cite_is_the_frozen_one():
+    """phase24-sql-baseline-not-pinned: the docs cite the pushdown tests as proof that the
+    SQL differs from the Phase 2-4 query only by the pushdown, but every check rendered
+    that query from the current template. The frozen 387fc2d rendering now anchors it,
+    and the evidence statements say so."""
+    fixture = json.loads(_read(REPO_ROOT / PHASE4_FIXTURE))
+    assert "387fc2d" in fixture["source"] and len(fixture["queries"]) >= 10
+    test = _read(REPO_ROOT / "tests" / "unit" / "analytics" / "test_year_pushdown_sql.py")
+    assert "def test_the_non_pushdown_rendering_is_the_frozen_phase_4_query(" in test
+    analytics = _flat(_read(DOCS_DIR / "analytics.md"))
+    assert f"frozen in {PHASE4_FIXTURE}" in analytics
+    row = _row(_read(OPERATIONS), "`tests/unit/analytics/test_year_pushdown_sql.py`")
+    assert "387fc2d" in row and PHASE4_FIXTURE in row and "byte for byte" in row
+    plans = _read(REPO_ROOT / "tests" / "data_quality" / "test_query_plans.py")
+    assert "held to the text 387fc2d rendered" in _flat(plans.split('"""', 2)[1])
 
 
 # --- dry-run-stale-snapshot-422 --------------------------------------------------------

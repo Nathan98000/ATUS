@@ -33,7 +33,9 @@ noise) keep the version, and are listed here:
   counts and `numeric` sums are identical, and replicate `float8` sums can differ only by
   summation order. Evidence: `tests/unit/analytics/test_year_pushdown_sql.py`
   (the rendered SQL differs from the Phase 2-4 query only by the pushdown and
-  `MATERIALIZED`); `tests/integration/test_year_pushdown.py` (old and new
+  `MATERIALIZED`, and the Phase 2-4 query it renders is byte for byte the
+  text the Phase 1-4 code, 387fc2d, rendered: frozen in
+  `tests/unit/analytics/phase4_queries.json` for shapes covering every branch); `tests/integration/test_year_pushdown.py` (old and new
   queries return the same counts and `numeric` sums, and replicate sums
   within the §9 tolerance); the opt-in full-database check
   `tests/data_quality/test_query_plans.py`; and the final §9 HTTP replay

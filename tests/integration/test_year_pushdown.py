@@ -3,6 +3,9 @@ one return the same counts and exactly the same ``numeric`` sums, and
 replicate ``float8`` sums within the §9 tolerance, over the audit's extreme
 specifications and a seeded random sample, on the randomized dataset and on
 the hand-computed fixture; the engine's outputs compare equivalent too.
+The Phase 2-4 query is the current template without the pushdown, held
+byte for byte to what 387fc2d rendered by
+tests/unit/analytics/test_year_pushdown_sql.py.
 
 (The same check ran read-only on the full database over 71 real
 specifications: docs/adr/ADR-013-data-releases-and-serving-db.md.)

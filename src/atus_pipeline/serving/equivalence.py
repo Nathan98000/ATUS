@@ -147,7 +147,9 @@ def compare_statistics(rows_a: list[tuple], rows_b: list[tuple]) -> Comparison:
 def rendered_queries(conn, resolver, spec, *, years_loaded: tuple[int, ...]
                      ) -> list[tuple[str, str, dict]]:
     """For each sufficient-statistics query the engine runs for ``spec`` (two
-    for a comparison): the Phase 2-4 SQL, the current SQL (year pushdown),
+    for a comparison): the Phase 2-4 SQL (the template without the pushdown,
+    held byte for byte to what 387fc2d rendered by
+    ``tests/unit/analytics/test_year_pushdown_sql.py``), the current SQL (year pushdown),
     and their parameters. Raises :class:`AnalyticsError` for a spec the engine
     refuses (mirrors ``AnalysisEngine._prepare``)."""
     from ..analytics.errors import InvalidSpecError
