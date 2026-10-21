@@ -11,6 +11,8 @@ durable daily budget lives at the edge.
 * :class:`DailyCap` — a process-wide count of uncached analyses per UTC day.
 * :class:`AdmissionLanes` — at most N uncached analyses computing at once, of
   which at most M heavy; a request waits a bounded time for a lane.
+* :class:`RequestSlots` — at most :func:`max_inflight_requests` requests
+  (liveness excepted) in the app at once, single-flight joiners included.
 * :func:`is_heavy` — the deterministic cost classifier the lanes use.
 * :func:`client_identity` — which client a request is charged to.
 """
@@ -343,6 +345,49 @@ class AdmissionLanes:
         return False
 
 
+# --------------------------------------------------------------------------- #
+# requests in flight                                                           #
+# --------------------------------------------------------------------------- #
+
+
+def max_inflight_requests(settings: Settings) -> int:
+    """Requests the app serves at once, liveness (``/health``) excepted.
+
+    Four per worker thread, as uvicorn's connection bound was before review
+    round 3: room for queued cheap requests and for many requests waiting on
+    one analysis. uvicorn's own bound (``serve.limit_concurrency``) lies well
+    above it, so ordinary traffic can never fill it and the platform's health
+    check always reaches the app (review r3, health-503-under-joiners)."""
+    return max(32, settings.api_threads * 4)
+
+
+class RequestSlots:
+    """At most ``limit`` requests in the app at once; the next one gets 503
+    ``overloaded`` before routing (``GuardMiddleware``).
+
+    Single-flight joiners take no lane and no analysis token, and wait as long
+    as the computation they joined (up to the 90 s deadline), so without this
+    bound enough of them filled uvicorn's ``limit_concurrency`` and its own
+    503 reached ``/health`` too (review r3). Used on the event loop only, so it
+    needs no lock.
+    """
+
+    def __init__(self, limit: int):
+        self.limit = limit
+        self.in_flight = 0
+        self.rejections = 0
+
+    def try_enter(self) -> bool:
+        if self.in_flight >= self.limit:
+            self.rejections += 1
+            return False
+        self.in_flight += 1
+        return True
+
+    def leave(self) -> None:
+        self.in_flight -= 1
+
+
 @dataclass
 class Protection:
     """The per-process protection state, built once per application lifespan."""
@@ -351,6 +396,7 @@ class Protection:
     analysis_limiter: TokenBucketLimiter
     daily_cap: DailyCap
     lanes: AdmissionLanes
+    requests: RequestSlots
 
     @classmethod
     def from_settings(cls, settings: Settings) -> Protection:
@@ -362,4 +408,5 @@ class Protection:
                 settings.api_max_inflight, settings.api_max_inflight_heavy,
                 settings.api_admission_wait_s,
             ),
+            requests=RequestSlots(max_inflight_requests(settings)),
         )

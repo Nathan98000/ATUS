@@ -504,3 +504,104 @@ class TestHttpEdgeCases:
         })
         assert preflight.status_code == 200
         assert preflight.headers["access-control-allow-origin"] == origin
+
+
+class TestRequestsInFlight:
+    """Review r3 (health-503-under-joiners): single-flight joiners took no
+    lane, no token and had no cap, so enough of them filled uvicorn's
+    ``limit_concurrency`` and its own 503 reached /health, the platform's
+    health check. The app now bounds the requests it serves (liveness
+    excepted) itself, below uvicorn's bound (the real-server test is
+    ``tests/integration/api_prod/test_server.py::TestHealthWhileRequestsWait``)."""
+
+    def test_requests_beyond_the_bound_are_shed_before_routing(self, build):
+        client, fake_db = build()
+        slots = client.app.state.protection.requests
+        assert slots.limit == 64
+        slots.in_flight = slots.limit        # every slot held, e.g. by joiners
+        shed = client.post(ESTIMATE, json=BODY)
+        assert shed.status_code == 503
+        assert shed.json()["error"] == {
+            "code": "overloaded",
+            "message": "The service is busy with other analyses. Retry shortly.",
+            "details": {"retry_after_seconds": 10, "scope": "global"},
+        }
+        assert shed.headers["Retry-After"] == "10"
+        assert shed.headers["Server-Timing"].startswith("db;dur=0,")
+        assert client.get("/api/v1/population/metadata").status_code == 503
+        assert fake_db.transactions == []
+        assert slots.rejections == 2
+        # Liveness is never counted or refused.
+        health = client.get("/health")
+        assert health.status_code == 200 and health.json()["status"] == "ok"
+        assert slots.in_flight == slots.limit and slots.rejections == 2
+
+    def test_a_slot_is_held_for_the_request_and_given_back(self, build):
+        client, _ = build()
+        slots = client.app.state.protection.requests
+        assert client.post(ESTIMATE, json=BODY).status_code == 200
+        assert client.get("/api/v1/population/metadata").status_code == 200
+        assert client.post(ESTIMATE, json={"years": [2023]}).status_code == 422
+        assert slots.in_flight == 0 and slots.rejections == 0
+
+    def test_counted_on_metrics(self, build):
+        client, _ = build(ops_token="o" * 40)
+        slots = client.app.state.protection.requests
+        slots.in_flight = slots.limit
+        assert client.post(ESTIMATE, json=BODY).status_code == 503
+        slots.in_flight = 0
+        text = client.get("/metrics", headers={"Authorization": "Bearer " + "o" * 40}).text
+        assert "atus_requests_in_flight_limit 64" in text
+        assert "atus_requests_shed_total 1" in text
+
+
+class TestCancelledRequests:
+    """Review r3 (sigterm-plain-500): uvicorn cancels the requests still
+    running when its graceful shutdown window ends, before the lifespan
+    shutdown; unanswered, the client got uvicorn's plain-text 500. The
+    real-server test is ``tests/integration/api_prod/test_server.py::
+    TestShutdownDuringAnAnalysis``."""
+
+    @staticmethod
+    def _call(app, tmp_path) -> list[dict]:
+        from atus_pipeline.api.middleware import RequestContextMiddleware
+
+        middleware = RequestContextMiddleware(app, make_settings(tmp_path))
+        sent: list[dict] = []
+
+        async def receive():
+            return {"type": "http.request", "body": b"{}", "more_body": False}
+
+        async def send(message):
+            sent.append(message)
+
+        scope = {"type": "http", "method": "POST", "path": ESTIMATE,
+                 "raw_path": ESTIMATE.encode(), "query_string": b"",
+                 "headers": [(b"content-type", b"application/json")], "client": REMOTE}
+        with pytest.raises(asyncio.CancelledError):
+            asyncio.run(middleware(scope, receive, send))
+        return sent
+
+    def test_a_request_cancelled_before_its_response_gets_the_overloaded_envelope(
+            self, tmp_path):
+        async def cancelled(scope, receive, send):
+            raise asyncio.CancelledError("Task cancelled, timeout graceful shutdown exceeded")
+
+        start, body = self._call(cancelled, tmp_path)
+        headers = {k.decode(): v.decode() for k, v in start["headers"]}
+        assert start["status"] == 503
+        assert headers["content-type"] == "application/json"
+        assert headers["retry-after"] == "10"
+        assert headers["cache-control"] == "no-store"
+        assert headers["x-request-id"] and headers["x-content-type-options"] == "nosniff"
+        assert headers["server-timing"].startswith("db;dur=0,")
+        assert b'"code":"overloaded"' in body["body"]
+
+    def test_a_response_already_started_is_left_alone(self, tmp_path):
+        async def started_then_cancelled(scope, receive, send):
+            await send({"type": "http.response.start", "status": 200, "headers": []})
+            raise asyncio.CancelledError
+
+        sent = self._call(started_then_cancelled, tmp_path)
+        assert [m["type"] for m in sent] == ["http.response.start"]
+        assert sent[0]["status"] == 200

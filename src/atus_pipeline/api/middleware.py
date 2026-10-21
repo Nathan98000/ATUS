@@ -12,7 +12,8 @@ Order of the stack (outermost first)::
     GuardMiddleware           declared body size, edge auth, per-client
                               request bucket, media type, streamed body size,
                               control characters in the query string,
-                              operator paths without a valid bearer (404)
+                              operator paths without a valid bearer (404),
+                              requests in flight (503 overloaded)
     ExceptionMiddleware -> routes
 
 The guard rejects before routing, so a rejected request never reaches a
@@ -42,6 +43,7 @@ from .errors import (
     ERROR_CODE_KEY,
     ApiError,
     ForbiddenOriginError,
+    OverloadedError,
     PayloadTooLargeError,
     RateLimitedError,
     UnsupportedMediaTypeError,
@@ -67,6 +69,10 @@ OPS_PATHS = frozenset({"/ready", "/metrics"})
 without edge auth (the Worker never routes them). Without a valid token
 they behave exactly like an unknown path."""
 RATE_LIMIT_EXEMPT_PATHS = frozenset({"/health"})
+REQUEST_SLOT_EXEMPT_PATHS = frozenset({"/health"})
+"""Never counted against, nor refused by, the bound on requests in flight
+(``protection.RequestSlots``): the platform's health check must get through
+whatever else the app is serving."""
 DOCS_PATHS = frozenset({"/docs", "/docs/oauth2-redirect", "/redoc"})
 BODY_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
@@ -125,7 +131,8 @@ def request_server_timing(stats: observability.RequestStats, started: float) -> 
     """:func:`server_timing` for a request so far (``started``: perf_counter)."""
     return server_timing(
         stats.db_ms, (time.perf_counter() - started) * 1000,
-        touched_db=stats.transactions > 0 or stats.db_statements > 0,
+        touched_db=(stats.transactions > 0 or stats.db_statements > 0
+                    or stats.open_since is not None),
     )
 
 
@@ -191,6 +198,20 @@ class _DisconnectWatcher:
     def stop(self) -> None:
         if self._task is not None and not self._task.done():
             self._task.cancel()
+
+
+async def _answer_cancelled(scope: Scope, receive: Receive, send: Send,
+                            request_id: str) -> None:
+    """503 ``overloaded`` ("server shutting down", ``Retry-After: 10``) for a
+    request cancelled before its response started, through the usual
+    headers; it never raises."""
+    note_error_code(scope.setdefault("state", {}), "overloaded")
+    try:
+        await OverloadedError("server shutting down: request cancelled").to_response()(
+            scope, receive, send)
+    except Exception:  # the connection may be gone; the cancellation goes on
+        log.warning("request_id=%s cancelled at shutdown; no answer could be sent",
+                    request_id)
 
 
 def _consume_result(task: asyncio.Task) -> None:
@@ -285,6 +306,14 @@ class RequestContextMiddleware:
             # id) and answers 500 outside this middleware, with the
             # Server-Timing of TIMING_STATE_KEY.
             unhandled = True
+            raise
+        except asyncio.CancelledError:
+            # uvicorn cancels the requests still running when its graceful
+            # shutdown window ends, before the app's lifespan shutdown runs:
+            # unanswered here, the client got uvicorn's plain-text 500 (review
+            # r3, sigterm-plain-500). The cancellation itself goes on.
+            if response["status"] is None:
+                await _answer_cancelled(scope, receive, send_with_headers, request_id)
             raise
         finally:
             if watcher is not None:
@@ -422,7 +451,20 @@ class GuardMiddleware:
             await response(scope, receive, send)
             return
 
-        await self.app(scope, receive, send)
+        slots = getattr(getattr(scope["app"].state, "protection", None), "requests", None)
+        if slots is None or path in REQUEST_SLOT_EXEMPT_PATHS:
+            await self.app(scope, receive, send)
+            return
+        # Held for the whole request, so a joiner waiting on a long analysis
+        # counts until it is answered (review r3, health-503-under-joiners).
+        if not slots.try_enter():
+            await self._reject(OverloadedError("too many requests in flight"),
+                               scope, receive, send)
+            return
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            slots.leave()
 
     @staticmethod
     async def _reject(

@@ -94,7 +94,7 @@ Tests:
   - JSON-only bodies;
   - control characters in the query string get a 422.
 - **API schema bounds:** at most 50 years, at most 100 codes per include or exclude list, length-limited labels and presets. A 422 lists at most 20 errors, with truncated strings.
-- **uvicorn:** a request head of at most 16 KiB; idle keep-alive connections close after 5 s; `limit_concurrency` sheds excess connections with a 503 before the app runs.
+- **uvicorn:** a request head of at most 16 KiB; idle keep-alive connections close after 5 s; `limit_concurrency` (128) sheds excess connections with a 503 before the app runs. The app itself serves at most 64 requests besides `/health` at once and sheds the rest with 503 `overloaded`, so requests waiting on a long analysis cannot fill uvicorn's bound and fail the platform's health check (review round 3).
 
 Code: `edge/src/index.ts` (`readJsonBody`), `src/atus_pipeline/api/middleware.py`, `src/atus_pipeline/api/schemas/analysis.py`, `src/atus_pipeline/api/errors.py`, `src/atus_pipeline/api/serve.py`.
 Tests:

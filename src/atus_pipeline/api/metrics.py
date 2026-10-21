@@ -253,6 +253,8 @@ class Metrics:
                               "analysis": protection.analysis_limiter.rejections},
                 daily_cap_used=protection.daily_cap.used_today(),
                 daily_cap_rejections=protection.daily_cap.rejections,
+                requests_in_flight=protection.requests.in_flight,
+                requests_shed=protection.requests.rejections,
             )
         runner = getattr(state, "runner", None)
         if runner is not None:
@@ -317,6 +319,16 @@ def _protection_lines(protection) -> list[str]:
                      "Uncached analyses admitted today (UTC).", cap.used_today())
     lines += _sample("atus_daily_cap_limit", "gauge",
                      "Daily cap on uncached analyses.", cap.limit)
+    requests = protection.requests
+    lines += _sample("atus_requests_in_flight", "gauge",
+                     "Requests the app is serving now (liveness excepted), "
+                     "single-flight joiners included.", requests.in_flight)
+    lines += _sample("atus_requests_in_flight_limit", "gauge",
+                     "Requests the app serves at once before it sheds with 503 overloaded.",
+                     requests.limit)
+    lines += _sample("atus_requests_shed_total", "counter",
+                     "Requests shed with 503 overloaded because the app was serving "
+                     "its limit.", requests.rejections)
     return lines
 
 

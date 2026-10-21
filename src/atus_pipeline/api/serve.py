@@ -17,10 +17,15 @@ Hardening (audit F07, F42, F49, F52):
   request head;
 * idle keep-alive connections close after 5 s; ``limit_concurrency`` sheds
   connections beyond a fixed bound with a 503 before any app code runs,
-  which caps what slow or idle clients can pin;
+  which caps what slow or idle clients can pin. That bound is twice the
+  app's own bound on requests in flight (``protection.max_inflight_requests``,
+  enforced by ``GuardMiddleware`` with a 503 ``overloaded`` envelope), so
+  requests the app serves, joiners of a long analysis included, can never
+  fill it and shut the platform's health check out (review r3);
 * on SIGTERM, in-flight requests get ``GRACEFUL_SHUTDOWN_S`` (below the
-  platform's grace period) before the app shuts down and cancels whatever
-  queries are still running.
+  platform's grace period). uvicorn then cancels the requests still running,
+  which ``RequestContextMiddleware`` answers 503 ``overloaded`` (review r3),
+  before the app shuts down and cancels whatever queries are still running.
 """
 
 from __future__ import annotations
@@ -30,6 +35,7 @@ import sys
 from ..config import ConfigError, Settings, check_api_settings, load_settings
 from ..database.dsn import ensure_system_roots
 from ..logging_setup import configure_logging
+from .protection import max_inflight_requests
 
 APP_FACTORY = "atus_pipeline.api.app:create_app"
 GRACEFUL_SHUTDOWN_S = 20       # Render waits 30 s after SIGTERM before SIGKILL
@@ -39,9 +45,11 @@ MAX_REQUEST_HEAD_BYTES = 16 * 1024
 
 def limit_concurrency(settings: Settings) -> int:
     """Connections + in-flight requests above which uvicorn answers 503
-    directly. Four per worker thread leaves room for queued cheap requests
-    while bounding what slow clients can hold."""
-    return max(32, settings.api_threads * 4)
+    directly, before any app code (``/health`` included). Twice the app's own
+    bound on requests in flight: the other half is left to ``/health``, idle
+    keep-alive connections and the connections of requests the app has just
+    shed, while still bounding what slow clients can hold."""
+    return 2 * max_inflight_requests(settings)
 
 
 def default_host(settings: Settings) -> str:

@@ -235,6 +235,7 @@ visitor ──TLS──▶ Cloudflare edge (sets CF-Connecting-IP = visitor)
   - Measured memory is ~70 MB of 512 MB.
   - The anyio thread limiter is 16.
   - All DB work runs off the event loop, so `/health` answers within Render's 5 s health-check window even during a 50 s query. After 15 s of failed checks Render stops routing to the instance; after 60 s it restarts it.
+  - Requests waiting on a long analysis cannot shut the check out either. Single-flight joiners take no lane and no token and wait as long as the computation, so before review round 3 about 63 of them filled uvicorn's `limit_concurrency` (64), and uvicorn answered `/health` with its own 503 for as long as the analysis ran. The app now serves at most `max(32, 4 × ATUS_API_THREADS)` (64) requests besides `/health` at once and answers the next one 503 `overloaded` itself, and uvicorn's bound is twice that (128), so ordinary traffic leaves room for `/health` (`tests/integration/api_prod/test_server.py::TestHealthWhileRequestsWait`). Idle or slow connections beyond 128 still fill uvicorn's bound (ADR-012, "What this does not protect against").
 - **Pool** (`psycopg_pool`):
   - `min_size=0`, so the API makes no DB connection at start and a Render spin-up does not wake Neon;
   - `max_size=4`;

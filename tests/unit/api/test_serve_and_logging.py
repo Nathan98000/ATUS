@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 from atus_pipeline import cli
 from atus_pipeline.api import serve
 from atus_pipeline.api.app import create_app
+from atus_pipeline.api.protection import max_inflight_requests
 from atus_pipeline.config import ConfigError, load_settings
 from atus_pipeline.logging_setup import mark_logged, set_redacted_secrets
 from tests.unit.api.conftest import make_settings
@@ -40,7 +41,11 @@ class TestUvicornOptions:
         assert options["server_header"] is False
         assert options["timeout_keep_alive"] == 5
         assert options["timeout_graceful_shutdown"] == 20
-        assert options["limit_concurrency"] == 64
+        # Review r3 (health-503-under-joiners): uvicorn's bound is twice the
+        # app's own bound on requests in flight (64), so what the app serves
+        # can never fill it and shut /health out.
+        assert options["limit_concurrency"] == 128
+        assert max_inflight_requests(make_settings(tmp_path)) == 64
         assert options["http"] == "h11" and options["ws"] == "none"
         assert options["h11_max_incomplete_event_size"] == 16 * 1024
         assert options["access_log"] is False and options["log_config"] is None
@@ -66,7 +71,7 @@ class TestUvicornOptions:
         config.load()
         assert config.workers == 1
         assert not config.proxy_headers
-        assert config.limit_concurrency == 64
+        assert config.limit_concurrency == 128
 
 
 class TestThreadLimiter:
