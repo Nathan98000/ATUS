@@ -8,8 +8,12 @@ repeats its base in two ARGs for the OCI labels; they must match the FROM lines.
 
 from __future__ import annotations
 
+import os
 import re
+import subprocess
+from pathlib import Path
 
+import pytest
 import yaml
 
 from .conftest import REPO_ROOT
@@ -89,6 +93,57 @@ POSTGRES_PINS = {
 }
 # Recorded evidence quotes the digest of its day and is never updated.
 EVIDENCE = ("docs/", "loadtests/results/")
+#: Without git, files above this size are not read: no pin lives in one.
+MAX_SCANNED_BYTES = 1 << 20
+
+
+def repository_files(root: Path = REPO_ROOT) -> list[Path]:
+    """The repository's files as git sees them: tracked, plus untracked ones
+    that .gitignore does not exclude (a new file not yet added counts). Never
+    the ignored local data (gigabytes of raw ATUS files in data/), installs or
+    build output, which a walk of the checkout would read in full."""
+    try:
+        listing = subprocess.run(
+            ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+            cwd=root, capture_output=True, check=True, timeout=60,
+        ).stdout.decode()
+    except (OSError, subprocess.SubprocessError, UnicodeDecodeError):
+        # No git (an exported tree): walk it, skipping local trees and big files.
+        files = []
+        for directory, subdirs, names in os.walk(root):
+            subdirs[:] = [d for d in subdirs if d not in SKIP]
+            for name in names:
+                path = Path(directory) / name
+                if path.is_file() and path.stat().st_size <= MAX_SCANNED_BYTES:
+                    files.append(path)
+        return files
+    return [root / name for name in listing.split("\0") if name]
+
+
+def test_the_pin_scan_reads_the_repository_not_ignored_local_data(tmp_path, monkeypatch):
+    """The scan must not read what .gitignore excludes: the owner's checkout
+    holds about 3.4 GB of raw ATUS files under data/ (one over 1 GB)."""
+    if subprocess.run(["git", "init", "-q", str(tmp_path)], capture_output=True,
+                      check=False).returncode != 0:
+        pytest.skip("git is not available")
+    (tmp_path / ".gitignore").write_text("data/staging/\n")
+    (tmp_path / "data" / "staging").mkdir(parents=True)
+    (tmp_path / "data" / "staging" / "atuscps.dat").write_text("x" * 64)
+    (tmp_path / "ci.yml").write_text("image: postgres:16\n")
+    listed = {p.relative_to(tmp_path).as_posix() for p in repository_files(tmp_path)}
+    assert listed == {".gitignore", "ci.yml"}       # untracked but not ignored: listed
+
+    # Without git: a walk that skips local trees and files too big to hold a pin.
+    def no_git(*args, **kwargs):
+        raise OSError("git not found")
+
+    (tmp_path / "node_modules").mkdir()
+    (tmp_path / "node_modules" / "x.yml").write_text("image: postgres:16\n")
+    (tmp_path / "big.dat").write_bytes(b"x" * (MAX_SCANNED_BYTES + 1))
+    monkeypatch.setattr(subprocess, "run", no_git)
+    walked = {p.relative_to(tmp_path).as_posix() for p in repository_files(tmp_path)}
+    assert "ci.yml" in walked and "big.dat" not in walked
+    assert not any(name.startswith(("node_modules/", ".git/")) for name in walked)
 
 
 def test_every_postgres_16_pin_names_the_same_digest():
@@ -97,7 +152,7 @@ def test_every_postgres_16_pin_names_the_same_digest():
     build than the stack. Finish such a pull request by updating every copy
     listed in POSTGRES_PINS (the comment in .github/dependabot.yml says so)."""
     found: dict[str, list[str]] = {}
-    for path in REPO_ROOT.rglob("*"):
+    for path in repository_files():
         relative = path.relative_to(REPO_ROOT)
         if set(relative.parts) & SKIP or relative.as_posix().startswith(EVIDENCE) \
                 or not path.is_file() or path.suffix in (".png", ".gz", ".dump", ".tar"):
