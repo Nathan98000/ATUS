@@ -270,9 +270,18 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 4. **Worker → Settings → Builds:** leave it **disconnected**. Never use "Connect to Git". The config sets `preview_urls = false`, so no extra Version URLs exist.
 5. **Account API Tokens → Create Token → Custom token** for CI:
    - Workers role **Editor**, scoped to the single Worker `<worker>`.
-   - Add **Account Settings: Read** only if a `wrangler deploy --dry-run` with the token fails without it.
    - Account resources: only this account. TTL 90 days.
    - If the UI forces a template, use **Edit Cloudflare Workers** restricted to this account. It is broader: it includes KV, R2 and routes.
+   - **Check the token before you save it**, from `edge/`, once the Worker exists (step 3.4). Not with `wrangler deploy --dry-run`: a dry run never authenticates (wrangler 4.148 skips its login check and stops before any API call), so it passes with any token. This check authenticates and changes nothing:
+
+     ```bash
+     read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN   # paste the token, then Enter; nothing is shown
+     export CLOUDFLARE_ACCOUNT_ID=<Account ID>
+     npx --no-install wrangler deployments status                    # must print the Worker's current deployment
+     unset CLOUDFLARE_API_TOKEN
+     ```
+
+     It proves that the token is active, belongs to this account and can read the Worker. Whether it may also deploy (the Editor role) shows only when it deploys: the first approved deploy's `wrangler deploy` (Bootstrap, step 5, which sends Render the digest it already runs, so a failure there leaves nothing half-switched). If that step fails with an authentication or permission error, add **Account Settings: Read** to the token, update the secret and re-run the job. Every Deploy run repeats the read check before the Render hook and stops there, with nothing changed, once the token has expired or been revoked.
    - Save the token as GitHub environment secret `CLOUDFLARE_API_TOKEN`, and the Account ID (Workers overview sidebar) as `CLOUDFLARE_ACCOUNT_ID`.
 
 ### 2. Render (Free web service)
@@ -613,7 +622,7 @@ The snapshot is built before anything deploys, so a failed restore or snapshot d
 **The deploy job.**
 
 1. It checks that the environment holds its four secrets and that `PUBLIC_BASE_URL` is set. It installs only what its steps run: the API's runtime lock and the package, binary wheels only (`--only-binary=:all:`), for the smoke's §9 comparison, and the edge's lockfile for `wrangler`. The `wrangler.jsonc` invariant tests ran in `edge-config`, and the browser journey runs in `browser-smoke`: their test and browser tooling never runs next to the deploy secrets.
-2. It records the rollback targets: the build the origin runs now, that build's GHCR digest, and the Worker's current deployment (`wrangler deployments status`).
+2. It checks the Cloudflare token before the Render hook, while nothing has changed: `wrangler deployments status` must succeed, so an expired, revoked or wrong-account token stops the job here instead of at `wrangler deploy` after Render has switched (review round 3). Its output is the Worker's rollback target. The read cannot prove that the token may deploy (the Editor role); that shows only at step 5. Then, best effort, it records the build the origin runs now and that build's GHCR digest. Those may fail without stopping the job, because a forward fix must deploy while the API is down, so a wrong `RENDER_ORIGIN` shows only at the wait (step 4), after the hook.
 3. `scripts/ops/render_deploy.py trigger` POSTs `RENDER_DEPLOY_HOOK_URL` with `imgURL=<URL-encoded digest reference>`. The URL is read from the environment and never printed; anything but an `https://api.render.com/deploy/srv-...` URL is refused.
 4. `scripts/ops/render_deploy.py wait` polls the origin's `/health` until `build` equals `GITHUB_SHA`. It allows 15 minutes: the image pull, Render's ~1 minute spin-up and the app start. The app start took about 6 s at 0.1 CPU in the emulation ([cold-start A/B](../loadtests/results/2026-10-21-cold-start-ab.md); about 13 s before commit 5844ab7).
    - `/health` reports the commit, not the image digest. If the origin already ran this commit before the hook (for example "Re-run all jobs", which rebuilds and pushes a new digest of the same commit), the wait cannot see the switch. The step then shows a warning, and you confirm the deploy in Render → Events.
@@ -937,9 +946,10 @@ Every secret has one procedure.
 4. **`IP_HMAC_KEY`.** `npx --no-install wrangler secret put IP_HMAC_KEY` at any time.
 5. **Cloudflare API token** (90-day TTL).
    1. Before it expires, create a new Custom token with the same scope.
-   2. Replace the GitHub secret `CLOUDFLARE_API_TOKEN`.
-   3. Delete the old token in Cloudflare.
-   4. **If it may have leaked**, or the Cloudflare account was compromised, the Worker's secrets are disclosed too: Worker code deployed with the token can read every one of them from `env` and send it anywhere, and the version can then be rolled back. So also:
+   2. Check it as in owner step 1.5: from `edge/`, `read -rs CLOUDFLARE_API_TOKEN && export CLOUDFLARE_API_TOKEN` (paste it; nothing is shown), `CLOUDFLARE_ACCOUNT_ID=<Account ID> npx --no-install wrangler deployments status`, then `unset CLOUDFLARE_API_TOKEN`. In the dashboard's token list, it must show the same permissions as the old token: the check proves that it authenticates, not that it may deploy.
+   3. Replace the GitHub secret `CLOUDFLARE_API_TOKEN`.
+   4. Delete the old token in Cloudflare.
+   5. **If it may have leaked**, or the Cloudflare account was compromised, the Worker's secrets are disclosed too: Worker code deployed with the token can read every one of them from `env` and send it anywhere, and the version can then be rolled back. So also:
       - rotate `EDGE_AUTH_SECRET` (item 1), `OPS_TOKEN` (item 3), `IP_HMAC_KEY` (item 4) and, if set, `NEON_API_KEY` with its data check (item 7);
       - treat `RENDER_ORIGIN` as known: it is not a credential, and direct requests still need the edge secret ([security.md R3](security.md#accepted-risks));
       - set the pause switch (`API_PAUSED_UNTIL`, `API_PAUSED_REASON`) again with `deploy.yml` operation `pause-api` or `resume-api`: it holds no secret values, but the token can set or clear it;

@@ -518,17 +518,27 @@ jobs:
         working-directory: edge
         run: npm ci
 
-      - name: Record what runs now (rollback targets)
+      # Before anything changes: an expired, revoked or wrong-account Cloudflare
+      # token stops the job here, not at `wrangler deploy` after the Render hook
+      # has switched the API to the new image (review round 3,
+      # cf-token-first-proven-after-render-switch). Read-only; what it prints is
+      # the Worker's rollback target for the notes below.
+      - name: The Cloudflare token works (fatal; records the Worker's current deployment)
+        working-directory: edge
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --no-install wrangler deployments status --json > "$RUNNER_TEMP/worker-before.json"
+
+      # Best effort: a deploy must also go through while the API is down (a
+      # forward fix), so an origin that does not answer is not fatal here. A wrong
+      # RENDER_ORIGIN therefore shows only in the wait step, after the hook.
+      - name: Record the build the origin runs now (rollback target)
         id: before
         continue-on-error: true
         env:
           RENDER_ORIGIN: ${{ secrets.RENDER_ORIGIN }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          python scripts/ops/render_deploy.py current-build --wake-timeout 180
-          (cd edge && npx --no-install wrangler deployments status --json) \
-            > "$RUNNER_TEMP/worker-before.json" 2> /dev/null || true
+        run: python scripts/ops/render_deploy.py current-build --wake-timeout 180
 
       - name: Previous image digest
         id: previous
