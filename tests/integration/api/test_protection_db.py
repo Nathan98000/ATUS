@@ -428,6 +428,9 @@ class TestPoolExhaustion:
         assert app.state.protection.lanes.rejections == 1
 
 
+# Terminates the API's idle backends (a Neon suspend). Behind a transaction pooler an idle
+# client connection holds no backend of its own, so there is none to terminate.
+@pytest.mark.direct_connection
 class TestStaleConnections:
     def test_requests_succeed_after_every_backend_is_terminated(self, loaded_settings):
         # TTL 0: every request below needs the database, not the snapshot

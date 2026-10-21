@@ -43,6 +43,7 @@ testpaths = ["tests"]
 markers = [
     "integration: tests that need a running PostgreSQL instance (skipped when unavailable)",
     "data_quality: tests that run against a fully loaded ATUS database (opt-in via ATUS_DATA_QUALITY=1)",
+    "direct_connection: integration tests that need a direct PostgreSQL connection, not a transaction pooler (scripts/smoke_stack.sh --integration-via-pgbouncer deselects them)",
 ]
 
 [tool.ruff]

@@ -956,19 +956,28 @@ def test_the_serving_url_prefers_the_api_role(tmp_path, monkeypatch):
     monkeypatch.delenv(replay.SERVING_URL_ENV, raising=False)
     monkeypatch.setenv(replay.FULL_URL_ENV, "postgresql://atus:atus@localhost:5434/atus")
     secrets_file = tmp_path / "neon.env"
-    secrets_file.write_text("ATUS_OWNER_DATABASE_URL=postgresql://owner:o-secret@h/atus\n"
-                            "ATUS_API_DATABASE_URL='postgresql://atus_api:a-secret@h/atus'\n")
+    secrets_file.write_text("ATUS_OWNER_DATABASE_URL=postgresql://owner:o-secret@localhost:5466/atus\n"
+                            "ATUS_API_DATABASE_URL='postgresql://atus_api:a-secret@localhost:5466/atus'\n")
     args = replay.parse_args(["--specs", str(tmp_path), "--out", str(tmp_path), "--targets",
                               "bc", "--serving-secrets-file", str(secrets_file)])
     urls = replay.database_urls(args)
-    assert urls["c"] == ("postgresql://atus_api:a-secret@h/atus",
+    assert urls["c"] == ("postgresql://atus_api:a-secret@localhost:5466/atus",
                          "neon.env:ATUS_API_DATABASE_URL")
     assert urls["b"][1] == f"${replay.FULL_URL_ENV}"
-    secrets_file.write_text("ATUS_OWNER_DATABASE_URL=postgresql://owner:o-secret@h/atus"
+    secrets_file.write_text("ATUS_OWNER_DATABASE_URL=postgresql://owner:o-secret@localhost:5466/atus"
                             "?sslmode=require\n")
     owner, source = replay.database_urls(args)["c"]
     assert source == "neon.env:ATUS_OWNER_DATABASE_URL"
-    # Review r3 (owner-restore-unverified-tls): a pasted owner string is verified.
+    assert owner == "postgresql://owner:o-secret@localhost:5466/atus?sslmode=require"  # local: kept
+    # Review r3 (owner-restore-unverified-tls): a pasted remote owner string is
+    # verified (a remote database needs --allow-remote-database, review r3 docs).
+    secrets_file.write_text("ATUS_OWNER_DATABASE_URL=postgresql://owner:o-secret@h/atus"
+                            "?sslmode=require\n")
+    remote = replay.parse_args(["--specs", str(tmp_path), "--out", str(tmp_path), "--targets",
+                                "bc", "--serving-secrets-file", str(secrets_file),
+                                "--allow-remote-database"])
+    owner, source = replay.database_urls(remote)["c"]
+    assert source == "neon.env:ATUS_OWNER_DATABASE_URL"
     assert owner == ("postgresql://owner:o-secret@h/atus"
                      "?sslmode=verify-full&sslrootcert=system")
     secrets_file.write_text("OTHER=1\n")
@@ -983,7 +992,7 @@ def test_the_serving_url_can_come_from_the_environment(tmp_path, monkeypatch):
     monkeypatch.delenv(replay.SERVING_URL_ENV, raising=False)
     with pytest.raises(replay.SetupError, match="needs --serving-secrets-file"):
         replay.database_urls(args)
-    monkeypatch.setenv(replay.SERVING_URL_ENV, "postgresql://u:p@h/db")
+    monkeypatch.setenv(replay.SERVING_URL_ENV, "postgresql://u:p@localhost:5466/db")
     assert replay.database_urls(args)["c"][1] == f"${replay.SERVING_URL_ENV}"
 
 
@@ -997,6 +1006,82 @@ def test_full_and_serving_must_be_different_databases(tmp_path, monkeypatch):
     assert ":pw@" not in str(raised.value)
     monkeypatch.setenv(replay.SERVING_URL_ENV, "postgresql://atus_api:pw@localhost:5466/atus")
     assert replay.database_urls(args)["c"][0].endswith("5466/atus")
+
+
+NEON_URL = ("postgresql://atus_api:n-secret@ep-quiet-sky-123456.us-east-2.aws.neon.tech/atus"
+            "?sslmode=verify-full&sslrootcert=system")
+
+
+def test_the_replay_refuses_a_database_that_is_not_on_this_machine(tmp_path, monkeypatch):
+    """Review round 3 (equivalence-harness-readme-targets-neon): the README's example
+    replayed hundreds of full analyses against the Neon project's secrets file, a
+    high-volume probe of a free provider (brief §5). Every database must be local
+    unless --allow-remote-database says otherwise."""
+    monkeypatch.delenv(replay.SERVING_URL_ENV, raising=False)
+    monkeypatch.setenv(replay.FULL_URL_ENV, "postgresql://atus:atus@localhost:5434/atus")
+    secrets_file = tmp_path / "neon-0325-abcdef12.env"
+    secrets_file.write_text(f"ATUS_API_DATABASE_URL='{NEON_URL}'\n")
+    common = ["--specs", str(tmp_path), "--out", str(tmp_path), "--targets", "bc",
+              "--serving-secrets-file", str(secrets_file)]
+    with pytest.raises(replay.SetupError, match="not on this machine") as raised:
+        replay.database_urls(replay.parse_args(common))
+    message = str(raised.value)
+    assert "n-secret" not in message and "replay_deployed.py" in message
+    assert "neon-0325-abcdef12.env:ATUS_API_DATABASE_URL" in message
+    allowed = replay.database_urls(replay.parse_args(common + ["--allow-remote-database"]))
+    assert allowed["c"][0] == NEON_URL
+    # the full database is held to the same rule
+    monkeypatch.setenv(replay.FULL_URL_ENV, "postgresql://atus:atus@db.example.org:5432/atus")
+    monkeypatch.setenv(replay.SERVING_URL_ENV, "postgresql://atus_api:pw@localhost:5466/atus")
+    with pytest.raises(replay.SetupError, match="not on this machine"):
+        replay.database_urls(replay.parse_args(common[:6]))
+
+
+@pytest.mark.parametrize("url, environ, local", [
+    ("postgresql://u:p@localhost:5466/atus", {}, True),
+    ("postgresql://u:p@127.0.0.1:5466/atus", {}, True),
+    ("postgresql://u:p@[::1]:5466/atus", {}, True),
+    ("host=/var/run/postgresql dbname=atus", {}, True),
+    ("dbname=atus", {}, True),                                    # the local socket
+    ("dbname=atus", {"PGHOST": "db.example.org"}, False),
+    ("host=localhost hostaddr=10.0.0.5 dbname=atus", {}, False),
+    ("host=localhost dbname=atus", {"PGHOSTADDR": "10.0.0.5"}, False),
+    ("host=localhost,db.example.org dbname=atus", {}, False),
+    ("service=atus", {}, False),
+    ("host=localhost dbname=atus", {"PGSERVICE": "atus"}, False),
+    (NEON_URL, {}, False),
+    ("postgresql://u:p@db/atus", {}, False),                      # one label: still resolved
+    ("not a connection string", {}, False),
+])
+def test_only_loopback_hosts_and_sockets_are_on_this_machine(url, environ, local):
+    assert replay.is_local_database(url, environ) is local
+
+
+def test_the_replay_finds_the_system_roots_before_it_connects(tmp_path, monkeypatch):
+    """Review round 3: database_facts connected without ensure_system_roots, so with
+    psycopg's bundled libpq ``sslrootcert=system`` found no roots on the owner's Mac."""
+    import atus_pipeline.database.dsn as dsn
+
+    specs = tmp_path / "specs"
+    specs.mkdir()
+    (specs / "one.jsonl").write_text(json.dumps(
+        {"id": "s1", "endpoint": "estimate", "expect": "any",
+         "body": {"years": [2024]}}) + "\n")
+    monkeypatch.setenv("SSL_CERT_FILE", "")
+    monkeypatch.setattr(dsn, "system_ca_bundle", lambda: "/the/system/bundle.pem")
+    monkeypatch.setenv(replay.FULL_URL_ENV, "postgresql://atus:atus@localhost:5434/atus")
+    monkeypatch.setenv(replay.SERVING_URL_ENV,
+                       "postgresql://atus_api:pw@localhost:5466/atus?sslrootcert=system")
+    seen = []
+
+    def facts(url):
+        seen.append(os.environ.get("SSL_CERT_FILE"))
+        raise replay.SetupError("stop here")
+
+    monkeypatch.setattr(replay, "database_facts", facts)
+    assert replay.main(["--specs", str(specs), "--out", str(tmp_path / "out"),
+                        "--targets", "bc"]) == 2
+    assert seen == ["/the/system/bundle.pem"]
 
 
 class _Flaky(BaseHTTPRequestHandler):

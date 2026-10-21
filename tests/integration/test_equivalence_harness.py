@@ -173,6 +173,9 @@ def test_full_and_serving_fixture_databases_are_equivalent_over_http(
         assert "postgresql://" not in log.read_text() or ":***@" in log.read_text()
 
 
+# CREATE DATABASE ... TEMPLATE refuses a source that another session is connected to,
+# and a transaction pooler keeps its server connections open.
+@pytest.mark.direct_connection
 def test_a_changed_serving_database_is_caught_with_json_paths(
         databases, changed_serving, tmp_path, monkeypatch):
     full, _ = databases

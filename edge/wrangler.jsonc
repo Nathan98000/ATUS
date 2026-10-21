@@ -72,7 +72,9 @@
   },
   // Persistent analysis-result cache (ADR-011 "Edge tiers"). The namespace id
   // is not secret: replace the placeholder with the id printed by
-  // `npx --no-install wrangler kv namespace create atus-results` (after `npm ci` here).
+  // `npx --no-install wrangler kv namespace create atus-results --update-config=false`
+  // (after `npm ci` here). Without that flag wrangler's default answers add a second
+  // binding, which test/node/config.test.ts refuses.
   "kv_namespaces": [
     {
       "binding": "RESULT_CACHE",

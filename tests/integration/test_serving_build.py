@@ -95,6 +95,9 @@ def builds(full, test_db_url):
         drop_scratch_database(url)
 
 
+# CREATE DATABASE ... TEMPLATE refuses a source that another session is connected to,
+# and a transaction pooler keeps its server connections to `full` open: the tests that
+# use this fixture are marked direct_connection.
 @pytest.fixture
 def mutable_full(full, test_db_url):
     """A disposable copy of the full database, for tests that alter the source."""
@@ -127,6 +130,7 @@ def test_two_builds_have_the_same_content_hash_and_different_versions(builds):
             assert compute_content_hash(conn).content_hash == report.content_hash
 
 
+@pytest.mark.direct_connection
 def test_the_content_hash_changes_with_the_data(mutable_full, target, builds):
     (_, reference), _ = builds
     with psycopg.connect(mutable_full) as conn:
@@ -348,6 +352,8 @@ def test_full_database_commands_refuse_the_serving_database(builds, tmp_path, co
 # the source is only read; the target is all-or-nothing                        #
 # --------------------------------------------------------------------------- #
 
+# Logs in as a role it creates, which the pooler's user list does not know
+@pytest.mark.direct_connection
 def test_a_select_only_role_can_build_from_the_source(full, target, test_db_url):
     role = f"{urlsplit(test_db_url).path.lstrip('/')}_srvb_reader"
     password = secrets.token_urlsafe(16)
@@ -390,6 +396,7 @@ def _untouched(url: str) -> None:
         assert conn.execute("SELECT to_regclass('atus.activity_companions')").fetchone()[0]
 
 
+@pytest.mark.direct_connection
 def test_an_unconvertible_replicate_weight_stops_the_build(mutable_full, target):
     with psycopg.connect(mutable_full) as conn:
         conn.execute(
@@ -402,6 +409,7 @@ def test_an_unconvertible_replicate_weight_stops_the_build(mutable_full, target)
     _untouched(target)
 
 
+@pytest.mark.direct_connection
 def test_a_failed_build_into_an_empty_database_leaves_it_empty(mutable_full, test_db_url):
     with psycopg.connect(mutable_full) as conn:
         conn.execute("UPDATE atus.activities SET duration_minutes = 1440 "
@@ -418,6 +426,7 @@ def test_a_failed_build_into_an_empty_database_leaves_it_empty(mutable_full, tes
         drop_scratch_database(empty)
 
 
+@pytest.mark.direct_connection
 def test_an_omitted_row_that_an_estimate_would_read_stops_the_build(mutable_full, target):
     with psycopg.connect(mutable_full) as conn:
         conn.execute(
@@ -466,6 +475,7 @@ def test_the_build_refuses_a_serving_database_as_its_source(builds, target):
     _untouched(target)
 
 
+@pytest.mark.direct_connection
 def test_the_build_requires_recorded_validation_by_default(mutable_full, target):
     with pytest.raises(ServingBuildError, match="validate-db.*validate-analytics"):
         build_serving_database(mutable_full, target)
@@ -497,6 +507,7 @@ def _record_passing_validation(conn: psycopg.Connection, run_at) -> None:
         )
 
 
+@pytest.mark.direct_connection
 def test_only_results_recorded_since_the_data_went_live_validate_it(mutable_full, target):
     """While a load builds its shadow tables the previous data stays live, so a
     validate-db or validate-analytics run in that window (after the run's
@@ -529,6 +540,8 @@ def _cli(*args: str):
     return CliRunner().invoke(cli, list(args), env={"ATUS_LOG_LEVEL": "WARNING"})
 
 
+# compare-serving-db sets startup options (-c jit=off), which a pooler refuses
+@pytest.mark.direct_connection
 def test_the_commands_build_verify_and_compare(full, target, tmp_path):
     report_path = tmp_path / "report.json"
     built = _cli("build-serving-db", "--source", full, "--target", target,
@@ -559,6 +572,9 @@ def _loopback_alias(url: str) -> str:
     return urlunsplit(parts._replace(netloc=parts.netloc.replace(parts.hostname, host, 1)))
 
 
+# compare-serving-db sets startup options (-c jit=off), which a pooler refuses, and
+# mutable_full copies `full` as a template
+@pytest.mark.direct_connection
 def test_compare_refuses_to_compare_a_database_with_itself(full, builds, mutable_full):
     """Review r3 (compare-serving-db-self-comparison): the engine-level diff
     never checked which databases it compared. A database compared with
@@ -588,6 +604,9 @@ def test_compare_refuses_to_compare_a_database_with_itself(full, builds, mutable
         assert f"Serving data version: {read_data_version(b)}" in passed.output
 
 
+# compare-serving-db sets startup options (-c jit=off), which a pooler refuses, and
+# the copy uses the serving build as a template
+@pytest.mark.direct_connection
 def test_compare_fails_on_a_serving_copy_that_differs(full, builds, test_db_url):
     """Review r3: the CLI's negative case. One sleep episode recoded in a
     copy of the serving database makes the diff fail (exit 1)."""

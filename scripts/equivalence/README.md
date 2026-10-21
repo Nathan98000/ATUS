@@ -20,10 +20,19 @@ Both use the same criterion code (`atus_pipeline.serving.equivalence`).
 # installed from requirements/api.lock.txt (the same library versions as Phase 5)
 scripts/equivalence/run.sh setup
 
-# the replay: starts a, b and c, replays, stops them, writes the report
+# the replay: starts a, b and c, replays, stops them, writes the report; the serving
+# database is the release restored into the local drill (docs/operations.md, "Restore drill")
 scripts/equivalence/run.sh --specs DIR --out OUT \
-    --serving-secrets-file ~/.config/atus/neon-<release>-<build8>.env
+    --serving-secrets-file ~/.config/atus/drill.env
 ```
+
+**Never point it at a provider's database (Neon).** The Phase 5 corpus is 544 specs plus
+the GET endpoints, each a full analysis, run one after another: a high-volume probe, which
+brief §5 forbids against a free provider. The harness therefore refuses a database that is
+not on this machine (a Unix socket, `localhost` or a loopback address; `PGHOST`,
+`PGHOSTADDR` and `PGSERVICE` count too) unless `--allow-remote-database` is given. A
+deployed release is checked with the budgeted `scripts/replay_deployed.py` (at most 40
+requests; docs/deployment.md step 9).
 
 `run.sh` prepares the baseline (at `$ATUS_EQ_BASELINE_DIR`, default
 `~/.cache/atus/baseline-387fc2d`) and then runs `replay.py`, which you can also call
@@ -34,14 +43,14 @@ directly (`python scripts/equivalence/replay.py --help`). Useful options:
 `a` and `b` share the full database, and 2 jobs once filled its container's 64 MiB
 `/dev/shm`, audit F33),
 `--ports 8641,8642,8643`, `--no-gets`, `--save-responses none|failures|all`,
-`--fail-on-unexpected`.
+`--fail-on-unexpected`, `--allow-remote-database` (above).
 
 Databases. Connection strings are never accepted on the command line, printed or written.
 Reports name databases as `user@host:port/dbname`.
 
 - Full: `$ATUS_EQ_FULL_DATABASE_URL`, default the local development database.
 - Serving: `--serving-secrets-file`, the `KEY=value` file `atus restore-serving-db`
-  writes. The harness uses `ATUS_API_DATABASE_URL` (the read-only API role) and falls
+  writes (the drill's `~/.config/atus/drill.env`, never the Neon project's file). The harness uses `ATUS_API_DATABASE_URL` (the read-only API role) and falls
   back to `ATUS_OWNER_DATABASE_URL`. Alternatively, set `$ATUS_EQ_SERVING_DATABASE_URL`.
   If the serving database is the full database, the harness refuses to run, because
   comparing a database with itself proves nothing.
