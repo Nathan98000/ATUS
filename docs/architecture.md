@@ -483,7 +483,14 @@ Neon's 0.25 CU floor and 2 CU ceiling):
 | uncached single-year estimate with replicate SEs | 0.99 s | 79 ms |
 | worst cases: pooled 22 years, 23-year trends (by kind) | 21.4–21.8 s | 2.03–2.12 s |
 | F66 broad selector pooled or trended / compared by sex | 33.5–35.0 s / 69.2 s | 2.67–2.68 s / 2.99 s |
-| container cold start to the first `/health` (0.1 CPU; Render's spin-up excluded) | 13.1 s | 12.9 s |
+| container cold start to the first `/health` (0.1 CPU; Render's spin-up excluded) | 5.8 s (13.1 s before 5844ab7) | 12.9 s before 5844ab7; not re-measured |
+
+The cold-start row's current figure comes from a later A/B on the same stack
+([`../loadtests/results/2026-10-21-cold-start-ab.md`](../loadtests/results/2026-10-21-cold-start-ab.md),
+n=8 per image, at 0.25 CU only). It compares the image at e5ca1fd, which
+precompiles the standard library (commit 5844ab7), with one built before that
+commit, which took 12.7 s at p50. The figures in parentheses are the emulation
+runs' own, from an earlier image.
 
 The analyses in these rows ran one at a time, and PostgreSQL's statement
 log puts 96.6–99.9% of their summed latency in the database (the metadata

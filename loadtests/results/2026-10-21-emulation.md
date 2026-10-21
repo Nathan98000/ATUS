@@ -4,12 +4,13 @@ Brief §13 (performance under free-tier limits, measured only) and §10 (calibra
 
 **What this is.** Timed runs of the [`loadtests/`](../README.md) tooling against the production-mode stack (`docker-compose.prod.yml` + `docker-compose.emulation.yml`) on this laptop, with the **real serving release artifact** restored into the stack database. The API ran at Render Free's 0.1 CPU / 512 MB. The database ran at Neon Free's 0.25 CU floor and at its 2 CU ceiling. A laptop baseline used the same image unconstrained against the full database.
 
-**What this is not.** Nothing here ran on Neon, Render or Cloudflare. The emulation gives the CPU and RAM shares, not the providers' hardware, storage or network (section 10). Every number below was produced by the runs listed in section 11 on 2026-10-21 between 03:53 and 07:14 UTC; nothing is estimated or carried over from earlier reports. Where a run was too small to support a conclusion, the text says so.
+**What this is not.** Nothing here ran on Neon, Render or Cloudflare. The emulation gives the CPU and RAM shares, not the providers' hardware, storage or network (section 10). Every number below was produced by the runs listed in section 11 on 2026-10-21 between 03:53 and 07:14 UTC; nothing is estimated or carried over from earlier reports. Section 14 is the exception: it was added later and summarizes a separate cold-start run (10:21–10:25 UTC), recorded in its own file. Where a run was too small to support a conclusion, the text says so.
 
 ## Summary
 
 - **Restore drill (A).** The production restore tool restored the release artifact into a fresh `postgres:16` with a non-superuser owner in **15.6 s** of wall time: `pg_restore` 8.0 s, `VACUUM (ANALYZE)` 1.3 s, the serving checks with the full content hash 5.2 s. All 22 checks passed. `sum(pg_database_size)` afterwards: **649,903,180 B**, which is 65% of the 1,000,000,000 B budget.
 - **Cold start (B).** From `docker run` to the first `200` from `/health` at 0.1 CPU: p50 **13.1 s** (n=5, DB at 0.25 CU) and 12.9 s (n=5, at 2 CU). The first `/api/v1/meta` followed 0.3–0.6 s later. Start-up costs 1.3–1.4 CPU-seconds of import, and at 0.1 CPU that takes about 13 s. This excludes Render's own spin-up.
+  - A later A/B on the same day (section 14) compared an image built before commit 5844ab7, which precompiles the standard library, with one built after it. At 0.25 CU: p50 **12.69 s** before and **5.76 s** after (n=8 each).
 - **Metadata and cache hits.** These run no SQL. The 0.1-CPU API serves **33–35 metadata requests/s** and **67–71 cache hits/s**, the same at both DB profiles. p50 is 1.6–1.9 ms with one client. p95 is about 90–100 ms, because the API's CPU quota (10 ms per 100 ms period) runs out and the process waits for the next period: it was throttled in 96–97% of periods during the metadata runs.
 - **Uncached single-year estimates with replicate SEs** (n=59 distinct specs, one at a time): p50 / p95 / p99 **0.99 / 3.19 / 4.43 s at 0.25 CU** and **79 / 142 / 211 ms at 2 CU** (laptop full DB: 0.34 / 0.63 / 0.98 s). PostgreSQL's log puts 96.6–99.1% of the summed latency in the database.
 - **Worst cases** (5 kinds × n=5, plus the F66 broad-selector compare, one at a time, parallel workers at the server default):
@@ -203,6 +204,8 @@ The drill container was removed afterwards.
 - The audit measured 7.65 s at p50 for an earlier image (387fc2d) whose import took 0.71–1.11 CPU-seconds. The Phase 5 API now imports more.
 
 **Not included.** Render's own spin-up (image pull, scheduling, routing) and Neon's wake from suspend.
+
+**Later.** The image measured here (9afd1b4) has no compiled standard library. Section 14 measures the image built after commit 5844ab7 against one built before it.
 
 ## 5. C. Emulation profiles: 0.25 CU and 2 CU
 
@@ -865,3 +868,23 @@ python3 loadtests/report.py --lanes \
 - **The margin at the boundary is narrow at 0.25 CU.** The costliest single-year spec (4.60 s) is close to the cheapest 8-year pooled estimate (5.33–5.79 s). The medians are far apart: 0.91–1.37 s for light estimates, against 6.48–29.91 s for heavy pooled estimates and 11.14–23.61 s for trends.
 - **Not measured.** Specs of 2–7 year queries: pooled ranges of 2–7 years, compares over 2–3 years, and trends shorter than 8 years. The threshold's immediate neighbourhood is therefore untested.
 - **Decision.** No measured request was misclassified, so the threshold stays at 8. The edge governor uses the same rule.
+
+## 14. Later: cold start A/B after the standard-library fix (2026-10-21)
+
+Added after sections 1–13 and measured separately, with its own method, ran-alone evidence and raw files: [`2026-10-21-cold-start-ab.md`](2026-10-21-cold-start-ab.md). Sections 4 and 7 above stay as measured.
+
+Commit 5844ab7 precompiles the Python standard library in the image and keeps python-dotenv off the API's start-up. The A/B compared two images, alternately, on the stack of these runs at 0.25 CU:
+- A: `atus-pb-api:base`, built at 00f3831, before 5844ab7;
+- B: `atus-api:premerge`, built at e5ca1fd, after it.
+
+Each image got one warm-up start, left out of the summary, then 8 measured starts. The API ran at 0.1 CPU / 512 MB.
+
+| Image | to first `/health` 200: p50 / min / max (s) | to first `/api/v1/meta` 200: p50 / min / max (s) | start-up CPU: p50 / min / max (s) |
+|---|---|---|---|
+| A, before (00f3831) | 12.69 / 12.31 / 13.03 | 13.06 / 12.71 / 13.49 | 1.298 / 1.267 / 1.329 |
+| B, after (e5ca1fd) | 5.76 / 5.53 / 6.51 | 6.12 / 5.63 / 6.84 | 0.609 / 0.567 / 0.673 |
+
+**Limits of the comparison.**
+- The two images also differ by other commits between 00f3831 and e5ca1fd. The A/B does not isolate 5844ab7.
+- It ran at 0.25 CU only, in one session, with A started before B in every round.
+- Render's spin-up and its amd64 CPU are not emulated.

@@ -859,6 +859,12 @@ Their numbers supersede three parts of this ADR, which stay above as written: th
 | Parallel query off | 40.6 / 39.5 s → 19.2 / 19.1 s (probe) | `ATUS_API_MAX_PARALLEL_WORKERS=0`: at 0.25 CU the F66 compare 69.21 → 38.58 s and a single-year estimate 0.99 → 0.70 s at p50; at 2 CU slower, worst-case p99 3.03 → 3.53 s (5.2, 5.3). Left unset (ADR-012) |
 | Serving DB size | cluster sum 650,458,708 B (prototype) | the release artifact restored: `sum(pg_database_size)` 649,903,180 B, 65% of 1,000,000,000 B; dump 336,549,536 B (3) |
 
+**Later measurement: cold start (2026-10-21).** The cold-start row above is for the image at 9afd1b4, which shipped no compiled standard library. A later A/B ([`../../loadtests/results/2026-10-21-cold-start-ab.md`](../../loadtests/results/2026-10-21-cold-start-ab.md)) measured at 0.25 CU, n=8, under the same method:
+- the image at e5ca1fd, which precompiles the standard library (commit 5844ab7): first `/health` p50 5.76 s (max 6.51 s), first `/api/v1/meta` p50 6.12 s (max 6.84 s), 0.57–0.67 CPU-seconds of start-up;
+- an image built before that commit, for comparison: first `/health` p50 12.69 s.
+
+The "App start" term of the coldest-path projection below still uses the earlier image's figures. It was not recomputed.
+
 The year pushdown is adopted (ADR-013). The statements per request and the pool's behaviour changed with the implementation, not the calibration: [ADR-012](ADR-012-load-and-quota-protection.md) and [`../api.md`](../api.md#statements-per-request).
 
 **2. "Coldest path for a novel analysis"** (Request flow), recomputed. **PROJECTION**, from these terms in sequence (the API wakes Neon only on its first database request):

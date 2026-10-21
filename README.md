@@ -255,7 +255,11 @@ npm ci && npm test                    # Vitest in workerd; never contacts Cloudf
   at 0.25 CU and 79 ms at 2 CU. Pooled 22-year and 23-year trend worst cases
   took 21.4–21.8 s at 0.25 CU and 2.03–2.12 s at 2 CU, and the F66 broad-selector
   compare by sex 69–71 s at 0.25 CU. At 0.1 CPU the container's cold start
-  to its first `/health` took 13.1 s p50, before Render's own spin-up. The
+  to its first `/health` took 13.1 s p50 in those runs. A later A/B, with the
+  image precompiling its standard library (5844ab7), measured 5.8 s p50
+  against 12.7 s for an image built before that commit
+  ([loadtests/results/2026-10-21-cold-start-ab.md](loadtests/results/2026-10-21-cold-start-ab.md)).
+  Both figures exclude Render's own spin-up. The
   runs kept every protection default
   ([ADR-012, "Calibration (§13)"](docs/adr/ADR-012-load-and-quota-protection.md#calibration-13)).
 - **After a deploy** (not run yet): `scripts/replay_deployed.py` is a

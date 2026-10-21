@@ -15,6 +15,10 @@ For each bundle, into <to>/<bundle name>/:
   cold_start/cold_start.json        when the bundle ran cold starts
   background_stats.csv              other projects' containers, once a minute
 
+A directory written by cold_start.py run on its own (cold_start.json,
+environment.json and background_stats.jsonl.gz side by side) exports the same
+way, with cold_start.json at the top.
+
 No log is copied (database and API logs stay in the raw bundle), and every
 file written is scanned for the stage's secret values; a hit deletes the
 export.
@@ -60,12 +64,17 @@ def jsonl_to_csv(src: Path, dest: Path, fields: tuple[str, ...]) -> int:
 
 def export_bundle(bundle: Path, dest_root: Path) -> Path:
     meta = json.loads((bundle / "environment.json").read_text())
+    standalone = bundle / "cold_start.json"  # cold_start.py run on its own
+    if standalone.exists():
+        meta["timed"] = json.loads(standalone.read_text()).get("timed")
     if not meta.get("timed"):
         raise lt.LoadTestError(f"{bundle.name} is a dry run: nothing to export as a measurement")
     dest = dest_root / bundle.name
     dest.mkdir(parents=True, exist_ok=False)
     shutil.copy2(bundle / "environment.json", dest / "environment.json")
-    for record in meta["scenarios"]:
+    if standalone.exists():
+        shutil.copy2(standalone, dest / "cold_start.json")
+    for record in meta.get("scenarios", []):
         src, target = bundle / record["label"], dest / record["label"]
         target.mkdir()
         for name in COPIED:

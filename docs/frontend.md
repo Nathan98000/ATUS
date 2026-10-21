@@ -749,6 +749,9 @@ an uncached single-year estimate with replicate SEs took 0.99 s at p50 at
 Neon's 0.25 CU floor and 79 ms at 2 CU; pooled 22-year and 23-year trend
 worst cases took 21.4–21.8 s and 2.03–2.12 s; and the costliest request, the F66
 broad selector compared by sex, 69–71 s at 0.25 CU. A cold container took
-13.1 s at p50 to its first `/health` at 0.1 CPU, before Render's own spin-up.
+5.8 s at p50 to its first `/health` at 0.1 CPU, before Render's own spin-up
+([cold-start A/B](../loadtests/results/2026-10-21-cold-start-ab.md)). In the
+emulation runs, before the image precompiled its standard library, it took
+13.1 s.
 Repeated runs hit a cache (the static snapshot, the edge, or the API's
 in-process cache).

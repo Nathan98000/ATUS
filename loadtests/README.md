@@ -16,7 +16,7 @@ Reproducible load tests for the ATUS API, run **locally** against the production
 | `k6/lib/common.js` | edge headers, client addresses, metrics, the per-request record, options from the environment, the summary |
 | `k6/lib/specs.js` | the spec corpus, starters, the prewarm list, the worst cases and the generators |
 | `run.py` | the orchestrator: stack, restore, DB profiles, scenarios, bundles, export |
-| `cold_start.py` | container start → first `200` on `/health` and on `/api/v1/meta`, N times |
+| `cold_start.py` | container start → first `200` on `/health` and on `/api/v1/meta`, N times; `--image A --image B` alternates two images (A, B, A, B, ...) with summaries per image, `--warmup K` starts each image K times first without summarizing them |
 | `analyze.py` | prints a bundle (or an exported results directory) as tables |
 | `precondition.py` | waits (polling, up to 3 h) until no other ATUS workload runs and the project's databases are idle, and writes the evidence |
 | `report.py` | Markdown tables from timed bundles or exports: one table over several runs (`--combine`), per spec kind (`--kinds`), a sweep by level (`--saturation`), a split by endpoint or view kind (`--breakdown`), the ran-alone attestation (`--ran-alone`), the `statement_timeout` calibration (`--calibrate`), computed analyses by the API's lane class (`--lanes`) |
@@ -196,7 +196,9 @@ One `profile`, `scenario` or `baseline` invocation writes one bundle, `<out-root
 **`cold_start/cold_start.json`** (with `--cold-start N`), for each repetition:
 - seconds from just before `docker run` to the first `200` from `/health` and from `/api/v1/meta`;
 - the polls, the image and the DB profile;
-- the container's memory peak, CPU time and throttling after start-up.
+- the container's memory peak, CPU time (`startup_cpu_s`) and throttling after start-up.
+
+`cold_start.py` run on its own writes `<stage>/<UTC>-coldstart/`. That holds the same `cold_start.json`, with `by_image` summaries when it alternated images and warm-ups marked `"warmup": true`. Next to it go an `environment.json` (the ran-alone check before and after, the host, git) and `background_stats.jsonl.gz`. `export_raw.py` exports that directory like a bundle.
 
 **The saturation point** comes from a sweep (`--sweep VUS=1,2,4,...`). `analyze.py` tabulates `200`s per second, p95 and non-200 answers per level. Saturation is the level after which throughput stops rising while p95 or errors climb. The API sheds before the database melts: its lanes allow 2 uncached analyses in flight, 1 of them heavy, and the next request waits up to 5 s and then gets `503 overloaded`. So report both the throughput plateau and the level where `overloaded` starts.
 

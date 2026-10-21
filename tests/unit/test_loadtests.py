@@ -215,6 +215,18 @@ def test_raw_output_stays_out_of_the_repository(tmp_path):
         runner.Stage(tmp_path, "Bad Name")
 
 
+def test_cold_start_ab_alternates_images_and_leaves_warmups_out():
+    cold_start = _load("cold_start", "atus_loadtests_cold_start")
+    plan = cold_start.run_plan(["a", "b"], runs=2, warmup=1)
+    assert plan == [("a", True), ("b", True), ("a", False), ("b", False),
+                    ("a", False), ("b", False)]
+    runs = [{"warmup": True, "to_first_health_s": 99.0},
+            {"warmup": False, "to_first_health_s": 2.0},
+            {"warmup": False, "to_first_health_s": 4.0}]
+    summary = cold_start.summaries(runs)["summary_to_first_health_s"]
+    assert (summary["n"], summary["min"], summary["p50"], summary["max"]) == (2, 2.0, 3.0, 4.0)
+
+
 def test_other_workloads_are_recognised_by_command_line():
     hits = ["/x/.venv/bin/python scripts/equivalence/replay.py --all",
             "/x/.venv/bin/python -m pytest tests/unit", "node /x/playwright/cli.js test",

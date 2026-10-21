@@ -12,7 +12,7 @@ Each exported run is a directory:
 | `<scenario>/stats_summary.json`, `cgroup.json` | API and DB CPU and memory | — |
 | `<scenario>/summary.json` | k6's end-of-test summary | — |
 | `<scenario>/functional.json` | — | statuses, error codes and X-Cache outcomes only |
-| `cold_start/cold_start.json` | per-repetition timings and their summary | whether every start reached `/api/v1/meta` |
+| `cold_start/cold_start.json` | per-repetition timings and their summary (per image in an A/B: `by_image`) | whether every start reached `/api/v1/meta` |
 
 `python3 loadtests/analyze.py loadtests/results/<name>` prints any of them as tables.
 
@@ -24,5 +24,6 @@ Each exported run is a directory:
 |---|---|---|
 | [`2026-10-21-dryrun/`](2026-10-21-dryrun/) | dry run (not timed) | every scenario, the three DB profiles, the laptop baseline and the cold start run end to end against the real serving dump |
 | [`2026-10-21-emulation.md`](2026-10-21-emulation.md) with [`raw/`](raw/) | **timed** | the restore drill, cold starts, every scenario at 0.25 CU and 2 CU, the laptop baseline, saturation sweeps, lane calibration, the `statement_timeout` calibration, the recommendations and the calibration applied in ADR-012 (brief §13, §10) |
+| [`2026-10-21-cold-start-ab.md`](2026-10-21-cold-start-ab.md) with [`raw/20261021T102143Z-coldstart/`](raw/20261021T102143Z-coldstart/) | **timed** | cold start at 0.1 CPU, alternating an image built before commit 5844ab7 (precompiled standard library) with one built after it, n=8 each at 0.25 CU; summarized in the emulation record's section 14 |
 
 `raw/` holds the timed bundles exported by `loadtests/export_raw.py` (compact: no logs, no secrets; per-request rows as `requests.csv.gz`, `docker stats` as `docker_stats.csv.gz`), the restore drill's report, and the precondition snapshots. `python3 loadtests/report.py` regenerates every table of the timed record from it.
