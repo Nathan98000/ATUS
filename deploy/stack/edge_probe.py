@@ -7,8 +7,10 @@ in front of the production-mode API. Each check prints one PASS/FAIL line:
 
   spa_fallback      deep links (/explore, /about, /analysis/..., unknown paths)
                     get the SPA's index.html with 200 (Workers SPA fallback)
-  static_headers    _headers on static responses: CSP with connect-src 'self',
-                    HSTS, nosniff, Referrer-Policy, Permissions-Policy;
+  static_headers    _headers on static responses (/, /explore, a hashed
+                    asset): every header of its `/*` rule with exactly the
+                    value the file gives (CSP with connect-src 'self', HSTS,
+                    nosniff, Referrer-Policy, Permissions-Policy, COOP);
                     index.html no-cache, hashed assets immutable
   snapshot_static   /snap/current.json (no-cache) points at a manifest whose
                     files are served byte for byte as built, as static files
@@ -64,6 +66,11 @@ from datetime import time as dt_time
 from pathlib import Path
 
 ESTIMATE = "/api/v1/analysis/estimate"
+HEADERS_FILE = Path(__file__).resolve().parents[2] / "frontend" / "public" / "_headers"
+#: Headers the `/*` rule of _headers must set (brief §11); the probe checks
+#: every header of that rule, these at least.
+REQUIRED_SITE_HEADERS = ("content-security-policy", "strict-transport-security",
+                         "x-content-type-options", "referrer-policy", "permissions-policy")
 NAVIGATION = {"Accept": "text/html", "Sec-Fetch-Mode": "navigate", "Sec-Fetch-Dest": "document"}
 API_SECURITY = {
     "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
@@ -120,10 +127,32 @@ def analysis_body(label: str) -> bytes:
                       separators=(",", ":"), sort_keys=True).encode()
 
 
+def site_headers(path: Path = HEADERS_FILE) -> dict[str, str]:
+    """The headers the `/*` rule of a `_headers` file sets on every static
+    path (lowercase names, values as written)."""
+    rules: dict[str, dict[str, str]] = {}
+    current: str | None = None
+    for line in path.read_text().splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if not line[0].isspace():
+            current = line.strip()
+            rules.setdefault(current, {})
+        elif current is not None:
+            name, _, value = line.strip().partition(":")
+            rules[current][name.strip().lower()] = value.strip()
+    expected = rules.get("/*", {})
+    missing = [name for name in REQUIRED_SITE_HEADERS if not expected.get(name)]
+    if missing:
+        raise SystemExit(f"{path}: the /* rule does not set {', '.join(missing)}")
+    return expected
+
+
 @dataclass
 class Probe:
     base: str
     results: list[tuple[str, bool, str]] = field(default_factory=list)
+    site: dict[str, str] = field(default_factory=site_headers)
 
     def check(self, name: str, ok: bool, detail: str) -> bool:
         self.results.append((name, ok, detail))
@@ -145,16 +174,13 @@ def check_spa_fallback(probe: Probe) -> None:
     probe.check("spa_fallback", not bad, "deep links -> index.html 200" if not bad else str(bad))
 
 
-def _static_security_problems(headers: dict[str, str]) -> list[str]:
-    problems = []
+def _static_security_problems(headers: dict[str, str], expected: dict[str, str]) -> list[str]:
+    """Each header of `expected` (the `/*` rule) missing or with another value."""
+    problems = [f"{name}={headers.get(name)!r}" for name, value in expected.items()
+                if headers.get(name) != value]
     csp = headers.get("content-security-policy", "")
     if "connect-src 'self'" not in csp or "frame-ancestors 'none'" not in csp:
         problems.append("csp")
-    for name, needle in (("strict-transport-security", "max-age="),
-                         ("x-content-type-options", "nosniff"),
-                         ("referrer-policy", ""), ("permissions-policy", "")):
-        if needle not in headers.get(name, "\0"):
-            problems.append(name)
     if "x-request-id" in headers:
         problems.append("worker-generated")
     return problems
@@ -162,11 +188,11 @@ def _static_security_problems(headers: dict[str, str]) -> list[str]:
 
 def check_static_headers(probe: Probe) -> str | None:
     index = probe.get("/", headers=NAVIGATION)
-    problems = [f"/:{p}" for p in _static_security_problems(index.headers)]
+    problems = [f"/:{p}" for p in _static_security_problems(index.headers, probe.site)]
     if "no-cache" not in index.headers.get("cache-control", ""):
         problems.append("/:cache-control")
     deep = probe.get("/explore", headers=NAVIGATION)
-    problems += [f"/explore:{p}" for p in _static_security_problems(deep.headers)]
+    problems += [f"/explore:{p}" for p in _static_security_problems(deep.headers, probe.site)]
     match = re.search(rb'src="(/assets/[^"]+\.js)"', index.body)
     asset = match.group(1).decode() if match else None
     if asset is None:
@@ -175,10 +201,12 @@ def check_static_headers(probe: Probe) -> str | None:
         reply = probe.get(asset)
         if reply.status != 200 or "immutable" not in reply.headers.get("cache-control", ""):
             problems.append(f"{asset}:{reply.status}/{reply.headers.get('cache-control')}")
-        problems += [f"{asset}:{p}" for p in _static_security_problems(reply.headers)]
+        problems += [f"{asset}:{p}" for p in _static_security_problems(reply.headers,
+                                                                      probe.site)]
     probe.check("static_headers", not problems,
-                "CSP connect-src 'self', HSTS, nosniff, Referrer/Permissions-Policy; "
-                "index no-cache, assets immutable" if not problems else str(problems))
+                f"the {len(probe.site)} headers of _headers' /* rule, exact (CSP connect-src "
+                "'self', HSTS, nosniff, Referrer/Permissions-Policy); index no-cache, assets "
+                "immutable" if not problems else str(problems))
     return asset
 
 
@@ -398,7 +426,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--skip-governor", action="store_true",
                         help="do not spend a /24's daily allowance")
     args = parser.parse_args(argv)
-    probe = Probe(args.base.rstrip("/"))
+    # The published copy of _headers when the assets are given, else the source.
+    published = args.assets / "_headers" if args.assets else None
+    probe = Probe(args.base.rstrip("/"), site=site_headers(
+        published if published is not None and published.is_file() else HEADERS_FILE))
     expected_version = os.environ.get("ATUS_PROBE_DATA_VERSION") or None
 
     check_spa_fallback(probe)

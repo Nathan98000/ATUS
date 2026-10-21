@@ -5,8 +5,10 @@
 # deploys nothing (Render's image-backed service never auto-deploys, Workers
 # Builds is never connected). Jobs, each with the least permission it needs:
 #
-#   preflight  the ref is a semver tag or main; releases/current.json names a
-#              published serving-DB release
+#   preflight  the ref is a semver tag or main; ci.yml passed on a push to
+#              main for this very commit, and the commit is on main (this
+#              workflow runs only the Worker's config tests and the SPA
+#              build); releases/current.json names a published release
 #   build      image.yml from scratch (no build cache): the strict gate,
 #              deployment tests, stack smoke plain and emulated, Trivy
 #   push       the one job with packages: write: pushes exactly the tested
@@ -21,6 +23,9 @@
 #              release vars, post-deploy smoke (<= 30 requests, the step's
 #              --max-requests), browser smoke (<= 6 /api requests), rollback
 #              notes in the job summary
+#   promote    after a passing deploy: tags the deployed digest `live` (the
+#              image Render's service is configured with) and
+#              `deployed-<commit>` (the next run's rollback target)
 #
 # Secrets are read from the environment by the scripts and never echoed.
 name: Deploy
@@ -53,6 +58,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
+      actions: read
     outputs:
       data_version: ${{ steps.release.outputs.data_version }}
       release_tag: ${{ steps.release.outputs.release_tag }}
@@ -81,6 +87,11 @@ jobs:
             echo "### Deploy $REF_NAME ($GITHUB_SHA)"
             if [ -n "$REASON" ]; then echo "Reason: $REASON"; fi
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: CI passed for this commit, and it is on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ops/github_ops.py deploy-gate --repo "$GITHUB_REPOSITORY" --sha "$GITHUB_SHA"
 
       - name: The release manifest names a published release
         id: release
@@ -440,24 +451,19 @@ jobs:
           (cd edge && npx --no-install wrangler deployments status --json) \
             > "$RUNNER_TEMP/worker-before.json" 2> /dev/null || true
 
-      - name: Log in to GHCR (read; previous digest)
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Previous image digest
         id: previous
         continue-on-error: true
         env:
           PREVIOUS_BUILD: ${{ steps.before.outputs.build }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [[ "$PREVIOUS_BUILD" =~ ^[0-9a-f]{40}$ ]]; then
-            digest=$(docker buildx imagetools inspect "$GHCR_REPOSITORY:sha-$PREVIOUS_BUILD" \
-              --format '{{json .Manifest}}' | jq -r .digest)
-            echo "image_ref=$GHCR_REPOSITORY@$digest" >> "$GITHUB_OUTPUT"
-          fi
+          # The digest the running commit was deployed as: its deployed-<commit>
+          # tag, which only job promote moves. Never sha-<commit> of this run's
+          # own commit: this run's push has just moved that tag (a re-run).
+          python3 scripts/ops/github_ops.py deployed-image --owner nathan98000 \
+            --package atus-api --build "$PREVIOUS_BUILD" --this-build "$GITHUB_SHA" \
+            >> "$GITHUB_OUTPUT"
 
       - name: Deploy the API image by digest (Render deploy hook)
         env:
@@ -511,6 +517,7 @@ jobs:
         env:
           PREVIOUS_BUILD: ${{ steps.before.outputs.build }}
           PREVIOUS_IMAGE: ${{ steps.previous.outputs.image_ref }}
+          PREVIOUS_SOURCE: ${{ steps.previous.outputs.image_source }}
         run: |
           worker_before="(not recorded)"
           if [ -s "$RUNNER_TEMP/worker-before.json" ]; then
@@ -522,13 +529,15 @@ jobs:
 
           | Component | Before this run | This run |
           |---|---|---|
-          | API (Render) | build \`${PREVIOUS_BUILD:-unknown}\`, image \`${PREVIOUS_IMAGE:-unknown}\` | \`$IMAGE_REF\` |
+          | API (Render) | build \`${PREVIOUS_BUILD:-unknown}\`, image \`${PREVIOUS_IMAGE:-unknown (Render → Events)}\` (${PREVIOUS_SOURCE:-not looked up}) | \`$IMAGE_REF\` |
           | Edge (Worker + static site) | versions \`$worker_before\` | snapshot \`$SNAPSHOT_ID\`, data \`$DATA_VERSION\` |
 
           - **API:** with \`RENDER_DEPLOY_HOOK_URL\` exported from your password manager, run
             \`python scripts/ops/render_deploy.py trigger --image-ref <previous image>\`, then
             \`RENDER_ORIGIN=... python scripts/ops/render_deploy.py wait --expect-build <previous build>\`.
-            GHCR keeps the last 20 digests (ghcr-cleanup.yml).
+            Then move the GHCR tag \`live\` back to it: re-run job \`promote\` of the Deploy run that
+            deployed it (GitHub allows that for 30 days; later by hand, docs/operations.md, "Rollback").
+            GHCR keeps the last 20 digests and \`live\`.
           - **Edge:** \`cd edge && npx wrangler rollback <previous version id> --message "rollback"\`
             (without an id: the version before the current one), then
             \`python scripts/ops/monitors.py edge --base-url $PUBLIC_BASE_URL\`.
@@ -536,3 +545,42 @@ jobs:
             \`ATUS_DATABASE_URL\` and \`ATUS_EXPECTED_DATA_VERSION\`, then re-run this workflow at the
             commit whose releases/current.json names the previous release.
           EOF
+
+  promote:
+    name: Mark the deployed digest (Render's configured image, rollback target)
+    # Only after the deploy job, smoke included, passed: `live` is the Image
+    # URL Render's service is configured with (owner step 2.7), so a deploy
+    # not made through the hook (Manual Deploy) runs the last verified
+    # digest; ghcr-cleanup.yml never deletes it. `deployed-<commit>` names
+    # the digest that commit ran as, for the next run's rollback notes. Re-run
+    # this job of an earlier run to move `live` back after an API rollback
+    # (GitHub re-runs jobs for 30 days; after that, by hand: operations.md).
+    needs: [push, deploy]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_REF: ${{ needs.push.outputs.image_ref }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag the deployed digest live and deployed-<commit> (same digest, no new manifest)
+        run: |
+          for tag in live "deployed-$GITHUB_SHA"; do
+            docker buildx imagetools create --prefer-index=false \
+              --tag "$GHCR_REPOSITORY:$tag" "$IMAGE_REF"
+            digest=$(docker buildx imagetools inspect "$GHCR_REPOSITORY:$tag" \
+              --format '{{json .Manifest}}' | jq -r .digest)
+            if [ "$GHCR_REPOSITORY@$digest" != "$IMAGE_REF" ]; then
+              echo "::error::$tag names $digest, not the deployed $IMAGE_REF"
+              exit 1
+            fi
+          done
+          echo "Tagged \`$IMAGE_REF\` as \`live\` and \`deployed-$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"

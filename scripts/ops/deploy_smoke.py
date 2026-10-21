@@ -8,6 +8,13 @@
 
 Checks, in order (brief §16, §17; deployment.md "8. Prove the deployment"):
 
+  propagation      (with --expect-data-version or --expect-snapshot-id) waits,
+                   bounded, until /api/_edge/health and /snap/current.json
+                   name this release: the smoke runs right after `wrangler
+                   deploy`, and the colo answering the runner may serve the
+                   previous version for a few seconds. At most 4 polls each,
+                   15 s apart, within --propagation-timeout; if the release
+                   never arrives, the checks below fail on their own reads
   shell            GET /: 200 text/html with the site's security headers and
                    ``Cache-Control: no-cache`` (frontend/public/_headers)
   deep_link        GET /analysis/estimate: the SPA fallback, with the <meta>
@@ -63,6 +70,10 @@ from httpcheck import (  # noqa: E402
 HARD_MAX_REQUESTS = 40
 SNAPSHOT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 ANALYSIS_STATUSES = ("miss", "hit", "join", "bypass", "edge")
+#: Propagation polls per path and their spacing: the worst case (4 + 4) still
+#: fits the deploy's 30-request budget with every other check at its maximum.
+PROPAGATION_ATTEMPTS = 4
+PROPAGATION_INTERVAL_S = 15.0
 
 #: The home page's first and third starters (frontend/src/domain/prewarm.ts,
 #: STARTER_EXAMPLES; tests/unit/ops/test_deploy_smoke.py keeps them in step).
@@ -107,6 +118,38 @@ class Smoke:
         self.snapshot_id: str | None = None
         self.manifest: dict | None = None
         self.latest_year: int | None = None
+
+    # -- the release reaching this colo --------------------------------------
+    def _names_this_release(self, reply) -> bool:
+        if reply.status != 200 or not reply.is_json:
+            return False
+        try:
+            body = reply.json()
+        except OpsError:
+            return False
+        dv, snap = self.args.expect_data_version, self.args.expect_snapshot_id
+        return (not dv or body.get("data_version") == dv) and \
+            (not snap or body.get("snapshot_id") == snap)
+
+    def propagation(self) -> None:
+        if not (self.args.expect_data_version or self.args.expect_snapshot_id):
+            return
+        waited = []
+        for path in ("/api/_edge/health", "/snap/current.json"):
+            before = self.client.sent
+            try:
+                self.client.wait_for(
+                    "GET", path, self._names_this_release,
+                    deadline_s=self.args.propagation_timeout,
+                    min_interval_s=PROPAGATION_INTERVAL_S, max_attempts=PROPAGATION_ATTEMPTS)
+            except BudgetExceeded:
+                raise
+            except OpsError as exc:
+                self.report.add("propagation", "WARN", f"{path} does not name this release "
+                                f"yet ({exc}); the checks below judge it")
+                return
+            waited.append(f"{path} after {self.client.sent - before} request(s)")
+        self.report.ok("propagation", "this release is served: " + ", ".join(waited))
 
     # -- static site --------------------------------------------------------
     def shell(self) -> None:
@@ -332,8 +375,8 @@ class Smoke:
                                      "uncached analyses admitted today")
 
     def run(self) -> None:
-        steps = [self.shell, self.deep_link, self.snapshot, self.edge_health, self.api_health,
-                 self.meta, self.starters, self.api_errors]
+        steps = [self.propagation, self.shell, self.deep_link, self.snapshot, self.edge_health,
+                 self.api_health, self.meta, self.starters, self.api_errors]
         if self.args.origin_lock:
             steps.append(self.origin_lock)
         if self.args.ops_budget:
@@ -356,6 +399,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="starters to diff against the snapshot (default 1)")
     parser.add_argument("--max-requests", type=int, default=30)
     parser.add_argument("--wake-timeout", type=float, default=240.0)
+    parser.add_argument("--propagation-timeout", type=float, default=60.0,
+                        help="seconds to wait for the new release to reach this colo")
     parser.add_argument("--origin-lock", action="store_true")
     parser.add_argument("--ops-budget", action="store_true")
     parser.add_argument("--report", type=Path, default=None, help="write the results as JSON")

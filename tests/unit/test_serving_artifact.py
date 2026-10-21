@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 
 import pytest
 
@@ -97,7 +98,84 @@ def test_resolve_prefers_a_new_enough_local_client(monkeypatch):
     monkeypatch.setattr(pgtools.shutil, "which",
                         lambda name: None if name == "docker" else f"/usr/bin/{name}")
     with pytest.raises(pgtools.PgToolError, match="16 or newer"):
+        pgtools.resolve("pg_restore", "postgresql://u:pw@h/db", server_major=16)
+    with pytest.raises(pgtools.PgToolError, match="pg_dump 16 is needed"):
         pgtools.resolve("pg_dump", "postgresql://u:pw@h/db", server_major=16)
+
+
+def test_pg_dump_is_exactly_the_servers_major_version(monkeypatch):
+    # A pg_dump newer than the server writes an archive the deploy runner's
+    # pg_restore 16 cannot read (and SET commands a 16 server rejects).
+    monkeypatch.setattr(pgtools, "local_major", lambda tool: 17)
+    monkeypatch.setattr(pgtools.shutil, "which", lambda name: f"/usr/bin/{name}")
+    dump = pgtools.resolve("pg_dump", "postgresql://u:pw@h/db", server_major=16)
+    assert dump.argv[:2] == ("docker", "run") and dump.argv[-2:] == ("postgres:16", "pg_dump")
+    restore = pgtools.resolve("pg_restore", "postgresql://u:pw@h/db", server_major=16)
+    assert restore.argv == ("/usr/bin/pg_restore",)
+    monkeypatch.setattr(pgtools, "local_major", lambda tool: 16)
+    assert pgtools.resolve("pg_dump", "postgresql://u:pw@h/db",
+                           server_major=16).argv == ("/usr/bin/pg_dump",)
+
+
+@pytest.mark.parametrize("recorded, server, expected", [
+    ("pg_dump (PostgreSQL) 16.15 (Debian 16.15-1.pgdg13+2) (docker postgres:16)", 16, 16),
+    ("pg_dump (PostgreSQL) 18.1 (local /opt/homebrew/bin/pg_dump (18))", 16, 18),
+    (None, 16, 16),
+    ("pg_dump (PostgreSQL) 16.4", 17, 17),
+])
+def test_the_restore_client_is_at_least_as_new_as_the_dump(recorded, server, expected):
+    from atus_pipeline.serving.restore import restore_client_major
+
+    manifest = {"tools": {"pg_dump": recorded}} if recorded else {}
+    assert restore_client_major(server, manifest) == expected
+
+
+NEON_ENV = {"PGHOST": "ep-1.us-east-1.aws.neon.tech", "PGUSER": "neondb_owner",
+            "PGPASSWORD": "hunter2", "PGDATABASE": "atus", "PGSSLMODE": "verify-full"}
+
+
+def test_the_container_gets_the_hosts_ca_bundle_for_sslrootcert_system(tmp_path):
+    # The postgres image ships no CA bundle (ca-certificates is not
+    # installed), so `system` inside the container needs the host's.
+    bundle = tmp_path / "cert.pem"
+    bundle.write_text("roots")
+    env = {**NEON_ENV, "PGSSLROOTCERT": "system"}
+    argv, env_out = pgtools.docker_argv("pg_restore", env, "postgres:16", platform="darwin",
+                                        ca_file=str(bundle))
+    mount = f"{bundle.resolve()}:{pgtools.CONTAINER_CA_FILE}:ro"
+    assert argv[argv.index(mount) - 1] == "-v"
+    assert argv[argv.index(f"SSL_CERT_FILE={pgtools.CONTAINER_CA_FILE}") - 1] == "-e"
+    assert env_out["PGSSLROOTCERT"] == "system"        # verification is unchanged
+    assert argv[-2:] == ("postgres:16", "pg_restore")
+    with pytest.raises(pgtools.PgToolError, match="SSL_CERT_FILE"):
+        pgtools.docker_argv("psql", env, "postgres:16", platform="darwin", ca_file=None)
+    plain, _ = pgtools.docker_argv("psql", NEON_ENV, "postgres:16", platform="darwin",
+                                   ca_file=str(bundle))
+    assert "-v" not in plain
+
+
+def test_the_container_gets_a_sslrootcert_file_mounted(tmp_path):
+    ca = tmp_path / "neon-ca.pem"
+    ca.write_text("ca")
+    argv, env_out = pgtools.docker_argv(
+        "psql", {**NEON_ENV, "PGSSLROOTCERT": str(ca)}, "postgres:16", platform="darwin")
+    assert f"{ca.resolve()}:{pgtools.CONTAINER_ROOT_CERT}:ro" in argv
+    assert env_out["PGSSLROOTCERT"] == pgtools.CONTAINER_ROOT_CERT
+    with pytest.raises(pgtools.PgToolError, match="not found"):
+        pgtools.docker_argv("psql", {**NEON_ENV, "PGSSLROOTCERT": str(tmp_path / "x.pem")},
+                            "postgres:16", platform="darwin")
+
+
+def test_resolve_hands_the_container_the_bundle_ssl_cert_file_names(tmp_path, monkeypatch):
+    bundle = tmp_path / "cert.pem"
+    bundle.write_text("roots")
+    monkeypatch.setenv("SSL_CERT_FILE", str(bundle))
+    monkeypatch.setattr(pgtools, "local_major", lambda tool: None)
+    monkeypatch.setattr(pgtools.shutil, "which", lambda name: f"/usr/bin/{name}")
+    tool = pgtools.resolve(
+        "pg_restore", "postgresql://o:pw@ep-1.neon.tech/atus?sslmode=verify-full"
+                      "&sslrootcert=system", server_major=16)
+    assert f"{bundle.resolve()}:{pgtools.CONTAINER_CA_FILE}:ro" in tool.argv
 
 
 def _artifact(tmp_path, content=b"PGDMP fake dump"):
@@ -151,3 +229,37 @@ def test_read_manifest_refuses_other_json(tmp_path):
     path.write_text(json.dumps({"kind": "something-else"}))
     with pytest.raises(ArtifactError):
         read_manifest(path)
+
+
+@pytest.mark.parametrize("owner_query", ["sslmode=verify-full&sslrootcert=system",
+                                         "sslmode=require&channel_binding=require"])
+def test_the_restore_finds_ca_roots_before_its_first_connection(tmp_path, monkeypatch,
+                                                                owner_query):
+    # Owner step 3.5 on the owner's Mac: the first connection (the owner's
+    # DSN) and the API role checks (always verify-full + system for a remote
+    # host) need roots that the psycopg wheel's OpenSSL cannot find alone.
+    from atus_pipeline.database import dsn
+    from atus_pipeline.serving import restore as restore_module
+
+    bundle = tmp_path / "cert.pem"
+    bundle.write_text("roots")
+    monkeypatch.setattr(dsn, "SYSTEM_CA_BUNDLES", (str(bundle),), raising=False)
+    # Unset now and after the test: the code under test sets it, and a
+    # delenv of an unset variable records nothing to undo.
+    monkeypatch.setenv("SSL_CERT_FILE", "unset-below")
+    monkeypatch.delenv("SSL_CERT_FILE")
+    monkeypatch.setenv("ATUS_OWNER_DATABASE_URL",
+                       f"postgresql://neondb_owner:pw@ep-1.us-east-1.aws.neon.tech/atus"
+                       f"?{owner_query}")
+    seen = []
+
+    def connect(*args, **kwargs):
+        seen.append(os.environ.get("SSL_CERT_FILE"))
+        raise RuntimeError("stop before any network")
+
+    monkeypatch.setattr(restore_module.psycopg, "connect", connect)
+    dump, _ = _artifact(tmp_path)
+    options = restore_module.RestoreOptions(artifact=dump, secrets_file=tmp_path / "neon.env")
+    with pytest.raises(RuntimeError, match="stop before any network"):
+        restore_module.restore(options, echo=lambda message: None)
+    assert seen == [str(bundle)]

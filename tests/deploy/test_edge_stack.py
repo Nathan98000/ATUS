@@ -221,6 +221,25 @@ class TestEdgeProbeHelpers:
         assert body == b'{"activity":{"include":["010101"],"label":"x"},"years":[2023]}'
 
 
+def test_the_edge_cycle_runs_deploys_own_gates():
+    """deploy.yml's post-deploy gates (deploy_smoke.py and the browser smoke)
+    run in CI against the local edge, with the deploy's flags, so a
+    regression in either script shows up before a production deploy."""
+    script = (REPO_ROOT / "scripts" / "smoke_stack.sh").read_text()
+    edge = script[script.index('if [ "$edge" = 1 ]; then'):]
+    smoke = edge[edge.index("smoke_args=("):edge.index("scripts/ops/deploy_smoke.py")]
+    deploy = (REPO_ROOT / ".github" / "workflows" / "deploy.yml").read_text()
+    for flag in ("--require-snapshot", "--recompute 2", "--max-requests 30", "--origin-lock",
+                 "--expect-data-version", "--expect-snapshot-id", "--expect-build"):
+        assert flag in smoke and flag in deploy, flag
+    assert "RENDER_ORIGIN=$direct_api" in edge
+    # ... before the origin (snapshot-api) is removed
+    assert edge.index("scripts/ops/deploy_smoke.py") < edge.index("rm -fsv snapshot-api")
+    e2e = edge[edge.index('if [ "$e2e" = 1 ]; then'):]
+    assert 'PUBLIC_BASE_URL="$edge_base"' in e2e
+    assert "npx playwright test -c playwright.deployed.config.ts" in e2e
+
+
 def test_smoke_stack_refuses_e2e_without_edge():
     result = subprocess.run([str(REPO_ROOT / "scripts" / "smoke_stack.sh"), "--e2e"],
                             cwd=REPO_ROOT, capture_output=True, text=True, timeout=30,
@@ -246,6 +265,12 @@ def test_edge_cycle(api_image, docker_prefix, node):
     output = result.stdout + result.stderr
     assert result.returncode == 0, output[-6000:]
     assert "smoke: 0 failed" in output and "edge probe: 0 failed" in output
+    # deploy.yml's gates: deploy_smoke.py (both starters diffed under §9) and
+    # the deployed browser smoke
+    for check in ("propagation", "starter_1_sleep", "starter_2_tv_by_sex", "ops_budget"):
+        assert f"[PASS] {check}" in output, check
+    assert re.search(r"^smoke: 0 failed, \d+ requests$", output, re.MULTILINE)
+    assert "== deployed browser smoke" in output
     assert re.search(r"^\s+\d+ passed", output, re.MULTILINE), output[-3000:]
     # everything is removed afterwards (regression: the E2E loop once
     # overwrote the compose project name, so the stack outlived the run)

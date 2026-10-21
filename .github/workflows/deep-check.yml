@@ -6,6 +6,11 @@
 # a minute; the Worker maps the wait to 503 service_waking with Retry-After).
 # At most 8 requests a run.
 #
+# It also compares the build /health reports with the commit of the GHCR
+# digest tagged `live` (the last deploy that passed its smoke), read through
+# the GitHub API with the run's read-only token; a deep check that lands
+# during a deploy may see the old build: re-run it.
+#
 # A failure emails the owner (see edge-check.yml). Skipped until the
 # repository variable PUBLIC_BASE_URL is set.
 name: Deep check
@@ -30,6 +35,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      packages: read
     steps:
       - name: Check out the monitor scripts
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,7 +43,23 @@ jobs:
           persist-credentials: false
           sparse-checkout: scripts/ops
 
-      - name: Check /api/health (cold-start tolerant)
+      # The build Render must run: the commit of the GHCR digest tagged `live`
+      # (deploy.yml job promote). A Render redeploy that is not deploy.yml's
+      # (Manual Deploy, "Save and deploy") then fails this check if it brought
+      # back another image. Not fatal when GitHub cannot answer: the health
+      # check still runs, without the build expectation.
+      - name: Which build should run (the `live` tag)
+        id: live
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ops/github_ops.py live-build --owner nathan98000 --package atus-api >> "$GITHUB_OUTPUT"
+
+      - name: Check /api/health (cold-start tolerant) and the build it reports
         env:
           PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
-        run: python3 scripts/ops/monitors.py deep --wake-timeout 240 --max-requests 8
+          EXPECT_BUILD: ${{ steps.live.outputs.build }}
+        run: |
+          args=(--wake-timeout 240 --max-requests 8)
+          if [ -n "$EXPECT_BUILD" ]; then args+=(--expect-build "$EXPECT_BUILD"); fi
+          python3 scripts/ops/monitors.py deep "${args[@]}"

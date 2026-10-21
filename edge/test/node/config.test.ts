@@ -13,6 +13,27 @@ const CONFIG_PATH = fileURLToPath(new URL('../../wrangler.jsonc', import.meta.ur
 const { rawConfig: raw } = experimental_readRawConfig({ config: CONFIG_PATH })
 const config = unstable_readConfig({ config: CONFIG_PATH })
 
+/**
+ * The release vars: fixed safe defaults, except `NEON_PROJECT_ID`, which is
+ * empty until the owner commits the project id (ADR-015; the same shape
+ * `Governor.neonConfigured` accepts). A project id is not a secret; the key
+ * (`NEON_API_KEY`) is a Worker secret and never a var.
+ */
+function expectReleaseVars(vars: Record<string, unknown> | undefined): void {
+  const { NEON_PROJECT_ID: projectId, ...fixed } = vars ?? {}
+  expect(fixed).toEqual({
+    API_VERSION: 'v1',
+    ANALYTICS_VERSION: '',
+    DATA_VERSION: '',
+    RESPONSE_FORMAT: '1',
+    SNAPSHOT_ID: '',
+    EPOCH: '1',
+    PREWAKE: 'on',
+  })
+  expect(projectId).toBeTypeOf('string')
+  expect(projectId).toMatch(/^([A-Za-z0-9-]{1,64})?$/)
+}
+
 describe('wrangler.jsonc', () => {
   it('has no cache block anywhere (Workers Cache bills otherwise-free requests)', () => {
     expect(raw).not.toHaveProperty('cache')
@@ -48,16 +69,16 @@ describe('wrangler.jsonc', () => {
   })
 
   it('declares the release vars with safe defaults and no secrets', () => {
-    expect(raw.vars).toEqual({
-      API_VERSION: 'v1',
-      ANALYTICS_VERSION: '',
-      DATA_VERSION: '',
-      RESPONSE_FORMAT: '1',
-      SNAPSHOT_ID: '',
-      EPOCH: '1',
-      PREWAKE: 'on',
-      NEON_PROJECT_ID: '',
-    })
+    expectReleaseVars(raw.vars)
+  })
+
+  it('accepts a committed Neon project id (the ground-truth governor, ADR-015)', () => {
+    // The runbooks have the owner commit the project id here; CI and the
+    // deploy job's config step must then still pass.
+    expectReleaseVars({ ...raw.vars, NEON_PROJECT_ID: 'proud-sun-123456' })
+    for (const bad of ['proud sun', 'x'.repeat(65), 'napi_key/with-slash', 7]) {
+      expect(() => expectReleaseVars({ ...raw.vars, NEON_PROJECT_ID: bad })).toThrow()
+    }
   })
 
   it('requires the runtime secrets, so a deploy without them is refused', () => {

@@ -20,8 +20,9 @@
 #   e2e-stack    the tested image in the production compose stack behind the
 #                edge Worker (wrangler dev): scripts/smoke_stack.sh --edge --e2e,
 #                i.e. the API smoke, the SPA and static snapshot, the edge
-#                probe, and the whole Playwright suite in stack mode
-#                (E2E_BASE_URL), every project
+#                probe, deploy.yml's post-deploy smoke (deploy_smoke.py), the
+#                whole Playwright suite in stack mode (E2E_BASE_URL), every
+#                project, and deploy.yml's browser smoke
 name: CI
 
 on:
@@ -352,11 +353,19 @@ jobs:
           test "$loaded" = "$(cat "$RUNNER_TEMP/image/atus-api.id")"
 
       # The host-side steps (scripts/build_snapshot.py, deploy/stack/edge_probe.py)
-      # need only the standard library.
+      # need only the standard library; scripts/ops/deploy_smoke.py, deploy.yml's
+      # post-deploy gate run here too, needs the package for its §9 comparison.
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock.txt
+
+      - name: Install the hash-locked environment (deploy_smoke.py's §9 comparison)
+        run: |
+          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --no-deps --no-build-isolation -e .
 
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

@@ -770,6 +770,14 @@ All runs below were local. Nothing has been compared on a deployed host.
   ```
 
   Never put a secret on a command line, in chat or in an issue. Values in `neon*.env` that contain `?` or `&` are stored single-quoted; copy them without the quotes.
+- **After every "Save and deploy"** (and any other Render deploy not made by `deploy.yml`): wait until Render → Events shows it live, then check that the API still runs the `live` build. Render does not document which image an image-backed service pulls then; with the Image URL at `:live` ([owner step 2.7](deployment.md#2-render-free-web-service)) it is the last digest a deploy verified, and `deep-check.yml` checks the build every 6 hours. By hand (listing package versions needs the `read:packages` scope: `gh auth refresh -s read:packages` once):
+
+  ```bash
+  build="$(GH_TOKEN="$(gh auth token)" python scripts/ops/github_ops.py live-build --owner nathan98000 --package atus-api | cut -d= -f2)"
+  RENDER_ORIGIN="$ORIGIN" python scripts/ops/render_deploy.py wait --expect-build "$build"
+  ```
+
+  Never use Render's Manual Deploy instead of `deploy.yml`: it skips the smoke.
 - **Quota.** Every request to `$SITE/api/...` is one Worker request (100,000 a day, account-wide). `/api/health` can wake Render, never Neon. Steps marked **(wakes Neon)** spend Neon compute.
 - **Status.** None of these runbooks has run against a provider. Local rehearsals are cited where they exist.
 
@@ -777,7 +785,7 @@ All runs below were local. Nothing has been compared on a deployed host.
 
 The procedure is [deployment.md step 7](deployment.md#7-first-approved-deploy-ci). For the very first deploy, follow "Bootstrap" there.
 
-1. **Check before you start:** CI is green on the commit, and the release manifest names a published release (`deploy.yml` refuses otherwise):
+1. **Check before you start:** CI is green on the commit (a push to `main`; a tag must point at a commit CI ran on, on `main`), and the release manifest names a published release. `deploy.yml`'s preflight refuses otherwise; if CI is still running for the commit, wait for it and re-run the deploy:
 
    ```bash
    python scripts/ops/release_manifest.py check --require-published
@@ -805,7 +813,7 @@ The procedure is [deployment.md step 7](deployment.md#7-first-approved-deploy-ci
    python scripts/ops/monitors.py edge --base-url "$SITE"
    ```
 
-6. **If a smoke check fails, the new version is already live:** the Worker deploy comes before the smoke. Go to [Rollback](#rollback), using the summary's table.
+6. **If a smoke check fails, the new version is already live:** the Worker deploy comes before the smoke. Go to [Rollback](#rollback), using the summary's table. The smoke first waits up to a minute for the new release to reach the colo it talks to (check `propagation`), so a `snapshot` or `edge_health` failure after that wait is not propagation lag. If `propagation` shows WARN and only those two checks failed, run `python scripts/ops/monitors.py edge --base-url "$SITE"` once before rolling back: when it passes, the release arrived late and nothing needs rolling back.
 
 "Re-run all jobs" builds and pushes a new digest of the same commit. `/health` cannot show that change, so the wait step warns instead of waiting; confirm the deploy in Render → Events.
 
@@ -820,7 +828,21 @@ The summary of every Deploy run has a "Rollback" table: the build, image digest 
   RENDER_ORIGIN="$ORIGIN" python scripts/ops/render_deploy.py wait --expect-build <previous commit sha>
   ```
 
-  GHCR keeps the newest 20 digests (`ghcr-cleanup.yml`). Render's dashboard can also roll back to an earlier deploy.
+  Then move the GHCR tag `live` back. `live` is the Image URL Render's service is configured with ([owner step 2.7](deployment.md#2-render-free-web-service)); until it moves, `deep-check.yml` fails on the build, and a Render deploy not made through the hook would bring back the image you rolled away from.
+  - **Within 30 days of the Deploy run that deployed that digest:** Actions → that run → job `promote` → Re-run. GitHub re-runs a job only "up to 30 days after its initial run" (docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs, read 2026-10-21).
+  - **Later, by hand** (what `promote` does; needs the `write:packages` scope on your gh token, `gh auth refresh -s write:packages` once):
+
+    ```bash
+    gh auth token | docker login ghcr.io -u Nathan98000 --password-stdin
+    docker buildx imagetools create --prefer-index=false \
+      --tag ghcr.io/nathan98000/atus-api:live ghcr.io/nathan98000/atus-api@sha256:<previous digest>
+    docker buildx imagetools inspect ghcr.io/nathan98000/atus-api:live   # Digest: sha256:<previous digest>
+    docker logout ghcr.io
+    ```
+
+    If `inspect` shows another digest, the tag names a new manifest: stop and point Render's Image URL at `ghcr.io/nathan98000/atus-api@sha256:<previous digest>` instead, until the next deploy's `promote` (then set it back to `:live`).
+
+  GHCR keeps the newest 20 digests and `live` (`ghcr-cleanup.yml`). Render's dashboard can also roll back to an earlier deploy.
 - **Edge** (SPA, snapshot, Worker and its vars; needs `npx wrangler login` or `CLOUDFLARE_API_TOKEN`):
 
   ```bash
@@ -878,6 +900,8 @@ scripts/ops/restore_serving_db.sh --artifact ~/atus-artifacts/<dir>/atus-serving
 
 This step **(wakes Neon)**. Do not pass `--verify-content-hash` on Neon: it re-reads every row, which costs about the data's size in egress. The script writes `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` into the secrets file. The report has the checks, the metered size and each step's duration (`seconds`).
 
+TLS needs the system's CA roots on your machine. The script finds them itself (macOS `/etc/ssl/cert.pem`) unless `SSL_CERT_FILE` names another bundle, and hands them to the `postgres:16` docker client when there is no local `pg_restore`/`psql` 16 or newer ([deployment.md, "TLS to the database"](deployment.md#tls-to-the-database)). On a machine without a system bundle, `export SSL_CERT_FILE=<CA bundle>` first. "certificate verify failed" means no roots were found; never work around it with `sslmode=require`.
+
 **Restore after a lost project.** The release artifact is the backup.
 
 1. Create a new Neon project ([owner steps 3.2–3.4](deployment.md#3-neon-free)).
@@ -929,7 +953,7 @@ The normative procedure is ADR-013 "Release procedure on the free stack (§15)".
 
    Commit `releases/current.json` (and `NEON_PROJECT_ID` in `edge/wrangler.jsonc` if used). Data release tags do not match `v*`, so they deploy nothing.
 4. **New Neon project and restore (owner):** [Serving-DB build and restore](#serving-db-build-and-restore). Never restore a second copy into the current project: two copies exceed its 1 GB.
-5. **Smoke a local API against the new project (wakes Neon).** Start `atus api` (development mode, loopback) with `ATUS_DATABASE_URL` set to that project's `ATUS_API_DATABASE_URL`, then:
+5. **Smoke a local API against the new project (wakes Neon).** Start `atus api` (development mode, loopback) with `ATUS_DATABASE_URL` set to that project's `ATUS_API_DATABASE_URL` (`verify-full` + `system`: `atus api` sets `SSL_CERT_FILE` to the system bundle when it is unset, as the restore does), then:
 
    ```bash
    python scripts/replay_deployed.py --base-url http://127.0.0.1:8000 \
@@ -1086,14 +1110,14 @@ Every exhaustion degrades toward the static floor: the SPA, the snapshot (starte
 
 | Quota | Signal | Action |
 |---|---|---|
-| Worker requests, 100,000/day, account-wide | `/api` answers a non-JSON 429 or error 1027; the SPA's daily-allowance page | Wait for 00:00 UTC. Find the source in Workers Logs (deployment.md scenarios S1–S3). Nothing at $0 can rate-limit before the Worker runs (ADR-011 accepted risk 4) |
+| Worker requests, 100,000/day, account-wide | Before: the daily quota report's "Worker requests today" line above 70% of the pro-rated allowance (only with the optional analytics token, owner step 4.3). After: `/api` answers a non-JSON 429 or error 1027; the SPA's daily-allowance page | Wait for 00:00 UTC. Find the source in Workers Logs (deployment.md scenarios S1–S3). Nothing at $0 can rate-limit before the Worker runs (ADR-011 accepted risk 4) |
 | KV reads or writes | none visible; more misses | wait for 00:00 UTC |
 | Durable Object requests or rows written | 503 `capacity_unavailable` for new analyses | wait for 00:00 UTC; `/api/_ops/budget` may fail too |
 | Governor daily caps | 503 `daily_capacity_reached` (`budget` `global`, `heavy`, `cu_day`, `egress_day`, `metadata`); 429 `budget: "prefix"` (a network's 60 analyses, 300 admissions or fifth of the day's compute) or `"metadata"` | Working as designed; wait for 00:00 UTC. If real visitors often hit `cu_day`, `egress_day` or their network's compute share without a Neon key, add the project-scoped `NEON_API_KEY`: with fresh usage figures the daily ceiling is 10 CU-h instead of 2.903, and egress is checked against Neon's own month-to-date figure (ADR-015). `metadata` means clients are sending query strings or unknown codes: the SPA never does; check that the deploy set `SNAPSHOT_ID` (the Worker answers plain metadata GETs from the snapshot only then) |
 | Governor monthly pacing | 503 `capacity_paused` (`budget` `egress` or `cu_month`) with `resumes_at` | Wait for `resumes_at`. If it happens every month, apply the calibration lever ([deployment.md step 10](deployment.md#10-week-1-calibration)): lower the compute's maximum CU and set `NEON_MAX_CU` in `edge/src/constants.ts` to match |
 | Neon compute (100 CU-h) or egress (5 GB) | 503 `database_paused`; the SPA's paused page | Wait for the next Neon consumption period (Neon console, or the Neon `period_end` in `/api/_ops/budget` when `NEON_API_KEY` is set). Then find out why the governor did not stop first |
 | Neon storage (1 GB per project) | owner writes fail (`validate-analytics`); the API is unaffected | Never keep two copies in one project; a release goes into a new project |
-| Render outbound (5 GB/month) | services suspended until the 1st (Render email or dashboard). Render's answer while suspended is undocumented: the Worker answers `service_waking` or `upstream_unavailable`, and the SPA shows the waking notice, then "still not answering … may be paused" — it cannot tell a suspension from a cold start ([security.md R13](security.md#accepted-risks)) | Wait. Find the cause in Render logs (direct hits show `edge_authenticated: false` and 403) and in `/api/_ops/budget` (`metadata.origin_calls`, `analyses.refunded`; ADR-015 "Render outbound through the Worker"). Never pay; never recreate the service |
+| Render outbound (5 GB/month) | Before: nothing automated (no monitor can read it without an account-wide Render API key); the weekly schedules-check summary reminds you to look at the workspace's usage. After: services suspended until the 1st (Render email or dashboard). Render's answer while suspended is undocumented: the Worker answers `service_waking` or `upstream_unavailable`, and the SPA shows the waking notice, then "still not answering … may be paused" — it cannot tell a suspension from a cold start ([security.md R13](security.md#accepted-risks)) | Wait. Find the cause in Render logs (direct hits show `edge_authenticated: false` and 403) and in `/api/_ops/budget` (`metadata.origin_calls`, `analyses.refunded`; ADR-015 "Render outbound through the Worker"). Never pay; never recreate the service |
 | Render pipeline minutes | deploys wait; the running service keeps serving | Wait for the next month. Image deploys build nothing; whether pulls count is undocumented |
 | Render instance hours | cannot run out with one service | never add a second Free web service |
 | Workers Logs | edge logs stop until 00:00 UTC | none needed |
@@ -1129,7 +1153,7 @@ This means Render's discretionary suspension for "uncommonly high" traffic that 
 
 ### Scheduled workflows were disabled
 
-GitHub disables scheduled workflows after 60 days without repository activity, and it can delay or drop scheduled runs. `schedules-check.yml` (monthly) fails when a schedule is not active, when a monitor's last scheduled run is far older than its cadence, or when nothing has been pushed for 28 days. When it fails, or monitor runs stop:
+GitHub disables scheduled workflows after 60 days without repository activity, and it can delay or drop scheduled runs. `schedules-check.yml` (weekly) fails when a schedule is not active, when a monitor's last scheduled run is far older than its cadence, or when `main` has had no commit for 28 days (pushes to Dependabot's branches do not count: GitHub does not say whether they are activity). When it fails, or monitor runs stop:
 
 ```bash
 gh workflow list --all                      # which workflows are disabled
@@ -1139,4 +1163,4 @@ gh workflow run schedules-check.yml         # confirm, or locally:
 GH_TOKEN="$(gh auth token)" python scripts/ops/github_ops.py schedules --repo Nathan98000/ATUS
 ```
 
-If the cause was inactivity, push a commit. Failure emails for a scheduled workflow go to the user who last changed its `cron` line ([owner step 4.4](deployment.md#4-github-repository-nathan98000atus-stays-public)).
+If the cause was inactivity, push a commit to `main`. Failure emails for a scheduled workflow go to the user who last changed its `cron` line ([owner step 4.4](deployment.md#4-github-repository-nathan98000atus-stays-public)).

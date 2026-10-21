@@ -10,15 +10,30 @@ reports or another process's argument list (brief §19):
   variables (``PGHOST``, ``PGPASSWORD``, ...), so command-line tools such as
   ``pg_dump`` and ``psql`` get the password through their environment rather
   than their arguments, where ``ps`` would show it.
+
+:func:`ensure_system_roots` makes ``sslrootcert=system`` find the operating
+system's CA roots outside the image (docs/deployment.md "TLS to the
+database").
 """
 
 from __future__ import annotations
 
+import os
 import re
+from collections.abc import MutableMapping
 
+import psycopg
 from psycopg.conninfo import conninfo_to_dict
 
 MASK = "***"
+
+#: CA bundles of common operating systems, in the order tried: macOS (and
+#: Alpine), Debian/Ubuntu (the image's), Fedora/RHEL.
+SYSTEM_CA_BUNDLES = (
+    "/etc/ssl/cert.pem",
+    "/etc/ssl/certs/ca-certificates.crt",
+    "/etc/pki/tls/certs/ca-bundle.crt",
+)
 
 # postgresql://user:password@host  ->  postgresql://user:***@host
 _URL_PASSWORD = re.compile(r"(?P<head>\bpostgres(?:ql)?://[^\s:/@]*:)(?P<secret>[^\s@]*)(?=@)")
@@ -93,6 +108,45 @@ def libpq_env(conninfo: str) -> dict[str, str]:
             raise ValueError(f"connection parameter {key!r} has no libpq environment variable")
         env[_ENV_VARS[key]] = str(value)
     return env
+
+
+def uses_system_roots(conninfo: str) -> bool:
+    """Whether ``conninfo`` verifies the server against ``sslrootcert=system``."""
+    try:
+        return conninfo_to_dict(conninfo).get("sslrootcert") == "system"
+    except psycopg.ProgrammingError:
+        return False
+
+
+def system_ca_bundle() -> str | None:
+    """The first CA bundle of :data:`SYSTEM_CA_BUNDLES` that exists, or None."""
+    return next((path for path in SYSTEM_CA_BUNDLES if os.path.isfile(path)), None)
+
+
+def ensure_system_roots(*conninfos: str,
+                        environ: MutableMapping[str, str] | None = None) -> str | None:
+    """Make ``sslrootcert=system`` find the operating system's CA roots.
+
+    libpq resolves ``system`` through OpenSSL's default certificate paths,
+    and the OpenSSL inside the ``psycopg[binary]`` wheel defaults to a
+    build-machine directory (``/tmp/libpq.build``) that exists nowhere else:
+    without ``SSL_CERT_FILE`` every verified connection fails, on the owner's
+    Mac as in the image (which sets it). When one of ``conninfos`` uses
+    ``system`` and ``SSL_CERT_FILE`` is unset, it is pointed at the first
+    existing system bundle (macOS: ``/etc/ssl/cert.pem``), before the first
+    connection. Verification is unchanged: these are the roots ``system``
+    means. Returns the bundle in effect, or None (nothing to do, or no bundle
+    found: libpq then fails closed, as before).
+    """
+    environ = os.environ if environ is None else environ
+    if not any(uses_system_roots(conninfo) for conninfo in conninfos):
+        return None
+    if environ.get("SSL_CERT_FILE"):
+        return environ["SSL_CERT_FILE"]
+    bundle = system_ca_bundle()
+    if bundle:
+        environ["SSL_CERT_FILE"] = bundle
+    return bundle
 
 
 def same_database(a: str, b: str) -> bool:

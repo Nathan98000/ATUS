@@ -25,9 +25,14 @@
 #      prewarmed spec;
 #   4. starts the Worker (`edge`, wrangler dev in local mode) with the release
 #      vars DATA_VERSION, ANALYTICS_VERSION and SNAPSHOT_ID, on 127.0.0.1;
-#   5. runs deploy/stack/edge_probe.py from the host against it, and with
-#      --e2e the Playwright suite through it (E2E_BASE_URL; projects from
-#      E2E_PROJECTS, default "desktop mobile webkit").
+#   5. runs deploy/stack/edge_probe.py from the host against it, then
+#      deploy.yml's own post-deploy gate, scripts/ops/deploy_smoke.py, with
+#      the deploy's flags (the snapshot-api service as the origin for the
+#      origin lock; the §9 comparison needs this checkout's package in
+#      --python), and with --e2e the Playwright suite through it
+#      (E2E_BASE_URL; projects from E2E_PROJECTS, default "desktop mobile
+#      webkit") and deploy.yml's browser smoke
+#      (playwright.deployed.config.ts, PUBLIC_BASE_URL).
 #
 # --integration-via-pgbouncer starts only db + PgBouncer (transaction mode,
 # emulation profile) and runs the existing integration suite from this
@@ -223,6 +228,16 @@ if [ "$mode" = smoke ]; then
       ATUS_PROBE_DATA_VERSION=$version \
       "$python_bin" deploy/stack/edge_probe.py --base "$edge_base" --assets "$assets" \
       --direct-api "$direct_api"
+
+    echo "== post-deploy smoke, as deploy.yml runs it (snapshot-api stands in for the origin)"
+    smoke_args=(--base-url "$edge_base" --expect-data-version "$version"
+                --expect-snapshot-id "$snapshot_id" --require-snapshot --recompute 2
+                --max-requests 30 --origin-lock --ops-budget)
+    if [ "$skip_protection" = 0 ]; then
+      smoke_args+=(--expect-build "$build_sha")
+    fi
+    RENDER_ORIGIN=$direct_api EDGE_OPS_TOKEN=$(setting ATUS_STACK_EDGE_OPS_TOKEN) \
+      "$python_bin" scripts/ops/deploy_smoke.py "${smoke_args[@]}"
     compose --profile snapshot rm -fsv snapshot-api >/dev/null 2>&1 || true
 
     if [ "$e2e" = 1 ]; then
@@ -232,6 +247,10 @@ if [ "$mode" = smoke ]; then
         playwright_projects+=(--project "$e2e_project")
       done
       (cd frontend && E2E_BASE_URL="$edge_base" npx playwright test "${playwright_projects[@]}")
+
+      echo "== deployed browser smoke, as deploy.yml runs it ($edge_base)"
+      (cd frontend && PUBLIC_BASE_URL="$edge_base" \
+        npx playwright test -c playwright.deployed.config.ts)
     fi
     if [ "$keep" = 1 ]; then
       echo "edge kept at $edge_base"

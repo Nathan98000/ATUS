@@ -186,13 +186,86 @@ def test_deploy_runs_only_on_tags_or_by_hand():
     assert on["push"] == {"tags": ["v*"]}, "a push to a branch must deploy nothing"
 
 
+def test_deploy_requires_green_ci_on_main_before_building():
+    """deploy.yml itself runs only the Worker's config tests and the SPA build:
+    preflight refuses a commit without a successful ci.yml push run on main,
+    and a tag on a commit that is not on main."""
+    preflight = jobs(by_name("deploy.yml"))["preflight"]
+    assert preflight["permissions"] == {"contents": "read", "actions": "read"}
+    (gate,) = [s for s in steps(preflight) if "github_ops.py deploy-gate" in s.get("run", "")]
+    assert '--sha "$GITHUB_SHA"' in gate["run"]
+    assert gate["env"]["GH_TOKEN"] == "${{ github.token }}"
+    names = [s.get("name", "") for s in steps(preflight)]
+    assert names.index(gate["name"]) < len(names) - 1   # before the manifest check
+    assert jobs(by_name("deploy.yml"))["build"]["needs"] == "preflight"
+
+
 def test_deploy_permissions_are_minimal():
     workflow = by_name("deploy.yml")
     assert workflow["permissions"] == {}
     writers = {job_id for job_id, job in jobs(workflow).items()
                if any(v == "write" for v in (job.get("permissions") or {}).values())}
-    assert writers == {"push"}
-    assert jobs(workflow)["push"]["permissions"] == {"contents": "read", "packages": "write"}
+    assert writers == {"push", "promote"}
+    for job_id in writers:
+        assert jobs(workflow)[job_id]["permissions"] == {"contents": "read",
+                                                         "packages": "write"}, job_id
+
+
+def test_promote_moves_live_only_after_a_passing_deploy():
+    """Render's service is configured with `:live` (owner step 2.7), so a
+    deploy not made through the hook runs the last digest that passed the
+    smoke, not the bootstrap digest; deployed-<commit> is the next run's
+    rollback target. Same digest, no new manifest (--prefer-index=false)."""
+    promote = jobs(by_name("deploy.yml"))["promote"]
+    assert set(promote["needs"]) == {"push", "deploy"}
+    assert "if" not in promote                  # never after a failed deploy or smoke
+    assert "environment" not in promote
+    text = flat(promote)
+    assert 'for tag in live "deployed-$GITHUB_SHA"' in text
+    assert "imagetools create --prefer-index=false" in text
+    assert '"$GHCR_REPOSITORY@$digest" != "$IMAGE_REF"' in text
+
+
+def test_moving_live_back_after_a_rollback_works_after_30_days_too():
+    """GitHub re-runs a job only up to 30 days after its run, and the previous
+    deploy is often older: the runbook must also give the by-hand tag move,
+    which does what `promote` does (same digest, checked)."""
+    promote = flat(jobs(by_name("deploy.yml"))["promote"])
+    assert "imagetools create --prefer-index=false" in promote
+    notes = flat(jobs(by_name("deploy.yml"))["deploy"])
+    assert "30 days" in notes and 'docs/operations.md, "Rollback"' in notes
+    operations = (REPO_ROOT / "docs" / "operations.md").read_text()
+    rollback = operations[operations.index("### Rollback"):]
+    rollback = rollback[:rollback.index("\n### ", 1)]
+    assert "30 days" in rollback
+    assert "imagetools create --prefer-index=false" in rollback
+    image = "ghcr.io/nathan98000/atus-api"
+    assert f"--tag {image}:live {image}@sha256:" in rollback
+    assert "imagetools inspect ghcr.io/nathan98000/atus-api:live" in rollback
+    deployment = (REPO_ROOT / "docs" / "deployment.md").read_text()
+    api_rollback = deployment[deployment.index("### Rollback"):]
+    assert "30 days" in api_rollback[:api_rollback.index("- **Edge")]
+
+
+def test_the_rollback_target_is_the_deployed_digest_not_this_runs_tag():
+    """A re-run of the running commit has already moved sha-<commit> when the
+    deploy job looks up the previous image: the lookup reads deployed-<commit>."""
+    deploy = jobs(by_name("deploy.yml"))["deploy"]
+    (step,) = [s for s in steps(deploy) if s.get("id") == "previous"]
+    assert "github_ops.py deployed-image" in step["run"]
+    assert '--build "$PREVIOUS_BUILD" --this-build "$GITHUB_SHA"' in step["run"]
+    assert "sha-$PREVIOUS_BUILD" not in flat(deploy)
+    assert "steps.previous.outputs.image_source" in flat(deploy)
+
+
+def test_the_deep_check_expects_the_live_build():
+    (job,) = jobs(by_name("deep-check.yml")).values()
+    assert job["permissions"] == {"contents": "read", "packages": "read"}
+    text = flat(job)
+    assert "github_ops.py live-build --owner nathan98000 --package atus-api" in text
+    assert '--expect-build "$EXPECT_BUILD"' in text
+    (live,) = [s for s in steps(job) if s.get("id") == "live"]
+    assert live["continue-on-error"] is True    # GitHub down: health still checked
 
 
 def test_only_the_production_environment_job_holds_deploy_secrets():
@@ -371,7 +444,7 @@ SCHEDULES = {
     "edge-check.yml": "17,47 * * * *",
     "deep-check.yml": "17 */6 * * *",
     "quota-report.yml": "5 22 * * *",
-    "schedules-check.yml": "0 9 1 * *",
+    "schedules-check.yml": "41 9 * * 1",
     "ghcr-cleanup.yml": "23 4 * * 1",
 }
 
@@ -398,7 +471,12 @@ def test_monitors_never_touch_the_database(name):
     text = (WORKFLOWS_DIR / name).read_text()
     assert not DB_PATHS.search(text), name
     for _job, step in run_scripts(WORKFLOWS_DIR / name):
-        assert step["run"].startswith("python3 scripts/ops/monitors.py "), step["run"]
+        # The site is reached only through monitors.py; deep-check also reads
+        # the `live` tag's commit from the GitHub API (github_ops.py).
+        run = step["run"]
+        assert run.startswith("python3 scripts/ops/github_ops.py live-build ") or \
+            "python3 scripts/ops/monitors.py " in run, run
+        assert not re.search(r"\b(curl|wget)\b", run), run
     monitors = (REPO_ROOT / "scripts" / "ops" / "monitors.py").read_text()
     paths = re.findall(r'"(/[a-z_/.<>-]*)"', monitors.split("EDGE_PATHS", 1)[1]
                        .split("# Provider quotas", 1)[0])
@@ -415,6 +493,17 @@ def test_quota_report_reads_its_token_from_the_ops_environment():
     (job,) = jobs(by_name("quota-report.yml")).values()
     assert job["environment"] == "ops"
     assert "secrets.EDGE_OPS_TOKEN" in flat(job)
+
+
+def test_quota_report_watches_the_workers_daily_requests_when_configured():
+    """The early warning for Workers Free's 100,000 requests/day: the optional
+    read-only analytics token from the `ops` environment reaches monitors.py
+    (which skips the line, visibly, without it)."""
+    (job,) = jobs(by_name("quota-report.yml")).values()
+    (step,) = [s for s in steps(job) if "monitors.py quota" in s.get("run", "")]
+    assert step["env"]["CLOUDFLARE_ANALYTICS_TOKEN"] == "${{ secrets.CLOUDFLARE_ANALYTICS_TOKEN }}"
+    assert step["env"]["CLOUDFLARE_ANALYTICS_ACCOUNT"] == \
+        "${{ secrets.CLOUDFLARE_ANALYTICS_ACCOUNT }}"
 
 
 def test_ghcr_cleanup_keeps_20():
@@ -487,6 +576,10 @@ def test_ci_runs_the_public_origin_with_the_local_stack_commands():
     assert "--no-build" in smoke["run"] and "--edge --e2e" in smoke["run"]
     assert set(smoke["env"]["E2E_PROJECTS"].split()) == {"desktop", "mobile", "firefox", "webkit"}
     assert smoke["env"]["ATUS_BUILD_SHA"] == "${{ github.sha }}"
+    # deploy_smoke.py's §9 comparison imports the package
+    assert "--require-hashes --no-deps -r requirements/dev.lock.txt" in text
+    assert text.index("pip install --no-deps --no-build-isolation -e .") < \
+        text.index("scripts/smoke_stack.sh")
     assert "docker compose" not in text  # the script starts, probes and removes the stack
     assert "TODO" not in (WORKFLOWS_DIR / "ci.yml").read_text()
 

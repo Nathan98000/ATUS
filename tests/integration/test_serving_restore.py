@@ -42,6 +42,10 @@ from atus_pipeline.serving.contract import READ
 from atus_pipeline.serving.equivalence import compare_results, run, seed_specs
 from atus_pipeline.serving.restore import EXPECTED_ROLE_SETTINGS
 from atus_pipeline.serving.secrets_file import API_PASSWORD_KEY, API_URL_KEY, read_env_file
+
+# Fixtures of the opt-in TLS restore (the container tests' own).
+from tests.deploy.conftest import docker_daemon, docker_prefix  # noqa: F401
+from tests.deploy.test_owner_tls import owner_certificates, tls_only_postgres  # noqa: F401
 from tests.integration.conftest import (
     MIGRATIONS_DIR,
     _admin_url,
@@ -428,3 +432,35 @@ def test_roles_sql_refuses_a_database_without_the_serving_marker(cluster, tmp_pa
         with cluster.admin() as conn:
             conn.execute(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
             conn.execute(f'DROP ROLE IF EXISTS "{role}"')
+
+
+def test_the_restore_verifies_tls_like_owner_step_3_5(artifact, tmp_path, request,
+                                                      monkeypatch):
+    """Owner step 3.5 against a TLS-only server with the runbook's DSN
+    (``sslmode=verify-full&sslrootcert=system``), the CA in the bundle
+    ``SSL_CERT_FILE`` names (the owner's machine; opt-in like the other
+    container tests: ``ATUS_DOCKER_TESTS=1``). Where no local client is new
+    enough (the owner's Mac), pg_restore and psql run from the postgres image,
+    which has no CA bundle of its own."""
+    server_url = request.getfixturevalue("tls_only_postgres")   # skips without docker
+    certificates = request.getfixturevalue("owner_certificates")
+    monkeypatch.setenv("SSL_CERT_FILE", str(certificates / "ca.crt"))
+    owner_password = secrets.token_urlsafe(18)
+    with psycopg.connect(server_url, autocommit=True) as conn:
+        conn.execute(f"CREATE ROLE neondb_owner LOGIN CREATEDB CREATEROLE "
+                     f"PASSWORD '{owner_password}'")
+        conn.execute("CREATE DATABASE atus OWNER neondb_owner")
+    parts = urlsplit(server_url)
+    owner_url = urlunsplit(parts._replace(
+        netloc=f"neondb_owner:{owner_password}@{parts.hostname}:{parts.port}", path="/atus"))
+    manifest_path, _, _ = artifact
+    dump = manifest_path.parent / read_manifest(manifest_path)["artifact"]["file"]
+    secrets_file = tmp_path / "neon.env"
+    secrets_file.write_text(f"ATUS_OWNER_DATABASE_URL='{owner_url}'\n")
+    secrets_file.chmod(0o600)
+    result = restore(dump, secrets_file, "atus_api")
+    output = result.stdout + result.stderr
+    assert result.returncode == 0, output
+    assert "Restore passed." in output and owner_password not in output
+    api_url = read_env_file(secrets_file)[API_URL_KEY]
+    assert "sslmode=verify-full" in api_url and "sslrootcert=system" in api_url

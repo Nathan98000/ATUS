@@ -140,6 +140,47 @@ def test_a_stale_worker_or_api_is_caught(fake_server, capsys):
     assert "expected " + SHA in out and "DATA_VERSION old" in out
 
 
+def _old_then_new(old, new, *, old_replies: int):
+    """A route answering ``old`` for the first ``old_replies`` requests: a colo
+    that still serves the previous release right after `wrangler deploy`."""
+    seen = []
+
+    def route(_request):
+        seen.append(1)
+        return old if len(seen) <= old_replies else new
+
+    return route
+
+
+def test_a_release_still_propagating_is_waited_for_not_failed(fake_server, capsys,
+                                                               _no_real_sleep):
+    deployed_site(fake_server)
+    stale_vars = json_reply(200, {"status": "ok", "edge_version": "0.1.0",
+                                  "data_version": "0325:serving-old", "snapshot_id": "old-snap",
+                                  "cache_scope": "abc"})
+    stale_pointer = json_reply(200, {"snapshot_id": "old-snap",
+                                     "data_version": "0325:serving-old"}, api=False)
+    for path, old, replies in (("/api/_edge/health", stale_vars, 2),
+                               ("/snap/current.json", stale_pointer, 1)):
+        fake_server.routes[("GET", path)] = _old_then_new(
+            old, fake_server.routes[("GET", path)], old_replies=replies)
+    assert smoke.main(args(fake_server, "--recompute", "2")) == 0
+    out = capsys.readouterr().out
+    assert "smoke: 0 failed" in out and "propagation" in out
+    assert len(fake_server.calls) <= 30
+    assert _no_real_sleep and max(_no_real_sleep) <= 15.0
+
+
+def test_a_release_that_never_arrives_still_fails_within_the_budget(fake_server, capsys):
+    deployed_site(fake_server)
+    fake_server.routes[("GET", "/snap/current.json")] = json_reply(
+        200, {"snapshot_id": "old-snap", "data_version": DV}, api=False)
+    assert smoke.main(args(fake_server, "--recompute", "2")) == 1
+    out = capsys.readouterr().out
+    assert "serves old-snap, expected " + SNAP in out
+    assert len(fake_server.calls) <= 30
+
+
 def test_the_starter_mirror_matches_the_spa(fake_server):
     """STARTERS mirrors frontend/src/domain/prewarm.ts STARTER_EXAMPLES[0] and [2]."""
     source = (REPO_ROOT / "frontend" / "src" / "domain" / "prewarm.ts").read_text()

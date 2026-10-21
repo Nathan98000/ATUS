@@ -225,7 +225,7 @@ Tests:
 - `frontend/e2e/service-states.spec.ts` (headers and CSP violations under `vite preview`);
 - `edge/test/worker/headers.test.ts`;
 - `tests/unit/api/test_guard.py::TestHeaders`;
-- the `static_headers` and `api_headers` checks in `deploy/stack/edge_probe.py`.
+- the `static_headers` and `api_headers` checks in `deploy/stack/edge_probe.py`. `static_headers` compares every header of the `/*` rule of the published `_headers` with its exact value on `/`, `/explore` and a hashed bundle; `tests/deploy/test_edge_probe.py` shows each check of the probe failing on its violation (a missing or changed `Referrer-Policy` or `Permissions-Policy` included) against a stub edge.
 
 **C13. CORS off.**
 - CORS is off unless `ATUS_API_CORS_ORIGINS` lists exact origins. `*` and origins with paths are refused at startup, and credentials are never allowed.
@@ -333,7 +333,7 @@ Tests:
   - every workflow and every job declares its `permissions`;
   - no workflow uses `pull_request_target` or `workflow_run`;
   - checkouts do not persist credentials;
-  - `packages: write` is granted only to the deploy `push` job and the GHCR cleanup.
+  - `packages: write` is granted only to the deploy `push` job, the deploy `promote` job (which only adds the tags `live` and `deployed-<commit>` to the digest that passed the smoke) and the GHCR cleanup.
 - **Inputs:**
   - base images are pinned by digest;
   - Python installs are hash-locked (`--require-hashes`, binary wheels only);
@@ -343,7 +343,7 @@ Tests:
   - Trivy, from a pinned release binary checked against its SHA-256, which fails on HIGH or CRITICAL vulnerabilities that have a fix;
   - `pip-audit --strict` on `requirements/api.lock.txt`;
   - `npm audit --omit=dev` (the frontend's at `--audit-level=high`).
-- **Updates.** Dependabot proposes weekly updates for pip, npm (frontend and edge), GitHub Actions, Docker and Compose, each after a 7-day cooldown.
+- **Updates.** Dependabot proposes weekly updates for pip, npm (frontend and edge), GitHub Actions, Docker and Compose, each after a 7-day cooldown. The `postgres:16` digest also has copies no ecosystem updates (the workflows' `services:` images, `deploy/ci/check_image.py`, `tests/deploy/test_container_image.py`): `tests/deploy/test_dependabot.py::test_every_postgres_16_pin_names_the_same_digest` fails a pull request that bumps only some of them, so CI, the deploy snapshot and the stack keep one PostgreSQL build.
 - **Deploy.** It pushes exactly the tested image ID, and Render deploys it by digest.
 
 Code: `.github/workflows/`, `.github/dependabot.yml`, `Dockerfile`, `deploy/*/Dockerfile`, `requirements/*.lock.txt`.
@@ -502,12 +502,13 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 
 **R1. Distributed abuse beyond the per-network caps.** Budgets are per /24 or /48, and a few networks are enough to spend the shared ones: ten at their 60 analyses spend the global 600, five sending heavy analyses spend the heavy 300, and five spacing analyses so that each is charged its own wake session spend the daily compute ceiling (each network is held to a fifth of it; before review round 1 one network alone could). An attacker with that many networks (a botnet, a few IPv6 /48s) passes every per-network limit. The global (600/day), heavy (300/day), CU-hour and egress budgets still hold, but legitimate visitors then get 503 `daily_capacity_reached` for new analyses until 00:00 UTC. Static and cached results keep working. Admissions that end refunded (the API shed them, or answered from its cache) are bounded per network only, at 300 a day and a few KB of Render outbound each: dozens of networks keeping that up for a whole month could spend Render's 5 GB and suspend it until the 1st (`deployment.md`, S6).
 
-**R2. Workers Free's 100,000 requests per day are account-wide.** Every `/api` request counts, including those the Worker refuses. On workers.dev at $0, nothing can rate-limit before the Worker runs (ADR-011, accepted risk 4). Once the requests are spent, `/api` is down until 00:00 UTC, KV-cached results included. The SPA and the static snapshot keep working, because static asset requests never invoke the Worker.
+**R2. Workers Free's 100,000 requests per day are account-wide.** Every `/api` request counts, including those the Worker refuses. On workers.dev at $0, nothing can rate-limit before the Worker runs (ADR-011, accepted risk 4). Once the requests are spent, `/api` is down until 00:00 UTC, KV-cached results included. The SPA and the static snapshot keep working, because static asset requests never invoke the Worker. Early warning: only with the optional read-only analytics token (owner step 4.3), when the daily quota report finds more than 70% of the pro-rated allowance used; it runs once a day, so a flood that starts after 22:05 UTC is seen only when `/api` stops. Without the token there is none, only the weekly reminder to look at the dashboard.
 
 **R3. Render direct-origin bandwidth.** The onrender.com hostname cannot be disabled.
 - Every direct request costs Render outbound bandwidth, even when refused, and `/health` answers anyone without a rate limit.
 - A sustained flood could exhaust the workspace's monthly outbound allowance. Render would then suspend the service until the next month (ADR-011, accepted risk 8).
 - Mitigations: an unpublished name with a random suffix, minimal 403 bodies, zero database work, and Render's own Cloudflare layer.
+- No early warning: reading Render's bandwidth needs an account-wide Render API key, which is never created, so no monitor sees the allowance running out. The weekly schedules-check summary reminds the owner to look at the workspace's usage; the first automated signal is the suspension itself.
 
 **R4. Role defaults are a backstop, not a boundary.**
 - `atus_api`'s defaults are session defaults: `statement_timeout`, `lock_timeout`, `idle_in_transaction_session_timeout`, `jit` and `default_transaction_read_only`. The role can `SET` each of them itself.

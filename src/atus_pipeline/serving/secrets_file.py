@@ -150,8 +150,10 @@ def api_database_url(owner_url: str, role: str, password: str) -> str:
         query["sslrootcert"] = "system"
         if params.get("channel_binding"):
             query["channel_binding"] = params["channel_binding"]
-    elif params.get("sslmode"):
-        query["sslmode"] = params["sslmode"]
+    else:
+        for key in ("sslmode", "sslrootcert"):     # a local server: the owner's choice
+            if params.get(key):
+                query[key] = params[key]
     netloc = f"{quote(role, safe='')}:{quote(password, safe='')}@"
     netloc += f"[{host}]" if ":" in host else host
     if params.get("port"):
