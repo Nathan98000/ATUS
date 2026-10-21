@@ -26,8 +26,8 @@ Checks, in order (brief §16, §17; deployment.md "8. Prove the deployment"):
                    If it reports the owner's pause switch (``api_paused``;
                    edge/src/pause.ts), the smoke fails at once with how to
                    clear it (deploy.yml operation ``resume-api``) and sends
-                   nothing that would reach Render: api_health and the
-                   starters are reported as not checked
+                   nothing that would reach Render: api_health, the starters
+                   and the origin lock are reported as not checked
   api_health       GET /api/health through the Worker to Render's /health,
                    with a cold-start budget; reports the expected build
   meta             GET /api/v1/meta: v1, and X-Data-Version as expected (the
@@ -371,6 +371,9 @@ class Smoke:
 
     # -- optional, secret-backed ---------------------------------------------
     def origin_lock(self) -> None:
+        # The one request sent to Render directly, not through the Worker.
+        if self._paused("origin_lock"):
+            return
         origin_url = os.environ.get("RENDER_ORIGIN", "").strip()
         if not origin_url:
             self.report.fail("origin_lock", "--origin-lock needs RENDER_ORIGIN")

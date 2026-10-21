@@ -1165,7 +1165,7 @@ Then approve the `production` environment. Only job `api-switch` runs: it checks
 
 - **`paused_until`** is a UTC date (`YYYY-MM-DD`, meaning midnight) or time (`YYYY-MM-DDTHH:MMZ`), or `unknown`. From that time on the Worker forwards requests again by itself, with no new version: give the time Render's allowance resets. With `unknown`, the switch stays on until `resume-api`.
 - **`pause_reason`** picks the wording: `render_quota` (the host used up this month's allowance; new analyses resume when it resets), `render_suspended` (the host suspended the service), `maintenance`.
-- **Deploys keep it.** `wrangler deploy` keeps every secret, the switch included. A deploy's post-deploy smoke goes through the Worker, so while the switch is on it fails at once (`[FAIL] api_paused`, with `api_health` and the starters not checked; `scripts/ops/deploy_smoke.py`). Clear the switch (`resume-api`) before deploying once Render is back.
+- **Deploys keep it.** `wrangler deploy` keeps every secret, the switch included. A deploy's post-deploy smoke goes through the Worker, so while the switch is on it fails at once (`[FAIL] api_paused`, with `api_health`, the starters and the origin lock not checked, so it sends Render nothing; `scripts/ops/deploy_smoke.py`). Clear the switch (`resume-api`) before deploying once Render is back.
 - **Monitors** report it as `WARN`, not as a failure: `edge-check.yml` from `/api/_edge/health`, and `deep-check.yml` stops after one `api_paused` answer instead of waiting out its budget.
 - **Edge rollbacks** bring back the switch of the version rolled back to ([deployment.md "Rollback"](deployment.md#rollback), step 4). After a rollback, `wrangler secret bulk` refuses to change secrets until the latest version is deployed again.
 

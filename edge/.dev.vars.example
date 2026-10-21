@@ -6,6 +6,7 @@ EDGE_AUTH_SECRET=dev-only-edge-secret-change-me
 RENDER_ORIGIN=http://127.0.0.1:8571
 OPS_TOKEN=dev-only-ops-token
 IP_HMAC_KEY=dev-only-ip-hmac-key
-# The owner's pause switch (src/pause.ts), off when absent or empty:
-# API_PAUSED_UNTIL=2036-11-01
-# API_PAUSED_REASON=maintenance
+# The owner's pause switch (src/pause.ts) cannot be set in this file: with
+# `secrets.required` in wrangler.jsonc, `wrangler dev` loads only those names
+# (and the vars) from it. Its values are not secret, so pass them as vars:
+#   npx wrangler dev --var API_PAUSED_UNTIL:2036-11-01 --var API_PAUSED_REASON:maintenance

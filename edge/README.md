@@ -63,7 +63,9 @@ HTTP is accepted only for loopback hosts) and start that API with `ATUS_EDGE_SEC
 `wrangler dev` runs fully locally (KV and the Durable Object are simulated under `.wrangler/`); no
 account is needed. To exercise the edge cache, pass the release vars, e.g.
 `npx wrangler dev --var DATA_VERSION:<x-data-version of the local API> --var ANALYTICS_VERSION:<its
-analytics version>`.
+analytics version>`. The owner's pause switch is passed the same way (`--var API_PAUSED_UNTIL:2036-11-01
+--var API_PAUSED_REASON:maintenance`): `wrangler dev` reads from `.dev.vars` only the secrets
+`wrangler.jsonc` lists as required, so it would drop the switch there.
 
 The static result snapshot (`/snap/...`, tier L0) is written into the SPA build by
 `scripts/build_snapshot.py` from a running API; see ADR-015.
