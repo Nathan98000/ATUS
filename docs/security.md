@@ -142,7 +142,7 @@ Tests:
 - `tests/integration/api/test_protection_db.py::TestSingleFlightOverTheEngine`.
 
 **C8. Bounded database work.**
-- **Per-transaction limits.** The first statement of every request's transaction sets these, transaction-locally with `set_config(..., true)`:
+- **Per-transaction limits.** The first statement of every request's transaction sets these, transaction-locally with `set_config(..., true)` (the data snapshot's REPEATABLE READ read sends them as `SET LOCAL` statements, followed by a share lock on `atus.ingestion_runs`, in the same single query):
   - `statement_timeout`: 85 s for analyses, 10 s for metadata;
   - `lock_timeout`: 5 s;
   - `idle_in_transaction_session_timeout`: 30 s;

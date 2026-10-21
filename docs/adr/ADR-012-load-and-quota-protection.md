@@ -112,7 +112,7 @@ It is a pure function of the validated spec, so the same request is always in th
 
 ### Bounded work per request
 
-Every request's database work runs in one transaction, started as `BEGIN READ ONLY` (the API never writes, I05; a write fails even under a role that could write). Its first statement applies the limits with `set_config(name, value, true)`, the function form of `SET LOCAL`. The values end with the transaction, so they are safe behind a transaction-mode pooler. Session `SET` and startup `options` are never used.
+Every request's database work runs in one transaction, started as `BEGIN READ ONLY` (the API never writes, I05; a write fails even under a role that could write). Its first statement applies the limits with `set_config(name, value, true)`, the function form of `SET LOCAL`. The values end with the transaction, so they are safe behind a transaction-mode pooler. Session `SET` and startup `options` are never used. The data snapshot's REPEATABLE READ read is the exception: a `SELECT` would fix its snapshot before it holds any lock, so it sends the limits as `SET LOCAL` statements followed by `LOCK TABLE atus.ingestion_runs IN ACCESS SHARE MODE`, all in one query. Neither takes a snapshot, so an `atus load` switch commits before the snapshot or waits for the read (ADR-013, "Why readers never see a mix").
 
 | Parameter | Value | Source |
 |---|---|---|

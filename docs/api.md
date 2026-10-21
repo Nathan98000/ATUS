@@ -473,7 +473,10 @@ a request meets them:
    doubled for compare). Others wait up to 5 s, then get 503 `overloaded`.
 10. **Bounded queries.** Each transaction is `READ ONLY` and starts with
     one statement that sets transaction-local limits (`set_config(..., true)`,
-    the function form of `SET LOCAL`): `statement_timeout` 85 s for analyses
+    the function form of `SET LOCAL`; the data snapshot's REPEATABLE READ
+    read sends them as `SET LOCAL` statements plus a share lock on
+    `atus.ingestion_runs`, in one query, so its snapshot is taken only after
+    the lock): `statement_timeout` 85 s for analyses
     and 10 s for metadata, `lock_timeout` 5 s,
     `idle_in_transaction_session_timeout` 30 s,
     `client_connection_check_interval` 5 s, `jit` off, and

@@ -19,6 +19,7 @@ from atus_pipeline.api.database import (
     connection_kwargs,
     session_limits,
     session_limits_statement,
+    snapshot_limits_statement,
 )
 from atus_pipeline.api.errors import (
     DatabasePausedError,
@@ -54,6 +55,16 @@ class TestSessionLimits:
         assert sql.startswith("SELECT set_config('statement_timeout', %s, true), ")
         assert sql.count("set_config(") == len(params) == 5
         assert ";" not in sql
+
+    def test_snapshot_transactions_lock_before_any_snapshot_taking_statement(self, tmp_path):
+        """REPEATABLE READ: only SET and LOCK before the snapshot exists (a
+        SELECT would fix it before the lock; review r1)."""
+        limits = session_limits(make_settings(tmp_path), "metadata")
+        text = snapshot_limits_statement(limits).as_string(None)
+        statements = text.split("; ")
+        assert statements[:-1] == [f"SET LOCAL {name} = '{value}'" for name, value in limits]
+        assert statements[-1] == "LOCK TABLE atus.ingestion_runs IN ACCESS SHARE MODE"
+        assert "SELECT" not in text and "%s" not in text
 
     def test_unknown_kind_is_rejected(self, tmp_path):
         with pytest.raises(ValueError):

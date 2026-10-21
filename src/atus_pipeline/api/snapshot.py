@@ -13,7 +13,12 @@ database. The API now keeps in memory:
   together with the years instead of reading them again.
 
 All of it is read in one REPEATABLE READ metadata transaction, so the parts
-describe the same committed data. The snapshot is read when a request needs
+describe the same committed data. That transaction locks ``ingestion_runs``
+(ACCESS SHARE) before its snapshot is taken (``Database.read_snapshot``), so
+a concurrent ``atus load`` switch, which locks that table first, has either
+committed before the snapshot or waits until the read ends: the data
+version and run are never paired with another version's tables, which the
+switch moves in by name. The snapshot is read when a request needs
 it; there is no background refresh, so an idle API never touches the database
 (I08). Concurrent requests that need a read share one refresh.
 

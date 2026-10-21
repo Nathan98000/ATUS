@@ -26,10 +26,16 @@ Transactions: each request's work runs in one transaction whose first
 statement applies the request's limits with ``set_config(..., true)`` — the
 function form of ``SET LOCAL``, so the values end with the transaction and
 are safe behind a transaction-mode pooler (never a session ``SET`` or a
-startup ``options`` parameter). Analyses also get a wall-clock deadline that
-cancels the running query, so a request issuing several statements is
-bounded too. The transaction ends (commit/rollback) and the connection goes
-back to the pool before the HTTP response is sent (audit I10).
+startup ``options`` parameter). The data snapshot's REPEATABLE READ
+transaction sends the same limits as ``SET LOCAL`` statements instead, in
+the same single query, followed by a share lock on ``atus.ingestion_runs``:
+neither takes the transaction snapshot, so the snapshot is fixed only after
+the lock is held, and a concurrent ``atus load`` switch either committed
+before it or waits for it (:data:`SNAPSHOT_LOCK`). Analyses also get a
+wall-clock deadline that cancels the running query, so a request issuing
+several statements is bounded too. The transaction ends (commit/rollback)
+and the connection goes back to the pool before the HTTP response is sent
+(audit I10).
 
 Every transaction is ``READ ONLY`` (psycopg sends ``BEGIN READ ONLY``; no
 extra statement): the API never writes (audit I05), so even a role that
@@ -48,6 +54,7 @@ from dataclasses import dataclass
 from time import monotonic
 
 import psycopg
+from psycopg import sql as pgsql
 from psycopg_pool import ConnectionPool, PoolTimeout
 
 from ..config import Settings
@@ -118,6 +125,31 @@ def session_limits_statement(limits: list[tuple[str, str]]) -> tuple[str, list[s
     names come from the fixed list above; values are bound parameters."""
     sql = "SELECT " + ", ".join(f"set_config('{name}', %s, true)" for name, _ in limits)
     return sql, [value for _, value in limits]
+
+
+SNAPSHOT_LOCK = "LOCK TABLE atus.ingestion_runs IN ACCESS SHARE MODE"
+"""Taken by a REPEATABLE READ transaction before its snapshot exists. The
+loader's switch locks ``ingestion_runs`` (ACCESS EXCLUSIVE) before it swaps
+the tables in, so it either committed before the snapshot is taken or waits
+for this transaction to end: the snapshot never pairs one data version with
+another version's tables."""
+
+
+def snapshot_limits_statement(limits: list[tuple[str, str]]) -> pgsql.Composed:
+    """The limits as ``SET LOCAL`` statements followed by
+    :data:`SNAPSHOT_LOCK`, sent as one query (simple protocol: no parameters,
+    and psycopg never prepares a multi-statement query). Neither ``SET`` nor
+    ``LOCK`` takes the transaction snapshot, which a ``SELECT set_config(...)``
+    would: a REPEATABLE READ transaction's snapshot is fixed by its first
+    other statement, after the lock is held (``PlannedStmtRequiresSnapshot``
+    in PostgreSQL). The lock wait is bounded by the ``lock_timeout`` set just
+    before it."""
+    statements = [
+        pgsql.SQL("SET LOCAL {} = {}").format(pgsql.SQL(name), pgsql.Literal(value))
+        for name, value in limits
+    ]
+    statements.append(pgsql.SQL(SNAPSHOT_LOCK))
+    return pgsql.SQL("; ").join(statements)
 
 
 @dataclass
@@ -298,7 +330,12 @@ class Database:
 
     @contextmanager
     def _transaction(self, kind: str, repeatable_read: bool) -> Iterator[psycopg.Connection]:
-        sql, params = session_limits_statement(session_limits(self._settings, kind))
+        limits = session_limits(self._settings, kind)
+        if repeatable_read:
+            # The snapshot must not exist before the lock (SNAPSHOT_LOCK).
+            sql, params = snapshot_limits_statement(limits), None
+        else:
+            sql, params = session_limits_statement(limits)
         conn = self.acquire()
         deadline: _Deadline | None = None
         with self._active_lock:
