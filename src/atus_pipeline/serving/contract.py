@@ -6,8 +6,8 @@ these with their names, types, NULL semantics and constraints, so the engine
 code runs unchanged on it. ``tests/integration/test_serving_contract.py``
 proves the contract is complete: it runs the engine, the HTTP API and the
 benchmark suite as a role that holds privileges on exactly these columns
-(plus SELECT on the :data:`LOCKED` tables as a whole) and nothing else. The serving-DB builder asserts its output with
-:func:`missing_contract_columns`.
+(plus SELECT on the :data:`LOCKED` tables as a whole) and nothing else.
+The serving-DB builder asserts its output with :func:`missing_contract_columns`.
 
 ``atus validate-db`` is deliberately outside the contract: it checks the
 full database (episode arithmetic, companions, row counts against the BLS

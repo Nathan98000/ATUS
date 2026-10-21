@@ -24,11 +24,27 @@ from .cli import _print_results, _settings
 from .database.dsn import describe, redact
 
 SERVING_URL_ENV = "ATUS_SERVING_DATABASE_URL"
+TOOL_ERROR_LINES = 20
+"""How many of a failed client tool's last stderr lines the error shows."""
 
 
 def _fail(exc: Exception, *secrets: str) -> click.ClickException:
-    first_line = str(exc).splitlines()[0] if str(exc) else type(exc).__name__
-    return click.ClickException(redact(first_line, *secrets))
+    """The error's first line; for a failed ``pg_dump``/``pg_restore``/``psql``,
+    also the last :data:`TOOL_ERROR_LINES` lines of its (already redacted)
+    stderr, which say why it failed (e.g. Neon refusing ``ALTER ROLE ... SET``)."""
+    from .serving.pgtools import PgToolError
+
+    lines = str(exc).splitlines()
+    if not lines:
+        message = type(exc).__name__
+    elif isinstance(exc, PgToolError):
+        reason = lines[1:]
+        if len(reason) > TOOL_ERROR_LINES:
+            reason = ["...", *reason[-TOOL_ERROR_LINES:]]
+        message = "\n".join([lines[0], *reason])
+    else:
+        message = lines[0]
+    return click.ClickException(redact(message, *secrets))
 
 
 @click.command(

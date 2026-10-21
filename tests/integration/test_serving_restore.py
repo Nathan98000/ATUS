@@ -393,6 +393,23 @@ def test_a_failed_check_after_a_rotation_says_the_new_password_is_in_effect(
         assert conn.execute("SELECT 1").fetchone() == (1,)
 
 
+def test_a_failing_roles_sql_says_why(restored, cluster, tmp_path):
+    """Review r1 (cli-drops-pg-tool-error-reason): only the first line of
+    psql's failure reached the operator, never PostgreSQL's reason, which is
+    what the first Neon restore needs to see (ADR-011 "Unknowns")."""
+    bad = tmp_path / "roles.sql"
+    bad.write_text("DO $$ BEGIN RAISE EXCEPTION 'simulated provider refusal'; END $$;\n")
+    before = restored["secrets_file"].read_text()
+    result = restore(restored["dump"], restored["secrets_file"], cluster.api_role,
+                     "--roles-only", "--roles-sql", str(bad))
+    output = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "psql failed (exit 3" in output
+    assert "simulated provider refusal" in output
+    assert restored["secrets_file"].read_text() == before   # nothing written
+    assert cluster.owner_password not in output
+
+
 def test_roles_only_refuses_a_database_that_is_not_a_serving_database(
         restored, cluster, tmp_path):
     """``--roles-only`` skips the emptiness check, so it must not apply
