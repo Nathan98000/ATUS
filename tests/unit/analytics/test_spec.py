@@ -107,6 +107,16 @@ class TestAnalysisSpec:
         for level in (0.5 + 2**-53, 0.9, 0.95, 0.99):
             assert make_spec(confidence_level=level).confidence_level == level
 
+    def test_confidence_level_without_a_quantile_is_kept_when_no_interval_is_computed(self):
+        """Review r2 verification: with variance "none" the engine computes no
+        interval and never reads the level, so 1 - 2**-53 always answered 200;
+        refusing it there would have taken away an answer that had statistics."""
+        largest = 1 - 2**-53
+        spec = make_spec(confidence_level=largest, variance="none")
+        assert spec.confidence_level == largest
+        with pytest.raises(InvalidSpecError, match="confidence_level"):
+            make_spec(confidence_level=largest, variance="replicate")
+
     def test_roundtrip_serialization(self):
         spec = make_spec(
             years=(2019, 2021),
