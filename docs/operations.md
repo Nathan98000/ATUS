@@ -828,7 +828,21 @@ The summary of every Deploy run has a "Rollback" table: the build, image digest 
   RENDER_ORIGIN="$ORIGIN" python scripts/ops/render_deploy.py wait --expect-build <previous commit sha>
   ```
 
-  Then move the GHCR tag `live` back: Actions → the Deploy run that deployed that digest → job `promote` → Re-run. `live` is the Image URL Render's service is configured with ([owner step 2.7](deployment.md#2-render-free-web-service)); until it moves, `deep-check.yml` fails on the build. GHCR keeps the newest 20 digests and `live` (`ghcr-cleanup.yml`). Render's dashboard can also roll back to an earlier deploy.
+  Then move the GHCR tag `live` back. `live` is the Image URL Render's service is configured with ([owner step 2.7](deployment.md#2-render-free-web-service)); until it moves, `deep-check.yml` fails on the build, and a Render deploy not made through the hook would bring back the image you rolled away from.
+  - **Within 30 days of the Deploy run that deployed that digest:** Actions → that run → job `promote` → Re-run. GitHub re-runs a job only "up to 30 days after its initial run" (docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs, read 2026-10-21).
+  - **Later, by hand** (what `promote` does; needs the `write:packages` scope on your gh token, `gh auth refresh -s write:packages` once):
+
+    ```bash
+    gh auth token | docker login ghcr.io -u Nathan98000 --password-stdin
+    docker buildx imagetools create --prefer-index=false \
+      --tag ghcr.io/nathan98000/atus-api:live ghcr.io/nathan98000/atus-api@sha256:<previous digest>
+    docker buildx imagetools inspect ghcr.io/nathan98000/atus-api:live   # Digest: sha256:<previous digest>
+    docker logout ghcr.io
+    ```
+
+    If `inspect` shows another digest, the tag names a new manifest: stop and point Render's Image URL at `ghcr.io/nathan98000/atus-api@sha256:<previous digest>` instead, until the next deploy's `promote` (then set it back to `:live`).
+
+  GHCR keeps the newest 20 digests and `live` (`ghcr-cleanup.yml`). Render's dashboard can also roll back to an earlier deploy.
 - **Edge** (SPA, snapshot, Worker and its vars; needs `npx wrangler login` or `CLOUDFLARE_API_TOKEN`):
 
   ```bash

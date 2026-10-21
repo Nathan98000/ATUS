@@ -226,6 +226,27 @@ def test_promote_moves_live_only_after_a_passing_deploy():
     assert '"$GHCR_REPOSITORY@$digest" != "$IMAGE_REF"' in text
 
 
+def test_moving_live_back_after_a_rollback_works_after_30_days_too():
+    """GitHub re-runs a job only up to 30 days after its run, and the previous
+    deploy is often older: the runbook must also give the by-hand tag move,
+    which does what `promote` does (same digest, checked)."""
+    promote = flat(jobs(by_name("deploy.yml"))["promote"])
+    assert "imagetools create --prefer-index=false" in promote
+    notes = flat(jobs(by_name("deploy.yml"))["deploy"])
+    assert "30 days" in notes and 'docs/operations.md, "Rollback"' in notes
+    operations = (REPO_ROOT / "docs" / "operations.md").read_text()
+    rollback = operations[operations.index("### Rollback"):]
+    rollback = rollback[:rollback.index("\n### ", 1)]
+    assert "30 days" in rollback
+    assert "imagetools create --prefer-index=false" in rollback
+    image = "ghcr.io/nathan98000/atus-api"
+    assert f"--tag {image}:live {image}@sha256:" in rollback
+    assert "imagetools inspect ghcr.io/nathan98000/atus-api:live" in rollback
+    deployment = (REPO_ROOT / "docs" / "deployment.md").read_text()
+    api_rollback = deployment[deployment.index("### Rollback"):]
+    assert "30 days" in api_rollback[:api_rollback.index("- **Edge")]
+
+
 def test_the_rollback_target_is_the_deployed_digest_not_this_runs_tag():
     """A re-run of the running commit has already moved sha-<commit> when the
     deploy job looks up the previous image: the lookup reads deployed-<commit>."""
