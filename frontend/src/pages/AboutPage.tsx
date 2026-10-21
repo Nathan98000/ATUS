@@ -105,7 +105,8 @@ export function AboutPage() {
       </p>
       <p>
         A new analysis sends only its specification (activity, population, years, statistic) to
-        the analysis service; opening the analysis builder also sends one empty request that
+        the analysis service. Opening the analysis builder, or an analysis that is not among the
+        pre-computed ones, also sends one empty request (at most once every 10 minutes) that
         wakes the service up. For each request that reaches the service, it logs:
       </p>
       <ul>
@@ -123,7 +124,9 @@ export function AboutPage() {
         Request bodies are never logged. The service uses your full IP address only in memory,
         to limit how many new analyses one visitor can start, and never writes it into its log
         lines; the edge's daily usage counter keeps only a keyed hash of the shortened address,
-        with a key that changes every day. The database receives nothing about visitors.
+        with a key derived anew each day from a secret. It deletes those counts after each day,
+        although its storage can restore deleted data for up to 30 days. The database receives
+        nothing about visitors.
       </p>
       <p>
         Logs are kept by the hosting providers' free plans and then deleted: the API host
