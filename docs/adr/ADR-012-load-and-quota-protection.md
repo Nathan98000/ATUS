@@ -62,7 +62,7 @@ The code is `api/middleware.py` (1–6), `api/snapshot.py` (8), `api/analysis_ru
 | analyses | `ATUS_API_RATE_ANALYSIS` | `6/60` (burst 6) | only an analysis that will actually compute: not cache hits, not single-flight joiners, not requests rejected earlier |
 
 - A rejection is 429 `rate_limited` with `Retry-After` (seconds until a token is available, at least 1), `details.retry_after_seconds` and `details.scope: "client"`.
-- An analysis token is refunded when the request is then shed (`overloaded`, `daily_capacity_reached`) before computing.
+- An analysis token is refunded when the request is then shed (`overloaded`, `daily_capacity_reached`) before computing, and when its computation fails before the engine starts (below, "Daily cap").
 - **Memory is bounded.** Each bucket set is an LRU of at most 10,000 clients (about 2 MB). Evicting a bucket forgets its debt, so a client whose bucket was pushed out by 10,000 newer clients starts again with a full bucket. That is the price of a fixed memory bound, and one reason the edge governor stays primary.
 
 ### In-process data snapshot: answers that cost nothing (F14)
@@ -87,6 +87,7 @@ The per-request statement counts, verified against PostgreSQL's own statement lo
 - At most `ATUS_API_DAILY_ANALYSIS_CAP` (600) uncached analyses are admitted per UTC day in this process. This mirrors ADR-011's global governor cap.
 - Over the cap: 503 `daily_capacity_reached`, `details.scope: "daily"`, and `Retry-After` set to the seconds until 00:00 UTC. Cached results stay available.
 - The count lives in memory, so a restart resets it. The governor's count persists.
+- **Only computations that ran keep their unit.** A computation that fails before the engine starts, after its lane, gives its unit and its analysis token back: no connection (`database_unavailable`), a Neon pause (`database_paused`), a full pool (`overloaded`), or a data version other than the pinned one (`data_version_mismatch`). Only its connection checkout and its data-version read ran. An outage or a monthly pause therefore cannot use up the day's cap and keep answering `daily_capacity_reached` after the database is back (review round 4: before, every such failure kept its unit until 00:00 UTC). A computation whose engine started stays charged, whatever its outcome (`analysis_timeout`, a connection lost mid-query, a 422 found by the statistics query). The edge governor refunds the same codes as shed.
 
 ### Admission lanes
 

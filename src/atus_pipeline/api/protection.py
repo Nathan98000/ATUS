@@ -210,7 +210,8 @@ class DailyCap:
     """At most ``limit`` uncached analyses per UTC day in this process.
 
     A backstop for the edge governor (which persists across restarts); it
-    resets at 00:00 UTC, matching Cloudflare's daily quotas.
+    resets at 00:00 UTC, matching Cloudflare's daily quotas. Only analyses
+    that reached their statistics queries keep their unit (:meth:`refund`).
     """
 
     def __init__(self, limit: int, *, clock: Callable[[], datetime] = _utc_now):
@@ -237,6 +238,16 @@ class DailyCap:
                 return False
             self.used += 1
             return True
+
+    def refund(self) -> None:
+        """Give back a unit taken for a computation that never reached its
+        statistics queries (``AnalysisRunner._lead``). Never below zero: a
+        unit taken just before 00:00 UTC and given back after it comes off
+        the new day's count (at most the few analyses failing at midnight)."""
+        with self._lock:
+            self._roll(self._clock())
+            if self.used > 0:
+                self.used -= 1
 
     def used_today(self) -> int:
         with self._lock:

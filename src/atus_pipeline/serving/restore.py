@@ -37,7 +37,9 @@ The procedure of brief §9 and ADR-013, in order:
 7. checks: the serving checks against the manifest (``serving/checks.py``),
    the API role's stored settings (exactly roles.sql's) and session defaults,
    that its earlier sessions ended before a password change, live proof that
-   the API role cannot write, and the worst-case query plans as the API role;
+   the API role cannot write any table (no privilege stops it from creating
+   large objects: roles.sql removes its own and the serving checks fail on
+   any; security.md R16), and the worst-case query plans as the API role;
 8. the metered size, ``sum(pg_database_size(datname))`` over every database
    the owner can see, against the provider's limit.
 
@@ -473,7 +475,7 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
         ))
         probes = write_probes(api)
         checks.append(_check(
-            "API role cannot write", all(v == "refused" for v in probes.values()),
+            "API role cannot write tables", all(v == "refused" for v in probes.values()),
             ", ".join(f"{k} {v}" for k, v in probes.items()),
         ))
         checks.extend(explain_worst_cases(api))

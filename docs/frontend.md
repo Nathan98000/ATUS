@@ -782,7 +782,7 @@ one origin, whose Worker proxies `/api/*` to the API — so the build calls
   in `-<salt>`. The salt stays empty; the recovery after a Cloudflare
   compromise sets a fresh one, so the recovered build reuses no bundle name
   a browser may hold an attacker's immutable copy of (`boot.css` and the
-  favicon keep their names; deployment.md "Rotation", item 5; security.md R16).
+  favicon keep their names; deployment.md "Rotation", item 5; security.md R17).
   The app needs nothing inline, no `data:` URL and nothing third-party;
   clipboard writes (the Share button) stay allowed for the page itself.
 - **`<meta>` CSP backstop.** The build injects the same policy, minus

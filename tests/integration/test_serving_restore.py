@@ -329,6 +329,121 @@ def test_the_api_role_defaults_bound_every_session(restored):
         assert attributes == (False, False, False, False, False, 10)
 
 
+LARGE_OBJECT_WRITES = ["SELECT lo_from_bytea(0, '\\x00')", "SELECT lo_create(0)"]
+
+
+@pytest.mark.parametrize("statement", LARGE_OBJECT_WRITES)
+def test_the_api_role_can_still_create_large_objects(restored, statement):
+    """Review r4 (api-role-can-write-large-objects): no privilege controls
+    them. lo_create, lo_from_bytea, lowrite and lo_put are EXECUTE to PUBLIC,
+    creating one needs no privilege, and only a superuser could revoke that
+    (Neon has none), so with its read-only default off the API role creates
+    one. This is the documented exposure (security.md R16); roles.sql removes
+    the role's and every check fails while one exists (the tests below)."""
+    with psycopg.connect(restored["api_url"], autocommit=True) as conn:
+        conn.read_only = False
+        with conn.transaction(force_rollback=True):
+            assert conn.execute(statement).fetchone()[0] > 0
+
+
+def _large_objects(conn) -> list[str]:
+    return [owner for (owner,) in conn.execute(
+        "SELECT r.rolname FROM pg_largeobject_metadata l JOIN pg_roles r ON r.oid = l.lomowner "
+        "ORDER BY 1")]
+
+
+def _memberships_in(conn, role: str) -> list[tuple]:
+    """The connected role's memberships in ``role``: (admin, inherit, set)."""
+    return conn.execute(
+        "SELECT admin_option, inherit_option, set_option FROM pg_auth_members "
+        "WHERE roleid = (SELECT oid FROM pg_roles WHERE rolname = %s) "
+        "AND member = (SELECT oid FROM pg_roles WHERE rolname = current_user)",
+        (role,)).fetchall()
+
+
+def test_a_rotation_removes_the_large_objects_a_leaked_api_password_stored(
+        restored, cluster, tmp_path):
+    """Review r4: with the role's password, large objects persist in the
+    serving database after the session ends, owned by the role, and its
+    non-superuser owner cannot unlink them ("must be owner of large object").
+    The rotation's roles.sql removes them as the role, through the ADMIN
+    OPTION the owner holds on the role it created, and gives that membership
+    back; verify-serving-db flags them until then."""
+    role, owner_url = cluster.api_role, restored["owner_url"]
+    with psycopg.connect(restored["api_url"], autocommit=True) as conn:
+        conn.execute("SET default_transaction_read_only = off")
+        conn.execute("SELECT lo_from_bytea(0, decode(repeat('ab', 65536), 'hex'))")
+        conn.execute("SELECT lo_create(0)")
+    with psycopg.connect(restored["api_url"], autocommit=True) as conn:
+        conn.read_only = False                        # BEGIN READ WRITE
+        with conn.transaction():
+            conn.execute("SELECT lo_from_bytea(0, '\\x01')")
+    with psycopg.connect(owner_url, autocommit=True) as conn:
+        assert _large_objects(conn) == [role] * 3
+        before = _memberships_in(conn, role)
+        with pytest.raises(psycopg.errors.InsufficientPrivilege, match="must be owner"):
+            conn.execute("SELECT lo_unlink(oid) FROM pg_largeobject_metadata")
+    flagged = CliRunner().invoke(cli, ["verify-serving-db", "--database-url", owner_url],
+                                 env={"ATUS_LOG_LEVEL": "WARNING"})
+    assert flagged.exit_code == 1, flagged.output
+    (line,) = [ln for ln in flagged.output.splitlines() if "serving: no large objects" in ln]
+    assert "[FAIL]" in line and line.endswith(" 3 large object(s)"), line
+
+    result = restore(restored["dump"], restored["secrets_file"], role,
+                     "--roles-only", "--rotate-api-password")
+    output = result.stdout + result.stderr
+    restored["api_url"] = read_env_file(restored["secrets_file"])[API_URL_KEY]
+    assert result.returncode == 0, output
+    assert f"roles.sql: removed 3 large object(s) that {role} had stored." in output
+    assert "[PASS] serving: no large objects  0 large object(s)" in output
+    with psycopg.connect(owner_url) as conn:
+        assert _large_objects(conn) == []
+        assert _memberships_in(conn, role) == before == [(True, False, False)]
+
+
+def test_a_large_object_roles_sql_cannot_remove_fails_every_check(restored, cluster):
+    """One the API role does not own (here the owner's) is not removed: roles.sql
+    fails and says how to clean up (the serving checks fail on it too: the
+    rotation test above). The script is one transaction, so the API role's own
+    large objects stay as well, and no removal is reported."""
+    role, owner_url = cluster.api_role, restored["owner_url"]
+    with psycopg.connect(restored["api_url"], autocommit=True) as conn:
+        conn.execute("SET default_transaction_read_only = off")
+        conn.execute("SELECT lo_create(0)")
+    with psycopg.connect(owner_url, autocommit=True) as conn:
+        conn.execute("SELECT lo_from_bytea(0, '\\x00')")
+    try:
+        result = restore(restored["dump"], restored["secrets_file"], role, "--roles-only")
+        output = result.stdout + result.stderr
+        assert result.returncode != 0, output
+        assert "roles.sql: the database holds large objects" in output
+        assert "lo_unlink" in output
+        # Run by hand (psql prints its \echo lines, which the restore drops on
+        # failure): the rolled-back removal is not reported as done.
+        tool = pgtools.resolve("psql", owner_url, server_major=16, extra_env={
+            "ATUS_API_ROLE_PASSWORD": read_env_file(restored["secrets_file"])[API_PASSWORD_KEY]})
+        by_hand = subprocess.run(
+            [*tool.argv, "-X", "-q", "-v", "ON_ERROR_STOP=1", "-v", f"api_role={role}",
+             "-f", "-"],
+            input=ROLES_SQL.read_bytes(), capture_output=True, env=tool.env, check=False,
+        )
+        assert by_hand.returncode != 0
+        assert b"roles.sql: the database holds large objects" in by_hand.stderr
+        assert b"large object(s) that" not in by_hand.stdout, by_hand.stdout
+        with psycopg.connect(owner_url) as conn:
+            assert sorted(_large_objects(conn)) == sorted([role, cluster.owner])
+    finally:
+        with psycopg.connect(owner_url, autocommit=True) as conn:
+            conn.execute("SELECT lo_unlink(oid) FROM pg_largeobject_metadata "
+                         "WHERE lomowner = (SELECT oid FROM pg_roles WHERE rolname = current_user)")
+    clean = restore(restored["dump"], restored["secrets_file"], role, "--roles-only")
+    output = clean.stdout + clean.stderr
+    assert clean.returncode == 0, output
+    assert f"roles.sql: removed 1 large object(s) that {role} had stored." in output
+    with psycopg.connect(owner_url) as conn:
+        assert _large_objects(conn) == []
+
+
 def test_a_restored_database_is_never_restored_over(restored, cluster):
     result = restore(restored["dump"], restored["secrets_file"], cluster.api_role)
     assert result.returncode != 0

@@ -33,7 +33,10 @@
 --     (review r3: the role can set its own defaults).
 --     max_parallel_workers_per_gather is not set here: the emulation load
 --     tests left it at the server default, and the API can set it per
---     request (ATUS_API_MAX_PARALLEL_WORKERS; F38).
+--     request (ATUS_API_MAX_PARALLEL_WORKERS; F38);
+--   * no large objects. No privilege stops a role from creating them, so the
+--     API role's are removed (a rotation runs this script) and the script
+--     fails if any other remain (review r4; security.md R16).
 
 \set ON_ERROR_STOP on
 -- Errors print their message only: no statement text, no context.
@@ -88,6 +91,34 @@ ALTER ROLE :"api_role" SET lock_timeout = '5s';
 ALTER ROLE :"api_role" SET idle_in_transaction_session_timeout = '30s';
 ALTER ROLE :"api_role" SET jit = off;
 ALTER ROLE :"api_role" SET default_transaction_read_only = on;
+
+-- Large objects. Any role can create them: lo_create, lo_from_bytea, lowrite
+-- and lo_put are EXECUTE to PUBLIC, creating one needs no privilege, and only
+-- a superuser could revoke that (Neon has none). The API role can turn its
+-- read-only default off, so whoever held its password could have stored data
+-- in pg_largeobject, owned by the role, up to the project's storage limit
+-- (security.md R16). A serving database has none: remove the role's, acting
+-- as the role (only its owner may unlink one) through the ADMIN OPTION this
+-- script's role holds on a role it created (PostgreSQL 16), then give that
+-- membership back. The check below fails if any large object remains (review r4).
+SELECT EXISTS (
+    SELECT FROM pg_largeobject_metadata
+    WHERE lomowner = (SELECT oid FROM pg_roles WHERE rolname = :'api_role')
+) AS api_large_objects \gset
+\if :api_large_objects
+  SELECT pg_has_role(current_user, :'api_role', 'MEMBER WITH ADMIN OPTION') AS can_act_as_api \gset
+  \if :can_act_as_api
+  \else
+    DO $$ BEGIN RAISE EXCEPTION 'roles.sql: the API role owns large objects, and this role holds no ADMIN OPTION on it to remove them; restore the release into a new project (security.md R16)'; END $$;
+  \endif
+  GRANT :"api_role" TO CURRENT_USER WITH INHERIT FALSE, SET TRUE;
+  SET LOCAL ROLE :"api_role";
+  SELECT count(lo_unlink(oid)) AS api_large_objects_removed
+  FROM pg_largeobject_metadata
+  WHERE lomowner = (SELECT oid FROM pg_roles WHERE rolname = current_user) \gset
+  RESET ROLE;
+  REVOKE :"api_role" FROM CURRENT_USER;
+\endif
 
 -- Database and schemas: connect and look up names, never create anything.
 REVOKE CREATE, TEMPORARY ON DATABASE :"DBNAME" FROM PUBLIC;
@@ -170,6 +201,14 @@ AS read_only_ok \gset
   DO $$ BEGIN RAISE EXCEPTION 'roles.sql: the API role can still write or create objects'; END $$;
 \endif
 
+-- No privilege stops the API role from creating large objects (above): a
+-- serving database holds none, so any that remain (another role's) fail here.
+SELECT NOT EXISTS (SELECT FROM pg_largeobject_metadata) AS large_objects_ok \gset
+\if :large_objects_ok
+\else
+  DO $$ BEGIN RAISE EXCEPTION 'roles.sql: the database holds large objects, which a serving database never has; remove them as their owner (SELECT lo_unlink(oid) FROM pg_largeobject_metadata) or restore the release into a new project'; END $$;
+\endif
+
 SELECT count(*) = 10 AS reads_ok
 FROM unnest(ARRAY[
     'atus.respondents', 'atus.household_members', 'atus.cps_persons', 'atus.activities',
@@ -184,4 +223,8 @@ WHERE has_table_privilege(:'api_role', t.name, 'SELECT') \gset
 
 COMMIT;
 
-\echo roles.sql: :api_role can log in and read the served tables; it cannot write, create objects or use temporary tables.
+-- Reported only once committed: a failed check above rolls the removal back.
+\if :api_large_objects
+  \echo roles.sql: removed :api_large_objects_removed large object(s) that :api_role had stored.
+\endif
+\echo roles.sql: :api_role can log in and read the served tables; it cannot write any table, create tables or schemas, or use temporary tables. No privilege stops it from creating large objects (security.md R16); none exist now.

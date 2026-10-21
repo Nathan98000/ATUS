@@ -3,7 +3,8 @@
 Run after a restore (``scripts/ops/restore_serving_db.sh`` runs them) and
 before a release switch. Cheap checks always run: the serving marker, the
 data version and row counts against the release manifest, the serving
-contract, planner statistics (a restore must be followed by ``VACUUM
+contract, no large objects (any role can create them, the API role
+included: security.md R16), planner statistics (a restore must be followed by ``VACUUM
 (ANALYZE)``, because a scale-to-zero compute may suspend before autovacuum
 runs; read from ``pg_stats``, which a suspend keeps), and the physical
 activity-code order that makes the activity index scan cheap. Two checks are optional:
@@ -165,6 +166,13 @@ def serving_checks(
     missing = missing_contract_columns(conn)
     results.append(_check("serving contract", not missing,
                           "complete" if not missing else ", ".join(missing)))
+    large_objects = conn.execute("SELECT count(*) FROM pg_largeobject_metadata").fetchone()[0]
+    results.append(_check(
+        "no large objects", large_objects == 0, f"{large_objects} large object(s)",
+        "a serving database has none, but any role can create them, the API role included "
+        "(security.md R16): re-run roles.sql (--roles-only), which removes the API role's "
+        "and fails on any other",
+    ))
     recorded = conn.execute("SELECT count(*) FROM atus.validation_results").fetchone()[0]
     results.append(_check(
         "validation_results empty", recorded == 0, f"{recorded} row(s)",

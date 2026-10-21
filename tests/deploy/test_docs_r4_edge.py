@@ -70,7 +70,7 @@ def test_a_compromise_is_recovered_in_order_without_an_epoch_bump():
     positions = [item.index(needle) for needle in order]
     assert positions == sorted(positions), dict(zip(order, positions, strict=True))
     for needle in ("no entry that version wrote verifies", "fresh instance", "back to back",
-                   "new SNAPSHOT_ID", "security.md R16",
+                   "new SNAPSHOT_ID", "security.md R17",
                    # Such a version may delete a required secret, so that wrangler refuses
                    # the deploy; a secret put then deploys that version's code with the value.
                    "a throwaway value for it", "never put a value you keep"):
@@ -92,7 +92,7 @@ def test_the_other_runbooks_and_the_threat_model_say_the_same():
     token = _flat(_row(security, "`CLOUDFLARE_API_TOKEN`"))
     assert "bump EPOCH (" not in token
     for needle in ("ASSET_SALT", "IP_HMAC_KEY first", "invalidates every KV entry (C10)",
-                   "fresh governor instance (C6)", "R16"):
+                   "fresh governor instance (C6)", "R17"):
         assert needle in token, needle
     c10 = _flat(_section(security, "**C10. KV store gate.**", "Code:"))
     assert "**Tag.**" in c10 and "IP_HMAC_KEY" in c10 and "does not verify" in c10
@@ -108,10 +108,10 @@ def test_the_other_runbooks_and_the_threat_model_say_the_same():
     risks = _section(security, "## Accepted risks", "\n## ")
     numbers = [int(n) for n in re.findall(r"^\*\*R(\d+)\.", risks, re.M)]
     assert numbers == list(range(1, len(numbers) + 1)), numbers
-    r16 = _flat(risks[risks.index("**R16."):])
-    assert "ASSET_SALT" in r16 and "SNAPSHOT_ID" in r16 and "service worker" in r16
-    assert "never asks for a name such a version could have filled" not in r16
-    assert "/boot.css and /favicon.svg" in r16 and "cache: 'no-cache'" in r16
+    r17 = _flat(risks[risks.index("**R17."):])
+    assert "ASSET_SALT" in r17 and "SNAPSHOT_ID" in r17 and "service worker" in r17
+    assert "never asks for a name such a version could have filled" not in r17
+    assert "/boot.css and /favicon.svg" in r17 and "cache: 'no-cache'" in r17
     index_html = _read(REPO_ROOT / "frontend" / "index.html")
     unhashed = set(re.findall(r'(?:href|src)="(/[^"/]+\.(?:css|svg|js))"', index_html))
     assert unhashed == {"/boot.css", "/favicon.svg"}, unhashed

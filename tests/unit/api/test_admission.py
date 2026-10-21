@@ -10,6 +10,7 @@ from __future__ import annotations
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 
 import psycopg
 import pytest
@@ -17,6 +18,12 @@ from fastapi.testclient import TestClient
 from psycopg_pool import PoolTimeout
 
 from atus_pipeline.analytics.errors import InsufficientDataError
+from atus_pipeline.api import observability
+from atus_pipeline.api.errors import (
+    DatabasePausedError,
+    DatabaseUnavailableError,
+    OverloadedError,
+)
 from atus_pipeline.config import RateLimit
 from atus_pipeline.database import versions
 from tests.unit.api.conftest import FakeDatabase, FakeVersionConnection, make_app, make_settings
@@ -117,6 +124,104 @@ class TestDailyCap:
         assert 1 <= int(refused.headers["Retry-After"]) <= 86_400
         assert error["details"]["retry_after_seconds"] == int(refused.headers["Retry-After"])
         assert client.post(ESTIMATE, json=body(2021)).headers["X-Cache"] == "hit"
+
+
+class _FailingAnalysisDatabase(FakeDatabase):
+    """A database whose analysis transactions fail before yielding a
+    connection (``fail_with``), the way ``Database.acquire`` fails during an
+    outage or a Neon pause; metadata (the snapshot) still works."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fail_with: BaseException | None = None
+
+    @contextmanager
+    def transaction(self, kind: str, *, repeatable_read: bool = False):
+        if kind == "analysis" and self.fail_with is not None:
+            self.transactions.append(kind)
+            raise self.fail_with
+        with super().transaction(kind, repeatable_read=repeatable_read) as conn:
+            yield conn
+
+
+class _NewVersionConnection(FakeVersionConnection):
+    """Reports a data version other than the (pinned) snapshot's."""
+
+    def execute(self, sql, params=None):
+        if "ingestion_runs" in sql:
+            observability.note_statement()
+
+            class _Cursor:
+                @staticmethod
+                def fetchone():
+                    return ({"id": 2, "release": "0325", "data_version": "0325:run2"},)
+            return _Cursor()
+        return super().execute(sql, params)
+
+
+class TestDailyCapNotSpentWithoutComputing:
+    """Review r4: an analysis that never reached its statistics queries (no
+    connection, a Neon pause, a full pool, a release switch) gives back its
+    daily-cap unit and its analysis token, so an outage cannot use up the day
+    and keep refusing after the database is back."""
+
+    @pytest.mark.parametrize(
+        ("failure", "code"),
+        [
+            (DatabaseUnavailableError("could not open a database connection in time"),
+             "database_unavailable"),
+            (DatabasePausedError("compute time quota exceeded"), "database_paused"),
+            (OverloadedError("no database connection within 10 s"), "overloaded"),
+        ],
+    )
+    def test_failures_before_the_statistics_queries_are_refunded(
+        self, build, failure, code
+    ):
+        db = _FailingAnalysisDatabase()
+        client, app = build(
+            fake_db=db, client_kwargs={"client": REMOTE}, api_daily_analysis_cap=2,
+            api_rate_analysis=RateLimit(2, 3600.0),
+        )
+        db.fail_with = failure
+        for year in range(2010, 2015):
+            response = client.post(ESTIMATE, json=body(year))
+            assert response.status_code == 503
+            assert response.json()["error"]["code"] == code
+        protection = app.state.protection
+        assert protection.daily_cap.used_today() == 0
+        db.fail_with = None  # the database is back
+        assert client.post(ESTIMATE, json=body(2021)).headers["X-Cache"] == "miss"
+        assert client.post(ESTIMATE, json=body(2022)).headers["X-Cache"] == "miss"
+        assert protection.daily_cap.used_today() == 2
+        assert protection.daily_cap.rejections == 0
+
+    def test_data_version_mismatch_is_refunded(self, build):
+        db = FakeDatabase(_NewVersionConnection, data_version="0325:run1")
+        client, app = build(
+            fake_db=db, client_kwargs={"client": REMOTE}, api_daily_analysis_cap=1,
+            api_rate_analysis=RateLimit(1, 3600.0), expected_data_version="0325:run1",
+        )
+        for year in (2021, 2022):
+            db.data_version = "0325:run1"  # the snapshot is read again each time
+            response = client.post(ESTIMATE, json=body(year))
+            assert response.json()["error"]["code"] == "data_version_mismatch"
+        assert app.state.protection.daily_cap.used_today() == 0
+        assert app.state.protection.analysis_limiter.rejections == 0
+
+    def test_a_computation_that_queried_is_still_charged(self, build, stub_engine):
+        def cancelled(spec):
+            raise psycopg.errors.QueryCanceled("canceling statement due to statement timeout")
+
+        stub_engine.estimate_behavior = cancelled
+        client, app = build(client_kwargs={"client": REMOTE}, api_daily_analysis_cap=2,
+                            api_rate_analysis=RateLimit(5, 3600.0))
+        for year in (2021, 2022):
+            assert client.post(ESTIMATE, json=body(year)).json()["error"]["code"] == (
+                "analysis_timeout"
+            )
+        refused = client.post(ESTIMATE, json=body(2023))
+        assert refused.json()["error"]["code"] == "daily_capacity_reached"
+        assert app.state.protection.daily_cap.used_today() == 2
 
 
 class TestLanes:

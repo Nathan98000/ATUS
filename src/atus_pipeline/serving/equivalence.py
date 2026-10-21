@@ -14,7 +14,8 @@ compare as follows (docs/operations.md, "Equivalence criterion (§9)"):
   of both groups). The floor ``S`` is what makes zero-variance estimates
   comparable: their "standard error" is floating-point noise around 0
   (F40/I12: 7.83e-12 vs 7.93e-12 on an estimate of 1,440 minutes), which a
-  purely relative bound rejects.
+  purely relative bound rejects. A non-finite value (NaN, +-inf) matches
+  only the same non-finite value, and ``S`` comes from finite values only.
 
 Replicate sums are ``float8`` and their summation order follows the query
 plan; measured noise is up to 6.24e-13 relative on standard errors and
@@ -25,6 +26,7 @@ orders of magnitude more).
 
 from __future__ import annotations
 
+import math
 import random
 from dataclasses import dataclass, field
 from datetime import date
@@ -70,11 +72,21 @@ def _number(value) -> bool:
 
 def _close(a: float, b: float, scale: float, path: str, out: Comparison) -> None:
     out.compared += 1
-    diff = abs(float(a) - float(b))
+    fa, fb = float(a), float(b)
+    if not (math.isfinite(fa) and math.isfinite(fb)):
+        # NaN fails every comparison and inf widens the bound to inf, so the
+        # tolerance would pass them against anything: a non-finite value
+        # matches only the same non-finite value (review r4).
+        if not (fa == fb or (math.isnan(fa) and math.isnan(fb))):
+            out.mismatches.append(f"{path}: {a!r} vs {b!r} (not both the same non-finite value)")
+        return
+    diff = abs(fa - fb)
     if diff == 0:
         return
-    magnitude = max(abs(float(a)), abs(float(b)))
-    bound = max(magnitude, scale)
+    magnitude = max(abs(fa), abs(fb))
+    # S is a floor from finite point values only: an infinite or NaN one
+    # (compared exactly elsewhere) must not widen the bound.
+    bound = max(magnitude, scale) if math.isfinite(scale) else magnitude
     out.max_relative = max(out.max_relative, diff / magnitude if magnitude else float("inf"))
     out.max_scaled = max(out.max_scaled, diff / bound if bound else float("inf"))
     if diff > REL_TOL * bound:
@@ -83,8 +95,12 @@ def _close(a: float, b: float, scale: float, path: str, out: Comparison) -> None
 
 
 def _estimate_value(d) -> float:
+    """``|value|`` of an estimate for the floor ``S``: finite values only (a
+    non-finite point value is compared exactly and contributes nothing)."""
     if isinstance(d, dict) and _number(d.get("value")):
-        return abs(float(d["value"]))
+        value = abs(float(d["value"]))
+        if math.isfinite(value):
+            return value
     return 0.0
 
 
@@ -133,13 +149,19 @@ def compare_statistics(rows_a: list[tuple], rows_b: list[tuple]) -> Comparison:
         out.mismatches.append(f"{len(rows_a)} vs {len(rows_b)} rows")
     for ra, rb in zip(rows_a, rows_b, strict=False):
         year = ra[0]
-        for i in range(min(6, len(ra))):
+        if len(ra) != len(rb):
+            out.mismatches.append(f"year {year}: {len(ra)} vs {len(rb)} columns")
+        for i in range(min(6, len(ra), len(rb))):
             out.compared += 1
             if type(ra[i]) is not type(rb[i]) or ra[i] != rb[i]:
                 out.mismatches.append(f"year {year} column {i}: {ra[i]!r} vs {rb[i]!r}")
-        for i in range(6, len(ra)):
-            scale = max((abs(v) for v in ra[i]), default=0.0)
-            for j, (x, y) in enumerate(zip(ra[i], rb[i], strict=True)):
+        for i in range(6, min(len(ra), len(rb))):
+            if len(ra[i]) != len(rb[i]):
+                out.mismatches.append(
+                    f"year {year} column {i}: {len(ra[i])} vs {len(rb[i])} replicates"
+                )
+            scale = max((abs(v) for v in ra[i] if math.isfinite(v)), default=0.0)
+            for j, (x, y) in enumerate(zip(ra[i], rb[i], strict=False)):
                 _close(x, y, scale, f"year {year} column {i}[{j}]", out)
     return out
 

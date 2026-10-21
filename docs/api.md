@@ -445,7 +445,7 @@ response format, is sent only as a header on analyses:
 | `api_version` (`v1`, path prefix) | HTTP contract | request/response semantics change incompatibly |
 | `analytics_version` (`0.2`) | statistical implementation | computed numbers could differ. Engine changes that keep every number equal under the §9 equivalence criterion (Phase 5: the year pushdown and its materialized CTE) keep the version; see the version history in [analytics.md](analytics.md) |
 | data version (`X-Data-Version` on analyses and metadata) | loaded BLS data | `atus load` or a serving-DB build produces new data (forms under [Caching](#caching)) |
-| `X-Response-Format` (`1`) | the serialized bytes of an analysis response | any change to analysis response bytes (fields, their order or formatting, warning or label text) without an `analytics_version` change, as in ADR-015: edge KV entries survive code-only deploys. `RESPONSE_FORMAT` in `src/atus_pipeline/api/__init__.py`, with the Worker's default var in `edge/wrangler.jsonc` and its config test (the snapshot build, the stack smoke and the deploy follow the constant); `tests/unit/api/test_response_format.py` pins the response schemas and bytes to it, so a change without a bump fails CI |
+| `X-Response-Format` (`1`) | the serialized bytes of an analysis response | any change to analysis response bytes (fields, their order or formatting, warning or label text) without an `analytics_version` change, as in ADR-015: edge KV entries survive code-only deploys. `RESPONSE_FORMAT` in `src/atus_pipeline/api/__init__.py`, with the Worker's default var in `edge/wrangler.jsonc` and its config test (the snapshot build, the stack smoke and the deploy follow the constant); `tests/unit/api/test_response_format.py` pins to it, with `ANALYTICS_VERSION`, the response schemas, the bytes of hand-built results (serialization) and the real engine's responses to a fixed set of requests on synthetic statistics (every warning and note, label and population description form and trend unavailable reason; numbers to 12 significant digits), so such a change without a bump fails CI. Text the engine produces only for other requests is not covered: add a request to `ENGINE_REQUESTS` with any new text (review round 4) |
 
 ## Protection and limits
 
@@ -473,7 +473,9 @@ a request meets them:
    the cache, single-flight and dry-run steps below; cache hits, joins and
    the dry run's 422s are free (an `insufficient_data` found by the query
    itself is charged), and a token is refunded when the lanes or the daily
-   cap then refuse the analysis. Over a limit: 429 with `Retry-After`.
+   cap then refuse the analysis, or when it fails before the engine starts
+   (no database connection, a pause, a full pool, a data version mismatch).
+   Over a limit: 429 with `Retry-After`.
 5. **Media type and shape.** POST bodies must be JSON (415). Control
    characters in query parameters are rejected (422).
 6. **Data snapshot.** Data routes answer from the in-process snapshot; with
@@ -484,7 +486,9 @@ a request meets them:
    weights) gets its 422 without spending a token, a lane or a statement.
 8. **Daily cap.** 600 uncached analyses per UTC day per process, then 503
    `daily_capacity_reached`. The count is in memory and restarts with the
-   process; the edge governor holds the durable daily budget.
+   process; the edge governor holds the durable daily budget. An analysis
+   that fails before the engine starts gives its unit back, so a database
+   outage does not use up the day (review round 4).
 9. **Lanes.** At most 2 analyses compute at once, and at most 1 of them
    heavy. An analysis is heavy at 8 or more year-queries (`len(years)`,
    doubled for compare). Others wait up to 5 s, then get 503 `overloaded`.

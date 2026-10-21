@@ -21,7 +21,11 @@ redefining an activity preset's codes (`ACTIVITY_PRESETS` in
 presets, and edge-cached results are keyed by the request bytes, not by the
 preset's definition ([ADR-015](adr/ADR-015-edge-cache-snapshot-and-governor.md#staleness-across-releases)),
 so `tests/unit/analytics/test_preset_vocabulary.py` pins every preset to this
-version and fails on such a change. Engine changes
+version and fails on such a change. `tests/unit/api/test_response_format.py`
+pins the real engine's responses to a fixed set of requests, numbers included
+(to 12 significant digits), to this version and `RESPONSE_FORMAT`
+(`ENGINE_PINNED`, review round 4): a number change without a bump fails it,
+and a bump adds the new fingerprints there. Engine changes
 that keep every number equal under the §9 equivalence criterion (counts and
 point sums exact; standard errors and CIs within floating-point summation
 noise) keep the version, and are listed here:
