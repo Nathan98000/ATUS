@@ -555,6 +555,10 @@ def test_ci_runs_the_public_origin_with_the_local_stack_commands():
     assert "--no-build" in smoke["run"] and "--edge --e2e" in smoke["run"]
     assert set(smoke["env"]["E2E_PROJECTS"].split()) == {"desktop", "mobile", "firefox", "webkit"}
     assert smoke["env"]["ATUS_BUILD_SHA"] == "${{ github.sha }}"
+    # deploy_smoke.py's §9 comparison imports the package
+    assert "--require-hashes --no-deps -r requirements/dev.lock.txt" in text
+    assert text.index("pip install --no-deps --no-build-isolation -e .") < \
+        text.index("scripts/smoke_stack.sh")
     assert "docker compose" not in text  # the script starts, probes and removes the stack
     assert "TODO" not in (WORKFLOWS_DIR / "ci.yml").read_text()
 
