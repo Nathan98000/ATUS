@@ -431,6 +431,64 @@ describe('settling each origin outcome', () => {
     expect((await report()).compute_today.settled_cu_hours).toBe(0)
   })
 
+  it('refunds the counts and charges no compute when the API got no database connection (database_unavailable)', async () => {
+    // Neon unreachable, wrong credentials, a TLS failure: the API reports
+    // db;dur=0 because no connection was obtained, and Neon ran nothing.
+    const outcome = await settledAfter(() =>
+      apiJson(envelope('database_unavailable'), 503, {
+        'server-timing': 'db;dur=0, app;dur=1004.2',
+      }),
+    )
+    expect(outcome).toEqual({ status: 503, admitted: 0, refunded: 1, prefix: 0 })
+    expect((await report()).compute_today.settled_cu_hours).toBe(0)
+  })
+
+  it('refunds the counts but charges compute when the connection broke after the checkout', async () => {
+    const outcome = await settledAfter(() =>
+      apiJson(envelope('database_unavailable'), 503, {
+        'server-timing': 'db;dur=40.0, app;dur=2.0',
+      }),
+    )
+    expect(outcome).toEqual({ status: 503, admitted: 0, refunded: 1, prefix: 0 })
+    expect((await report()).compute_today.settled_cu_hours).toBeGreaterThan(0)
+  })
+
+  it('lets a run of failed database connections lock out neither a network nor the day', async () => {
+    // Review r3 (db-unavailable-settled-as-computed): each 503
+    // database_unavailable was settled as computed. In conservative mode one
+    // network trying every 6 minutes (an attempt and the SPA's retry) got 429
+    // rate_limited (prefix) from its fourth attempt, and about 16 networks
+    // closed the day's compute (cu_day) for everyone until 00:00 UTC, after
+    // the database was fixed.
+    const clock = controlClock(T)
+    const calls = mockOrigin(() =>
+      apiJson(envelope('database_unavailable'), 503, {
+        'retry-after': '5',
+        'server-timing': 'db;dur=0, app;dur=1004.2',
+      }),
+    )
+    // 35 rounds 6 minutes apart: 70 admissions for 203.0.113.7, past its 60.
+    for (let round = 0; round < 35; round += 1) {
+      for (const ip of ['203.0.113.7', `198.51.100.${round + 1}`]) {
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          const response = await callWorker(...post(ip))
+          expect(response.status).toBe(503)
+          expect((await readEnvelope(response)).code).toBe('database_unavailable')
+          clock.advance(5_000)
+        }
+      }
+      clock.advance(6 * 60_000)
+    }
+    expect(calls).toHaveLength(140)
+    const during = await report()
+    expect(during.analyses).toMatchObject({ admitted: 0, refunded: 140, in_flight: 0 })
+    expect(during.compute_today.settled_cu_hours).toBe(0)
+    // The operator fixes the connection: the same network and a new one are admitted.
+    mockOrigin(() => apiJson('{"ok":true}', 200, COMPUTED))
+    expect((await callWorker(...post('203.0.113.7'))).status).toBe(200)
+    expect((await callWorker(...post('192.0.2.50'))).status).toBe(200)
+  })
+
   it.each(['data_version_mismatch', 'data_not_loaded', 'schema_not_initialized'])(
     'refunds the counts of a %s refusal (no analysis ran)',
     async (code) => {

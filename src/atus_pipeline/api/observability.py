@@ -14,7 +14,8 @@ them, so their cost is charged to that request and joiners pay nothing).
   ``COMMIT``/``ROLLBACK`` psycopg sends around each transaction.
 * ``db_ms``: wall time inside :meth:`Database.transaction`, from asking the
   pool for a connection to giving it back, so a waking database shows up
-  here and not as application time.
+  here and not as application time. A transaction that never got a
+  connection counts nothing (:func:`database_time`).
 
 **Client IPs** are personal data (brief §12). Raw addresses exist only in
 memory, for the token buckets; logs and metrics only ever see
@@ -68,15 +69,30 @@ def note_statement() -> None:
         stats.db_statements += 1
 
 
+class DatabaseTime:
+    """The block :func:`database_time` measures: charged only if ``connected``."""
+
+    def __init__(self, connected: bool) -> None:
+        self.connected = connected
+
+
 @contextmanager
-def database_time() -> Iterator[None]:
-    """Charge the wall time of the enclosed block to the current request."""
+def database_time(*, connected: bool = True) -> Iterator[DatabaseTime]:
+    """Charge the wall time of the enclosed block to the current request.
+
+    ``Database.transaction`` passes ``connected=False`` and sets
+    ``connected`` once the pool gave it a connection: a block that never got
+    one (the connect was refused, failed authentication or TLS, or timed out)
+    charges nothing and counts no transaction, so its ``Server-Timing`` says
+    ``db;dur=0`` and the edge governor charges no Neon compute for it
+    (review r3)."""
     stats = _CURRENT.get()
+    timing = DatabaseTime(connected)
     started = time.perf_counter()
     try:
-        yield
+        yield timing
     finally:
-        if stats is not None:
+        if stats is not None and timing.connected:
             stats.db_seconds += time.perf_counter() - started
             stats.transactions += 1
 

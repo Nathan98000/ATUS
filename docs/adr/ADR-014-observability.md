@@ -76,7 +76,7 @@ The text format writes the same facts in one line: `request_id=… METHOD path -
 The request-context middleware puts a counter in a context variable for each request. Worker threads, the detached analysis computation and the shared snapshot refresh inherit it, so their database work is charged to the request that caused it; a single-flight joiner pays nothing.
 
 - `db_statements` counts every statement the API sends through psycopg: the pool's connection check (an empty query), the per-transaction limits, the queries. PostgreSQL additionally logs the `BEGIN` and `COMMIT` psycopg sends around each transaction.
-- `db_ms` is wall time inside `Database.transaction`, from asking the pool for a connection to giving it back. A waking database shows up here, not as application time.
+- `db_ms` is wall time inside `Database.transaction`, from asking the pool for a connection to giving it back. A waking database shows up here, not as application time. A transaction that never got a connection (refused, wrong credentials, TLS, a connect timeout) counts nothing, so its request reports `db;dur=0` and the edge governor charges it no compute (review round 3).
 
 The per-request statement budget, verified against PostgreSQL's own statement log in a test (`tests/integration/api/test_statement_log.py`), is in [api.md](../api.md#statements-per-request). In short: cache hits, every 4xx, `/meta`, `/activities*`, `/population/metadata`, `/health` cost 0 statements while the in-process data snapshot is fresh; an uncached estimate or trend costs 4 (6 in the server log), a compare 5 (7).
 

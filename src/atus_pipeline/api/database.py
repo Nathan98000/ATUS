@@ -386,12 +386,14 @@ class Database:
         returns the connection to the pool before the caller continues.
         ``repeatable_read`` makes every statement see the same snapshot of
         the data (``BEGIN ISOLATION LEVEL REPEATABLE READ``)."""
-        with observability.database_time():
-            with self._transaction(kind, repeatable_read) as conn:
+        with observability.database_time(connected=False) as timing:
+            with self._transaction(kind, repeatable_read, timing) as conn:
                 yield conn
 
     @contextmanager
-    def _transaction(self, kind: str, repeatable_read: bool) -> Iterator[psycopg.Connection]:
+    def _transaction(
+        self, kind: str, repeatable_read: bool, timing: observability.DatabaseTime
+    ) -> Iterator[psycopg.Connection]:
         limits = session_limits(self._settings, kind)
         if repeatable_read:
             # The snapshot must not exist before the lock (SNAPSHOT_LOCK).
@@ -401,6 +403,9 @@ class Database:
         if self._closing:
             raise OverloadedError("server shutting down")
         conn = self.acquire()
+        # Database time from here on, the wait for this connection included;
+        # a checkout that got none is not (observability.database_time).
+        timing.connected = True
         deadline: _Deadline | None = None
         with self._active_lock:
             # Under the lock that begin_shutdown takes: a transaction is either

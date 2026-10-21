@@ -128,7 +128,7 @@ Tests: `tests/unit/api/test_protection.py::TestTokenBucket`, `tests/unit/api/tes
   - a missing `IP_HMAC_KEY`.
 
 Code: `edge/src/governor.ts`, `edge/src/admission.ts`, `edge/src/budget.ts`, `edge/src/constants.ts`, `edge/src/snapshot.ts`.
-Tests: `edge/test/worker/governor.test.ts` (including "each network's share of the day's compute" and "Neon egress without ground truth"), `edge/test/worker/governor-flow.test.ts` ("failing closed"), `edge/test/worker/metadata.test.ts`, `edge/test/worker/budget.test.ts`, `edge/test/worker/cache.test.ts` ("serves a hit while the origin is unconfigured or the governor is down").
+Tests: `edge/test/worker/governor.test.ts` (including "each network's share of the day's compute" and "Neon egress without ground truth"), `edge/test/worker/governor-flow.test.ts` ("failing closed"; "lets a run of failed database connections lock out neither a network nor the day"), `edge/test/worker/metadata.test.ts`, `edge/test/worker/budget.test.ts`, `edge/test/worker/cache.test.ts` ("serves a hit while the origin is unconfigured or the governor is down").
 
 **C7. Admission in the API.**
 - **Dry run.** Analytically invalid requests get a 422 before any token, lane or statement is spent.

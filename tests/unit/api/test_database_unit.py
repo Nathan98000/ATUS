@@ -213,6 +213,69 @@ class TestCheckout:
         finally:
             db.close()
 
+    @pytest.mark.parametrize(
+        ("message", "error"),
+        [
+            ("connection refused", DatabaseUnavailableError),
+            ('password authentication failed for user "atus_api"', DatabaseUnavailableError),
+            ("SSL error: certificate verify failed", DatabaseUnavailableError),
+            ("ERROR:  Your project has exceeded the compute time quota.", DatabasePausedError),
+        ],
+    )
+    def test_a_checkout_that_got_no_connection_charges_no_database_time(
+        self, tmp_path, message, error
+    ):
+        """Review r3 (db-unavailable-settled-as-computed): a failed connect
+        was timed as database time, so the response said ``db;dur`` > 0 and
+        the edge governor charged a Neon wake session for a database that
+        ran nothing (refused, wrong credentials, TLS). A transaction counts
+        from asking the pool for a connection, but only once it got one."""
+        from atus_pipeline.api import observability
+        from atus_pipeline.api.middleware import request_server_timing
+
+        db = self._database(tmp_path, _failing_connection_class(message))
+        stats, token = observability.start_request()
+        started = time.perf_counter()
+        try:
+            with pytest.raises(error), db.transaction("analysis"):
+                pass
+        finally:
+            observability.end_request(token)
+            db.close()
+        assert (stats.transactions, stats.db_seconds) == (0, 0.0)
+        assert request_server_timing(stats, started).startswith("db;dur=0, ")
+
+    def test_a_connection_lost_after_the_checkout_is_still_charged(self, tmp_path, monkeypatch):
+        """The other half: once the pool gave a connection, its whole time
+        (the wait for it included) is database time, also when the
+        connection then breaks (503 database_unavailable after statements
+        may have run on Neon)."""
+        from atus_pipeline.api import observability
+
+        class Dropped:
+            refused_because = None
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def execute(self, *args, **kwargs):
+                raise psycopg.OperationalError("server closed the connection unexpectedly")
+
+        db = self._database(tmp_path, _failing_connection_class("unused"))
+        monkeypatch.setattr(db, "acquire", lambda: Dropped())
+        monkeypatch.setattr(db.pool, "putconn", lambda conn: None)
+        stats, token = observability.start_request()
+        try:
+            with pytest.raises(psycopg.OperationalError), db.transaction("metadata"):
+                pass
+        finally:
+            observability.end_request(token)
+            db.close()
+        assert stats.transactions == 1 and stats.db_seconds > 0
+
     def test_pool_starts_without_connecting(self, tmp_path):
         failing = _failing_connection_class("must not connect at startup")
         db = self._database(tmp_path, failing)

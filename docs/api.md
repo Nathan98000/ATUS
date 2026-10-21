@@ -223,7 +223,9 @@ Response headers:
 - `Server-Timing: db;dur=<ms>, app;dur=<ms>` on every response: time spent
   in database transactions (including waiting for a connection) and the rest,
   up to the response start. `db;dur=0` exactly means the request opened no
-  database transaction (cache hits, single-flight joins, shed requests,
+  database transaction, or got no connection for it (cache hits, single-flight
+  joins, shed requests, a `database_unavailable` or `database_paused` from a
+  failed connect,
   metadata from the snapshot, and every 4xx except a 422 that the statistics
   query itself produces: `insufficient_data`, or a diary-date window outside
   the requested years); any database work reports at least `0.1`. The edge

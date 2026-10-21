@@ -483,6 +483,12 @@ class TestDatabaseOutage:
             assert search.status_code == 200 and search.json()["total"] >= 5
             assert new.status_code == 503
             assert new.json()["error"]["code"] == "database_unavailable"
+            # Review r3: no connection, no database time, so the edge governor
+            # sheds these instead of charging a Neon wake session; that holds
+            # also for the first one, whose checkout found the pool's idle
+            # connection dead (its check query never reached a server).
+            for response in (meta, new):
+                assert response.headers["Server-Timing"].startswith("db;dur=0, ")
             assert ready.status_code == 503  # readiness is never answered from memory
             assert app.state.snapshots.stale_serves >= 3
 

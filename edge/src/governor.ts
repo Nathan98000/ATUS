@@ -153,15 +153,16 @@ export type LookupResult = AdmitResult
  *   Fully refunded.
  * - `shed`: the API refused it without computing (`overloaded`,
  *   `rate_limited`, `daily_capacity_reached`, and the data-availability
- *   refusals: `database_paused`, `data_version_mismatch`, `data_not_loaded`,
- *   `schema_not_initialized`). Counts refunded.
+ *   refusals: `database_paused`, `database_unavailable`,
+ *   `data_version_mismatch`, `data_not_loaded`, `schema_not_initialized`).
+ *   Counts refunded.
  * - `rejected`: a 4xx from the API (validation). Global and heavy counts
  *   refunded; the prefix keeps the charge, so invalid requests stay bounded.
  * - `reused`: a 2xx the API served from its cache or a joined computation.
  *   Refunded like `rejected`.
  * - `computed`: everything else (2xx miss or bypass, timeouts — including
  *   Cloudflare's 524, after which the API still runs the analysis to the
- *   end — and DB errors).
+ *   end — and unexpected errors).
  *
  * A `rejected` or `reused` answer that reported DB time (`dbMs > 0`) keeps
  * its global and heavy counts: a 422 found only by the statistics query

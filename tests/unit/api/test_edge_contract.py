@@ -267,6 +267,43 @@ class TestServerTimingForTheGovernor:
         assert before_work.headers["Server-Timing"].startswith("db;dur=0, ")
         assert governor_db_ms(before_work.headers["Server-Timing"]) == 0
 
+    @pytest.mark.parametrize(
+        ("refusal", "code"),
+        [
+            ("connection refused", "database_unavailable"),
+            ('password authentication failed for user "atus_api"', "database_unavailable"),
+            ("ERROR:  Your project has exceeded the data transfer quota.", "database_paused"),
+        ],
+    )
+    def test_a_request_that_got_no_connection_reports_no_database_time(
+        self, build, tmp_path, refusal, code
+    ):
+        """Review r3 (db-unavailable-settled-as-computed): the failed connect
+        was timed as database time, so the governor settled 503
+        database_unavailable as a computed analysis: it kept the counts and
+        charged a Neon wake session, and about 16 such answers closed the
+        conservative day for everyone after the database was fixed."""
+        from atus_pipeline.api.database import Database
+
+        class Refused(psycopg.Connection):
+            @classmethod
+            def connect(cls, conninfo="", **kwargs):
+                raise psycopg.OperationalError(refusal)
+
+        database = Database(
+            make_settings(tmp_path, api_pool_timeout_s=0.5, api_connect_timeout_s=2),
+            connection_class=Refused,
+        )
+        try:
+            client, _ = build(fake_db=database)
+            for response in (client.post(ESTIMATE, json=BODY, headers=EDGE),
+                             client.get("/api/v1/meta", headers=EDGE)):
+                assert assert_envelope(response, 503) == code
+                assert response.headers["Server-Timing"].startswith("db;dur=0, ")
+                assert governor_db_ms(response.headers["Server-Timing"]) == 0
+        finally:
+            database.close()
+
     def test_a_shed_analysis_reports_no_database_time(self, build):
         client, _ = build(api_rate_analysis=RateLimit(1, 3600.0))
         assert client.post(ESTIMATE, json=BODY, headers=EDGE).status_code == 200
