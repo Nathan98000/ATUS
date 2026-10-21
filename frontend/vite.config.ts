@@ -82,6 +82,37 @@ function metaCspPlugin(apiBase: string | undefined): Plugin {
 }
 
 /**
+ * The published OpenAPI schema: `frontend/openapi.json` (what
+ * `scripts/export_openapi.py` writes) copied byte for byte to
+ * `<outDir>/openapi.json`, so the static host serves it at `/openapi.json`
+ * (ADR-011: the API's own `/openapi.json` is off in production). It is an
+ * ordinary static asset outside `/api`, so the edge Worker never runs for it.
+ * `npm run check:bundle` checks the copy.
+ */
+const OPENAPI_ASSET = 'openapi.json'
+
+function publishOpenApiPlugin(): Plugin {
+  let schemaFile = ''
+  return {
+    name: 'atus-publish-openapi',
+    apply: 'build',
+    configResolved(config) {
+      schemaFile = resolve(config.root, OPENAPI_ASSET)
+    },
+    buildStart() {
+      this.addWatchFile(schemaFile)
+    },
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: OPENAPI_ASSET,
+        source: readFileSync(schemaFile),
+      })
+    },
+  }
+}
+
+/**
  * `vite preview` serves the build with the headers of the built `_headers`
  * file, as the static host does — so every E2E run checks the deployed CSP,
  * HSTS, Permissions-Policy and cache rules. `/api` is the edge Worker's (and
@@ -128,7 +159,12 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     envDir,
-    plugins: [react(), metaCspPlugin(env.VITE_API_BASE_URL), previewStaticHeadersPlugin()],
+    plugins: [
+      react(),
+      metaCspPlugin(env.VITE_API_BASE_URL),
+      publishOpenApiPlugin(),
+      previewStaticHeadersPlugin(),
+    ],
     server: { proxy: apiProxy },
     preview: { proxy: apiProxy },
     test: {

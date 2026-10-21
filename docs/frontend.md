@@ -73,7 +73,7 @@ frontend/e2e/
 frontend/scripts/
   snapshot-requests.mjs  prints the prewarmed analysis requests for the snapshot
   check-bundle.mjs       the deploy guard on dist/ (API address, inline code,
-                         <meta> CSP, _headers)
+                         <meta> CSP, _headers, the published openapi.json)
   api-types.mjs          generates / checks src/api/generated.ts
 frontend/public/
   _headers               response headers of the static site (CSP, HSTS, cache rules)
@@ -433,7 +433,7 @@ snapshot's), else the version the page's metadata reported — the legacy
 
 ```bash
 npm test          # unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 63 Playwright runs: 35 tests in Chromium desktop, 2 mobile,
+npm run test:e2e  # 64 Playwright runs: 36 tests in Chromium desktop, 2 mobile,
                   # and the 13 @core journeys again in Firefox and in WebKit
 npx playwright install firefox webkit   # once, for the cross-browser projects
 ```
@@ -487,7 +487,8 @@ The E2E counts are the tests declared in `e2e/*.spec.ts` and the projects in
   countdown, the boot fallback with the bundle blocked; downloads read back
   from disk (CSV values equal to the JSON response's, `NA` for 2020, keyboard
   operation); and the headers to be deployed: every page carries the `_headers`
-  rules and the `<meta>` CSP, bundles are served immutable, and the core
+  rules and the `<meta>` CSP, bundles are served immutable, `/openapi.json`
+  is served with its rules and equals `frontend/openapi.json`, and the core
   journeys (including a download) produce no CSP violation or
   Permissions-Policy error, with every API request on the page's own origin.
 - Cross-browser: tests tagged `@core` — the first-time-user estimate, the
@@ -586,7 +587,7 @@ one origin, whose Worker proxies `/api/*` to the API — so the build calls
   | every static file | `Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`, `Strict-Transport-Security: max-age=31536000`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy` denying every powerful feature the site does not use (camera, microphone, geolocation, payment, USB, clipboard reads, …), `Cross-Origin-Opener-Policy: same-origin` |
   | `/assets/*` (hashed bundles) | `Cache-Control: public, max-age=31536000, immutable` |
   | `/`, `/index.html`, `/explore`, `/about`, `/analysis/*` | `Cache-Control: no-cache` |
-  | `/snap/current.json` | `Cache-Control: no-cache` |
+  | `/snap/current.json`, `/openapi.json` | `Cache-Control: no-cache` |
   | `/snap/:snapshot/*` (a snapshot directory) | `Cache-Control: public, max-age=31536000, immutable` |
 
   The host joins a header set by two matching rules with a comma, so no two
@@ -604,6 +605,17 @@ one origin, whose Worker proxies `/api/*` to the API — so the build calls
   `_headers` to the SPA-fallback `index.html` (an unverified detail of
   ADR-011; check a deep link with curl after deploying). The dev server does
   not get it: Vite injects inline scripts there.
+- **Published OpenAPI schema: `/openapi.json`.** The build copies
+  `frontend/openapi.json` (written by `scripts/export_openapi.py`; the API
+  types are generated from it) byte for byte to `dist/openapi.json` (the
+  `atus-publish-openapi` plugin in `vite.config.ts`), so the static host
+  serves the schema while the API's own `/openapi.json` stays off in
+  production (ADR-011). It is a static file at the site root, not under
+  `/api`: the edge Worker runs first only for `/api` and `/api/*`, so its
+  route allowlist is never involved (a unit test checks `run_worker_first`
+  in `edge/wrangler.jsonc`). Being unhashed, it gets `Cache-Control:
+  no-cache`, so a deploy that changes the API is seen at once.
+  `check:bundle` and an E2E test compare it with `frontend/openapi.json`.
 - **Every E2E run uses the deployed headers.** `vite preview` applies the
   built `dist/_headers` to every non-`/api` response (a plugin in
   `vite.config.ts`), so the browser tests run under the exact CSP,
@@ -617,7 +629,9 @@ one origin, whose Worker proxies `/api/*` to the API — so the build calls
   after a script or stylesheet; or lacks `_headers`, a security header on
   any HTML route, a strict CSP (`'none'` default, `'self'` scripts and
   connections, no `unsafe-*`, `data:` or wildcard, `frame-ancestors 'none'`),
-  HSTS of at least a year, or the cache rules above.
+  HSTS of at least a year, or the cache rules above; or if `openapi.json`
+  is missing or differs from `frontend/openapi.json` by a single byte, or a
+  `dist/api/` directory exists (the Worker answers every `/api` path first).
 - **Deploys.** Hashed bundles may disappear after a new deploy while an old
   `index.html` is still open or cached; the boot shell then explains instead
   of showing a blank page, and a reload fetches the new `index.html` (never

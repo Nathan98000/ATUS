@@ -34,6 +34,12 @@
 /analysis/*
   Cache-Control: no-cache
 
+# The API's OpenAPI schema, published by the build as a static copy of
+# frontend/openapi.json (ADR-011). Unhashed and replaced by every deploy that
+# changes the API: always revalidated.
+/openapi.json
+  Cache-Control: no-cache
+
 # Static snapshot: the pointer names the current snapshot and is always
 # revalidated; a snapshot directory is written once and never changes.
 # `:snapshot` matches one path segment, so the second rule cannot match the

@@ -1,11 +1,12 @@
 /**
  * scripts/check-bundle.mjs, the deploy-time guard on dist/: no baked-in
  * development API (F24), no inline code the CSP forbids, the <meta> CSP
- * backstop, and the _headers rules. The last test builds the real app and
- * checks the result.
+ * backstop, the _headers rules, and the published OpenAPI schema. The last
+ * test builds the real app and checks the result.
  */
 import { spawnSync } from 'node:child_process'
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -26,6 +27,8 @@ import {
 
 const FRONTEND = process.cwd()
 const SITE_HEADERS = readFileSync(join(FRONTEND, 'public', '_headers'), 'utf8')
+/** The committed schema the build publishes at /openapi.json (ADR-011). */
+const OPENAPI = readFileSync(join(FRONTEND, 'openapi.json'))
 const POLICY =
   headersForPath(parseHeadersFile(SITE_HEADERS), '/').get('content-security-policy') ?? ''
 const META = `<meta http-equiv="Content-Security-Policy" content="${metaContentSecurityPolicy(POLICY).replaceAll("'", '&#39;')}">`
@@ -48,6 +51,7 @@ function distWith({
   code = 'fetch("/api/v1/meta")',
   html = indexHtml(),
   headers = SITE_HEADERS as string | null,
+  openapi = OPENAPI as Buffer | string | null,
 } = {}): string {
   const dist = mkdtempSync(join(tmpdir(), 'check-bundle-'))
   scratch.push(dist)
@@ -55,6 +59,7 @@ function distWith({
   writeFileSync(join(dist, 'assets', 'index-abc123.js'), code)
   writeFileSync(join(dist, 'index.html'), html)
   if (headers !== null) writeFileSync(join(dist, '_headers'), headers)
+  if (openapi !== null) writeFileSync(join(dist, 'openapi.json'), openapi)
   return dist
 }
 
@@ -194,6 +199,39 @@ describe('check-bundle.mjs', () => {
     )
   })
 
+  it('requires the published OpenAPI schema, byte for byte frontend/openapi.json', () => {
+    expectFailure(distWith({ openapi: null }), /openapi\.json is missing/)
+    // A stale copy, and the same schema serialized differently (not what
+    // scripts/export_openapi.py wrote): both differ.
+    const schema = JSON.parse(OPENAPI.toString('utf8')) as { info: { version: string } }
+    expectFailure(
+      distWith({
+        openapi: `${JSON.stringify({ ...schema, info: { ...schema.info, version: 'old' } }, null, 1)}\n`,
+      }),
+      /openapi\.json differs from frontend\/openapi\.json/,
+    )
+    expectFailure(
+      distWith({ openapi: JSON.stringify(schema) }),
+      /openapi\.json differs from frontend\/openapi\.json/,
+    )
+  })
+
+  it('requires the schema to be revalidated, never cached as immutable', () => {
+    const withoutRule = SITE_HEADERS.replace('/openapi.json\n  Cache-Control: no-cache\n', '')
+    expect(withoutRule).not.toBe(SITE_HEADERS)
+    expectFailure(
+      distWith({ headers: withoutRule }),
+      /\/openapi\.json must be Cache-Control: no-cache, is \(default\)/,
+    )
+  })
+
+  it('fails when the build puts files under /api, which the edge Worker answers first', () => {
+    const dist = distWith()
+    mkdirSync(join(dist, 'api'))
+    writeFileSync(join(dist, 'api', 'openapi.json'), OPENAPI)
+    expectFailure(dist, /dist\/api\/ exists, but \/api belongs to the edge Worker/)
+  })
+
   it('passes the real production build: no inline code, the <meta> CSP first, _headers shipped', () => {
     const outDir = mkdtempSync(join(tmpdir(), 'check-bundle-build-'))
     scratch.push(outDir)
@@ -219,6 +257,9 @@ describe('check-bundle.mjs', () => {
     expect(result.status).toBe(0)
 
     expect(readFileSync(join(outDir, '_headers'), 'utf8')).toBe(SITE_HEADERS)
+    // The schema is published at the site root, outside /api, byte for byte.
+    expect(readFileSync(join(outDir, 'openapi.json')).equals(OPENAPI)).toBe(true)
+    expect(existsSync(join(outDir, 'api'))).toBe(false)
     const html = readFileSync(join(outDir, 'index.html'), 'utf8')
     const page = new DOMParser().parseFromString(html, 'text/html')
     const first = page.head.firstElementChild

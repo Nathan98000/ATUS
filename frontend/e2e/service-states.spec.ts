@@ -3,10 +3,10 @@
  * served same-origin under the deployed `_headers` rules: cold start (a
  * delayed /meta), an incompatible API, a data release switch, an exhausted
  * quota, rate limits, the edge's daily request limit, the boot fallback when
- * the bundle cannot load, and the security headers and CSP compatibility of
- * the core journeys. Failures are injected with page.route; everything else
- * is the real API on the fixture database. New states get axe and keyboard
- * checks (brief §17).
+ * the bundle cannot load, the security headers and CSP compatibility of the
+ * core journeys, and the published OpenAPI schema. Failures are injected with
+ * page.route; everything else is the real API on the fixture database. New
+ * states get axe and keyboard checks (brief §17).
  */
 import { readFileSync } from 'node:fs'
 
@@ -343,3 +343,18 @@ test(
     expect([...apiOrigins]).toEqual([new URL(baseURL as string).origin])
   },
 )
+
+test('the OpenAPI schema is published at /openapi.json, a static file outside /api', async ({
+  request,
+}) => {
+  const response = await request.get('/openapi.json')
+  expect(response.status()).toBe(200)
+  const headers = response.headers()
+  expect(headers['content-type']).toMatch(/^application\/json\b/)
+  // The deployed rules for it: revalidated, with the site's security headers.
+  for (const [name, value] of headersForPath(SITE_HEADERS, '/openapi.json')) {
+    expect(headers[name], name).toBe(value)
+  }
+  expect(headers['cache-control']).toBe('no-cache')
+  expect((await response.body()).equals(readFileSync('openapi.json'))).toBe(true)
+})
