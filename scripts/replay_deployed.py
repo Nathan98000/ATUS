@@ -27,7 +27,16 @@ budget:
         --record expected-0325.json
     # 2. against the public site (at most 40 requests, paced):
     python scripts/replay_deployed.py --base-url https://atus.<sub>.workers.dev \\
-        --expected expected-0325.json --report replay.json
+        --expected expected-0325.json --expect-data-version <the release's> \\
+        --report replay.json
+
+Which database answered. ``--expect-data-version`` (the release's
+``data_version`` from ``releases/current.json``) fails the run unless
+``/api/v1/meta`` and every analysis report exactly that ``X-Data-Version``.
+With ``--expected``, a site that reports the data version the file was
+recorded with fails too: that is the full database compared with itself (for
+example an ``atus api`` from the recording still answering on the port; review
+round 2, replay-local-smoke-proves-wrong-db).
 
 Quota safety. The plan is counted before anything is sent and refused when it
 exceeds ``--max-requests`` (default and hard maximum 40); a retry is a request
@@ -337,6 +346,24 @@ class Replayer:
                                       f"{MINUTES_PER_DAY:,.0f} with a zero SE: a tier-1 code "
                                       "is missing from F66_TIER1_CODES, or the result is wrong")
 
+    def check_data_version(self, expect: str | None, recorded: str | None) -> None:
+        """The site answered from the expected database, and not from the one the
+        expected responses were recorded from (which would compare it with itself)."""
+        live = self.meta.get("_x_data_version")
+        seen = {r.get("data_version") for r in self.responses.values()} | {live}
+        name = "data version"
+        if expect and seen != {expect}:
+            found = ", ".join(sorted(str(v) for v in seen))
+            self.record(name, "FAIL", f"the site reports {found}, expected {expect}: another "
+                                      "database answered (an API from an earlier step still "
+                                      "on the port? Render not switched yet?)")
+        elif recorded and live == recorded:
+            self.record(name, "FAIL", f"the site reports {live}, the data version the expected "
+                                      "file was recorded from: this compares that database with "
+                                      "itself (stop the API used for --record, then retry)")
+        elif expect:
+            self.record(name, "PASS", expect)
+
     def compare_expected(self, request: PlannedRequest, expected: dict | None) -> None:
         if expected is None:
             return
@@ -394,6 +421,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="the public origin, or a local API for --record")
     parser.add_argument("--expected", type=Path, help="responses recorded with --record")
     parser.add_argument("--record", type=Path, help="write the responses here (loopback only)")
+    parser.add_argument("--expect-data-version", default=None, metavar="DATA_VERSION",
+                        help="the X-Data-Version every answer must carry (the release's "
+                             "data_version in releases/current.json)")
     parser.add_argument("--max-requests", type=int, default=HARD_MAX_REQUESTS)
     parser.add_argument("--pace", type=float, default=None,
                         help=f"seconds between analyses (default {REMOTE_PACE_S} remote, "
@@ -443,6 +473,9 @@ def main(argv: list[str] | None = None) -> int:
 
     replayer = Replayer(client, pace_s=pace, wake_timeout_s=args.wake_timeout)
     replayer.run(plan, expected)
+    if replayer.meta and (args.expect_data_version or expected is not None):
+        replayer.check_data_version(args.expect_data_version,
+                                    expected.get("data_version") if expected else None)
     if expected is not None and replayer.meta:
         recorded_av = expected.get("analytics_version")
         if recorded_av != replayer.meta.get("analytics_version"):

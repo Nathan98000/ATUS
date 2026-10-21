@@ -664,8 +664,9 @@ What a rehearsal cannot show is Render's deploy hook, its image pull, and the re
   1. Once per release, on your machine, against `atus api` serving the **full** database (loopback only):
      `python scripts/replay_deployed.py --base-url http://127.0.0.1:8000 --record expected-<release>.json`.
      Keep the file outside the repository.
-  2. Against the site:
-     `python scripts/replay_deployed.py --base-url https://atus.<sub>.workers.dev --expected expected-<release>.json --report replay.json`.
+  2. Against the site, with the release's `data_version` (`releases/current.json`):
+     `python scripts/replay_deployed.py --base-url https://atus.<sub>.workers.dev --expected expected-<release>.json --expect-data-version <data_version> --report replay.json`.
+     The replay fails unless every answer carries that `X-Data-Version`, and when the site reports the data version the file was recorded from (the full database compared with itself).
 - **What it sends.** The 24 BLS benchmarks of `atus_pipeline.analytics.benchmarks` (23 distinct specifications), `/api/v1/meta`, a full-period sleep trend, a by-sex comparison, and last the F66 broad selector (every tier-1 code pooled over every multi-year year, with replicate variance): 28 requests.
   - The broad selector is the costliest analysis on the serving DB. ADR-011 adds it to this replay so that the statement timeout is sized with it (ADR-012). Its response time is in the report.
 - **What it checks.** Every benchmark against BLS's published value and the benchmark's own tolerance, and every response against the full-database recording under §9.

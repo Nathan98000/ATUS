@@ -942,11 +942,12 @@ The normative procedure is ADR-013 "Release procedure on the free stack (§15)".
      && atus load --validate && atus validate-db && atus validate-analytics
    ```
 
-   Then record the expected answers from a local API on the full database:
+   Then record the expected answers from a local API on the full database, and stop that API again: step 5 starts another one on the same port, which cannot bind while this one runs.
 
    ```bash
    atus api &
    python scripts/replay_deployed.py --base-url http://127.0.0.1:8000 --record ~/atus-artifacts/expected-<release>.json
+   kill %1
    ```
 
 2. **Build and prove:** [Serving-DB build and restore](#serving-db-build-and-restore), then the [Restore drill](#restore-drill), which includes the HTTP equivalence harness.
@@ -961,12 +962,16 @@ The normative procedure is ADR-013 "Release procedure on the free stack (§15)".
 
    Commit `releases/current.json` (and `NEON_PROJECT_ID` in `edge/wrangler.jsonc` if used). Data release tags do not match `v*`, so they deploy nothing.
 4. **New Neon project and restore (owner):** [Serving-DB build and restore](#serving-db-build-and-restore). Never restore a second copy into the current project: two copies exceed its 1 GB.
-5. **Smoke a local API against the new project (wakes Neon).** Start `atus api` (development mode, loopback) with `ATUS_DATABASE_URL` set to that project's `ATUS_API_DATABASE_URL` (`verify-full` + `system`: `atus api` sets `SSL_CERT_FILE` to the system bundle when it is unset, as the restore does), then:
+5. **Smoke a local API against the new project (wakes Neon).** Start `atus api &` (development mode, loopback) with `ATUS_DATABASE_URL` set to that project's `ATUS_API_DATABASE_URL` (`verify-full` + `system`: `atus api` sets `SSL_CERT_FILE` to the system bundle when it is unset, as the restore does), then replay against it with the release's `data_version` (the manifest from step 3), and stop it:
 
    ```bash
    python scripts/replay_deployed.py --base-url http://127.0.0.1:8000 \
-       --expected ~/atus-artifacts/expected-<release>.json --report replay-local.json
+       --expected ~/atus-artifacts/expected-<release>.json \
+       --expect-data-version "$(jq -r .data_version releases/current.json)" --report replay-local.json
+   kill %1
    ```
+
+   `--expect-data-version` fails the replay unless the new project answered. Without it, an API still running from step 1 (the full database) would answer instead, compare the full database with itself, and pass; the replay also fails when the site reports the data version the expected file was recorded from.
 
 6. **Switch.**
    1. Push the commit from step 3 and run `gh workflow run deploy.yml --ref main -f reason="data release <tag>"`.
@@ -976,7 +981,8 @@ The normative procedure is ADR-013 "Release procedure on the free stack (§15)".
 7. **Verify (at most 40 requests; wakes Neon):**
 
    ```bash
-   python scripts/replay_deployed.py --base-url "$SITE" --expected ~/atus-artifacts/expected-<release>.json --report replay.json
+   python scripts/replay_deployed.py --base-url "$SITE" --expected ~/atus-artifacts/expected-<release>.json \
+       --expect-data-version "$(jq -r .data_version releases/current.json)" --report replay.json
    ```
 
 8. **Keep the previous project** until the owner approves its deletion. Rollback is in [Rollback](#rollback), "Data".
