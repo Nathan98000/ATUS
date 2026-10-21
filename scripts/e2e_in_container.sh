@@ -23,7 +23,8 @@
 # read-only, pure JavaScript), so client, server and the image's browser builds
 # are one version; the script refuses a node_modules that differs from the
 # lockfile (run `npm ci` in frontend/ first) and an image of another version.
-# The container is removed on exit, whatever the result.
+# The container is removed on exit, whatever the result; a container another
+# run started under the same name is never touched.
 #
 # Environment:
 #   E2E_BROWSER_SERVER_PORT  host port of the browser server, on 127.0.0.1
@@ -109,9 +110,20 @@ if ! docker image inspect "$image" >/dev/null 2>&1; then
   docker pull "$image"
 fi
 
+# This run's mark on its container. The cleanup removes the container under
+# $container only while it carries this mark: when `docker run` fails because
+# another run took the name after the check above (say, during a long pull),
+# that run's container is left alone; one this run created but could not
+# start (a port in use) is still removed.
+run_label=atus.e2e-browsers.run
+run_id="$$.$(date +%s).${RANDOM}"
 started=0
 cleanup() {
-  if [ "$started" = 1 ]; then
+  [ "$started" = 1 ] || return 0
+  local owner
+  owner=$(docker container inspect --format "{{index .Config.Labels \"$run_label\"}}" \
+    "$container" 2>/dev/null) || return 0
+  if [ "$owner" = "$run_id" ]; then
     docker rm -f "$container" >/dev/null 2>&1 || true
   fi
 }
@@ -125,7 +137,7 @@ echo "== Browser server: $image (Playwright $version) as $container on 127.0.0.1
 # loopback only: a browser server drives browsers for whoever connects.
 started=1
 docker run --detach --rm --init --ipc=host --user pwuser --workdir /home/pwuser \
-  --name "$container" \
+  --name "$container" --label "$run_label=$run_id" \
   --publish "127.0.0.1:${port}:3000" \
   --volume "$frontend/node_modules:/opt/atus-e2e/node_modules:ro" \
   "$image" \
@@ -134,7 +146,9 @@ docker run --detach --rm --init --ipc=host --user pwuser --workdir /home/pwuser 
 
 ready=0
 for _ in $(seq 1 60); do
-  if docker logs "$container" 2>&1 | grep -q 'Listening on ws://'; then
+  # Not `grep -q`: it stops reading at the first match, and under pipefail
+  # the SIGPIPE of a docker logs still writing would fail the check.
+  if docker logs "$container" 2>&1 | grep 'Listening on ws://' >/dev/null; then
     ready=1
     break
   fi

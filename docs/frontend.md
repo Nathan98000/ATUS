@@ -544,7 +544,8 @@ every project to the container (`e2e/browserServer.ts`) with
 `exposeNetwork: '<loopback>'`, so the browsers' requests for `localhost`
 come back through the test runner and the app is served from the same
 origin as in every other run (no `host.docker.internal`). The container is
-removed on exit. `E2E_BROWSER_SERVER_PORT` (default 8139) and
+removed on exit; it carries a per-run label, so a container that another run
+started under the same name is never removed. `E2E_BROWSER_SERVER_PORT` (default 8139) and
 `E2E_BROWSER_CONTAINER` (default `atus-e2e-browsers`) move it; the usual
 `E2E_FRONTEND_PORT`, `E2E_BACKEND_PORT` and `ATUS_E2E_DATABASE_URL` pass
 through, for example:
@@ -556,7 +557,7 @@ E2E_FRONTEND_PORT=4174 E2E_BACKEND_PORT=8138 E2E_BROWSER_SERVER_PORT=8140 \
 ```
 
 Downloads are read through `download.createReadStream()`, which works for
-local and remote browsers alike (`download.path()` does not exist remotely).
+local and remote browsers alike (`download.path()` throws when the browser is remote).
 One known Playwright-Firefox limitation shows in long repeated runs: in a
 Firefox instance that has made many navigations into documents served with
 `Cross-Origin-Opener-Policy: same-origin`, `page.goto` sometimes never

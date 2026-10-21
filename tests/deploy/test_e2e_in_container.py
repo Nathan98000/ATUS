@@ -40,17 +40,44 @@ printf 'docker %s\n' "$*" >> "$FAKE_LOG"
 case "$1" in
   container)
     if [ "$2" = inspect ] && [ "$3" = --format ]; then
-      if [ "${FAKE_NEVER_READY:-}" = 1 ]; then echo false; else echo true; fi
-      exit 0
+      case "$4" in
+        *State.Running*)
+          if [ "${FAKE_NEVER_READY:-}" = 1 ]; then echo false; else echo true; fi
+          exit 0 ;;
+        *Config.Labels*)
+          # the run label of the container under that name: another run's
+          # after a name conflict, else the one `docker run` was given
+          if [ "${FAKE_RUN_CONFLICT:-}" = 1 ]; then echo another-run; exit 0; fi
+          if [ -f "$FAKE_LOG.label" ]; then cat "$FAKE_LOG.label"; exit 0; fi
+          exit 1 ;;
+      esac
+      exit 3
     fi
     [ "${FAKE_EXISTS:-}" = 1 ] && exit 0
     exit 1 ;;
   image) [ "${FAKE_NO_IMAGE:-}" = 1 ] && exit 1; exit 0 ;;
   pull) exit 0 ;;
-  run) echo 0123456789ab; exit 0 ;;
+  run)
+    if [ "${FAKE_RUN_CONFLICT:-}" = 1 ]; then
+      echo "docker: Error response from daemon: Conflict. The container name is already in use" >&2
+      exit 125
+    fi
+    for arg in "$@"; do
+      case "$arg" in atus.e2e-browsers.run=*) printf '%s\n' "${arg#*=}" > "$FAKE_LOG.label" ;; esac
+    done
+    if [ "${FAKE_START_FAILS:-}" = 1 ]; then  # created, then failed to start (port in use)
+      echo "docker: Error response from daemon: ports are not available" >&2
+      exit 125
+    fi
+    echo 0123456789ab; exit 0 ;;
   logs)
     if [ "${FAKE_NEVER_READY:-}" = 1 ]; then echo "browserType.launch: something broke"; exit 0; fi
-    echo "Listening on ws://0.0.0.0:3000/"; exit 0 ;;
+    echo "Listening on ws://0.0.0.0:3000/"
+    if [ "${FAKE_NOISY_LOG:-}" = 1 ]; then  # more log after the ready line (2 MB)
+      noise=$(head -c 2000000 /dev/zero | tr '\0' x)
+      printf '%s\n' "$noise"
+    fi
+    exit 0 ;;
   rm) exit 0 ;;
 esac
 exit 3
@@ -61,6 +88,11 @@ printf 'npx %s\n' "$*" >> "$FAKE_LOG"
 printf 'npx-cwd %s\n' "$PWD" >> "$FAKE_LOG"
 printf 'npx-env E2E_BROWSER_SERVER=%s\n' "${E2E_BROWSER_SERVER:-}" >> "$FAKE_LOG"
 exit "${FAKE_NPX_STATUS:-0}"
+"""
+
+# The readiness loop waits a second between polls; the fake does not.
+FAKE_SLEEP = """#!/bin/sh
+exit 0
 """
 
 
@@ -101,6 +133,7 @@ class FakeRepo:
         bin_dir.mkdir()
         _write_executable(bin_dir / "docker", FAKE_DOCKER)
         _write_executable(bin_dir / "npx", FAKE_NPX)
+        _write_executable(bin_dir / "sleep", FAKE_SLEEP)
         self.path = os.pathsep.join([str(bin_dir), str(Path(node).parent), "/usr/bin", "/bin"])
 
     def install(self, package: str, version: str) -> None:
@@ -109,6 +142,7 @@ class FakeRepo:
 
     def run(self, *args: str, **env: str) -> subprocess.CompletedProcess:
         self.log.write_text("")
+        Path(f"{self.log}.label").unlink(missing_ok=True)
         clean = {"PATH": self.path, "HOME": str(self.root), "FAKE_LOG": str(self.log)}
         clean.update(env)
         return subprocess.run(["bash", str(self.root / "scripts" / "e2e_in_container.sh"), *args],
@@ -155,6 +189,8 @@ def test_runs_the_local_suite_against_the_containers_browsers(repo):
         rf" {re.escape(IMAGE)} node /opt/atus-e2e/node_modules/playwright-core/cli\.js "
         r"run-server --port 3000 --host 0\.0\.0\.0$", run), run
     assert "--name atus-t-browsers" in run
+    # marked as this run's, so the cleanup can tell it from another run's
+    assert re.search(r"--label atus\.e2e-browsers\.run=\S+ ", run), run
     # the image is present: nothing pulled
     assert not any(line.startswith("docker pull") for line in calls)
     # the test runner: here, in frontend/, with every argument and the endpoint
@@ -245,6 +281,34 @@ def test_refuses_bad_settings_before_docker(repo, env):
     result = repo.run(**env)
     assert result.returncode == 2
     assert repo.docker_calls() == []
+
+
+def test_a_name_taken_by_another_run_after_the_check_is_left_alone(repo):
+    # Another run took the name between the check and `docker run` (say,
+    # while this one pulled the image): its container is not this run's to remove.
+    result = repo.run(FAKE_RUN_CONFLICT="1", FAKE_NO_IMAGE="1")
+    assert result.returncode != 0
+    assert "Conflict" in result.stderr
+    calls = repo.calls()
+    assert not any(line.startswith(("docker rm", "npx ")) for line in calls), calls
+
+
+def test_a_container_created_but_not_started_is_still_removed(repo):
+    result = repo.run(FAKE_START_FAILS="1")
+    assert result.returncode != 0
+    calls = repo.calls()
+    assert calls[-1] == "docker rm -f atus-e2e-browsers"
+    assert not any(line.startswith("npx ") for line in calls)
+
+
+def test_more_log_after_the_ready_line_still_counts_as_ready(repo):
+    # Under pipefail, `docker logs | grep -q` fails once grep stops reading at
+    # the first match and docker logs, still writing, gets SIGPIPE.
+    result = repo.run(FAKE_NOISY_LOG="1")
+    assert result.returncode == 0, result.stderr[-2000:]
+    calls = repo.calls()
+    assert "npx --no-install playwright test" in calls
+    assert calls[-1] == "docker rm -f atus-e2e-browsers"
 
 
 def test_a_server_that_never_starts_is_reported_and_removed(repo):
