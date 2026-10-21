@@ -119,6 +119,28 @@ export function loadSnapshot(): Promise<Snapshot | null> {
   return loading
 }
 
+/**
+ * Whether reloading the page would load metadata of data version `version`.
+ * Without a snapshot the page's `/meta` comes from the API, which already
+ * serves `version`. With one, the reload loads whatever snapshot the pointer
+ * names now: during a release switch (ADR-013 step 8) the API serves the new
+ * release before the deploy job publishes the new snapshot, and a reload
+ * then loads the old snapshot again. An unreadable or foreign pointer means
+ * the reload would fall back to the API.
+ */
+export async function reloadLoadsVersion(version: string): Promise<boolean> {
+  if (!(await loadSnapshot())) return true
+  let pointer: unknown
+  try {
+    pointer = await fetchJson(SNAPSHOT_POINTER_PATH, { cache: 'no-cache' })
+  } catch {
+    return true
+  }
+  if (!isRecord(pointer) || typeof pointer.data_version !== 'string') return true
+  if (apiMajorVersion(pointer.api_version) !== SUPPORTED_API_VERSION) return true
+  return pointer.data_version === version
+}
+
 /** Test isolation: forget the loaded snapshot. */
 export function resetSnapshot(): void {
   loading = null

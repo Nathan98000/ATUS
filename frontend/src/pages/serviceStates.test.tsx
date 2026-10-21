@@ -24,7 +24,16 @@ import {
   presetsFixture,
 } from '../test/fixtures'
 import { testQueryClient, withFakeClock } from '../test/render'
-import { analysisHeaders, api, errorResponse, installSnapshot, server } from '../test/server'
+import {
+  SNAPSHOT_DATA_VERSION,
+  SNAPSHOT_ID,
+  analysisHeaders,
+  api,
+  errorResponse,
+  installSnapshot,
+  server,
+} from '../test/server'
+import { SNAPSHOT_POINTER_PATH } from '../api/snapshot'
 
 const sleepSpec: EstimateRequest = {
   measure: 'average_minutes_per_day',
@@ -368,6 +377,58 @@ describe('analysis errors (F13, F64)', () => {
 })
 
 describe('data release changes (F27)', () => {
+  /**
+   * ADR-013 step 8: the API already serves `served` while the deployed
+   * snapshot, which the page's /meta came from, is the old release. The
+   * pointer names `deployedLater` from its second read on (the deploy job
+   * published the new snapshot after the page loaded).
+   */
+  async function releaseSwitch(served: string, deployedLater: string) {
+    await installSnapshot({
+      get: { '/api/v1/meta': metaFixture, '/api/v1/activities/presets': presetsFixture },
+    })
+    let pointerReads = 0
+    server.use(
+      http.get(SNAPSHOT_POINTER_PATH, () => {
+        pointerReads += 1
+        return HttpResponse.json({
+          snapshot_id: SNAPSHOT_ID,
+          data_version: pointerReads === 1 ? SNAPSHOT_DATA_VERSION : deployedLater,
+          api_version: 'v1',
+        })
+      }),
+      http.get(api('/wake'), () => HttpResponse.json({ origin: 'warm' })),
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(estimateSleepFixture, {
+          headers: { ...analysisHeaders(), 'X-Data-Version': served },
+        }),
+      ),
+    )
+  }
+
+  it('mid-switch, when a reload would load the same old snapshot, does not offer one (review round 1)', async () => {
+    // Every uncached analysis, every reload and every new tab showed "Reload
+    // so that every number comes from the same release", which reloading
+    // could not do until the deploy job published the new snapshot.
+    await releaseSwitch('0326:serving-new:aaa', SNAPSHOT_DATA_VERSION)
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    const notice = await screen.findByText(/different data release/)
+    expect(notice).toHaveTextContent('reloading the page does not change that yet')
+    expect(notice.closest('output')).not.toBeNull()
+    expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
+  })
+
+  it('once the new snapshot is deployed, offers the reload', async () => {
+    await releaseSwitch('0326:serving-new:aaa', '0326:serving-new:aaa')
+    renderApp(sleepRoute)
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Reload page' })).toBeInTheDocument()
+    expect(screen.getByText(/different data release/)).toHaveTextContent(
+      'Reload so that every number comes from the same release.',
+    )
+  })
+
   it('announces the change in the live region that was already there, empty (review round 1)', async () => {
     server.use(
       http.get(api('/meta'), () =>
