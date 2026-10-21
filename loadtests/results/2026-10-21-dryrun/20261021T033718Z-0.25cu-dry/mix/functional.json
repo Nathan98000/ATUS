@@ -1,0 +1,197 @@
+{
+ "note": "DRY RUN: tiny scale, not timed. Status codes, error codes and cache outcomes only; no latency is recorded here.",
+ "k6_exit": 0,
+ "db_statements_logged": 18,
+ "db_attribution_complete": true,
+ "timed": false,
+ "setup": {
+  "requests": 2,
+  "status": {
+   "200": 2
+  },
+  "error_codes": {}
+ },
+ "overall": {
+  "requests": 6,
+  "status": {
+   "200": 6
+  },
+  "error_codes": {},
+  "x_cache": {
+   "none": 3,
+   "miss": 3
+  },
+  "expected_outcome": 6
+ },
+ "by_endpoint": {
+  "activities": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "estimate": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "meta": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "population_metadata": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "trend": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 2
+   },
+   "expected_outcome": 2
+  }
+ },
+ "by_endpoint_cache": {
+  "activities|none": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "estimate|miss": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "meta|none": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "population_metadata|none": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "trend|miss": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 2
+   },
+   "expected_outcome": 2
+  }
+ },
+ "by_kind": {
+  "activities": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "meta": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "population_metadata": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "preset": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "starter": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 2
+   },
+   "expected_outcome": 2
+  }
+ }
+}

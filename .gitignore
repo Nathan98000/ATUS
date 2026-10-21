@@ -42,3 +42,6 @@ frontend/node_modules/.tmp/
 # OS noise
 .DS_Store
 .claude/
+
+# Load-test raw outputs (loadtests/run.py --out-root default): never committed
+loadtests/out/

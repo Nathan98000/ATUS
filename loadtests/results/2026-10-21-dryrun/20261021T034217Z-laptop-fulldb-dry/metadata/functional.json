@@ -1,0 +1,185 @@
+{
+ "note": "DRY RUN: tiny scale, not timed. Status codes, error codes and cache outcomes only; no latency is recorded here.",
+ "k6_exit": 0,
+ "db_statements_logged": 0,
+ "db_attribution_complete": true,
+ "timed": false,
+ "setup": {
+  "requests": 2,
+  "status": {
+   "200": 2
+  },
+  "error_codes": {}
+ },
+ "overall": {
+  "requests": 12,
+  "status": {
+   "200": 12
+  },
+  "error_codes": {},
+  "x_cache": {
+   "none": 12
+  },
+  "expected_outcome": 12
+ },
+ "by_endpoint": {
+  "activities": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  },
+  "activity_detail": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  },
+  "meta": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  },
+  "population_metadata": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  }
+ },
+ "by_endpoint_cache": {
+  "activities|none": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  },
+  "activity_detail|none": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  },
+  "meta|none": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  },
+  "population_metadata|none": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  }
+ },
+ "by_kind": {
+  "activities": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  },
+  "level1": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "level2": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "level3": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1
+  },
+  "meta": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  },
+  "population_metadata": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  }
+ }
+}
