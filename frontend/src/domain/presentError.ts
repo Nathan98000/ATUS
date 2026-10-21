@@ -12,6 +12,7 @@
  */
 import { ApiError, NetworkError } from '../api/client'
 import { IncompatibleApiError, SUPPORTED_API_VERSION } from '../api/compat'
+import { COLD_START_BUDGET_MS } from '../api/resilience'
 
 /**
  * - `request`: the analysis request itself is the problem (adjust it);
@@ -42,6 +43,17 @@ export interface PresentedError {
 }
 
 const STILL_WORKS = 'Starter examples and analyses that were computed earlier still open.'
+
+/**
+ * A "waking" failure (`resilience.ts`) is shown only after the automatic
+ * retries used up the cold-start budget: the host has not answered for that
+ * long, which a normal cold start does not take. Free hosting can also be
+ * suspended for the rest of the month, and its answer then is undocumented
+ * (docs/security.md, accepted risk R13), so the copy says that this may be
+ * the cause instead of promising that the problem is temporary.
+ */
+const NOT_ANSWERING_FOR = `more than ${Math.floor(COLD_START_BUDGET_MS / 60_000)} minutes`
+const MAYBE_PAUSED = `If it stays unavailable for hours, its free hosting may be paused, for example until next month after a monthly allowance ran out. ${STILL_WORKS}`
 
 /** True for states presented as a full page (paused quota, incompatible API). */
 export function isFullPageError(error: unknown): boolean {
@@ -116,6 +128,8 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
     case 'invalid_spec':
     case 'validation_error':
     case 'malformed_json':
+    // The API's fallback for a domain rejection without a code of its own (422).
+    case 'invalid_analysis':
       return {
         ...common,
         kind: 'request',
@@ -208,15 +222,18 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         ...common,
         kind: 'paused',
         heading: 'New analyses are paused for now',
-        message: `ATUS Explorer runs entirely on free hosting. This month’s database allowance is nearly used up, so new analyses are paused until it resets${resetPhrase(retryAfter, now)}.`,
+        message: `ATUS Explorer runs entirely on free hosting. This month’s database allowance is nearly used up, so new analyses are paused until it resets${resetPhrase(resumesAtSeconds(error, now) ?? retryAfter, now)}.`,
         hint: STILL_WORKS,
       }
     case 'database_paused':
+      // Its Retry-After (a fixed hour) only paces retries: the provider's
+      // allowance resets with its next billing period, which the API does not
+      // know. A date is named only when the service sends `resumes_at`.
       return {
         ...common,
         kind: 'paused',
         heading: 'The analysis database is paused',
-        message: `ATUS Explorer runs entirely on free hosting, and its database has used up its monthly allowance or was paused by the provider. It resumes automatically when the allowance resets${resetPhrase(retryAfter, now)}.`,
+        message: `ATUS Explorer runs entirely on free hosting, and its database has used up its monthly allowance or was paused by the provider. It resumes automatically when the allowance resets${resetPhrase(resumesAtSeconds(error, now), now)}.`,
         hint: STILL_WORKS,
       }
     case 'edge_daily_limit':
@@ -232,9 +249,9 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
       return {
         ...common,
         kind: 'service',
-        heading: 'The analysis service is still waking up',
-        message:
-          'Free hosting sleeps when idle, and waking it is taking longer than usual. Try again in a moment.',
+        heading: 'The analysis service is still not answering',
+        message: `Free hosting sleeps when idle and usually wakes within a minute, but the analysis service has not answered for ${NOT_ANSWERING_FOR}. Try again in a few minutes.`,
+        hint: MAYBE_PAUSED,
         retryable: true,
         retryAfterSeconds: retryAfter,
       }
@@ -258,6 +275,7 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         hint: 'Trying again later, when the service is less busy, may also work.',
         retryable: true,
         adjustable: true,
+        retryAfterSeconds: retryAfter,
       }
     case 'capacity_unavailable':
       return {
@@ -283,10 +301,7 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
     case 'upstream_unavailable':
       return {
         ...common,
-        kind: 'service',
-        heading: 'The analysis service is unavailable',
-        message:
-          'Its hosting provider answered instead of the service. This is usually temporary; try again in a minute.',
+        ...upstreamUnavailable(error),
         retryable: true,
         retryAfterSeconds: retryAfter,
       }
@@ -309,6 +324,7 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         message:
           'The analysis service is running, but its survey data is not loaded yet. Please try again later.',
         retryable: true,
+        retryAfterSeconds: retryAfter,
       }
     case 'forbidden_origin':
       return {
@@ -342,8 +358,75 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
           'The analysis could not be completed. This is a problem in the service, not in your request.',
         hint: 'Trying again may help; if it persists, the API logs have the details.',
         retryable: true,
+        retryAfterSeconds: retryAfter,
       }
   }
+}
+
+/**
+ * `upstream_unavailable` by `details.reason` (the edge's, docs/api.md): only
+ * a platform error page — or a non-JSON 5xx the client mapped itself, which
+ * has no reason — means the hosting provider answered instead of the API.
+ */
+function upstreamUnavailable(
+  error: ApiError,
+): Pick<PresentedError, 'kind' | 'heading' | 'message' | 'hint'> {
+  switch (detailString(error, 'reason')) {
+    case 'connect_failed':
+    case 'circuit_open':
+      // Nothing answered; retried as a cold start until the budget ran out.
+      return {
+        kind: 'service',
+        heading: 'The analysis service could not be reached',
+        message: `The site could not connect to the analysis service for ${NOT_ANSWERING_FOR}. It may still be starting; try again in a few minutes.`,
+        hint: MAYBE_PAUSED,
+      }
+    case 'not_configured':
+      return {
+        kind: 'service',
+        heading: 'The analysis service could not be reached',
+        message:
+          'The site’s connection to the analysis service is not set up, so new analyses cannot run. This is a problem in ATUS Explorer’s deployment, not in your analysis.',
+        hint: STILL_WORKS,
+      }
+    case 'origin_timeout':
+      // The API took the request (a Cloudflare 524); retried once.
+      return {
+        kind: 'service',
+        heading: 'The analysis service did not answer in time',
+        message:
+          'The service took the analysis but did not answer within the time its host allows. Trying again may return the finished result.',
+        hint: null,
+      }
+    case 'broken_response':
+      return {
+        kind: 'service',
+        heading: 'The analysis service’s answer broke off',
+        message:
+          'The connection broke off while the service was answering. Trying again usually works.',
+        hint: null,
+      }
+    default:
+      // `platform_error`, or a non-JSON 5xx page: retried until the budget ran out.
+      return {
+        kind: 'service',
+        heading: 'The analysis service is unavailable',
+        message: `Its hosting provider answered instead of the service for ${NOT_ANSWERING_FOR}. Try again in a few minutes.`,
+        hint: MAYBE_PAUSED,
+      }
+  }
+}
+
+function detailString(error: ApiError, name: string): string | null {
+  const value = (error.details as Record<string, unknown> | null)?.[name]
+  return typeof value === 'string' ? value : null
+}
+
+/** Seconds until `details.resumes_at` (an ISO timestamp), when the service sent one. */
+function resumesAtSeconds(error: ApiError, now: number): number | null {
+  const resumesAt = detailString(error, 'resumes_at')
+  const at = resumesAt === null ? Number.NaN : Date.parse(resumesAt)
+  return Number.isNaN(at) ? null : Math.ceil((at - now) / 1000)
 }
 
 /** A rate limit asking for more than this is not "a few per minute": no countdown. */
@@ -351,8 +434,7 @@ const LONG_WAIT_SECONDS = 15 * 60
 
 /** The edge governor's budget name (`details.budget`), when it sent one. */
 export function budgetOf(error: ApiError): string | null {
-  const budget = (error.details as { budget?: unknown } | null)?.budget
-  return typeof budget === 'string' ? budget : null
+  return detailString(error, 'budget')
 }
 
 /** "at about 3:45 PM" (local), or "tomorrow at about 3:45 PM". */
@@ -397,18 +479,26 @@ function resetPhrase(retryAfterSeconds: number | null, now: number): string {
 }
 
 /**
- * FastAPI validation details ({errors: [{loc, msg, ...}]}) → short
- * human-readable lines locating each problem. Unknown shapes yield nothing.
+ * Validation details → short human-readable lines locating each problem. The
+ * API's envelope lists `{errors: [{location, message, type}]}` (docs/api.md);
+ * FastAPI's own `{loc, msg}` is read too. Unknown shapes yield nothing.
  */
 function validationDetailLines(details: unknown): string[] {
   const errors = (details as { errors?: unknown })?.errors
   if (!Array.isArray(errors)) return []
   return errors.slice(0, 6).flatMap((entry) => {
-    const item = entry as { loc?: unknown; msg?: unknown }
-    if (typeof item.msg !== 'string') return []
-    const location = Array.isArray(item.loc)
-      ? item.loc.filter((part) => part !== 'body').join('.')
+    const item = entry as {
+      location?: unknown
+      message?: unknown
+      loc?: unknown
+      msg?: unknown
+    }
+    const message = item.message ?? item.msg
+    if (typeof message !== 'string') return []
+    const parts = item.location ?? item.loc
+    const location = Array.isArray(parts)
+      ? parts.filter((part) => part !== 'body').join('.')
       : ''
-    return [location !== '' ? `${location}: ${item.msg}` : item.msg]
+    return [location !== '' ? `${location}: ${message}` : message]
   })
 }

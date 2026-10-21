@@ -96,6 +96,7 @@ describe('ErrorPanel', () => {
 
 describe('validation details (review finding: field errors surfaced)', () => {
   it('lists field-level problems from 422 validation details', () => {
+    // The API's envelope (errors.py validation_details): {location, message, type}.
     const error = new ApiError(
       422,
       'validation_error',
@@ -103,10 +104,15 @@ describe('validation details (review finding: field errors surfaced)', () => {
       {
         errors: [
           {
-            loc: ['body', 'population', 'age_min'],
-            msg: 'Input should be less than or equal to 130',
+            location: ['body', 'population', 'age_min'],
+            message: 'Input should be less than or equal to 130',
+            type: 'less_than_equal',
           },
-          { loc: ['body', 'years', 0], msg: 'Input should be greater than or equal to 2003' },
+          {
+            location: ['body', 'years', 0],
+            message: 'Input should be greater than or equal to 2003',
+            type: 'greater_than_equal',
+          },
         ],
       },
       null,
