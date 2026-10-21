@@ -699,6 +699,14 @@ describe('offline (review round 1)', () => {
     expect(screen.queryByText('Calculating estimate…')).not.toBeInTheDocument()
     // Offline is final: one attempt, not the cold-start budget.
     expect(requests('POST /api/v1/analysis/estimate')).toBe(1)
+
+    // Back online, the failed analysis runs by itself. (networkMode 'always'
+    // turns TanStack Query's refetchOnReconnect off unless it is set.)
+    server.resetHandlers()
+    vi.restoreAllMocks()
+    act(() => onlineManager.setOnline(true))
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('a page opened offline says so instead of "Preparing…" forever', async () => {
@@ -706,6 +714,10 @@ describe('offline (review round 1)', () => {
     server.use(http.get(api('/meta'), () => HttpResponse.error()))
     renderApp(sleepRoute)
     expect(await screen.findByRole('alert')).toHaveTextContent('Check your internet connection')
+    server.resetHandlers()
+    vi.restoreAllMocks()
+    act(() => onlineManager.setOnline(true))
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
     expect(screen.queryByText('Preparing the analysis…')).not.toBeInTheDocument()
   })
 })

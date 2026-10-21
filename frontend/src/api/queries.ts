@@ -21,7 +21,10 @@
  * browser stayed offline, with no request and no message. Running the
  * function lets the request fail at once, and `resilience.ts` presents being
  * offline as final ("check your internet connection"); a query that failed
- * is fetched again when the browser comes back online.
+ * is fetched again when the browser comes back online. That needs
+ * `refetchOnReconnect: true` stated: with networkMode 'always' TanStack Query
+ * turns it off by default. Loaded data never goes stale (`staleTime:
+ * Infinity`), so a reconnect refetches only queries that have no data.
  */
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 
@@ -48,6 +51,7 @@ const METADATA_QUERY = {
   retry: false,
   refetchOnWindowFocus: false,
   networkMode: 'always',
+  refetchOnReconnect: true,
 } as const
 
 const META_QUERY_KEY = ['meta'] as const
@@ -169,6 +173,7 @@ export function useAnalysis<Op extends Operation>(
     retry: false,
     refetchOnWindowFocus: false,
     networkMode: 'always',
+    refetchOnReconnect: true,
   })
 }
 
