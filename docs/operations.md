@@ -828,8 +828,8 @@ The summary of every Deploy run has a "Rollback" table: the build, image digest 
   ```
 
   Then move the GHCR tag `live` back. `live` is the Image URL Render's service is configured with ([owner step 2.7](deployment.md#2-render-free-web-service)); until it moves, `deep-check.yml` fails on the build, and a Render deploy not made through the hook would bring back the image you rolled away from.
-  - **Within 30 days of the Deploy run that deployed that digest:** Actions → that run → job `promote` → Re-run. GitHub re-runs a job only "up to 30 days after its initial run" (docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs, read 2026-10-21).
-  - **Later, by hand** (what `promote` does; needs the `write:packages` scope on your gh token, `gh auth refresh -s write:packages` once):
+  - **Within 30 days of the Deploy run that deployed that digest:** Actions → that run → job `promote` → Re-run. GitHub re-runs a job only "up to 30 days after its initial run" (docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs, read 2026-10-21). **First check that no other Deploy run is in progress or waiting for approval** (`gh run list --workflow deploy.yml --limit 5`): `deploy.yml` has one workflow-level concurrency group (`deploy-production`), so the re-run would wait behind that run, possibly for days if it waits for approval, and a later Deploy dispatch would cancel the waiting re-run. Reject the pending run's deployment (that run → Review deployments → Reject) or cancel it (`gh run cancel <id>`), or move the tag by hand as below.
+  - **Later, or while another Deploy run is pending, by hand** (what `promote` does; needs the `write:packages` scope on your gh token, `gh auth refresh -s write:packages` once):
 
     ```bash
     gh auth token | docker login ghcr.io -u Nathan98000 --password-stdin

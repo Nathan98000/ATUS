@@ -580,6 +580,8 @@ jobs:
             \`RENDER_ORIGIN=... python scripts/ops/render_deploy.py wait --expect-build <previous build>\`.
             Then move the GHCR tag \`live\` back to it: re-run job \`promote\` of the Deploy run that
             deployed it (GitHub allows that for 30 days; later by hand, docs/operations.md, "Rollback").
+            While another Deploy run is in progress or waits for approval, that re-run waits behind it
+            (one concurrency group): reject that run first, or move the tag by hand.
             GHCR keeps the last 20 digests and \`live\`.
           - **Edge:** \`cd edge && npx --no-install wrangler rollback <previous version id> --message "rollback"\`
             (without an id: the version before the current one), then
@@ -634,6 +636,8 @@ jobs:
     # the digest that commit ran as, for the next run's rollback notes. Re-run
     # this job of an earlier run to move `live` back after an API rollback
     # (GitHub re-runs jobs for 30 days; after that, by hand: operations.md).
+    # The re-run joins the workflow's concurrency group, so it waits behind any
+    # Deploy run in progress or awaiting approval (operations.md "Rollback").
     needs: [push, deploy, browser-smoke]
     runs-on: ubuntu-24.04
     timeout-minutes: 10

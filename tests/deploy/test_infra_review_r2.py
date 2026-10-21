@@ -300,3 +300,28 @@ def test_the_deploy_runbook_says_not_every_main_commit_gets_ci():
     for text in ("runs CI on its head only", "cancelled when a newer push", "gh run rerun",
                  "tag a commit whose CI passed"):
         assert text in step, text
+
+
+# --- promote-rerun-queues-behind-pending-deploy ------------------------------------------
+
+
+def test_the_rollback_says_a_promote_rerun_waits_behind_a_pending_deploy():
+    """promote-rerun-queues-behind-pending-deploy: deploy.yml has one workflow-level
+    concurrency group, so re-running `promote` of an earlier run (the documented way to
+    move `live` back after an API rollback) waits behind any Deploy run in progress or
+    awaiting approval, and a later dispatch cancels it. Every place that gives that step
+    says so and offers the way out (reject the pending run, or move the tag by hand)."""
+    deploy = yaml.safe_load(_read(WORKFLOWS / "deploy.yml"))
+    assert deploy["concurrency"] == {"group": "deploy-production", "cancel-in-progress": False}
+    assert all("concurrency" not in job for job in deploy["jobs"].values())
+    api = _flat(_section(_read(OPERATIONS), "### Rollback", "- **Edge**"))
+    assert "no other Deploy run is in progress or waiting for approval" in api
+    for text in ("Reject", "gh run cancel", "while another Deploy run is pending, by hand"):
+        assert text in api, text
+    rollback = _section(_read(DEPLOYMENT), "### Rollback", "- **Data:**")
+    step = _flat(rollback[rollback.index("3. move the GHCR tag `live` back"):])
+    assert "while another Deploy run is in progress or waiting for approval" in step
+    assert "imagetools create" in step and "rejecting that pending run" in step
+    summary = _flat(_read(WORKFLOWS / "deploy.yml"))
+    assert "While another Deploy run is in progress or waits for approval, that re-run waits" \
+        in summary
