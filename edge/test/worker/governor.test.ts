@@ -350,6 +350,28 @@ describe('Durable Object row budget (Workers Free: 100k rows written, 5M read pe
     expect(firstAdmit.read + secondAdmit.read).toBeLessThanOrEqual(30)
   })
 
+  it('writes at most 5 rows for any settle, and at most 3 for a refunded one with db;dur=0', async () => {
+    // A settle that refunds counts and is also charged compute (a data-
+    // availability refusal with DB time, or an API answer without
+    // Server-Timing) deletes its lease and writes the day twice (refund,
+    // charge), the state and the prefix's compute: 5 rows. What a client can
+    // cause to be refunded (sheds, waking, 4xx and cache reuse, all with
+    // db;dur=0 or not reached) writes at most 3.
+    const clock = controlClock(T)
+    const kinds: SettleKind[] = ['not_reached', 'shed', 'rejected', 'reused', 'computed']
+    for (const kind of kinds) {
+      for (const dbMs of [0, 1000, null]) {
+        const lease = await admitted(`${kinds.indexOf(kind)}`.repeat(32))
+        clock.advance(2 * S)
+        const { written } = await rowsDuring(() => settle(lease, kind, dbMs))
+        expect(written, `${kind} db=${dbMs}`).toBeLessThanOrEqual(5)
+        if (kind === 'not_reached' || (kind !== 'computed' && dbMs === 0)) {
+          expect(written, `${kind} db=${dbMs}`).toBeLessThanOrEqual(3)
+        }
+      }
+    }
+  })
+
   it('writes at most 5 rows per metadata lookup, and none to deny one', async () => {
     controlClock(T)
     const first = await rowsDuring(() => governor().admitLookup({ prefix: PREFIX }))
@@ -572,19 +594,23 @@ async function prefixCuS(prefix = PREFIX, dayName = TODAY): Promise<number> {
 
 describe("each network's share of the day's compute", () => {
   /**
-   * One network's cheap analyses (80 ms of DB time), 7 minutes apart so none
-   * shares another's wake session: each is charged ~610 CU-s.
+   * One network's analyses, each settled a second after admission with
+   * `dbMs` of DB time, the next admitted `gap` after that. By default cheap
+   * ones (80 ms) 7 minutes apart, so none shares another's wake session:
+   * each is charged ~610 CU-s.
    */
   async function spaced(
     clock: ReturnType<typeof controlClock>,
     prefix: string,
+    gap = 7 * MIN,
+    dbMs = 80,
   ): Promise<{ admitted: number; denial: Denied | null }> {
     for (let count = 0; count < 60; count += 1) {
       const result = await admit(prefix)
       if (!result.ok) return { admitted: count, denial: result }
       clock.advance(S)
-      await settle(result.leaseId, 'computed', 80)
-      clock.advance(7 * MIN)
+      await settle(result.leaseId, 'computed', dbMs)
+      clock.advance(gap)
     }
     return { admitted: 60, denial: null }
   }
@@ -615,6 +641,27 @@ describe("each network's share of the day's compute", () => {
         PREFIX_DAILY_CU_SHARE * ceilingCuHours,
         4,
       )
+    },
+  )
+
+  it.each([
+    ['conservative', 11],
+    ['ground-truth', 54],
+  ] as const)(
+    "also holds a real visitor's continuous run of analyses, a minute apart (%s: %i)",
+    async (mode, expected) => {
+      // The price of the share, stated in ADR-015 row 4: one wake session
+      // grows with its length, so a network running novel analyses without a
+      // break is refused after about 11 minutes a day (conservative) or 54
+      // (ground truth), where before it could run its 60.
+      const start = Date.UTC(2036, 9, 20, 0, 5)
+      const clock = controlClock(start)
+      if (mode === 'ground-truth') await seedGroundTruth(clock.now())
+      const run = await spaced(clock, PREFIX, MIN - S, 1000)
+      expect(run.admitted).toBe(expected)
+      expect(run.denial).toMatchObject({ code: 'rate_limited', budget: 'prefix' })
+      expect((clock.now() - start) / MIN).toBe(expected)
+      expect((await admit(OTHER)).ok).toBe(true)
     },
   )
 

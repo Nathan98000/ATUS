@@ -33,9 +33,11 @@ import { isJsonContentType, toHex } from './http'
 import type { Relayed } from './proxy'
 
 /**
- * API error codes that mean "refused without computing": the API's own load
+ * API error codes that mean "refused, no result": the API's own load
  * shedding, and the data-availability refusals (Neon's quota pause, a data
- * release switch, no data loaded), which run no analysis either.
+ * release switch, no data loaded), which depend on the deployment's state,
+ * not on the request. Counts are refunded; DB time they report (a version
+ * change found after computing) is still charged.
  */
 const SHED_CODES = new Set([
   'overloaded',

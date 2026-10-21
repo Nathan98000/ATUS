@@ -361,3 +361,29 @@ def test_docs_scope_the_security_headers_to_worker_responses():
     assert "unknown HTTP method" in r8 and "Content-Length" in r8
     c4 = _row(SECURITY.read_text(), "- **Edge.** An analysis POST")
     assert "refused before the body is read" not in c4 and "(R8)" in c4
+
+
+def test_docs_state_what_the_compute_share_leaves_a_real_visitor():
+    """single-network-cu-ceiling-exhaustion, verification: the per-network compute share
+    also stops a real visitor's continuous run (about 11 minutes a day without the Neon
+    key, `governor.test.ts`); the ADR said such a run "costs little more than one"."""
+    adr = ADR_015.read_text()
+    share = _section(adr, "**Each network's share of the compute (row 4).**",
+                     "**Metadata lookups.**")
+    assert "costs little more than one" not in share
+    assert "about 11 minutes a day in conservative mode and about 54 with ground truth" in share
+    assert "about 11 minutes of continuous novel analyses" in _row(adr, "- **Shared networks.**")
+    prefix = _row(DEPLOYMENT.read_text(), "| Per IP prefix (/24 or /48")
+    assert "about 11 minutes a day without the Neon key, about 54 with it" in prefix
+    assert "well under the network's fifth" not in DEPLOYMENT.read_text()
+
+
+def test_adr_015_says_estimates_can_be_passed_and_settles_with_timing_can_overshoot():
+    """conservative-mode-neon-egress-unbounded and settled-charge-exceeds-provisional,
+    verification: the light estimate was described as an upper bound ("at most 61,892 B"),
+    and the overshoot text implied a settle with Server-Timing could not overshoot."""
+    adr = ADR_015.read_text()
+    model = next(line for line in adr.splitlines() if line.startswith("- **Model error.**"))
+    assert "at most 61,892 B" not in model and "may pass 64 KiB" in model
+    assert "such a settle can overshoot too" in adr
+    assert "light at most 61,892 B" not in CONSTANTS.read_text()

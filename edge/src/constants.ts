@@ -145,9 +145,11 @@ export const EGRESS_DAILY_CONSERVATIVE_BYTES = EGRESS_STOP_BYTES / 31
 /**
  * Neon egress charged per analysis that touched the database, until ground
  * truth replaces it. Sized from DB->API bytes measured on the full database
- * (review r1, 2026-10-21): light at most 61,892 B (7-year pooled or trend);
- * heavy 392,464 B for a 22-year compare, and up to 242,394 B for one side of
- * a narrow 22-year population, so a compare of two such sides fits 512 KiB.
+ * (review r1, 2026-10-21): light 61,892 B for a broad 7-year pooled estimate
+ * or trend (a narrow population moved about a quarter more per year, so a
+ * light analysis may pass 64 KiB: an estimate, not a bound); heavy 392,464 B
+ * for a 22-year compare, and up to 242,394 B for one side of a narrow 22-year
+ * population, so a compare of two such sides fits 512 KiB.
  */
 export const EGRESS_ESTIMATE_BYTES = { light: 64 * 1024, heavy: 512 * 1024 } as const
 
