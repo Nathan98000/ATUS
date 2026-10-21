@@ -105,9 +105,11 @@ interface LogRecord {
 export default {
   async fetch(request, env, ctx): Promise<Response> {
     const url = new URL(request.url)
-    // Only /api paths should arrive (run_worker_first); locally, wrangler
-    // serves the SPA fallback for every other unmatched path without invoking
-    // the Worker. Should one arrive anyway, the assets binding answers it.
+    // run_worker_first sends /api paths here. Cloudflare also invokes the
+    // Worker for a non-navigation request that matches no asset (an unfurler
+    // fetching a share link, a stale tab's missing /snap file; metered,
+    // ADR-011 "Request flow"); locally, wrangler dev treats those as
+    // navigations. The assets binding answers them with the SPA fallback.
     if (!isApiPath(url.pathname)) return env.ASSETS.fetch(request)
     return handleApi(request, url, env, ctx)
   },

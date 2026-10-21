@@ -12,8 +12,9 @@
 # Account Analytics: Read) and CLOUDFLARE_ANALYTICS_ACCOUNT, one more request
 # to Cloudflare's GraphQL Analytics API judges the account's Worker requests
 # today against Workers Free's 100,000 a day. Render's outbound bandwidth has
-# no monitor (it needs an account-wide Render API key): the weekly
-# schedules-check summary reminds the owner to look at it.
+# no monitor (it needs an account-wide Render API key): it is an item of the
+# owner checklist (docs/deployment.md, "Owner checklist"), which the owner
+# opens weekly; no notification carries it.
 name: Quota report
 
 on:

@@ -405,8 +405,11 @@ the first read of each process (only an analysis that sees the version
 change forces a new read). If a read fails while an earlier snapshot exists,
 that snapshot keeps answering (**stale if error**), and the database is tried
 again after at most 30 s; uncached analyses still need the database and fail
-with the usual 503. `/ready` never uses a pinned or stale snapshot. While the
-snapshot is usable:
+with the usual 503. `/ready` never uses a pinned or stale snapshot, but it does
+answer from a snapshot younger than `ATUS_API_SNAPSHOT_TTL_S` (600 s in
+production) without contacting the database: its `"database": "ok"` then means
+the database answered within that time, and `snapshot_age_s` says how long ago.
+While the snapshot is usable:
 
 - `/meta`, `/activities`, `/activities/{code}` and `/population/metadata`
   answer from memory;

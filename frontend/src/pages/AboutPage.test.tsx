@@ -5,6 +5,7 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
+import { PREWAKE_INTERVAL_MS } from '../api/prewake'
 import { renderWithProviders } from '../test/render'
 import { AboutPage } from './AboutPage'
 
@@ -44,7 +45,27 @@ describe('About page: privacy and logs', () => {
     const text = section.textContent ?? ''
     expect(text).toContain('Request bodies are never logged.')
     expect(text).toMatch(/full IP address only in memory/)
-    expect(text).toMatch(/keyed hash of the shortened address.*changes every day/)
+    expect(text).toMatch(/keyed hash of the shortened address.*derived anew each day/)
+  })
+
+  it('says deleted usage counts stay restorable for 30 days (review round 2)', () => {
+    // The governor's purge is a DELETE in a SQLite-backed Durable Object, whose
+    // point-in-time recovery reaches back 30 days (docs/security.md, C17).
+    renderWithProviders(<AboutPage />)
+    const text = privacySection().textContent ?? ''
+    expect(text).toMatch(/deletes those counts after each day/)
+    expect(text).toMatch(/restore deleted data for up to 30 days/)
+  })
+
+  it('names both triggers of the empty wake request and its rate (review round 2)', () => {
+    // prewake() runs on entering Explore and from runAnalysis for any analysis
+    // the static snapshot does not hold, at most once per PREWAKE_INTERVAL_MS.
+    renderWithProviders(<AboutPage />)
+    const text = (privacySection().textContent ?? '').replace(/\s+/g, ' ')
+    expect(text).toMatch(
+      /Opening the analysis builder, or an analysis that is not among the pre-computed ones, also sends one empty request/,
+    )
+    expect(text).toContain(`at most once every ${PREWAKE_INTERVAL_MS / 60_000} minutes`)
   })
 
   it('states each provider retention period', () => {

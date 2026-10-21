@@ -445,7 +445,8 @@ class SnapshotStore:
         A failed read raises the database's error unchanged, unless a
         previous trusted snapshot can be served instead (stale if error).
         ``strict`` (readiness) uses the TTL alone: no pinning, no stale
-        snapshot, so the answer reflects the database now.
+        snapshot, so the answer reflects the database as of a read at most
+        ``ttl_s`` old (``age_s()`` says how old).
         """
         snapshot = self._usable(strict)
         if snapshot is None:

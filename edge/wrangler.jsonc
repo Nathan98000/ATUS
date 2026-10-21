@@ -1,9 +1,12 @@
 // Cloudflare Worker for the public ATUS origin (ADR-011).
 //
 // One workers.dev origin serves the SPA and the static result snapshot as
-// static assets (free, never invokes the Worker), and runs this Worker only
-// for `/api` and `/api/*`, where it proxies an allowlist of routes to the
-// never-published Render origin.
+// static assets (free: a request for a file that exists, or a navigation, never
+// invokes the Worker), and runs this Worker first for `/api` and `/api/*`,
+// where it proxies an allowlist of routes to the never-published Render
+// origin. A non-navigation request that matches no file (an unfurler fetching
+// a share link, a stale tab's missing /snap file) also invokes it, and is
+// metered (ADR-011 "Request flow").
 //
 // Invariants asserted by test/node/config.test.ts (and so by CI, ADR-011 "Deploy"):
 //   - no `cache` block: Workers Cache bills requests that are otherwise free;

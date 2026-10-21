@@ -484,7 +484,7 @@ facts are `null`, never guessed. File names are
 
 ```bash
 npm test          # unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 65 Playwright runs: 37 tests in Chromium desktop, 2 mobile,
+npm run test:e2e  # 79 Playwright runs: 50 tests in Chromium desktop, 3 mobile,
                   # and the 13 @core journeys again in Firefox and in WebKit
 npx playwright install firefox webkit   # once, for the cross-browser projects
 ../scripts/e2e_in_container.sh --project firefox   # Firefox where it cannot launch
@@ -492,7 +492,10 @@ npx playwright install firefox webkit   # once, for the cross-browser projects
 ```
 
 The E2E counts are the tests declared in `e2e/*.spec.ts` and the projects in
-`playwright.config.ts`; the CI test report gives the per-run counts.
+`playwright.config.ts`, as `npx playwright test --list` prints them; the CI
+test report gives the per-run counts.
+`tests/deploy/test_docs_accuracy_r2.py` compares the comment above with that
+listing wherever `frontend/node_modules` is installed.
 
 - Unit: formatters, URL spec round-trips (including non-ASCII labels and
   malformed links), builder state ⇄ spec conversion, lexicon index, API

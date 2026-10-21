@@ -389,10 +389,24 @@ def test_configuration_reference_matches_the_published_openapi_schema():
     assert "`frontend/openapi.json`" in row
 
 
+def _workflow_credentials() -> set[str]:
+    """Every credential a workflow reads as `secrets.NAME` (identifiers such as account
+    ids and the origin URL excluded; GITHUB_TOKEN is the run's own)."""
+    names: set[str] = set()
+    for path in sorted((REPO_ROOT / ".github" / "workflows").glob("*.yml")):
+        names.update(re.findall(r"secrets\.([A-Z][A-Z0-9_]*)", path.read_text()))
+    return {name for name in names - {"GITHUB_TOKEN"}
+            if re.search(r"TOKEN|KEY|HOOK|SECRET|PASSWORD", name)}
+
+
 def test_every_secret_has_a_rotation_entry():
+    """The list is the API's and the Worker's secrets plus every credential the
+    workflows read, so a secret added to a workflow (review round 2: the optional
+    analytics token) fails here until it has a procedure."""
     reference = _configuration_reference()
     rotation = reference[reference.index("### Rotation"):]
-    for secret in ("ATUS_EDGE_SECRETS", "EDGE_AUTH_SECRET", "atus_api", "ATUS_OPS_TOKEN",
-                   "OPS_TOKEN", "IP_HMAC_KEY", "CLOUDFLARE_API_TOKEN", "RENDER_DEPLOY_HOOK_URL",
-                   "NEON_API_KEY"):
+    credentials = _workflow_credentials()
+    assert {"CLOUDFLARE_API_TOKEN", "RENDER_DEPLOY_HOOK_URL", "EDGE_OPS_TOKEN"} <= credentials
+    for secret in sorted({"ATUS_EDGE_SECRETS", "EDGE_AUTH_SECRET", "atus_api", "ATUS_OPS_TOKEN",
+                          "OPS_TOKEN", "IP_HMAC_KEY", "NEON_API_KEY"} | credentials):
         assert secret in rotation, secret

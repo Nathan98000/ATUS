@@ -57,7 +57,7 @@ A hit returns the stored bytes with status 200, `X-Cache: edge`, the stored vers
 
 ### Static snapshot (L0)
 
-Layout (all static assets under the SPA's `dist`, so they never invoke the Worker):
+Layout (all static assets under the SPA's `dist`, so a request for one of these files never invokes the Worker; a non-navigation request for a file that is not there, such as a tab still on the previous snapshot asking for one of its files, does: ADR-011 "Request flow", corrected in review round 2):
 
 ```text
 snap/current.json                    pointer (no-cache): snapshot_id, data_version, analytics_version,
@@ -88,7 +88,7 @@ The SPA reads the manifest and never probes for a file, because the SPA fallback
 
 One SQLite-backed Durable Object named `global`. The Worker calls it for analysis POSTs that missed KV, and for metadata GETs the snapshot could not answer. Static files, KV hits, snapshot answers, health and wake never call it.
 
-**Who is charged.** An HMAC of the client network: IPv4 `/24` (also for IPv4-mapped IPv6), IPv6 `/48`, from `CF-Connecting-IP`; requests without a parseable address share one `unknown` bucket. The HMAC is `HMAC-SHA256(HMAC-SHA256(IP_HMAC_KEY, "atus-ip-prefix|<UTC date>"), prefix)` truncated to 128 bits, computed in the Worker. The governor never sees an address, the key rotates every UTC day, and prefix rows are deleted at the first event after 00:00 UTC (a midnight alarm makes sure that happens without traffic).
+**Who is charged.** An HMAC of the client network: IPv4 `/24` (also for IPv4-mapped IPv6), IPv6 `/48`, from `CF-Connecting-IP`; requests without a parseable address share one `unknown` bucket. The HMAC is `HMAC-SHA256(HMAC-SHA256(IP_HMAC_KEY, "atus-ip-prefix|<UTC date>"), prefix)` truncated to 128 bits, computed in the Worker. The governor never sees an address. The derived key changes every UTC day, but `IP_HMAC_KEY` itself changes only when rotated, so whoever holds it can derive any day's key. Prefix rows are deleted at the first event after 00:00 UTC (a midnight alarm makes sure that happens without traffic), and the Durable Object's point-in-time recovery can still restore them for 30 days (review round 2; [`../security.md`](../security.md) C17).
 
 **Cost class.** Heavy when `len(years) × (2 for a compare, else 1) ≥ 8`, the API's lane rule (ADR-012); also heavy when the body is not JSON with a `years` list (the API rejects those, and they are then refunded).
 
@@ -144,7 +144,7 @@ The network count (the 60) is refunded for `not_reached` and `shed`, but every a
 ### Write privileges
 
 - **L0:** only the deploy workflow, by publishing static assets. Files are immutable per `SNAPSHOT_ID`.
-- **L1:** only the Worker, through its binding, and only under the gate. No runtime holds a KV API token. The API cannot write. The Cloudflare API token that deploys the Worker may also be able to write KV; if it leaks, rotate it and bump `EPOCH`.
+- **L1:** only the Worker, through its binding, and only under the gate. No runtime holds a KV API token. The API cannot write. The Cloudflare API token that deploys the Worker may also be able to write KV; if it leaks, rotate it and bump `EPOCH`. Rotate every Worker secret too: code deployed with the token can read them all and send them out (review round 2; [`../deployment.md`](../deployment.md#rotation), "Rotation", item 5).
 - **Governor:** only the Worker, through its binding. The ops endpoint only reads.
 - **L2:** the API process.
 
@@ -227,9 +227,9 @@ A JSON round trip is lossy (`1e400` becomes `null`, and `1.0` becomes `1`), so t
 - **Render outbound through the Worker.** Bounded per day as follows. PROJECTION from measured sizes:
   - analyses that keep their counts: ≤ 600 × ~40 KB (SQL text to Neon plus the gzipped answer), ≈ 0.74 GB a month;
   - metadata lookups: ≤ 2,000 × ~9 KB (the whole lexicon, gzipped; the Worker always asks for gzip), ≈ 0.6 GB a month;
-  - `/api/health`, which is not governed: ~0.5 KB each, ≈ 1.5 GB a month even if one client spent the Worker's whole 100,000 requests a day on it for a month.
+  - `/api/health`, which is not governed: 571 B each from the production-mode API itself (505 B of headers, a 66 B body; [counted in review round 2](../evidence/phase5/review-r2-bytes/README.md)), ≈ 1.8 GB a month even if one client spent the Worker's whole 100,000 requests a day on it for a month. Render's proxy headers come on top and are unmeasured. (Review round 2 replaced an earlier estimate of half a kilobyte per answer, which no measurement supported.)
 
-  That is about 2.8 GB of the 5 GB in the worst case, so no single client can suspend Render for the month. Admissions that end refunded (Render waking, the API shedding, a 4xx decided before any statement, a reuse) are bounded per network only, at 300 a day with answers of a few KB each, about 30 MB a month per network. It would take dozens of networks, sustained for the whole month, to spend the rest (R1 in `../security.md`). Direct requests to onrender.com are outside the Worker (ADR-011, accepted risk 8).
+  That is about 3.1 GB of the 5 GB in the worst case before Render's own headers, so no single client can suspend Render for the month as long as Render adds less than about 600 B to each answer (every 100 B more adds 0.31 GB a month); ADR-011 "Unknowns" measures it after deploy. Admissions that end refunded (Render waking, the API shedding, a 4xx decided before any statement, a reuse) are bounded per network only, at 300 a day with answers of a few KB each, about 30 MB a month per network. It would take dozens of networks, sustained for the whole month, to spend the rest (R1 in `../security.md`). Direct requests to onrender.com are outside the Worker (ADR-011, accepted risk 8).
 
 ## Verification
 

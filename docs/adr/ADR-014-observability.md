@@ -134,7 +134,7 @@ Cadence and budget as in [`../deployment.md`](../deployment.md) (traffic model a
 | Edge check | every 30 min (`:17`, `:47`) | `/api/_edge/health`, answered by the Worker | nothing behind the Worker | 1,488 runs, 1 Worker request each |
 | Deep check | every 6 h (`17 */6 * * *`) | `/api/health` → origin `/health` | Render (spin-up), never Neon | 124 runs, 1 Worker request and up to 1 Render wake each |
 | Quota report | daily | the Worker's `/api/_ops/budget` | nothing behind the Worker | 31 runs, 1 Worker request each |
-| Schedule check | monthly runbook | re-enables auto-disabled workflows | — | — |
+| Schedule check | weekly workflow (Monday 09:41 UTC; first planned as a monthly step by hand, see Amendments) | the GitHub API only: fails when a schedule is disabled or a monitor has stopped; re-enables nothing | — | 4–5 runs |
 
 - **No monitor touches the database.** The only check that reaches the API calls `/health`, so Neon wakes only for real traffic (brief §10).
 - **Alerting is a failed workflow**, which emails the owner. The quota report fails when any budget is above 70% of its pro-rated value (ADR-011).
@@ -177,7 +177,7 @@ The decisions are unchanged. This section records where the implementation diffe
   - It runs daily at 22:05 UTC, so it reads the governor's counters before their 00:00 UTC reset.
   - It runs in the GitHub environment `ops`, with the Worker's ops token stored as `EDGE_OPS_TOKEN`, and alerts at a threshold of 0.7.
   - The pro-rating rules are in [`../deployment.md`](../deployment.md#monitoring-and-alerting-0). The per-network cap is reported but never alerts.
-  - Amended in review round 1: the governor's budgets say nothing about the account's Worker requests or Render's outbound bandwidth. With an optional read-only Cloudflare token (Account Analytics: Read) the report also judges the Worker requests today against the pro-rated 100,000 (GraphQL Analytics API, `workersInvocationsAdaptive`; availability on Workers Free undocumented). Render outbound stays unmonitored, because reading it needs an account-wide Render API key; the weekly schedules-check summary reminds the owner to look.
+  - Amended in review round 1: the governor's budgets say nothing about the account's Worker requests or Render's outbound bandwidth. With an optional read-only Cloudflare token (Account Analytics: Read) the report also judges the Worker requests today against the pro-rated 100,000 (GraphQL Analytics API, `workersInvocationsAdaptive`; availability on Workers Free undocumented). Render outbound stays unmonitored, because reading it needs an account-wide Render API key. The owner has to look: the weekly schedules-check run lists it in its summary, which no email carries, since a passing run notifies no one (review round 2; [`../deployment.md`](../deployment.md#owner-checklist), "Owner checklist").
 - **Schedule check: a weekly workflow (Monday 09:41 UTC, off the hour), not a runbook step.** It re-enables nothing: with a read-only token (`actions: read`) it can only fail, and so email the owner, when:
   - a scheduled workflow is not active;
   - a monitor's last scheduled run is too old;
