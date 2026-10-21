@@ -241,6 +241,49 @@ class TestDatabaseTls:
         assert STACK_PASSWORD not in str(info.value) and "neon.tech" not in str(info.value)
 
     @pytest.mark.parametrize(
+        ("variable", "value", "allowed"),
+        [
+            # libpq dials PGHOSTADDR instead of resolving the URL's host
+            ("PGHOSTADDR", "203.0.113.5", False),
+            ("PGHOSTADDR", "127.0.0.1", True),
+            # libpq reads the service's file, whose hostaddr could be anywhere
+            ("PGSERVICE", "prod", False),
+            ("PGSERVICE", "", True),
+        ],
+    )
+    def test_local_stack_hatch_reads_libpq_routing_from_the_environment(
+        self, monkeypatch, variable, value, allowed
+    ):
+        """What libpq takes from the environment when the URL does not say
+        is held to the same rule as the URL: in the mapping load_settings
+        reads, and in the process environment check_api_settings checks."""
+        url = "postgresql://atus_api:pw@db:5432/atus"
+        monkeypatch.delenv("PGHOSTADDR", raising=False)
+        monkeypatch.delenv("PGSERVICE", raising=False)
+        if allowed:
+            settings = load_settings(stack_env(url, **{variable: value}))
+            monkeypatch.setenv(variable, value)
+            check_api_settings(settings)
+            return
+        with pytest.raises(ConfigError, match="local-stack-only is accepted only") as info:
+            load_settings(stack_env(url, **{variable: value}))
+        assert value not in str(info.value)
+        settings = load_settings(stack_env(url))  # the mapping says nothing ...
+        monkeypatch.setenv(variable, value)  # ... but libpq would read the process's
+        with pytest.raises(ConfigError, match="local-stack-only is accepted only"):
+            check_api_settings(settings)
+        # A URL that sets the parameter itself overrides the environment.
+        if variable == "PGHOSTADDR":
+            check_api_settings(replace(settings, database_url=f"{url}?hostaddr=127.0.0.1"))
+
+    def test_verified_urls_ignore_libpq_routing_in_the_environment(self, monkeypatch):
+        """With verify-full the certificate is checked against the URL's host
+        whatever address libpq dials, so the environment does not matter."""
+        monkeypatch.setenv("PGHOSTADDR", "203.0.113.5")
+        monkeypatch.setenv("PGSERVICE", "prod")
+        check_api_settings(load_settings(prod_env(PGHOSTADDR="203.0.113.5", PGSERVICE="prod")))
+
+    @pytest.mark.parametrize(
         ("host", "local"),
         [
             ("db", True), ("pgbouncer", True), ("atus-stack_db", True), ("", False),

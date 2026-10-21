@@ -264,7 +264,9 @@ def is_local_stack_host(host: str) -> bool:
     a Unix-socket directory, ``localhost``, a loopback address, Docker
     Desktop's ``host.docker.internal``, or a compose service name (one DNS
     label starting with a letter: no dots, so no public DNS name). An empty
-    entry is not: libpq would take the host from ``PGHOST`` instead."""
+    entry is not: libpq would take the host from ``PGHOST`` instead. A single
+    label is still resolved by the container's resolver (whose search domains
+    could extend it); on the stack, Docker's embedded DNS answers it."""
     if not host:
         return False
     if host.startswith(("/", "@")):  # a Unix-domain socket directory (or abstract name)
@@ -284,7 +286,9 @@ def _is_loopback_address(text: str) -> bool:
         return False
 
 
-def check_database_tls(database_url: str, tls_mode: str) -> None:
+def check_database_tls(
+    database_url: str, tls_mode: str, environ: Mapping[str, str] | None = None
+) -> None:
     """Production's rule for the database connection (ADR-011 "TLS").
 
     ``ATUS_DATABASE_URL`` itself must set ``sslmode=verify-full`` or
@@ -297,17 +301,24 @@ def check_database_tls(database_url: str, tls_mode: str) -> None:
     is accepted only when the URL names its hosts itself and every ``host``
     is a local-stack host (:func:`is_local_stack_host`), every ``hostaddr``
     a loopback address, and no ``service`` (whose file could name any host)
-    is used, so it can never disable verification for a database elsewhere.
-    Messages never echo the URL.
+    is used. libpq also takes ``hostaddr`` and ``service`` from
+    ``PGHOSTADDR`` and ``PGSERVICE`` when the URL does not set them, so those
+    in ``environ`` (default: the process environment, which libpq reads) are
+    held to the same rule. The hatch thus never applies to a host the URL
+    does not name as local (a single-label name is still resolved by the
+    container's resolver: :func:`is_local_stack_host`). Messages never echo
+    the URL.
     """
     from psycopg.conninfo import conninfo_to_dict
 
     params = conninfo_to_dict(database_url)  # validated by _validate_database_url
     if tls_mode == DATABASE_TLS_LOCAL_STACK:
+        environ = os.environ if environ is None else environ
         hosts = str(params.get("host") or "").split(",")
-        addresses = [a for a in str(params.get("hostaddr") or "").split(",") if a]
+        hostaddr = params.get("hostaddr") or environ.get("PGHOSTADDR") or ""
+        addresses = [a for a in str(hostaddr).split(",") if a]
         if (
-            not params.get("service")
+            not (params.get("service") or environ.get("PGSERVICE"))
             and all(is_local_stack_host(h.strip()) for h in hosts)
             and all(_is_loopback_address(a.strip()) for a in addresses)
         ):
@@ -316,7 +327,8 @@ def check_database_tls(database_url: str, tls_mode: str) -> None:
             "ATUS_DATABASE_TLS=local-stack-only is accepted only for a database on the "
             "local stack, named in ATUS_DATABASE_URL itself (a compose service name "
             "without dots, localhost or a loopback address, host.docker.internal, or a "
-            "Unix socket; no service file); ATUS_DATABASE_URL names another or no host. "
+            "Unix socket; no service file, and no PGSERVICE or non-loopback PGHOSTADDR "
+            "in the environment); ATUS_DATABASE_URL names another or no host. "
             "Remove ATUS_DATABASE_TLS and use sslmode=verify-full"
         )
     sslmode = str(params.get("sslmode") or "")  # libpq compares it case-sensitively
@@ -433,7 +445,7 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
     _validate_database_url(database_url)
     database_tls = env.choice("ATUS_DATABASE_TLS", DATABASE_TLS_VERIFY, DATABASE_TLS_MODES)
     if production:
-        check_database_tls(database_url, database_tls)
+        check_database_tls(database_url, database_tls, environ)
 
     max_inflight = env.integer("ATUS_API_MAX_INFLIGHT", 2, 1, 64)
     max_inflight_heavy = env.integer("ATUS_API_MAX_INFLIGHT_HEAVY", 1, 1, 64)
@@ -504,7 +516,8 @@ def check_api_settings(settings: Settings) -> None:
     :func:`load_settings`) and at least one edge secret: without one, the
     provider hostname would serve the API to anyone, bypassing every
     protection that lives at the edge. The database URL rules are checked
-    again here, so programmatically built settings (``Settings(...)``,
+    again here (against the process environment, which is what libpq will
+    read), so programmatically built settings (``Settings(...)``,
     ``dataclasses.replace``) cannot skip them.
     """
     if not settings.is_production:
