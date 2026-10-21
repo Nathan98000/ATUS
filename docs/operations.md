@@ -1043,7 +1043,7 @@ Restore every release artifact once, as production will, into a fresh cluster wi
    ```
 
    Then delete `drill.env`.
-6. **Optionally smoke the image on the same dump**, after the teardown: the stack's `dump` profile restores it into a stack of its own and runs the smoke probe against it. Not while the drill runs: that stack's `db` publishes the same `127.0.0.1:${ATUS_STACK_DB_PORT}` as the drill's (5470 by default), and its `roles` service re-applies `roles.sql` with the stack's `ATUS_STACK_API_DB_PASSWORD`, which would replace the `atus_api` password that `drill.env` holds. Set `ATUS_STACK_DUMP` in `.env.stack` to the dump, then:
+6. **Optionally smoke the image on the same dump**, after the teardown: the stack's `dump` profile restores it into a stack of its own and runs the smoke probe against it. Not while the drill runs: that stack's `db` publishes the same `127.0.0.1:${ATUS_STACK_DB_PORT}` as the drill's (5470 by default). Nor in the drill's own project (`-p atus-drill`) to share its database: there the stack's `roles` service would re-apply `roles.sql` with the stack's `ATUS_STACK_API_DB_PASSWORD`, replacing the `atus_api` password that `drill.env` holds. Set `ATUS_STACK_DUMP` in `.env.stack` to the dump, then:
 
    ```bash
    docker compose -p atus-drill-smoke --env-file .env.stack -f docker-compose.prod.yml --profile dump up -d --wait api

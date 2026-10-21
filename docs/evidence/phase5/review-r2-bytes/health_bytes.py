@@ -1,7 +1,10 @@
 """Byte count (not timed) of the production-mode API's /health answer, served
 with the options `atus api` passes to uvicorn (server_header off). No database
-is contacted: /health never touches it, and the URL points at a closed port."""
+is contacted: /health never touches it, and the URL points at a closed port.
+Each line's size is that of the line as sent; the request ID and the
+Server-Timing durations are masked in the printout, so no timing is recorded."""
 import os
+import re
 import secrets
 import socket
 import threading
@@ -47,6 +50,8 @@ for label, extra in (("as the Worker's fetch would (keep-alive, gzip accepted)",
     for line in head.split(b"\r\n"):
         name = line.split(b":", 1)[0]
         shown = name + b": <hex>" if name.lower() == b"x-request-id" else line
+        if name.lower() == b"server-timing":
+            shown = re.sub(rb"dur=[0-9.]+", b"dur=*", line)
         print(len(line) + 2, shown.decode())
     print(f"TOTAL {len(head) + 4 + len(body)} B (headers {len(head) + 4} + body {len(body)})")
 srv.should_exit = True

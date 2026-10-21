@@ -1,6 +1,6 @@
 --- as the Worker's fetch would (keep-alive, gzip accepted)
 17 HTTP/1.1 200 OK
-37 date: Wed, 21 Oct 2026 15:39:36 GMT
+37 date: Wed, 21 Oct 2026 16:10:59 GMT
 20 content-length: 66
 32 content-type: application/json
 25 cache-control: no-store
@@ -11,11 +11,11 @@
 69 content-security-policy: default-src 'none'; frame-ancestors 'none'
 45 strict-transport-security: max-age=31536000
 32 x-request-id: <hex>
-38 server-timing: db;dur=0, app;dur=4.9
+38 server-timing: db;dur=*, app;dur=*
 TOTAL 571 B (headers 505 + body 66)
 --- with the edge secret
 17 HTTP/1.1 200 OK
-37 date: Wed, 21 Oct 2026 15:39:36 GMT
+37 date: Wed, 21 Oct 2026 16:10:59 GMT
 20 content-length: 66
 32 content-type: application/json
 25 cache-control: no-store
@@ -26,5 +26,5 @@ TOTAL 571 B (headers 505 + body 66)
 69 content-security-policy: default-src 'none'; frame-ancestors 'none'
 45 strict-transport-security: max-age=31536000
 32 x-request-id: <hex>
-38 server-timing: db;dur=0, app;dur=0.1
+38 server-timing: db;dur=*, app;dur=*
 TOTAL 571 B (headers 505 + body 66)

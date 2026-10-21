@@ -276,6 +276,9 @@ def test_the_health_outbound_bound_uses_the_measured_answer_size():
     """health-outbound-bound-understated: the bound assumed ~0.5 KB per /api/health
     answer; the production-mode API alone sends more."""
     evidence = _read(EVIDENCE / "review-r2-bytes" / "health_bytes.txt")
+    # Byte counts only: the record must not carry the API's Server-Timing durations.
+    assert re.search(r"^\d+ server-timing: ", evidence, re.MULTILINE)
+    assert not re.search(r"dur=\d", evidence), "unmasked Server-Timing duration"
     totals = set(re.findall(r"^TOTAL (\d+) B", evidence, re.MULTILINE))
     assert len(totals) == 1, totals
     size = int(totals.pop())
@@ -350,7 +353,11 @@ def test_the_dump_smoke_never_shares_the_drills_port_and_is_torn_down():
     teardown = drill.index("-p atus-drill --env-file .env.stack -f docker-compose.prod.yml down -v")
     dump_up = [match.start() for match in re.finditer(r"--profile dump up", drill)]
     assert dump_up and min(dump_up) > teardown
-    assert "ATUS_STACK_API_DB_PASSWORD" in drill
+    # The password reset happens only where the stack shares the drill's database,
+    # that is in the drill's own project; a project of its own has a db of its own.
+    (reset,) = [sentence for sentence in re.split(r"(?<=\.) ", _flat(drill))
+                if "ATUS_STACK_API_DB_PASSWORD" in sentence]
+    assert "-p atus-drill" in reset and "drill.env" in reset, reset
     step_2 = _section(_read(DEPLOYMENT), "### 2. Restore drill", "### 3. The image")
     for section in (drill, step_2):
         lines = [line for line in section.splitlines() if "docker compose" in line]
