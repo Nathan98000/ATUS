@@ -312,8 +312,14 @@ def test_the_budget_counts_the_monitors_and_the_workers_cpu_work_as_configured()
     crons = _crons()
     assert crons["edge-check.yml"] == "17,47 * * * *" and crons["deep-check.yml"] == "17 */6 * * *"
     assert crons["quota-report.yml"].endswith("* * *")       # daily
-    deep = int(re.search(r"monitors\.py deep [^\n]*--max-requests (\d+)",
-                         _read(WORKFLOWS / "deep-check.yml")).group(1))
+    # The deep check builds its arguments in a bash array (the optional
+    # --expect-build of the `live` tag), so the budget is not on the
+    # `monitors.py deep` line itself.
+    deep_check = _read(WORKFLOWS / "deep-check.yml")
+    assert "monitors.py deep" in deep_check
+    budgets = re.findall(r"--max-requests (\d+)", deep_check)
+    assert len(budgets) == 1, budgets
+    deep = int(budgets[0])
     monitoring = 48 * 1 + 4 * deep + 1
     text = _read(DEPLOYMENT)
     assert f"1–{deep} Worker requests" in _row(text, "Monitoring")
