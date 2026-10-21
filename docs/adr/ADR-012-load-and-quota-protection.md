@@ -215,6 +215,22 @@ The defaults above come from ADR-011 and the audit. Two things are still open:
 
 No latency or load numbers were measured for this ADR.
 
+### Emulation calibration (2026-10-21)
+
+The §13 runs on the emulation profile are in [`../../loadtests/results/2026-10-21-emulation.md`](../../loadtests/results/2026-10-21-emulation.md). They are local: the release artifact restored into the production-mode stack, the API at 0.1 CPU / 512 MB, and the database at 0.25 CU and 2 CU. Their conclusions for this ADR:
+
+- **`statement_timeout`.** `clamp(3 × p99, 30 s, 85 s)` over the worst cases including F66 gives 85 s at the 0.25 CU floor (p99 70.5 s, the F66 compare by sex) and 30 s at 2 CU (p99 3.0 s). The floor governs, so **85 s stands**.
+  - At the floor that is only 1.2 × the F66 compare's p99.
+  - CPU contention there pushes F66 past it: 88–106 s with two heavy analyses at once, which the heavy lane prevents. The request then gets `analysis_timeout`.
+- **Lanes: 2 in flight, 1 heavy, 5 s wait stand.**
+  - 2 in flight is the throughput optimum at 2 CU.
+  - 1 in flight is better at 0.25 CU for a flood of light analyses only. In a realistic mix at 0.25 CU, however, one lane shed light analyses behind heavy ones (20 sheds, 10 light), where two lanes shed only heavy ones (11).
+  - A second heavy lane makes each heavy analysis 2.6–3.6 × slower at 0.25 CU.
+- **`ATUS_API_MAX_PARALLEL_WORKERS` stays unset.** 0 wins at 0.25 CU (F66 compare 69 → 39 s) but loses at 2 CU (worst-case p99 3.03 → 3.53 s), so ADR-011's rule does not adopt it. If the compute is fixed at 0.25 CU, 0 is the better setting, after the §9 proof.
+- The heavy classifier's audit figures above (~7 s, ~52 s, ~47–49 s at 0.25 CU) predate the release build. The same kinds now take about 1 s (p50 over 59 corpus single-year specs), 21 s and 21–22 s there.
+
+The post-deploy replay on Neon (§16) still has to confirm these values on the real compute.
+
 ## Consequences
 
 - Rejected and cached requests cost no analysis capacity, and while the data snapshot is fresh they cost no SQL either (F14): cache hits, 4xx and the metadata routes run 0 statements, an uncached estimate 4 (6 in PostgreSQL's log, with `BEGIN` and `COMMIT`), a compare 5 (7). These are counted per request by the API and verified against PostgreSQL's `log_statement=all` in a test.

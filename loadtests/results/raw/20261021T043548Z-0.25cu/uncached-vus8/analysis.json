@@ -1,0 +1,274 @@
+{
+ "timed": true,
+ "setup": {
+  "requests": 2,
+  "status": {
+   "200": 2
+  },
+  "error_codes": {}
+ },
+ "overall": {
+  "requests": 62,
+  "status": {
+   "200": 62
+  },
+  "error_codes": {},
+  "x_cache": {
+   "miss": 61,
+   "hit": 1
+  },
+  "expected_outcome": 62,
+  "window_s": 133.157,
+  "throughput_rps": 0.466,
+  "throughput_200_rps": 0.466,
+  "latency_ms": {
+   "n": 62,
+   "min": 1.0,
+   "p50": 16097.1,
+   "p95": 32523.4,
+   "p99": 40807.9,
+   "max": 51692.9,
+   "mean": 16777.3
+  },
+  "latency_200_ms": {
+   "n": 62,
+   "min": 1.0,
+   "p50": 16097.1,
+   "p95": 32523.4,
+   "p99": 40807.9,
+   "max": 51692.9,
+   "mean": 16777.3
+  },
+  "server_db_ms": {
+   "n": 62,
+   "min": 0,
+   "p50": 16092.7,
+   "p95": 32509.4,
+   "p99": 40773.2,
+   "max": 51686.8,
+   "mean": 16766.8
+  },
+  "server_app_ms": {
+   "n": 62,
+   "min": 0.4,
+   "p50": 2.9,
+   "p95": 46.6,
+   "p99": 47.6,
+   "max": 48,
+   "mean": 7.4
+  },
+  "server_db_share_of_latency": 0.9994
+ },
+ "by_endpoint": {
+  "estimate": {
+   "requests": 62,
+   "status": {
+    "200": 62
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 61,
+    "hit": 1
+   },
+   "expected_outcome": 62,
+   "window_s": 133.157,
+   "throughput_rps": 0.466,
+   "throughput_200_rps": 0.466,
+   "latency_ms": {
+    "n": 62,
+    "min": 1.0,
+    "p50": 16097.1,
+    "p95": 32523.4,
+    "p99": 40807.9,
+    "max": 51692.9,
+    "mean": 16777.3
+   },
+   "latency_200_ms": {
+    "n": 62,
+    "min": 1.0,
+    "p50": 16097.1,
+    "p95": 32523.4,
+    "p99": 40807.9,
+    "max": 51692.9,
+    "mean": 16777.3
+   },
+   "server_db_ms": {
+    "n": 62,
+    "min": 0,
+    "p50": 16092.7,
+    "p95": 32509.4,
+    "p99": 40773.2,
+    "max": 51686.8,
+    "mean": 16766.8
+   },
+   "server_app_ms": {
+    "n": 62,
+    "min": 0.4,
+    "p50": 2.9,
+    "p95": 46.6,
+    "p99": 47.6,
+    "max": 48,
+    "mean": 7.4
+   },
+   "server_db_share_of_latency": 0.9994
+  }
+ },
+ "by_endpoint_cache": {
+  "estimate|hit": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 1
+   },
+   "expected_outcome": 1,
+   "window_s": 0.001,
+   "throughput_rps": 965.355,
+   "throughput_200_rps": 965.355,
+   "latency_ms": {
+    "n": 1,
+    "min": 1.0,
+    "p50": 1.0,
+    "p95": 1.0,
+    "p99": 1.0,
+    "max": 1.0,
+    "mean": 1.0
+   },
+   "latency_200_ms": {
+    "n": 1,
+    "min": 1.0,
+    "p50": 1.0,
+    "p95": 1.0,
+    "p99": 1.0,
+    "max": 1.0,
+    "mean": 1.0
+   },
+   "server_db_ms": {
+    "n": 1,
+    "min": 0,
+    "p50": 0,
+    "p95": 0,
+    "p99": 0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 1,
+    "min": 0.4,
+    "p50": 0.4,
+    "p95": 0.4,
+    "p99": 0.4,
+    "max": 0.4,
+    "mean": 0.4
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "estimate|miss": {
+   "requests": 61,
+   "status": {
+    "200": 61
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 61
+   },
+   "expected_outcome": 61,
+   "window_s": 133.157,
+   "throughput_rps": 0.458,
+   "throughput_200_rps": 0.458,
+   "latency_ms": {
+    "n": 61,
+    "min": 256.8,
+    "p50": 16100.9,
+    "p95": 32606.2,
+    "p99": 40986.3,
+    "max": 51692.9,
+    "mean": 17052.3
+   },
+   "latency_200_ms": {
+    "n": 61,
+    "min": 256.8,
+    "p50": 16100.9,
+    "p95": 32606.2,
+    "p99": 40986.3,
+    "max": 51692.9,
+    "mean": 17052.3
+   },
+   "server_db_ms": {
+    "n": 61,
+    "min": 249.9,
+    "p50": 16095.9,
+    "p95": 32594.2,
+    "p99": 40952.1,
+    "max": 51686.8,
+    "mean": 17041.7
+   },
+   "server_app_ms": {
+    "n": 61,
+    "min": 1.5,
+    "p50": 2.9,
+    "p95": 46.6,
+    "p99": 47.6,
+    "max": 48,
+    "mean": 7.5
+   },
+   "server_db_share_of_latency": 0.9994
+  }
+ },
+ "by_kind": {
+  "corpus": {
+   "requests": 62,
+   "status": {
+    "200": 62
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 61,
+    "hit": 1
+   },
+   "expected_outcome": 62,
+   "window_s": 133.157,
+   "throughput_rps": 0.466,
+   "throughput_200_rps": 0.466,
+   "latency_ms": {
+    "n": 62,
+    "min": 1.0,
+    "p50": 16097.1,
+    "p95": 32523.4,
+    "p99": 40807.9,
+    "max": 51692.9,
+    "mean": 16777.3
+   },
+   "latency_200_ms": {
+    "n": 62,
+    "min": 1.0,
+    "p50": 16097.1,
+    "p95": 32523.4,
+    "p99": 40807.9,
+    "max": 51692.9,
+    "mean": 16777.3
+   },
+   "server_db_ms": {
+    "n": 62,
+    "min": 0,
+    "p50": 16092.7,
+    "p95": 32509.4,
+    "p99": 40773.2,
+    "max": 51686.8,
+    "mean": 16766.8
+   },
+   "server_app_ms": {
+    "n": 62,
+    "min": 0.4,
+    "p50": 2.9,
+    "p95": 46.6,
+    "p99": 47.6,
+    "max": 48,
+    "mean": 7.4
+   },
+   "server_db_share_of_latency": 0.9994
+  }
+ }
+}

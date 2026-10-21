@@ -1,0 +1,882 @@
+{
+ "bundle": "20261021T052710Z-2cu",
+ "stage": "timed",
+ "timed": true,
+ "dry_run": false,
+ "profile": "2cu",
+ "ran_alone_before": {
+  "checked_at": "2026-10-21T05:27:19.673831Z",
+  "ran_alone": "yes",
+  "reasons": [],
+  "criteria": "no other load generator process; no other atus-lt-* stack; no other container above 5% of one core in two docker stats samples 3 s apart; the measurement precondition (see precondition.criteria)",
+  "precondition": {
+   "checked_at": "2026-10-21T05:27:17.969102Z",
+   "ok": true,
+   "reasons": [],
+   "criteria": "no process matching scripts/equivalence/replay.py|pytest|playwright|k6|wrangler (other than this run's); no atus-* container besides ['atus-emu-pg', 'atus-postgres', 'atus-wsb-build', 'atus-wsb-drill'] and this run's own; no active query in those databases except this run's",
+   "workload_processes": [],
+   "other_atus_lt_containers": [],
+   "protected_db_activity": {
+    "atus-postgres": {
+     "client_backends": 0,
+     "by_state": {},
+     "active_not_ours": []
+    },
+    "atus-wsb-drill": {
+     "client_backends": 0,
+     "by_state": {},
+     "active_not_ours": []
+    },
+    "atus-wsb-build": {
+     "client_backends": 0,
+     "by_state": {},
+     "active_not_ours": []
+    },
+    "atus-emu-pg": {
+     "client_backends": 0,
+     "by_state": {},
+     "active_not_ours": []
+    }
+   },
+   "load_average_1_5_15": [
+    1.35,
+    1.34,
+    1.46
+   ],
+   "docker_ps": [
+    {
+     "name": "atus-lt-timed-api-1",
+     "image": "atus-api:lt-9afd1b4e2e0e",
+     "status": "Up 21 seconds"
+    },
+    {
+     "name": "atus-lt-timed-db-1",
+     "image": "postgres:16",
+     "status": "Up 25 seconds (healthy)"
+    },
+    {
+     "name": "atus-wsb-drill",
+     "image": "postgres:16",
+     "status": "Up 7 hours"
+    },
+    {
+     "name": "atus-wsb-build",
+     "image": "postgres:16",
+     "status": "Up 7 hours"
+    },
+    {
+     "name": "atus-emu-pg",
+     "image": "postgres:16",
+     "status": "Up 11 hours"
+    },
+    {
+     "name": "atus-postgres",
+     "image": "postgres:16",
+     "status": "Up 14 hours"
+    },
+    {
+     "name": "supabase_db_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/postgres:17.6.1.156",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_studio_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/studio:2026.07.27-sha-cbb076d",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_pg_meta_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/postgres-meta:v0.96.6",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_storage_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/storage-api:v1.67.20",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_rest_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/postgrest:v14.15",
+     "status": "Up 12 days"
+    },
+    {
+     "name": "supabase_realtime_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/realtime:v2.120.3",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_inbucket_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/mailpit:v1.30.2",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_auth_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/gotrue:v2.194.0",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_kong_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/kong:2.8.1",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "timeblock-postgres",
+     "image": "postgres:16-alpine",
+     "status": "Up 12 days (healthy)"
+    }
+   ],
+   "docker_stats": [
+    {
+     "name": "atus-lt-timed-api-1",
+     "cpu_pct": 0.23,
+     "mem_mib": 46.6
+    },
+    {
+     "name": "atus-lt-timed-db-1",
+     "cpu_pct": 2.41,
+     "mem_mib": 52.7
+    },
+    {
+     "name": "atus-wsb-drill",
+     "cpu_pct": 0.0,
+     "mem_mib": 167.3
+    },
+    {
+     "name": "atus-wsb-build",
+     "cpu_pct": 0.0,
+     "mem_mib": 135.1
+    },
+    {
+     "name": "atus-emu-pg",
+     "cpu_pct": 0.0,
+     "mem_mib": 18.9
+    },
+    {
+     "name": "atus-postgres",
+     "cpu_pct": 0.0,
+     "mem_mib": 243.4
+    },
+    {
+     "name": "supabase_db_dogtrax-dev",
+     "cpu_pct": 0.13,
+     "mem_mib": 40.5
+    },
+    {
+     "name": "supabase_studio_dogtrax-dev",
+     "cpu_pct": 0.02,
+     "mem_mib": 193.6
+    },
+    {
+     "name": "supabase_pg_meta_dogtrax-dev",
+     "cpu_pct": 0.2,
+     "mem_mib": 80.2
+    },
+    {
+     "name": "supabase_storage_dogtrax-dev",
+     "cpu_pct": 0.03,
+     "mem_mib": 98.8
+    },
+    {
+     "name": "supabase_rest_dogtrax-dev",
+     "cpu_pct": 0.07,
+     "mem_mib": 66.2
+    },
+    {
+     "name": "supabase_realtime_dogtrax-dev",
+     "cpu_pct": 1.04,
+     "mem_mib": 152.5
+    },
+    {
+     "name": "supabase_inbucket_dogtrax-dev",
+     "cpu_pct": 0.0,
+     "mem_mib": 18.2
+    },
+    {
+     "name": "supabase_auth_dogtrax-dev",
+     "cpu_pct": 0.01,
+     "mem_mib": 19.4
+    },
+    {
+     "name": "supabase_kong_dogtrax-dev",
+     "cpu_pct": 0.02,
+     "mem_mib": 23.8
+    },
+    {
+     "name": "timeblock-postgres",
+     "cpu_pct": 0.0,
+     "mem_mib": 13.4
+    }
+   ]
+  },
+  "other_container_blips": [
+   {
+    "name": "supabase_pg_meta_dogtrax-dev",
+    "cpu_pct": [
+     10.1,
+     0.22
+    ]
+   }
+  ],
+  "load_average_1_5_15": [
+   1.35,
+   1.34,
+   1.46
+  ],
+  "top_host_processes_pcpu": [
+   {
+    "pcpu": 22.4,
+    "comm": "com.apple.Virtualization.VirtualMachine"
+   },
+   {
+    "pcpu": 8.7,
+    "comm": "coreaudiod"
+   },
+   {
+    "pcpu": 3.5,
+    "comm": "locationd"
+   },
+   {
+    "pcpu": 1.2,
+    "comm": "claude"
+   },
+   {
+    "pcpu": 0.8,
+    "comm": "claude"
+   },
+   {
+    "pcpu": 0.5,
+    "comm": "Camo Studio"
+   },
+   {
+    "pcpu": 0.3,
+    "comm": "claude"
+   },
+   {
+    "pcpu": 0.3,
+    "comm": "Python"
+   }
+  ],
+  "running_containers": [
+   "atus-lt-timed-api-1",
+   "atus-lt-timed-db-1",
+   "atus-wsb-drill",
+   "atus-wsb-build",
+   "atus-emu-pg",
+   "atus-postgres",
+   "supabase_db_dogtrax-dev",
+   "supabase_studio_dogtrax-dev",
+   "supabase_pg_meta_dogtrax-dev",
+   "supabase_storage_dogtrax-dev",
+   "supabase_rest_dogtrax-dev",
+   "supabase_realtime_dogtrax-dev",
+   "supabase_inbucket_dogtrax-dev",
+   "supabase_auth_dogtrax-dev",
+   "supabase_kong_dogtrax-dev",
+   "timeblock-postgres"
+  ]
+ },
+ "host_before": {
+  "date_utc": "2026-10-21T05:27:19.908013Z",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine_model": "Mac16,12",
+  "cpu": "Apple M4",
+  "host_cpus": 10,
+  "host_memory_bytes": 25769803776,
+  "load_average_1_5_15": [
+   1.35,
+   1.34,
+   1.46
+  ],
+  "docker_server": "29.6.2",
+  "docker_vm_cpus": 10,
+  "docker_vm_memory_bytes": 8321515520,
+  "docker_compose": "5.3.1",
+  "k6": "k6 v2.2.0 (commit/devel, go1.26.5, darwin/arm64)",
+  "python": "3.14.7"
+ },
+ "git": {
+  "commit": "f3e439d204e7579e67d05b4106955109969b7046",
+  "branch": "phase5",
+  "image_inputs_dirty": false,
+  "worktree_dirty": true
+ },
+ "target": {
+  "target": "stack",
+  "project": "atus-lt-timed",
+  "profile": "2cu",
+  "profile_label": "Neon Free ceiling 2 CU: 2 vCPU / 7 GB (Neon's ratio gives 8 GB; the Docker VM has 7.75 GiB)",
+  "api_container_limits": {
+   "cpus": 0.1,
+   "memory_bytes": 536870912,
+   "memory_swap_bytes": 536870912,
+   "shm_size_bytes": 67108864
+  },
+  "db_container_limits": {
+   "cpus": 2.0,
+   "memory_bytes": 7516192768,
+   "memory_swap_bytes": 7516192768,
+   "shm_size_bytes": 1073741824
+  },
+  "db_container_started_at": "2026-10-21T05:26:51.951057127Z",
+  "db_settings": "effective_cache_size=4GB; jit=off; log_min_duration_statement=0; max_connections=839; max_parallel_workers=8; max_parallel_workers_per_gather=2; max_worker_processes=17; server_version=16.15 (Debian 16.15-1.pgdg13+2); shared_buffers=215MB; work_mem=4MB",
+  "cluster_bytes": 649960524,
+  "api_environment": {
+   "ATUS_API_STATEMENT_TIMEOUT_MS": "600000",
+   "ATUS_API_DAILY_ANALYSIS_CAP": "10000000",
+   "ATUS_EDGE_SECRETS": "<redacted>",
+   "ATUS_EXPECTED_DATA_VERSION": "0325:serving-20261020T224252Z-a7420a5c:de834e672474",
+   "WEB_CONCURRENCY": "1",
+   "ATUS_OPS_TOKEN": "<redacted>",
+   "PORT": "10000",
+   "ATUS_ENV": "production",
+   "ATUS_DATABASE_URL": "<redacted>",
+   "ATUS_BUILD_SHA": "9afd1b4e2e0e1184e63b674a88cfc5500a6feb96"
+  },
+  "image": {
+   "tag": "atus-api:lt-9afd1b4e2e0e",
+   "id": "sha256:059436d2576a02e03502124caf598b00b556cb6b4d6c261e2bb1edf0b25f080d",
+   "repo_digests": [
+    "atus-api@sha256:059436d2576a02e03502124caf598b00b556cb6b4d6c261e2bb1edf0b25f080d"
+   ],
+   "architecture": "arm64",
+   "os": "linux",
+   "size_bytes": 61074878,
+   "created": "2026-10-21T03:54:46.825881584Z",
+   "revision": "9afd1b4e2e0e1184e63b674a88cfc5500a6feb96",
+   "version": "0.1.0"
+  },
+  "dump": {
+   "dump": "/private/tmp/claude-501/-Users-nathann-Downloads-Projects-TimeUse/8bbd66b9-82fb-4cc2-83c8-206ee25a10a8/scratchpad/impl/wsb/artifacts/atus-serving-0325-20261020T224252Z-a7420a5c.dump",
+   "dump_sha256": "24098d84cc05868e7607c5bba6f5c361deef31cffd1d082c0d1a2e0eee21304b",
+   "dump_verified": true,
+   "manifest": {
+    "build_id": "20261020T224252Z-a7420a5c",
+    "content_hash": "de834e672474e24898d20c17585f0ef48cc39c0e8df2289bc96b08034dd7f833",
+    "data_version": "0325:serving-20261020T224252Z-a7420a5c:de834e672474",
+    "release": "0325",
+    "analytics_version": "0.2",
+    "sizes": {
+     "atus_tables_bytes": 620363776,
+     "cluster_bytes": 652367444,
+     "database_bytes": 629357591
+    }
+   }
+  },
+  "expected_data_version": "0325:serving-20261020T224252Z-a7420a5c:de834e672474",
+  "pg_statement_logging": true
+ },
+ "docker_ps_before": [
+  {
+   "name": "atus-lt-timed-api-1",
+   "image": "atus-api:lt-9afd1b4e2e0e",
+   "status": "Up 23 seconds"
+  },
+  {
+   "name": "atus-lt-timed-db-1",
+   "image": "postgres:16",
+   "status": "Up 28 seconds (healthy)"
+  },
+  {
+   "name": "atus-wsb-drill",
+   "image": "postgres:16",
+   "status": "Up 7 hours"
+  },
+  {
+   "name": "atus-wsb-build",
+   "image": "postgres:16",
+   "status": "Up 7 hours"
+  },
+  {
+   "name": "atus-emu-pg",
+   "image": "postgres:16",
+   "status": "Up 11 hours"
+  },
+  {
+   "name": "atus-postgres",
+   "image": "postgres:16",
+   "status": "Up 14 hours"
+  },
+  {
+   "name": "supabase_db_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/postgres:17.6.1.156",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_studio_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/studio:2026.07.27-sha-cbb076d",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_pg_meta_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/postgres-meta:v0.96.6",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_storage_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/storage-api:v1.67.20",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_rest_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/postgrest:v14.15",
+   "status": "Up 12 days"
+  },
+  {
+   "name": "supabase_realtime_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/realtime:v2.120.3",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_inbucket_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/mailpit:v1.30.2",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_auth_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/gotrue:v2.194.0",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_kong_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/kong:2.8.1",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "timeblock-postgres",
+   "image": "postgres:16-alpine",
+   "status": "Up 12 days (healthy)"
+  }
+ ],
+ "scenarios": [
+  {
+   "scenario": "worstcase",
+   "label": "worstcase",
+   "settings": {
+    "WORST_SET": "all",
+    "ITERATIONS": "6",
+    "REQ_TIMEOUT": "700s"
+   },
+   "k6_exit": 0,
+   "started_utc": "2026-10-21T05:27:38.554610Z",
+   "wall_s": 13.6,
+   "requests": 6,
+   "status": {
+    "200": 6
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 6
+   },
+   "db_attribution_complete": true,
+   "db_statements": 37
+  },
+  {
+   "scenario": "uncached",
+   "label": "uncached",
+   "settings": {
+    "WORST_SET": "all",
+    "ITERATIONS": "6",
+    "REQ_TIMEOUT": "700s"
+   },
+   "k6_exit": 0,
+   "started_utc": "2026-10-21T05:28:11.963561Z",
+   "wall_s": 0.6,
+   "requests": 6,
+   "status": {
+    "200": 6
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 6
+   },
+   "db_attribution_complete": true,
+   "db_statements": 36
+  }
+ ],
+ "background_noise": {
+  "what": "docker stats --no-stream of every container that is not this run's, once a minute during the bundle (other projects' services)",
+  "samples_per_container": 1,
+  "cpu_pct_max": {
+   "atus-emu-pg": 0.0,
+   "atus-postgres": 0.0,
+   "atus-wsb-build": 0.0,
+   "atus-wsb-drill": 0.4,
+   "supabase_auth_dogtrax-dev": 0.02,
+   "supabase_db_dogtrax-dev": 0.07,
+   "supabase_inbucket_dogtrax-dev": 0.0,
+   "supabase_kong_dogtrax-dev": 0.01,
+   "supabase_pg_meta_dogtrax-dev": 8.91,
+   "supabase_realtime_dogtrax-dev": 0.19,
+   "supabase_rest_dogtrax-dev": 0.06,
+   "supabase_storage_dogtrax-dev": 0.01,
+   "supabase_studio_dogtrax-dev": 0.0,
+   "timeblock-postgres": 1.32
+  },
+  "cpu_pct_sum_of_means": 10.99
+ },
+ "ran_alone_after": {
+  "checked_at": "2026-10-21T05:28:24.180755Z",
+  "ran_alone": "yes",
+  "reasons": [],
+  "criteria": "no other load generator process; no other atus-lt-* stack; no other container above 5% of one core in two docker stats samples 3 s apart; the measurement precondition (see precondition.criteria)",
+  "precondition": {
+   "checked_at": "2026-10-21T05:28:22.504945Z",
+   "ok": true,
+   "reasons": [],
+   "criteria": "no process matching scripts/equivalence/replay.py|pytest|playwright|k6|wrangler (other than this run's); no atus-* container besides ['atus-emu-pg', 'atus-postgres', 'atus-wsb-build', 'atus-wsb-drill'] and this run's own; no active query in those databases except this run's",
+   "workload_processes": [],
+   "other_atus_lt_containers": [],
+   "protected_db_activity": {
+    "atus-postgres": {
+     "client_backends": 0,
+     "by_state": {},
+     "active_not_ours": []
+    },
+    "atus-wsb-drill": {
+     "client_backends": 0,
+     "by_state": {},
+     "active_not_ours": []
+    },
+    "atus-wsb-build": {
+     "client_backends": 0,
+     "by_state": {},
+     "active_not_ours": []
+    },
+    "atus-emu-pg": {
+     "client_backends": 0,
+     "by_state": {},
+     "active_not_ours": []
+    }
+   },
+   "load_average_1_5_15": [
+    1.6,
+    1.42,
+    1.48
+   ],
+   "docker_ps": [
+    {
+     "name": "atus-lt-timed-api-1",
+     "image": "atus-api:lt-9afd1b4e2e0e",
+     "status": "Up 26 seconds"
+    },
+    {
+     "name": "atus-lt-timed-db-1",
+     "image": "postgres:16",
+     "status": "Up About a minute (healthy)"
+    },
+    {
+     "name": "atus-wsb-drill",
+     "image": "postgres:16",
+     "status": "Up 7 hours"
+    },
+    {
+     "name": "atus-wsb-build",
+     "image": "postgres:16",
+     "status": "Up 7 hours"
+    },
+    {
+     "name": "atus-emu-pg",
+     "image": "postgres:16",
+     "status": "Up 11 hours"
+    },
+    {
+     "name": "atus-postgres",
+     "image": "postgres:16",
+     "status": "Up 14 hours"
+    },
+    {
+     "name": "supabase_db_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/postgres:17.6.1.156",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_studio_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/studio:2026.07.27-sha-cbb076d",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_pg_meta_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/postgres-meta:v0.96.6",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_storage_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/storage-api:v1.67.20",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_rest_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/postgrest:v14.15",
+     "status": "Up 12 days"
+    },
+    {
+     "name": "supabase_realtime_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/realtime:v2.120.3",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_inbucket_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/mailpit:v1.30.2",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_auth_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/gotrue:v2.194.0",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "supabase_kong_dogtrax-dev",
+     "image": "public.ecr.aws/supabase/kong:2.8.1",
+     "status": "Up 12 days (healthy)"
+    },
+    {
+     "name": "timeblock-postgres",
+     "image": "postgres:16-alpine",
+     "status": "Up 12 days (healthy)"
+    }
+   ],
+   "docker_stats": [
+    {
+     "name": "atus-lt-timed-api-1",
+     "cpu_pct": 0.27,
+     "mem_mib": 47.6
+    },
+    {
+     "name": "atus-lt-timed-db-1",
+     "cpu_pct": 0.0,
+     "mem_mib": 271.9
+    },
+    {
+     "name": "atus-wsb-drill",
+     "cpu_pct": 0.0,
+     "mem_mib": 167.3
+    },
+    {
+     "name": "atus-wsb-build",
+     "cpu_pct": 0.0,
+     "mem_mib": 135.1
+    },
+    {
+     "name": "atus-emu-pg",
+     "cpu_pct": 0.68,
+     "mem_mib": 18.9
+    },
+    {
+     "name": "atus-postgres",
+     "cpu_pct": 0.0,
+     "mem_mib": 243.4
+    },
+    {
+     "name": "supabase_db_dogtrax-dev",
+     "cpu_pct": 0.21,
+     "mem_mib": 40.5
+    },
+    {
+     "name": "supabase_studio_dogtrax-dev",
+     "cpu_pct": 0.02,
+     "mem_mib": 193.6
+    },
+    {
+     "name": "supabase_pg_meta_dogtrax-dev",
+     "cpu_pct": 0.32,
+     "mem_mib": 80.3
+    },
+    {
+     "name": "supabase_storage_dogtrax-dev",
+     "cpu_pct": 0.0,
+     "mem_mib": 98.8
+    },
+    {
+     "name": "supabase_rest_dogtrax-dev",
+     "cpu_pct": 0.11,
+     "mem_mib": 66.2
+    },
+    {
+     "name": "supabase_realtime_dogtrax-dev",
+     "cpu_pct": 1.22,
+     "mem_mib": 153.1
+    },
+    {
+     "name": "supabase_inbucket_dogtrax-dev",
+     "cpu_pct": 0.0,
+     "mem_mib": 18.2
+    },
+    {
+     "name": "supabase_auth_dogtrax-dev",
+     "cpu_pct": 0.05,
+     "mem_mib": 19.4
+    },
+    {
+     "name": "supabase_kong_dogtrax-dev",
+     "cpu_pct": 0.02,
+     "mem_mib": 23.8
+    },
+    {
+     "name": "timeblock-postgres",
+     "cpu_pct": 0.01,
+     "mem_mib": 13.3
+    }
+   ]
+  },
+  "other_container_blips": [],
+  "load_average_1_5_15": [
+   1.6,
+   1.42,
+   1.48
+  ],
+  "top_host_processes_pcpu": [
+   {
+    "pcpu": 50.8,
+    "comm": "com.apple.Virtualization.VirtualMachine"
+   },
+   {
+    "pcpu": 15.6,
+    "comm": "com.docker.backend"
+   },
+   {
+    "pcpu": 8.6,
+    "comm": "coreaudiod"
+   },
+   {
+    "pcpu": 4.7,
+    "comm": "Python"
+   },
+   {
+    "pcpu": 2.0,
+    "comm": "claude"
+   },
+   {
+    "pcpu": 0.9,
+    "comm": "claude"
+   },
+   {
+    "pcpu": 0.7,
+    "comm": "com.docker.backend"
+   },
+   {
+    "pcpu": 0.6,
+    "comm": "Docker Desktop"
+   }
+  ],
+  "running_containers": [
+   "atus-lt-timed-api-1",
+   "atus-lt-timed-db-1",
+   "atus-wsb-drill",
+   "atus-wsb-build",
+   "atus-emu-pg",
+   "atus-postgres",
+   "supabase_db_dogtrax-dev",
+   "supabase_studio_dogtrax-dev",
+   "supabase_pg_meta_dogtrax-dev",
+   "supabase_storage_dogtrax-dev",
+   "supabase_rest_dogtrax-dev",
+   "supabase_realtime_dogtrax-dev",
+   "supabase_inbucket_dogtrax-dev",
+   "supabase_auth_dogtrax-dev",
+   "supabase_kong_dogtrax-dev",
+   "timeblock-postgres"
+  ]
+ },
+ "host_after": {
+  "date_utc": "2026-10-21T05:28:24.735563Z",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "machine_model": "Mac16,12",
+  "cpu": "Apple M4",
+  "host_cpus": 10,
+  "host_memory_bytes": 25769803776,
+  "load_average_1_5_15": [
+   1.6,
+   1.42,
+   1.48
+  ],
+  "docker_server": "29.6.2",
+  "docker_vm_cpus": 10,
+  "docker_vm_memory_bytes": 8321515520,
+  "docker_compose": "5.3.1",
+  "k6": "k6 v2.2.0 (commit/devel, go1.26.5, darwin/arm64)",
+  "python": "3.14.7"
+ },
+ "docker_ps_after": [
+  {
+   "name": "atus-lt-timed-api-1",
+   "image": "atus-api:lt-9afd1b4e2e0e",
+   "status": "Up 28 seconds"
+  },
+  {
+   "name": "atus-lt-timed-db-1",
+   "image": "postgres:16",
+   "status": "Up About a minute (healthy)"
+  },
+  {
+   "name": "atus-wsb-drill",
+   "image": "postgres:16",
+   "status": "Up 7 hours"
+  },
+  {
+   "name": "atus-wsb-build",
+   "image": "postgres:16",
+   "status": "Up 7 hours"
+  },
+  {
+   "name": "atus-emu-pg",
+   "image": "postgres:16",
+   "status": "Up 11 hours"
+  },
+  {
+   "name": "atus-postgres",
+   "image": "postgres:16",
+   "status": "Up 14 hours"
+  },
+  {
+   "name": "supabase_db_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/postgres:17.6.1.156",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_studio_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/studio:2026.07.27-sha-cbb076d",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_pg_meta_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/postgres-meta:v0.96.6",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_storage_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/storage-api:v1.67.20",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_rest_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/postgrest:v14.15",
+   "status": "Up 12 days"
+  },
+  {
+   "name": "supabase_realtime_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/realtime:v2.120.3",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_inbucket_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/mailpit:v1.30.2",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_auth_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/gotrue:v2.194.0",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "supabase_kong_dogtrax-dev",
+   "image": "public.ecr.aws/supabase/kong:2.8.1",
+   "status": "Up 12 days (healthy)"
+  },
+  {
+   "name": "timeblock-postgres",
+   "image": "postgres:16-alpine",
+   "status": "Up 12 days (healthy)"
+  }
+ ],
+ "finished_utc": "2026-10-21T05:28:24.909351Z"
+}

@@ -1,0 +1,188 @@
+{
+  "target": "neondb_owner@127.0.0.1:5502/atus",
+  "owner_is_superuser": false,
+  "data_version": "0325:serving-20261020T224252Z-a7420a5c:de834e672474",
+  "artifact_sha256": "24098d84cc05868e7607c5bba6f5c361deef31cffd1d082c0d1a2e0eee21304b",
+  "server_version": "16.15 (Debian 16.15-1.pgdg13+2)",
+  "tools": {
+    "pg_restore": "pg_restore (PostgreSQL) 16.15 (Debian 16.15-1.pgdg13+2) (docker postgres:16)",
+    "psql": "psql (PostgreSQL) 16.15 (Debian 16.15-1.pgdg13+2) (docker postgres:16)"
+  },
+  "checks": [
+    {
+      "name": "serving: serving marker",
+      "passed": true,
+      "severity": "error",
+      "observed": "schema comment 'atus-serving build 20261020T224252Z-a7420a5c; release 0325; data version 0325:serving-20261020T224252Z-a7420a5c:de834e672474; built from 0325:run1:1788919495952073. A serving database: never run atus migrate, load or validate-db here.'",
+      "detail": "the builder marks the schema comment and the data version"
+    },
+    {
+      "name": "serving: data version",
+      "passed": true,
+      "severity": "error",
+      "observed": "0325:serving-20261020T224252Z-a7420a5c:de834e672474",
+      "detail": "manifest: 0325:serving-20261020T224252Z-a7420a5c:de834e672474"
+    },
+    {
+      "name": "serving: rows in activity_tier1",
+      "passed": true,
+      "severity": "error",
+      "observed": "18",
+      "detail": "manifest: 18"
+    },
+    {
+      "name": "serving: rows in activity_tier2",
+      "passed": true,
+      "severity": "error",
+      "observed": "107",
+      "detail": "manifest: 107"
+    },
+    {
+      "name": "serving: rows in activity_codes",
+      "passed": true,
+      "severity": "error",
+      "observed": "431",
+      "detail": "manifest: 431"
+    },
+    {
+      "name": "serving: rows in respondents",
+      "passed": true,
+      "severity": "error",
+      "observed": "258,954",
+      "detail": "manifest: 258,954"
+    },
+    {
+      "name": "serving: rows in household_members",
+      "passed": true,
+      "severity": "error",
+      "observed": "258,954",
+      "detail": "manifest: 258,954"
+    },
+    {
+      "name": "serving: rows in cps_persons",
+      "passed": true,
+      "severity": "error",
+      "observed": "258,954",
+      "detail": "manifest: 258,954"
+    },
+    {
+      "name": "serving: rows in activities",
+      "passed": true,
+      "severity": "error",
+      "observed": "2,982,182",
+      "detail": "manifest: 2,982,182"
+    },
+    {
+      "name": "serving: rows in replicate_weights",
+      "passed": true,
+      "severity": "error",
+      "observed": "250,172",
+      "detail": "manifest: 250,172"
+    },
+    {
+      "name": "serving: rows in pandemic_replicate_weights",
+      "passed": true,
+      "severity": "error",
+      "observed": "16,751",
+      "detail": "manifest: 16,751"
+    },
+    {
+      "name": "serving: serving contract",
+      "passed": true,
+      "severity": "error",
+      "observed": "complete",
+      "detail": ""
+    },
+    {
+      "name": "serving: validation_results empty",
+      "passed": true,
+      "severity": "warning",
+      "observed": "0 row(s)",
+      "detail": "expected after `atus validate-analytics` ran here; the artifact itself ships empty"
+    },
+    {
+      "name": "serving: planner statistics",
+      "passed": true,
+      "severity": "error",
+      "observed": "every table analyzed",
+      "detail": "run VACUUM (ANALYZE) after a restore"
+    },
+    {
+      "name": "serving: activities stored in activity_code order",
+      "passed": true,
+      "severity": "error",
+      "observed": "correlation 1.0000",
+      "detail": "pg_stats correlation must be >= 0.99"
+    },
+    {
+      "name": "serving: content hash",
+      "passed": true,
+      "severity": "error",
+      "observed": "de834e672474e24898d20c17585f0ef48cc39c0e8df2289bc96b08034dd7f833",
+      "detail": "manifest: de834e672474e24898d20c17585f0ef48cc39c0e8df2289bc96b08034dd7f833; the data version must end in its first 12 digits"
+    },
+    {
+      "name": "restore: API role session defaults",
+      "passed": true,
+      "severity": "error",
+      "observed": "statement_timeout=85s, lock_timeout=5s, idle_in_transaction_session_timeout=30s, jit=off, default_transaction_read_only=on",
+      "detail": ""
+    },
+    {
+      "name": "restore: API role cannot write",
+      "passed": true,
+      "severity": "error",
+      "observed": "INSERT refused, UPDATE refused, DELETE refused, TRUNCATE refused, CREATE TABLE refused, CREATE TEMP TABLE refused, DROP TABLE refused",
+      "detail": ""
+    },
+    {
+      "name": "serving: plan: sleep (010101) pooled, 22 years",
+      "passed": true,
+      "severity": "error",
+      "observed": "cost 980,012; activities via Index Scan",
+      "detail": "a narrow activity selector should read activities through idx_activities_activity_code; a sequential scan means missing statistics or a lost physical order (run VACUUM (ANALYZE))"
+    },
+    {
+      "name": "serving: plan: BLS leisure and sports pooled, 22 years",
+      "passed": true,
+      "severity": "error",
+      "observed": "cost 1,038,811; activities via Index Scan",
+      "detail": ""
+    },
+    {
+      "name": "serving: plan: all tier-1 codes pooled (F66 broad selector), 22 years",
+      "passed": true,
+      "severity": "error",
+      "observed": "cost 1,140,293; activities via Seq Scan",
+      "detail": ""
+    },
+    {
+      "name": "restore: metered size under the limit",
+      "passed": true,
+      "severity": "error",
+      "observed": "649,903,180 B of 1,000,000,000 B (65%); headroom 350,096,820 B",
+      "detail": "sum(pg_database_size(datname)) over the databases the owner can see"
+    }
+  ],
+  "sizes": {
+    "database_bytes": 627129367,
+    "sum_pg_database_size_bytes": 649903180,
+    "databases": {
+      "atus": 627129367,
+      "postgres": 7699479,
+      "template0": 7537167,
+      "template1": 7537167
+    },
+    "databases_not_visible": []
+  },
+  "seconds": {
+    "verify artifact": 0.12,
+    "pg_restore": 8.01,
+    "roles.sql": 0.27,
+    "VACUUM (ANALYZE)": 1.26,
+    "serving checks": 5.23,
+    "API role checks": 0.04,
+    "total": 15.42
+  },
+  "passed": true
+}

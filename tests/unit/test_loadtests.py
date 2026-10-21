@@ -207,3 +207,49 @@ def test_background_noise_is_summarised_per_container(tmp_path):
     assert summary["cpu_pct_max"] == {"a": 3.0, "b": 0.5}
     assert summary["cpu_pct_sum_of_means"] == 2.5
     assert summary["samples_per_container"] == 2
+
+
+report = _load("report", "atus_loadtests_report")
+
+
+def test_report_reads_exported_rows_like_raw_ones(tmp_path):
+    rows = [{"t": "req", "ph": "main", "ep": "estimate", "kind": "W1", "spec": "W1", "ts": 5,
+             "st": 200, "code": "", "cache": "miss", "dur": 1500.5, "wait": 1500.0, "db": 1490.0,
+             "app": 2.0, "bytes": 900, "ra": "", "vu": 1, "it": 0},
+            {"t": "req", "ph": "main", "ep": "estimate", "kind": "W1", "spec": "W1", "ts": 9,
+             "st": 503, "code": "overloaded", "cache": "", "dur": 5001.0, "wait": 5000.0,
+             "db": None, "app": 5000.0, "bytes": 200, "ra": "10", "vu": 2, "it": 1}]
+    raw = tmp_path / "raw" / "s"
+    raw.mkdir(parents=True)
+    with gzip.open(raw / "requests.jsonl.gz", "wt") as handle:
+        handle.write("\n".join(__import__("json").dumps(r) for r in rows) + "\n")
+    exported = tmp_path / "exp"
+    exported.mkdir()
+    exporter = _load("export_raw", "atus_loadtests_export_raw")
+    import csv
+    with gzip.open(exported / "requests.csv.gz", "wt", newline="") as out:
+        writer = csv.DictWriter(out, fieldnames=exporter.REQUEST_FIELDS, extrasaction="ignore")
+        writer.writeheader()
+        for r in rows:
+            writer.writerow({**r, "t_ms": r["ts"] - 5})
+    for record_set in (report.load_records(raw), report.load_records(exported / "")):
+        assert [(r["st"], r["code"], r["dur"], r["db"]) for r in record_set] == [
+            (200, "", 1500.5, 1490.0), (503, "overloaded", 5001.0, None)]
+    assert report.kinds_table(raw.parent, "s") == report.kinds_table(tmp_path, "exp")
+
+
+def test_throttled_share_and_the_statement_timeout_clamp(tmp_path):
+    assert report.throttled({"nr_periods": 200, "nr_throttled": 50}) == "25%"
+    assert report.throttled({}) == "-"
+    import json
+    for name, p99_ms in (("floor", 70520.0), ("ceiling", 3030.0), ("mid", 12070.0)):
+        (tmp_path / name).mkdir()
+        (tmp_path / name / "analysis.json").write_text(json.dumps({
+            "timed": True, "by_endpoint": {},
+            "overall": {"requests": 30, "status": {"200": 30}, "error_codes": {},
+                        "latency_ms": {"n": 30, "p99": p99_ms, "mean": 1.0}}}))
+    # ADR-012: clamp(3 x p99, 30 s, 85 s)
+    assert report.calibration(tmp_path, "floor") == {"p99_s": 70.52, "three_p99_s": 211.6,
+                                                     "clamped_s": 85.0}
+    assert report.calibration(tmp_path, "ceiling")["clamped_s"] == 30.0
+    assert report.calibration(tmp_path, "mid")["clamped_s"] == 36.2

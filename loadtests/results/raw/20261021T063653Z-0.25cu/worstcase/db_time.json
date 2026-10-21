@@ -1,0 +1,33 @@
+{
+ "tag": "20261021T063653Z-0.25cu.worstcase",
+ "db_ms": 210942.8,
+ "by_kind_ms": {
+  "statement": 17.3,
+  "parse": 12.0,
+  "bind": 60.4,
+  "execute": 210853.1
+ },
+ "statements": 37,
+ "lines": 65,
+ "errors": {},
+ "statement_timeouts": 0,
+ "analysis_sql_ms": 210917.8,
+ "first_ts": "2026-10-21 06:37:22.627 UTC",
+ "last_ts": "2026-10-21 06:40:53.992 UTC",
+ "windows": {
+  "setup": {
+   "db_ms": 0.0,
+   "statements": 0,
+   "from": "2026-10-21T06:37:22.614000Z",
+   "to": "2026-10-21T06:37:22.626000Z"
+  },
+  "main": {
+   "db_ms": 210942.8,
+   "statements": 37,
+   "from": "2026-10-21T06:37:22.626000Z",
+   "to": "2026-10-21T06:40:54.243362Z"
+  }
+ },
+ "complete": true,
+ "backends": 1
+}

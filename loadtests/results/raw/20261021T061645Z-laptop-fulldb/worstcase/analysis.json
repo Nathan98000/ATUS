@@ -1,0 +1,679 @@
+{
+ "timed": true,
+ "setup": {
+  "requests": 2,
+  "status": {
+   "200": 2
+  },
+  "error_codes": {}
+ },
+ "overall": {
+  "requests": 6,
+  "status": {
+   "200": 6
+  },
+  "error_codes": {},
+  "x_cache": {
+   "miss": 6
+  },
+  "expected_outcome": 6,
+  "window_s": 64.937,
+  "throughput_rps": 0.092,
+  "throughput_200_rps": 0.092,
+  "latency_ms": {
+   "n": 6,
+   "min": 10537.0,
+   "p50": 10726.4,
+   "p95": 11296.6,
+   "p99": 11434.7,
+   "max": 11469.2,
+   "mean": 10822.0
+  },
+  "latency_200_ms": {
+   "n": 6,
+   "min": 10537.0,
+   "p50": 10726.4,
+   "p95": 11296.6,
+   "p99": 11434.7,
+   "max": 11469.2,
+   "mean": 10822.0
+  },
+  "server_db_ms": {
+   "n": 6,
+   "min": 10535.5,
+   "p50": 10724.6,
+   "p95": 11294.6,
+   "p99": 11432.8,
+   "max": 11467.3,
+   "mean": 10820.2
+  },
+  "server_app_ms": {
+   "n": 6,
+   "min": 0.9,
+   "p50": 1.1,
+   "p95": 1.4,
+   "p99": 1.4,
+   "max": 1.4,
+   "mean": 1.1
+  },
+  "server_db_share_of_latency": 0.9998
+ },
+ "by_endpoint": {
+  "compare": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1,
+   "window_s": 11.469,
+   "throughput_rps": 0.087,
+   "throughput_200_rps": 0.087,
+   "latency_ms": {
+    "n": 1,
+    "min": 11469.2,
+    "p50": 11469.2,
+    "p95": 11469.2,
+    "p99": 11469.2,
+    "max": 11469.2,
+    "mean": 11469.2
+   },
+   "latency_200_ms": {
+    "n": 1,
+    "min": 11469.2,
+    "p50": 11469.2,
+    "p95": 11469.2,
+    "p99": 11469.2,
+    "max": 11469.2,
+    "mean": 11469.2
+   },
+   "server_db_ms": {
+    "n": 1,
+    "min": 11467.3,
+    "p50": 11467.3,
+    "p95": 11467.3,
+    "p99": 11467.3,
+    "max": 11467.3,
+    "mean": 11467.3
+   },
+   "server_app_ms": {
+    "n": 1,
+    "min": 1.3,
+    "p50": 1.3,
+    "p95": 1.3,
+    "p99": 1.3,
+    "max": 1.3,
+    "mean": 1.3
+   },
+   "server_db_share_of_latency": 0.9998
+  },
+  "estimate": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 2
+   },
+   "expected_outcome": 2,
+   "window_s": 42.753,
+   "throughput_rps": 0.047,
+   "throughput_200_rps": 0.047,
+   "latency_ms": {
+    "n": 2,
+    "min": 10694.4,
+    "p50": 10736.6,
+    "p95": 10774.6,
+    "p99": 10777.9,
+    "max": 10778.8,
+    "mean": 10736.6
+   },
+   "latency_200_ms": {
+    "n": 2,
+    "min": 10694.4,
+    "p50": 10736.6,
+    "p95": 10774.6,
+    "p99": 10777.9,
+    "max": 10778.8,
+    "mean": 10736.6
+   },
+   "server_db_ms": {
+    "n": 2,
+    "min": 10692.6,
+    "p50": 10734.7,
+    "p95": 10772.5,
+    "p99": 10775.9,
+    "max": 10776.7,
+    "mean": 10734.7
+   },
+   "server_app_ms": {
+    "n": 2,
+    "min": 1.1,
+    "p50": 1.2,
+    "p95": 1.4,
+    "p99": 1.4,
+    "max": 1.4,
+    "mean": 1.2
+   },
+   "server_db_share_of_latency": 0.9998
+  },
+  "trend": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 3
+   },
+   "expected_outcome": 3,
+   "window_s": 42.687,
+   "throughput_rps": 0.07,
+   "throughput_200_rps": 0.07,
+   "latency_ms": {
+    "n": 3,
+    "min": 10537.0,
+    "p50": 10711.8,
+    "p95": 10738.1,
+    "p99": 10740.4,
+    "max": 10741.0,
+    "mean": 10663.3
+   },
+   "latency_200_ms": {
+    "n": 3,
+    "min": 10537.0,
+    "p50": 10711.8,
+    "p95": 10738.1,
+    "p99": 10740.4,
+    "max": 10741.0,
+    "mean": 10663.3
+   },
+   "server_db_ms": {
+    "n": 3,
+    "min": 10535.5,
+    "p50": 10709.9,
+    "p95": 10736.4,
+    "p99": 10738.7,
+    "max": 10739.3,
+    "mean": 10661.6
+   },
+   "server_app_ms": {
+    "n": 3,
+    "min": 0.9,
+    "p50": 1.0,
+    "p95": 1.1,
+    "p99": 1.1,
+    "max": 1.1,
+    "mean": 1.0
+   },
+   "server_db_share_of_latency": 0.9998
+  }
+ },
+ "by_endpoint_cache": {
+  "compare|miss": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1,
+   "window_s": 11.469,
+   "throughput_rps": 0.087,
+   "throughput_200_rps": 0.087,
+   "latency_ms": {
+    "n": 1,
+    "min": 11469.2,
+    "p50": 11469.2,
+    "p95": 11469.2,
+    "p99": 11469.2,
+    "max": 11469.2,
+    "mean": 11469.2
+   },
+   "latency_200_ms": {
+    "n": 1,
+    "min": 11469.2,
+    "p50": 11469.2,
+    "p95": 11469.2,
+    "p99": 11469.2,
+    "max": 11469.2,
+    "mean": 11469.2
+   },
+   "server_db_ms": {
+    "n": 1,
+    "min": 11467.3,
+    "p50": 11467.3,
+    "p95": 11467.3,
+    "p99": 11467.3,
+    "max": 11467.3,
+    "mean": 11467.3
+   },
+   "server_app_ms": {
+    "n": 1,
+    "min": 1.3,
+    "p50": 1.3,
+    "p95": 1.3,
+    "p99": 1.3,
+    "max": 1.3,
+    "mean": 1.3
+   },
+   "server_db_share_of_latency": 0.9998
+  },
+  "estimate|miss": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 2
+   },
+   "expected_outcome": 2,
+   "window_s": 42.753,
+   "throughput_rps": 0.047,
+   "throughput_200_rps": 0.047,
+   "latency_ms": {
+    "n": 2,
+    "min": 10694.4,
+    "p50": 10736.6,
+    "p95": 10774.6,
+    "p99": 10777.9,
+    "max": 10778.8,
+    "mean": 10736.6
+   },
+   "latency_200_ms": {
+    "n": 2,
+    "min": 10694.4,
+    "p50": 10736.6,
+    "p95": 10774.6,
+    "p99": 10777.9,
+    "max": 10778.8,
+    "mean": 10736.6
+   },
+   "server_db_ms": {
+    "n": 2,
+    "min": 10692.6,
+    "p50": 10734.7,
+    "p95": 10772.5,
+    "p99": 10775.9,
+    "max": 10776.7,
+    "mean": 10734.7
+   },
+   "server_app_ms": {
+    "n": 2,
+    "min": 1.1,
+    "p50": 1.2,
+    "p95": 1.4,
+    "p99": 1.4,
+    "max": 1.4,
+    "mean": 1.2
+   },
+   "server_db_share_of_latency": 0.9998
+  },
+  "trend|miss": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 3
+   },
+   "expected_outcome": 3,
+   "window_s": 42.687,
+   "throughput_rps": 0.07,
+   "throughput_200_rps": 0.07,
+   "latency_ms": {
+    "n": 3,
+    "min": 10537.0,
+    "p50": 10711.8,
+    "p95": 10738.1,
+    "p99": 10740.4,
+    "max": 10741.0,
+    "mean": 10663.3
+   },
+   "latency_200_ms": {
+    "n": 3,
+    "min": 10537.0,
+    "p50": 10711.8,
+    "p95": 10738.1,
+    "p99": 10740.4,
+    "max": 10741.0,
+    "mean": 10663.3
+   },
+   "server_db_ms": {
+    "n": 3,
+    "min": 10535.5,
+    "p50": 10709.9,
+    "p95": 10736.4,
+    "p99": 10738.7,
+    "max": 10739.3,
+    "mean": 10661.6
+   },
+   "server_app_ms": {
+    "n": 3,
+    "min": 0.9,
+    "p50": 1.0,
+    "p95": 1.1,
+    "p99": 1.1,
+    "max": 1.1,
+    "mean": 1.0
+   },
+   "server_db_share_of_latency": 0.9998
+  }
+ },
+ "by_kind": {
+  "W1-pooled22-leisure": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1,
+   "window_s": 10.779,
+   "throughput_rps": 0.093,
+   "throughput_200_rps": 0.093,
+   "latency_ms": {
+    "n": 1,
+    "min": 10778.8,
+    "p50": 10778.8,
+    "p95": 10778.8,
+    "p99": 10778.8,
+    "max": 10778.8,
+    "mean": 10778.8
+   },
+   "latency_200_ms": {
+    "n": 1,
+    "min": 10778.8,
+    "p50": 10778.8,
+    "p95": 10778.8,
+    "p99": 10778.8,
+    "max": 10778.8,
+    "mean": 10778.8
+   },
+   "server_db_ms": {
+    "n": 1,
+    "min": 10776.7,
+    "p50": 10776.7,
+    "p95": 10776.7,
+    "p99": 10776.7,
+    "max": 10776.7,
+    "mean": 10776.7
+   },
+   "server_app_ms": {
+    "n": 1,
+    "min": 1.4,
+    "p50": 1.4,
+    "p95": 1.4,
+    "p99": 1.4,
+    "max": 1.4,
+    "mean": 1.4
+   },
+   "server_db_share_of_latency": 0.9998
+  },
+  "W2-trend23-12": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1,
+   "window_s": 10.741,
+   "throughput_rps": 0.093,
+   "throughput_200_rps": 0.093,
+   "latency_ms": {
+    "n": 1,
+    "min": 10741.0,
+    "p50": 10741.0,
+    "p95": 10741.0,
+    "p99": 10741.0,
+    "max": 10741.0,
+    "mean": 10741.0
+   },
+   "latency_200_ms": {
+    "n": 1,
+    "min": 10741.0,
+    "p50": 10741.0,
+    "p95": 10741.0,
+    "p99": 10741.0,
+    "max": 10741.0,
+    "mean": 10741.0
+   },
+   "server_db_ms": {
+    "n": 1,
+    "min": 10739.3,
+    "p50": 10739.3,
+    "p95": 10739.3,
+    "p99": 10739.3,
+    "max": 10739.3,
+    "mean": 10739.3
+   },
+   "server_app_ms": {
+    "n": 1,
+    "min": 1,
+    "p50": 1,
+    "p95": 1,
+    "p99": 1,
+    "max": 1,
+    "mean": 1.0
+   },
+   "server_db_share_of_latency": 0.9998
+  },
+  "W3-trend23-010101": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1,
+   "window_s": 10.537,
+   "throughput_rps": 0.095,
+   "throughput_200_rps": 0.095,
+   "latency_ms": {
+    "n": 1,
+    "min": 10537.0,
+    "p50": 10537.0,
+    "p95": 10537.0,
+    "p99": 10537.0,
+    "max": 10537.0,
+    "mean": 10537.0
+   },
+   "latency_200_ms": {
+    "n": 1,
+    "min": 10537.0,
+    "p50": 10537.0,
+    "p95": 10537.0,
+    "p99": 10537.0,
+    "max": 10537.0,
+    "mean": 10537.0
+   },
+   "server_db_ms": {
+    "n": 1,
+    "min": 10535.5,
+    "p50": 10535.5,
+    "p95": 10535.5,
+    "p99": 10535.5,
+    "max": 10535.5,
+    "mean": 10535.5
+   },
+   "server_app_ms": {
+    "n": 1,
+    "min": 0.9,
+    "p50": 0.9,
+    "p95": 0.9,
+    "p99": 0.9,
+    "max": 0.9,
+    "mean": 0.9
+   },
+   "server_db_share_of_latency": 0.9999
+  },
+  "W4-F66-pooled22-tier1": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1,
+   "window_s": 10.694,
+   "throughput_rps": 0.094,
+   "throughput_200_rps": 0.094,
+   "latency_ms": {
+    "n": 1,
+    "min": 10694.4,
+    "p50": 10694.4,
+    "p95": 10694.4,
+    "p99": 10694.4,
+    "max": 10694.4,
+    "mean": 10694.4
+   },
+   "latency_200_ms": {
+    "n": 1,
+    "min": 10694.4,
+    "p50": 10694.4,
+    "p95": 10694.4,
+    "p99": 10694.4,
+    "max": 10694.4,
+    "mean": 10694.4
+   },
+   "server_db_ms": {
+    "n": 1,
+    "min": 10692.6,
+    "p50": 10692.6,
+    "p95": 10692.6,
+    "p99": 10692.6,
+    "max": 10692.6,
+    "mean": 10692.6
+   },
+   "server_app_ms": {
+    "n": 1,
+    "min": 1.1,
+    "p50": 1.1,
+    "p95": 1.1,
+    "p99": 1.1,
+    "max": 1.1,
+    "mean": 1.1
+   },
+   "server_db_share_of_latency": 0.9998
+  },
+  "W5-F66-trend23-tier1": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1,
+   "window_s": 10.712,
+   "throughput_rps": 0.093,
+   "throughput_200_rps": 0.093,
+   "latency_ms": {
+    "n": 1,
+    "min": 10711.8,
+    "p50": 10711.8,
+    "p95": 10711.8,
+    "p99": 10711.8,
+    "max": 10711.8,
+    "mean": 10711.8
+   },
+   "latency_200_ms": {
+    "n": 1,
+    "min": 10711.8,
+    "p50": 10711.8,
+    "p95": 10711.8,
+    "p99": 10711.8,
+    "max": 10711.8,
+    "mean": 10711.8
+   },
+   "server_db_ms": {
+    "n": 1,
+    "min": 10709.9,
+    "p50": 10709.9,
+    "p95": 10709.9,
+    "p99": 10709.9,
+    "max": 10709.9,
+    "mean": 10709.9
+   },
+   "server_app_ms": {
+    "n": 1,
+    "min": 1.1,
+    "p50": 1.1,
+    "p95": 1.1,
+    "p99": 1.1,
+    "max": 1.1,
+    "mean": 1.1
+   },
+   "server_db_share_of_latency": 0.9998
+  },
+  "W6-F66-compare22-sex": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1,
+   "window_s": 11.469,
+   "throughput_rps": 0.087,
+   "throughput_200_rps": 0.087,
+   "latency_ms": {
+    "n": 1,
+    "min": 11469.2,
+    "p50": 11469.2,
+    "p95": 11469.2,
+    "p99": 11469.2,
+    "max": 11469.2,
+    "mean": 11469.2
+   },
+   "latency_200_ms": {
+    "n": 1,
+    "min": 11469.2,
+    "p50": 11469.2,
+    "p95": 11469.2,
+    "p99": 11469.2,
+    "max": 11469.2,
+    "mean": 11469.2
+   },
+   "server_db_ms": {
+    "n": 1,
+    "min": 11467.3,
+    "p50": 11467.3,
+    "p95": 11467.3,
+    "p99": 11467.3,
+    "max": 11467.3,
+    "mean": 11467.3
+   },
+   "server_app_ms": {
+    "n": 1,
+    "min": 1.3,
+    "p50": 1.3,
+    "p95": 1.3,
+    "p99": 1.3,
+    "max": 1.3,
+    "mean": 1.3
+   },
+   "server_db_share_of_latency": 0.9998
+  }
+ }
+}

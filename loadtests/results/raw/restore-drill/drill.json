@@ -1,0 +1,146 @@
+{
+ "started_utc": "2026-10-21T03:54:11Z",
+ "dump": "atus-serving-0325-20261020T224252Z-a7420a5c.dump",
+ "steps_s": {
+  "sha256 verify (shasum, standalone)": 0.61,
+  "fresh postgres:16 container to ready (initdb + neondb_owner)": 0.82
+ },
+ "sha256": {
+  "actual": "24098d84cc05868e7607c5bba6f5c361deef31cffd1d082c0d1a2e0eee21304b",
+  "matches_sha256_file": true,
+  "matches_manifest": true
+ },
+ "dump_bytes": 336549536,
+ "container": {
+  "name": "atus-lt-drill-pg",
+  "image": "postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94",
+  "limits": "unconstrained (Docker VM)",
+  "settings": "jit=off shared_buffers=215MB max_connections=839 max_worker_processes=17 max_parallel_workers=8 shm 1g"
+ },
+ "restore_tool": {
+  "exit": 0,
+  "wall_s": 15.59,
+  "command": "scripts/ops/restore_serving_db.sh --artifact <dump> --secrets-file <private> --verify-content-hash --report ...",
+  "seconds_by_step": {
+   "verify artifact": 0.12,
+   "pg_restore": 8.01,
+   "roles.sql": 0.27,
+   "VACUUM (ANALYZE)": 1.26,
+   "serving checks": 5.23,
+   "API role checks": 0.04,
+   "total": 15.42
+  },
+  "passed": true,
+  "owner_is_superuser": false,
+  "tools": {
+   "pg_restore": "pg_restore (PostgreSQL) 16.15 (Debian 16.15-1.pgdg13+2) (docker postgres:16)",
+   "psql": "psql (PostgreSQL) 16.15 (Debian 16.15-1.pgdg13+2) (docker postgres:16)"
+  },
+  "server_version": "16.15 (Debian 16.15-1.pgdg13+2)",
+  "data_version": "0325:serving-20261020T224252Z-a7420a5c:de834e672474",
+  "checks": [
+   {
+    "name": "serving: serving marker",
+    "passed": true
+   },
+   {
+    "name": "serving: data version",
+    "passed": true
+   },
+   {
+    "name": "serving: rows in activity_tier1",
+    "passed": true
+   },
+   {
+    "name": "serving: rows in activity_tier2",
+    "passed": true
+   },
+   {
+    "name": "serving: rows in activity_codes",
+    "passed": true
+   },
+   {
+    "name": "serving: rows in respondents",
+    "passed": true
+   },
+   {
+    "name": "serving: rows in household_members",
+    "passed": true
+   },
+   {
+    "name": "serving: rows in cps_persons",
+    "passed": true
+   },
+   {
+    "name": "serving: rows in activities",
+    "passed": true
+   },
+   {
+    "name": "serving: rows in replicate_weights",
+    "passed": true
+   },
+   {
+    "name": "serving: rows in pandemic_replicate_weights",
+    "passed": true
+   },
+   {
+    "name": "serving: serving contract",
+    "passed": true
+   },
+   {
+    "name": "serving: validation_results empty",
+    "passed": true
+   },
+   {
+    "name": "serving: planner statistics",
+    "passed": true
+   },
+   {
+    "name": "serving: activities stored in activity_code order",
+    "passed": true
+   },
+   {
+    "name": "serving: content hash",
+    "passed": true
+   },
+   {
+    "name": "restore: API role session defaults",
+    "passed": true
+   },
+   {
+    "name": "restore: API role cannot write",
+    "passed": true
+   },
+   {
+    "name": "serving: plan: sleep (010101) pooled, 22 years",
+    "passed": true
+   },
+   {
+    "name": "serving: plan: BLS leisure and sports pooled, 22 years",
+    "passed": true
+   },
+   {
+    "name": "serving: plan: all tier-1 codes pooled (F66 broad selector), 22 years",
+    "passed": true
+   },
+   {
+    "name": "restore: metered size under the limit",
+    "passed": true
+   }
+  ]
+ },
+ "sizes": {
+  "database_bytes": 627129367,
+  "sum_pg_database_size_bytes": 649903180,
+  "databases": {
+   "atus": 627129367,
+   "postgres": 7699479,
+   "template0": 7537167,
+   "template1": 7537167
+  },
+  "databases_not_visible": []
+ },
+ "sum_pg_database_size_bytes_independent": 649903180,
+ "total_wall_s": 17.11,
+ "finished_utc": "2026-10-21T03:54:28Z"
+}

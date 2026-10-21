@@ -1,0 +1,33 @@
+{
+ "tag": "20261021T043356Z-0.25cu.uncached",
+ "db_ms": 53139.1,
+ "by_kind_ms": {
+  "statement": 5.8,
+  "parse": 117.1,
+  "bind": 1243.6,
+  "execute": 51772.6
+ },
+ "statements": 354,
+ "lines": 553,
+ "errors": {},
+ "statement_timeouts": 0,
+ "analysis_sql_ms": 53122.6,
+ "first_ts": "2026-10-21 04:34:24.681 UTC",
+ "last_ts": "2026-10-21 04:35:18.582 UTC",
+ "windows": {
+  "setup": {
+   "db_ms": 0.0,
+   "statements": 0,
+   "from": "2026-10-21T04:34:24.665000Z",
+   "to": "2026-10-21T04:34:24.679000Z"
+  },
+  "main": {
+   "db_ms": 53139.1,
+   "statements": 354,
+   "from": "2026-10-21T04:34:24.679000Z",
+   "to": "2026-10-21T04:35:18.834644Z"
+  }
+ },
+ "complete": true,
+ "backends": 1
+}

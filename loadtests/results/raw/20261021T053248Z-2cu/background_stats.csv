@@ -1,0 +1,15 @@
+ts,name,cpu_pct,mem_mib
+1792560777.982,atus-wsb-drill,0.01,167.3
+1792560777.982,atus-wsb-build,0.0,135.1
+1792560777.982,atus-emu-pg,0.0,18.9
+1792560777.982,atus-postgres,0.7,243.4
+1792560777.982,supabase_db_dogtrax-dev,1.63,40.5
+1792560777.982,supabase_studio_dogtrax-dev,0.0,193.6
+1792560777.982,supabase_pg_meta_dogtrax-dev,0.25,79.7
+1792560777.982,supabase_storage_dogtrax-dev,0.0,98.8
+1792560777.982,supabase_rest_dogtrax-dev,0.07,66.2
+1792560777.982,supabase_realtime_dogtrax-dev,1.96,152.5
+1792560777.982,supabase_inbucket_dogtrax-dev,1.6,18.3
+1792560777.982,supabase_auth_dogtrax-dev,0.03,19.4
+1792560777.982,supabase_kong_dogtrax-dev,0.01,23.9
+1792560777.982,timeblock-postgres,1.79,13.4
