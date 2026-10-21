@@ -86,6 +86,24 @@ def test_api_image_runtime_contract():
         assert f"org.opencontainers.image.{label}=" in runtime, label
 
 
+def test_api_image_compiles_the_standard_library_before_dropping_root():
+    """The base image ships the stdlib without .pyc and the app user can never
+    write one: the runtime stage compiles it as root, at the base image's
+    Python version (compileall silently skips a directory that does not exist,
+    so a base bump must move this path too; check_image.py `bytecode` would
+    then fail)."""
+    text = _read("Dockerfile")
+    runtime = text.split("AS runtime", 1)[1]
+    compile_step = re.search(
+        r"^RUN python -m compileall -q -j 0 -x '/site-packages/' "
+        r"/usr/local/lib/python(\d+\.\d+)$", runtime, re.MULTILINE)
+    assert compile_step, "the runtime stage must compile the standard library"
+    base = re.search(r"^ARG PYTHON_BASE=python:(\d+\.\d+)-slim$", text, re.MULTILINE)
+    assert compile_step.group(1) == base.group(1)
+    assert runtime.index(compile_step.group(0)) < runtime.index("\nUSER 10001:10001")
+    assert "PYTHONDONTWRITEBYTECODE=1" in runtime  # reading .pyc still works
+
+
 def test_dockerignore_is_an_allow_list_of_what_the_image_needs():
     lines = [
         line.strip() for line in _read(".dockerignore").splitlines()

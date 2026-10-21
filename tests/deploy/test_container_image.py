@@ -78,6 +78,9 @@ print(json.dumps({
     "app_dir": sorted(os.listdir("/app")),
     "migrations_in_package": any(pkg.rglob("*.sql")),
     "pyc_present": any(pkg.rglob("*.pyc")),
+    "stdlib_pyc_present": any(
+        (pathlib.Path(importlib.util.find_spec("json").origin).parent / "__pycache__")
+        .glob("*.pyc")),
 }))
 """
     result = run_python(api_image, code)
@@ -92,6 +95,7 @@ print(json.dumps({
     assert found["app_dir"] == []
     assert found["migrations_in_package"] is False
     assert found["pyc_present"] is True  # compiled at build time, not at cold start
+    assert found["stdlib_pyc_present"] is True  # the base image ships none
 
 
 def test_labels_and_build_metadata(api_image):

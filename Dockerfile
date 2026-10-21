@@ -54,8 +54,9 @@ RUN python -m venv /opt/venv \
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
 
-# pip compiles every module to bytecode on install, so the runtime image
-# never compiles at start-up. The import check fails the build if the API
+# pip compiles every module it installs (the locked packages and
+# atus_pipeline) to bytecode; the runtime stage compiles the standard library
+# (below). The import check fails the build if the API
 # needs a package the lock left out; the curl_cffi check proves the
 # pipeline-only dependency stayed out (requirements/api.in), which is also
 # why `pip check` in the image reports curl-cffi as missing: expected.
@@ -88,6 +89,15 @@ LABEL org.opencontainers.image.title="atus-api" \
 RUN groupadd --system --gid 10001 atus \
  && useradd --system --uid 10001 --gid 10001 --home-dir /nonexistent \
         --no-create-home --shell /usr/sbin/nologin atus
+
+# The python base image ships its standard library without bytecode, and at
+# run time nothing can add it: the app user cannot write __pycache__ (nor would
+# it, with PYTHONDONTWRITEBYTECODE=1). Without this step every start compiled
+# each standard-library module it imports. Compiled at the interpreter's
+# default optimization level, against the base layer's unchanged sources (pip,
+# never used at run time, excluded). deploy/ci/check_image.py (`bytecode`)
+# proves every module the start-up imports loads from a usable .pyc.
+RUN python -m compileall -q -j 0 -x '/site-packages/' /usr/local/lib/python3.12
 
 COPY --from=build /opt/venv /opt/venv
 

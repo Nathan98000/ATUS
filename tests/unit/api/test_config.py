@@ -67,6 +67,31 @@ class TestDefaults:
         assert s.api_snapshot_ttl_s == 600
         assert s.edge_secrets == (SECRET_A, SECRET_B)
 
+    def test_dotenv_is_read_and_imported_in_development_only(self, tmp_path):
+        """A .env file configures development; production ignores it and never
+        imports python-dotenv (kept off the API's start-up path)."""
+        import json
+        import os
+        import subprocess
+        import sys
+
+        (tmp_path / ".env").write_text("ATUS_LOG_LEVEL=DEBUG\n")
+        code = ("import json, sys; from atus_pipeline.config import load_settings; "
+                "s = load_settings(); "
+                "print(json.dumps([s.log_level, 'dotenv' in sys.modules]))")
+        base = {k: v for k, v in os.environ.items()
+                if not k.startswith(("ATUS_", "PG")) and k != "PYTHONPATH"}
+
+        def run(**env) -> list:
+            result = subprocess.run([sys.executable, "-c", code], cwd=tmp_path,
+                                    env={**base, **env}, capture_output=True, text=True,
+                                    timeout=60, check=False)
+            assert result.returncode == 0, result.stderr
+            return json.loads(result.stdout)
+
+        assert run() == ["DEBUG", True]
+        assert run(**prod_env()) == ["INFO", False]
+
     def test_dataclass_defaults_equal_environment_defaults(self, tmp_path):
         """Programmatic Settings(...) (tests, scripts) get the same protection
         as the environment path."""

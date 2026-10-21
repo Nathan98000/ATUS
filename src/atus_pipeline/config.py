@@ -30,8 +30,6 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from dotenv import find_dotenv, load_dotenv
-
 DEFAULT_DATABASE_URL = "postgresql://atus:atus@localhost:5434/atus"
 DEFAULT_DATA_DIR = "data"
 DEFAULT_RELEASE = "0325"
@@ -408,6 +406,10 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
     """
     if environ is None:
         if os.environ.get("ATUS_ENV", "").strip().lower() != "production":
+            # Imported here: production never reads a .env file, so the API's
+            # start-up does not import python-dotenv (deploy/ci/check_image.py).
+            from dotenv import find_dotenv, load_dotenv
+
             load_dotenv(find_dotenv(usecwd=True))
         environ = os.environ
     env = _Env(environ)
