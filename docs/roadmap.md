@@ -130,12 +130,117 @@ Vite, client-side only):
   110.8 kB gzip JS, home visually complete ~170 ms locally with exactly one
   API call.
 
-Deliberately not built: exports (CSV/PNG/PDF), saved analyses/accounts,
-persistent history, dark mode, SSR/SEO work.
+Deliberately not built: exports (CSV/PNG/PDF; CSV and JSON exports came in
+Phase 5), saved analyses/accounts, persistent history, dark mode, SSR/SEO
+work.
 
-## Phase 5 — Hardening & Deployment
+## Phase 5 — Production Hardening & $0 Deployment
 
-Deployment packaging for the API + static frontend, traffic controls (rate
-limiting) for public exposure, monitoring, performance work driven by real
-query patterns, release automation for new ATUS years, and frontend niceties
-deferred from Phase 4 (exports, short share links).
+**Status: implemented; deployment pending owner steps (see
+[deployment.md](deployment.md)).** Phase 5 is **not** complete. It is marked
+complete only when every item of the definition of done (brief §21) holds;
+the items still open are listed under "Remaining" below.
+
+Phase 5 changes how the system runs, not what it computes:
+`ANALYTICS_VERSION` stays `0.2`. How the parts fit together is in
+[architecture.md](architecture.md).
+
+### Implemented and verified locally
+
+- **Audit** ([operations.md](operations.md)): the baseline at commit
+  `387fc2d`, 71 findings and 14 recorded facts, each finding checked by two
+  independent refuters; the timed free-tier measurements of the pre-Phase-5
+  code are in
+  [evidence/phase5/01-audit-timed.md](evidence/phase5/01-audit-timed.md).
+- **Hosting decision** ([ADR-011](adr/ADR-011-hosting.md)): a judge panel
+  scored five proposals. Chosen: Cloudflare Workers Free (SPA, static
+  snapshot, and an `/api` Worker with a KV result cache and a Durable Object
+  quota governor), Render Free (the API image, by digest) and Neon Free (the
+  serving database). The runner-up, Vercel Hobby as the API host, is the
+  documented fallback. The free-tier budget, failure modes, owner steps and
+  configuration reference are in [deployment.md](deployment.md).
+- **Reload without downtime and unique data versions**
+  ([ADR-013](adr/ADR-013-data-releases-and-serving-db.md)): `atus load`
+  builds the new data in a shadow schema and switches it in with one short
+  transaction; `data_version` is globally unique and committed with the data
+  (migration `0003`); release-specific values derive from the source
+  registry, and a test runs a synthetic next release (2003–2026) through
+  validation, the load, the engine and the API.
+- **Serving database** (ADR-013): `atus build-serving-db` derives a ~0.6 GB
+  database whose content hash repeats across builds, and a checksummed
+  `pg_dump` release artifact with a manifest; `atus restore-serving-db`
+  applies least-privilege roles (`scripts/ops/roles.sql`); full-database
+  commands refuse a serving database. A restore drill into a fresh
+  PostgreSQL 16 cluster as a non-superuser owner passed
+  `atus validate-analytics` (24/24) and the opt-in benchmark tests.
+- **Statistical equivalence** (brief §9): criterion in ADR-013 (Decision 10)
+  and `atus_pipeline.serving.equivalence`. `atus compare-serving-db` found
+  all 161 specifications equivalent on the restore drill (ADR-013). The
+  three-way HTTP replay passed 544 of 544 specifications and 84 of 84 GET
+  requests after the one plan regression it found was fixed (commit
+  `9afd1b4`; [evidence](evidence/phase5/equivalence/final-9afd1b4/README.md)).
+- **Load and quota protection in the API**
+  ([ADR-012](adr/ADR-012-load-and-quota-protection.md)): body cap, edge
+  authentication, per-client token buckets, a daily cap, admission lanes,
+  single-flight, per-transaction timeouts and a request deadline,
+  stale-connection handling, and specific error codes with `Retry-After`.
+  Cache hits, metadata and 4xx answers run no SQL while the in-process data
+  snapshot is fresh. The limits are provisional until calibration.
+- **Edge** ([ADR-015](adr/ADR-015-edge-cache-snapshot-and-governor.md)): the
+  Worker in `edge/`, the KV result cache, the static snapshot of all
+  metadata and about 130 prewarmed analyses, and the quota governor.
+- **Observability** ([ADR-014](adr/ADR-014-observability.md)): JSON access
+  logs with truncated client addresses, `/metrics`, token-gated `/ready`, and
+  monitor workflows that never touch the database.
+- **Frontend** ([frontend.md](frontend.md)): API version check, cold-start
+  notice and a 150 s retry budget, quota and paused states, CSV and JSON
+  exports, a boot fallback, a same-origin production build under a strict
+  CSP, and Playwright projects for Chromium, mobile, Firefox and WebKit.
+- **Packaging**: a multi-stage, non-root API image installed from
+  hash-locked requirements; the production-mode compose stack, the free-tier
+  emulation profile and a PgBouncer profile; `scripts/smoke_stack.sh`. On
+  2026-10-20 the stack smoke (plain and emulated), the edge probe and the
+  Playwright suite through the local edge passed; Firefox cannot launch on
+  the development machine and has not run yet ([deployment.md](deployment.md),
+  step 0).
+- **CI/CD** (`.github/workflows/`): CI for backend, supply chain, frontend,
+  edge, the image (gate, deployment tests, stack smoke, Trivy) and both E2E
+  modes; a deploy workflow that deploys the tested image by digest behind the
+  `production` environment's required reviewer; monitor workflows;
+  Dependabot.
+- **Short share links**: deferred by decision
+  ([ADR-016](adr/ADR-016-short-share-links.md)).
+
+### Remaining for the definition of done
+
+Each item must be done or verified before Phase 5 is marked complete and
+`v1.0.0` is tagged.
+
+1. **Load tests** (§13): commit the load tests with their measured results
+   under free-tier emulation, and set the provisional limits from them (the
+   statement timeout, the admission lanes, `ATUS_API_MAX_PARALLEL_WORKERS`;
+   ADR-012, "Calibration"). See loadtests/results (§13).
+2. **Timed restore drill**: the drill was performed, but its times were
+   taken on a shared machine and are marked illustrative (ADR-013,
+   Decision 8). It needs a serialized, timed run.
+3. **Documentation** (§18): at this commit `docs/security.md` (the threat
+   model, §11) does not exist, and the "Equivalence criterion" and
+   "Runbooks" sections of [operations.md](operations.md) are placeholders,
+   although [deployment.md](deployment.md) links to them.
+4. **CI on GitHub**: the Phase 5 workflows have not yet run on GitHub-hosted
+   runners; their steps were rehearsed locally. That first run is also the
+   first Firefox E2E result.
+5. **Owner account steps** ([deployment.md](deployment.md#owner-account-setup-19)):
+   Cloudflare, Render, Neon and GitHub on free plans; publish the serving-DB
+   release artifact (`releases/current.json` says `unpublished`); restore it
+   into Neon; run the first Worker deploy; approve the first deploy run.
+6. **Prove the deployment** (deployment.md, step 8): curl and Playwright
+   against the public URL, including the security headers and CSP on the
+   real origins, the origin lock, and live recomputation of snapshot entries
+   under §9. Only then does the README show a live URL.
+7. **Post-deploy measurement** (deployment.md, steps 9 and 10): the
+   quota-budgeted replay (`scripts/replay_deployed.py`: the BLS benchmarks
+   and §9 spot checks against the deployed URL), the unknowns listed in
+   ADR-011, and the week-1 calibration of the Neon compute and timeouts.
+8. **Monitors live**: the scheduled workflows stay skipped until the
+   repository variable `PUBLIC_BASE_URL` is set after the first deploy.
