@@ -6,6 +6,8 @@
   python3 loadtests/report.py --ran-alone <dir> [...]                   attestation rows
   python3 loadtests/report.py --combine "0.25 CU=<dir>#uncached#estimate|miss" ...
                                                          one table over several runs
+  python3 loadtests/report.py --lanes "0.25 CU mix=<dir>#mix" ...
+                                       computed analyses by the API's lane class
 
 Every number printed comes from the bundle's own files: analysis.json
 (k6 per-request records, main phase), db_time.json (PostgreSQL's statement
@@ -234,6 +236,61 @@ def saturation_table(root: Path) -> list[str]:
     return out
 
 
+# The harness's specs whose year queries reach the API's heavy threshold, by id.
+_HEAVY_SPEC = re.compile(r"^(W\d|genp-)")
+_LANE_ORDER = ("light estimate", "light compare", "heavy estimate", "heavy trend",
+               "heavy compare")
+
+
+def lane_class(record: dict) -> str:
+    """'<light|heavy> <endpoint>': the admission lane the API's rule
+    (api/protection.py is_heavy: len(years), doubled for a compare, >= 8) gives
+    this harness's request, read from its endpoint and spec id.
+
+    The harness sends no spec between 2 and 7 year queries (k6/lib/specs.js):
+    every trend covers the full period (23 years); W1-W6 cover 22 or 23 years
+    (W6 is a compare); `genp-` pooled estimates cover 8, 12 or 22 years; every
+    other spec (the corpus, `gen1-`, `genc-`, presets, starters) is one year:
+    1 year query, or 2 for a compare."""
+    spec, endpoint = record.get("spec") or "", record.get("ep") or ""
+    heavy = endpoint == "trend" or bool(_HEAVY_SPEC.match(spec))
+    return f"{'heavy' if heavy else 'light'} {endpoint}"
+
+
+def lanes_table(rows: list[tuple[str, Path, str]]) -> list[str]:
+    """Per run and lane class, the analyses that computed (main phase, 200,
+    X-Cache miss): Server-Timing db (the database transaction, without the wait
+    for a lane) and the client latency."""
+    out = ["| Run | lane, endpoint | n | Server-Timing db min | p50 | p95 | max (s) | "
+           "latency max (s) |",
+           "|---|---|---|---|---|---|---|---|"]
+    for name, root, label in rows:
+        groups: dict[str, list] = defaultdict(list)
+        for r in load_records(root / label):
+            if (r.get("ph") == "main" and r.get("ep") in ("estimate", "trend", "compare")
+                    and r["st"] == 200 and r.get("cache") == "miss"):
+                groups[lane_class(r)].append(r)
+        for cls in sorted(groups, key=lambda c: (_LANE_ORDER + (c,)).index(c)):
+            db = lt.summarize([r["db"] for r in groups[cls]])
+            dur = lt.summarize([r["dur"] for r in groups[cls]])
+            out.append(f"| {name} | {cls} | {db['n']} | {sec(db.get('min'))} | "
+                       f"{sec(db.get('p50'))} | {sec(db.get('p95'))} | {sec(db.get('max'))} | "
+                       f"{sec(dur.get('max'))} |")
+    return out
+
+
+def _run_item(item: str) -> tuple[str, Path, str, str]:
+    """[NAME=]PATH[#LABEL[#GROUP]] -> (name, root, label, group); the label
+    defaults to the bundle's first scenario."""
+    name, _, rest = item.rpartition("=") if "=" in item.split("#")[0] else ("", "", item)
+    path, _, sel = rest.partition("#")
+    label, _, group = sel.partition("#")
+    root = Path(path).resolve()
+    meta = load(root / "environment.json")
+    label = label or meta["scenarios"][0]["label"]
+    return name or f"{meta['profile']} {label}", root, label, group
+
+
 def calibration(root: Path, label: str) -> dict:
     """clamp(3 x p99, 30 s, 85 s) over every main-phase request of a worst-case run."""
     m = scenario_metrics(root, label)
@@ -285,18 +342,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--breakdown", choices=("endpoint", "endpoint_cache", "kind"),
                         help="one PATH#LABEL split by endpoint, endpoint|X-Cache or view kind")
     parser.add_argument("--table", choices=("latency", "resource", "both"), default="both")
+    parser.add_argument("--lanes", action="store_true",
+                        help="computed analyses by the API's lane class, over every argument "
+                             "given as [NAME=]PATH[#LABEL]")
     args = parser.parse_args(argv)
+    if args.lanes:
+        items = [_run_item(str(item)) for item in args.roots]
+        print("\n".join(lanes_table([(name, root, label) for name, root, label, _ in items])))
+        return 0
     if args.combine:
         rows = []
         for item in map(str, args.roots):
-            name, _, rest = item.rpartition("=") if "=" in item.split("#")[0] else ("", "", item)
-            path, _, sel = rest.partition("#")
-            label, _, group = sel.partition("#")
-            root = Path(path).resolve()
-            meta = load(root / "environment.json")
-            label = label or meta["scenarios"][0]["label"]
-            rows.append((name or f"{meta['profile']} {label}",
-                         scenario_metrics(root, label, group or None)))
+            name, root, label, group = _run_item(item)
+            rows.append((name, scenario_metrics(root, label, group or None)))
         if args.table in ("latency", "both"):
             print("\n".join(latency_table(rows, args.unit)))
         if args.table == "both":

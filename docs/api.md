@@ -66,7 +66,7 @@ with a message naming the variable, and the message never echoes a secret.
 | `ATUS_API_STATEMENT_TIMEOUT_MS` | `85000` | `85000` | per-transaction `statement_timeout` for analyses |
 | `ATUS_API_META_STATEMENT_TIMEOUT_MS` | `10000` | `10000` | per-transaction `statement_timeout` for metadata and lexicon reads |
 | `ATUS_API_JIT` | `off` | `off` | per-transaction `jit` |
-| `ATUS_API_MAX_PARALLEL_WORKERS` | *(unset: server default)* | after load tests | per-transaction `max_parallel_workers_per_gather` |
+| `ATUS_API_MAX_PARALLEL_WORKERS` | *(unset: server default)* | *(unset: server default)* | per-transaction `max_parallel_workers_per_gather`; left unset by the §13 calibration ([ADR-012](adr/ADR-012-load-and-quota-protection.md#calibration-13)) |
 | `ATUS_API_PREPARE_THRESHOLD` | `5` | `5` | psycopg auto-prepare threshold; `none` behind a transaction-mode pooler |
 | `ATUS_API_MAX_INFLIGHT` | `2` | `2` | uncached analyses computing at once |
 | `ATUS_API_MAX_INFLIGHT_HEAVY` | `1` | `1` | how many of those may be heavy |
@@ -323,8 +323,11 @@ Measured effect (Phase 3: in-process client, full 2003–25 database on a laptop
 Expensive multi-year variance requests stay **synchronous** (no job queues,
 polling, or websockets): the worst case is one long request per
 (spec × version), then cached. On the free-tier database that can mean tens
-of seconds (ADR-011 measured ~33–52 s for the worst cases at Neon's 0.25 CU
-floor), bounded by the statement timeout and the request deadline (ADR-012).
+of seconds: on the emulation of Neon's 0.25 CU floor, pooled and trended
+worst cases took 21–22 s at p50, and the F66 broad selector's compare by sex
+up to 71 s ([load tests](../loadtests/results/2026-10-21-emulation.md),
+2026-10-21; about 3 s at 2 CU). The statement timeout and the request
+deadline bound them (ADR-012).
 
 ### In-process data snapshot
 

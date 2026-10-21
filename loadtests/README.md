@@ -19,7 +19,7 @@ Reproducible load tests for the ATUS API, run **locally** against the production
 | `cold_start.py` | container start → first `200` on `/health` and on `/api/v1/meta`, N times |
 | `analyze.py` | prints a bundle (or an exported results directory) as tables |
 | `precondition.py` | waits (polling, up to 3 h) until no other ATUS workload runs and the project's databases are idle, and writes the evidence |
-| `report.py` | Markdown tables from timed bundles or exports: one table over several runs (`--combine`), per spec kind (`--kinds`), a sweep by level (`--saturation`), a split by endpoint or view kind (`--breakdown`), the ran-alone attestation (`--ran-alone`), the `statement_timeout` calibration (`--calibrate`) |
+| `report.py` | Markdown tables from timed bundles or exports: one table over several runs (`--combine`), per spec kind (`--kinds`), a sweep by level (`--saturation`), a split by endpoint or view kind (`--breakdown`), the ran-alone attestation (`--ran-alone`), the `statement_timeout` calibration (`--calibrate`), computed analyses by the API's lane class (`--lanes`) |
 | `export_raw.py` | compact, committable copies of timed bundles for `results/raw/`: summaries, per-request CSV, `docker stats` CSV; no logs; secret-scanned |
 | `ltcommon.py` | shared helpers: PostgreSQL log attribution, `docker stats` sampling, statistics, the "ran alone" check, secret scan |
 | `results/` | committed, compact results (see [`results/README.md`](results/README.md)) |

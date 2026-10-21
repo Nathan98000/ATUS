@@ -24,11 +24,13 @@
 --     temporary tables, no metadata tables (validation_results, source_files,
 --     schema_migrations), no role memberships;
 --   * role defaults bound every API session (ADR-011 "Bounded work"):
---     statement_timeout 85 s, lock_timeout 5 s,
+--     statement_timeout 85 s (the API's per-request value, calibrated in
+--     ADR-012 "Calibration"), lock_timeout 5 s,
 --     idle_in_transaction_session_timeout 30 s, jit off (F37), and read-only
 --     transactions by default (a second guard; the privileges are the boundary).
---     max_parallel_workers_per_gather is not set here: the API sets it per
---     request (ATUS_API_MAX_PARALLEL_WORKERS) once load tests decide it (F38).
+--     max_parallel_workers_per_gather is not set here: the emulation load
+--     tests left it at the server default, and the API can set it per
+--     request (ATUS_API_MAX_PARALLEL_WORKERS; F38).
 
 \set ON_ERROR_STOP on
 -- Errors print their message only: no statement text, no context.

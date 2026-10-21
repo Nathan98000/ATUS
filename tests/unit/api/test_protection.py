@@ -102,8 +102,8 @@ class TestHeavyClassifier:
             ("estimate", 1, False),
             ("estimate", HEAVY_YEAR_QUERIES - 1, False),
             ("estimate", HEAVY_YEAR_QUERIES, True),
-            ("estimate", 22, True),   # pooled 22 years: ~52 s at 0.25 CU
-            ("trend", 23, True),      # 23-year trend: ~47-49 s at 0.25 CU
+            ("estimate", 22, True),   # pooled 22 years: 21.35 s p50 at 0.25 CU (ADR-012)
+            ("trend", 23, True),      # 23-year trend: 21.50-21.81 s p50 at 0.25 CU
             ("trend", 2, False),
             ("compare", 1, False),
             ("compare", 3, False),

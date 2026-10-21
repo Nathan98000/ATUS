@@ -150,7 +150,7 @@ Neon's algorithm page says the autoscaler reads the 1-minute load average every 
 Common assumptions:
 
 - 480 Neon wake sessions a month (16/day × 30), each with ~1.9 uncached analyses about 60 s apart;
-- busy time at 2 CU of ~1 s per analysis (measured 0.38 s single-year, 2.7–3.4 s worst);
+- busy time at 2 CU of ~1 s per analysis. Measured in the [2026-10-21 emulation](../loadtests/results/2026-10-21-emulation.md): 0.079 s p50 for a single-year estimate, 2.0–3.0 s p50 for the worst cases. The audit measured 0.38 s and 2.7–3.4 s on an earlier build;
 - spike day: compute awake for about 12 h;
 - ~1 CU-h reserve for restore and smoke tests.
 
@@ -159,11 +159,11 @@ Common assumptions:
 | A | drops to 0.25 CU as soon as a query ends | 75 CU-s tail + 15 CU-s think time + ~4 CU-s busy ≈ 0.026 CU-h | ≈ 12.5 + 3.2 (spike) + 1 ≈ **17 CU-h** |
 | B | stays raised while the 1-minute load average decays (~2–3 min) | + ~210–400 CU-s ≈ 0.08–0.14 CU-h | ≈ **45–80 CU-h** |
 | C | stays at 2 CU through the whole tail | ≈ 2 × (300 + 60) CU-s ≈ 0.2 CU-h | ≈ 96 + 24 (spike) ≈ **120 CU-h**, over quota; the governor stops at 85, so uncached analyses pause late in the month |
-| Fixed 0.25 CU (fallback lever) | constant | ≈ 0.25 × (300 + 60 + ~23 s busy) ≈ 0.027 CU-h | ≈ **17 CU-h**, but worst cases take 47–52 s (measured at the 0.25 CU emulation) |
+| Fixed 0.25 CU (fallback lever) | constant | ≈ 0.25 × (300 + 60 + ~23 s busy) ≈ 0.027 CU-h | ≈ **17 CU-h**, but worst cases take 21–22 s pooled or trended, 33–35 s for the F66 broad selector, and 69.2 s for its compare by sex (p50; max 71.0 s; [2026-10-21 emulation](../loadtests/results/2026-10-21-emulation.md)) |
 
 These figures line up with proposal P1's independent scenario analysis (A 17, B 45–55, C 105–110).
 
-**Week-1 calibration.** Read `compute_time_seconds` per wake session from `GET /projects/{id}`. If it exceeds about 0.1 CU-h, lower the compute's maximum to 1 CU (after a 1 CU emulation run) or fix it at 0.25 CU. To be finalized in ADR-012.
+**Week-1 calibration.** Read `compute_time_seconds` per wake session from `GET /projects/{id}`. If it exceeds about 0.1 CU-h, lower the compute's maximum to 1 CU (after a 1 CU emulation run) or fix it at 0.25 CU. ADR-012 "Calibration (§13)" keeps this lever. If the compute is fixed at 0.25 CU, set `ATUS_API_MAX_PARALLEL_WORKERS=0` once its §9 proof passes (step 10 of the deploy guide).
 
 ### Governor starting parameters
 
@@ -176,8 +176,8 @@ To be finalized in ADR-012.
 | Neon egress | stop at 4.5 GB month-to-date; heavy analyses ≤ 300/day |
 | Global uncached analyses | ≤ 600 per UTC day (also bounds KV writes and Render outbound) |
 | Per IP prefix (/24 or /48, HMAC with a daily key) | ≤ 60 uncached analyses per UTC day |
-| API in-flight (in-process, global on one Render instance) | ≤ 2 uncached, ≤ 1 heavy; wait ≤ 5 s, then 503 `overloaded` |
-| API per-IP token buckets | uncached: burst ~10, refill 1 per 30 s; other `/api`: ~120/min |
+| API in-flight (in-process, global on one Render instance) | ≤ 2 uncached, ≤ 1 heavy; wait ≤ 5 s, then 503 `overloaded` (calibrated on the emulation profile, ADR-012 "Calibration (§13)") |
+| API per-IP token buckets | uncached analyses: 6 per 60 s (burst 6); every other request: 120 per 60 s (`ATUS_API_RATE_ANALYSIS`, `ATUS_API_RATE_REQUESTS`; ADR-012) |
 
 ## Scraping-burst scenarios
 
@@ -553,7 +553,7 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 `deploy.yml` runs on a `v*` tag or manual dispatch, in environment `production`, and waits for your approval as required reviewer. ADR-011 fixes its steps:
 
 1. Call `RENDER_DEPLOY_HOOK_URL` with `imgURL=ghcr.io/nathan98000/atus-api@sha256:<hex>`, URL-encoded. Every part except the digest must match the image configured on the service.
-2. Poll origin `/health` until its `build` equals `GITHUB_SHA`. Allow for a cold start: about a minute of Render spin-up plus 7–11 s of app start (measured, F67).
+2. Poll origin `/health` until its `build` equals `GITHUB_SHA`. Allow for a cold start: about a minute of Render spin-up plus about 13 s of app start. At 0.1 CPU the first `/health` came at a p50 of 12.9–13.1 s and `/api/v1/meta` 0.3–0.6 s later ([2026-10-21 emulation](../loadtests/results/2026-10-21-emulation.md), section 4; the audit measured 7–11 s on an earlier image, F67).
 3. Generate the static snapshot with that same digest, against the release dump restored into `postgres:16` with the production role settings.
 4. `wrangler deploy` with the vars `DATA_VERSION`, `ANALYTICS_VERSION`, `RESPONSE_FORMAT` and `SNAPSHOT_ID`.
 5. Run a smoke test of at most 40 requests.
@@ -583,7 +583,7 @@ The snapshot is built before anything deploys, so a failed restore or snapshot d
 1. It checks that the environment holds its four secrets and that `PUBLIC_BASE_URL` is set. It runs the `wrangler.jsonc` invariant tests (`npx vitest run --project node` in `edge/`) and refuses the placeholder KV namespace id.
 2. It records the rollback targets: the build the origin runs now, that build's GHCR digest, and the Worker's current deployment (`wrangler deployments status`).
 3. `scripts/ops/render_deploy.py trigger` POSTs `RENDER_DEPLOY_HOOK_URL` with `imgURL=<URL-encoded digest reference>`. The URL is read from the environment and never printed; anything but an `https://api.render.com/deploy/srv-...` URL is refused.
-4. `scripts/ops/render_deploy.py wait` polls the origin's `/health` until `build` equals `GITHUB_SHA`. It allows 15 minutes: the image pull, Render's ~1 minute spin-up and the 7–11 s app start (F67).
+4. `scripts/ops/render_deploy.py wait` polls the origin's `/health` until `build` equals `GITHUB_SHA`. It allows 15 minutes: the image pull, Render's ~1 minute spin-up and the app start, which took about 13 s at 0.1 CPU in the emulation.
    - `/health` reports the commit, not the image digest. If the origin already ran this commit before the hook (for example "Re-run all jobs", which rebuilds and pushes a new digest of the same commit), the wait cannot see the switch. The step then shows a warning, and you confirm the deploy in Render → Events.
 5. `npx --no-install wrangler deploy` (the version locked in `edge/package-lock.json`) publishes the SPA, the snapshot and the Worker, with `--var` `DATA_VERSION`, `ANALYTICS_VERSION`, `RESPONSE_FORMAT` and `SNAPSHOT_ID` read from the snapshot.
 6. The post-deploy smoke, at most 40 requests in all:
@@ -654,9 +654,26 @@ What a rehearsal cannot show is Render's deploy hook, its image pull, and the re
 
 ### 10. Week-1 calibration
 
+**Starting values.** The §13 emulation runs calibrated these (ADR-012 "Calibration (§13)", [`loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md)). Every one is the code default, so leave them all **unset on Render**:
+
+| Setting | Value | Where it is set |
+|---|---|---|
+| `ATUS_API_STATEMENT_TIMEOUT_MS` | `85000` (request deadline 90 s) | code default; the `atus_api` role's backstop `statement_timeout = 85s` comes from `scripts/ops/roles.sql`, applied by the restore |
+| `ATUS_API_MAX_INFLIGHT` / `ATUS_API_MAX_INFLIGHT_HEAVY` | `2` / `1` | code default |
+| `ATUS_API_ADMISSION_WAIT_S` | `5` | code default |
+| `ATUS_API_MAX_PARALLEL_WORKERS` | unset (the server's default) | code default |
+| heavy threshold | 8 year queries | `HEAVY_YEAR_QUERIES` in the API and in `edge/src/constants.ts` |
+
+`tests/deploy/test_packaging_files.py` fails if the template, the code, `roles.sql` and the Worker's constants stop agreeing.
+
+**What the measurements say at Neon's 0.25 CU floor.** The F66 compare by sex took 69.2 s at p50 and at most 71.0 s, so 85 s is only 1.2 × its slowest time. A concurrent analysis slows it further: with two heavy analyses running at once, the F66 requests took 88–106 s, which the single heavy lane prevents. A request that passes 85 s answers `503 analysis_timeout`. At 2 CU the compare took about 3 s.
+
+**After the replay (step 9):**
+
 - **Neon compute.** Read Neon's `compute_time_seconds` per wake session. If it exceeds about 0.1 CU-h, either lower the compute's maximum to 1 CU (after a 1 CU emulation run) or fix it at 0.25 CU.
-- **Timeout.** Set the statement timeout to `clamp(3 × p99 measured on Neon, 30 s, 85 s)` (ADR-011 "Bounded work").
-- **TODO(WS-A, ADR-012):** the final values and where each one is set.
+- **Timeout.** Apply `clamp(3 × p99 measured on Neon, 30 s, 85 s)` (ADR-011 "Bounded work") to the replay's worst cases, F66 included. Lower 85 s only if those requests ran while the compute was at its 0.25 CU minimum and 3 × their p99 is below 85 s. A replay that saw only a scaled-up compute says nothing about the floor. To lower it, set `ATUS_API_STATEMENT_TIMEOUT_MS` on Render: the role default and the Worker's `PROVISIONAL_BUSY_MS` stay safe upper bounds. A permanent change also updates the code default, the template, `roles.sql` and `PROVISIONAL_BUSY_MS` together, which the test above checks. It cannot go higher: 85 s is the clamp's ceiling, because ADR-011 keeps every limit at or below 100 s.
+- **Parallel workers.** If the compute is fixed at 0.25 CU, set `ATUS_API_MAX_PARALLEL_WORKERS=0` on Render once its §9 proof passes. It cuts the F66 compare there from 69.2 to 38.6 s at p50. Do not set it while the compute autoscales: at 2 CU it is slower.
+- **Lanes.** Change them only if production logs show light analyses shed with `overloaded`, or `analysis_timeout` under ordinary traffic.
 
 ## Configuration reference
 
@@ -712,13 +729,13 @@ This lists every variable and secret the deployed system uses: where it is set, 
 | `ATUS_API_POOL_MAX_IDLE_S` | `240` | `240` | close idle connections before Neon suspends at 300 s |
 | `ATUS_API_POOL_TIMEOUT_S` | `5` | `5` | pool acquire timeout → 503 `overloaded` |
 | `ATUS_API_CONNECT_TIMEOUT_S` | `10` | `15` | libpq `connect_timeout` (covers a Neon wake) |
-| `ATUS_API_STATEMENT_TIMEOUT_MS` | `85000` | `60000` | per-request `SET LOCAL statement_timeout` for analyses; final value from the week-1 calibration |
+| `ATUS_API_STATEMENT_TIMEOUT_MS` | `85000` | `85000` | per-request `SET LOCAL statement_timeout` for analyses; the request deadline is this plus 5 s. Calibrated on the emulation profile (ADR-012 "Calibration (§13)"): keep 85000 while the compute's minimum is 0.25 CU, where the F66 compare takes up to 71 s. The week-1 replay may revise it (deploy guide, step 10) |
 | `ATUS_API_META_STATEMENT_TIMEOUT_MS` | `10000` | `10000` | the same, for metadata and lexicon reads |
 | `ATUS_API_JIT` | `off` | `off` | per-request `SET LOCAL jit` (Neon has no LLVM; F37) |
-| `ATUS_API_MAX_PARALLEL_WORKERS` | unset: the server default | `0` | per-request `SET LOCAL max_parallel_workers_per_gather`; set only after the §9-gated load tests |
-| `ATUS_API_MAX_INFLIGHT` | `2` | `2` | uncached analyses in flight |
-| `ATUS_API_MAX_INFLIGHT_HEAVY` | `1` | `1` | of which multi-year |
-| `ATUS_API_ADMISSION_WAIT_S` | `5` | `5` | wait for a lane, then 503 `overloaded` |
+| `ATUS_API_MAX_PARALLEL_WORKERS` | unset: the server default | `0` | per-request `SET LOCAL max_parallel_workers_per_gather`. Leave unset in production: `0` is faster at 0.25 CU but slower at 2 CU (ADR-012 "Calibration (§13)"). Set `0` only if the compute is fixed at 0.25 CU, after its §9 proof |
+| `ATUS_API_MAX_INFLIGHT` | `2` | `2` | uncached analyses in flight (calibrated: ADR-012 "Calibration (§13)") |
+| `ATUS_API_MAX_INFLIGHT_HEAVY` | `1` | `1` | of which heavy: 8 or more year queries, `len(years)` doubled for a compare (calibrated) |
+| `ATUS_API_ADMISSION_WAIT_S` | `5` | `5` | wait for a lane, then 503 `overloaded` (calibrated) |
 | `ATUS_API_RATE_ANALYSIS` | `6/60` | `10/60` | per-client-IP token bucket for uncached analyses: `<tokens>/<seconds>` |
 | `ATUS_API_RATE_REQUESTS` | `120/60` | `120/60` | the same, for every other route |
 | `ATUS_API_DAILY_ANALYSIS_CAP` | `600` | `600` | in-process backstop, resets 00:00 UTC; the Worker's governor is the primary cap |

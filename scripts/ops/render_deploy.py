@@ -21,7 +21,8 @@ Commands:
     render_deploy.py wait --expect-build <git sha> [--previous-build <sha>] [--timeout 900]
         Poll origin /health until it reports that build: the image is pulled,
         started and routed. Allows for Render's ~1 min spin-up plus the app's
-        7-11 s start (F67) and the image pull. /health reports the commit, not
+        start (~13 s at 0.1 CPU in the 2026-10-21 emulation; F67) and the
+        image pull. /health reports the commit, not
         the digest: when the origin already ran this commit before the hook
         (``--previous-build``, e.g. a re-run that rebuilt and pushed a new
         digest), the wait cannot see the switch, so it says so as a GitHub

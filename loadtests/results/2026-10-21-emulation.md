@@ -651,7 +651,7 @@ The rule, from ADR-011 and ADR-012: `statement_timeout = clamp(3 × p99 of the w
 | `ATUS_API_STATEMENT_TIMEOUT_MS` | 85000 | **keep 85000** | Section 8. |
 | `ATUS_API_POOL_MAX_SIZE` | 4 | **keep 4** | With 2 lanes, analyses hold at most 2 connections, and metadata, hits and the snapshot read need none or one. No pool timeout occurred in any run. |
 
-Changing a default is a code and ADR change. This record makes no code change to the API: every value above either stays as it is or is conditional on an owner decision (the compute's minimum).
+Changing a default is a code and ADR change. This record makes no code change to the API: every value above either stays as it is or is conditional on an owner decision (the compute's minimum). Section 13 records how ADR-012 applied these recommendations.
 
 ## 10. What these runs do not show
 
@@ -784,3 +784,83 @@ Run from the repository root with `ATUS_LT_OUT_ROOT` (outside the repository) an
 2026-10-21T06:51:54Z  python3 loadtests/run.py profile --stage timed --profile 0.25cu --scenarios mix --set MIX_MODE=api --set EXECUTOR=arrival --set RATE=6 --set DURATION=10m
 2026-10-21T07:03:17Z  python3 loadtests/run.py profile --stage timed --profile 0.25cu --api-env ATUS_API_MAX_INFLIGHT=1 --api-env ATUS_API_MAX_INFLIGHT_HEAVY=1 --scenarios mix --set MIX_MODE=api --set EXECUTOR=arrival --set RATE=6 --set DURATION=10m
 ```
+
+## 13. Calibration applied (2026-10-21)
+
+ADR-012 ["Calibration (§13)"](../../docs/adr/ADR-012-load-and-quota-protection.md#calibration-13) records the decisions taken from sections 5–9. This section adds no new run. Its one table is read from the same bundles, with `report.py --lanes`, a read-only post-processing mode added after the runs.
+
+**Values.** Every setting keeps its code default:
+
+| Setting | Value | From |
+|---|---|---|
+| `ATUS_API_STATEMENT_TIMEOUT_MS` and the `atus_api` role default | 85000 (85 s); the deadline stays 90 s | section 8 |
+| `ATUS_API_MAX_INFLIGHT` / `_HEAVY` | 2 / 1 | sections 5.4–5.6 |
+| `ATUS_API_ADMISSION_WAIT_S` | 5 | sections 5.2, 5.4, 5.6 |
+| `ATUS_API_MAX_PARALLEL_WORKERS` | unset (server default) | sections 5.2, 5.3 |
+| heavy classifier | 8 year queries | below |
+| `ATUS_API_POOL_MAX_SIZE` | 4 | sections 5.4, 9 |
+
+**No confirmation run.** Nothing changed, so no latency or behaviour can differ from what sections 4–7 measured. The runs used production's lanes, timeout and parallel-worker setting, apart from the per-run overrides listed in section 11.
+
+**Heavy-classifier check.** This table covers every analysis that computed (main phase, `200`, `X-Cache: miss`), grouped by the lane the API's rule gives it: `len(years)`, doubled for a compare, ≥ 8.
+
+- The harness sends no spec between 2 and 7 year queries:
+  - every trend covers 23 years;
+  - W1–W6 cover 22–23 years;
+  - `genp-` pooled estimates cover 8, 12 or 22 years;
+  - every other spec is one year.
+- Database time is `Server-Timing` `db`. It excludes the wait for a lane.
+
+```text
+python3 loadtests/report.py --lanes \
+  "0.25 CU, uncached, 1 client=loadtests/results/raw/20261021T050129Z-0.25cu#uncached" \
+  "0.25 CU, worst cases, 1 client=loadtests/results/raw/20261021T040144Z-0.25cu#worstcase" \
+  "0.25 CU, origin mix=loadtests/results/raw/20261021T051548Z-0.25cu#mix" \
+  "0.25 CU, API mix, 1 lane=loadtests/results/raw/20261021T070335Z-0.25cu#mix" \
+  "0.25 CU, API mix, 2 lanes=loadtests/results/raw/20261021T065213Z-0.25cu#mix" \
+  "2 CU, uncached, 1 client=loadtests/results/raw/20261021T055223Z-2cu#uncached" \
+  "2 CU, worst cases, 1 client=loadtests/results/raw/20261021T052843Z-2cu#worstcase" \
+  "2 CU, origin mix=loadtests/results/raw/20261021T060549Z-2cu#mix" \
+  "2 CU, API mix, 2 lanes=loadtests/results/raw/20261021T062537Z-2cu#mix"
+```
+
+| Run | lane, endpoint | n | Server-Timing db min | p50 | p95 | max (s) | latency max (s) |
+|---|---|---|---|---|---|---|---|
+| 0.25 CU, uncached, 1 client | light estimate | 59 | 0.18 | 0.99 | 3.18 | 4.60 | 4.60 |
+| 0.25 CU, worst cases, 1 client | heavy estimate | 10 | 17.48 | 29.91 | 41.97 | 42.02 | 42.02 |
+| 0.25 CU, worst cases, 1 client | heavy trend | 15 | 18.81 | 23.61 | 41.30 | 41.98 | 41.99 |
+| 0.25 CU, worst cases, 1 client | heavy compare | 5 | 67.58 | 69.20 | 70.65 | 71.01 | 71.02 |
+| 0.25 CU, origin mix | light estimate | 9 | 0.36 | 1.06 | 1.72 | 1.80 | 1.80 |
+| 0.25 CU, origin mix | light compare | 4 | 1.15 | 1.47 | 2.14 | 2.23 | 2.24 |
+| 0.25 CU, origin mix | heavy estimate | 3 | 5.47 | 7.41 | 8.33 | 8.43 | 8.44 |
+| 0.25 CU, origin mix | heavy trend | 5 | 9.81 | 11.14 | 16.86 | 18.17 | 18.17 |
+| 0.25 CU, API mix, 1 lane | light estimate | 47 | 0.08 | 0.91 | 1.57 | 2.57 | 5.95 |
+| 0.25 CU, API mix, 1 lane | light compare | 16 | 0.79 | 1.35 | 2.62 | 2.63 | 2.93 |
+| 0.25 CU, API mix, 1 lane | heavy estimate | 10 | 5.79 | 6.48 | 8.19 | 8.39 | 9.56 |
+| 0.25 CU, API mix, 1 lane | heavy trend | 13 | 8.97 | 18.52 | 21.28 | 21.61 | 21.75 |
+| 0.25 CU, API mix, 2 lanes | light estimate | 50 | 0.33 | 1.37 | 3.25 | 3.68 | 3.68 |
+| 0.25 CU, API mix, 2 lanes | light compare | 19 | 1.16 | 3.02 | 4.85 | 5.18 | 5.99 |
+| 0.25 CU, API mix, 2 lanes | heavy estimate | 10 | 5.33 | 7.77 | 10.21 | 10.21 | 13.27 |
+| 0.25 CU, API mix, 2 lanes | heavy trend | 12 | 9.51 | 21.72 | 27.84 | 28.54 | 30.52 |
+| 2 CU, uncached, 1 client | light estimate | 59 | 0.02 | 0.08 | 0.14 | 0.23 | 0.23 |
+| 2 CU, worst cases, 1 client | heavy estimate | 10 | 1.99 | 2.24 | 2.69 | 2.70 | 2.70 |
+| 2 CU, worst cases, 1 client | heavy trend | 15 | 1.88 | 2.08 | 2.69 | 2.69 | 2.69 |
+| 2 CU, worst cases, 1 client | heavy compare | 5 | 2.97 | 2.99 | 3.03 | 3.04 | 3.04 |
+| 2 CU, origin mix | light estimate | 9 | 0.06 | 0.09 | 0.15 | 0.15 | 0.16 |
+| 2 CU, origin mix | light compare | 4 | 0.11 | 0.13 | 0.14 | 0.14 | 0.15 |
+| 2 CU, origin mix | heavy estimate | 3 | 0.58 | 0.73 | 0.80 | 0.80 | 0.81 |
+| 2 CU, origin mix | heavy trend | 5 | 1.00 | 1.06 | 1.74 | 1.90 | 1.91 |
+| 2 CU, API mix, 2 lanes | light estimate | 53 | 0.04 | 0.11 | 0.16 | 0.22 | 0.23 |
+| 2 CU, API mix, 2 lanes | light compare | 21 | 0.10 | 0.14 | 0.18 | 0.21 | 0.22 |
+| 2 CU, API mix, 2 lanes | heavy estimate | 12 | 0.54 | 0.68 | 0.84 | 0.84 | 0.85 |
+| 2 CU, API mix, 2 lanes | heavy trend | 19 | 0.88 | 1.94 | 2.14 | 2.19 | 2.20 |
+
+**What the numbers show.**
+
+- **The rule separated the two classes in every run.** Every heavy request used more database time than every light one at the same profile:
+  - at 0.25 CU, one analysis at a time (the 1-client runs and the one-lane mix): light at most 4.60 s, heavy at least 5.79 s;
+  - at 0.25 CU with two lanes busy: light at most 5.18 s, heavy at least 5.33 s;
+  - at 2 CU: light at most 0.23 s, heavy at least 0.54 s.
+- **The margin at the boundary is narrow at 0.25 CU.** The costliest single-year spec (4.60 s) is close to the cheapest 8-year pooled estimate (5.33–5.79 s). The medians are far apart: 0.91–1.37 s for light estimates, against 6.48–29.91 s for heavy pooled estimates and 11.14–23.61 s for trends.
+- **Not measured.** Specs of 2–7 year queries: pooled ranges of 2–7 years, compares over 2–3 years, and trends shorter than 8 years. The threshold's immediate neighbourhood is therefore untested.
+- **Decision.** No measured request was misclassified, so the threshold stays at 8. The edge governor uses the same rule.

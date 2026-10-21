@@ -202,10 +202,58 @@ def test_production_example_values_match_the_contract():
     }
     commented = dict(re.findall(r"^# ([A-Z][A-Z0-9_]*)=(\S*)$", _read(".env.production.example"),
                                 re.MULTILINE))
-    # decided by the load tests; set by Render; baked in at build time
+    # unset: the server default (ADR-012 "Calibration (§13)"); set by Render; baked in
+    # at build time
     assert commented["ATUS_API_MAX_PARALLEL_WORKERS"] == ""
     assert commented["PORT"] == "10000"
     assert commented["ATUS_BUILD_SHA"] == "dev"
+
+
+# ADR-012 "Calibration (§13)": the values the 2026-10-21 emulation runs confirmed
+# (loadtests/results/2026-10-21-emulation.md, sections 8, 9 and 13).
+CALIBRATED = {
+    "ATUS_API_STATEMENT_TIMEOUT_MS": "85000", "ATUS_API_MAX_INFLIGHT": "2",
+    "ATUS_API_MAX_INFLIGHT_HEAVY": "1", "ATUS_API_ADMISSION_WAIT_S": "5",
+}
+
+
+def test_calibrated_limits_are_the_defaults_and_agree_across_components():
+    """The production template, the code's production defaults, the API role's default,
+    the request deadline and the edge governor all carry the calibrated values."""
+    from atus_pipeline.api.database import DEADLINE_MARGIN_S
+    from atus_pipeline.api.protection import HEAVY_YEAR_QUERIES
+    from atus_pipeline.config import load_settings
+    from atus_pipeline.serving.restore import EXPECTED_ROLE_SETTINGS
+
+    example = _assignments(_read(".env.production.example"))
+    assert {name: example[name] for name in CALIBRATED} == CALIBRATED
+    settings = load_settings({
+        "ATUS_ENV": "production", "ATUS_EDGE_SECRETS": "e" * 40,
+        "ATUS_DATABASE_URL": "postgresql://atus_api:not-a-secret@db.invalid:5432/atus",
+    })
+    assert (settings.api_statement_timeout_ms, settings.api_max_inflight,
+            settings.api_max_inflight_heavy, settings.api_admission_wait_s) == (85_000, 2, 1, 5)
+    # Unset in production: 0 loses at 2 CU, so ADR-011's rule does not adopt it.
+    assert settings.api_max_parallel_workers is None
+    assert HEAVY_YEAR_QUERIES == 8
+
+    # The API role's backstop equals the per-transaction value.
+    roles = dict(re.findall(r"ALTER ROLE :\"api_role\" SET (\w+) = '?(\w+)'?;",
+                            _read("scripts/ops/roles.sql")))
+    expected_role_timeout = f"{settings.api_statement_timeout_ms // 1000}s"
+    assert roles["statement_timeout"] == EXPECTED_ROLE_SETTINGS["statement_timeout"]
+    assert roles["statement_timeout"] == expected_role_timeout
+
+    # The request deadline stays at or under ADR-011's 100 s, and the governor charges
+    # exactly it as an admitted analysis's provisional DB-busy time, with the same rule
+    # for what is heavy.
+    deadline_ms = settings.api_statement_timeout_ms + DEADLINE_MARGIN_S * 1000
+    assert deadline_ms <= 100_000
+    constants = _read("edge/src/constants.ts")
+    busy = re.search(r"^export const PROVISIONAL_BUSY_MS = ([\d_]+)$", constants, re.MULTILINE)
+    heavy = re.search(r"^export const HEAVY_YEAR_QUERIES = (\d+)$", constants, re.MULTILINE)
+    assert int(busy.group(1).replace("_", "")) == deadline_ms
+    assert int(heavy.group(1)) == HEAVY_YEAR_QUERIES
 
 
 def test_production_example_documents_every_variable_the_code_reads():

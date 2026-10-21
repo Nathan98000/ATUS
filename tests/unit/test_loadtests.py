@@ -253,3 +253,46 @@ def test_throttled_share_and_the_statement_timeout_clamp(tmp_path):
                                                      "clamped_s": 85.0}
     assert report.calibration(tmp_path, "ceiling")["clamped_s"] == 30.0
     assert report.calibration(tmp_path, "mid")["clamped_s"] == 36.2
+
+
+def test_lane_classes_follow_the_api_rule_for_the_harness_specs(tmp_path):
+    """report.py --lanes: the API's rule (len(years), doubled for a compare, >= 8) on the
+    harness's specs, which never fall between 2 and 7 year queries (k6/lib/specs.js)."""
+    from atus_pipeline.api.protection import is_heavy
+
+    cases = [  # (endpoint, spec id, years the harness sends)
+        ("estimate", "errors-weird-020", 1), ("estimate", "gen1-3", 1),
+        ("estimate", "pandemic-sleep-2020", 1), ("estimate", "starter-sleep", 1),
+        ("compare", "genc-7", 1), ("compare", "compare-sex-sleep", 1),
+        ("compare", "starter-tv-by-sex", 1),
+        ("estimate", "genp-4", 8), ("estimate", "W1-pooled22-leisure", 22),
+        ("estimate", "W4-F66-pooled22-tier1", 22), ("trend", "gent-2", 23),
+        ("trend", "trend-sleep", 23), ("trend", "starter-leisure-trend", 23),
+        ("trend", "W2-trend23-12", 23), ("compare", "W6-F66-compare22-sex", 22),
+    ]
+    for endpoint, spec, n_years in cases:
+        expected = "heavy" if is_heavy(endpoint, range(n_years)) else "light"
+        assert report.lane_class({"ep": endpoint, "spec": spec}) == f"{expected} {endpoint}"
+
+    import json
+    rows = [  # only main-phase 200 misses count
+        {"ph": "main", "ep": "estimate", "spec": "gen1-1", "st": 200, "cache": "miss",
+         "dur": 1300.0, "db": 1200.0},
+        {"ph": "main", "ep": "estimate", "spec": "gen1-2", "st": 200, "cache": "miss",
+         "dur": 900.0, "db": 800.0},
+        {"ph": "main", "ep": "trend", "spec": "gent-1", "st": 200, "cache": "miss",
+         "dur": 21000.0, "db": 20900.0},
+        {"ph": "main", "ep": "estimate", "spec": "gen1-1", "st": 200, "cache": "hit",
+         "dur": 2.0, "db": 0.0},
+        {"ph": "main", "ep": "trend", "spec": "gent-2", "st": 503, "cache": "",
+         "dur": 5000.0, "db": None},
+        {"ph": "setup", "ep": "estimate", "spec": "starter-sleep", "st": 200, "cache": "miss",
+         "dur": 700.0, "db": 690.0},
+    ]
+    run = tmp_path / "s"
+    run.mkdir()
+    with gzip.open(run / "requests.jsonl.gz", "wt") as handle:
+        handle.write("\n".join(json.dumps({"t": "req", **r}) for r in rows) + "\n")
+    table = report.lanes_table([("run", tmp_path, "s")])
+    assert table[2:] == ["| run | light estimate | 2 | 0.80 | 1.00 | 1.18 | 1.20 | 1.30 |",
+                         "| run | heavy trend | 1 | 20.90 | 20.90 | 20.90 | 20.90 | 21.00 |"]

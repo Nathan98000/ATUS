@@ -23,6 +23,6 @@ Each exported run is a directory:
 | Directory | Kind | What it shows |
 |---|---|---|
 | [`2026-10-21-dryrun/`](2026-10-21-dryrun/) | dry run (not timed) | every scenario, the three DB profiles, the laptop baseline and the cold start run end to end against the real serving dump |
-| [`2026-10-21-emulation.md`](2026-10-21-emulation.md) with [`raw/`](raw/) | **timed** | the restore drill, cold starts, every scenario at 0.25 CU and 2 CU, the laptop baseline, saturation sweeps, lane calibration, the `statement_timeout` calibration and the recommendations (brief §13, §10) |
+| [`2026-10-21-emulation.md`](2026-10-21-emulation.md) with [`raw/`](raw/) | **timed** | the restore drill, cold starts, every scenario at 0.25 CU and 2 CU, the laptop baseline, saturation sweeps, lane calibration, the `statement_timeout` calibration, the recommendations and the calibration applied in ADR-012 (brief §13, §10) |
 
 `raw/` holds the timed bundles exported by `loadtests/export_raw.py` (compact: no logs, no secrets; per-request rows as `requests.csv.gz`, `docker stats` as `docker_stats.csv.gz`), the restore drill's report, and the precondition snapshots. `python3 loadtests/report.py` regenerates every table of the timed record from it.
