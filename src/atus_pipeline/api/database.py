@@ -150,7 +150,9 @@ another version's tables."""
 def snapshot_limits_statement(limits: list[tuple[str, str]]) -> pgsql.Composed:
     """The limits as ``SET LOCAL`` statements followed by
     :data:`SNAPSHOT_LOCK`, sent as one query (simple protocol: no parameters,
-    and psycopg never prepares a multi-statement query). Neither ``SET`` nor
+    and ``Database`` executes it with ``prepare=False``, because PostgreSQL
+    cannot prepare several statements and ``ATUS_API_PREPARE_THRESHOLD=0``
+    would make psycopg try at once). Neither ``SET`` nor
     ``LOCK`` takes the transaction snapshot, which a ``SELECT set_config(...)``
     would: a REPEATABLE READ transaction's snapshot is fixed by its first
     other statement, after the lock is held (``PlannedStmtRequiresSnapshot``
@@ -417,7 +419,10 @@ class Database:
                     conn, self._settings.api_statement_timeout_ms / 1000 + DEADLINE_MARGIN_S
                 )
             with conn:
-                conn.execute(sql, params)
+                # Never prepared: the snapshot's statement is several
+                # statements, which PostgreSQL cannot prepare, and
+                # ATUS_API_PREPARE_THRESHOLD=0 would prepare it at once.
+                conn.execute(sql, params, prepare=False if repeatable_read else None)
                 yield conn
         except psycopg.errors.QueryCanceled as exc:
             with self._active_lock:

@@ -319,6 +319,22 @@ class TestTransactions:
                 with database.transaction("metadata", repeatable_read=True) as conn:
                     conn.execute("CREATE TEMP TABLE scratch (x int)")
 
+    @pytest.mark.parametrize("threshold", [0, 1, 5, None])
+    def test_the_snapshot_read_works_with_every_prepare_threshold(self, loaded_settings,
+                                                                  threshold):
+        """The snapshot's opening query is several statements (SET LOCAL ...;
+        LOCK ...), which PostgreSQL cannot prepare; with
+        ATUS_API_PREPARE_THRESHOLD=0 psycopg prepared it on first use and
+        every snapshot read failed (review r1 verification). Repeated on one
+        connection past psycopg's default threshold of 5."""
+        with api(loaded_settings, api_prepare_threshold=threshold, api_pool_max_size=3,
+                 api_snapshot_ttl_s=0) as (client, app):
+            statuses = [client.get("/api/v1/meta").status_code for _ in range(8)]
+            assert client.post(ESTIMATE, json={"activity": {"include": ["0101"]},
+                                               "years": [2023]}).status_code == 200
+            assert app.state.database.pool.get_stats()["connections_num"] == 1
+        assert statuses == [200] * 8
+
 
 # --------------------------------------------------------------------------- #
 # statements per request, as the API counts them                              #
