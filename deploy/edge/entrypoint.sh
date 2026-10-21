@@ -3,7 +3,8 @@
 #
 # Worker secrets reach wrangler through .dev.vars (mode 600, inside the
 # container only), never through the command line, where `ps` would show
-# them. Worker vars that deploy.yml publishes are passed as --var when set;
+# them. Worker vars (names from the "vars" of edge/wrangler.jsonc, the only
+# ones edge/src reads) are passed as --var when set, as deploy.yml does;
 # unset ones keep the values in edge/wrangler.jsonc.
 #
 # With ATUS_EDGE_RELAY_TARGET set (the local stack: api:10000), a loopback
@@ -26,7 +27,7 @@ done
 
 set --
 for name in DATA_VERSION ANALYTICS_VERSION RESPONSE_FORMAT SNAPSHOT_ID EPOCH \
-            PREWAKE GATE_INFLIGHT API_ORIGIN NEON_PROJECT_ID; do
+            PREWAKE NEON_PROJECT_ID; do
   eval "value=\${$name:-}"
   if [ -n "$value" ]; then
     set -- "$@" --var "$name:$value"

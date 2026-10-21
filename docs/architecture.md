@@ -297,8 +297,11 @@ Phase 5 added protection in front of the engine (ADR-012):
   statement counts; Prometheus text at `/metrics`; a periodic metrics log
   event; `Server-Timing`.
 
-The values above are provisional until calibration ("Calibration" in
-ADR-012). The HTTP reference is [api.md](api.md).
+The values above were calibrated on the free-tier emulation on 2026-10-21
+and kept at their code defaults
+([ADR-012, "Calibration (§13)"](adr/ADR-012-load-and-quota-protection.md#calibration-13));
+the post-deploy replay on Neon must still confirm them. The HTTP reference is
+[api.md](api.md).
 
 ## Serving database
 
@@ -402,7 +405,10 @@ assets and never run Worker code. Only `/api` and `/api/*` do
 ## Hosting (designed, not deployed)
 
 ADR-011 chose this design through a judge panel of five proposals; the
-runner-up (Vercel Hobby as the API host) is the documented fallback.
+runner-up (Vercel Hobby as the API host) is the documented fallback. It is a
+manual procedure, and none of its preconditions is implemented (ADR-011,
+amendments): the Worker reads its origin only from the secret
+`RENDER_ORIGIN`.
 
 | Role | Provider (free plan) | Notes |
 |---|---|---|
@@ -466,9 +472,29 @@ the engine requires bumping `ANALYTICS_VERSION` and recording it in
 
 ## Performance
 
-Performance under free-tier emulation is measured by the load tests: see
-loadtests/results (§13) ([`loadtests/results/`](../loadtests/results/)). The
-Phase 5 audit's timed measurements of the pre-Phase-5 code (latency at
+Performance under free-tier emulation is measured by the load tests
+([`../loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md),
+local runs on 2026-10-21; the API at 0.1 CPU / 512 MB, the database at
+Neon's 0.25 CU floor and 2 CU ceiling):
+
+| Request | 0.25 CU, p50 | 2 CU, p50 |
+| --- | --- | --- |
+| metadata route or cached analysis, one client (no SQL; the 0.1-CPU API serves 33–35 metadata requests/s and 67–71 cache hits/s) | 1.6–1.9 ms | 1.6–1.9 ms |
+| uncached single-year estimate with replicate SEs | 0.99 s | 79 ms |
+| worst cases: pooled 22 years, 23-year trends (by kind) | 21.4–21.8 s | 2.03–2.12 s |
+| F66 broad selector pooled or trended / compared by sex | 33.5–35.0 s / 69.2 s | 2.67–2.68 s / 2.99 s |
+| container cold start to the first `/health` (0.1 CPU; Render's spin-up excluded) | 13.1 s | 12.9 s |
+
+Analyses ran one at a time for these rows, and PostgreSQL's statement log
+puts 96.6–99.9% of their summed latency in the database. At 0.25 CU
+throughput peaks at one analysis in flight (1.14 per second), and the
+admission lanes shed with `503 overloaded` from 4 concurrent clients; at 2 CU
+it plateaus at about 24 per second from 2 clients, with no shed. The API's
+peak RSS stayed at or below 76.1 MiB of 512 MB. These runs kept every
+protection default, including the 85 s statement timeout, which is only
+1.2 × the F66 compare's p99 at the floor
+([ADR-012, "Calibration (§13)"](adr/ADR-012-load-and-quota-protection.md#calibration-13)).
+The Phase 5 audit's timed measurements of the pre-Phase-5 code (latency at
 0.25 CU and 2 CU, saturation, memory, cold start) are in
 [`evidence/phase5/01-audit-timed.md`](evidence/phase5/01-audit-timed.md) and
 summarized in [operations.md](operations.md).

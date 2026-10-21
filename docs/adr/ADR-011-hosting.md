@@ -749,7 +749,7 @@ The decision is unchanged. This section records where the implementation (code, 
 ### Cross-references
 
 - The labels "to be finalized in ADR-012" on "Quota governor" and "final values in ADR-012" on its "Starting budgets" name the wrong ADR. The governor, its budgets and the edge tiers are finalized in [ADR-015](ADR-015-edge-cache-snapshot-and-governor.md), whose title is "Edge result cache, static snapshot and quota governor" (broader than the "persistent result cache" under **Related**).
-- [ADR-012](ADR-012-load-and-quota-protection.md) holds the API's own limits, the "Bounded work" values (still provisional) and the API's error codes. [ADR-013](ADR-013-data-releases-and-serving-db.md) finalizes "Release switch". [ADR-014](ADR-014-observability.md) finalizes the IP truncation in logs and the monitor cadence.
+- [ADR-012](ADR-012-load-and-quota-protection.md) holds the API's own limits, the "Bounded work" values (calibrated on the emulation profile on 2026-10-21, its "Calibration (§13)") and the API's error codes. [ADR-013](ADR-013-data-releases-and-serving-db.md) finalizes "Release switch". [ADR-014](ADR-014-observability.md) finalizes the IP truncation in logs and the monitor cadence.
 - [ADR-016](ADR-016-short-share-links.md) (short share links, deferred) was added.
 - Error code names: the API's codes are in ADR-012 "Error mapping". The Worker-generated `service_waking`, `upstream_unavailable`, `capacity_unavailable` and `capacity_paused` are specified in ADR-015 and defined in `edge/src/proxy.ts`, `edge/src/ops.ts` and `edge/src/governor.ts`. The client-facing table is `docs/api.md`, "Errors".
 
@@ -788,7 +788,7 @@ The decision is unchanged. This section records where the implementation (code, 
   - no `deploy-vercel` job.
 
   They were not built in Phase 5.
-- The Worker reads its origin only from the secret `RENDER_ORIGIN` (`edge/src/index.ts`, `edge/src/upstream.ts`). `API_ORIGIN` and `GATE_INFLIGHT`, which `deploy/edge/entrypoint.sh` would pass as vars, are read by no Worker code.
+- The Worker reads its origin only from the secret `RENDER_ORIGIN` (`edge/src/index.ts`, `edge/src/upstream.ts`). `API_ORIGIN` and `GATE_INFLIGHT` are read by no Worker code; `deploy/edge/entrypoint.sh` no longer passes them as vars, and the configuration reference no longer lists them (2026-10-21).
 - **Consequence.** "Recovery: switch to the fallback by changing a Worker var" (accepted risk 1) and the graft "fail over to a different provider by changing one Worker var" do not hold for the current code.
   - After a Render suspension, only static content and KV-cached results keep working.
   - That lasts until the preconditions are built and the switch procedure is run.
@@ -815,12 +815,12 @@ The decision is unchanged. This section records where the implementation (code, 
 ### API and database details
 
 - **In-process snapshot.** With `ATUS_EXPECTED_DATA_VERSION` set (production), the snapshot is pinned and never re-read for its age; "refreshed at most every 10 minutes" no longer applies. A stale-if-error fallback was added (ADR-012). Reason: every re-read can wake Neon.
-- **OpenAPI.** `/openapi.json` is off in production as decided. The schema is not served as a static asset of the site, though: it is committed as `frontend/openapi.json` (`scripts/export_openapi.py`, drift-checked in `ci.yml`).
+- **OpenAPI.** `/openapi.json` is off in production as decided. The schema is committed as `frontend/openapi.json` (`scripts/export_openapi.py`, drift-checked in `ci.yml`), and the site publishes that copy as a static asset at `/openapi.json`, as decided ("Exposure"). It sits outside `/api`, so serving it runs neither the Worker nor the API.
 - **TLS check.** The libpq-version and `sslrootcert=system` checks are in `tests/deploy/test_container_image.py`, which the image job runs after the build; the Dockerfile itself checks nothing. The image sets `SSL_CERT_FILE`, because the libpq inside the psycopg binary wheel has no usable default CA path ([`../deployment.md`](../deployment.md#tls-to-the-database)).
 - **Optimizations.**
   - `max_parallel_workers_per_gather` is a per-request API setting (`ATUS_API_MAX_PARALLEL_WORKERS`, unset by default), not a role default (`scripts/ops/roles.sql`).
   - The year pushdown was adopted with the §9 proof, as a `MATERIALIZED` CTE (ADR-013, amendments).
-- **Calibration.** The statement timeout and the lanes still await the §13 emulation runs and the post-deploy replay, and the maximum CU awaits week-1 Neon data. For the §13 results, see loadtests/results (§13), [`../../loadtests/results/`](../../loadtests/results/). This amendment adds no performance number.
+- **Calibration.** The §13 emulation runs (2026-10-21) kept the statement timeout, the lanes and the parallel-worker setting at their code defaults ([ADR-012, "Calibration (§13)"](ADR-012-load-and-quota-protection.md#calibration-13)). The post-deploy replay must confirm them on Neon, and the maximum CU still awaits week-1 Neon data. The measurements this ADR quoted are superseded: see [Calibration (§13): superseded measurements](#calibration-13-superseded-measurements) below.
 
 ### Release switch
 
@@ -837,3 +837,47 @@ The decision is unchanged. This section records where the implementation (code, 
   - The Firefox projects run only in Linux CI (`ci.yml` jobs `e2e` and `e2e-stack`), because Playwright's Firefox does not launch on the development machine (macOS 27).
   - No CI run of the Phase 5 workflows is recorded in the repository, and the remote-tracking `origin/main` in this clone is the Phase 4 commit `387fc2d`. No Firefox result exists yet.
   - The post-deploy browser smoke runs in Chromium only.
+
+### Calibration (§13): superseded measurements
+
+The decision is unchanged. The §13 load tests ran locally on 2026-10-21 against the production-mode stack with the real serving release, the API at Render Free's 0.1 CPU / 512 MB and the database at Neon Free's 0.25 CU floor and 2 CU ceiling ([`../../loadtests/results/2026-10-21-emulation.md`](../../loadtests/results/2026-10-21-emulation.md), "the record"). [ADR-012, "Calibration (§13)"](ADR-012-load-and-quota-protection.md#calibration-13) takes its decisions from them. Nothing ran on Neon, Render or Cloudflare.
+
+Their numbers supersede three parts of this ADR, which stay above as written: the audit's measurements of the code at 387fc2d.
+
+**1. "Measured facts that drive the design".** For the current code:
+
+| Fact | Above (audit, 387fc2d) | Now (record section) |
+|---|---|---|
+| API memory | ~70 MB peak | peak RSS (VmHWM) at most 76.1 MiB, cgroup peak at most 59.3 MiB, of 512 MB, with the 256-entry result cache full (5.7). Also "~70 MB" under "API process model" |
+| API cold start at 0.1 CPU, before the platform's own spin-up | first `/health` p50 7.65 s; first `/meta` up to 11.04 s | first `/health` p50 13.12 s (DB at 0.25 CU) and 12.88 s (2 CU), max 13.85 s; first `/api/v1/meta` p50 13.72 s and 13.21 s, max 14.28 s. Start-up costs 1.3–1.4 CPU-seconds of import (4). Also "the measured 7–11 s process start" under "Rejected alternatives" |
+| Share of request time in the DB | ≥ 98.4% at 0.25 CU | 98.7–99.1% of uncached single-year latency at 0.25 CU, 96.6–97.0% at 2 CU, 99.7–99.9% for the worst cases; the API's `Server-Timing` `app` time 1.1–2.6 ms per worst case at p50 (5.8) |
+| Worst cases at 0.25 CU | ~33–52 s (pooled 22 years p50 51.7 s) | pooled 22-year leisure and 23-year trends 21.35–21.81 s at p50 (max 25.80 s); the F66 broad selector 33.49–34.99 s pooled or trended (max 42.02 s), and 69.21 s compared by sex (max 71.02 s); p99 of all 30 requests 70.52 s (5.3). Also "47–52 s" under "Rejected alternatives" (P3 at a fixed 0.25 CU) |
+| Worst cases at 2 CU | 2.7–3.4 s | 2.03–2.99 s at p50 by kind, p99 3.03 s (5.3) |
+| Single-year estimate with SE | p50 6.95 s at 0.25 CU, 0.38 s at 2 CU | p50 0.99 s at 0.25 CU (p99 4.43 s) and 79 ms at 2 CU (p99 211 ms) (5.2) |
+| Saturation | DB CPU saturates from 2 concurrent at 0.25 CU; at 16, 6 × 503 | through the real lanes: at 0.25 CU throughput peaks at 1 concurrent client (1.14 analyses/s), `503 overloaded` starts at 4 clients and reaches 246 of 354 requests at 16; at 2 CU it plateaus at about 24/s from 2 clients, with no 503 up to 16 (5.4) |
+| Parallel query off | 40.6 / 39.5 s → 19.2 / 19.1 s (probe) | `ATUS_API_MAX_PARALLEL_WORKERS=0`: at 0.25 CU the F66 compare 69.21 → 38.58 s and a single-year estimate 0.99 → 0.70 s at p50; at 2 CU slower, worst-case p99 3.03 → 3.53 s (5.2, 5.3). Left unset (ADR-012) |
+| Serving DB size | cluster sum 650,458,708 B (prototype) | the release artifact restored: `sum(pg_database_size)` 649,903,180 B, 65% of 1,000,000,000 B; dump 336,549,536 B (3) |
+
+The year pushdown is adopted (ADR-013). The statements per request and the pool's behaviour changed with the implementation, not the calibration: [ADR-012](ADR-012-load-and-quota-protection.md) and [`../api.md`](../api.md#statements-per-request).
+
+**2. "Coldest path for a novel analysis"** (Request flow), recomputed. **PROJECTION**, from these terms in sequence (the API wakes Neon only on its first database request):
+
+- Render spin-up: about a minute (documented, unmeasured for this image). Whether it includes the app start is still unknown.
+- App start: 13.2–13.7 s at p50 to the first `/api/v1/meta`, at most 14.28 s, at 0.1 CPU. Measured with the database already awake; it includes the first snapshot read.
+- Neon wake: a few hundred ms to a few seconds (documented, unmeasured).
+- The query. At 2 CU: 0.079 s at p50 for a single-year estimate, at most 3.04 s for a worst case. At 0.25 CU: 0.99 s at p50 (at most 4.60 s) for a single-year estimate, at most 25.80 s for the non-F66 worst cases, and at most 71.02 s for the F66 compare. The statement timeout (85 s) and the deadline (90 s) cap it. How fast a freshly woken compute leaves 0.25 CU is unmeasured (F41), so the floor's figures are the conservative ones.
+
+| Novel analysis | Coldest path (PROJECTION) |
+|---|---|
+| single-year estimate | about 60–82 s: 60 s + 0–14.3 s + 0.3–3 s + 0.08–4.6 s |
+| pooled or trend worst case, non-F66, at 0.25 CU | up to about 103 s |
+| F66 compare at 0.25 CU (the slowest measured request) | about 135–148 s: about 148 s when Render's minute excludes the app start, about 135 s when it includes it |
+| bound: any analysis cut off by the 90 s deadline | about 167 s, answered with 503 `analysis_timeout` |
+
+This replaces "about 65–80 s in the typical case and up to ~125 s in the worst".
+
+- **The 125 s proxy read timeout.** If it applies to the Worker→Render hop (an unknown above) and Render holds a request through its spin-up (also unknown), the F66 compare's cold path exceeds it. The visitor then gets a 524, which the Worker answers as `upstream_unavailable` (`origin_timeout`). The API still finishes and caches the analysis, and the SPA's one retry for that reason joins it or hits the cache. This updates "The coldest worst case (spin-up ~70 s + a query at 0.25 CU)" under "Risks".
+- **The SPA's 150 s analysis budget** ([`../frontend.md`](../frontend.md#cold-start-retries-and-service-states)). About 148 s only just fits; the 167 s bound does not. A visitor who runs out of budget sees a time-out, while a computation that completes is cached for "Try again".
+- **Prewake** still overlaps the first two terms with the time a visitor spends building a spec.
+
+**3. The compute basis** ("Database: Neon"). The decision stands: autoscaling, minimum 0.25 CU, maximum 2 CU. Its basis now reads: worst cases at 2.03–2.99 s (p50) at 2 CU against 21.35–69.21 s at 0.25 CU, the F66 compare included; the floor is 10–23 × slower. The calibration lever's cost changes too. At a fixed 0.25 CU the worst cases take 21–22 s, the F66 broad selector 33–35 s, and its compare 69.21 s at p50 (71.02 s max), not "47–52 s". With `ATUS_API_MAX_PARALLEL_WORKERS=0`, once its §9 proof passes, the compare drops to 38.58 s at p50 (40.71 s max), as ADR-012's week-1 rules say.

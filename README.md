@@ -247,8 +247,17 @@ npm ci && npm test                    # Vitest in workerd; never contacts Cloudf
   The last committed replay passed 544 of 544 specifications
   ([evidence](docs/evidence/phase5/equivalence/final-9afd1b4/README.md)).
 - **Load tests** run only locally, against the production-mode stack under
-  the emulation profile, never against a provider: see loadtests/results
-  (§13) ([loadtests/results/](loadtests/results/)).
+  the emulation profile, never against a provider: the API at Render Free's
+  0.1 CPU / 512 MB, the database at Neon Free's 0.25 CU floor and its 2 CU
+  ceiling. The 2026-10-21 runs
+  ([loadtests/results/2026-10-21-emulation.md](loadtests/results/2026-10-21-emulation.md))
+  measured uncached single-year estimates with replicate SEs at 0.99 s p50
+  at 0.25 CU and 79 ms at 2 CU. Pooled 22-year and 23-year trend worst cases
+  took 21.4–21.8 s at 0.25 CU and 2.03–2.12 s at 2 CU, and the F66 broad-selector
+  compare by sex 69–71 s at 0.25 CU. At 0.1 CPU the container's cold start
+  to its first `/health` took 13.1 s p50, before Render's own spin-up. The
+  runs kept every protection default
+  ([ADR-012, "Calibration (§13)"](docs/adr/ADR-012-load-and-quota-protection.md#calibration-13)).
 - **After a deploy** (not run yet): `scripts/replay_deployed.py` is a
   quota-budgeted replay of the BLS benchmarks against the public URL, and
   `frontend/playwright.deployed.config.ts` a one-journey browser smoke

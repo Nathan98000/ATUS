@@ -223,6 +223,22 @@ def test_the_deploy_job_follows_adr_011():
     assert "Rollback" in deploy
 
 
+def test_the_deploy_header_states_the_smoke_budgets_the_steps_enforce():
+    """The header comment's request budgets are the ones the steps apply: the smoke
+    script's --max-requests and the browser journey's /api cap."""
+    text = (WORKFLOWS_DIR / "deploy.yml").read_text()
+    header = re.sub(r"\n#\s+", " ", text[:text.index("\nname:")])
+    smoke = re.search(r"post-deploy smoke \(<= (\d+) requests, the step's --max-requests\)",
+                      header)
+    browser = re.search(r"browser smoke \(<= (\d+) /api requests\)", header)
+    assert smoke and browser, header
+    deploy = flat(jobs(by_name("deploy.yml"))["deploy"])
+    assert re.findall(r"--max-requests (\d+)", deploy) == [smoke.group(1)]
+    assert f"Post-deploy smoke (at most {smoke.group(1)} requests" in deploy
+    starter = (REPO_ROOT / "frontend" / "e2e" / "deployed" / "starter.deployed.ts").read_text()
+    assert re.search(rf"^const MAX_API_REQUESTS = {browser.group(1)}$", starter, re.MULTILINE)
+
+
 def test_the_snapshot_is_built_from_the_pushed_digest_and_the_committed_release():
     snapshot = flat(jobs(by_name("deploy.yml"))["snapshot"])
     assert "release_manifest.py fetch" in snapshot

@@ -18,8 +18,9 @@
 #              here deploys nothing
 #   deploy     environment `production` (the owner approves): Render deploy
 #              hook by digest, wait for the build, wrangler deploy with the
-#              release vars, post-deploy smoke (<= 40 requests), browser smoke,
-#              rollback notes in the job summary
+#              release vars, post-deploy smoke (<= 30 requests, the step's
+#              --max-requests), browser smoke (<= 6 /api requests), rollback
+#              notes in the job summary
 #
 # Secrets are read from the environment by the scripts and never echoed.
 name: Deploy

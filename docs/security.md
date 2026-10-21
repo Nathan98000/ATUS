@@ -48,7 +48,7 @@ owner machine:  ~/.config/atus/edge.env and neon.env, the neondb_owner DSN, ever
 
 ## Controls
 
-Defaults are the values in the code today. The calibration of timeouts and concurrency belongs to ADR-012; for measurements see loadtests/results (§13), under [`loadtests/results/`](../loadtests/results/).
+Defaults are the values in the code today. The calibration of timeouts and concurrency belongs to ADR-012: the 2026-10-21 emulation runs kept every default ([ADR-012, "Calibration (§13)"](adr/ADR-012-load-and-quota-protection.md#calibration-13); measurements in [`../loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md)).
 
 **C1. Edge route allowlist.** The Worker serves a fixed set of `/api` routes plus `/api/v1/activities/<code>`, where the code is 1–32 characters from `[A-Za-z0-9_-]`. Anything else under `/api` gets a 404 envelope, and a wrong method gets a 405, with no origin call. Paths are matched exactly, with no case folding and no trailing-slash folding. `/ready`, `/metrics`, `/docs`, `/redoc` and `/openapi.json` are never routed.
 Code: `edge/src/routes.ts`. Tests: `edge/test/worker/routing.test.ts`.
@@ -391,7 +391,7 @@ Tests:
 - **Retries.** A retry after a disconnect or a proxy timeout joins the running computation or hits the cache; it does not compute again (`tests/integration/api_prod/test_server.py::TestClientDisconnect`).
 - **Measured scale.**
   - The audit measured the pre-fix code under emulation: worst cases took 47–52 s at p50 at Neon's 0.25 CU floor, and database CPU saturated at 2 concurrent uncached analyses ([`docs/evidence/phase5/01-audit-timed.md`](evidence/phase5/01-audit-timed.md)).
-  - For the current code's timeouts and lanes, see loadtests/results (§13).
+  - The current code, under the same emulation on 2026-10-21 ([`../loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md)): at 0.25 CU the pooled 22-year and 23-year trend worst cases took 21–22 s at p50, the F66 broad selectors 33–35 s pooled or trended and 69–71 s compared by sex. Through the real lanes (2 in flight, 1 heavy, 5 s wait), `503 overloaded` started at 4 concurrent clients and grew to 246 of 354 requests at 16, answered after 5.0 s at p50; no `analysis_timeout` occurred. The 85 s statement timeout is only 1.2 × the F66 compare's p99 at the floor, so CPU contention there can turn it into `503 analysis_timeout`, never a wrong or cached answer ([ADR-012, "Calibration (§13)"](adr/ADR-012-load-and-quota-protection.md#calibration-13)).
 - **Remaining:** within its 60 a day, one network can still run 60 worst-case analyses. The global and CU-hour budgets bound the total.
 
 ### 3. Scraping
@@ -485,7 +485,7 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 | Path | Through the Worker | Direct to onrender.com | Decision |
 |---|---|---|---|
 | `/docs`, `/docs/oauth2-redirect`, `/redoc` | 404 (not allowlisted) | 403 without the edge secret; 404 with it (routes removed) | **Off** (`ATUS_API_DOCS=off`, the production default). The pages load third-party CDN scripts without SRI and serve no visitor (audit F43) |
-| `/openapi.json` | 404 | as above | **Off.** The same schema is committed as `frontend/openapi.json` and exported by `scripts/export_openapi.py`; `tests/unit/api/test_exposure.py::TestDocumentationSwitch::test_published_snapshot_is_current` keeps it current. The public site does not serve it |
+| `/openapi.json` | 404 | as above | **Off.** The same schema is committed as `frontend/openapi.json` and exported by `scripts/export_openapi.py`; `tests/unit/api/test_exposure.py::TestDocumentationSwitch::test_published_snapshot_is_current` keeps it current. The public site publishes that committed copy as a static asset at `/openapi.json` (the site root, outside `/api`): it holds no secrets, and serving it runs neither the Worker nor the API |
 | `/ready` | 404, never routed | 403 without the edge secret; 404 with it; 200 or 503 with `Authorization: Bearer <ATUS_OPS_TOKEN>` | **Operator only.** It queries the database on every call and names data versions, so without a token it must not be a way to wake Neon (audit F16). Its failures are ordinary envelopes; hints go to the log |
 | `/metrics` | 404, never routed | same as `/ready` | **Operator only.** Prometheus text with bounded label values (route templates, codes), no client input or addresses |
 | `/health` | `/api/health` → origin `/health` | 200 `{status, build}` | **Public.** Render's health check and the monitors need it. It touches no database and needs no edge auth; it is exempt from rate limiting |

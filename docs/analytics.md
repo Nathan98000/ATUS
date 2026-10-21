@@ -206,8 +206,14 @@ Historical: measured with the Phase 2 code on a laptop, before the Phase 5
 year pushdown. The Phase 5 audit timed the pre-pushdown code again, on the
 laptop and under free-tier emulation
 ([`evidence/phase5/01-audit-timed.md`](evidence/phase5/01-audit-timed.md)).
-For the current code under free-tier emulation, see
-[loadtests/results](../loadtests/results/) (§13).
+For the current code under free-tier emulation (2026-10-21,
+[`../loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md),
+sections 5.2, 5.3 and 6): an uncached single-year estimate with replicate SEs
+took 0.99 s at p50 at Neon's 0.25 CU floor and 79 ms at 2 CU; pooled
+22-year leisure and 23-year trends 21.4–21.8 s and 2.03–2.12 s; all 18
+tier-1 codes pooled or trended (the F66 broad selector) 33.5–35.0 s and
+2.67–2.68 s. The laptop baseline on the full database took 0.34 s for the
+single-year estimates and 10.9–11.0 s for pooled leisure and the trends.
 
 | Analysis | seconds |
 | --- | --- |

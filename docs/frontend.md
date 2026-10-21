@@ -654,7 +654,13 @@ then replaces the metadata API calls).
 Slow analyses show an explanatory loading state. Uncached full-period
 variance took about 11 s on the Phase 4 laptop; the Phase 5 audit measured
 tens of seconds for the pre-Phase-5 code under free-tier emulation
-([`evidence/phase5/01-audit-timed.md`](evidence/phase5/01-audit-timed.md));
-for the current code, see [loadtests/results](../loadtests/results/) (§13).
+([`evidence/phase5/01-audit-timed.md`](evidence/phase5/01-audit-timed.md)).
+For the current code under the same emulation (2026-10-21,
+[`../loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md)):
+an uncached single-year estimate with replicate SEs took 0.99 s at p50 at
+Neon's 0.25 CU floor and 79 ms at 2 CU; pooled 22-year and 23-year trend
+worst cases took 21.4–21.8 s and 2.03–2.12 s; and the costliest request, the F66
+broad selector compared by sex, 69–71 s at 0.25 CU. A cold container took
+13.1 s at p50 to its first `/health` at 0.1 CPU, before Render's own spin-up.
 Repeated runs hit a cache (the static snapshot, the edge, or the API's
 in-process cache).
