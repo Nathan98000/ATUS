@@ -669,8 +669,8 @@ What a rehearsal cannot show is Render's deploy hook, its image pull, and the re
 - The origin lock: `curl -s -o /dev/null -w '%{http_code}' https://<service>.onrender.com/api/v1/meta` prints `403`.
 - Security headers on both origins: the SPA's `_headers` and the Worker's own. Include the SPA-fallback `index.html`, where `_headers` may not apply (ADR-011 "Risks").
 - `/health` (allowing for the cold start), then `/api/v1/meta` (the Worker answers it from the snapshot; `/api/v1/meta?check=1` reaches the API as a counted lookup), one cached analysis, the SPA shell and one starter analysis rendering, with no CSP violations in the console.
-- At least 2 snapshot entries recomputed live and compared under §9.
-- The deploy job runs these checks (step 7). To repeat them by hand: `python scripts/ops/deploy_smoke.py --base-url https://atus.<sub>.workers.dev --require-snapshot --recompute 2`, then `PUBLIC_BASE_URL=... npx playwright test -c playwright.deployed.config.ts` in `frontend/`. The README gets the live URL only after this step passes.
+- At least 2 snapshot entries recomputed live and compared under §9: by the API on Render against Neon, never answered from the edge cache (an `X-Cache: edge` answer fails the check).
+- The deploy job runs these checks (step 7). To repeat them by hand: `python scripts/ops/deploy_smoke.py --base-url https://atus.<sub>.workers.dev --require-snapshot --recompute 2` (exit status 3: everything passed but the quota governor refused the recompute, which is owed until the time its OWED rows name), then `PUBLIC_BASE_URL=... npx playwright test -c playwright.deployed.config.ts` in `frontend/`. The README gets the live URL only after this step passes.
 - **Then start the monitors:** set the repository variable `PUBLIC_BASE_URL` (owner step 4.1). Until it exists, the edge check, deep check and quota report are skipped.
 
 ### 9. Quota-budgeted post-deploy replay

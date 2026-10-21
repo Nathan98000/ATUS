@@ -53,7 +53,10 @@ Tests never reach Cloudflare or Render: the secrets are fake, `RENDER_ORIGIN` is
 `https://origin.invalid`, and the origin is either a mocked `fetch` or a local HTTP server on an
 ephemeral loopback port (`test/global-setup.ts`). `test/node/config.test.ts` asserts the
 `wrangler.jsonc` invariants that CI must hold (no `cache` block, `preview_urls: false`,
-`workers_dev: true`, `run_worker_first` = `/api` and `/api/*`, SPA fallback).
+`workers_dev: true`, `run_worker_first` = `/api` and `/api/*`, SPA fallback). The worker tests
+bind the vars their fixtures are written for (`test/release.ts`: `RESPONSE_FORMAT` and the levers
+the owner sets in `wrangler.jsonc` by hand, `EPOCH`, `PREWAKE` and `NEON_PROJECT_ID`), so an
+`EPOCH` bump or `PREWAKE` off changes `wrangler.jsonc` and no test.
 
 ## Local development
 
