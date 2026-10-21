@@ -853,7 +853,8 @@ Their numbers supersede three parts of this ADR, which stay above as written: th
 | Share of request time in the DB | ≥ 98.4% at 0.25 CU | 98.7–99.1% of uncached single-year latency at 0.25 CU, 96.6–97.0% at 2 CU, 99.7–99.9% for the worst cases; the API's `Server-Timing` `app` time 1.1–2.6 ms per worst case at p50 (5.8) |
 | Worst cases at 0.25 CU | ~33–52 s (pooled 22 years p50 51.7 s) | pooled 22-year leisure and 23-year trends 21.35–21.81 s at p50 (max 25.80 s); the F66 broad selector 33.49–34.99 s pooled or trended (max 42.02 s), and 69.21 s compared by sex (max 71.02 s); p99 of all 30 requests 70.52 s (5.3). Also "47–52 s" under "Rejected alternatives" (P3 at a fixed 0.25 CU) |
 | Worst cases at 2 CU | 2.7–3.4 s | 2.03–2.99 s at p50 by kind, p99 3.03 s (5.3) |
-| Single-year estimate with SE | p50 6.95 s at 0.25 CU, 0.38 s at 2 CU | p50 0.99 s at 0.25 CU (p99 4.43 s) and 79 ms at 2 CU (p99 211 ms) (5.2) |
+| Single-year estimate with SE | p50 6.95 s at 0.25 CU, 0.38 s at 2 CU | p50 0.99 s at 0.25 CU (p99 4.43 s) and 79 ms at 2 CU (p99 211 ms) over 59 distinct corpus specs (5.2). Not the same request: the audit repeated one spec (`010101`, 2025), so the two p50s are not a like-for-like speed-up |
+| Costliest specs | broad tier-1 selectors ~2.6× pooled leisure (illustrative) | the F66 broad selector pooled or trended 1.6 × pooled leisure (W1), and compared by sex about 3.2 × W1, at 0.25 CU (5.3) |
 | Saturation | DB CPU saturates from 2 concurrent at 0.25 CU; at 16, 6 × 503 | through the real lanes: at 0.25 CU throughput peaks at 1 concurrent client (1.14 analyses/s), `503 overloaded` starts at 4 clients and reaches 246 of 354 requests at 16; at 2 CU it plateaus at about 24/s from 2 clients, with no 503 up to 16 (5.4) |
 | Parallel query off | 40.6 / 39.5 s → 19.2 / 19.1 s (probe) | `ATUS_API_MAX_PARALLEL_WORKERS=0`: at 0.25 CU the F66 compare 69.21 → 38.58 s and a single-year estimate 0.99 → 0.70 s at p50; at 2 CU slower, worst-case p99 3.03 → 3.53 s (5.2, 5.3). Left unset (ADR-012) |
 | Serving DB size | cluster sum 650,458,708 B (prototype) | the release artifact restored: `sum(pg_database_size)` 649,903,180 B, 65% of 1,000,000,000 B; dump 336,549,536 B (3) |
@@ -870,9 +871,9 @@ The year pushdown is adopted (ADR-013). The statements per request and the pool'
 | Novel analysis | Coldest path (PROJECTION) |
 |---|---|
 | single-year estimate | about 60–82 s: 60 s + 0–14.3 s + 0.3–3 s + 0.08–4.6 s |
-| pooled or trend worst case, non-F66, at 0.25 CU | up to about 103 s |
-| F66 compare at 0.25 CU (the slowest measured request) | about 135–148 s: about 148 s when Render's minute excludes the app start, about 135 s when it includes it |
-| bound: any analysis cut off by the 90 s deadline | about 167 s, answered with 503 `analysis_timeout` |
+| pooled or trend worst case, non-F66, at 0.25 CU | up to about 103 s: 60 s + 14.3 s + 3 s + 25.8 s |
+| F66 compare at 0.25 CU (the slowest measured request) | about 134–148 s: 60 s + 0–14.3 s + 3 s + 71.0 s, so about 148 s when Render's minute excludes the app start, about 134 s when it includes it |
+| bound: any analysis cut off by the 90 s deadline | about 167 s (60 s + 14.3 s + 3 s + 90 s), answered with 503 `analysis_timeout` |
 
 This replaces "about 65–80 s in the typical case and up to ~125 s in the worst".
 

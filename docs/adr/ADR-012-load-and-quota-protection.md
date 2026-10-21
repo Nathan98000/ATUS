@@ -184,7 +184,7 @@ The two layers count different things and fail differently:
 | | Edge governor (ADR-015) | This layer |
 |---|---|---|
 | Lives in | one Durable Object; survives Render restarts and spin-downs | API memory; reset on every restart |
-| Counts | uncached analyses per client network (60 per day), globally (600), heavy (300), Neon compute and egress from ground truth; and admissions per client network, refunded ones included (300 per day, so refunded retries cannot spend the Durable Object's daily row writes) | per-client requests and computing analyses per minute, 600 computing analyses per UTC day, concurrent computations |
+| Counts | uncached analyses per client network (60 per day), globally (600), heavy (300), Neon compute and egress from ground truth; and admissions per client network, refunded ones included (300 per day, so one network's refunded retries cannot use up the Durable Object's daily row writes) | per-client requests and computing analyses per minute, 600 computing analyses per UTC day, concurrent computations |
 | Client key | HMAC of the /24 or /48 prefix, daily key | the address from `X-ATUS-Client-IP` (IPv6 by /64) |
 | Sees | requests that reach the Worker | every request, including direct hits on onrender.com |
 | On failure | fails closed for uncached analyses when the Durable Object errors or does not answer within 5 s: 503 `capacity_unavailable`, `Retry-After: 60` | protects one process regardless of the edge |

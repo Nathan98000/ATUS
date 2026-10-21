@@ -485,8 +485,9 @@ Neon's 0.25 CU floor and 2 CU ceiling):
 | F66 broad selector pooled or trended / compared by sex | 33.5–35.0 s / 69.2 s | 2.67–2.68 s / 2.99 s |
 | container cold start to the first `/health` (0.1 CPU; Render's spin-up excluded) | 13.1 s | 12.9 s |
 
-Analyses ran one at a time for these rows, and PostgreSQL's statement log
-puts 96.6–99.9% of their summed latency in the database. At 0.25 CU
+The analyses in these rows ran one at a time, and PostgreSQL's statement
+log puts 96.6–99.9% of their summed latency in the database (the metadata
+and cached rows run no SQL). At 0.25 CU
 throughput peaks at one analysis in flight (1.14 per second), and the
 admission lanes shed with `503 overloaded` from 4 concurrent clients; at 2 CU
 it plateaus at about 24 per second from 2 clients, with no shed. The API's

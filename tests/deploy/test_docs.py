@@ -139,6 +139,63 @@ def test_adr_011_amendment_quotes_the_records_figures():
     assert "85 s" in amendment and "90 s" in amendment
 
 
+_TERM = r"\d+(?:\.\d+)?(?:–\d+(?:\.\d+)?)? s"
+
+
+def test_adr_011_coldest_path_projection_adds_up():
+    """Every row of the recomputed coldest-path table states its sum: the figures it
+    claims are the sums of the low and high ends of its terms, rounded to a second."""
+    amendment = _section((ADR / "ADR-011-hosting.md").read_text(),
+                         "### Calibration (§13): superseded measurements")
+    table = _section(amendment, "| Novel analysis |", "This replaces")
+    rows = [line for line in table.splitlines()[2:] if line.startswith("|")]
+    assert len(rows) == 4
+    for row in rows:
+        cell = row.split("|")[2]
+        sums = re.search(rf"{_TERM}(?: \+ {_TERM})+", cell)
+        assert sums, row
+        low = high = 0.0
+        for term in sums.group(0).split(" + "):
+            a, _, b = term.removesuffix(" s").partition("–")
+            low, high = low + float(a), high + float(b or a)
+        claim = re.search(r"about (\d+)(?:–(\d+))? s", cell)
+        assert claim, row
+        if claim.group(2):
+            assert (int(claim.group(1)), int(claim.group(2))) == (round(low), round(high)), row
+        else:
+            assert int(claim.group(1)) == round(high), row
+
+
+def test_audit_and_emulation_single_year_p50s_are_not_compared_as_a_speed_up():
+    """The audit's 6.95 s repeated one spec (010101, 2025); the record's 0.99 s is the
+    p50 of 59 distinct specs. A line quoting both must say they are not comparable."""
+    for path in DOCS:
+        for number, line in _lines_outside_fences(path):
+            if "6.95 s" in line and "0.99 s" in line:
+                assert re.search(r"not (?:comparable|the same request|a like-for-like)",
+                                 line, re.IGNORECASE), f"{_name(path)}:{number}"
+
+
+def test_the_parallel_workers_decision_reads_the_same_everywhere():
+    """F38: ATUS_API_MAX_PARALLEL_WORKERS stays unset (ADR-012 "Calibration (§13)")."""
+    adr_012 = (ADR / "ADR-012-load-and-quota-protection.md").read_text()
+    assert "| `ATUS_API_MAX_PARALLEL_WORKERS` | **unset (server default), unchanged** |" in adr_012
+    adr_013 = (ADR / "ADR-013-data-releases-and-serving-db.md").read_text()
+    bullet = next(line for line in adr_013.splitlines()
+                  if line.startswith("- **Parallel query (F38).**"))
+    assert "stays unset" in bullet and "leaves it unset" in bullet
+    operations = (REPO_ROOT / "docs" / "operations.md").read_text()
+    resolution = _section(operations, "## Audit resolution")
+    f38 = next(line for line in resolution.splitlines() if line.startswith("| F38 |"))
+    assert f38.startswith("| F38 | Accepted |") and "stays unset" in f38
+
+
+def test_architecture_performance_table_attributes_db_time_to_analyses_only():
+    text = (REPO_ROOT / "docs" / "architecture.md").read_text()
+    performance = _section(text, "## Performance")
+    assert "metadata\nand cached rows run no SQL" in performance
+
+
 def _constant(name: str) -> int:
     constants = (REPO_ROOT / "edge" / "src" / "constants.ts").read_text()
     match = re.search(rf"^export const {name} = ([\d_]+)$", constants, re.MULTILINE)
