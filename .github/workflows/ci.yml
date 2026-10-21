@@ -32,6 +32,11 @@ on:
 
 permissions: read-all
 
+# Pushes to main never cancel a running CI run, but GitHub keeps one pending
+# run per group: a push that queues while another waits cancels the waiting
+# one, and a push of several commits runs CI on its head only. deploy.yml's
+# gate (github_ops.py deploy-gate) needs a green push run for exactly the
+# commit it deploys, and says which of these happened when there is none.
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -76,6 +81,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # The full history: tests/deploy/test_docs_accuracy.py compares the
+          # dated stack-mode E2E record with the commits since (it skips in a
+          # shallow clone, and ATUS_REQUIRE_GIT_HISTORY makes that a failure here).
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -86,7 +95,7 @@ jobs:
 
       - name: Install the hash-locked dev environment
         run: |
-          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
           python -m pip install --no-deps --no-build-isolation -e .
           python -m pip check
 
@@ -97,6 +106,8 @@ jobs:
         run: python -m pytest tests/unit -q -p no:cacheprovider
 
       - name: Deployment-file tests (static; container tests run in the image job)
+        env:
+          ATUS_REQUIRE_GIT_HISTORY: "1"
         run: python -m pytest tests/deploy -q -p no:cacheprovider
 
       - name: Integration tests (disposable databases on the postgres:16 service)
@@ -131,7 +142,7 @@ jobs:
         run: |
           python -m venv "$RUNNER_TEMP/ci-tools"
           "$RUNNER_TEMP/ci-tools/bin/python" -m pip install --require-hashes --no-deps \
-            -r requirements/ci-tools.lock.txt
+            --only-binary=:all: -r requirements/ci-tools.lock.txt
           echo "$RUNNER_TEMP/ci-tools/bin" >> "$GITHUB_PATH"
 
       - name: pip-audit of the API image's runtime lock
@@ -292,7 +303,7 @@ jobs:
 
       - name: Install the backend (hash-locked)
         run: |
-          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
           python -m pip install --no-deps --no-build-isolation -e .
 
       - name: Set up Node
@@ -364,7 +375,7 @@ jobs:
 
       - name: Install the hash-locked environment (deploy_smoke.py's §9 comparison)
         run: |
-          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
           python -m pip install --no-deps --no-build-isolation -e .
 
       - name: Set up Node

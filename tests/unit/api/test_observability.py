@@ -279,11 +279,23 @@ class TestHealth:
     def test_build_and_no_dependencies(self, build):
         client, app = build(build_sha="0123abcd", edge_secrets=(SECRET,))
         response = client.get("/health")
-        assert response.json() == {"status": "ok", "build": "0123abcd"}
+        assert response.json() == {"status": "ok", "build": "0123abcd",
+                                   "expected_data_version": None}
         assert response.headers["Cache-Control"] == "no-store"
         head = client.head("/health")
         assert head.status_code == 200 and head.content == b""
         assert app.state.snapshots.refreshes == 0
+
+    def test_the_data_binding_is_reported_from_configuration(self, build):
+        """no-prepublish-data-version-check (review round 2): the deploy publishes the
+        Worker's DATA_VERSION and snapshot only once the origin is bound to that release,
+        and /health says which one without touching the database."""
+        client, app = build(build_sha="0123abcd", expected_data_version="0325:serving-x:abc")
+        assert client.get("/health").json() == {
+            "status": "ok", "build": "0123abcd", "expected_data_version": "0325:serving-x:abc"}
+        assert app.state.snapshots.refreshes == 0
+        unpinned, _ = build(build_sha="0123abcd")
+        assert unpinned.get("/health").json()["expected_data_version"] is None
 
 
 class TestOperatorEndpoints:

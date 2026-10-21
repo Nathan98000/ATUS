@@ -57,7 +57,7 @@
   },
   // Secrets are never in this file. Generate them with
   // scripts/ops/gen_edge_secrets.sh (writes ~/.config/atus/edge.env, chmod 600)
-  // and load each with `npx wrangler secret put <NAME>` piped from that file:
+  // and load each with `npx --no-install wrangler secret put <NAME>` piped from that file:
   //   EDGE_AUTH_SECRET  sent as X-ATUS-Edge-Auth; the API's ATUS_EDGE_SECRETS accepts it
   //   RENDER_ORIGIN     https://<service>.onrender.com, never published
   //   OPS_TOKEN         bearer for /api/_ops/budget
@@ -72,7 +72,7 @@
   },
   // Persistent analysis-result cache (ADR-011 "Edge tiers"). The namespace id
   // is not secret: replace the placeholder with the id printed by
-  // `npx wrangler kv namespace create atus-results`.
+  // `npx --no-install wrangler kv namespace create atus-results` (after `npm ci` here).
   "kv_namespaces": [
     {
       "binding": "RESULT_CACHE",

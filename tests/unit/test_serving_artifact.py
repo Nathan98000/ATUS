@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+from pathlib import Path
 
 import pytest
 
@@ -84,6 +86,7 @@ def test_docker_invocation_names_variables_but_never_their_values():
 
 
 def test_resolve_prefers_a_new_enough_local_client(monkeypatch):
+    monkeypatch.delenv(pgtools.IMAGE_ENV, raising=False)
     monkeypatch.setenv("PGHOST", "elsewhere")             # never inherited
     monkeypatch.setenv("PGSSLMODE", "disable")
     monkeypatch.setattr(pgtools, "local_major", lambda tool: 16)
@@ -94,7 +97,7 @@ def test_resolve_prefers_a_new_enough_local_client(monkeypatch):
     assert "PGSSLMODE" not in tool.env
     monkeypatch.setattr(pgtools, "local_major", lambda tool: 14)
     tool = pgtools.resolve("pg_dump", "postgresql://u:pw@h/db", server_major=16)
-    assert tool.argv[:2] == ("docker", "run") and tool.argv[-2] == "postgres:16"
+    assert tool.argv[:2] == ("docker", "run") and tool.argv[-2] == pgtools.PINNED_IMAGES[16]
     monkeypatch.setattr(pgtools.shutil, "which",
                         lambda name: None if name == "docker" else f"/usr/bin/{name}")
     with pytest.raises(pgtools.PgToolError, match="16 or newer"):
@@ -106,15 +109,40 @@ def test_resolve_prefers_a_new_enough_local_client(monkeypatch):
 def test_pg_dump_is_exactly_the_servers_major_version(monkeypatch):
     # A pg_dump newer than the server writes an archive the deploy runner's
     # pg_restore 16 cannot read (and SET commands a 16 server rejects).
+    monkeypatch.delenv(pgtools.IMAGE_ENV, raising=False)
     monkeypatch.setattr(pgtools, "local_major", lambda tool: 17)
     monkeypatch.setattr(pgtools.shutil, "which", lambda name: f"/usr/bin/{name}")
     dump = pgtools.resolve("pg_dump", "postgresql://u:pw@h/db", server_major=16)
-    assert dump.argv[:2] == ("docker", "run") and dump.argv[-2:] == ("postgres:16", "pg_dump")
+    assert dump.argv[:2] == ("docker", "run")
+    assert dump.argv[-2:] == (pgtools.PINNED_IMAGES[16], "pg_dump")
     restore = pgtools.resolve("pg_restore", "postgresql://u:pw@h/db", server_major=16)
     assert restore.argv == ("/usr/bin/pg_restore",)
     monkeypatch.setattr(pgtools, "local_major", lambda tool: 16)
     assert pgtools.resolve("pg_dump", "postgresql://u:pw@h/db",
                            server_major=16).argv == ("/usr/bin/pg_dump",)
+
+
+def test_the_docker_client_is_pinned_by_digest(monkeypatch):
+    """owner-credential-tools-unpinned (review round 2): the docker fallback, the
+    default on macOS, ran the mutable ``postgres:16`` tag with the owner's PGPASSWORD,
+    although every other postgres:16 in the repository is pinned by digest."""
+    monkeypatch.delenv(pgtools.IMAGE_ENV, raising=False)
+    monkeypatch.setattr(pgtools, "local_major", lambda tool: None)
+    monkeypatch.setattr(pgtools.shutil, "which", lambda name: f"/usr/bin/{name}")
+    for tool_name in pgtools.TOOLS:
+        tool = pgtools.resolve(tool_name, "postgresql://u:pw@h/db", server_major=16)
+        image = tool.argv[-2]
+        assert re.fullmatch(r"postgres:16@sha256:[0-9a-f]{64}", image), image
+        assert tool.origin == f"docker {image}" and "pw" not in " ".join(tool.argv)
+    ci = (Path(__file__).resolve().parents[2] / ".github" / "workflows" / "ci.yml").read_text()
+    assert f"image: {pgtools.PINNED_IMAGES[16]}" in ci          # CI's service image
+    # An explicit image still wins; a major without a pin is refused, never a tag.
+    override = "postgres:17@sha256:" + "0" * 64
+    monkeypatch.setenv(pgtools.IMAGE_ENV, override)
+    assert pgtools.resolve("psql", "postgresql://u:pw@h/db", server_major=17).argv[-2] == override
+    monkeypatch.delenv(pgtools.IMAGE_ENV)
+    with pytest.raises(pgtools.PgToolError, match=pgtools.IMAGE_ENV):
+        pgtools.resolve("pg_restore", "postgresql://u:pw@h/db", server_major=18)
 
 
 @pytest.mark.parametrize("recorded, server, expected", [

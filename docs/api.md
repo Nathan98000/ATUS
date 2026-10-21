@@ -109,7 +109,7 @@ process.
 | `GET /api/v1/activities/{code}` | one code with ancestry, children, leaf count |
 | `GET /api/v1/population/metadata` | supported population filters + valid values |
 | `GET /api/v1/meta` | API/analytics/data versions + capability discovery |
-| `GET /health` | liveness and build (unversioned, public, no database) |
+| `GET /health` | liveness, build and the configured data version (`expected_data_version`, from `ATUS_EXPECTED_DATA_VERSION`, null when unset); unversioned, public, no database |
 | `GET /ready` | readiness, operators only (`Authorization: Bearer <ATUS_OPS_TOKEN>`) |
 | `GET /metrics` | Prometheus metrics, operators only (same bearer) |
 
@@ -441,7 +441,7 @@ response format, is sent only as a header on analyses:
 | `api_version` (`v1`, path prefix) | HTTP contract | request/response semantics change incompatibly |
 | `analytics_version` (`0.2`) | statistical implementation | computed numbers could differ. Engine changes that keep every number equal under the §9 equivalence criterion (Phase 5: the year pushdown and its materialized CTE) keep the version; see the version history in [analytics.md](analytics.md) |
 | data version (`X-Data-Version` on analyses and metadata) | loaded BLS data | `atus load` or a serving-DB build produces new data (forms under [Caching](#caching)) |
-| `X-Response-Format` (`1`) | the serialized bytes of an analysis response | any change to analysis response bytes (fields, their order or formatting, warning or label text) without an `analytics_version` change, as in ADR-015: edge KV entries survive code-only deploys. `RESPONSE_FORMAT` in `src/atus_pipeline/api/__init__.py`, with the Worker's var; `tests/unit/api/test_response_format.py` pins the response schemas and bytes to it, so a change without a bump fails CI |
+| `X-Response-Format` (`1`) | the serialized bytes of an analysis response | any change to analysis response bytes (fields, their order or formatting, warning or label text) without an `analytics_version` change, as in ADR-015: edge KV entries survive code-only deploys. `RESPONSE_FORMAT` in `src/atus_pipeline/api/__init__.py`, with the Worker's default var in `edge/wrangler.jsonc` and its config test (the snapshot build, the stack smoke and the deploy follow the constant); `tests/unit/api/test_response_format.py` pins the response schemas and bytes to it, so a change without a bump fails CI |
 
 ## Protection and limits
 

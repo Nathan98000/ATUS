@@ -14,6 +14,14 @@ const TEST_SECRETS = {
 }
 Object.assign(process.env, TEST_SECRETS)
 
+// The release var the worker tests' fixtures (origin headers, KV metadata,
+// cache scopes computed independently) are written for. The deploy always sets
+// it with --var, so the tests pin it too instead of inheriting wrangler.jsonc's
+// default: a RESPONSE_FORMAT bump then edits that default and
+// test/node/config.test.ts, never these fixtures (review round 2,
+// response-format-bump-breaks-snapshot; tests/unit/api/test_response_format.py).
+const TEST_RELEASE = { RESPONSE_FORMAT: '1' }
+
 // Two projects, neither of which talks to Cloudflare or Render:
 //
 // - "worker": tests run inside workerd (the Workers runtime) through
@@ -28,7 +36,7 @@ export default defineConfig({
         plugins: [
           cloudflareTest({
             wrangler: { configPath: './wrangler.jsonc' },
-            miniflare: { bindings: TEST_SECRETS },
+            miniflare: { bindings: { ...TEST_SECRETS, ...TEST_RELEASE } },
           }),
         ],
         test: {

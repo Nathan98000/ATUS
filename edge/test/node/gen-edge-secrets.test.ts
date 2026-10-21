@@ -86,12 +86,12 @@ describe('gen_edge_secrets.sh', () => {
     expect(commands).toHaveLength(5)
     for (const name of [...WORKER_SECRETS, 'RENDER_ORIGIN']) {
       expect(commands).toContain(
-        `  grep '^${name}=' ${envFile} | cut -d= -f2- | npx wrangler secret put ${name}`,
+        `  grep '^${name}=' ${envFile} | cut -d= -f2- | npx --no-install wrangler secret put ${name}`,
       )
     }
     // The first deploy uploads the Worker's names only (--secrets-file sends every line).
     expect(commands).toContain(
-      `  (umask 077 && tmp=$(mktemp -d) && trap 'rm -rf -- "$tmp"' EXIT && grep -E '^(EDGE_AUTH_SECRET|OPS_TOKEN|IP_HMAC_KEY|RENDER_ORIGIN)=' ${envFile} > "$tmp/worker.env" && npx wrangler deploy --secrets-file "$tmp/worker.env")`,
+      `  (umask 077 && tmp=$(mktemp -d) && trap 'rm -rf -- "$tmp"' EXIT && grep -E '^(EDGE_AUTH_SECRET|OPS_TOKEN|IP_HMAC_KEY|RENDER_ORIGIN)=' ${envFile} > "$tmp/worker.env" && npx --no-install wrangler deploy --secrets-file "$tmp/worker.env")`,
     )
     expect(stdout).not.toContain('needs RENDER_ORIGIN first')
     expect(values.RENDER_ORIGIN).toBe('https://atus-api-abc123.onrender.com')
@@ -138,7 +138,8 @@ if (process.argv[2] === 'child') {
     })
     expect(result.status, result.stderr).toBe(0)
     const seen = JSON.parse(result.stdout) as { args: string[]; path: string; names: string[] }
-    expect(seen.args.slice(0, 2)).toEqual(['wrangler', 'deploy'])
+    // --no-install: npx runs the wrangler edge/'s lockfile installed, never a download
+    expect(seen.args.slice(0, 3)).toEqual(['--no-install', 'wrangler', 'deploy'])
     expect(seen.names).toEqual([...WORKER_SECRETS, 'RENDER_ORIGIN'])
     expect(() => lstatSync(dirname(seen.path))).toThrow() // the private copy is gone
   })
@@ -152,7 +153,7 @@ if (process.argv[2] === 'child') {
     const lines = stdout.split('\n')
     const frontendDir = fileURLToPath(new URL('../../../frontend', import.meta.url))
     const edgeDir = fileURLToPath(new URL('../..', import.meta.url)).replace(/\/$/, '')
-    const deploy = lines.findIndex((line) => line.includes('npx wrangler deploy'))
+    const deploy = lines.findIndex((line) => line.includes('npx --no-install wrangler deploy'))
     const build = lines.indexOf(
       `  (cd ${frontendDir} && npm ci && VITE_API_BASE_URL= npm run build)`,
     )

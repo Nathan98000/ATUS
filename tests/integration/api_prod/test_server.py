@@ -310,7 +310,8 @@ class TestProductionProcess:
         finally:
             process.terminate()
             _, stderr = process.communicate(timeout=30)
-        assert health.json() == {"status": "ok", "build": "0123abcd"}
+        assert health.json() == {"status": "ok", "build": "0123abcd",
+                                 "expected_data_version": None}
         assert meta.status_code == 200 and estimate.status_code == 200
         assert re.match(r"^db;dur=[0-9.]+, app;dur=[0-9.]+$", estimate.headers["Server-Timing"])
         assert hidden.status_code == 404

@@ -174,7 +174,7 @@ printf '%b' "$report"
 printf '\nLoad them into the Worker (each command reads its value from the file):\n\n'
 printf '  cd %q\n' "$edge_dir"
 for name in $loadable; do
-  printf "  grep '^%s=' %s | cut -d= -f2- | npx wrangler secret put %s\n" "$name" "$quoted_file" "$name"
+  printf "  grep '^%s=' %s | cut -d= -f2- | npx --no-install wrangler secret put %s\n" "$name" "$quoted_file" "$name"
 done
 # A brand-new Worker's first `wrangler deploy` must carry the secrets that
 # wrangler.jsonc lists as required. --secrets-file uploads every line of the
@@ -195,7 +195,7 @@ printf 'edge/package-lock.json, so first:\n\n'
 printf '  (cd %q && npm ci && VITE_API_BASE_URL= npm run build)\n' "$frontend_dir"
 printf '  cd %q && npm ci\n' "$edge_dir"
 # shellcheck disable=SC2016  # $tmp expands when the owner runs the printed command
-printf '  (umask 077 && tmp=$(mktemp -d) && trap %s EXIT && grep -E %s %s > "$tmp/worker.env" && npx wrangler deploy --secrets-file "$tmp/worker.env")\n' \
+printf '  (umask 077 && tmp=$(mktemp -d) && trap %s EXIT && grep -E %s %s > "$tmp/worker.env" && npx --no-install wrangler deploy --secrets-file "$tmp/worker.env")\n' \
   "'rm -rf -- \"\$tmp\"'" "'${worker_names}'" "$quoted_file"
 [[ -n "$origin" ]] || printf '  (needs RENDER_ORIGIN first: rerun with --render-origin)\n'
 printf '\nThe API must accept the same edge secret: set Render env ATUS_EDGE_SECRETS to the\n'

@@ -256,12 +256,12 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 1. Sign up at `dash.cloudflare.com` with email and password, then verify the email. The account starts on Workers Free. Do **not** subscribe to Workers Paid, and do not enable R2, Workers Cache or any paid add-on.
 2. **Workers & Pages → account subdomain:** set the subdomain you chose. ⚠ Every share link depends on it.
 3. *(After implementation provides `wrangler.jsonc`.)* On your Mac, from the repo:
-   1. `npx wrangler@4 login`. Wrangler must be 4.20 or newer.
-   2. `npx wrangler kv namespace create <KV_NAME>`. The namespace id is not secret: replace the placeholder `id` of the `RESULT_CACHE` binding in `edge/wrangler.jsonc` with it, then commit and push that change to `main` before you dispatch the first deploy run ("Bootstrap", step 2, under step 7 of the deploy guide). The deploy job checks out the commit the run was dispatched from and refuses the placeholder.
+   1. `cd edge && npm ci`, then, from `edge/`, `npx --no-install wrangler login`. `npm ci` installs the wrangler locked in `edge/package-lock.json` (4.20 or newer is required), and `--no-install` makes `npx` refuse to download any other version: this login stores an OAuth token with broad scopes on your Cloudflare account on the Mac, so it must come from the reviewed lockfile, never from whatever the registry serves that day (the repository root has no `package.json`, so `npx` run there downloads wrangler). Run every later `wrangler` command the same way, from `edge/`. Once the deploys run (CI uses its own scoped token), `npx --no-install wrangler logout` removes the login until you next need it.
+   2. `npx --no-install wrangler kv namespace create <KV_NAME>`, from `edge/`. The namespace id is not secret: replace the placeholder `id` of the `RESULT_CACHE` binding in `edge/wrangler.jsonc` with it, then commit and push that change to `main` before you dispatch the first deploy run ("Bootstrap", step 2, under step 7 of the deploy guide). The deploy job checks out the commit the run was dispatched from and refuses the placeholder.
    3. Generate the secrets: `scripts/ops/gen_edge_secrets.sh --render-origin https://<service>.onrender.com` writes `~/.config/atus/edge.env` (mode 600) and prints, without any value, the commands below. The Render origin exists only after step 2.3; until then run the script without `--render-origin` and re-run it later.
    4. Build what the first deploy publishes, from a checkout of the commit you dispatched: `wrangler.jsonc` publishes `../frontend/dist`, which a fresh clone does not have (it is gitignored). Run `(cd frontend && npm ci && VITE_API_BASE_URL= npm run build)` (same-origin, as CI builds it), then `cd edge && npm ci`, so that `npx` runs the wrangler locked in `edge/package-lock.json`. The script prints both commands too. This first publish has no snapshot; the approved deploy replaces it ("Bootstrap", step 5).
 
-      Then run the first `npx wrangler deploy` yourself, from `edge/`. Creating a Worker needs account-level Admin. This creates the Worker, its static assets and the Durable Object migration. `wrangler.jsonc` marks `EDGE_AUTH_SECRET`, `OPS_TOKEN`, `IP_HMAC_KEY` and `RENDER_ORIGIN` as required, so this first deploy passes them with `--secrets-file`, filtered to the Worker's names exactly as the script prints it (the file also holds the API's `ATUS_OPS_TOKEN`, which never goes to the Worker). The printed command copies those names into a private temporary file that it removes afterwards: a process substitution (`--secrets-file <(grep ...)`) fails on macOS, because wrangler reads the file in a child process that cannot open `/dev/fd/N`. Later changes use `npx wrangler secret put <NAME>`, piped from the file:
+      Then run the first `npx --no-install wrangler deploy` yourself, from `edge/`. Creating a Worker needs account-level Admin. This creates the Worker, its static assets and the Durable Object migration. `wrangler.jsonc` marks `EDGE_AUTH_SECRET`, `OPS_TOKEN`, `IP_HMAC_KEY` and `RENDER_ORIGIN` as required, so this first deploy passes them with `--secrets-file`, filtered to the Worker's names exactly as the script prints it (the file also holds the API's `ATUS_OPS_TOKEN`, which never goes to the Worker). The printed command copies those names into a private temporary file that it removes afterwards: a process substitution (`--secrets-file <(grep ...)`) fails on macOS, because wrangler reads the file in a child process that cannot open `/dev/fd/N`. Later changes use `npx --no-install wrangler secret put <NAME>`, piped from the file:
       - `EDGE_AUTH_SECRET`
       - `OPS_TOKEN`
       - `IP_HMAC_KEY`
@@ -293,7 +293,7 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
    - `WEB_CONCURRENCY=1`
 5. **Settings → Deploy Hook:** copy the URL into the GitHub environment secret `RENDER_DEPLOY_HOOK_URL`. Regenerate it if it ever leaks. Confirm that **no Git repository is connected**; image-backed services never auto-deploy.
 6. Do **not** create a Render API key: it grants access to every workspace you belong to. Enable email notifications for failed deploys and service events. Never add a second Free web service to this workspace.
-7. *(After the first deploy run's `promote` job has passed.)* **Settings → Image → Image URL:** `ghcr.io/nathan98000/atus-api:live`, then save. Deploys keep going through the hook by digest; this setting is what any other deploy uses (Manual Deploy, "Deploy latest reference", and possibly "Save and deploy"). Render documents that a hook's `imgURL` does not change it ("your service continues to use the tag or digest in its settings", render.com/docs/deploying-an-image, read 2026-10-21), so left at the bootstrap digest it would bring that image back, and fail once `ghcr-cleanup.yml` deletes it. `deploy.yml`'s `promote` job moves `live` to each digest whose deploy passed the smoke, `ghcr-cleanup.yml` never deletes it, and `deep-check.yml` alerts when `/health` reports another build.
+7. *(After the first deploy run's `promote` job has passed.)* **Settings → Image → Image URL:** `ghcr.io/nathan98000/atus-api:live`, then save. Deploys keep going through the hook by digest; this setting is what any other deploy uses (Manual Deploy, "Deploy latest reference", and possibly "Save and deploy"). Render documents that a hook's `imgURL` does not change it ("your service continues to use the tag or digest in its settings", render.com/docs/deploying-an-image, read 2026-10-21), so left at the bootstrap digest it would bring that image back, and fail once `ghcr-cleanup.yml` deletes it. `deploy.yml`'s `promote` job moves `live` to each digest whose deploy passed the smoke, `ghcr-cleanup.yml` never deletes it, and `deep-check.yml` alerts when `/health` reports another build. It also fails when it cannot read the `live` tag (a 401/403, or no tag), never silently skipping the comparison; its first run after step 4.1 shows whether the run's `GITHUB_TOKEN` may read the package's versions ([operations.md](operations.md#the-deep-check-cannot-read-the-live-tag)).
 
 ### 3. Neon (Free)
 
@@ -308,9 +308,9 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 4. Do **not** create branches or read replicas, and do not run an instant restore on this project. Each would add to the project's 1 GB.
 5. *(After implementation provides the restore script.)*
    1. **Connect**, with connection pooling **off** (the direct host, without `-pooler`). Copy the `neondb_owner` connection string into a new file for this project, `~/.config/atus/neon-<release>-<build8>.env` (named like the project), as `ATUS_OWNER_DATABASE_URL=...`. Keep that file outside the repo, `chmod 600`. Use one file per Neon project and keep the previous project's file until that project's deletion is approved: a data rollback needs its `atus_api` DSN ([operations.md](operations.md#serving-db-build-and-restore)).
-   2. Run the restore script yourself, with `--secrets-file` naming that file (step 5 of the deploy guide). It runs `pg_restore --no-owner --no-acl` with a client of version 16 or newer (a local one, or the `postgres:16` image through docker; on macOS no client install is needed), creates `atus_api` with a generated password of at least 60 bits, applies grants and role settings, runs `VACUUM (ANALYZE)` and checks the metered size. It writes the `atus_api` DSN back into the same file. Nothing is printed or pasted.
+   2. Run the restore script yourself, with `--secrets-file` naming that file (step 5 of the deploy guide). It runs `pg_restore --no-owner --no-acl` with a client of version 16 or newer (a local one, or the `postgres:16` image through docker, pinned by the digest every other `postgres:16` in the repository uses; on macOS no client install is needed), creates `atus_api` with a generated password of at least 60 bits, applies grants and role settings, runs `VACUUM (ANALYZE)` and checks the metered size. It writes the `atus_api` DSN back into the same file. Nothing is printed or pasted.
 6. *(Optional; strengthens the quota governor.)* **Organization settings → API keys → Create → Project-scoped key** for this project only, if the Free plan offers it.
-   - Load it with `npx wrangler secret put NEON_API_KEY`. The project id goes in as the Worker var `NEON_PROJECT_ID`.
+   - Load it with `npx --no-install wrangler secret put NEON_API_KEY`. The project id goes in as the Worker var `NEON_PROJECT_ID`.
    - Never use a personal or organization-wide key here.
    - The key must be re-created for each release project.
 
@@ -560,11 +560,11 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 ### 6. First Worker deploy (owner)
 
 - **Owner step 1.3:**
-  1. `npx wrangler@4 login`;
-  2. `npx wrangler kv namespace create <KV_NAME>`, its id put into `edge/wrangler.jsonc` and committed to `main` before the first deploy run is dispatched (step 7, "Bootstrap");
+  1. `cd edge && npm ci`, then `npx --no-install wrangler login` from `edge/` (the wrangler locked in `edge/package-lock.json`, never a download);
+  2. `npx --no-install wrangler kv namespace create <KV_NAME>` from `edge/`, its id put into `edge/wrangler.jsonc` and committed to `main` before the first deploy run is dispatched (step 7, "Bootstrap");
   3. the secrets, generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_secrets.sh`;
   4. what the deploy publishes and the locked tools, which a fresh clone lacks: `(cd frontend && npm ci && VITE_API_BASE_URL= npm run build)`, then `cd edge && npm ci`;
-  5. the first `npx wrangler deploy` from `edge/`, which you run yourself, because creating a Worker needs account Admin, with the Worker's secrets from that file; later changes are piped into `wrangler secret put`. It publishes the SPA without a snapshot until the approved deploy replaces it.
+  5. the first `npx --no-install wrangler deploy` from `edge/`, which you run yourself, because creating a Worker needs account Admin, with the Worker's secrets from that file; later changes are piped into `wrangler secret put`. It publishes the SPA without a snapshot until the approved deploy replaces it.
 - **What CI asserts on `edge/wrangler.jsonc` before every later deploy** (ADR-011):
   - no `[cache]` block;
   - `preview_urls = false` and `workers_dev = true`;
@@ -581,7 +581,7 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 `deploy.yml` runs on a `v*` tag or manual dispatch, in environment `production`, and waits for your approval as required reviewer. ADR-011 fixes its steps:
 
 1. Call `RENDER_DEPLOY_HOOK_URL` with `imgURL=ghcr.io/nathan98000/atus-api@sha256:<hex>`, URL-encoded. Every part except the digest must match the image configured on the service.
-2. Poll origin `/health` until its `build` equals `GITHUB_SHA`. Allow for a cold start: about a minute of Render spin-up plus about 6 s of app start.
+2. Poll origin `/health` until its `build` equals `GITHUB_SHA`, then require its `expected_data_version` (Render's `ATUS_EXPECTED_DATA_VERSION`) to equal the release's `data_version`. Allow for a cold start: about a minute of Render spin-up plus about 6 s of app start.
    - At 0.1 CPU the first `/health` came at a p50 of 5.8 s (5.5–6.5 s), and `/api/v1/meta` 0.1–0.4 s later. That is the image that precompiles its standard library (commit 5844ab7), measured at 0.25 CU with n=8 ([cold-start A/B](../loadtests/results/2026-10-21-cold-start-ab.md)).
    - Before that commit it was 12.9–13.1 s ([2026-10-21 emulation](../loadtests/results/2026-10-21-emulation.md), section 4). The audit measured 7–11 s on an earlier image (F67).
 3. Generate the static snapshot with that same digest, against the release dump restored into `postgres:16` with the production role settings.
@@ -596,7 +596,9 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 | `build` | `contents: read` | `image.yml` from scratch (no build cache) |
 | `push` | `contents: read`, `packages: write` | pushes exactly the tested image; outputs `ghcr.io/nathan98000/atus-api@sha256:<hex>` |
 | `snapshot` | `contents: read`, `packages: read` | builds the static snapshot from the committed release with that digest (below) |
+| `edge-config` | `contents: read` | the `wrangler.jsonc` invariant tests (`npx vitest run --project node` in `edge/`) and the placeholder KV namespace id check, in a job without secrets |
 | `deploy` | environment `production` (your approval); `contents: read`, `packages: read` | deploys and verifies (below) |
+| `browser-smoke` | `contents: read` | after `deploy`, without secrets: one browser journey against the public URL (below) |
 
 **The snapshot job.**
 
@@ -610,15 +612,16 @@ The snapshot is built before anything deploys, so a failed restore or snapshot d
 
 **The deploy job.**
 
-1. It checks that the environment holds its four secrets and that `PUBLIC_BASE_URL` is set. It runs the `wrangler.jsonc` invariant tests (`npx vitest run --project node` in `edge/`) and refuses the placeholder KV namespace id.
+1. It checks that the environment holds its four secrets and that `PUBLIC_BASE_URL` is set. It installs only what its steps run: the API's runtime lock and the package, binary wheels only (`--only-binary=:all:`), for the smoke's §9 comparison, and the edge's lockfile for `wrangler`. The `wrangler.jsonc` invariant tests ran in `edge-config`, and the browser journey runs in `browser-smoke`: their test and browser tooling never runs next to the deploy secrets.
 2. It records the rollback targets: the build the origin runs now, that build's GHCR digest, and the Worker's current deployment (`wrangler deployments status`).
 3. `scripts/ops/render_deploy.py trigger` POSTs `RENDER_DEPLOY_HOOK_URL` with `imgURL=<URL-encoded digest reference>`. The URL is read from the environment and never printed; anything but an `https://api.render.com/deploy/srv-...` URL is refused.
 4. `scripts/ops/render_deploy.py wait` polls the origin's `/health` until `build` equals `GITHUB_SHA`. It allows 15 minutes: the image pull, Render's ~1 minute spin-up and the app start. The app start took about 6 s at 0.1 CPU in the emulation ([cold-start A/B](../loadtests/results/2026-10-21-cold-start-ab.md); about 13 s before commit 5844ab7).
    - `/health` reports the commit, not the image digest. If the origin already ran this commit before the hook (for example "Re-run all jobs", which rebuilds and pushes a new digest of the same commit), the wait cannot see the switch. The step then shows a warning, and you confirm the deploy in Render → Events.
+   - Then the origin must be bound to the release this run publishes: `/health`'s `expected_data_version` (Render's `ATUS_EXPECTED_DATA_VERSION`, read from its configuration, not the database) must equal the snapshot's `DATA_VERSION`. Otherwise the step fails at once and nothing is published at the edge; the API image it deployed stays bound to its old data. Once `releases/current.json` on `main` names a new release, every deploy carries it, a hotfix included, so no deploy can pass until Render is switched (data release step 6) or the manifest commit is reverted.
 5. `npx --no-install wrangler deploy` (the version locked in `edge/package-lock.json`) publishes the SPA, the snapshot and the Worker, with `--var` `DATA_VERSION`, `ANALYTICS_VERSION`, `RESPONSE_FORMAT` and `SNAPSHOT_ID` read from the snapshot.
 6. The post-deploy smoke, at most 40 requests in all:
    - `scripts/ops/deploy_smoke.py`, at most 30 requests: first a bounded wait until `/api/_edge/health` and `/snap/current.json` name this release (the colo answering the runner may serve the previous version for a few seconds after `wrangler deploy`; at most 4 polls each, 15 s apart, within 60 s), then the SPA shell and its headers; the SPA fallback; the snapshot pointer and manifest; `/api/_edge/health`; `/api/health`, with a cold-start budget; `/api/v1/meta` (which the Worker answers from the snapshot); two home-page starters, whose live answers also prove the API's `X-Data-Version`, served from the snapshot and recomputed live with different request bytes (so the edge cache cannot answer) and diffed under the §9 criterion; an unknown `/api` path; and the origin lock (the onrender.com URL answers 403 `forbidden_origin`);
-   - one browser journey, `frontend/playwright.deployed.config.ts`: a starter renders, with no CSP errors and at most 6 `/api` requests.
+   - then, in the `browser-smoke` job, one browser journey, `frontend/playwright.deployed.config.ts`: a starter renders, with no CSP errors and at most 6 `/api` requests. `promote` waits for it.
 7. It writes the rollback notes (below) into the job summary, whatever the outcome.
 
 A push to `main` deploys nothing: deploy.yml has no branch trigger, which `tests/deploy/test_workflows.py` asserts along with the permissions above.
@@ -635,7 +638,7 @@ What a rehearsal cannot show is Render's deploy hook, its image pull, and the re
 **Bootstrap: the very first deploy.** Nothing exists on Render yet, so the first run is split around your approval. The `deploy` job checks out the commit the run was dispatched from and refuses the placeholder KV namespace id, so the real id must be on `main` before the run starts.
 
 1. Publish the release artifact and commit `releases/current.json` (step 1).
-2. Create the KV namespace (owner steps 1.3.1–1.3.2): `npx wrangler@4 login`, then `npx wrangler kv namespace create <KV_NAME>`. Put the id it prints into `edge/wrangler.jsonc` in place of the placeholder, then commit and push that change to main. Wait until CI on that push has passed (`gh run watch`): `preflight` refuses a commit without a successful `ci.yml` run on a push to `main`.
+2. Create the KV namespace (owner steps 1.3.1–1.3.2): `cd edge && npm ci`, then, from `edge/`, `npx --no-install wrangler login` and `npx --no-install wrangler kv namespace create <KV_NAME>`. Put the id it prints into `edge/wrangler.jsonc` in place of the placeholder, then commit and push that change to main. Wait until CI on that push has passed (`gh run watch`): `preflight` refuses a commit without a successful `ci.yml` run on a push to `main`.
 3. **Actions → Deploy → Run workflow** on `main`, at or after that commit. `preflight`, `build`, `push` and `snapshot` run; `deploy` waits for your approval, for up to 30 days.
 4. Meanwhile:
    - make the package public (owner step 4.5);
@@ -667,8 +670,9 @@ What a rehearsal cannot show is Render's deploy hook, its image pull, and the re
   1. Once per release, on your machine, against `atus api` serving the **full** database (loopback only):
      `python scripts/replay_deployed.py --base-url http://127.0.0.1:8000 --record expected-<release>.json`.
      Keep the file outside the repository.
-  2. Against the site:
-     `python scripts/replay_deployed.py --base-url https://atus.<sub>.workers.dev --expected expected-<release>.json --report replay.json`.
+  2. Against the site, with the release's `data_version` (`releases/current.json`):
+     `python scripts/replay_deployed.py --base-url https://atus.<sub>.workers.dev --expected expected-<release>.json --expect-data-version <data_version> --report replay.json`.
+     The replay fails unless every answer carries that `X-Data-Version`, and when the site reports the data version the file was recorded from (the full database compared with itself).
 - **What it sends.** The 24 BLS benchmarks of `atus_pipeline.analytics.benchmarks` (23 distinct specifications), `/api/v1/meta`, a full-period sleep trend, a by-sex comparison, and last the F66 broad selector (every tier-1 code pooled over every multi-year year, with replicate variance): 28 requests.
   - The broad selector is the costliest analysis on the serving DB. ADR-011 adds it to this replay so that the statement timeout is sized with it (ADR-012). Its response time is in the report.
 - **What it checks.** Every benchmark against BLS's published value and the benchmark's own tolerance, and every response against the full-database recording under §9.
@@ -727,7 +731,7 @@ This lists every variable and secret the deployed system uses: where it is set, 
 |---|---|---|
 | **Render env** | Render → service → Environment | "Save and deploy" redeploys the service with the new values. Render documents that it redeploys "your service's existing build" (render.com/docs/configure-environment-variables, read 2026-10-21) but not which image an image-backed service then pulls; with the Image URL at `:live` (owner step 2.7) either way it is the last digest a deploy verified. Afterwards `/health` must report the `live` build (deep-check checks it; by hand: [operations.md, Conventions](operations.md#conventions)) |
 | **Image** | baked in at build time (Dockerfile) | a new image, deployed by digest; never set these on Render |
-| **Worker secret** | `npx wrangler secret put NAME`, piped from a file; encrypted, and never readable again through the dashboard or wrangler, but readable by any code deployed to the Worker (so a leaked deploy token exposes every one: [Rotation](#rotation), item 5) | the command deploys a new Worker version |
+| **Worker secret** | `npx --no-install wrangler secret put NAME`, piped from a file; encrypted, and never readable again through the dashboard or wrangler, but readable by any code deployed to the Worker (so a leaked deploy token exposes every one: [Rotation](#rotation), item 5) | the command deploys a new Worker version |
 | **Worker var** | `vars` in `edge/wrangler.jsonc`, or `--var` from `deploy.yml` | the next `wrangler deploy` |
 | **GitHub secret / var** | Settings → Secrets and variables → Actions (the repository variable); Settings → Environments → `production` or `ops` (secrets) | the next workflow run |
 | **Owner file** | `~/.config/atus/<name>.env`: `chmod 600`, outside the repository, your master copy | written by the scripts that generate the values |
@@ -794,7 +798,7 @@ Never set on Render. The data commands (`atus load`, `atus build-serving-db`, `a
 | `ATUS_API_DB_PASSWORD` | written by `restore-serving-db` into the project's secrets file | — | 192 random bits, URL-safe | **secret**, the generated `atus_api` password; reused by later restores unless `--rotate-api-password` |
 | `ATUS_API_DATABASE_URL` | written by `restore-serving-db` into the project's secrets file | — | `postgresql://atus_api:<password>@ep-<id>...:5432/atus?sslmode=verify-full&sslrootcert=system` | **secret**, the DSN to copy into Render's `ATUS_DATABASE_URL` |
 | `ATUS_API_ROLE_PASSWORD` | `scripts/ops/roles.sql` (psql `\getenv`) | — | a SCRAM-SHA-256 verifier | set by the restore only while psql applies roles.sql, so the plaintext never reaches the server; the local stack passes its own throwaway password |
-| `ATUS_PG_CLIENT_IMAGE` | `pg_dump`/`pg_restore`/`psql` wrappers | `postgres:<server major>` | `postgres:16` | client image used through Docker when no local client is new enough |
+| `ATUS_PG_CLIENT_IMAGE` | `pg_dump`/`pg_restore`/`psql` wrappers | for PostgreSQL 16, `postgres:16` pinned by digest (`serving/pgtools.py`, the digest CI uses); other majors have no default | `postgres:16@sha256:<digest>` | client image used through Docker when no local client is new enough; it receives the connection's password, so name a digest, not a tag |
 | `ATUS_BIN` | `scripts/ops/restore_serving_db.sh` | `.venv/bin/atus`, then `atus` on PATH | `/opt/atus/bin/atus` | the `atus` executable the wrapper runs |
 | `ATUS_EDGE_ENV_FILE` | `scripts/ops/gen_edge_secrets.sh` | `~/.config/atus/edge.env` | — | where the generated secrets go (`--file` overrides it) |
 | `EDGE_AUTH_SECRET` (environment) | `scripts/build_snapshot.py` | unset: `--edge-secret-file` | — | **secret**, sent to the local snapshot API as `X-ATUS-Edge-Auth` |
@@ -835,7 +839,7 @@ Never set on Render. The data commands (`atus load`, `atus build-serving-db`, `a
 
 These are all the vars the Worker reads (`edge/src/`). None selects the API origin: that is the secret `RENDER_ORIGIN` alone. The Vercel fallback (ADR-011 "Fallback") is a documented manual procedure whose preconditions, its Worker settings included, are not implemented (ADR-011 amendment).
 
-Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_secrets.sh` and loaded with `npx wrangler secret put <NAME>`, piped from that file (owner step 1.3); the script prints each command. A brand-new Worker's first `wrangler deploy` must already carry the required secrets (`secrets.required` in `wrangler.jsonc`, so `RENDER_ORIGIN` must be known), and `--secrets-file` uploads every line of the file it reads: give it the Worker's names only, as the script prints (`grep -E '^(EDGE_AUTH_SECRET|OPS_TOKEN|IP_HMAC_KEY|RENDER_ORIGIN)=' ~/.config/atus/edge.env` into a private temporary file, which `--secrets-file` reads and the command then removes; not a process substitution, which fails on macOS), never the whole file, which also holds the API's `ATUS_OPS_TOKEN` and any `EDGE_AUTH_SECRET_PREVIOUS` or `NEON_API_KEY`.
+Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_secrets.sh` and loaded with `npx --no-install wrangler secret put <NAME>`, piped from that file (owner step 1.3); the script prints each command. A brand-new Worker's first `wrangler deploy` must already carry the required secrets (`secrets.required` in `wrangler.jsonc`, so `RENDER_ORIGIN` must be known), and `--secrets-file` uploads every line of the file it reads: give it the Worker's names only, as the script prints (`grep -E '^(EDGE_AUTH_SECRET|OPS_TOKEN|IP_HMAC_KEY|RENDER_ORIGIN)=' ~/.config/atus/edge.env` into a private temporary file, which `--secrets-file` reads and the command then removes; not a process substitution, which fails on macOS), never the whole file, which also holds the API's `ATUS_OPS_TOKEN` and any `EDGE_AUTH_SECRET_PREVIOUS` or `NEON_API_KEY`.
 
 ### GitHub (repository variable and environments)
 
@@ -917,7 +921,7 @@ Every secret has one procedure.
 1. **Edge secret.** This one is designed so that no request fails.
    1. `scripts/ops/gen_edge_secrets.sh --rotate EDGE_AUTH_SECRET` writes the new value into `edge.env` and keeps the old one as `EDGE_AUTH_SECRET_PREVIOUS`.
    2. Render `ATUS_EDGE_SECRETS=<old>,<new>`, then "Save and deploy". Wait until Render → Events shows the deploy as live.
-   3. `npx wrangler secret put EDGE_AUTH_SECRET` with `<new>`.
+   3. `npx --no-install wrangler secret put EDGE_AUTH_SECRET` with `<new>`.
    4. Render `ATUS_EDGE_SECRETS=<new>`, then "Save and deploy".
 2. **`atus_api` database password.**
    1. `scripts/ops/restore_serving_db.sh --artifact <the release dump> --secrets-file <that project's file> --roles-only --rotate-api-password` re-applies `scripts/ops/roles.sql` as `neondb_owner` with a new generated 192-bit password (sent as a SCRAM verifier) and rewrites `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` in that file.
@@ -930,7 +934,7 @@ Every secret has one procedure.
    3. For `OPS_TOKEN`, update the GitHub secret `EDGE_OPS_TOKEN` (`ops`, and `production` if you set it there). `ATUS_OPS_TOKEN` has no GitHub copy.
 
    Until both match, only the ops checks see 404. Visitors are unaffected.
-4. **`IP_HMAC_KEY`.** `npx wrangler secret put IP_HMAC_KEY` at any time.
+4. **`IP_HMAC_KEY`.** `npx --no-install wrangler secret put IP_HMAC_KEY` at any time.
 5. **Cloudflare API token** (90-day TTL).
    1. Before it expires, create a new Custom token with the same scope.
    2. Replace the GitHub secret `CLOUDFLARE_API_TOKEN`.
@@ -970,7 +974,7 @@ Every secret has one procedure.
 
 ## Rollback and runbooks
 
-The general runbooks live in [`operations.md`](operations.md#runbooks): deploy, rollback, serving-DB build and restore, data release and new ATUS year, restore drill, incident first steps, token rotation, quota exhausted, and provider free-tier changes. The procedures below are the ones the workflows implement.
+The general runbooks live in [`operations.md`](operations.md#runbooks): deploy, rollback, a deploy blocked by the image scan, serving-DB build and restore, data release and new ATUS year, restore drill, incident first steps, token rotation, quota exhausted, and provider free-tier changes. The procedures below are the ones the workflows implement.
 
 ### Rollback
 
@@ -979,19 +983,20 @@ Every deploy run's summary records what ran before it and what it deployed, what
 - **API.** Export `RENDER_DEPLOY_HOOK_URL` from your password manager into your shell (never paste it into chat), then:
   1. `python scripts/ops/render_deploy.py trigger --image-ref ghcr.io/nathan98000/atus-api@sha256:<previous>`;
   2. `RENDER_ORIGIN=... python scripts/ops/render_deploy.py wait --expect-build <previous build>`;
-  3. move the GHCR tag `live` back to that digest: within 30 days of the Deploy run that deployed it, Actions → that run → job `promote` → Re-run (GitHub re-runs a job only "up to 30 days after its initial run", docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs, read 2026-10-21); later, by hand with `docker buildx imagetools create --prefer-index=false` ([operations.md, Rollback](operations.md#rollback) has the commands). Until then `deep-check.yml` reports the build mismatch, and a Render deploy not made through the hook would bring back the image you rolled away from.
+  3. move the GHCR tag `live` back to that digest: within 30 days of the Deploy run that deployed it, Actions → that run → job `promote` → Re-run (GitHub re-runs a job only "up to 30 days after its initial run", docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs, read 2026-10-21); later, or while another Deploy run is in progress or waiting for approval (the re-run would wait behind it in `deploy.yml`'s one concurrency group, and a later dispatch would cancel it), by hand with `docker buildx imagetools create --prefer-index=false`, or after rejecting that pending run ([operations.md, Rollback](operations.md#rollback) has the commands). Until then `deep-check.yml` reports the build mismatch, and a Render deploy not made through the hook would bring back the image you rolled away from.
 
   The previous image in the summary is the digest that commit was last deployed as (its `deployed-<commit>` tag, which only `promote` moves), so a re-run of the running commit, whose push moves `sha-<commit>`, still names the right one. GHCR keeps the newest 20 digests and the one tagged `live`. Render's dashboard can also roll back to a previous deploy.
 - **Edge (SPA, snapshot, Worker and its vars):**
-  1. `cd edge && npx wrangler rollback <previous version id> --message "rollback"`. Without an id, wrangler offers the version before the current one.
+  1. `cd edge && npx --no-install wrangler rollback <previous version id> --message "rollback"`. Without an id, wrangler offers the version before the current one.
   2. **If wrangler says "The following secrets have changed since version … was deployed"**, confirming redeploys that version with its old secret values. After an edge-secret rotation the old `EDGE_AUTH_SECRET` is no longer in the API's `ATUS_EDGE_SECRETS`, so every proxied request would get 403 `forbidden_origin`; an old `RENDER_ORIGIN` or a revoked `NEON_API_KEY` comes back the same way. Decline, and choose a version deployed after the secret change. If you need an older one, first make the API accept the old edge secret too (Render `ATUS_EDGE_SECRETS=<current>,<EDGE_AUTH_SECRET_PREVIOUS from edge.env>`, "Save and deploy", wait until live), then confirm. You cannot fix the secrets afterwards with `wrangler secret put`: wrangler 4.148 refuses to edit a secret while a version other than the latest is deployed.
   3. Check with `python scripts/ops/monitors.py edge --base-url https://atus.<sub>.workers.dev`, and run one analysis through the site.
   4. The pause switch is a pair of secrets too: a version from before a switch change brings back that version's switch (wrangler lists `API_PAUSED_UNTIL` among the changed secrets). The edge check reports it (`api_paused`, WARN); set it again with `deploy.yml` once the latest version is deployed.
 - **Data:** the release switch in reverse (ADR-013; the commands are in [operations.md "Rollback"](operations.md#rollback)):
-  1. make `releases/current.json` on `main` name the previous release again (`git checkout <commit of the previous release> -- releases/current.json`, and `NEON_PROJECT_ID` in `edge/wrangler.jsonc` if the governor reads Neon usage), commit and push;
-  2. wait until CI on that push has passed (`gh run watch`; preflight's CI gate refuses the commit until then), then `gh workflow run deploy.yml --ref main`, so the Worker's `DATA_VERSION` and snapshot follow with the current code. Preflight runs only `main` or a `vX.Y.Z` tag; re-running an old run (GitHub allows that for 30 days) or tagging the old commit would deploy that commit's API image and Worker code too;
-  3. while `deploy` waits for approval, restore the previous `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` on Render, wait until it is live, then approve (do this step first only if the newer release must stop serving at once: API and edge then serve different releases until the approval);
-  4. if the governor reads Neon usage, create a new project-scoped key for the previous project in Neon and load it with `npx wrangler secret put NEON_API_KEY` (the previous key is not kept: [Cloudflare Worker](#cloudflare-worker)), then revoke the newer project's key.
+  1. restore the previous `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` on Render;
+  2. roll the edge back at once with `wrangler rollback` to the Worker version from before the release's deploy (Edge, above): it restores the Worker's `DATA_VERSION` and the old snapshot. Steps 1 and 2 need no build, scan or CI, so they work even while the image scan blocks every deploy ([operations.md, "The image scan blocks a deploy"](operations.md#the-image-scan-blocks-a-deploy));
+  3. make `releases/current.json` on `main` name the previous release again (`git checkout <commit of the previous release> -- releases/current.json`, and `NEON_PROJECT_ID` in `edge/wrangler.jsonc` if the governor reads Neon usage), commit and push;
+  4. wait until CI on that push has passed (`gh run watch`; preflight's CI gate refuses the commit until then), then `gh workflow run deploy.yml --ref main` and approve, so `main`, the Worker's code and the snapshot agree. Preflight runs only `main` or a `vX.Y.Z` tag; re-running an old run (GitHub allows that for 30 days) or tagging the old commit would deploy that commit's API image and Worker code too;
+  5. if the governor reads Neon usage, create a new project-scoped key for the previous project in Neon and load it with `npx --no-install wrangler secret put NEON_API_KEY` once step 4 has deployed (the previous key is not kept: [Cloudflare Worker](#cloudflare-worker); step 2's version may carry its old value, but nothing else holds it), then revoke the newer project's key.
 - **API host:** no failover is implemented. The Vercel fallback (ADR-011 "Fallback") is a documented manual procedure whose preconditions are not built, and no Worker var selects the API origin; the Worker reads it only from the secret `RENDER_ORIGIN`. See the runbook [Render suspends the service](operations.md#render-suspends-the-service) (owner decision).
 
 ### Monitoring and alerting ($0)
@@ -1000,11 +1005,21 @@ Every deploy run's summary records what ran before it and what it deployed, what
 |---|---|---|---|---|
 | `edge-check.yml` | every 30 min (`:17`, `:47`) | 4 (1 Worker) | SPA shell or its headers, `/api/_edge/health`, the snapshot pointer or manifest, or a Worker `SNAPSHOT_ID` that differs from the pointer | Cloudflare only |
 | `deep-check.yml` | every 6 h (`17 */6 * * *`) | 1–8 | `/api/health` through the Worker after a cold-start allowance of 4 min | Cloudflare and Render; never Neon |
-| `quota-report.yml` | daily, 22:05 UTC | 1 (+1 to Cloudflare's API with the optional analytics token) | any governor budget above 70% of its pro-rated value (see below); with the analytics token (owner step 4.3), the account's Worker requests today above 70% of the pro-rated 100,000 | the Worker's governor; Cloudflare's GraphQL Analytics API |
+| `quota-report.yml` | daily, 22:05 UTC | 1 (+1 to Cloudflare's API with the optional analytics token) | a quota at risk, at 70% (see below); a configured Neon key whose usage poll keeps failing; with the analytics token (owner step 4.3), the account's Worker requests today above 70% of the pro-rated 100,000 | the Worker's governor; Cloudflare's GraphQL Analytics API |
 | `schedules-check.yml` | weekly (Monday 09:41 UTC) | GitHub API | a scheduled workflow not `active`; a monitor whose last scheduled run is far older than its cadence; no commit on `main` for 28 days | GitHub only |
 | `ghcr-cleanup.yml` | weekly (Monday 04:23 UTC) | GitHub API | a failed deletion | GitHub only |
 
-- **Pro-rating in the quota report.** Daily budgets are pro-rated by the share of the UTC day elapsed: global and heavy analyses, and the Neon CU-hour ceiling. Monthly Neon CU-hours and egress are pro-rated by the share of Neon's consumption period. The rolling 31-day CU total is compared with the whole 100 CU-hour quota. The per-network cap is reported but never alerts.
+- **What the quota report judges.** It fails when a line is above 70% of its reference:
+  - global and heavy analyses today, pro-rated by the share of the UTC day elapsed;
+  - Neon's month-to-date CU-hours (Neon's own figure plus the governor's charges since its last poll), against the governor's pacing allowance, the monthly line above which it pauses analyses (`capacity_paused`). Only with `NEON_API_KEY`;
+  - Neon's month-to-date egress, pro-rated by the share of Neon's consumption period. Only with `NEON_API_KEY`.
+
+  Three lines are reported but never alert, because the governor itself holds them down and reaching them is the protection working:
+  - the busiest network against the per-network cap;
+  - the governor's CU-hours today against its daily ceiling. Reaching it refuses analyses (`daily_capacity_reached`, budget `cu_day`). In conservative mode a typical day of the traffic model does (ADR-015, "Conservative mode is tight"), so this line would otherwise fail every day;
+  - its rolling 31-day charges. They charge 2 CU for every second and the whole idle tail, an upper bound far above what Neon measures on normal traffic: compared with the 100 CU-h quota they crossed 70% from about day 23 (ground truth) or day 26 (conservative mode) of a typical month (review round 2, quota-report-alerts-on-normal-traffic).
+
+  Without `NEON_API_KEY` no Neon CU-hour line can alert. The report shows a WARN instead: Neon's real usage, including what the governor does not count (ADR-015, "Model error"), is visible only in the Neon console. With the key, a poll that keeps failing (conservative mode with a poll error) fails the report.
 - **Not monitored: Render outbound bandwidth** (5 GB a month; the service pauses until the 1st when it runs out). Reading it needs a Render API key, which grants every workspace (owner step 2.6 says never to create one), so no workflow warns before it runs out, and no notification prompts you to look either: a weekly look at the workspace's usage is an item of the [owner checklist](#owner-checklist) below, which you open yourself. Governed traffic stays far below it (projection in [Free-tier budget](#render-free-web-service-hobby-workspace)), so a rise means direct-origin hits or another ungoverned path. Without the analytics token, the Worker's daily requests are unmonitored too, and the same checklist covers them.
 - **Email.** A failed scheduled run emails its owner when notifications are set as in owner step 4.4. A run that passes sends nothing.
 - **Skipped monitors.** The monitors stay skipped until the repository variable `PUBLIC_BASE_URL` exists, which you set only after step 8 has verified the site (owner step 4.1).

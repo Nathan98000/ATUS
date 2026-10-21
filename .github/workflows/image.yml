@@ -64,7 +64,7 @@ jobs:
 
       - name: Install the hash-locked dev environment
         run: |
-          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
           python -m pip install --no-deps --no-build-isolation -e .
 
       - name: Lint the packaging files (Dockerfiles, compose, shell, ShellCheck)
@@ -137,16 +137,20 @@ jobs:
           echo "$RUNNER_TEMP/trivy-bin" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/trivy-bin/trivy" --version
 
+      # .trivyignore holds the vulnerabilities accepted for a short, recorded
+      # time (an expiry date and a reason per entry; usually none). When this
+      # step blocks deploys: docs/operations.md, "The image scan blocks a deploy".
       - name: Scan the image (fails on HIGH or CRITICAL vulnerabilities that have a fix)
         env:
           TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
-        run: trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --format table "$IMAGE"
+        run: trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --ignorefile .trivyignore --exit-code 1 --format table "$IMAGE"
 
+      # Every finding, the accepted ones included (an empty ignore file).
       - name: Scan report (SARIF, every severity)
         if: ${{ !cancelled() && steps.trivy.outcome == 'success' }}
         env:
           TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
-        run: trivy image --scanners vuln --skip-db-update --format sarif --output trivy-image.sarif "$IMAGE"
+        run: trivy image --scanners vuln --skip-db-update --ignorefile /dev/null --format sarif --output trivy-image.sarif "$IMAGE"
 
       - name: Upload the scan report
         if: ${{ !cancelled() && steps.trivy.outcome == 'success' }}

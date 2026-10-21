@@ -24,8 +24,14 @@ set it on purpose; it ends at its date or with ``resume-api``.
 
 ``quota`` (daily, ``quota-report.yml``): reads the governor's budget state
 from ``GET /api/_ops/budget`` (bearer ``EDGE_OPS_TOKEN``, never printed) and
-fails when any provider budget is above 70% of its pro-rated value. One
-Worker request; the governor answers from its own storage. With
+fails when a quota is at risk: an analysis cap above 70% of its pro-rated
+value, Neon's own month-to-date CU-hours above 70% of the governor's pacing
+allowance, Neon egress above 70% of its pro-rated share, or a configured Neon
+key whose usage poll keeps failing. The governor's own CU charges (today
+against its daily ceiling, the rolling 31 days) are reported, never alerted
+on: the governor holds them down, and normal traffic fills the conservative
+ceiling (ADR-015). One Worker request; the governor answers from its own
+storage. With
 ``CLOUDFLARE_ANALYTICS_TOKEN`` (a read-only "Account Analytics: Read" token)
 and ``CLOUDFLARE_ANALYTICS_ACCOUNT`` (the account id) it also judges the
 account's Worker requests today against Workers Free's 100,000 a day, from
@@ -272,12 +278,22 @@ def _line(name: str, used: float, budget: float | None, threshold: float,
 def evaluate_budget(report: dict, *, threshold: float = ALERT_THRESHOLD) -> list[BudgetLine]:
     """Every governor budget against its pro-rated value (pure; tested directly).
 
-    Daily budgets (the governor's counters, which reset at 00:00 UTC) are
-    pro-rated by the share of the UTC day elapsed at ``generated_at``; monthly
-    provider quotas (Neon CU-hours and egress) by the share of Neon's
-    consumption period. The 31-day rolling CU total is compared with the whole
-    monthly quota. The per-network cap is reported but never alerts: hitting
-    it is the protection working, not a quota at risk.
+    Daily analysis caps (the governor's counters, which reset at 00:00 UTC) are
+    pro-rated by the share of the UTC day elapsed at ``generated_at``. Neon's
+    month-to-date CU-hours (its own figure plus the governor's bridge since the
+    last poll) are judged against the governor's pacing allowance, the line
+    above which it pauses analyses (``capacity_paused``); Neon egress against
+    the share of Neon's consumption period.
+
+    Informational only, because hitting them is the protection working, not a
+    quota at risk: the per-network cap; the governor's CU charges today
+    against its daily ceiling (reaching it refuses analyses with
+    ``daily_capacity_reached``, and a typical day reaches the conservative
+    ceiling, ADR-015); and its rolling 31-day charges (2 CU for every second
+    plus the whole idle tail: an upper bound the daily ceiling holds down,
+    far above Neon's own figure on normal traffic). Review round 2,
+    quota-report-alerts-on-normal-traffic: judged as quota use, they failed
+    the report on every typical day.
     """
     generated = _parse_time(report.get("generated_at")) or datetime.now(UTC)
     day_share = _day_share(generated)
@@ -298,22 +314,36 @@ def evaluate_budget(report: dict, *, threshold: float = ALERT_THRESHOLD) -> list
     if settled is not None and ceiling:
         lines.append(_line("Neon CU-h today", settled + (provisional or 0.0),
                            ceiling * day_share, threshold,
-                           f"daily ceiling {ceiling:g} CU-h ({report.get('mode', '?')} mode)"))
+                           f"the governor's charges against its daily ceiling {ceiling:g} "
+                           f"CU-h ({report.get('mode', '?')} mode); reaching it refuses "
+                           "analyses (daily_capacity_reached): informational",
+                           informational=True))
 
+    month = report.get("month") or {}
+    ground_truth = _num(month.get("cu_hours")) is not None
     rolling = _num(report.get("compute_rolling_31d_cu_hours"))
     if rolling is not None:
         lines.append(_line("Neon CU-h, last 31 days", rolling, NEON_MONTHLY_CU_HOURS,
-                           threshold, f"monthly quota {NEON_MONTHLY_CU_HOURS:g} CU-h"))
+                           threshold, "the governor's charges (2 CU, whole idle tail), an "
+                           "upper bound; " + ("Neon's own month to date is judged instead"
+                                              if ground_truth else "Neon's real usage needs "
+                                              "NEON_API_KEY") + ": informational",
+                           informational=True))
 
-    month = report.get("month") or {}
     share = _num(month.get("elapsed_share"))
     if share is not None:
         share = max(MIN_MONTH_SHARE, share)
         cu = _num(month.get("cu_hours"))
         if cu is not None:
             used = cu + (_num(month.get("bridge_cu_hours")) or 0.0)
-            lines.append(_line("Neon CU-h, month to date", used, NEON_MONTHLY_CU_HOURS * share,
-                               threshold, f"{share:.0%} of Neon's period elapsed"))
+            allowance = _num(month.get("allowance_cu_hours"))
+            if allowance:
+                budget, note = allowance, ("the governor's pacing allowance (analyses pause "
+                                           f"above it), {share:.0%} of Neon's period elapsed")
+            else:
+                budget, note = NEON_MONTHLY_CU_HOURS * share, \
+                    f"{share:.0%} of Neon's period elapsed"
+            lines.append(_line("Neon CU-h, month to date", used, budget, threshold, note))
         egress = _num(month.get("egress_bytes"))
         if egress is not None:
             used = egress + (_num(month.get("bridge_egress_bytes")) or 0.0)
@@ -370,10 +400,19 @@ def check_quota(client: Client, report: Report, *, token: str, threshold: float,
                        f"{'**ALERT**' if line.alert else 'ok'} |")
         status = "FAIL" if line.alert else "PASS"
         report.add(line.name, status, f"{line.used:,.4g} of {budget} ({share}); {line.note}")
-    if (governor.get("month") or {}).get("cu_hours") is None:
+    month = governor.get("month") or {}
+    poll_error = month.get("last_poll_error")
+    if governor.get("neon_configured") and governor.get("mode") != "ground_truth" \
+            and poll_error:
+        report.fail("neon_ground_truth",
+                    f"the governor has a Neon key but no fresh usage figures (last poll "
+                    f"error {str(poll_error)[:80]}): check NEON_API_KEY and NEON_PROJECT_ID "
+                    "(docs/operations.md, 'A quota is exhausted')")
+    elif month.get("cu_hours") is None:
         report.add("neon_ground_truth", "WARN",
-                   "no Neon usage poll (conservative mode): month-to-date CU-hours and "
-                   "egress are not reported; the rolling 31-day total stands in")
+                   "no Neon usage poll (conservative mode): Neon's real CU-hours and egress "
+                   "are not visible, so no Neon line can alert; the governor's charges are "
+                   "held under its daily ceiling (ADR-015)")
 
 
 # --------------------------------------------------------------------------- #

@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from atus_pipeline.api import RESPONSE_FORMAT
 from atus_pipeline.config import RateLimit
 from tests.unit.api.conftest import FakeDatabase, make_app, make_settings
 from tests.unit.api.test_contract import known_estimate_result
@@ -321,7 +322,9 @@ class TestHeaders:
         response = client.post(ESTIMATE, json=BODY)
         assert response.headers["X-Data-Version"] == "0325:run1"
         assert response.headers["X-Analytics-Version"] == "0.2"
-        assert response.headers["X-Response-Format"] == "1"
+        # The constant, not a copy: a RESPONSE_FORMAT bump edits only BUMP_FILES
+        # (tests/unit/api/test_response_format.py).
+        assert response.headers["X-Response-Format"] == RESPONSE_FORMAT
 
 
 class TestCompression:

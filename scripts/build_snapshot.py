@@ -680,8 +680,10 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--api-build", help="the API image's git SHA (else /health 'build')")
     parser.add_argument("--data-version",
                         help="data version the API must report in X-Data-Version")
-    parser.add_argument("--response-format", default="1",
-                        help="X-Response-Format the API must report (default 1)")
+    parser.add_argument("--response-format", default=None,
+                        help="X-Response-Format the API must report (default: the one "
+                             "format every analysis reports, so a RESPONSE_FORMAT bump "
+                             "needs no change here)")
     parser.add_argument("--skip-refused", action="store_true",
                         help="leave out analyses the API refuses with a 422 domain error "
                              "(fixture data only; a release snapshot must answer every spec)")

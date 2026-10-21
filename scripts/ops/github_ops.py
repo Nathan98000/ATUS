@@ -32,10 +32,15 @@ never printed.
         (ADR-011 "Rollback"). Never deletes when there are ``--keep`` or fewer,
         and at most ``--max-delete`` per run. Weekly: ghcr-cleanup.yml.
 
-    github_ops.py live-build --owner nathan98000 --package atus-api
+    github_ops.py live-build --owner nathan98000 --package atus-api [--require-live]
         Prints ``build=<commit>``: the commit of the digest tagged ``live``
         (empty before the first deploy). deep-check.yml expects /health to
-        report it.
+        report it, with ``--require-live``: it runs only after the first deploy
+        has tagged ``live``, so a missing package or tag fails. A refused
+        lookup (401, 403, any other 4xx) always fails: it would switch the
+        build comparison off for good. Only a transient failure (no reply,
+        408, 429, 5xx) prints an empty ``build=`` and exits 0, so the health
+        check still runs, without the build.
 
     github_ops.py deployed-image --owner nathan98000 --package atus-api --build <commit>
         Prints ``image_ref=`` and ``image_source=``: the digest ``<commit>``
@@ -207,15 +212,19 @@ def check_deploy_gate(gh: GitHub, repo: str, sha: str, *, branch: str = "main",
                       workflow: str = "ci.yml") -> list[Finding]:
     """Whether ``sha`` may deploy: a successful ``workflow`` run on a push to
     ``branch`` for exactly this commit, and the commit is on ``branch``."""
-    runs = gh.call("GET", f"/repos/{repo}/actions/workflows/{workflow}/runs?head_sha={sha}"
-                          f"&event=push&branch={branch}&status=success&per_page=1")
+    runs_path = (f"/repos/{repo}/actions/workflows/{workflow}/runs?head_sha={sha}"
+                 f"&event=push&branch={branch}")
+    runs = gh.call("GET", f"{runs_path}&status=success&per_page=1")
     passed = [r for r in (runs or {}).get("workflow_runs", [])
               if r.get("head_sha") == sha and r.get("conclusion") == "success"]
-    findings = [Finding("ci", True, f"{workflow} passed for {sha[:12]} on a push to {branch} "
-                                    f"(run {passed[0].get('id')})") if passed else
-                Finding("ci", False, f"no successful {workflow} run for {sha[:12]} on a push to "
-                                     f"{branch}: wait until CI has passed for this commit (or "
-                                     f"fix it), then re-run")]
+    if passed:
+        findings = [Finding("ci", True, f"{workflow} passed for {sha[:12]} on a push to "
+                                        f"{branch} (run {passed[0].get('id')})")]
+    else:
+        others = gh.call("GET", f"{runs_path}&per_page=5") or {}
+        findings = [Finding("ci", False, _why_no_green_ci(
+            [r for r in others.get("workflow_runs", []) if r.get("head_sha") == sha],
+            workflow, sha, branch))]
     compare = gh.call("GET", f"/repos/{repo}/compare/{sha}...{branch}") or {}
     status, behind = compare.get("status"), compare.get("behind_by")
     if status in ("ahead", "identical") and behind == 0:
@@ -225,6 +234,37 @@ def check_deploy_gate(gh: GitHub, repo: str, sha: str, *, branch: str = "main",
                                                     f"{behind} commit(s) off it): tag only "
                                                     f"commits on {branch}"))
     return findings
+
+
+#: Run states GitHub reports before a run has a conclusion.
+UNFINISHED = frozenset({"queued", "in_progress", "waiting", "pending", "requested"})
+
+
+def _why_no_green_ci(runs: list[dict], workflow: str, sha: str, branch: str) -> str:
+    """The deploy gate's refusal, saying what happened to this commit's CI. ci.yml's
+    concurrency keeps one pending push run on ``branch``: a newer push cancels the run
+    still waiting, and a push of several commits runs CI on its head only, so "wait"
+    alone can wait for a run that never comes (review round 2,
+    ci-concurrency-strands-main-commits)."""
+    refused = f"no successful {workflow} run for {sha[:12]} on a push to {branch}"
+    green = (f"or tag a commit whose {workflow} run passed (the head of {branch} once its "
+             "CI is green)")
+    if not runs:
+        return (f"{refused}, and none will come: GitHub runs CI only on the head commit "
+                f"of a push, and cancels a run still waiting when a newer push to "
+                f"{branch} queues. Tag a commit whose {workflow} run passed (the head of "
+                f"{branch} once its CI is green), then re-run")
+    latest = max(runs, key=lambda r: (str(r.get("created_at") or ""), r.get("id") or 0))
+    run_id, status = latest.get("id"), latest.get("status")
+    conclusion = latest.get("conclusion")
+    if status in UNFINISHED:
+        return f"{refused} yet: run {run_id} is {status}; wait until it passes, then re-run"
+    if conclusion == "cancelled":
+        return (f"{refused}: run {run_id} was cancelled (a newer push to {branch} "
+                f"superseded it while it waited). Re-run it (gh run rerun {run_id}) and "
+                f"re-run this deploy once it passes, {green}")
+    return (f"{refused}: run {run_id} ended {conclusion or status}. Fix it on {branch} "
+            "and deploy the fixing commit once its CI passes")
 
 
 def _ago(delta: timedelta) -> str:
@@ -248,6 +288,8 @@ class Version:
 LIVE_TAG = "live"
 DEPLOYED_PREFIX = "deployed-"
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
+#: GitHub answers that say "try again later", not "this can never work".
+TRANSIENT_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
 
 
 def plan_cleanup(versions: list[Version], *, keep: int) -> list[Version]:
@@ -294,6 +336,43 @@ def ghcr_versions(gh: GitHub, owner_kind: str, owner: str, package: str) -> list
     return out
 
 
+def print_live_build(gh: GitHub, owner_kind: str, owner: str, package: str, *,
+                     require: bool) -> int:
+    """``live-build``: print ``build=<commit>`` and return the exit status (see
+    the module docstring). deep-check.yml ran this with ``continue-on-error``,
+    so a lasting 401/403 or a missing tag silently dropped the build comparison
+    (review round 2, deep-check-build-expectation-silently-off)."""
+    where = f"{owner_kind}/{owner}/packages/container/{package}"
+    try:
+        versions = ghcr_versions(gh, owner_kind, owner, package)
+    except GitHubError as exc:
+        if exc.status is None or exc.status in TRANSIENT_STATUSES:
+            print(f"warning: {exc}: GitHub did not answer; the build is not compared this "
+                  "time", file=sys.stderr)
+            print("build=")
+            return 0
+        if exc.status in (401, 403):
+            print(f"error: {exc}: the token may not read the versions of {where}. In the "
+                  "package's settings, Manage Actions access must give this repository "
+                  "read access (docs/operations.md, \"The deep check cannot read the live "
+                  "tag\")", file=sys.stderr)
+            return 1
+        if exc.status != 404:
+            raise
+        versions = []
+    build = live_build(versions)
+    if build is None:
+        missing = f"no version is tagged {LIVE_TAG} ({where})"
+        if require:
+            print(f"error: {missing}, although the monitors start only after the first "
+                  "deploy's promote job tagged one (docs/operations.md, \"The deep check "
+                  "cannot read the live tag\")", file=sys.stderr)
+            return 1
+        print(f"{missing} (no deploy has passed yet)", file=sys.stderr)
+    print(f"build={build or ''}")
+    return 0
+
+
 def _summary(lines: list[str]) -> None:
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if path:
@@ -314,6 +393,8 @@ def main(argv: list[str] | None = None) -> int:
     dg.add_argument("--branch", default="main")
     gc = sub.add_parser("ghcr-cleanup", help="keep only the newest image versions")
     lb = sub.add_parser("live-build", help="the commit the `live` image was deployed from")
+    lb.add_argument("--require-live", action="store_true",
+                    help="fail when no version is tagged live (after the first deploy)")
     di = sub.add_parser("deployed-image", help="the digest a commit last ran as")
     for cmd in (gc, lb, di):
         cmd.add_argument("--owner", required=True)
@@ -369,20 +450,16 @@ def main(argv: list[str] | None = None) -> int:
         if not (NAME.match(args.owner) and NAME.match(args.package)):
             print("error: malformed --owner or --package", file=sys.stderr)
             return 2
-        if args.command in ("live-build", "deployed-image"):
+        if args.command == "live-build":
+            return print_live_build(gh, args.owner_kind, args.owner, args.package,
+                                    require=args.require_live)
+        if args.command == "deployed-image":
             try:
                 versions = ghcr_versions(gh, args.owner_kind, args.owner, args.package)
             except GitHubError as exc:
                 if exc.status != 404:
                     raise
                 versions = []
-            if args.command == "live-build":
-                build = live_build(versions)
-                if build is None:
-                    print(f"no version is tagged {LIVE_TAG} (no deploy has passed yet)",
-                          file=sys.stderr)
-                print(f"build={build or ''}")
-                return 0
             if not COMMIT.match(args.build):
                 print(f"unknown build {args.build[:60]!r}: no image to name", file=sys.stderr)
                 print("image_ref=\nimage_source=unknown")

@@ -210,13 +210,121 @@ def test_early_in_the_day_the_pro_rating_has_a_floor():
     assert not line.alert
 
 
-def test_conservative_mode_has_no_month_lines_but_keeps_the_rolling_total():
+def test_conservative_mode_has_no_month_lines_and_the_rolling_total_is_informational():
+    """quota-report-alerts-on-normal-traffic: the rolling total is the governor's own
+    charges (2 CU for every second, the whole idle tail), which its daily ceiling holds
+    down; compared with Neon's 100 CU-h it crossed 70% on typical traffic."""
     report = governor(mode="conservative", month={"elapsed_share": None, "cu_hours": None})
     lines = by_name(monitors.evaluate_budget(report))
     assert "Neon CU-h, month to date" not in lines
     assert lines["Neon CU-h, last 31 days"].used == 20.0
-    report["compute_rolling_31d_cu_hours"] = 71.0
-    assert by_name(monitors.evaluate_budget(report))["Neon CU-h, last 31 days"].alert
+    report["compute_rolling_31d_cu_hours"] = 86.0
+    line = by_name(monitors.evaluate_budget(report))["Neon CU-h, last 31 days"]
+    assert line.ratio == pytest.approx(0.86) and not line.alert
+
+
+# deployment.md's typical traffic (16 sessions a day, ~1.9 analyses 60 s apart, 1 s of DB
+# time each) played through the Worker and the governor for a month (review round 2,
+# quota-report-alerts-on-normal-traffic): the 22:05 UTC budget reports, abridged.
+def typical_day(mode: str, day: int) -> dict:
+    if mode == "conservative":   # no Neon key; day 31 (the rolling total at its steady state)
+        assert day == 31
+        return {
+            "generated_at": "2036-10-31T22:05:00.000Z", "day": "2036-10-31",
+            "mode": "conservative", "neon_configured": False,
+            "analyses": {"admitted": 27, "limit": 600, "heavy": 0, "heavy_limit": 300},
+            "prefixes": {"active": 14, "max_admitted": 2, "limit": 60},
+            "compute_today": {"settled_cu_hours": 2.7667, "provisional_cu_hours": 0,
+                              "ceiling_cu_hours": 2.9032},
+            "compute_rolling_31d_cu_hours": 85.7667,
+            "month": {"polled_at": None, "last_poll_error": None, "elapsed_share": None,
+                      "cu_hours": None, "bridge_cu_hours": None, "allowance_cu_hours": None,
+                      "egress_bytes": None, "bridge_egress_bytes": None},
+        }
+    month = {  # ground truth: Neon's own figure lags the governor's bridge by about 2 days
+        1: (0.0297, 0.0, 3.1667, 12.2261, 0, 2031616, 3.1667),
+        3: (0.0942, 1.1, 6.3333, 17.0649, 6_000_000, 4063232, 9.5),
+        31: (0.9974, 16.5, 6.3333, 84.8068, 90_000_000, 4063232, 98.1667),
+    }[day]
+    share, cu, bridge, allowance, egress, bridge_egress, rolling = month
+    return {
+        "generated_at": f"2036-10-{day:02d}T22:05:00.000Z", "day": f"2036-10-{day:02d}",
+        "mode": "ground_truth", "neon_configured": True,
+        "analyses": {"admitted": 31, "limit": 600, "heavy": 0, "heavy_limit": 300},
+        "prefixes": {"active": 16, "max_admitted": 2, "limit": 60},
+        "compute_today": {"settled_cu_hours": 3.1667, "provisional_cu_hours": 0,
+                          "ceiling_cu_hours": 10},
+        "compute_rolling_31d_cu_hours": rolling,
+        "month": {"polled_at": f"2036-10-{day:02d}T08:00:00.000Z", "last_poll_error": None,
+                  "elapsed_share": share, "cu_hours": cu, "bridge_cu_hours": bridge,
+                  "allowance_cu_hours": allowance, "egress_bytes": egress,
+                  "bridge_egress_bytes": bridge_egress},
+    }
+
+
+@pytest.mark.parametrize("mode, day", [("conservative", 31), ("ground_truth", 1),
+                                       ("ground_truth", 3), ("ground_truth", 31)])
+def test_a_typical_day_never_alerts(mode, day, fake_server, monkeypatch, capsys):
+    """quota-report-alerts-on-normal-traffic: the report failed on 31 of 31 typical days
+    in conservative mode (the governor's charges today against its own ceiling) and on 12
+    of 31 with ground truth (days 1-3 against the linear share, days 23-31 on the rolling
+    charges), so the only alert channel for quota exhaustion was red in normal operation."""
+    report = typical_day(mode, day)
+    alerts = [line.name for line in monitors.evaluate_budget(report) if line.alert]
+    assert alerts == []
+    fake_server.routes[("GET", "/api/_ops/budget")] = json_reply(
+        200, {"status": "ok", "governor": report})
+    monkeypatch.setenv("EDGE_OPS_TOKEN", TOKEN)
+    assert monitors.main(["quota", "--base-url", fake_server.base]) == 0
+    assert "[FAIL]" not in capsys.readouterr().out
+
+
+def test_the_governors_own_charges_never_alert():
+    """Today's charges against the daily ceiling: reaching it refuses analyses
+    (daily_capacity_reached), which is the governor working, like the per-network cap."""
+    report = typical_day("conservative", 31)
+    report["compute_today"]["settled_cu_hours"] = 2.9032         # the ceiling, reached
+    lines = by_name(monitors.evaluate_budget(report))
+    today = lines["Neon CU-h today"]
+    assert today.ratio > 1 and not today.alert
+    assert "daily_capacity_reached" in today.note
+
+
+def test_neon_month_to_date_is_judged_against_the_governors_pacing_allowance():
+    """Neon's own figure (plus the bridge) is the usage that can exhaust the quota, also
+    through what the governor does not count; the governor pauses analyses above its
+    pacing allowance, so the report warns at 70% of that allowance."""
+    report = typical_day("ground_truth", 31)
+    line = by_name(monitors.evaluate_budget(report))["Neon CU-h, month to date"]
+    assert line.used == pytest.approx(16.5 + 6.3333)
+    assert line.budget == pytest.approx(84.8068)
+    assert not line.alert
+    report["month"]["cu_hours"] = 55.0        # e.g. uncounted wakes: (55 + 6.3) / 84.8 = 72%
+    assert by_name(monitors.evaluate_budget(report))["Neon CU-h, month to date"].alert
+    # The rolling charges stay informational even far above Neon's figure.
+    assert not by_name(monitors.evaluate_budget(report))["Neon CU-h, last 31 days"].alert
+
+
+def test_a_neon_key_whose_poll_keeps_failing_fails_the_report(fake_server, monkeypatch,
+                                                             capsys):
+    """With the key configured, conservative mode with a poll error means the ground truth
+    broke: the one Neon signal the report has is gone, so it fails (without the key,
+    conservative mode is the chosen setup and only warns)."""
+    report = typical_day("conservative", 31)
+    report.update(neon_configured=True)
+    report["month"]["last_poll_error"] = "http_401"
+    fake_server.routes[("GET", "/api/_ops/budget")] = json_reply(
+        200, {"status": "ok", "governor": report})
+    monkeypatch.setenv("EDGE_OPS_TOKEN", TOKEN)
+    assert monitors.main(["quota", "--base-url", fake_server.base]) == 1
+    out = capsys.readouterr().out
+    assert "[FAIL] neon_ground_truth" in out and "http_401" in out
+    report.update(neon_configured=False)
+    report["month"]["last_poll_error"] = None
+    fake_server.routes[("GET", "/api/_ops/budget")] = json_reply(
+        200, {"status": "ok", "governor": report})
+    assert monitors.main(["quota", "--base-url", fake_server.base]) == 0
+    assert "[WARN] neon_ground_truth" in capsys.readouterr().out
 
 
 def test_quota_report_sends_the_bearer_and_never_prints_it(fake_server, monkeypatch, capsys,

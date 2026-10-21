@@ -126,11 +126,19 @@ CI_RUNS = (f"/repos/{REPO}/actions/workflows/ci.yml/runs?head_sha={SHA}&event=pu
            "&branch=main&status=success&per_page=1")
 
 
-def deploy_gate(server, *, ci_passed=True, compare=("identical", 0)):
+ALL_CI_RUNS = (f"/repos/{REPO}/actions/workflows/ci.yml/runs?head_sha={SHA}&event=push"
+               "&branch=main&per_page=5")
+
+
+def deploy_gate(server, *, ci_passed=True, compare=("identical", 0), other_runs=()):
     runs = [{"id": 77, "head_sha": SHA, "conclusion": "success", "event": "push",
              "head_branch": "main"}] if ci_passed else []
     server.routes[("GET", CI_RUNS)] = json_reply(
         200, {"total_count": len(runs), "workflow_runs": runs}, api=False)
+    others = [{"head_sha": SHA, "event": "push", "head_branch": "main", **run}
+              for run in other_runs]
+    server.routes[("GET", ALL_CI_RUNS)] = json_reply(
+        200, {"total_count": len(others), "workflow_runs": others}, api=False)
     status, behind = compare
     server.routes[("GET", f"/repos/{REPO}/compare/{SHA}...main")] = json_reply(
         200, {"status": status, "behind_by": behind, "ahead_by": 3}, api=False)
@@ -154,6 +162,37 @@ def test_a_commit_without_a_green_ci_run_is_refused(fake_server, monkeypatch, ca
     deploy_gate(fake_server, ci_passed=False)
     assert run_gate(fake_server, monkeypatch) == 1
     assert "no successful ci.yml run" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(("runs", "says"), [
+    # a push of several commits, or a run cancelled while still waiting: none will come
+    ((), ["and none will come", "head commit of a push", "Tag a commit whose ci.yml run"]),
+    (({"id": 88, "status": "completed", "conclusion": "cancelled",
+       "created_at": "2026-10-21T10:00:00Z"},),
+     ["run 88 was cancelled", "gh run rerun 88", "or tag a commit whose ci.yml run passed"]),
+    (({"id": 87, "status": "completed", "conclusion": "cancelled",
+       "created_at": "2026-10-21T09:00:00Z"},
+      {"id": 89, "status": "in_progress", "conclusion": None,
+       "created_at": "2026-10-21T10:00:00Z"}),
+     ["yet: run 89 is in_progress", "wait until it passes"]),
+    (({"id": 90, "status": "completed", "conclusion": "failure",
+       "created_at": "2026-10-21T10:00:00Z"},),
+     ["run 90 ended failure", "deploy the fixing commit"]),
+])
+def test_the_gate_says_what_happened_to_the_commits_ci(fake_server, monkeypatch, capsys,
+                                                       runs, says):
+    """ci-concurrency-strands-main-commits (review round 2): ci.yml's push concurrency
+    cancels a pending main run when a newer push queues, and a multi-commit push runs CI
+    on its head only; the refusal said "wait until CI has passed" for a run that would
+    never come."""
+    deploy_gate(fake_server, ci_passed=False, other_runs=runs)
+    assert run_gate(fake_server, monkeypatch) == 1
+    out = " ".join(capsys.readouterr().out.split())
+    assert "[FAIL] ci: no successful ci.yml run for 0123456789ab on a push to main" in out
+    for text in says:
+        assert text in out, text
+    if runs:
+        assert "wait until CI has passed" not in out
 
 
 @pytest.mark.parametrize("status, behind", [("diverged", 2), ("behind", 1)])
@@ -286,6 +325,53 @@ def test_live_build_is_empty_before_the_first_deploy(fake_server, monkeypatch, c
     assert run_tags(fake_server, monkeypatch, "live-build") == 0
     out = capsys.readouterr()
     assert out.out.splitlines() == ["build="] and "no version is tagged live" in out.err
+
+
+LIVE_VERSIONS = "/users/nathan98000/packages/container/atus-api/versions?per_page=100&page=1"
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_a_refused_live_lookup_fails_the_deep_check(fake_server, monkeypatch, capsys, status):
+    """deep-check-build-expectation-silently-off (review round 2): deep-check.yml ran
+    live-build with continue-on-error, so a lasting 401/403 (the run's token may not read
+    the user package's versions) dropped the build comparison with no signal."""
+    fake_server.routes[("GET", LIVE_VERSIONS)] = json_reply(status, {"message": "no"},
+                                                            api=False)
+    for extra in ((), ("--require-live",)):
+        assert run_tags(fake_server, monkeypatch, "live-build", *extra) == 1
+        out = capsys.readouterr()
+        assert f"HTTP {status}" in out.err and "Manage Actions access" in out.err
+        assert "build=" not in out.out and TOKEN not in out.err
+
+
+@pytest.mark.parametrize("missing", ["package", "tag"])
+def test_after_the_first_deploy_a_missing_live_tag_fails(fake_server, monkeypatch, capsys,
+                                                         missing):
+    if missing == "tag":
+        ghcr(fake_server, 3)                  # versions, none tagged live
+    else:
+        fake_server.routes[("GET", LIVE_VERSIONS)] = json_reply(
+            404, {"message": "Package not found."}, api=False)
+    assert run_tags(fake_server, monkeypatch, "live-build", "--require-live") == 1
+    out = capsys.readouterr()
+    assert "no version is tagged live" in out.err and out.out == ""
+
+
+@pytest.mark.parametrize("status", [429, 500, 503])
+def test_a_transient_live_lookup_failure_still_lets_health_run(fake_server, monkeypatch,
+                                                               capsys, status):
+    fake_server.routes[("GET", LIVE_VERSIONS)] = json_reply(status, {"message": "later"},
+                                                            api=False)
+    assert run_tags(fake_server, monkeypatch, "live-build", "--require-live") == 0
+    out = capsys.readouterr()
+    assert out.out.splitlines() == ["build="] and "not compared" in out.err
+
+
+def test_no_reply_from_github_is_transient(monkeypatch, capsys):
+    monkeypatch.setenv("GH_TOKEN", TOKEN)
+    assert gh_ops.main(["--api-url", "http://127.0.0.1:9", "live-build", "--owner",
+                        "nathan98000", "--package", "atus-api", "--require-live"]) == 0
+    assert capsys.readouterr().out.splitlines() == ["build="]
 
 
 def test_a_same_commit_rerun_finds_the_digest_that_was_deployed(fake_server, monkeypatch,

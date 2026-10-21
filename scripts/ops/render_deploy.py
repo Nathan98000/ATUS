@@ -18,9 +18,16 @@ Commands:
         POST the deploy hook with imgURL=<the URL-encoded reference>. Render
         requires every part but the digest to match the service's image URL.
 
-    render_deploy.py wait --expect-build <git sha> [--previous-build <sha>] [--timeout 900]
+    render_deploy.py wait --expect-build <git sha> [--expect-data-version <dv>]
+                          [--previous-build <sha>] [--timeout 900]
         Poll origin /health until it reports that build: the image is pulled,
-        started and routed. Allows for Render's ~1 min spin-up plus the app's
+        started and routed. With --expect-data-version, the origin must then
+        also be bound to that data version (/health's
+        ``expected_data_version``, Render's ATUS_EXPECTED_DATA_VERSION), or the
+        wait fails at once: deploy.yml publishes the edge's release vars and
+        snapshot only after this, so a deploy approved before the release
+        switch on Render publishes nothing at the edge (review round 2,
+        no-prepublish-data-version-check). Allows for Render's ~1 min spin-up plus the app's
         start (~13 s at 0.1 CPU in the 2026-10-21 emulation; F67) and the
         image pull. /health reports the commit, not
         the digest: when the origin already ran this commit before the hook
@@ -121,6 +128,28 @@ def _build_of(reply) -> str | None:
     return build if isinstance(build, str) and BUILD.match(build) else None
 
 
+def check_data_binding(reply, expected: str) -> None:
+    """The origin is bound to ``expected``: ``reply`` is the /health answer that
+    reported the build, and its ``expected_data_version`` is Render's
+    ATUS_EXPECTED_DATA_VERSION (from the configuration, not the database)."""
+    bound = None
+    if reply.status == 200 and reply.is_json:
+        try:
+            bound = reply.json().get("expected_data_version")
+        except (OpsError, AttributeError):
+            bound = None
+    if not isinstance(bound, str) or not bound:
+        raise OpsError(f"the origin is not bound to a data version ({reply.describe()}): set "
+                       f"Render's ATUS_EXPECTED_DATA_VERSION to {expected} together with "
+                       "ATUS_DATABASE_URL; nothing was published at the edge")
+    if bound != expected:
+        raise OpsError(f"the origin is bound to data version {bound[:200]} "
+                       f"(ATUS_EXPECTED_DATA_VERSION), but this deploy publishes {expected} "
+                       "(releases/current.json): switch Render to the new release first "
+                       "(docs/operations.md, Data release step 6), then re-run this job; "
+                       "nothing was published at the edge")
+
+
 def current_build(origin: Client, *, deadline_s: float) -> str:
     reply = origin.wait_for("GET", "/health", lambda r: _build_of(r) is not None,
                             deadline_s=deadline_s, min_interval_s=15.0,
@@ -129,7 +158,8 @@ def current_build(origin: Client, *, deadline_s: float) -> str:
 
 
 def wait_for_build(origin: Client, expected: str, *, deadline_s: float,
-                   interval_s: float) -> None:
+                   interval_s: float):
+    """The first /health reply that reports ``expected``."""
     seen: list[str | None] = []
 
     def ready(reply) -> bool:
@@ -140,8 +170,9 @@ def wait_for_build(origin: Client, expected: str, *, deadline_s: float,
             seen.append(build)
         return build == expected
 
-    origin.wait_for("GET", "/health", ready, deadline_s=deadline_s,
-                    min_interval_s=interval_s, max_attempts=origin.remaining, timeout=60.0)
+    return origin.wait_for("GET", "/health", ready, deadline_s=deadline_s,
+                           min_interval_s=interval_s, max_attempts=origin.remaining,
+                           timeout=60.0)
 
 
 def _origin(max_requests: int) -> Client:
@@ -168,6 +199,8 @@ def main(argv: list[str] | None = None) -> int:
     trig.add_argument("--image-repo", default=DEFAULT_IMAGE_REPO)
     wait = sub.add_parser("wait", help="poll origin /health until it reports a build")
     wait.add_argument("--expect-build", required=True)
+    wait.add_argument("--expect-data-version", default=None,
+                      help="the data version the origin must be bound to (the release's)")
     wait.add_argument("--previous-build", default="",
                       help="the build the origin ran before the hook (current-build)")
     wait.add_argument("--timeout", type=float, default=900.0)
@@ -199,9 +232,12 @@ def main(argv: list[str] | None = None) -> int:
                       "the commit, not the image digest, so this wait cannot show when the "
                       "new digest is live. Check Render -> Events for this deploy.", flush=True)
             budget = ceil_div(args.timeout, args.interval) + 2
-            wait_for_build(_origin(budget), args.expect_build, deadline_s=args.timeout,
-                           interval_s=args.interval)
+            reply = wait_for_build(_origin(budget), args.expect_build,
+                                   deadline_s=args.timeout, interval_s=args.interval)
             print(f"origin runs build {args.expect_build}")
+            if args.expect_data_version:
+                check_data_binding(reply, args.expect_data_version)
+                print(f"origin is bound to data version {args.expect_data_version}")
     except OpsError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

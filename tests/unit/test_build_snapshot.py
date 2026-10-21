@@ -150,6 +150,9 @@ def run(api: FakeApi, tmp_path: Path, secret_file: Path | None, *extra: str) -> 
     args = ["--api-base", api.base, "--out", str(tmp_path / "snap")]
     if secret_file is not None:
         args += ["--edge-secret-file", str(secret_file)]
+    if not {"--requests", "--requests-script", "--response-format"} & set(extra):
+        # Without analyses no response reports a format, and the snapshot records one.
+        args += ["--response-format", "1"]
     return snap.main([*args, *extra])
 
 
@@ -416,11 +419,39 @@ class TestRefusals:
         assert run(api, tmp_path, secret_file, "--data-version", "expected-release") == 1
         assert "not 'expected-release'" in capsys.readouterr().err
 
-    def test_refuses_another_response_format(self, api, tmp_path, secret_file, capsys):
+    def test_refuses_a_response_format_flag_the_api_contradicts(self, api, tmp_path,
+                                                                secret_file, capsys):
         api.routes[("POST", ESTIMATE)] = analysis(**{"X-Response-Format": "2"})
         requests = request_list(tmp_path, {"path": ESTIMATE, "body": BODY_A})
-        assert run(api, tmp_path, secret_file, "--requests", str(requests)) == 1
+        assert run(api, tmp_path, secret_file, "--requests", str(requests),
+                   "--response-format", "1") == 1
         assert "response_format" in capsys.readouterr().err
+
+    def test_takes_the_response_format_the_api_reports(self, api, tmp_path, secret_file,
+                                                       capsys):
+        """response-format-bump-breaks-snapshot (review round 2): the default was a
+        hard-coded "1", which deploy.yml and smoke_stack.sh rely on, so a documented
+        RESPONSE_FORMAT bump made every snapshot build (and deploy) fail."""
+        api.routes[("POST", ESTIMATE)] = analysis(**{"X-Response-Format": "2"})
+        requests = request_list(tmp_path, {"path": ESTIMATE, "body": BODY_A})
+        assert run(api, tmp_path, secret_file, "--requests", str(requests)) == 0
+        pointer = json.loads((tmp_path / "snap" / "current.json").read_text())
+        assert pointer["response_format"] == "2"
+
+    def test_a_build_without_analyses_must_name_the_response_format(self, api, tmp_path,
+                                                                     secret_file, capsys):
+        requests = request_list(tmp_path)
+        assert run(api, tmp_path, secret_file, "--requests", str(requests)) == 1
+        assert "reported no response_format; pass --response-format" in (
+            capsys.readouterr().err)
+
+    def test_refuses_analyses_that_disagree_on_the_response_format(self, api, tmp_path,
+                                                                   secret_file, capsys):
+        api.routes[("POST", TREND)] = analysis(**{"X-Response-Format": "2"})
+        requests = request_list(tmp_path, {"path": ESTIMATE, "body": BODY_A},
+                                {"path": TREND, "body": BODY_B})
+        assert run(api, tmp_path, secret_file, "--requests", str(requests)) == 1
+        assert "responses disagree on response_format" in capsys.readouterr().err
 
     def test_a_refused_analysis_fails_the_build_by_default(self, api, tmp_path, secret_file,
                                                            capsys):

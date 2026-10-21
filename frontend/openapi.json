@@ -525,7 +525,7 @@
      "system"
     ],
     "summary": "Liveness",
-    "description": "Answers whether the API process is running, and which build it is (`build`, from ATUS_BUILD_SHA). No dependencies touched (no database, no edge authentication; HEAD works too). Async on purpose: it bypasses the worker threadpool, so liveness stays instant even when every worker thread is busy with long analyses.",
+    "description": "Answers whether the API process is running, which build it is (`build`, from ATUS_BUILD_SHA), and which data version the deployment is bound to (`expected_data_version`, from ATUS_EXPECTED_DATA_VERSION; null when unset). No dependencies touched (no database, no edge authentication; HEAD works too). Async on purpose: it bypasses the worker threadpool, so liveness stays instant even when every worker thread is busy with long analyses.",
     "operationId": "health_health_get",
     "responses": {
      "200": {
@@ -1506,6 +1506,18 @@
       "type": "string",
       "title": "Build",
       "description": "Build identifier of the running image (ATUS_BUILD_SHA; 'dev' locally). The deploy workflow waits until it equals the deployed commit."
+     },
+     "expected_data_version": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expected Data Version",
+      "description": "The data version this deployment is bound to (ATUS_EXPECTED_DATA_VERSION; null when unset), read from the configuration, never the database. The deploy workflow publishes a release's snapshot only once it equals that release's data_version."
      }
     },
     "type": "object",

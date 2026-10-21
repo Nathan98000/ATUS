@@ -55,7 +55,8 @@
 #   --e2e                     with --edge: also Playwright through the edge
 #   --assets DIR              with --edge: publish this SPA build (a copy of it)
 #                             instead of building frontend/
-#   --keep                    leave the stack running (prints how to remove it)
+#   --keep                    leave the stack running; prints the exact teardown
+#                             (env file, every profile) and its secrets directory
 #   --python PATH             interpreter for --integration-via-pgbouncer and the
 #                             host-side edge steps (default .venv/bin/python, then python3)
 set -euo pipefail
@@ -103,6 +104,13 @@ secret() { od -An -tx1 -N24 /dev/urandom | tr -d ' \n'; }
 # (pytest shows reprs of settings objects that carry the database URL).
 redact() { sed -E 's#(://[^:/@[:space:]]+:)[^@[:space:]]+@#\1***@#g'; }
 
+# The response format the checkout's API sends (atus_pipeline.api.RESPONSE_FORMAT):
+# the probe and the snapshot build expect it, so a bump needs no edit here.
+response_format=$(sed -n 's/^RESPONSE_FORMAT = "\([0-9][0-9]*\)"$/\1/p' \
+  src/atus_pipeline/api/__init__.py)
+[ -n "$response_format" ] || {
+  echo "no RESPONSE_FORMAT in src/atus_pipeline/api/__init__.py" >&2; exit 2; }
+
 workdir=$(mktemp -d "${TMPDIR:-/tmp}/atus-smoke.XXXXXX")
 chmod 700 "$workdir"
 env_file="$workdir/stack.env"
@@ -133,6 +141,10 @@ if [ "$emulation" = 1 ]; then
   files+=(-f docker-compose.emulation.yml)
 fi
 compose() { docker compose -p "$project" --env-file "$env_file" "${files[@]}" "$@"; }
+# Every profile, so an --edge stack's Worker goes too; the env file carries the
+# secrets compose needs to read docker-compose.prod.yml at all.
+teardown_args=(--profile pgbouncer --profile smoke --profile snapshot --profile edge
+               down -v --remove-orphans)
 
 cleanup() {
   status=$?
@@ -142,10 +154,13 @@ cleanup() {
       2>&1 | redact || true
   fi
   if [ "$keep" = 1 ]; then
-    echo "stack kept: docker compose -p $project ${files[*]} down -v  (env file: $env_file)"
+    echo "stack kept. To remove it, from $PWD, then delete its private work directory" \
+      "(it holds the stack's secrets):"
+    printf '  docker compose -p %q --env-file %q' "$project" "$env_file"
+    printf ' %q' "${files[@]}" "${teardown_args[@]}"
+    printf '\n  rm -rf %q\n' "$workdir"
   else
-    if ! teardown=$(compose --profile pgbouncer --profile smoke --profile snapshot \
-        --profile edge down -v --remove-orphans 2>&1); then
+    if ! teardown=$(compose "${teardown_args[@]}" 2>&1); then
       echo "teardown failed:" >&2
       echo "$teardown" | redact >&2
     fi
@@ -169,7 +184,7 @@ if [ "$mode" = smoke ]; then
   compose logs --no-color seed | grep -E 'seed: ' || true
 
   echo "== smoke probe (inside the stack network)"
-  probe_args=(--fixture)
+  probe_args=(--fixture --response-format "$response_format")
   if [ "$skip_protection" = 1 ]; then
     probe_args+=(--skip-protection-checks)
   else
@@ -205,14 +220,16 @@ if [ "$mode" = smoke ]; then
     snapshot_id=$(EDGE_AUTH_SECRET=$(setting ATUS_STACK_EDGE_SECRET) "$python_bin" \
       scripts/build_snapshot.py --api-base "$direct_api" --out "$assets/snap" \
       --requests-script frontend/scripts/snapshot-requests.mjs --api-build "$build_sha" \
-      --data-version "$version" --skip-refused)
-    analytics_version=$("$python_bin" -c \
-      'import json, sys; print(json.load(open(sys.argv[1]))["analytics_version"])' \
-      "$assets/snap/current.json")
+      --data-version "$version" --response-format "$response_format" --skip-refused)
+    pointer() {
+      "$python_bin" -c 'import json, sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' \
+        "$assets/snap/current.json" "$1"
+    }
     {
       echo "ATUS_STACK_ASSETS_DIR=$assets"
       echo "ATUS_STACK_SNAPSHOT_ID=$snapshot_id"
-      echo "ATUS_STACK_ANALYTICS_VERSION=$analytics_version"
+      echo "ATUS_STACK_ANALYTICS_VERSION=$(pointer analytics_version)"
+      echo "ATUS_STACK_RESPONSE_FORMAT=$(pointer response_format)"
     } >> "$env_file"
 
     echo "== start the Worker (wrangler dev, local mode) with the release vars"

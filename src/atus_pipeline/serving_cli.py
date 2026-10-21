@@ -69,7 +69,7 @@ def _fail(exc: Exception, *secrets: str) -> click.ClickException:
               help="Override the generated build id.")
 @click.option("--pg-client-image", default=None,
               help="Docker image for pg_dump when no local client is new enough "
-                   "(default postgres:<server major>).")
+                   "(default: the postgres:16 digest pinned in serving/pgtools.py).")
 @click.option("--report", "report_path", type=click.Path(dir_okay=False, path_type=Path),
               default=None, help="Write the build report (JSON) here.")
 def build_serving_db(source_url, target_url, artifact_dir, allow_unvalidated, build_id,
@@ -194,7 +194,8 @@ def verify_serving_db(database_url, manifest_path, content_hash, explain) -> Non
 @click.option("--roles-sql", type=click.Path(exists=True, dir_okay=False, path_type=Path),
               default=None, help="Path of scripts/ops/roles.sql.")
 @click.option("--pg-client-image", default=None,
-              help="Docker image for pg_restore/psql when no local client is new enough.")
+              help="Docker image for pg_restore/psql when no local client is new enough "
+                   "(default: the postgres:16 digest pinned in serving/pgtools.py).")
 @click.option("--report", "report_path", type=click.Path(dir_okay=False, path_type=Path),
               default=None, help="Write the restore report (JSON, no secrets) here.")
 def restore_serving_db(artifact, secrets_file, api_role, rotate_api_password, roles_only,

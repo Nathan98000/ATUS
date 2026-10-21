@@ -159,6 +159,40 @@ def test_replay_passes_against_equivalent_responses(fake_server, tmp_path, capsy
     assert not [o for o in data["outcomes"] if o["status"] == "FAIL"]
 
 
+def test_a_replay_against_the_database_it_was_recorded_from_fails(fake_server, tmp_path,
+                                                                   capsys):
+    """replay-local-smoke-proves-wrong-db: the data-release runbook left the step-1 API (the
+    full database) on 127.0.0.1:8000, so the step-5 API on the new project could not bind,
+    and the smoke compared the full database with itself and passed."""
+    expected = record(fake_server, tmp_path)
+    capsys.readouterr()
+    fake_api(fake_server, data_version=DV_FULL)      # the step-1 server still answers
+    report = tmp_path / "report.json"
+    assert replay.main(["--base-url", fake_server.base, "--expected", expected,
+                        "--report", str(report)]) == 1
+    out = capsys.readouterr().out
+    assert "[FAIL] data version" in out and "recorded from" in out
+    assert [o["name"] for o in json.loads(report.read_text())["outcomes"]
+            if o["status"] == "FAIL"] == ["data version"]
+
+
+def test_the_site_must_serve_the_expected_data_version(fake_server, capsys):
+    """--expect-data-version: the release's data_version (releases/current.json)."""
+    fake_api(fake_server, data_version=DV_SERVING)
+    args = ["--base-url", fake_server.base, "--no-replays",
+            "--benchmark", "A1-2025: sleeping, hours/day"]
+    assert replay.main([*args, "--expect-data-version", DV_SERVING]) == 0
+    assert f"[PASS] data version: {DV_SERVING}" in capsys.readouterr().out
+    other = "0325:serving-20991231T000000Z-00000000:000000000000"
+    assert replay.main([*args, "--expect-data-version", other]) == 1
+    out = capsys.readouterr().out
+    assert "[FAIL] data version" in out and other in out
+    # A response without X-Data-Version cannot prove anything either.
+    fake_server.routes[("GET", "/api/v1/meta")] = json_reply(200, META)
+    assert replay.main([*args, "--expect-data-version", DV_SERVING]) == 1
+    assert "[FAIL] data version" in capsys.readouterr().out
+
+
 def test_a_value_outside_the_published_tolerance_fails(fake_server, capsys):
     responses = benchmark_responses()
     body = replay.stable_json(next(b for b in bm.build_benchmarks()

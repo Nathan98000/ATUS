@@ -139,5 +139,5 @@ def test_compare_requires_both_groups(client):
 def test_health_needs_no_database(client, fake_db):
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "build": "dev"}
+    assert response.json() == {"status": "ok", "build": "dev", "expected_data_version": None}
     assert fake_db.transactions == []

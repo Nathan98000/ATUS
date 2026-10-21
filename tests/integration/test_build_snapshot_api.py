@@ -25,6 +25,7 @@ import pytest
 import uvicorn
 
 import atus_pipeline.config as config
+from atus_pipeline.api import RESPONSE_FORMAT
 from atus_pipeline.api.app import create_app
 from atus_pipeline.database.versions import read_data_version
 from atus_pipeline.loading.loader import load_all
@@ -119,7 +120,9 @@ def test_snapshots_every_response_byte_for_byte(live_api, tmp_path, monkeypatch,
     manifest = json.loads((root / "manifest.json").read_text())
     assert manifest["data_version"] == data_version
     assert manifest["api_version"] == "v1"
-    assert manifest["response_format"] == "1"
+    # No --response-format either: the snapshot records the format the API reports,
+    # which is the constant (a RESPONSE_FORMAT bump edits no test here).
+    assert manifest["response_format"] == RESPONSE_FORMAT
 
     # Every lexicon code has its detail file.
     activities = json.loads(fetch(base, "/api/v1/activities")[0])
