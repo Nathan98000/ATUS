@@ -235,6 +235,80 @@ def test_the_pushed_image_is_the_tested_one():
     assert jobs(by_name("deploy.yml"))["build"]["with"]["use-cache"] is False
 
 
+#: GitHub cancels a run whose job has waited 30 days for an environment's approval.
+APPROVAL_WAIT_DAYS = 30
+
+
+def uses_action(step: dict, action: str) -> bool:
+    return str(step.get("uses", "")).startswith(f"{action}@")
+
+
+def run_uploads(workflow: dict) -> dict[str, object]:
+    """Artifact name -> ``retention-days`` for every upload in one run of ``workflow``:
+    its own jobs and the reusable workflows they call (same run, same artifacts)."""
+    uploads: dict[str, object] = {}
+    for job in jobs(workflow).values():
+        called = job.get("uses")
+        if isinstance(called, str) and called.startswith("./"):
+            uploads.update(run_uploads(load(REPO_ROOT / called[2:])))
+        for step in steps(job):
+            if uses_action(step, "actions/upload-artifact"):
+                spec = step.get("with") or {}
+                uploads[spec.get("name")] = spec.get("retention-days")
+    return uploads
+
+
+def approval_artifact_problems(workflow: dict) -> list[str]:
+    """Artifacts a job behind an environment downloads that can expire before approval.
+
+    Such a job starts only once the owner approves, up to 30 days after the
+    upload; an artifact kept for less fails the download (retention-days unset
+    means the repository default, 90 days).
+    """
+    uploads = run_uploads(workflow)
+    problems = []
+    for job_id, job in jobs(workflow).items():
+        if "environment" not in job:
+            continue
+        for step in steps(job):
+            if not uses_action(step, "actions/download-artifact"):
+                continue
+            name = (step.get("with") or {}).get("name")
+            if name not in uploads:
+                problems.append(f"{job_id}: downloads {name!r}, which this run never uploads")
+                continue
+            days = uploads[name]
+            if days is not None and int(days) < APPROVAL_WAIT_DAYS:
+                problems.append(f"{job_id}: {name!r} is kept {days} days, but approval can "
+                                f"take {APPROVAL_WAIT_DAYS}")
+    return problems
+
+
+def test_artifacts_outlive_the_production_approval():
+    assert approval_artifact_problems(by_name("deploy.yml")) == []
+
+
+def test_the_artifact_check_catches_an_artifact_that_expires_before_approval():
+    def workflow(days, *, environment: bool = True) -> dict:
+        upload = {"uses": f"actions/upload-artifact@{'a' * 40}",
+                  "with": {"name": "site", "path": "dist/"}}
+        if days is not None:
+            upload["with"]["retention-days"] = days
+        deploy = {"steps": [{"uses": f"actions/download-artifact@{'b' * 40}",
+                             "with": {"name": "site"}}]}
+        if environment:
+            deploy["environment"] = {"name": "production"}
+        return {"jobs": {"build": {"steps": [upload]}, "deploy": deploy}}
+
+    assert approval_artifact_problems(workflow(3))
+    assert not approval_artifact_problems(workflow(30))
+    assert not approval_artifact_problems(workflow(None))
+    assert not approval_artifact_problems(workflow(3, environment=False))
+    missing = workflow(30)
+    missing["jobs"]["deploy"]["steps"][0]["with"]["name"] = "other"
+    assert approval_artifact_problems(missing)
+
+
 def test_no_other_workflow_can_deploy_or_push():
     for path in WORKFLOWS:
         if path.name == "deploy.yml":

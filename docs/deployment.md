@@ -569,7 +569,7 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 2. It restores the dump into a `postgres:16` service with `atus restore-serving-db`, as a non-superuser `neondb_owner`. That applies `scripts/ops/roles.sql`, so `atus_api` has exactly its production privileges and role defaults; then it runs `VACUUM (ANALYZE)` and the restore checks.
 3. It pulls the pushed digest and runs it read-only: `--read-only`, every capability dropped, production mode, the release's `ATUS_EXPECTED_DATA_VERSION`, and generous per-client limits for the builder. The image must report `build` = `GITHUB_SHA`.
 4. It builds the same-origin SPA, then `scripts/build_snapshot.py --requests-script frontend/scripts/snapshot-requests.mjs --data-version <release>` writes and verifies `frontend/dist/snap`.
-5. It runs `npm run check:bundle` and checks the Workers static-asset limits (20,000 files, 25 MiB each), then hands `frontend/dist` to the deploy job.
+5. It runs `npm run check:bundle` and checks the Workers static-asset limits (20,000 files, 25 MiB each), then hands `frontend/dist` to the deploy job as the artifact `site-dist`. The artifact is kept 30 days, the longest the deploy job can wait for your approval.
 
 The snapshot is built before anything deploys, so a failed restore or snapshot deploys nothing.
 

@@ -329,7 +329,11 @@ jobs:
         with:
           name: site-dist
           path: frontend/dist/
-          retention-days: 3
+          # The deploy job downloads this only after the owner approves, and a
+          # job can wait up to 30 days for that (the first deploy's bootstrap
+          # does: docs/deployment.md, step 7). A shorter retention would make a
+          # late approval fail at the download, after the image was pushed.
+          retention-days: 30
           if-no-files-found: error
 
       - name: API logs
