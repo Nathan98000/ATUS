@@ -144,12 +144,15 @@ def build_serving_db(source_url, target_url, artifact_dir, allow_unvalidated, bu
                    "metered host).")
 @click.option("--explain", is_flag=True, help="Check the worst-case query plans.")
 def verify_serving_db(database_url, manifest_path, content_hash, explain) -> None:
-    from .serving.artifact import read_manifest
+    from .serving.artifact import ArtifactError, read_manifest
     from .serving.checks import serving_checks
 
     settings = _settings()
     url = database_url or settings.database_url
-    manifest = read_manifest(manifest_path) if manifest_path else None
+    try:
+        manifest = read_manifest(manifest_path) if manifest_path else None
+    except ArtifactError as exc:
+        raise _fail(exc) from exc
     ensure_system_roots(url)
     click.echo(f"Serving database: {describe(url)}")
     try:

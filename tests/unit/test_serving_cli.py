@@ -122,3 +122,39 @@ def test_the_file_is_used_without_the_environment(tmp_path, monkeypatch):
     path = _secrets_file(tmp_path, PROJECT_B)
     monkeypatch.delenv("ATUS_OWNER_DATABASE_URL", raising=False)
     assert restore_module.owner_url(_options(path)) == PROJECT_B
+
+
+# --------------------------------------------------------------------------- #
+# a release dump without its manifest                                         #
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.parametrize("extra", [[], ["--roles-only"], ["--roles-only", "--rotate-api-password"]])
+@pytest.mark.parametrize("manifest", [None, "{corrupt"], ids=["missing", "corrupt"])
+def test_a_dump_without_a_readable_manifest_is_a_clean_error(tmp_path, extra, manifest):
+    """Review r2 (restore-missing-manifest-traceback): every mode reads the
+    manifest beside the .dump first; a missing or corrupt one ended in a
+    FileNotFoundError or JSONDecodeError traceback instead of an error."""
+    dump = tmp_path / "atus-serving-0325-x.dump"
+    dump.write_bytes(b"PGDMP")
+    if manifest is not None:
+        (tmp_path / "atus-serving-0325-x.manifest.json").write_text(manifest)
+    result = CliRunner().invoke(cli, [
+        "restore-serving-db", "--artifact", str(dump), *extra,
+        "--secrets-file", str(tmp_path / "neon.env"),
+    ], env={"ATUS_OWNER_DATABASE_URL": OWNER_URL, "ATUS_LOG_LEVEL": "WARNING"})
+    assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit), repr(result.exception)
+    assert "atus-serving-0325-x.manifest.json" in result.output
+    assert "keep the release's .manifest.json beside" in result.output
+    assert "s3cret-owner-pw" not in result.output
+    assert not (tmp_path / "neon.env").exists()            # nothing written
+
+
+def test_verify_serving_db_reports_a_missing_manifest_cleanly(tmp_path):
+    result = CliRunner().invoke(cli, [
+        "verify-serving-db", "--database-url", OWNER_URL,
+        "--manifest", str(tmp_path / "nope.manifest.json"),
+    ], env={"ATUS_LOG_LEVEL": "WARNING"})
+    assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit), repr(result.exception)
+    assert "nope.manifest.json" in result.output and "s3cret-owner-pw" not in result.output
