@@ -1112,6 +1112,7 @@ Restore every release artifact once, as production will, into a fresh cluster wi
 | 503 `data_not_loaded` or `schema_not_initialized` | `ATUS_DATABASE_URL` points at the wrong or an empty database | the DSN vs the restored project |
 | 503 `overloaded` or `analysis_timeout` | load, or a slow plan | Render logs `db_ms`; `/metrics`; compare with the emulation's numbers ([`../loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md): at 0.25 CU sheds start at 4 concurrent clients, and the F66 compare takes 69–71 s of the 85 s timeout) |
 | no monitor emails, no recent monitor runs | scheduled workflows disabled | [Scheduled workflows were disabled](#scheduled-workflows-were-disabled) |
+| deep check fails at "Which build should run (the `live` tag)" | the run's token may not read the package's versions (401/403), or no version is tagged `live` | [The deep check cannot read the live tag](#the-deep-check-cannot-read-the-live-tag) |
 
 ### Rotating tokens and secrets
 
@@ -1176,6 +1177,16 @@ This means Render's discretionary suspension for "uncommonly high" traffic that 
    - the Workers static-asset limits checked in `deploy.yml`.
 4. **If $0 without a card still holds:** change the constants, the budget table and ADR-011's citation (new date), then deploy.
 5. **If it no longer holds** (a card required, a quota too small, a limit that would bill): stop and report to the owner. The options are in ADR-011 "Rejected alternatives" and "Fallback". A new hosting choice is a new ADR that supersedes ADR-011.
+
+### The deep check cannot read the live tag
+
+`deep-check.yml` compares the build `/health` reports with the commit of the GHCR digest tagged `live`, read with the run's own `GITHUB_TOKEN` (`packages: read`). Its step "Which build should run" fails the check when that lookup cannot work, because a check that silently stopped comparing would never warn that Render runs another image:
+
+- **HTTP 401 or 403.** The token may not read the package's versions. GitHub does not document that a repository's `GITHUB_TOKEN` can list a user-owned package's versions ([ADR-011](adr/ADR-011-hosting.md), "Not exercised against GHCR"), so the first deep check after owner step 4.1 is the test. In GitHub → your profile → Packages → `atus-api` → Package settings → **Manage Actions access**, add `Nathan98000/ATUS` with the Read role, then `gh workflow run deep-check.yml`. `ghcr-cleanup.yml` lists the same versions, so it fails the same way.
+- **No version is tagged `live`** (or the package is missing). The monitors start only after the first deploy's `promote` job tagged one, so this means the tag was deleted or `promote` never passed: re-run `promote` of the last good Deploy run, or move the tag by hand as in [Rollback](#rollback).
+- **No reply, 429 or 5xx.** GitHub is having a moment: the step passes with an empty build, the health check runs without it and the run shows the warning "Build not compared". Nothing to do unless it repeats.
+
+To read the tag yourself: `GH_TOKEN="$(gh auth token)" python scripts/ops/github_ops.py live-build --owner nathan98000 --package atus-api --require-live`.
 
 ### Scheduled workflows were disabled
 

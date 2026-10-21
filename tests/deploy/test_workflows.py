@@ -264,8 +264,16 @@ def test_the_deep_check_expects_the_live_build():
     text = flat(job)
     assert "github_ops.py live-build --owner nathan98000 --package atus-api" in text
     assert '--expect-build "$EXPECT_BUILD"' in text
+    # deep-check-build-expectation-silently-off (review round 2): continue-on-error
+    # turned a lasting 401/403 or a missing `live` tag into a green run that compared
+    # nothing. The lookup now fails the job (github_ops.py tolerates only transient
+    # failures), and the health check still runs after it.
     (live,) = [s for s in steps(job) if s.get("id") == "live"]
-    assert live["continue-on-error"] is True    # GitHub down: health still checked
+    assert "continue-on-error" not in live
+    assert "--require-live" in live["run"]
+    (health,) = [s for s in steps(job) if "monitors.py deep" in s.get("run", "")]
+    assert health["if"] == "${{ !cancelled() }}"
+    assert "::warning" in health["run"]
 
 
 def test_only_the_production_environment_job_holds_deploy_secrets():

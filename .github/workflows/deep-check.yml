@@ -9,7 +9,10 @@
 # It also compares the build /health reports with the commit of the GHCR
 # digest tagged `live` (the last deploy that passed its smoke), read through
 # the GitHub API with the run's read-only token; a deep check that lands
-# during a deploy may see the old build: re-run it.
+# during a deploy may see the old build: re-run it. A lookup GitHub refuses
+# (401/403) or a missing `live` tag fails the check, since either would turn
+# the comparison off for good; only a transient GitHub failure lets the
+# health check run without it, with a warning.
 #
 # A failure emails the owner (see edge-check.yml). Skipped until the
 # repository variable PUBLIC_BASE_URL is set.
@@ -46,20 +49,29 @@ jobs:
       # The build Render must run: the commit of the GHCR digest tagged `live`
       # (deploy.yml job promote). A Render redeploy that is not deploy.yml's
       # (Manual Deploy, "Save and deploy") then fails this check if it brought
-      # back another image. Not fatal when GitHub cannot answer: the health
-      # check still runs, without the build expectation.
+      # back another image. This workflow runs only once the first deploy has
+      # tagged `live` (PUBLIC_BASE_URL is set after it), so --require-live
+      # fails on a missing package or tag, and a refused lookup (401/403)
+      # fails too: a configuration error, never a reason to stop comparing.
+      # Only a transient failure (no reply, 429, 5xx) prints an empty build.
       - name: Which build should run (the `live` tag)
         id: live
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/ops/github_ops.py live-build --owner nathan98000 --package atus-api >> "$GITHUB_OUTPUT"
+        run: python3 scripts/ops/github_ops.py live-build --owner nathan98000 --package atus-api --require-live >> "$GITHUB_OUTPUT"
 
+      # Runs even when the lookup failed (the job fails anyway): the API's
+      # health is still worth knowing.
       - name: Check /api/health (cold-start tolerant) and the build it reports
+        if: ${{ !cancelled() }}
         env:
           PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
           EXPECT_BUILD: ${{ steps.live.outputs.build }}
         run: |
           args=(--wake-timeout 240 --max-requests 8)
-          if [ -n "$EXPECT_BUILD" ]; then args+=(--expect-build "$EXPECT_BUILD"); fi
+          if [ -n "$EXPECT_BUILD" ]; then
+            args+=(--expect-build "$EXPECT_BUILD")
+          else
+            echo "::warning title=Build not compared::the live tag's commit is unknown (see the previous step); /health is checked without it"
+          fi
           python3 scripts/ops/monitors.py deep "${args[@]}"

@@ -288,6 +288,53 @@ def test_live_build_is_empty_before_the_first_deploy(fake_server, monkeypatch, c
     assert out.out.splitlines() == ["build="] and "no version is tagged live" in out.err
 
 
+LIVE_VERSIONS = "/users/nathan98000/packages/container/atus-api/versions?per_page=100&page=1"
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_a_refused_live_lookup_fails_the_deep_check(fake_server, monkeypatch, capsys, status):
+    """deep-check-build-expectation-silently-off (review round 2): deep-check.yml ran
+    live-build with continue-on-error, so a lasting 401/403 (the run's token may not read
+    the user package's versions) dropped the build comparison with no signal."""
+    fake_server.routes[("GET", LIVE_VERSIONS)] = json_reply(status, {"message": "no"},
+                                                            api=False)
+    for extra in ((), ("--require-live",)):
+        assert run_tags(fake_server, monkeypatch, "live-build", *extra) == 1
+        out = capsys.readouterr()
+        assert f"HTTP {status}" in out.err and "Manage Actions access" in out.err
+        assert "build=" not in out.out and TOKEN not in out.err
+
+
+@pytest.mark.parametrize("missing", ["package", "tag"])
+def test_after_the_first_deploy_a_missing_live_tag_fails(fake_server, monkeypatch, capsys,
+                                                         missing):
+    if missing == "tag":
+        ghcr(fake_server, 3)                  # versions, none tagged live
+    else:
+        fake_server.routes[("GET", LIVE_VERSIONS)] = json_reply(
+            404, {"message": "Package not found."}, api=False)
+    assert run_tags(fake_server, monkeypatch, "live-build", "--require-live") == 1
+    out = capsys.readouterr()
+    assert "no version is tagged live" in out.err and out.out == ""
+
+
+@pytest.mark.parametrize("status", [429, 500, 503])
+def test_a_transient_live_lookup_failure_still_lets_health_run(fake_server, monkeypatch,
+                                                               capsys, status):
+    fake_server.routes[("GET", LIVE_VERSIONS)] = json_reply(status, {"message": "later"},
+                                                            api=False)
+    assert run_tags(fake_server, monkeypatch, "live-build", "--require-live") == 0
+    out = capsys.readouterr()
+    assert out.out.splitlines() == ["build="] and "not compared" in out.err
+
+
+def test_no_reply_from_github_is_transient(monkeypatch, capsys):
+    monkeypatch.setenv("GH_TOKEN", TOKEN)
+    assert gh_ops.main(["--api-url", "http://127.0.0.1:9", "live-build", "--owner",
+                        "nathan98000", "--package", "atus-api", "--require-live"]) == 0
+    assert capsys.readouterr().out.splitlines() == ["build="]
+
+
 def test_a_same_commit_rerun_finds_the_digest_that_was_deployed(fake_server, monkeypatch,
                                                                  capsys):
     """The re-run's push moved sha-C_LIVE to D_RERUN before the deploy job

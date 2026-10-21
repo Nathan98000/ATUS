@@ -32,10 +32,15 @@ never printed.
         (ADR-011 "Rollback"). Never deletes when there are ``--keep`` or fewer,
         and at most ``--max-delete`` per run. Weekly: ghcr-cleanup.yml.
 
-    github_ops.py live-build --owner nathan98000 --package atus-api
+    github_ops.py live-build --owner nathan98000 --package atus-api [--require-live]
         Prints ``build=<commit>``: the commit of the digest tagged ``live``
         (empty before the first deploy). deep-check.yml expects /health to
-        report it.
+        report it, with ``--require-live``: it runs only after the first deploy
+        has tagged ``live``, so a missing package or tag fails. A refused
+        lookup (401, 403, any other 4xx) always fails: it would switch the
+        build comparison off for good. Only a transient failure (no reply,
+        408, 429, 5xx) prints an empty ``build=`` and exits 0, so the health
+        check still runs, without the build.
 
     github_ops.py deployed-image --owner nathan98000 --package atus-api --build <commit>
         Prints ``image_ref=`` and ``image_source=``: the digest ``<commit>``
@@ -248,6 +253,8 @@ class Version:
 LIVE_TAG = "live"
 DEPLOYED_PREFIX = "deployed-"
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
+#: GitHub answers that say "try again later", not "this can never work".
+TRANSIENT_STATUSES = frozenset({408, 429, 500, 502, 503, 504})
 
 
 def plan_cleanup(versions: list[Version], *, keep: int) -> list[Version]:
@@ -294,6 +301,43 @@ def ghcr_versions(gh: GitHub, owner_kind: str, owner: str, package: str) -> list
     return out
 
 
+def print_live_build(gh: GitHub, owner_kind: str, owner: str, package: str, *,
+                     require: bool) -> int:
+    """``live-build``: print ``build=<commit>`` and return the exit status (see
+    the module docstring). deep-check.yml ran this with ``continue-on-error``,
+    so a lasting 401/403 or a missing tag silently dropped the build comparison
+    (review round 2, deep-check-build-expectation-silently-off)."""
+    where = f"{owner_kind}/{owner}/packages/container/{package}"
+    try:
+        versions = ghcr_versions(gh, owner_kind, owner, package)
+    except GitHubError as exc:
+        if exc.status is None or exc.status in TRANSIENT_STATUSES:
+            print(f"warning: {exc}: GitHub did not answer; the build is not compared this "
+                  "time", file=sys.stderr)
+            print("build=")
+            return 0
+        if exc.status in (401, 403):
+            print(f"error: {exc}: the token may not read the versions of {where}. In the "
+                  "package's settings, Manage Actions access must give this repository "
+                  "read access (docs/operations.md, \"The deep check cannot read the live "
+                  "tag\")", file=sys.stderr)
+            return 1
+        if exc.status != 404:
+            raise
+        versions = []
+    build = live_build(versions)
+    if build is None:
+        missing = f"no version is tagged {LIVE_TAG} ({where})"
+        if require:
+            print(f"error: {missing}, although the monitors start only after the first "
+                  "deploy's promote job tagged one (docs/operations.md, \"The deep check "
+                  "cannot read the live tag\")", file=sys.stderr)
+            return 1
+        print(f"{missing} (no deploy has passed yet)", file=sys.stderr)
+    print(f"build={build or ''}")
+    return 0
+
+
 def _summary(lines: list[str]) -> None:
     path = os.environ.get("GITHUB_STEP_SUMMARY")
     if path:
@@ -314,6 +358,8 @@ def main(argv: list[str] | None = None) -> int:
     dg.add_argument("--branch", default="main")
     gc = sub.add_parser("ghcr-cleanup", help="keep only the newest image versions")
     lb = sub.add_parser("live-build", help="the commit the `live` image was deployed from")
+    lb.add_argument("--require-live", action="store_true",
+                    help="fail when no version is tagged live (after the first deploy)")
     di = sub.add_parser("deployed-image", help="the digest a commit last ran as")
     for cmd in (gc, lb, di):
         cmd.add_argument("--owner", required=True)
@@ -369,20 +415,16 @@ def main(argv: list[str] | None = None) -> int:
         if not (NAME.match(args.owner) and NAME.match(args.package)):
             print("error: malformed --owner or --package", file=sys.stderr)
             return 2
-        if args.command in ("live-build", "deployed-image"):
+        if args.command == "live-build":
+            return print_live_build(gh, args.owner_kind, args.owner, args.package,
+                                    require=args.require_live)
+        if args.command == "deployed-image":
             try:
                 versions = ghcr_versions(gh, args.owner_kind, args.owner, args.package)
             except GitHubError as exc:
                 if exc.status != 404:
                     raise
                 versions = []
-            if args.command == "live-build":
-                build = live_build(versions)
-                if build is None:
-                    print(f"no version is tagged {LIVE_TAG} (no deploy has passed yet)",
-                          file=sys.stderr)
-                print(f"build={build or ''}")
-                return 0
             if not COMMIT.match(args.build):
                 print(f"unknown build {args.build[:60]!r}: no image to name", file=sys.stderr)
                 print("image_ref=\nimage_source=unknown")
