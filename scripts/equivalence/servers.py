@@ -107,6 +107,7 @@ def phase5_env(database_url: str, port: int, *, build_sha: str = "dev",
         "ATUS_API_RATE_REQUESTS": "1000000/1",
         "ATUS_API_MAX_INFLIGHT": "4",
         "ATUS_API_MAX_INFLIGHT_HEAVY": "2",
+        "ATUS_API_POOL_MAX_SIZE": "5",  # above the lanes (config.load_settings)
         "ATUS_API_ADMISSION_WAIT_S": "120",
         "ATUS_API_POOL_TIMEOUT_S": "60",
         "ATUS_API_STATEMENT_TIMEOUT_MS": "600000",

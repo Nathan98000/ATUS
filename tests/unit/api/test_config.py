@@ -356,6 +356,23 @@ class TestValidation:
         with pytest.raises(ConfigError, match="MAX_INFLIGHT_HEAVY"):
             load_settings({"ATUS_API_MAX_INFLIGHT": "1", "ATUS_API_MAX_INFLIGHT_HEAVY": "2"})
 
+    @pytest.mark.parametrize(("lanes", "pool"), [("8", "2"), ("4", "4"), ("2", "2")])
+    def test_the_pool_must_be_larger_than_the_lane_count(self, lanes, pool):
+        """Review r1 (pool-vs-lanes-invariant-unenforced): the lanes are taken
+        before a pool connection so that metadata reads and cache lookups
+        always find one; computations holding every connection would starve
+        them (503 overloaded after the pool timeout)."""
+        with pytest.raises(ConfigError, match="ATUS_API_POOL_MAX_SIZE"):
+            load_settings({"ATUS_API_MAX_INFLIGHT": lanes, "ATUS_API_MAX_INFLIGHT_HEAVY": "1",
+                           "ATUS_API_POOL_MAX_SIZE": pool})
+
+    def test_one_connection_beyond_the_lanes_is_enough(self):
+        s = load_settings({"ATUS_API_MAX_INFLIGHT": "8", "ATUS_API_MAX_INFLIGHT_HEAVY": "8",
+                           "ATUS_API_POOL_MAX_SIZE": "9"})
+        assert (s.api_max_inflight, s.api_pool_max_size) == (8, 9)
+        defaults = load_settings({})
+        assert defaults.api_pool_max_size > defaults.api_max_inflight
+
     def test_values_are_parsed(self):
         s = load_settings({
             "ATUS_API_RATE_ANALYSIS": "10/30",

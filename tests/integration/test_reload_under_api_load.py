@@ -65,6 +65,7 @@ GENEROUS_LIMITS = {
     "ATUS_API_DAILY_ANALYSIS_CAP": "1000000",
     "ATUS_API_MAX_INFLIGHT": "16",
     "ATUS_API_MAX_INFLIGHT_HEAVY": "16",
+    "ATUS_API_POOL_MAX_SIZE": "17",  # one more than the lanes (config.load_settings)
     "ATUS_API_ADMISSION_WAIT_S": "60",
 }
 

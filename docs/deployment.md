@@ -729,7 +729,7 @@ This lists every variable and secret the deployed system uses: where it is set, 
 | `ATUS_API_DOCS` | `on` → `off` | `off` | the API's `/docs`, `/redoc` and `/openapi.json` routes. In production the site publishes the committed schema (`frontend/openapi.json`) as a static asset at `/openapi.json` instead, outside `/api`, so neither the Worker nor the API runs for it |
 | `ATUS_API_CORS_ORIGINS` | empty | `http://localhost:5173` (development only) | allowed cross-origin callers; empty behind the same-origin Worker |
 | `ATUS_API_CACHE_SIZE` | `256` | `512` | in-process result LRU entries (lost at every spin-down) |
-| `ATUS_API_POOL_MAX_SIZE` | `4` | `4` | connections at most (Neon allows 839 at 0.25–2 CU) |
+| `ATUS_API_POOL_MAX_SIZE` | `4` | `4` | connections at most (Neon allows 839 at 0.25–2 CU); must exceed `ATUS_API_MAX_INFLIGHT`, or the API refuses to start |
 | `ATUS_API_POOL_MAX_IDLE_S` | `240` | `240` | psycopg_pool closes at most one idle connection per 240 s period, so a pool of 4 idle connections takes up to 16 min to empty and connections can outlive Neon's 300 s suspend. The first checkout after a wake finds them dead, closes every idle one and opens at most two (ADR-012 "Pool") |
 | `ATUS_API_POOL_TIMEOUT_S` | `5` | `5` | pool acquire timeout → 503 `overloaded` |
 | `ATUS_API_CONNECT_TIMEOUT_S` | `10` | `15` | libpq `connect_timeout` (covers a Neon wake) |
