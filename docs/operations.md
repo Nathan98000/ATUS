@@ -1,8 +1,13 @@
 # Operations
 
-This document covers how the ATUS platform is run in production on the $0 stack: what was found before deploying, the statistical equivalence criterion between the full database and the deployed serving database, and the operational runbooks.
+This document covers how the ATUS platform is run on the $0 stack (Cloudflare Workers Free, Render Free, Neon Free, GitHub; [ADR-011](adr/ADR-011-hosting.md)). It has four parts:
 
-At this stage it holds only the Phase 5 audit. The audit describes the system as it was at commit 387fc2d, before any Phase 5 change. The equivalence criterion and the runbooks will be written during Phase 5 implementation.
+- [Phase 5 audit](#phase-5-audit-2026-10-20): what was found before any Phase 5 change, at commit 387fc2d. Kept as written.
+- [Audit resolution](#audit-resolution): what Phase 5 did with each finding.
+- [Equivalence criterion (§9)](#equivalence-criterion-9): when the serving database and the full database count as giving the same answers, where that is checked, and the results.
+- [Runbooks](#runbooks): deploy, rollback, data releases, restores, incidents, secrets, quotas and provider changes.
+
+**Status: not deployed.** Everything below has run locally: unit and integration tests, the production-mode compose stack, its free-tier emulation profile and local deploy rehearsals. Nothing has run against a provider, and no runbook step that needs an account has been executed. Performance numbers for the fixed code: see [`loadtests/results/`](../loadtests/results/) (§13). The audit's timed numbers measure the code as it was before the fixes.
 
 ## Phase 5 audit (2026-10-20)
 
@@ -559,10 +564,577 @@ The API's CPU was throttled in at most 6 of 397 periods, and its cgroup memory s
 - **Database size:** the prototype serving DB (cluster sum 650,458,708 B ≈ 0.65 GB) fits Neon Free's 1 GB and Prisma Free's 2 GB. Growth during a restore was not measured.
 - **Statement budget.** This is arithmetic on the brief's unverified quota, assuming every statement counts as an operation. 200,000 operations a month allow about 66,000 cache hits or about 22,000 uncached estimates. Today every cache hit and every invalid request consumes operations (F14).
 
+## Audit resolution
+
+Each finding was checked against the code, the tests and the git history at commit 928f50e, and against the docs at 26e6e67 (no code changed in between). The tests named below were not re-run for this document.
+
+Status values:
+
+- **Fixed**: changed in code, configuration or docs. The row names where, and the tests that cover it.
+- **Partly fixed**: part is done; the row says what is left and where it is tracked.
+- **Accepted**: left as it is on purpose; the row says why and where that is recorded.
+- **Open**: not done yet; the row says where it is tracked.
+- **Applied** (facts I01–I14): the design relies on the fact.
+
+"Verified locally" applies to every row: no protection has been observed on a provider yet. Test paths are repo-relative; `test_x.py::name` names one test.
+
+### Findings F01–F71
+
+| Id | Status | Resolution | Verified by |
+|---|---|---|---|
+| F01 | Fixed | Every DB transaction sets `statement_timeout` (85 s analyses, 10 s metadata), `lock_timeout`, `idle_in_transaction_session_timeout` and `client_connection_check_interval` with `set_config(..., true)`. An analysis also has a deadline (timeout + 5 s) that cancels its query. Uncached analyses pass admission lanes first. The `atus_api` role defaults repeat the timeouts (`scripts/ops/roles.sql`). Changed from the audit's plan: a client disconnect does not cancel an admitted computation; it finishes within the deadline and is cached, so a retry joins it or hits the cache (ADR-012 "Single-flight and disconnects"). Code: `src/atus_pipeline/api/database.py`, `src/atus_pipeline/api/analysis_runner.py` (8e84789) | `tests/integration/api/test_protection_db.py` (`test_limits_are_applied_and_transaction_local`, `test_statement_timeout_is_analysis_timeout_and_never_cached`, `test_request_deadline_cancels_a_multi_statement_analysis`); `tests/integration/api_prod/test_server.py::test_abandoned_analysis_completes_is_cached_and_logged`; `tests/unit/api/test_database_unit.py`. The 85 s value is provisional (ADR-012 "Calibration"; see loadtests/results (§13)) |
+| F02 | Fixed | Routes and dependencies are async. Database work takes one worker-thread hop per transaction; `ATUS_API_THREADS` (16) sizes the limiter. The admission lane is taken before a pool connection. uvicorn's `limit_concurrency` (64) sheds excess connections before app code. Code: `api/app.py`, `api/dependencies.py`, `api/serve.py` | `tests/unit/api/test_serve_and_logging.py::test_lifespan_sizes_the_worker_thread_limiter`; `test_protection_db.py::test_lane_is_taken_before_a_pool_connection`; `test_server.py::test_connections_beyond_the_limit_are_shed_before_the_app`. Under load: see loadtests/results (§13) |
+| F03 | Fixed | A 64 KiB cap on declared and streamed bodies answers 413 before routing (`api/middleware.py`). The Worker applies the same cap (`edge/src/index.ts`) | `tests/unit/api/test_guard.py` (declared, streamed and huge lengths); `test_server.py::test_body_caps_over_real_sockets`; `edge/test/worker/limits.test.ts` |
+| F04 | Fixed | A 422 lists at most 20 errors, with bounded strings and no echoed values. `preset` has `max_length` 64. Responses of 1 KB or more are gzipped | `test_guard.py::test_422_lists_at_most_twenty_errors_with_bounded_strings`, `::test_preset_length_is_bounded`, `::test_large_responses_are_gzipped_small_ones_are_not` |
+| F05 | Fixed | Every checkout runs `check_connection`. A failed check drains the other idle connections (`api/database.py`) | `test_protection_db.py::test_requests_succeed_after_every_backend_is_terminated` |
+| F06 | Fixed | `data_version` is now `<release>:load-<run>-<UTC>-<hex>` for a load and `<release>:serving-<build_id>:<hash12>` for a serving build. It is written in the same commit as the data (migration `0003_data_version.sql`, `src/atus_pipeline/database/versions.py`; ea3aefe, 2e59f87, 9769f52). The cache key, `X-Data-Version`, `ATUS_EXPECTED_DATA_VERSION` and the SPA's tag all use it. `docs/api.md` and `docs/frontend.md` were corrected. **Not amended:** `docs/adr/ADR-008-server-state.md` still describes the Phase 4 key (`analytics_version:release:runN`) and says it invalidates "by construction" | `tests/unit/test_data_versions.py`; `tests/integration/test_reload_switch.py::TestSwitch::test_identical_reloads_still_get_distinct_versions`; `tests/integration/test_serving_build.py::test_two_builds_have_the_same_content_hash_and_different_versions` |
+| F07 | Fixed | The API requires the edge secret `X-ATUS-Edge-Auth`. It accepts two values for rotation and compares them in constant time. Per-client token buckets use the Worker's `X-ATUS-Client-IP` only when the request is authenticated. Proxy headers are off. Production refuses to start without secrets. The edge governor is the primary layer (ADR-015). Code: `api/middleware.py`, `api/protection.py`, `api/serve.py`, `edge/src/` | `test_guard.py` (403, both rotation values, forged forwarding headers, 429); `test_server.py::test_forwarded_headers_never_change_the_client`; `test_protection_db.py::test_forbidden_origin_runs_zero_statements`; `edge/test/worker/governor.test.ts`, `governor-flow.test.ts` |
+| F08 | Fixed | `atus load` builds in a shadow schema (`atus_next`) and switches the tables in one short transaction with bounded lock waits (ADR-013 Decision 1; 2e59f87). A hosted release switches to a new database instead | `tests/integration/test_reload_under_api_load.py`: continuous reads through the real API during a rebuild and switch, zero failures. Its negative control with the old loader blocks every reader (2321e28) |
+| F09 | Fixed | `Dockerfile`: multi-stage, base pinned by digest, hash-locked wheels, UID 10001, `/health` healthcheck. Also an allow-list `.dockerignore`, `docker-compose.prod.yml`, `docker-compose.emulation.yml` and `deploy/` (837d776) | `tests/deploy/test_packaging_files.py`; `tests/deploy/test_compose_config.py`; `deploy/ci/check_image.py` with `tests/deploy/test_check_image.py`; opt-in `tests/deploy/test_container_image.py` |
+| F10 | Partly fixed | Bounded, not removed: the 85 s timeout and 90 s deadline, one heavy lane, and the edge's 300 heavy analyses a day. The year pushdown (F39) and `jit=off` (F37) cut the cost. Whether the worst cases fit at 0.25 CU: see loadtests/results (§13). The final timeout comes from the week-1 calibration ([deployment.md step 10](deployment.md#10-week-1-calibration), ADR-012 "Calibration") | see F01, F37, F39 |
+| F11 | Fixed | A waking notice (polite live region) appears after 3 s of pending metadata. A share link says "Preparing the analysis…" until `/meta` answers. Code: `frontend/src/api/serviceStatus.ts`, `frontend/src/components/ServiceNotice.tsx`, `frontend/src/pages/AnalysisPage.tsx` | `frontend/src/api/serviceStatus.test.ts`; `frontend/src/pages/serviceStates.test.tsx` ("cold start (F11, F12)"); `frontend/e2e/service-states.spec.ts` |
+| F12 | Fixed | Metadata and transport failures are retried for up to 150 s, honouring `Retry-After`. Each metadata attempt has a 60 s client timeout. An analysis is retried once on `overloaded`, `database_unavailable` or an unknown 503. Home has "Try again". Code: `frontend/src/api/resilience.ts` | `frontend/src/api/resilience.test.ts`; `serviceStates.test.tsx` |
+| F13 | Fixed | Every error code has its own presentation, including full-page quota states and a `Retry-After` countdown. A non-JSON 429 is shown as the edge's daily limit. The "service is up" copy is gone. Code: `frontend/src/domain/presentError.ts`, `frontend/src/api/client.ts` | `frontend/src/domain/presentError.test.ts`; `frontend/src/api/client.test.ts`; `serviceStates.test.tsx`; `service-states.spec.ts` (quota page, edge 429, countdown) |
+| F14 | Fixed | An in-process data snapshot holds the data version, years and lexicon. It is read in one REPEATABLE READ transaction and pinned by `ATUS_EXPECTED_DATA_VERSION`. Bodies are validated and the cache is checked before any connection, so cache hits, 4xx and metadata routes run 0 statements (422cb4a, 18ca16e) | `tests/integration/api/test_statement_log.py::test_documented_counts` (PostgreSQL's own statement log); `tests/integration/api/test_snapshot_db.py`; `tests/unit/api/test_snapshot.py` |
+| F15 | Partly fixed | Identical in-flight requests share one computation. Year and code order are canonical. A respelled miss costs an analysis token and a lane. **Deferred:** keying on the resolved computation (label, `confidence_level`, prefix vs leaf), recorded in ADR-012 "What this does not protect against". ADR-015 explains why the edge keys on exact bytes | `tests/unit/api/test_admission.py::test_identical_concurrent_requests_share_one_computation`; `tests/unit/api/test_review_hardening.py` (canonical order) |
+| F16 | Fixed | `/health` is the only platform and monitor target. `/ready` and `/metrics` need `Authorization: Bearer <ATUS_OPS_TOKEN>`; without it they answer like an unknown path. Hints go to the log (`api/routes/health.py`) | `tests/unit/api/test_observability.py` (hidden without a token, wrong bearer); `tests/deploy/test_workflows.py::test_monitors_never_touch_the_database` |
+| F17 | Fixed | The pool is configured from the environment: `ATUS_API_POOL_MAX_SIZE` (4), `ATUS_API_POOL_MAX_IDLE_S` (240), `ATUS_API_POOL_TIMEOUT_S` (5), with `min_size=0` | `tests/unit/api/test_config.py` |
+| F18 | Fixed | `ATUS_API_PREPARE_THRESHOLD` is configurable (`none` behind a pooler). Production uses Neon's direct endpoint, so the default 5 stays. The PgBouncer run is in [deployment.md step 0](deployment.md#0-rehearse-the-whole-stack-locally) | `test_config.py`; `tests/unit/api/test_database_unit.py::test_connection_kwargs`; `scripts/smoke_stack.sh --integration-via-pgbouncer` |
+| F19 | Fixed | The switch locks tables in reader order and bounds each wait with `lock_timeout`. It retries, so a reader is never the deadlock victim | `test_reload_switch.py::TestReaders::test_a_lock_order_cycle_with_a_reader_never_kills_the_reader` |
+| F20 | Fixed | Data, the `succeeded` status and `data_version` commit together. The docstring in `loading/loader.py` was corrected | `test_reload_switch.py::TestSwitch::test_reload_switches_data_and_version_in_one_commit`; `TestFailedLoads::test_failure_inside_the_switch_transaction_changes_nothing` |
+| F21 | Fixed | The switch waits until every transaction older than the new data has ended | `test_reload_switch.py::TestRepeatableRead` |
+| F22 | Fixed | Each benchmark runs in its own transaction (a savepoint). Results are printed before they are recorded. `--no-persist` only prints. Under a read-only role the command reports that nothing was recorded and exits 1 (ADR-013 Decision 3; 4eedea2) | `tests/integration/test_validate_analytics.py` |
+| F23 | Fixed | Warnings and errors name the loaded release's lexicon. The OpenAPI description and the activities listing are release-neutral; one example response still shows 0325 output (42f6251) | `tests/unit/analytics/test_lexicon_text.py`; `tests/unit/api/test_exposure.py::TestReleaseNeutralText`; `tests/integration/test_release_checklist.py` |
+| F24 | Fixed | An empty base URL means same-origin. Any other value must be an absolute http(s) URL that the site CSP allows, or the build fails. `check:bundle` rejects a loopback API address. Code: `frontend/src/api/apiBase.ts`, `frontend/scripts/check-bundle.mjs` | `frontend/src/api/apiBase.test.ts`; `frontend/src/checkBundle.test.ts` |
+| F25 | Fixed | `/meta` must report `v1` and the expected shape (`frontend/src/api/compat.ts`). Anything else is a non-retryable full-page state | `frontend/src/api/compat.test.ts`; `serviceStates.test.tsx`; `service-states.spec.ts` (incompatible API version) |
+| F26 | Fixed | A page shows a page-level error only while nothing is loaded | `serviceStates.test.tsx` ("background failures and retries (F26, F63)") |
+| F27 | Fixed | The SPA fetches `/meta` with `cache: "no-cache"` and compares every response's `X-Data-Version` with the loaded one; a difference shows a reload notice. The API's snapshot answers `/meta` from one consistent read. The API still sends `/meta` as `public, max-age=300` with no ETag (`api/routes/meta.py`). The SPA revalidates anyway, and in production it reads metadata from the static snapshot | `serviceStatus.test.ts`; `service-states.spec.ts` (release switch under an open page); `test_reload_under_api_load.py` (`/meta` never pairs one run with the other's counts) |
+| F28 | Fixed | Hash-locked `requirements/*.lock.txt` files (`requirements/compile.sh`) are installed with `--require-hashes` in CI and in the image. The API's runtime lock is separate from the pipeline's (3278134) | `tests/deploy/test_requirements_locks.py`; `test_packaging_files.py::test_api_image_installs_only_hash_locked_wheels` |
+| F29 | Fixed | `ci.yml` runs `pip-audit` on the API lock and `npm audit --omit=dev`. `image.yml` runs Trivy as a pinned binary. `.github/dependabot.yml` covers pip, npm, actions, docker and docker-compose. CodeQL and Dependabot alerts are owner settings ([owner step 4.4](deployment.md#4-github-repository-nathan98000atus-stays-public)), not yet applied | `test_workflows.py::test_ci_audits_and_lints`, `::test_trivy_is_a_pinned_binary_never_the_hijacked_actions`; `tests/deploy/test_dependabot.py` |
+| F30 | Fixed | `frontend/scripts/api-types.mjs` passes `--default-non-nullable false`. CI checks for drift (`npm run check:api-types`, OpenAPI drift step) | `frontend/src/apiTypes.test.ts`; `test_workflows.py::test_ci_backend_covers_both_pythons_and_the_openapi_drift` |
+| F31 | Fixed | `.gitignore` ignores `.env*` and `*.env`, except the templates. Secret scanning and push protection are on by default for public repositories; owner step 4.4 confirms them | `test_packaging_files.py::test_secret_files_are_ignored` |
+| F32 | Fixed | The development compose binds to 127.0.0.1 and pins the image by digest. The production compose uses the non-superuser `neondb_owner` and `atus_api` | `test_compose_config.py::test_postgres_is_pinned_and_bound_to_loopback`, `::test_database_bootstraps_only_what_neons_console_creates` |
+| F33 | Fixed | Both compose files set `shm_size: 1g` (the emulation inherits it). SQLSTATE class 53 maps to 503 `overloaded`. The lanes cap concurrency | `test_compose_config.py::test_shared_memory_is_raised`; `test_database_unit.py::test_too_many_connections_is_overload`; `test_admission.py::test_mapping` |
+| F34 | Fixed | Distinct codes, each with `Retry-After`: `analysis_timeout`, `overloaded`, `database_paused`, `database_unavailable`, `data_not_loaded` (ADR-012 "Error mapping") | `test_admission.py::test_mapping`; `test_database_unit.py`; `test_protection_db.py::test_busy_pool_is_overloaded_with_retry_after` |
+| F35 | Fixed | At most 2 uncached analyses run at once, at most 1 of them heavy. A request waits at most 5 s, then gets 503 `overloaded` with `Retry-After`. Cache hits bypass the lanes. The edge governor caps each network and each day | `test_admission.py` (lanes, heavy lane, refunds). Saturation under emulation: see loadtests/results (§13) |
+| F36 | Fixed | libpq `connect_timeout` (10 s), TCP keepalives and the request deadline | `test_database_unit.py::test_connection_kwargs`; the deadline tests in `test_protection_db.py` |
+| F37 | Fixed | `jit=off` is set in four places: the `atus_api` role default, the per-request `ATUS_API_JIT`, the production and emulation database (`-c jit=off`), and `compare-serving-db` sessions | `test_compose_config.py::test_database_matches_neon`; `test_database_unit.py::test_optional_parallel_workers_and_jit`; opt-in `tests/deploy/test_stack_roles.py` |
+| F38 | Open | `ATUS_API_MAX_PARALLEL_WORKERS` (per-request `SET LOCAL`) exists and is unset, so the server default applies. The §13 load tests decide it (ADR-012, ADR-013 Decision 9): see loadtests/results (§13) | `test_database_unit.py::test_optional_parallel_workers_and_jit` |
+| F39 | Fixed | The year pushdown (9769f52) is proven equivalent. The §9 HTTP run found that it caused a plan regression: a nested loop that re-ran the activity aggregate for each respondent. Materializing the CTE (9afd1b4) fixed it ([Results](#results)). Latency effect: see loadtests/results (§13) | `tests/unit/analytics/test_year_pushdown_sql.py`; `tests/integration/test_year_pushdown.py`; opt-in `tests/data_quality/test_query_plans.py` |
+| F40 | Fixed | The scale-floored criterion is in `src/atus_pipeline/serving/equivalence.py` ([below](#equivalence-criterion-9)). The audit's extreme specifications seed every diff (`seed_specs`) | `tests/unit/test_serving_equivalence.py` (incl. `test_zero_variance_noise_passes_only_because_of_the_scale_floor`, `test_seed_specs_include_the_audit_extremes`) |
+| F41 | Open until deploy | `scripts/replay_deployed.py` (URL-targeted, at most 40 requests, paced) and the list of unknowns exist. Both have run only against local APIs. Tracked in [deployment.md step 9](deployment.md#9-quota-budgeted-post-deploy-replay) and ADR-011 "Unknowns to measure after deploy" | `tests/unit/ops/test_replay_deployed.py` |
+| F42 | Fixed (locally) | The API sends CSP `default-src 'none'; frame-ancestors 'none'`, `nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, CORP and, in production, HSTS. It sends no `server` header and gzips. The Worker sets its own headers, and the SPA has `frontend/public/_headers`. Not yet checked on the real deployment ([deployment.md step 8](deployment.md#8-prove-the-deployment)) | `test_guard.py::test_security_headers_on_success_and_errors`, `::test_hsts_in_production`; `edge/test/worker/headers.test.ts`; `frontend/src/deploy/staticHeaders.test.ts` |
+| F43 | Fixed | `ATUS_API_DOCS` is off in production, so the docs routes answer 404. The schema is committed as `frontend/openapi.json` by `scripts/export_openapi.py`. The decision is recorded in [security.md "Production exposure decisions"](security.md#production-exposure-decisions) and `docs/api.md` "Production exposure" | `test_exposure.py` (docs off, schema exported, published copy current) |
+| F44 | Fixed | Production refuses a missing or development `ATUS_DATABASE_URL` and missing or short secrets. It listens on `$PORT`, and `.env` is read only outside production (`src/atus_pipeline/config.py`, `api/serve.py`) | `test_config.py`; `test_serve_and_logging.py`; opt-in `tests/deploy/test_container_image.py::test_production_mode_refuses_to_start_without_its_settings` |
+| F45 | Fixed | Production is same-origin through the Worker. Development CORS exposes the contract headers | `test_guard.py::test_cors_exposes_the_contract_headers` |
+| F46 | Fixed | The HTTP exception handler keeps `exc.headers` | `test_guard.py::test_405_keeps_the_allow_header` |
+| F47 | Fixed | `HEAD` is answered on GET routes | `test_guard.py::test_head_on_get_routes` |
+| F48 | Fixed | No trailing-slash redirects: such paths get the 404 envelope | `test_guard.py::test_trailing_slash_is_not_redirected`; `test_server.py::test_odd_request_targets_get_envelopes_never_redirects` |
+| F49 | Partly fixed | `limit_concurrency` (64) sheds excess connections with 503 before any app code. The request head is limited to 16 KiB and keep-alive to 5 s. **Accepted:** uvicorn has no request-head read timeout, so slow clients rely on Render's proxy, which is unverified (ADR-012 "What this does not protect against") | `test_server.py::test_connections_beyond_the_limit_are_shed_before_the_app` |
+| F50 | Fixed | Control characters in the query get a 422. An unhandled error is logged once, with one traceback | `test_guard.py::test_control_characters_in_query_are_422_without_database_work`; `test_protection_db.py::test_nul_in_search_is_422_not_500`; `test_serve_and_logging.py::test_unhandled_error_is_logged_once_with_the_request_id` |
+| F51 | Fixed | 503 `data_not_loaded` with a generic message | `test_admission.py::test_unloaded_database_is_503_without_operator_hints`; `test_protection_db.py::test_migrated_but_empty_database_is_data_not_loaded` |
+| F52 | Fixed | `client_connection_check_interval` is 5 s and `timeout_graceful_shutdown` is 20 s. On shutdown, running queries are cancelled (`Database.cancel_active`) and detached computations get 5 s. The tests assert the settings; no test runs `cancel_active` | `test_database_unit.py::test_analysis_and_metadata_timeouts`; `test_serve_and_logging.py::test_development` |
+| F53 | Fixed | One access line per request, with `disconnected`, `client_ip_prefix` and the edge's `request_id` when authenticated (ADR-014). `/metrics` has no separate disconnect counter | `test_server.py::test_abandoned_analysis_completes_is_cached_and_logged`; `test_observability.py::test_one_structured_line_per_request`; `tests/unit/api/test_edge_contract.py` |
+| F54 | Fixed | The tests now cover the pool, threads, statement counts, dead connections and limits (rows above). Playwright runs the projects desktop, mobile, firefox and webkit (`frontend/playwright.config.ts`). Stack-mode E2E runs through the Worker (`ci.yml` job `e2e-stack`). Slow `/meta`, version mismatch and 429 cases are in `frontend/e2e/service-states.spec.ts`. Firefox runs only in Linux CI ([deployment.md step 0](deployment.md#0-rehearse-the-whole-stack-locally)) | as listed |
+| F55 | Fixed | Everything release-specific derives from one registry entry (d5831c7). The scripts take their years from the data and `/meta` (31d07d4). An AST guard keeps release literals out of the data, engine and validation packages. Frontend gap for a new year: see the [New ATUS year](#new-atus-year) runbook | `tests/integration/test_release_checklist.py` (synthetic `0326`); `tests/unit/test_release_literals.py`; `tests/unit/test_benchmark_scripts.py` |
+| F56 | Fixed | The image ships no migrations, and the API never changes the schema. `ATUS_MIGRATIONS_DIR` is for running outside a checkout | `test_packaging_files.py::test_no_migrations_or_tests_reach_the_image` |
+| F57 | Fixed | A serving marker (schema comment, or a serving `data_version`) makes `migrate`, `load`, `validate-db` and `load_all` refuse (`src/atus_pipeline/serving/guard.py`; 1ed13af) | `test_serving_build.py::test_full_database_commands_refuse_the_serving_database`; `tests/integration/test_cli_data_commands.py` |
+| F58 | Fixed | Every action is pinned by full SHA with a version comment. `checkout`, `setup-node` and `setup-python` are on v7. Dependabot updates the actions | `test_workflows.py::test_every_action_is_pinned_by_full_sha_with_a_version_comment` |
+| F59 | Fixed | Explicit `permissions`, `concurrency` and `timeout-minutes`. Python 3.11 and 3.12. The Playwright report and traces are uploaded. OpenAPI and API-type drift checks, and actionlint (b7390ea) | `test_workflows.py::test_permissions_and_timeouts_are_explicit`, `::test_ci_backend_covers_both_pythons_and_the_openapi_drift` |
+| F60 | Fixed | `scripts/e2e_backend.py` accepts only a local `atus_e2e[_<suffix>]` database and redacts the password (f1712d1) | `tests/deploy/test_e2e_backend_safety.py` |
+| F61 | Fixed | The About page has a privacy and logs section | `frontend/src/pages/AboutPage.test.tsx` |
+| F62 | Fixed | Metadata has `staleTime: Infinity`; loaded metadata is never refetched on focus or reconnect (only a failed query is retried on reconnect). In production it comes from the static snapshot. The API's `/meta` costs 0 statements while its snapshot is fresh (fe5f9dd) | `serviceStates.test.tsx` ("no background metadata refetch (F62)") |
+| F63 | Fixed | "Try again" refetches every failed query | `serviceStates.test.tsx` |
+| F64 | Fixed | An analysis is retried once on `overloaded`, `database_unavailable` or an unknown-code 503 (46a7384). On the server side, see F05 | `resilience.test.ts`; `serviceStates.test.tsx` |
+| F65 | Fixed | A boot shell in `#root` with an unhashed `boot.css` fallback. `/assets/*` is immutable and HTML is `no-cache` (`frontend/public/_headers`) | `frontend/src/bootShell.test.tsx`; `staticHeaders.test.ts`; `service-states.spec.ts` (bundle fails to load) |
+| F66 | Partly fixed | The broad selector is in the post-deploy replay (ad9f08e), in the seed specifications of every equivalence diff, and in the restore's worst-case EXPLAIN checks (`src/atus_pipeline/serving/checks.py`). **Accepted:** the API's heavy classifier and the governor's cost class ignore selector breadth (ADR-012 "Heavy classifier", ADR-015 "Cost-class blind spots"). Load tests: see loadtests/results (§13) | `test_replay_deployed.py`; `test_serving_equivalence.py::test_seed_specs_include_the_audit_extremes` |
+| F67 | Fixed (unmeasured on Render) | The pool is lazy, so the API does no DB work at start-up (the image gate's `startup_db_quiet`). The SPA shows the waking notice and allows 150 s. The deploy waits up to 15 min (`scripts/ops/render_deploy.py wait`). Render's real spin-up is an ADR-011 unknown | `test_database_unit.py::test_pool_starts_without_connecting`; `tests/deploy/test_check_image.py`; the frontend cold-start tests |
+| F68 | Accepted | The serving database is 0.63 GB, and the pushdown reads less. Memory pressure on Neon was not measured. Emulation: see loadtests/results (§13). Provider: [deployment.md step 9](deployment.md#9-quota-budgeted-post-deploy-replay) | — |
+| F69 | Fixed (docs) | `docs/api.md`: the error table is complete, `database_unavailable` and `overloaded` are separate, `X-Cache: bypass` is documented, and the Phase 3 timing table is labelled historical. The docstrings of `api/dependencies.py` and `loading/loader.py` were rewritten. **Still stale:** the module docstring of `src/atus_pipeline/api/cache.py` describes the version as `<release>:run<id>` | — |
+| F70 | Fixed (docs) | `docs/frontend.md` now covers the error mapping (`malformed_response` and the synthesized edge codes), the version tagging and the base URL | — |
+| F71 | Fixed (docs) | README: the Node requirement (22.22.2+ on Node 22, 24.15+ on Node 24), the layout and documentation listings (ADR-001 to ADR-016, `frontend/`, `edge/`, `deploy/`). `docs/architecture.md` rewritten for the whole system, with the new-release claim matching the registry (02a438f). `docs/database.md` lists every `validation_results` writer (26e6e67). The deployment diagram is in [deployment.md "Architecture"](deployment.md#architecture) | — |
+
+### Recorded facts I01–I14
+
+| Id | Status | How Phase 5 uses it | Verified by |
+|---|---|---|---|
+| I01 | Applied | The builder aggregates activities to (`tucaseid`, `activity_code`), keeps `smallint`, stores rows in `activity_code` order, and asserts that every sum fits 0–1,440 (`src/atus_pipeline/serving/builder.py`) | `test_serving_build.py::test_the_serving_schema_keeps_the_contract_and_every_constraint`, `::test_the_served_rows_are_the_designed_subset` |
+| I02 | Applied | The builder asserts that the omitted replicate rows are all-NULL or all-zero and that the weight filters exclude them | `test_serving_build.py::test_an_omitted_row_that_an_estimate_would_read_stops_the_build` |
+| I03 | Applied | `src/atus_pipeline/serving/contract.py`; the builder asserts `missing_contract_columns()` | `tests/integration/test_serving_contract.py` |
+| I04 | Applied | The builder's per-table hashes equal the prototype's (ADR-013 "Measured on the real full database"). The restore checks the physical order (`pg_stats.correlation` ≥ 0.99) | `tests/integration/test_serving_restore.py::test_the_restore_reproduces_the_build_exactly` |
+| I05 | Applied | `atus_api` can only SELECT and defaults to read-only transactions. The API opens every transaction with `BEGIN READ ONLY` | `test_snapshot_db.py::test_api_transactions_cannot_write`; `test_serving_restore.py`; opt-in `test_stack_roles.py` |
+| I06 | Applied | `frontend/public/_headers` sets the CSP (`connect-src 'self'`), with a `<meta>` backstop. The E2E suites, including the deployed browser smoke, collect CSP violations (`frontend/e2e/helpers.ts`). Not yet checked on the real deployment | `staticHeaders.test.ts`; `frontend/e2e/deployed/starter.deployed.ts` |
+| I07 | Applied | Secrets are redacted in log records and formatted output, tracebacks included. A malformed DSN is refused without being echoed | `test_serve_and_logging.py::test_create_app_redacts_the_database_password`; `test_observability.py::test_tracebacks_stay_on_one_line_and_secrets_are_redacted`; `test_exposure.py::TestNoInternalsInErrors`; `test_config.py::test_malformed_database_url_never_echoes_the_password` |
+| I08 | Applied | `min_size=0` and no background refresh. Whether Neon suspends as documented is unverified (ADR-011 unknowns) | `test_database_unit.py::test_pool_starts_without_connecting`; `test_snapshot_db.py::test_db_free_routes_never_open_a_connection` |
+| I09 | Applied | The body cap (F03) bounds hostile input. Memory under load: see loadtests/results (§13) | see F03 |
+| I10 | Applied | A transaction ends before its response starts | `test_admission.py::test_transaction_ends_before_the_response_starts` |
+| I11 | Applied | ADR-014: never alert on `atus_db_pool_requests_waiting` alone | — |
+| I12 | Applied | The scale floor of the criterion (F40) | see F40 |
+| I13 | Partly | The version has one source: `pyproject.toml` reads `atus_pipeline.__version__` (3278134). `deploy.yml` deploys only `vMAJOR.MINOR.PATCH` tags and does not compare the tag with `__version__`. No tag exists yet | `test_workflows.py::test_deploy_runs_only_on_tags_or_by_hand` |
+| I14 | Applied | Explore fetches the lexicon in parallel with `/meta` (`frontend/src/pages/ExplorePage.tsx`) | — |
+
+### What remains open
+
+- **Numbers for the fixed code, under local emulation** (F10, F35, F38, F66, F68, I09): see loadtests/results (§13).
+- **Measured only after a deploy** (F41, F42 and I06 on the real hosts, F67's Render spin-up, I08): [deployment.md steps 8–10](deployment.md#8-prove-the-deployment) and ADR-011 "Unknowns to measure after deploy".
+- **Deferred or accepted by decision:** F15 (cache key on the resolved computation), F49 (no head-read timeout), F66 (cost class ignores selector breadth).
+- **Small gaps:** no test runs `Database.cancel_active` (F52); no disconnect counter in `/metrics` (F53); no frontend test feeds a new year through `/meta` (§15; see [New ATUS year](#new-atus-year)).
+- **Docs:** ADR-008's key text (F06); the module docstring of `src/atus_pipeline/api/cache.py` (F69).
+- **Owner settings** (F29, F31): CodeQL default setup, Dependabot alerts, and confirming secret scanning and push protection ([owner step 4.4](deployment.md#4-github-repository-nathan98000atus-stays-public)).
+
 ## Equivalence criterion (§9)
 
-To be completed in Phase 5 implementation. The audit input is F40.
+The serving database, the engine's year pushdown, the static snapshot and the edge cache must not change any served number, beyond the floating-point noise of summation order. This section defines when two answers are equivalent. `src/atus_pipeline/serving/equivalence.py` implements it, and ADR-013 Decision 10 refers here.
+
+### Definition
+
+Two answers to the same specification (from the full and the serving database, or from two renderings of a query) are equivalent when all of the following hold:
+
+1. **Exactly equal, with the same JSON type.** This covers every result field except the three below: point estimates (`value`), `n_respondents`, `n_participants`, `weighted_population_per_day`, `days_in_period`, labels, years, the echoed `spec`, `warnings` and `analytics_version`. It also covers the key set at every level and the length of every list.
+2. **Standard errors and CI bounds** (`standard_error`, `ci_lower`, `ci_upper`; `TOLERANT_FIELDS`):
+
+   ```text
+   |a - b| <= 1e-12 * max(|a|, |b|, S)        (REL_TOL = 1e-12)
+   ```
+
+   S is the largest absolute point value of the estimate the field belongs to, and of the estimates that enclose it. For a comparison's `difference`, S also includes both groups' estimates. If either value is not a number (for example `null`), the field is compared exactly.
+3. **Errors are identical.** At engine level, the exception class and message must match (`"<Class>: <message>"`). Over HTTP, the status code and the whole error body (`code`, `message`, `details`) must match.
+4. **Raw sufficient statistics** (`compare_statistics`, used to compare two SQL renderings). The row count, year, counts and `numeric` sums are exactly equal. Each replicate `float8` sum is within `1e-12 ×` the largest absolute value in its replicate array.
+5. **HTTP only** (`scripts/equivalence/httpdiff.py`):
+   - These headers must be identical: `Content-Type`, `Cache-Control`, `X-Analytics-Version` and `X-Response-Format`.
+   - Every Phase 5 answer's `X-Data-Version` must equal the version its server reported at start.
+   - **Whitelisted** (may differ): the body keys `data_version` and `analysis_key` at any depth, and the headers `X-Data-Version`, `X-Analysis-Key`, `X-Request-ID`, `X-Cache`, `Server-Timing`, `Date` and `Content-Length`. Each has a written justification in `WHITELIST` and `WHITELISTED_HEADERS`.
+   - **Deliberately compared exactly:** `/meta`'s `ingestion_run_id`, `last_ingested_at`, `release`, `respondents` and `years`. The serving build copies the source run's provenance.
+   - **Phase 1–4 vs Phase 5 code on the same database (pair a–b):** a difference passes only when exactly one of eight named changes explains it. They are `validation_details_capped`, `preset_max_length`, `payload_too_large`, `unsupported_media_type`, `malformed_json_parser_limit`, `control_characters_rejected`, `lexicon_wording` and `health_reports_build` (`INTENDED_DIFFERENCES`). Domain errors have no such entry, so their code and message must be identical.
+
+### Why these bounds
+
+- **Point values, counts and populations get no tolerance.** They come from integer minutes and `numeric(18,6)` weights. Their sums are exact in any order, and the serving database keeps those types (ADR-013 Decision 6).
+- **Replicate sums are `float8`, summed in plan order.** Any plan change reorders them: parallel workers, a different join, or the serving database's physical layout. Measured differences:
+  - replicate sums, Phase 2–4 SQL vs the pushdown: up to 1.43e-14 relative on the full database and 1.11e-14 on the serving database (ADR-013 Decision 9). With parallel query off: 1.34e-14 (audit probe);
+  - standard errors, two runs on the full database: up to 8.57e-14 relative;
+  - standard errors, full vs serving: up to 1.28e-13 relative, and 6.24e-13 on near-universal participation (audit, "Brief statements corrected by measurement").
+- **1e-12 sits above every measured value.** A real data change moves results by many orders of magnitude more. `tests/integration/test_equivalence_harness.py` shows that one changed episode, and one replicate weight off by 1e-6, are each caught.
+- **The scale floor S (F40, I12).** An estimate whose true variance is 0 reports floating-point noise around 0 as its "standard error". Examples are all 18 tier-1 codes, which sum to 1,440 minutes, and a population compared with itself. On 1,440 minutes the audit measured 7.83e-12 vs 7.93e-12: 1.31e-2 relative, which a purely relative bound rejects. Scaled by S = 1,440, the difference is about 7e-17. The floor also widens the margin for near-universal participation, where the relative SE difference (6.24e-13) is within a factor of two of the bound.
+
+### What it does not cover
+
+- **Build identity.** `data_version`, `analysis_key` and the headers that carry them differ between any two databases by design. They identify a build; they are not statistics.
+- **Performance.** Nothing in the harness is timed. Capacity answers (429, and 503 `overloaded`, `database_unavailable` or `daily_capacity_reached`) are retried, not compared. `analysis_timeout` and a missing answer count as failures. Performance: see loadtests/results (§13).
+- **Agreement with BLS.** The 24 benchmarks cover that: `atus validate-analytics`, `tests/data_quality/test_analytics_benchmarks.py`, `tests/data_quality/test_api_benchmarks.py`, and `scripts/replay_deployed.py` against a site.
+- **The full database itself.** `atus validate-db` and `tests/data_quality/test_full_database.py` check it; both fail on a serving database by design.
+- **Every possible specification.** Equivalence is shown for the specifications that ran: the seeded extremes, seeded random samples and the 544-specification corpus. It is not proven for all specifications.
+- **A deployed host.** A local pass says nothing about one. The deploy smoke and the post-deploy replay apply the same criterion there.
+
+### Where it is enforced
+
+| Check | What it compares | When it runs |
+|---|---|---|
+| `tests/unit/test_serving_equivalence.py` | the criterion itself: exact fields, the tolerance, the scale floor, comparison scaling, errors, raw statistics, the seed specifications | CI (`ci.yml` backend) |
+| `tests/unit/test_equivalence_harness.py` | the HTTP rules: whitelist, intended differences and their negative cases, headers, retries | CI |
+| `tests/unit/ops/test_deploy_smoke.py`, `tests/unit/ops/test_replay_deployed.py` | the deploy-time comparisons: plan-order noise passes, a value outside the criterion fails | CI |
+| `tests/integration/test_year_pushdown.py` | Phase 2–4 SQL vs the current SQL: raw statistics for the extremes plus 250 random specifications, and engine outputs for 120, on the randomized and the hand-computed fixtures | CI (integration) |
+| `tests/integration/test_serving_build.py` | full vs serving fixture database: engine results and API responses | CI (integration) |
+| `tests/integration/test_equivalence_harness.py` | real servers b and c, on a fixture full database and a serving database built from it; a mutated serving copy must be caught | CI (integration) |
+| `atus compare-serving-db [--specs 200] [--seed 20261020] [--report FILE]` | engine-level randomized diff of the full database (`$ATUS_DATABASE_URL`) against the serving one (`$ATUS_SERVING_DATABASE_URL`). Both are read only with `jit=off` | each release, on the build and on the drill ([runbooks](#serving-db-build-and-restore)) |
+| `scripts/equivalence/run.sh` | three-way HTTP replay: a = Phase 1–4 API (387fc2d) on the full database, b = Phase 5 on the full database, c = Phase 5 on the serving database. Corpus: `docs/evidence/phase5/equivalence/specs/` | each release, and after any engine SQL change ([`scripts/equivalence/README.md`](../scripts/equivalence/README.md)) |
+| `ATUS_DATA_QUALITY=1 pytest tests/data_quality/test_query_plans.py` | full database, opt-in: the seven hazard specifications scan `atus.activities` only inside the materialized CTE, answer within the 85 s budget, and match the Phase 2–4 sufficient statistics | after any engine SQL change |
+| `scripts/ops/deploy_smoke.py --recompute 2` (`deploy.yml`) | two home-page starters served from the static snapshot vs recomputed live through the Worker with different request bytes | every deploy |
+| `scripts/replay_deployed.py --expected FILE` | every replayed response vs a recording from the full database | after a deploy, quota-budgeted |
+
+### Results
+
+All runs below were local. Nothing has been compared on a deployed host.
+
+| Run | Scope | Result |
+|---|---|---|
+| Year pushdown, read only (ADR-013 Decision 9) | full database: 71 specifications, 202,272 values; serving database: 161 specifications, 530,892 values | counts and `numeric` sums identical; largest replicate-sum difference 1.43e-14 (full) and 1.11e-14 (serving) |
+| `atus compare-serving-db`, restore drill of build `20261020T224252Z-a7420a5c` (ADR-013 Decision 8) | 161 specifications (extremes plus 150 random, seed 20261020), 9,671 values; full database vs the drill read as `atus_api` | all equivalent. Largest relative SE/CI difference 3.33e-13 on non-degenerate estimates; scaled differences within 1.66e-15 |
+| HTTP, first run (c8f83a0; b and c at 1bb1d6f) | 544 specifications, 84 GETs ([`evidence/phase5/equivalence/`](evidence/phase5/equivalence/README.md)) | **543/544 and 84/84.** No statistic differed in any pair. The failure: `population-071`, where b (Phase 5, full database) answered 503 `analysis_timeout` at the harness's 600 s limit. Cause: a plan regression from the year pushdown on the full database. The planner underestimated the correlated filters (year, `pandemic_weight > 0`, diary dates) and chose a nested loop that re-ran the activity aggregate once per respondent. An EXPLAIN survey found the same plan for 32 specifications. Largest scaled difference 7.03e-15 (a–b), 4.02e-15 (b–c) |
+| HTTP, supplementary run on ca2f5cc | same corpus | 544/544. The timeout is intermittent; the plan hazard was unchanged |
+| Fix, 9afd1b4 | `WITH activity_minutes AS MATERIALIZED`: the aggregate is computed once, as in the Phase 2–4 plan. The same rows are aggregated and joined, so no value changes | `tests/data_quality/test_query_plans.py`; `tests/unit/analytics/test_year_pushdown_sql.py` |
+| HTTP, final run ([`final-9afd1b4/`](evidence/phase5/equivalence/final-9afd1b4/README.md), committed in 928f50e) | 544 specifications, 84 GETs | **PASS: 544/544 and 84/84**, 0 mismatches, 0 server errors. a–b: 621 equivalent and 7 intended differences, all on GETs (`lexicon_wording` 5, `control_characters_rejected` 1, `health_reports_build` 1). b–c: 628 equivalent. Largest scaled SE/CI difference 4.24e-15 (a–b) and 2.79e-15 (b–c), against the 1e-12 bound. The summary records the code as 283f819: the run started from a working tree that already held the fix, which was committed as 9afd1b4 right after launch with no further edits |
+| Deploy rehearsal ([deployment.md step 7](deployment.md#7-first-approved-deploy-ci)) | `deploy_smoke.py --require-snapshot --recompute 2` against `wrangler dev` and the restored release | both starters equivalent between the snapshot and the live answer |
+| Replay rehearsal ([deployment.md step 9](deployment.md#9-quota-budgeted-post-deploy-replay)) | `replay_deployed.py`: full database (recording) vs the restored release as `atus_api` | 24/24 benchmarks; all 27 compared responses equivalent; largest scaled difference 1.59e-15 |
 
 ## Runbooks
 
-To be completed in Phase 5 implementation.
+### Conventions
+
+- **Placeholders.** `SITE=https://atus.<account-subdomain>.workers.dev` is the public URL, the repository variable `PUBLIC_BASE_URL`. `ORIGIN=https://<service>.onrender.com` is the API host; it is never published.
+- **Secrets** live only in the provider stores and in your files `~/.config/atus/edge.env` and `~/.config/atus/neon*.env` (mode 600; [configuration reference](deployment.md#owner-files-configatus-chmod-600)). Load a value into the environment without printing it, for example:
+
+  ```bash
+  export EDGE_OPS_TOKEN="$(grep '^OPS_TOKEN=' ~/.config/atus/edge.env | cut -d= -f2-)"
+  ```
+
+  Never put a secret on a command line, in chat or in an issue. Values in `neon*.env` that contain `?` or `&` are stored single-quoted; copy them without the quotes.
+- **Quota.** Every request to `$SITE/api/...` is one Worker request (100,000 a day, account-wide). `/api/health` can wake Render, never Neon. Steps marked **(wakes Neon)** spend Neon compute.
+- **Status.** None of these runbooks has run against a provider. Local rehearsals are cited where they exist.
+
+### Deploy
+
+The procedure is [deployment.md step 7](deployment.md#7-first-approved-deploy-ci). For the very first deploy, follow "Bootstrap" there.
+
+1. **Check before you start:** CI is green on the commit, and the release manifest names a published release (`deploy.yml` refuses otherwise):
+
+   ```bash
+   python scripts/ops/release_manifest.py check --require-published
+   ```
+
+2. **Start the workflow.** Either push a tag or run it by hand from `main`. The tag must be `vMAJOR.MINOR.PATCH`. It is not compared with `atus_pipeline.__version__`; keep them in step by hand.
+
+   ```bash
+   git tag -a v0.2.0 -m "<summary>" && git push origin v0.2.0
+   # or
+   gh workflow run deploy.yml --ref main -f reason="<why>"
+   gh run watch
+   ```
+
+3. The `preflight`, `build`, `push` and `snapshot` jobs run unattended.
+4. **Approve the `deploy` job** (Actions → the run → Review deployments → `production`). It then:
+   - records the rollback targets;
+   - calls the Render deploy hook with the image digest and waits until `/health` reports this commit;
+   - runs `wrangler deploy` with the release vars;
+   - runs `deploy_smoke.py` (at most 30 requests) and one browser journey;
+   - writes the rollback notes into the run summary.
+5. **Check:** the run summary, Render → Events (the deploy is live), Cloudflare → Workers → `atus` → Deployments, and the edge monitor:
+
+   ```bash
+   python scripts/ops/monitors.py edge --base-url "$SITE"
+   ```
+
+6. **If a smoke check fails, the new version is already live:** the Worker deploy comes before the smoke. Go to [Rollback](#rollback), using the summary's table.
+
+"Re-run all jobs" builds and pushes a new digest of the same commit. `/health` cannot show that change, so the wait step warns instead of waiting; confirm the deploy in Render → Events.
+
+### Rollback
+
+The summary of every Deploy run has a "Rollback" table: the build, image digest and Worker versions that ran before it. The commands are also in [deployment.md "Rollback"](deployment.md#rollback).
+
+- **API image.** Read the hook URL into the shell without echoing it (`read -rs RENDER_DEPLOY_HOOK_URL && export RENDER_DEPLOY_HOOK_URL`, then paste from your password manager). Then:
+
+  ```bash
+  python scripts/ops/render_deploy.py trigger --image-ref ghcr.io/nathan98000/atus-api@sha256:<previous digest>
+  RENDER_ORIGIN="$ORIGIN" python scripts/ops/render_deploy.py wait --expect-build <previous commit sha>
+  ```
+
+  GHCR keeps the newest 20 digests (`ghcr-cleanup.yml`). Render's dashboard can also roll back to an earlier deploy.
+- **Edge** (SPA, snapshot, Worker and its vars; needs `npx wrangler login` or `CLOUDFLARE_API_TOKEN`):
+
+  ```bash
+  cd edge
+  npx wrangler deployments list                      # find the previous version id
+  npx wrangler rollback <version id> --message "rollback"
+  cd .. && python scripts/ops/monitors.py edge --base-url "$SITE"
+  ```
+
+- **Keep the API and edge on the same data version.** If the two deploys carry different `DATA_VERSION`s, roll back the data binding as well (next item). Otherwise the edge cache stores nothing and the SPA shows its reload notice.
+- **Data: the release switch in reverse** (ADR-013 "Rollback").
+  1. In Render → Environment, set `ATUS_DATABASE_URL` back to the previous project's `atus_api` DSN and `ATUS_EXPECTED_DATA_VERSION` to that release's `data_version`, together, then "Save and deploy".
+  2. Make `releases/current.json` on `main` name the previous release again (`git checkout <commit of the previous release> -- releases/current.json`). If the governor reads Neon usage, set `NEON_PROJECT_ID` in `edge/wrangler.jsonc` back too. Commit and push.
+  3. `gh workflow run deploy.yml --ref main -f reason="data rollback to <tag>"`, then approve. The Worker's `DATA_VERSION` and the snapshot follow.
+  4. Put the previous project's `NEON_API_KEY` back with `npx wrangler secret put NEON_API_KEY`, if one is used.
+  5. Check that `curl -s "$SITE/api/_edge/health"` shows the previous `data_version`.
+
+  Keep the newer project; it is deleted only with the owner's approval.
+- **API host:** see [Render suspends the service](#render-suspends-the-service).
+
+### Serving-DB build and restore
+
+Background: ADR-013 Decisions 6–8 and [deployment.md steps 1, 2 and 5](deployment.md#1-build-the-serving-db-and-its-release-artifact). The full database is only read.
+
+**Build** (your machine):
+
+1. **Start a new, empty PostgreSQL 16 database.** For example, the stack's `db` service under its own compose project. It creates database `atus` owned by the non-superuser `neondb_owner`, on `127.0.0.1:5470` (or `ATUS_STACK_DB_PORT`):
+
+   ```bash
+   cp deploy/stack/stack.env.example .env.stack     # fresh random values; .env.* is gitignored
+   docker compose -p atus-build --env-file .env.stack -f docker-compose.prod.yml up -d --wait db
+   ```
+
+2. **Build and dump.** Export `ATUS_SERVING_DATABASE_URL` (the `neondb_owner` DSN of that database). `ATUS_DATABASE_URL` is the full database. Then:
+
+   ```bash
+   atus build-serving-db --artifact-dir ~/atus-artifacts/<release>-<UTC date> --report build-report.json
+   atus compare-serving-db --specs 200 --report compare-report.json
+   ATUS_DATABASE_URL="$ATUS_SERVING_DATABASE_URL" atus verify-serving-db \
+       --manifest ~/atus-artifacts/<dir>/atus-serving-<release>-<build_id>.manifest.json --explain
+   ```
+
+   The build refuses a source that has no passing `validate-db` and `validate-analytics` results recorded for its loaded data. It writes the dump, `.sha256` and manifest right after the build. Run `atus validate-analytics` only on restored copies: it writes to `validation_results`.
+3. **Check the size.** Compare the manifest's sizes with the provider limit. The restore enforces `--size-limit-bytes`, default 1,000,000,000.
+
+**Restore into Neon** (owner; [deployment.md step 5](deployment.md#5-load-the-serving-db-into-neon-owner)). Use one new project per release, over the direct endpoint, never `-pooler`. Keep one secrets file per project, so that a rollback still has the previous project's DSN.
+
+```bash
+# ~/.config/atus/neon-<release>-<build8>.env (mode 600) holds
+#   ATUS_OWNER_DATABASE_URL='postgresql://neondb_owner:...@ep-....neon.tech:5432/atus?sslmode=verify-full&sslrootcert=system'
+scripts/ops/restore_serving_db.sh --artifact ~/atus-artifacts/<dir>/atus-serving-<release>-<build_id>.dump \
+    --secrets-file ~/.config/atus/neon-<release>-<build8>.env --report restore-report.json
+```
+
+This step **(wakes Neon)**. Do not pass `--verify-content-hash` on Neon: it re-reads every row, which costs about the data's size in egress. The script writes `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` into the secrets file. The report has the checks, the metered size and each step's duration (`seconds`).
+
+**Restore after a lost project.** The release artifact is the backup.
+
+1. Create a new Neon project ([owner steps 3.2–3.4](deployment.md#3-neon-free)).
+2. Fetch and verify the published assets:
+
+   ```bash
+   python scripts/ops/release_manifest.py fetch --out ~/atus-artifacts/restore
+   ```
+
+3. Restore as above.
+4. Set only `ATUS_DATABASE_URL` on Render ("Save and deploy"). The same artifact carries the same `data_version`, so `ATUS_EXPECTED_DATA_VERSION`, the Worker vars and the snapshot do not change.
+5. Update `NEON_PROJECT_ID` and `NEON_API_KEY` if the governor uses them.
+
+**Re-apply roles** on a restored serving database (for example after a role change in `scripts/ops/roles.sql`):
+
+```bash
+scripts/ops/restore_serving_db.sh --artifact <the release dump> --secrets-file <that project's file> --roles-only
+```
+
+It refuses a database without the serving marker.
+
+### Data release
+
+The normative procedure is ADR-013 "Release procedure on the free stack (§15)". Command by command:
+
+1. **Full database.**
+
+   ```bash
+   atus download && atus extract && atus validate-source && atus migrate \
+     && atus load --validate && atus validate-db && atus validate-analytics
+   ```
+
+   Then record the expected answers from a local API on the full database:
+
+   ```bash
+   atus api &
+   python scripts/replay_deployed.py --base-url http://127.0.0.1:8000 --record ~/atus-artifacts/expected-<release>.json
+   ```
+
+2. **Build and prove:** [Serving-DB build and restore](#serving-db-build-and-restore), then the [Restore drill](#restore-drill), which includes the HTTP equivalence harness.
+3. **Publish (owner).** Create an immutable GitHub release with the dump, its `.sha256` and the manifest. Then name it in the repository:
+
+   ```bash
+   gh release create data-<release>-<build_id> <dump> <dump>.sha256 <manifest> \
+       --title "Serving database <release> (<build_id>)" --notes "<data_version>"
+   python scripts/ops/release_manifest.py write --artifact-dir <artifact dir> --tag data-<release>-<build_id>
+   python scripts/ops/release_manifest.py check --require-published
+   ```
+
+   Commit `releases/current.json` (and `NEON_PROJECT_ID` in `edge/wrangler.jsonc` if used). Data release tags do not match `v*`, so they deploy nothing.
+4. **New Neon project and restore (owner):** [Serving-DB build and restore](#serving-db-build-and-restore). Never restore a second copy into the current project: two copies exceed its 1 GB.
+5. **Smoke a local API against the new project (wakes Neon).** Start `atus api` (development mode, loopback) with `ATUS_DATABASE_URL` set to that project's `ATUS_API_DATABASE_URL`, then:
+
+   ```bash
+   python scripts/replay_deployed.py --base-url http://127.0.0.1:8000 \
+       --expected ~/atus-artifacts/expected-<release>.json --report replay-local.json
+   ```
+
+6. **Switch.**
+   1. Push the commit from step 3 and run `gh workflow run deploy.yml --ref main -f reason="data release <tag>"`.
+   2. While `deploy` waits for approval (its snapshot is already built), set Render's `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` (the manifest's `data_version`) together, "Save and deploy", and wait until Render → Events shows it live. Until the next step the API answers with the new version, the Worker stores nothing in KV, and open tabs see the reload notice.
+   3. If used, load the new project's `NEON_API_KEY` with `npx wrangler secret put NEON_API_KEY`.
+   4. Approve `deploy`. Its smoke checks `X-Data-Version`.
+7. **Verify (at most 40 requests; wakes Neon):**
+
+   ```bash
+   python scripts/replay_deployed.py --base-url "$SITE" --expected ~/atus-artifacts/expected-<release>.json --report replay.json
+   ```
+
+8. **Keep the previous project** until the owner approves its deletion. Rollback is in [Rollback](#rollback), "Data".
+
+### New ATUS year
+
+A new multi-year file (for example 2003–2026, release `0326`) is a data release with extra steps first. They are in ADR-013 "New ATUS year procedure" and [docs/source-data.md "Adding the next release"](source-data.md#adding-the-next-release-eg-20032026-0326):
+
+1. Read BLS's release notes and "Changes between data files".
+2. Add `multiyear_release("0326", first_year=2003, last_year=2026, expected_rows={...})` to `_REGISTRY` in `src/atus_pipeline/sources.py`. The counts come from each new `*_info.txt`.
+3. Generate the lexicon and review the diff against `activity_lexicon_0325.csv`. Add its counts to `tests/unit/test_lexicon_reference.py`. Review the presets in `src/atus_pipeline/analytics/spec.py` and the benchmark codes for retired or renamed codes.
+
+   ```bash
+   python scripts/extract_lexicon.py <lexiconnoex0326.pdf> data/reference/activity_lexicon_0326.csv
+   ```
+
+4. Run the pipeline with `ATUS_RELEASE=0326`.
+5. **Benchmarks.** Run the 24 existing benchmarks unchanged. If BLS revised a published value, record the revision; never edit an expectation to make it pass. Add the new year's published Table A-1 values as new benchmarks in `src/atus_pipeline/analytics/benchmarks.py`.
+6. Continue with the [Data release](#data-release) runbook. Re-check the serving database's size against the provider limit: release 0325 uses 65% of 10^9 B after a restore (ADR-013).
+7. **Frontend.** Years, the default year and the year pickers come from `/meta`; in production that is the static snapshot, which `scripts/build_snapshot.py` builds from the release's `/meta`. No frontend change is expected. **Gap:** the only test that checks this is `frontend/src/pages/ExplorePage.test.tsx`, which reads the latest year from the 2025 fixture; no test feeds a 2026 `/meta`. After the deploy, check that the year pickers list the new year.
+
+### Restore drill
+
+Restore every release artifact once, as production will, into a fresh cluster with Neon's Postgres major and a non-superuser owner not named `atus`. Do this before publishing. ADR-013 Decision 8 records the 2026-10-20 drill (illustrative timings on a shared laptop). The drill's timing for the definition of done belongs to a quiet machine.
+
+1. **A fresh cluster.** The stack's `db` service: `postgres:16`, `jit=off`, owner `neondb_owner`. Set `ATUS_STACK_DB_PORT` if another stack already uses port 5470.
+
+   ```bash
+   docker compose -p atus-drill --env-file .env.stack -f docker-compose.prod.yml up -d --wait db
+   ```
+
+2. **A drill secrets file.** In an editor, create `~/.config/atus/drill.env` (mode 600) with `ATUS_OWNER_DATABASE_URL='postgresql://neondb_owner:<ATUS_STACK_OWNER_PASSWORD>@127.0.0.1:<port>/atus'`.
+3. **Restore and check.** The report holds each step's duration and the total.
+
+   ```bash
+   scripts/ops/restore_serving_db.sh --artifact <dump> --secrets-file ~/.config/atus/drill.env \
+       --verify-content-hash --report drill-report.json
+   ```
+
+4. **Prove it.** Run `atus validate-analytics` and the benchmark tests with `ATUS_DATABASE_URL` set to the drill's owner DSN:
+
+   ```bash
+   atus validate-analytics
+   ATUS_DATA_QUALITY=1 pytest tests/data_quality/test_analytics_benchmarks.py tests/data_quality/test_api_benchmarks.py
+   ```
+
+   Then, with `ATUS_DATABASE_URL` set back to the full database and `ATUS_SERVING_DATABASE_URL` set to the drill's `ATUS_API_DATABASE_URL`:
+
+   ```bash
+   atus compare-serving-db --specs 150 --report compare-drill.json
+   scripts/equivalence/run.sh setup        # once: the 387fc2d baseline
+   scripts/equivalence/run.sh --specs docs/evidence/phase5/equivalence/specs --out <dir> \
+       --serving-secrets-file ~/.config/atus/drill.env --jobs 1
+   ```
+
+   Never run `atus validate-db` or `tests/data_quality/test_full_database.py` on the drill: they check the full database and fail by design.
+5. **Optionally smoke the image on the drill's data:** the stack's `dump` profile and smoke probe ([deployment.md step 2](deployment.md#2-restore-drill)).
+6. **Tear down:**
+
+   ```bash
+   docker compose -p atus-drill --env-file .env.stack -f docker-compose.prod.yml down -v
+   ```
+
+   Then delete `drill.env`.
+
+### Incident first steps
+
+1. **Find which tier fails.** These use at most 10 Worker requests (the deep check retries through a cold start) and none reach Neon:
+
+   ```bash
+   curl -sS -o /dev/null -w '%{http_code}\n' "$SITE/"          # static floor: never invokes the Worker
+   curl -sS "$SITE/api/_edge/health"                            # Worker alive; DATA_VERSION, SNAPSHOT_ID
+   python scripts/ops/monitors.py deep --base-url "$SITE"       # /api/health -> Render /health (may wake Render)
+   python scripts/ops/monitors.py quota --base-url "$SITE"      # governor budgets; needs EDGE_OPS_TOKEN
+   ```
+
+2. **Read the error code** of a failing request (browser network panel: `error.code`, `details.reason`, `details.budget`) and look it up below.
+3. **Look at the providers:**
+   - Render → the service → Events (deploys, restarts, "Image Pull Failed", suspension notices) and Logs. The logs are one JSON access line per request (`status`, `error`, `db_ms`, `request_id`, `edge_authenticated`) plus a metrics event every 5 minutes while requests arrive; Render keeps them for 7 days.
+   - Cloudflare → Workers → `atus` → Logs (one line per `/api` request with outcome, origin status and `Server-Timing`) and Deployments.
+   - Neon → the release project: compute state, Monitoring, usage (compute hours, network transfer, storage), any quota notice.
+   - GitHub → Actions: the latest monitor runs, and the latest Deploy run's summary.
+   - Email notices from Render, Neon, Cloudflare and GitHub.
+4. **Ask the origin directly, if needed.** This bypasses the Worker and costs Render outbound. Export `ATUS_OPS_TOKEN` from `edge.env` first.
+
+   ```bash
+   curl -sS "$ORIGIN/health"                                               # build; touches nothing
+   curl -sS -H "Authorization: Bearer $ATUS_OPS_TOKEN" "$ORIGIN/metrics"   # counters since the process started
+   curl -sS -H "Authorization: Bearer $ATUS_OPS_TOKEN" "$ORIGIN/ready"     # data_version vs expected (can wake Neon)
+   ```
+
+5. **Contain:**
+   - roll back if the incident started with a deploy;
+   - rotate any secret that may have leaked;
+   - for quota problems, follow [A quota is exhausted](#a-quota-is-exhausted).
+
+   Do not redeploy blind.
+6. **Write down** the times (UTC), the codes and what you changed. If a limit changes, update ADR-012 or ADR-015 and `docs/deployment.md`.
+
+| Symptom | Likely cause | Next step |
+|---|---|---|
+| `$SITE/` fails | Cloudflare, or a broken Worker deploy | Cloudflare status; Deployments; edge [rollback](#rollback) |
+| `/api/*` gives a non-JSON 429 or error 1027; SPA says "daily request allowance reached" | Worker 100,000 requests/day used | [quota runbook](#a-quota-is-exhausted) |
+| 503 `service_waking` | Render spinning up | normal; it lasts about a minute |
+| 502 `upstream_unavailable`, `reason` `not_configured` | Worker secret `RENDER_ORIGIN` missing or invalid | `wrangler secret put RENDER_ORIGIN` from `edge.env` |
+| `upstream_unavailable`, `reason` `connect_failed`, `circuit_open` or `platform_error` | Render down, suspended, or image pull failed | Render → Events; [Render suspends the service](#render-suspends-the-service) |
+| `upstream_unavailable`, `reason` `origin_timeout` | a 524: the origin held the request past the proxy timeout | Render logs for `analysis_timeout` and `db_ms` |
+| 403 `forbidden_origin` through the site | the Worker's `EDGE_AUTH_SECRET` is not in the API's `ATUS_EDGE_SECRETS` (a rotation step skipped) | [rotation](#rotating-tokens-and-secrets), edge secret |
+| 503 `capacity_unavailable` | governor error, Durable Object quota, or `IP_HMAC_KEY` missing (`ip_hmac_key_not_configured` in Workers Logs) | Workers Logs; [quota runbook](#a-quota-is-exhausted) |
+| 503 `daily_capacity_reached`; 429 `rate_limited` with `budget: "prefix"` | the governor's daily caps (by design) | quota report; [deployment.md "Scraping-burst scenarios"](deployment.md#scraping-burst-scenarios) |
+| 503 `capacity_paused` | the governor's monthly Neon pacing | [quota runbook](#a-quota-is-exhausted) |
+| 503 `database_paused` | Neon compute or egress quota exhausted | [quota runbook](#a-quota-is-exhausted) |
+| 503 `database_unavailable` | Neon unreachable, wrong credentials or TLS failure | Neon console; Render logs (driver class, SQLSTATE); Render's `ATUS_DATABASE_URL` |
+| 503 `data_version_mismatch` | Render's `ATUS_EXPECTED_DATA_VERSION` differs from the database's | finish or reverse the release switch ([Rollback](#rollback), "Data") |
+| 503 `data_not_loaded` or `schema_not_initialized` | `ATUS_DATABASE_URL` points at the wrong or an empty database | the DSN vs the restored project |
+| 503 `overloaded` or `analysis_timeout` | load, or a slow plan | Render logs `db_ms`; `/metrics`; loadtests/results (§13) |
+| no monitor emails, no recent monitor runs | scheduled workflows disabled | [Scheduled workflows were disabled](#scheduled-workflows-were-disabled) |
+
+### Rotating tokens and secrets
+
+The procedures are in [deployment.md "Rotation"](deployment.md#rotation). `tests/deploy/test_packaging_files.py::test_every_secret_has_a_rotation_entry` keeps that list complete. Commands and checks:
+
+| Secret | Commands | Check afterwards | Visitors |
+|---|---|---|---|
+| Edge secret (`EDGE_AUTH_SECRET` / `ATUS_EDGE_SECRETS`) | `scripts/ops/gen_edge_secrets.sh --rotate EDGE_AUTH_SECRET` (keeps the old value as `EDGE_AUTH_SECRET_PREVIOUS`) → Render `ATUS_EDGE_SECRETS=<new>,<old>`, Save and deploy, wait for live → in `edge/`: `grep '^EDGE_AUTH_SECRET=' ~/.config/atus/edge.env \| cut -d= -f2- \| npx wrangler secret put EDGE_AUTH_SECRET` → Render `ATUS_EDGE_SECRETS=<new>`, Save and deploy | `monitors.py deep`; one analysis on the site; `curl -s -o /dev/null -w '%{http_code}' "$ORIGIN/api/v1/meta"` still prints 403 | none, if the order is kept |
+| Worker `OPS_TOKEN` (GitHub `EDGE_OPS_TOKEN`) | `gen_edge_secrets.sh --rotate OPS_TOKEN` → `grep '^OPS_TOKEN=' ~/.config/atus/edge.env \| cut -d= -f2- \| npx wrangler secret put OPS_TOKEN` → `grep '^OPS_TOKEN=' ~/.config/atus/edge.env \| cut -d= -f2- \| gh secret set EDGE_OPS_TOKEN --env ops` (and `--env production` if set there) | `gh workflow run quota-report.yml` | none |
+| API `ATUS_OPS_TOKEN` | `gen_edge_secrets.sh --rotate ATUS_OPS_TOKEN` → Render env, Save and deploy | `/metrics` with the new bearer | none |
+| `atus_api` password | `scripts/ops/restore_serving_db.sh --artifact <release dump> --secrets-file <project file> --roles-only --rotate-api-password` → copy the new `ATUS_API_DATABASE_URL` to Render's `ATUS_DATABASE_URL`, Save and deploy | `monitors.py deep`, then one uncached analysis (wakes Neon) | new connections fail between the two steps (503 `database_unavailable`); do it while idle |
+| Cloudflare API token (90-day TTL) | a new Custom token with the same scope ([owner step 1.5](deployment.md#1-cloudflare-workers-free)) → `gh secret set CLOUDFLARE_API_TOKEN --env production` (paste at the prompt) → delete the old token. If it leaked, also bump `EPOCH` in `edge/wrangler.jsonc` and deploy: the token could write KV (ADR-015) | the next Deploy run | none |
+| Render deploy hook | Render → Settings → Deploy Hook → Regenerate (the old URL stops at once) → `gh secret set RENDER_DEPLOY_HOOK_URL --env production` | the next Deploy run | none |
+| `IP_HMAC_KEY` | `gen_edge_secrets.sh --rotate IP_HMAC_KEY` → `wrangler secret put IP_HMAC_KEY` piped as above | `monitors.py quota` | per-network counters restart |
+| Neon owner password, `NEON_API_KEY` | reset in the Neon console and update the project's `neon*.env`; revoke and re-create the key, then `npx wrangler secret put NEON_API_KEY` | `monitors.py quota` (last poll error) | none |
+
+After a suspected leak, rotate first. Then look for use in Render logs, Workers Logs and Neon ([deployment.md "Rotation"](deployment.md#rotation)). What each leaked secret allows is in [security.md, "Leaked tokens"](security.md#10-leaked-tokens).
+
+### A quota is exhausted
+
+Every exhaustion degrades toward the static floor: the SPA, the snapshot (starters, presets, metadata, about 130 prewarmed analyses) and KV-cached results. With no card on file, no provider bills. **Never add a card, start a trial or upgrade.** The limits and what visitors see are in [deployment.md "Free-tier budget"](deployment.md#free-tier-budget) and ["Failure modes and degradation"](deployment.md#failure-modes-and-degradation).
+
+| Quota | Signal | Action |
+|---|---|---|
+| Worker requests, 100,000/day, account-wide | `/api` answers a non-JSON 429 or error 1027; the SPA's daily-allowance page | Wait for 00:00 UTC. Find the source in Workers Logs (deployment.md scenarios S1–S3). Nothing at $0 can rate-limit before the Worker runs (ADR-011 accepted risk 4) |
+| KV reads or writes | none visible; more misses | wait for 00:00 UTC |
+| Durable Object requests or rows written | 503 `capacity_unavailable` for new analyses | wait for 00:00 UTC; `/api/_ops/budget` may fail too |
+| Governor daily caps | 503 `daily_capacity_reached` (`budget` `global`, `heavy`, `cu_day`); 429 `budget: "prefix"` | Working as designed; wait for 00:00 UTC. If real visitors often hit `cu_day` without a Neon key, add the project-scoped `NEON_API_KEY`: with fresh usage figures the daily ceiling is 10 CU-h instead of 2.903 (ADR-015) |
+| Governor monthly pacing | 503 `capacity_paused` (`budget` `egress` or `cu_month`) with `resumes_at` | Wait for `resumes_at`. If it happens every month, apply the calibration lever ([deployment.md step 10](deployment.md#10-week-1-calibration)): lower the compute's maximum CU and set `NEON_MAX_CU` in `edge/src/constants.ts` to match |
+| Neon compute (100 CU-h) or egress (5 GB) | 503 `database_paused`; the SPA's paused page | Wait for the next Neon consumption period (Neon console, or the Neon `period_end` in `/api/_ops/budget` when `NEON_API_KEY` is set). Then find out why the governor did not stop first |
+| Neon storage (1 GB per project) | owner writes fail (`validate-analytics`); the API is unaffected | Never keep two copies in one project; a release goes into a new project |
+| Render outbound (5 GB/month) | services paused until the 1st; the Worker answers `upstream_unavailable`; the SPA says "paused until the 1st" | Wait. Find the cause in Render logs (direct hits show `edge_authenticated: false` and 403). Never pay; never recreate the service |
+| Render pipeline minutes | deploys wait; the running service keeps serving | Wait for the next month. Image deploys build nothing; whether pulls count is undocumented |
+| Render instance hours | cannot run out with one service | never add a second Free web service |
+| Workers Logs | edge logs stop until 00:00 UTC | none needed |
+
+**Levers that need no code change** (Render env, "Save and deploy"): `ATUS_API_DAILY_ANALYSIS_CAP` (minimum 1), `ATUS_API_RATE_ANALYSIS` and `ATUS_API_MAX_INFLIGHT`. They are per process and reset on every restart. The governor's limits are constants in `edge/src/constants.ts`; changing them is a code change and a deploy. There is no runtime switch that stops new analyses at the edge.
+
+### Render suspends the service
+
+This means Render's discretionary suspension for "uncommonly high" traffic that the service initiates (ADR-011 accepted risk 1). It is not the monthly bandwidth pause, which ends on the 1st.
+
+1. **Confirm** in Render → the service, and in Render's email. The deep monitor fails, and analyses answer `upstream_unavailable`.
+2. **Do not:**
+   - pay, add a card or upgrade;
+   - recreate the service, or create another one in this or a new workspace. Render's AUP forbids attempts to "bypass, circumvent, or defeat" its restrictions (ADR-011 "Must-not-do list").
+
+   Delete nothing without the owner's approval.
+3. **What keeps working:** the static SPA, the snapshot and KV-cached results. Neon and the release are unaffected.
+4. **Owner decision: fail over to the ADR-011 fallback** (Vercel Hobby; [ADR-011 "Fallback"](adr/ADR-011-hosting.md#fallback-the-runner-up-p3s-api-host-vercel-hobby)). **The fallback is not implemented** ([ADR-011 amendment](adr/ADR-011-hosting.md#fallback-p3-vercel-hobby-a-documented-procedure-not-ready)). The repository has none of its preconditions: no Vercel entry module, no `vercel.json`, no `deploy-vercel` job, no Vercel budgets or in-flight gating in the governor, no origin mode with the protection-bypass header. The Worker reads its origin only from the secret `RENDER_ORIGIN` (`edge/src/upstream.ts`), not `API_ORIGIN` or `GATE_INFLIGHT`. `wrangler secret put RENDER_ORIGIN` can point it at another HTTPS origin, but for Vercel that alone is not enough. Failing over is therefore implementation work first, then ADR-011's switch procedure, which includes the owner accepting Vercel's terms and stopping at any card prompt.
+5. Until then, the site serves only the static floor and cached results.
+
+### A provider changes its free tier
+
+1. **Notice periods.** Neon's terms treat continued use as consent and allow termination on 30 days' notice. GHCR promises at least a month's notice. Render may suspend "for any reason". Workers Logs changes on 2026-12-01 (already in the budget). Decide before a change takes effect.
+2. **Compare the terms.** Re-read the cited pages ([ADR-011 "Cited free-tier terms"](adr/ADR-011-hosting.md#cited-free-tier-terms-all-accessed-2026-10-20); each has a URL and an access date) and write down what changed.
+3. **Recompute the budget:** the [deployment.md budget tables](deployment.md#free-tier-budget) (limit, projected use, headroom, on exhaustion) and the Neon CU-hour scenarios. Then the values that encode a limit:
+   - the governor constants in `edge/src/constants.ts` (`NEON_MONTHLY_CU_HOURS`, `DAILY_CU_HOURS_*`, `PACING_*`, `EGRESS_STOP_BYTES`, `GLOBAL_DAILY_ANALYSES`, `HEAVY_DAILY_ANALYSES`, `PREFIX_DAILY_*`, `NEON_MAX_CU`);
+   - the API defaults (ADR-012);
+   - the restore's `--size-limit-bytes`;
+   - the quota report's 70% threshold (`scripts/ops/monitors.py`);
+   - the Workers static-asset limits checked in `deploy.yml`.
+4. **If $0 without a card still holds:** change the constants, the budget table and ADR-011's citation (new date), then deploy.
+5. **If it no longer holds** (a card required, a quota too small, a limit that would bill): stop and report to the owner. The options are in ADR-011 "Rejected alternatives" and "Fallback". A new hosting choice is a new ADR that supersedes ADR-011.
+
+### Scheduled workflows were disabled
+
+GitHub disables scheduled workflows after 60 days without repository activity, and it can delay or drop scheduled runs. `schedules-check.yml` (monthly) fails when a schedule is not active, when a monitor's last scheduled run is far older than its cadence, or when nothing has been pushed for 28 days. When it fails, or monitor runs stop:
+
+```bash
+gh workflow list --all                      # which workflows are disabled
+gh workflow enable edge-check.yml           # repeat for each disabled one: deep-check.yml,
+                                            # quota-report.yml, ghcr-cleanup.yml, schedules-check.yml
+gh workflow run schedules-check.yml         # confirm, or locally:
+GH_TOKEN="$(gh auth token)" python scripts/ops/github_ops.py schedules --repo Nathan98000/ATUS
+```
+
+If the cause was inactivity, push a commit. Failure emails for a scheduled workflow go to the user who last changed its `cron` line ([owner step 4.4](deployment.md#4-github-repository-nathan98000atus-stays-public)).
