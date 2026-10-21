@@ -805,7 +805,7 @@ The procedure is [deployment.md step 7](deployment.md#7-first-approved-deploy-ci
    python scripts/ops/monitors.py edge --base-url "$SITE"
    ```
 
-6. **If a smoke check fails, the new version is already live:** the Worker deploy comes before the smoke. Go to [Rollback](#rollback), using the summary's table.
+6. **If a smoke check fails, the new version is already live:** the Worker deploy comes before the smoke. Go to [Rollback](#rollback), using the summary's table. The smoke first waits up to a minute for the new release to reach the colo it talks to (check `propagation`), so a `snapshot` or `edge_health` failure after that wait is not propagation lag. If `propagation` shows WARN and only those two checks failed, run `python scripts/ops/monitors.py edge --base-url "$SITE"` once before rolling back: when it passes, the release arrived late and nothing needs rolling back.
 
 "Re-run all jobs" builds and pushes a new digest of the same commit. `/health` cannot show that change, so the wait step warns instead of waiting; confirm the deploy in Render → Events.
 
