@@ -366,9 +366,10 @@ stateless. The URL encodes exactly that:
   friendly error page) → POST → render. Refresh reproduces the analysis.
   Every field the page shows must have the JSON type the page reads it as,
   population values included (`has_household_children` a boolean, ages and
-  `region` numbers, the rest strings): the API reads `"no"`, `"false"` or
-  `"0"` as `false`, which the page would have labelled "with household
-  children" (review round 4).
+  `region` finite numbers, the diary dates `YYYY-MM-DD`, the rest strings):
+  the API reads `"no"`, `"false"` or `"0"` as `false`, which the page would
+  have labelled "with household children", a string of digits as a Unix
+  time, and a `1e400` the page shows arrives as `null` (review round 4).
 - **Canonicalization:** after a successful estimate/trend run, the page
   rewrites the URL (history *replace*) using the API's canonical `spec` from
   the response, and seeds the query cache under the canonical key so the

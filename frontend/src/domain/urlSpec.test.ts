@@ -235,11 +235,45 @@ describe('wrongly typed fields (review round 2)', () => {
       'estimate',
       { ...base, population: { diary_date_min: 20190101 } },
     ],
+    // The API reads a string of digits as a Unix time: 2020-01-01 here.
+    [
+      'diary_date_max a Unix time',
+      'compare',
+      { ...compareBase, population: { diary_date_max: '1577836800' } },
+    ],
+    [
+      'diary_date_min not YYYY-MM-DD',
+      'estimate',
+      { ...base, population: { diary_date_min: '2019-01-01T00:00:00Z' } },
+    ],
   ] as const)('rejects a population with %s (review round 4)', (_label, operation, spec) => {
     expect(() => decodeSpec(link(spec), operation as Operation)).toThrow(
       /(population|group_[ab]) has the wrong type/,
     )
   })
+
+  // JSON.parse reads 1e400 as Infinity: the page described "age Infinity+"
+  // while the POSTed JSON sent null, so the API filtered nothing.
+  it.each([
+    ['population', 'estimate', '"population":{"age_min":1e400}'],
+    [
+      'population',
+      'compare',
+      '"population":{"region":-1e400},"group_a":{"sex":"male"},"group_b":{}',
+    ],
+    ['group_a', 'compare', '"group_a":{"age_max":1e400},"group_b":{"sex":"female"}'],
+  ] as const)(
+    'rejects a non-finite number in %s (review round 4)',
+    (field, operation, rest) => {
+      const json = `{"activity":{"preset":"sleep"},"years":[2023],${rest}}`
+      expect(Object.values(JSON.parse(json)[field])).toContain(
+        rest.includes('-1e400') ? -Infinity : Infinity,
+      )
+      expect(() => decodeSpec(btoa(json), operation)).toThrow(
+        new RegExp(`its ${field} has the wrong type`),
+      )
+    },
+  )
 
   it('accepts each population dimension with its own type, and null', () => {
     const population = {
@@ -268,6 +302,10 @@ describe('wrongly typed fields (review round 2)', () => {
     // A dimension the page does not know is left for the API to refuse (422).
     expect(() =>
       decodeSpec(link({ ...base, population: { shoe_size: '9' } }), 'estimate'),
+    ).not.toThrow()
+    // So is a year past 9999, which the builder's date input can produce.
+    expect(() =>
+      decodeSpec(link({ ...base, population: { diary_date_min: '20190-01-01' } }), 'estimate'),
     ).not.toThrow()
   })
 

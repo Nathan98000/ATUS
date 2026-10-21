@@ -93,8 +93,22 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 const isString = (value: unknown) => typeof value === 'string'
-const isNumber = (value: unknown) => typeof value === 'number'
+/**
+ * A finite number. A link's `1e400` parses as Infinity, which the page
+ * described ("age Infinity+") while the POSTed JSON sent `null`, so the API
+ * applied no filter at all (review round 4).
+ */
+const isNumber = (value: unknown) => typeof value === 'number' && Number.isFinite(value)
 const isBoolean = (value: unknown) => typeof value === 'boolean'
+/**
+ * A date as the API writes it and the builder's date input produces it:
+ * YYYY-MM-DD (the input allows years past 9999, which the API refuses with
+ * its own message). The API also reads a string of digits as a Unix time
+ * ("1577836800" is 2020-01-01), which the page would have shown as
+ * "from 1577836800" (review round 4).
+ */
+const isIsoDate = (value: unknown) =>
+  typeof value === 'string' && /^\d{4,}-\d{2}-\d{2}$/.test(value)
 const isScalar = (value: unknown) => isString(value) || isNumber(value) || isBoolean(value)
 const isStringList = (value: unknown) => Array.isArray(value) && value.every(isString)
 
@@ -117,8 +131,8 @@ const POPULATION_TYPES = new Map<string, (value: unknown) => boolean>([
   ['state_fips', isString],
   ['education_level', isString],
   ['day_type', isString],
-  ['diary_date_min', isString],
-  ['diary_date_max', isString],
+  ['diary_date_min', isIsoDate],
+  ['diary_date_max', isIsoDate],
 ])
 
 /** A population filter: an object of scalar values (null when unset), each of its dimension's type. */
