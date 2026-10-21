@@ -115,6 +115,20 @@ def server_timing(db_ms: float, total_ms: float, *, touched_db: bool = True) -> 
     return f"db;dur={db:.1f}, app;dur={max(0.0, total_ms - db_ms):.1f}"
 
 
+TIMING_STATE_KEY = "request_timing"
+"""Request-state key of ``(RequestStats, start time)``: the catch-all 500 is
+rendered outside :class:`RequestContextMiddleware` and reports the request's
+``Server-Timing`` from it (``app.outermost_headers``)."""
+
+
+def request_server_timing(stats: observability.RequestStats, started: float) -> str:
+    """:func:`server_timing` for a request so far (``started``: perf_counter)."""
+    return server_timing(
+        stats.db_ms, (time.perf_counter() - started) * 1000,
+        touched_db=stats.transactions > 0 or stats.db_statements > 0,
+    )
+
+
 def security_headers(settings: Settings, path: str) -> dict[str, str]:
     headers = {
         "X-Content-Type-Options": "nosniff",
@@ -225,6 +239,7 @@ class RequestContextMiddleware:
             authenticated=authenticated,
             edge_auth_enabled=settings.edge_auth_enabled,
         )
+        stats, stats_token = observability.start_request()
         state = scope.setdefault("state", {})
         state.update(
             request_id=request_id,
@@ -232,6 +247,7 @@ class RequestContextMiddleware:
             client_ip=identity.ip,
             rate_limit_key=identity.rate_key,
         )
+        state[TIMING_STATE_KEY] = (stats, started)
 
         method = scope["method"]
         path = scope["path"]
@@ -240,7 +256,6 @@ class RequestContextMiddleware:
             scope = {**scope, "method": "GET"}
 
         watcher = _DisconnectWatcher(receive, request_id) if method in BODY_METHODS else None
-        stats, stats_token = observability.start_request()
         response: dict = {"status": None, "cache": None, "analysis_key": None}
 
         async def send_with_headers(message: Message) -> None:
@@ -253,10 +268,7 @@ class RequestContextMiddleware:
                 for name, value in security_headers(settings, path).items():
                     response_headers[name] = value
                 response_headers["X-Request-ID"] = request_id
-                response_headers["Server-Timing"] = server_timing(
-                    stats.db_ms, (time.perf_counter() - started) * 1000,
-                    touched_db=stats.transactions > 0 or stats.db_statements > 0,
-                )
+                response_headers["Server-Timing"] = request_server_timing(stats, started)
                 if status >= 400:
                     response_headers["Cache-Control"] = "no-store"  # never cache errors
                 response["cache"] = response_headers.get("x-cache")
@@ -270,7 +282,8 @@ class RequestContextMiddleware:
             await self.app(scope, watcher.receive if watcher else receive, send_with_headers)
         except Exception:
             # The catch-all handler logs the traceback (once, with the request
-            # id) and answers 500 outside this middleware.
+            # id) and answers 500 outside this middleware, with the
+            # Server-Timing of TIMING_STATE_KEY.
             unhandled = True
             raise
         finally:

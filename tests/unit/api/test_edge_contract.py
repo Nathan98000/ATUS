@@ -28,6 +28,7 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
+from atus_pipeline.api.dependencies import get_database
 from atus_pipeline.config import RateLimit
 from tests.unit.api.conftest import FakeDatabase, make_app, make_settings
 from tests.unit.api.test_contract import known_estimate_result
@@ -242,6 +243,29 @@ class TestServerTimingForTheGovernor:
         for name, response in no_work.items():
             assert response.headers["Server-Timing"].startswith("db;dur=0, "), name
             assert governor_db_ms(response.headers["Server-Timing"]) == 0, name
+
+    def test_an_unhandled_500_reports_the_database_time_it_spent(self, build, stub_engine):
+        """Review r2 (unhandled-500-no-server-timing): the catch-all 500 is
+        rendered outside the request-context middleware and carried no
+        Server-Timing, so the governor settled a 500 that followed real
+        database work from its admission time (dbMs null) instead."""
+        stub_engine.estimate_behavior = lambda spec: (_ for _ in ()).throw(RuntimeError("x"))
+        client, _ = build()
+        after_work = client.post(ESTIMATE, json=BODY, headers=EDGE)
+        assert assert_envelope(after_work, 500) == "internal_error"
+        assert re.fullmatch(r"db;dur=\d+\.\d, app;dur=\d+\.\d",
+                            after_work.headers["Server-Timing"])
+        assert governor_db_ms(after_work.headers["Server-Timing"]) > 0
+
+        def broken_database():
+            raise RuntimeError("fails before any database work")
+
+        client, app = build()
+        app.dependency_overrides[get_database] = broken_database
+        before_work = client.post(ESTIMATE, json=BODY, headers=EDGE)
+        assert assert_envelope(before_work, 500) == "internal_error"
+        assert before_work.headers["Server-Timing"].startswith("db;dur=0, ")
+        assert governor_db_ms(before_work.headers["Server-Timing"]) == 0
 
     def test_a_shed_analysis_reports_no_database_time(self, build):
         client, _ = build(api_rate_analysis=RateLimit(1, 3600.0))

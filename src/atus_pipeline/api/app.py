@@ -46,7 +46,13 @@ from .cache import InMemoryAnalysisCache
 from .database import Database
 from .errors import register_exception_handlers
 from .metrics import Metrics, emit_metrics_events
-from .middleware import GuardMiddleware, RequestContextMiddleware, security_headers
+from .middleware import (
+    TIMING_STATE_KEY,
+    GuardMiddleware,
+    RequestContextMiddleware,
+    request_server_timing,
+    security_headers,
+)
 from .observability import RouteTemplates
 from .protection import Protection
 from .routes import activities, analysis, health, meta, population
@@ -189,13 +195,18 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
     def outermost_headers(request: Request) -> dict[str, str]:
         """Headers for responses produced at the outermost error layer, which
         the request-context and CORS middleware never see (unexpected 500s):
-        the request ID, security headers, no-store and, for allowed origins,
-        CORS, so browser clients can still read the error."""
+        the request ID, security headers, no-store, ``Server-Timing`` (the
+        governor sizes a computing request's charge from its ``db`` time,
+        ADR-014) and, for allowed origins, CORS, so browser clients can still
+        read the error."""
         headers = security_headers(settings, request.url.path)
         headers["Cache-Control"] = "no-store"
         request_id = getattr(request.state, "request_id", None)
         if request_id:
             headers["X-Request-ID"] = request_id
+        timing = getattr(request.state, TIMING_STATE_KEY, None)
+        if timing is not None:
+            headers["Server-Timing"] = request_server_timing(*timing)
         origin = request.headers.get("origin")
         if origin and origin in settings.api_cors_origins:
             headers["Access-Control-Allow-Origin"] = origin
