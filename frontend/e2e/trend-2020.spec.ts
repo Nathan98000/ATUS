@@ -2,7 +2,7 @@
  * Correctness requirement (spec §85): a trend containing 2020 must render a
  * visible, explained gap — no connecting line, no interpolation, no zero.
  */
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 import { CORE } from './helpers'
 

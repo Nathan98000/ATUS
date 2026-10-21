@@ -5,8 +5,10 @@
 # edge/wrangler.jsonc expects them (../frontend/dist).
 #
 # Local mode only: wrangler simulates KV and the Durable Object on disk under
-# /tmp, needs no Cloudflare login and never deploys. Validated in wave 2, once
-# edge/ exists.
+# /tmp, needs no Cloudflare login and never deploys. It makes no call to
+# Cloudflare either: no usage metrics or error reports, and no fetch of the
+# request.cf template (CLOUDFLARE_CF_FETCH_ENABLED=false; Miniflare's built-in
+# fallback is used).
 
 # node:22-slim (Debian bookworm, glibc: workerd has no musl build), pinned by
 # its multi-arch index digest.
@@ -18,7 +20,10 @@ FROM ${NODE_BASE}@${NODE_DIGEST}
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
     NPM_CONFIG_FUND=false \
     NPM_CONFIG_AUDIT=false \
-    WRANGLER_SEND_METRICS=false
+    WRANGLER_SEND_METRICS=false \
+    WRANGLER_SEND_ERROR_REPORTS=false \
+    WRANGLER_HIDE_BANNER=true \
+    CLOUDFLARE_CF_FETCH_ENABLED=false
 
 RUN mkdir -p /work/edge /work/frontend/dist && chown -R node:node /work
 WORKDIR /work/edge
@@ -31,6 +36,7 @@ RUN npm ci
 
 COPY --chown=node:node edge/ ./
 COPY --chmod=0755 deploy/edge/entrypoint.sh /usr/local/bin/atus-edge-entrypoint
+COPY --chmod=0755 deploy/edge/origin-relay.mjs /usr/local/bin/atus-edge-origin-relay.mjs
 
 EXPOSE 8787
 ENTRYPOINT ["/usr/local/bin/atus-edge-entrypoint"]

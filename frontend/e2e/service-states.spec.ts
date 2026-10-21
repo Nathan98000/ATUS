@@ -10,8 +10,9 @@
  */
 import { readFileSync } from 'node:fs'
 
-import { type Page, expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
+import { expect, test, withoutSnapshot } from './fixtures'
 import {
   CORE,
   analysisUrl,
@@ -47,6 +48,7 @@ test(
   'a slow /meta shows the waking message politely, without moving focus',
   CORE,
   async ({ page, browserName }) => {
+    await withoutSnapshot(page)
     await page.route('**/api/v1/meta', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 7_000))
       await route.continue()
@@ -76,6 +78,7 @@ test('a share link waiting on /meta is "preparing", and sends nothing until /met
   page,
 }) => {
   const posts = countPosts(page)
+  await withoutSnapshot(page)
   await page.route('**/api/v1/meta', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 4_000))
     await route.continue()
@@ -91,6 +94,7 @@ test('an incompatible API version is one clear, accessible full-page state', asy
   page,
 }) => {
   const posts = countPosts(page)
+  await withoutSnapshot(page)
   await page.route('**/api/v1/meta', async (route) => {
     const response = await route.fetch()
     await route.fulfill({ response, json: { ...(await response.json()), api_version: 'v2' } })
@@ -108,6 +112,7 @@ test('an incompatible API version is one clear, accessible full-page state', asy
 test('a data release switch under an open page offers a reload, politely', async ({ page }) => {
   // /meta reports one release; analyses then come from another (a switch
   // happened after the page loaded).
+  await withoutSnapshot(page)
   await page.route('**/api/v1/meta', async (route) => {
     const response = await route.fetch()
     await route.fulfill({
@@ -222,6 +227,7 @@ test('an exhausted database quota is one honest, accessible page', async ({ page
 })
 
 test("the edge's daily request limit (a non-JSON 429) is named as such", async ({ page }) => {
+  await withoutSnapshot(page)
   await page.route('**/api/v1/meta', (route) =>
     route.fulfill({
       status: 429,

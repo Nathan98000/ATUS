@@ -12,7 +12,18 @@
  * and WebKit. Install those browsers once with
  * `npx playwright install firefox webkit`.
  *
+ * Stack mode: with E2E_BASE_URL set, the same suite runs against the
+ * production-mode stack through its edge (scripts/smoke_stack.sh --edge
+ * --e2e): the Worker under `wrangler dev` serving this build plus the static
+ * snapshot, in front of the production API on a serving database built from
+ * the same fixture, with every production limit in place (e2e/fixtures.ts
+ * makes each test its own visitor). No server is started then. Firefox
+ * cannot launch on macOS 27 (`npx playwright test --project firefox` exits at
+ * launch, in and out of the sandbox), so locally stack mode runs `desktop`,
+ * `mobile` and `webkit`; CI runs Firefox on Linux.
+ *
  * Environment:
+ * - E2E_BASE_URL selects stack mode (e.g. http://127.0.0.1:8541);
  * - E2E_FRONTEND_PORT / E2E_BACKEND_PORT (default 4173 / 8137) move the two
  *   servers when several checkouts run E2E at once;
  * - ATUS_E2E_DATABASE_URL selects the disposable database the backend loads
@@ -21,6 +32,8 @@
  */
 import { defineConfig, devices } from '@playwright/test'
 
+/** Stack mode: the production-mode stack's edge (see above). */
+const STACK_BASE_URL = process.env.E2E_BASE_URL || undefined
 const FRONTEND_PORT = Number(process.env.E2E_FRONTEND_PORT ?? 4173)
 const BACKEND_PORT = Number(process.env.E2E_BACKEND_PORT ?? 8137)
 const FRONTEND_ORIGIN = `http://localhost:${FRONTEND_PORT}`
@@ -37,7 +50,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'list' : [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: FRONTEND_ORIGIN,
+    baseURL: STACK_BASE_URL ?? FRONTEND_ORIGIN,
     trace: 'retain-on-failure',
   },
   projects: [
@@ -64,24 +77,26 @@ export default defineConfig({
       grep: CORE_JOURNEYS,
     },
   ],
-  webServer: [
-    {
-      // Locally the repo venv runs the backend; CI sets E2E_BACKEND_PYTHON=python.
-      // /health needs no database (and no ops token), and the backend only
-      // starts serving once its fixture database is loaded.
-      command: `${process.env.E2E_BACKEND_PYTHON ?? '../.venv/bin/python'} ../scripts/e2e_backend.py --port ${BACKEND_PORT} --origin ${FRONTEND_ORIGIN} --origin http://127.0.0.1:${FRONTEND_PORT}`,
-      url: `${BACKEND_ORIGIN}/health`,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
-    },
-    {
-      command: `npm run build && npm run preview -- --port ${FRONTEND_PORT} --strictPort`,
-      url: FRONTEND_ORIGIN,
-      reuseExistingServer: !process.env.CI,
-      timeout: 180_000,
-      // Same-origin production build: no VITE_API_BASE_URL. The preview
-      // server forwards /api to the backend.
-      env: { ATUS_DEV_API_ORIGIN: BACKEND_ORIGIN, VITE_API_BASE_URL: '' },
-    },
-  ],
+  webServer: STACK_BASE_URL
+    ? undefined
+    : [
+        {
+          // Locally the repo venv runs the backend; CI sets E2E_BACKEND_PYTHON=python.
+          // /health needs no database (and no ops token), and the backend only
+          // starts serving once its fixture database is loaded.
+          command: `${process.env.E2E_BACKEND_PYTHON ?? '../.venv/bin/python'} ../scripts/e2e_backend.py --port ${BACKEND_PORT} --origin ${FRONTEND_ORIGIN} --origin http://127.0.0.1:${FRONTEND_PORT}`,
+          url: `${BACKEND_ORIGIN}/health`,
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+        },
+        {
+          command: `npm run build && npm run preview -- --port ${FRONTEND_PORT} --strictPort`,
+          url: FRONTEND_ORIGIN,
+          reuseExistingServer: !process.env.CI,
+          timeout: 180_000,
+          // Same-origin production build: no VITE_API_BASE_URL. The preview
+          // server forwards /api to the backend.
+          env: { ATUS_DEV_API_ORIGIN: BACKEND_ORIGIN, VITE_API_BASE_URL: '' },
+        },
+      ],
 })

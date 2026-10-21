@@ -2,7 +2,7 @@
  * The comparison scenario (spec §139): two groups, API-computed difference,
  * methodology, and a reproducible share link.
  */
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 import { CORE } from './helpers'
 

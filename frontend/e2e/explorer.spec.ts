@@ -2,7 +2,7 @@
  * The primary end-to-end scenario: home → explore → search activity →
  * population → year → statistic → run → understand result (spec §138).
  */
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 import { CORE, analyze, pickSleepBySearch, setAge } from './helpers'
 

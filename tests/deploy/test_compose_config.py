@@ -49,7 +49,8 @@ def dev_config(compose_config):
 
 @pytest.fixture(scope="module")
 def prod_config(compose_config):
-    return compose_config(PROD, env=DUMMY_STACK_ENV, profiles=("dump", "edge", "smoke"))
+    return compose_config(PROD, env=DUMMY_STACK_ENV,
+                          profiles=("dump", "snapshot", "edge", "smoke"))
 
 
 @pytest.fixture(scope="module")
@@ -228,17 +229,49 @@ class TestProductionCompose:
         }
         assert _published(smoke) == [] and smoke["read_only"] is True
 
-    def test_edge_is_defined_against_the_worker_contract(self, config):
+    def test_edge_runs_the_worker_in_front_of_the_api(self, config):
         edge = config["services"]["edge"]
         assert edge["profiles"] == ["edge"]
         assert edge["build"]["dockerfile"] == "deploy/edge/Dockerfile"
         env = edge["environment"]
-        assert env["RENDER_ORIGIN"] == "http://api:10000"
+        # plain HTTP is accepted on loopback only: the in-container relay
+        assert env["RENDER_ORIGIN"] == "http://127.0.0.1:10000"
+        assert env["ATUS_EDGE_RELAY_TARGET"] == "api:10000"
         assert env["EDGE_AUTH_SECRET"] == DUMMY_STACK_ENV["ATUS_STACK_EDGE_SECRET"]
         assert env["WRANGLER_SEND_METRICS"] == "false"
+        assert {"DATA_VERSION", "ANALYTICS_VERSION", "SNAPSHOT_ID"} <= set(env)
         (assets,) = edge["volumes"]
         assert assets["target"] == "/work/frontend/dist" and assets["read_only"] is True
+        assert assets["source"] == str(REPO_ROOT / "frontend" / "dist")
         assert [(p["host_ip"], p["target"]) for p in _published(edge)] == [("127.0.0.1", 8787)]
+        assert "/api/_edge/health" in " ".join(edge["healthcheck"]["test"])
+        assert edge["depends_on"]["api"]["condition"] == "service_healthy"
+        dockerfile = (REPO_ROOT / "deploy" / "edge" / "Dockerfile").read_text()
+        for setting in ("WRANGLER_SEND_METRICS=false", "WRANGLER_SEND_ERROR_REPORTS=false",
+                        "CLOUDFLARE_CF_FETCH_ENABLED=false"):
+            assert setting in dockerfile, setting
+
+    def test_edge_assets_can_be_a_prepared_directory(self, compose_config, tmp_path):
+        env = dict(DUMMY_STACK_ENV, ATUS_STACK_ASSETS_DIR=str(tmp_path),
+                   ATUS_STACK_SNAPSHOT_ID="abc-123", ATUS_STACK_ANALYTICS_VERSION="0.2",
+                   ATUS_EXPECTED_DATA_VERSION="0325:serving-x")
+        edge = compose_config(PROD, env=env, profiles=("edge",))["services"]["edge"]
+        assert edge["volumes"][0]["source"] == str(tmp_path)
+        assert edge["environment"]["SNAPSHOT_ID"] == "abc-123"
+        assert edge["environment"]["ANALYTICS_VERSION"] == "0.2"
+        assert edge["environment"]["DATA_VERSION"] == "0325:serving-x"
+
+    def test_snapshot_api_is_the_api_with_generous_limits_on_loopback(self, config):
+        api, snapshot = config["services"]["api"], config["services"]["snapshot-api"]
+        assert snapshot["profiles"] == ["snapshot"]
+        assert snapshot["image"] == api["image"]
+        extra = {k: v for k, v in snapshot["environment"].items() if k not in api["environment"]}
+        assert extra == {"ATUS_API_RATE_ANALYSIS": "100000/60",
+                         "ATUS_API_RATE_REQUESTS": "1000000/60"}
+        assert all(snapshot["environment"][k] == v for k, v in api["environment"].items())
+        assert [(p["host_ip"], p["target"]) for p in _published(snapshot)] == [
+            ("127.0.0.1", 10000)]
+        assert snapshot["read_only"] is True and snapshot["cap_drop"] == ["ALL"]
 
 
 # --- emulation override (docker-compose.emulation.yml) ---------------------------

@@ -2,7 +2,7 @@
  * Shareable analyses (spec §84): the copied URL must actually reconstruct
  * the analysis in a fresh browser context — same configuration, same result.
  */
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 import { CORE, analyze, setAge } from './helpers'
 

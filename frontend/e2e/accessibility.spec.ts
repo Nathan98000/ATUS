@@ -3,7 +3,7 @@
  * keyboard-only pass through the primary workflow. Automated tooling is a
  * floor, not a ceiling — component tests cover widget-specific semantics.
  */
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 import { analyze, expectNoSeriousViolations, setAge } from './helpers'
 

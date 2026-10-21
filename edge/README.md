@@ -59,6 +59,11 @@ analytics version>`.
 The static result snapshot (`/snap/...`, tier L0) is written into the SPA build by
 `scripts/build_snapshot.py` from a running API; see ADR-015.
 
+The whole public origin runs locally in Docker too: `scripts/smoke_stack.sh --edge [--e2e]` starts
+this Worker (the `edge` service of `docker-compose.prod.yml`, `wrangler dev` in local mode, no call to
+Cloudflare) with the SPA build and a freshly built snapshot, in front of the production-mode API, then
+probes it (`deploy/stack/edge_probe.py`) and optionally runs the Playwright suite through it.
+
 ## Secrets
 
 Production secrets live only in the Worker's secret store. `scripts/ops/gen_edge_secrets.sh` writes

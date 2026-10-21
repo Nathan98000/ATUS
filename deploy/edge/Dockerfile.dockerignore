@@ -1,11 +1,12 @@
 # Build context filter for deploy/edge/Dockerfile (BuildKit reads
 # <Dockerfile>.dockerignore in place of the root .dockerignore). Allow-list:
-# only the Worker sources and the entrypoint; never node_modules built for the
-# host's platform, local wrangler state or secrets.
+# only the Worker sources, the entrypoint and the loopback relay; never
+# node_modules built for the host's platform, local wrangler state or secrets.
 *
 
 !edge/
 !deploy/edge/entrypoint.sh
+!deploy/edge/origin-relay.mjs
 
 edge/node_modules
 edge/.wrangler

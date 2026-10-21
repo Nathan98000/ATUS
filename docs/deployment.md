@@ -319,7 +319,7 @@ All values are **PROJECTION** from the limits above. Nothing here was load-teste
 
 ## From-scratch deploy guide
 
-**Skeleton.** ADR-011 fixes the order below. Steps 0 and 3 are written and were run locally (functional checks only). Every other step states what ADR-011 decided and marks the missing detail as **TODO(owner)**, where the owner is the work that fills it:
+**Status.** ADR-011 fixes the order below. Steps 0 to 3 and 6 are written and were run locally (functional checks only); step 0 now covers the public origin too (the Worker, the SPA and the static snapshot). What is still missing is marked **TODO(owner)**, where the owner is the work that fills it:
 
 - **WS-A**: the API (protection, pool, observability);
 - **WS-B**: the serving DB and data releases (ADR-013);
@@ -386,9 +386,19 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
   | `seed` | the owner's loader and the serving build | unless a serving database is present: loads the fixture dataset with the real loader into a scratch full database, then builds the serving database from it into `atus` with the real serving builder (`atus build-serving-db`: serving shape, marker, a serving `data_version`), as `neondb_owner` in development mode like the real loader. `ATUS_SEED_FORCE=1` rebuilds it |
   | `roles` | the restore script's role step | applies `scripts/ops/roles.sql` as `neondb_owner`, exactly as production does: `atus_api` with SELECT on the served tables only, read-only transactions by default and the ADR-011 role defaults. It is the only definition of the role; `tests/deploy/test_stack_roles.py` (opt-in) proves it cannot write, truncate or create anything, and reads exactly the served tables |
   | `api` | the Render web service | the image with exactly Render's environment (`ATUS_ENV=production`, ...). Read-only root filesystem, all capabilities dropped. **Not published on the host** |
-  | `edge` | Cloudflare Worker + static assets | profile `edge`; `wrangler dev` in local mode on `127.0.0.1:8541`, assets from `frontend/dist`. Defined against the edge contract; validated once `edge/` lands (TODO(WS-D2)) |
+  | `snapshot-api` | CI's snapshot step | profile `snapshot`; the same image on the same database with generous per-client limits, published on `127.0.0.1` for `scripts/build_snapshot.py` only |
+  | `edge` | Cloudflare Worker + static assets: the public origin | profile `edge`; the Worker from `edge/` under `wrangler dev` in local mode (KV and the Durable Object simulated on disk; no login, no metrics or error reports, no `cf.json` fetch, so no call to Cloudflare) on `127.0.0.1:8541`, serving `ATUS_STACK_ASSETS_DIR` (default `frontend/dist`) with `_headers` and SPA fallback, in front of `api`. The Worker accepts a plain-HTTP origin on loopback only, so a relay inside the container (`deploy/edge/origin-relay.mjs`) forwards `127.0.0.1:10000` to `api:10000`; `RENDER_ORIGIN` is that loopback address. The release vars come from `ATUS_EXPECTED_DATA_VERSION`, `ATUS_STACK_ANALYTICS_VERSION` and `ATUS_STACK_SNAPSHOT_ID` |
   | `smoke` | — | profile `smoke`; the HTTP probe, run inside the stack network with the edge secret and the API's ops token |
 
+- **The public origin, end to end** (`--edge`; `--e2e` adds Playwright):
+
+  ```bash
+  scripts/smoke_stack.sh --edge --e2e      # needs node/npm, frontend/node_modules, Playwright browsers
+  ```
+
+  After the API smoke it does what a deploy does, in the same order: binds the API to its data (`ATUS_EXPECTED_DATA_VERSION`, as the release switch does), builds the SPA same-origin, builds the static snapshot with `scripts/build_snapshot.py` and the SPA's request generator against `snapshot-api` (with `--skip-refused`: the small fixture cannot answer every prewarmed spec, a release must), and starts the Worker with the release vars. `deploy/stack/edge_probe.py` then checks, from the host: SPA deep links (SPA fallback); `_headers` on static responses; the snapshot served statically and byte-identical to the API; `/api/_edge/health`; the `/api` allowlist; the Worker's security headers on `/api` responses; 413 and 415 at the edge; a KV miss then `X-Cache: edge`; the prewake; the ops bearer; the API's origin lock (403 without the edge secret); and a governor denial (a /24's 61st new analysis of the day: 429 `rate_limited`, budget `prefix`, `Retry-After` until 00:00 UTC). With `--e2e` the Playwright suite runs through the edge (stack mode, `E2E_BASE_URL`; projects `E2E_PROJECTS`, default `desktop mobile webkit`). On 2026-10-20 (wave 2): smoke 15/15, edge probe 13/13, Playwright 50/50 (Chromium desktop 35, mobile 2, WebKit 13). Firefox cannot launch on macOS 27 and runs in Linux CI.
+
+  `wrangler dev` takes `CF-Connecting-IP` from the request when one is sent (Miniflare sets it from the socket only otherwise; Cloudflare's edge overwrites it in production). The probe and the stack-mode E2E use that to act as distinct visitors from the benchmarking range 198.18.0.0/15, so the production limits stay in place without the whole suite counting as one visitor.
 - **Free-tier emulation** (`-f docker-compose.emulation.yml`): API 0.1 CPU / 512 MB, no swap (Render Free); database 0.25 vCPU / 1 GB, no swap (Neon's 0.25 CU floor). For the 2 CU ceiling set `ATUS_EMU_DB_CPUS=2 ATUS_EMU_DB_MEMORY=8g` (a Docker VM with less than 8 GB caps the RAM). `python deploy/emulation/neon_settings.py --help` prints the settings for other compute sizes from Neon's published formulas. Not emulated (F41): pageserver reads, wake from suspend, autoscaling itself, round trips between providers, Render's real CPU share and spin-up.
 
   The audit's emulation runs kept `shared_buffers` at 128 MB and Postgres's default `max_connections`/`max_worker_processes`. Neon's formula gives those values only for a fixed 0.25 CU compute; for ADR-011's 0.25–2 CU compute it gives 215 MB, 839 and 17, which the stack now uses. Later timed runs should state which settings they used.
@@ -414,7 +424,7 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
 
   `test_full_database.py` runs on the full DB before the build, never on the serving DB.
 - **Artifact.** A `pg_dump -Fc` of the serving DB plus its sha256. You attach both to an immutable GitHub Release; publishing is always your action.
-- **TODO(WS-B):** the builder command and flags; the dump, checksum and release-note names; the size check against Neon's 1 GB per project (whether that means 1e9 B or 1 GiB is undocumented, so budget for 1e9 B).
+- **Commands** (ADR-013 "Release procedure"): `atus build-serving-db --source <full DB, read only> --target <new empty local PostgreSQL 16 database> --artifact-dir <outside the repository>` (or `ATUS_SERVING_DATABASE_URL` for the target), then `atus compare-serving-db` for the randomized diff. The artifact is `atus-serving-<release>-<build_id>.dump` (`pg_dump -Fc --no-owner --no-acl`), `….dump.sha256` and `….manifest.json` (data version, content hash, row counts, sizes; no connection string). The restore checks `sum(pg_database_size)` against `--size-limit-bytes`, default 1,000,000,000 (whether Neon's "1 GB" means 1e9 B or 1 GiB is undocumented, so the default budgets for 1e9 B).
 
 ### 2. Restore drill
 
@@ -435,13 +445,7 @@ Everything below runs on your machine, binds only to `127.0.0.1`, and calls no p
   docker compose --env-file .env.stack -f docker-compose.prod.yml --profile smoke run --rm smoke
   ```
 
-- **TODO(WS-B):** `scripts/ops/restore_serving_db.sh`, covering:
-  - its target URL;
-  - sha256 verification of the dump;
-  - the role step;
-  - writing the `atus_api` DSN to `~/.config/atus/neon.env`.
-
-  Also `scripts/ops/roles.sql`.
+- **The drill:** `scripts/ops/restore_serving_db.sh --artifact <dump> --verify-content-hash` (implemented by `atus restore-serving-db`) against a fresh local `postgres:16` cluster with a non-superuser owner: the owner DSN from `ATUS_OWNER_DATABASE_URL` or `~/.config/atus/neon.env`; the dump's sha256 against its `.sha256` file and manifest; a refusal of any non-empty target; `pg_restore --no-owner --no-acl --single-transaction`; `scripts/ops/roles.sql` with a generated 192-bit `atus_api` password sent as a SCRAM verifier, written back as `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` into the same file (mode 600); `VACUUM (ANALYZE)`; and checks of the data version, rows, marker, role defaults, worst-case plans and size (ADR-013).
 - **The stack's roles are the deployed roles.** Its bootstrap creates only `neondb_owner` and the database; the `roles` service then applies `scripts/ops/roles.sql` after every seed or restore, exactly as the restore script does on Neon.
 
 ### 3. The image
@@ -514,9 +518,8 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
   5. writes the `atus_api` DSN back into the same file.
 - **Then on Render:** set `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` (see [Configuration reference](#configuration-reference)).
 - **First real TLS check.** This is the first connection with `sslmode=verify-full&sslrootcert=system` against Neon's real certificate.
-- **TODO(WS-B):**
-  - the exact command;
-  - whether Neon accepts `ALTER ROLE atus_api SET ...` (ADR-011 "Unknowns").
+- **The command:** `scripts/ops/restore_serving_db.sh --artifact <the release's .dump> --report restore-report.json`, with `ATUS_OWNER_DATABASE_URL` in `~/.config/atus/neon.env`.
+- **Not verifiable before this step:** whether Neon accepts `ALTER ROLE atus_api SET ...` from `neondb_owner` (ADR-011 "Unknowns"; the local drill emulates a non-superuser `CREATEROLE` owner, where it works). The restore's role checks fail loudly if it does not.
 
 ### 6. First Worker deploy (owner)
 
@@ -530,11 +533,10 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
   - `preview_urls = false` and `workers_dev = true`;
   - `run_worker_first` lists both `/api` and `/api/*`;
   - static assets come from `frontend/dist`.
-- **TODO(WS-D2):**
-  - the names in `edge/wrangler.jsonc`: the Worker, the KV binding, the Durable Object class and its migration tag;
-  - how to run `scripts/ops/gen_edge_secrets.sh`;
-  - a first run of the stack's `edge` profile: `npm ci && npm run build` in `frontend/`, then `docker compose ... --profile edge up`.
-- **TODO(WS-D1):** the production build that `frontend/dist` must contain: `_headers`, the SPA fallback and the relative API base.
+- **Names** (`edge/wrangler.jsonc`): Worker `atus`, KV binding `RESULT_CACHE` (replace the placeholder namespace id with the one `kv namespace create` prints), Durable Object binding `GOVERNOR`, class `Governor`, migration tag `v1`.
+- **Secrets:** `scripts/ops/gen_edge_secrets.sh [--render-origin https://<service>.onrender.com]` writes `~/.config/atus/edge.env` and prints the commands, including the first deploy's filtered `--secrets-file` (see [Cloudflare Worker](#cloudflare-worker)).
+- **Rehearsed locally:** `scripts/smoke_stack.sh --edge --e2e` runs this Worker, with the same `wrangler.jsonc`, in front of the production-mode API (step 0).
+- **What `frontend/dist` contains** (`npm run build` without `VITE_API_BASE_URL`): the SPA with a relative API base, `_headers` (CSP with `connect-src 'self'`, HSTS, `Permissions-Policy`, `index.html` and `/snap/current.json` no-cache, hashed assets and `/snap/<id>/*` immutable), and a `<meta>` CSP backstop in `index.html`. The SPA fallback is `not_found_handling = "single-page-application"` in `wrangler.jsonc`; the snapshot is added under `snap/` by step 7.
 
 ### 7. First approved deploy (CI)
 
@@ -547,7 +549,7 @@ Follow [Owner account setup](#owner-account-setup-19) in this order. Each step t
 5. Run a smoke test of at most 40 requests.
 
 - **TODO(wave 2):** `deploy.yml` and its smoke list.
-- **TODO(WS-D2):** `scripts/build_snapshot.py`, which reads `--requests` from WS-D1's `frontend/scripts/snapshot-requests.mjs`.
+- **The snapshot step** (the same command the local stack runs): `python scripts/build_snapshot.py --api-base <local API on the restored release dump> --edge-secret-file <file> --requests-script frontend/scripts/snapshot-requests.mjs --api-build "$GITHUB_SHA" --data-version "$DATA_VERSION" --out frontend/dist/snap`; its stdout is `SNAPSHOT_ID`. Every analysis response must carry `X-Data-Version`, `X-Analytics-Version` and `X-Response-Format`, and every prewarmed spec must succeed on the release (no `--skip-refused`).
 
 ### 8. Prove the deployment
 
@@ -734,7 +736,9 @@ Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_se
 | `ATUS_STACK_EDGE_SECRET`, `ATUS_STACK_OPS_TOKEN` | required | the API's `ATUS_EDGE_SECRETS` / `ATUS_OPS_TOKEN` (and the Worker's `EDGE_AUTH_SECRET`); the smoke probe gets both. At least 32 characters: the stack's API runs in production mode, which refuses shorter ones |
 | `ATUS_STACK_EDGE_OPS_TOKEN`, `ATUS_STACK_IP_HMAC_KEY` | empty | the Worker's `OPS_TOKEN` / `IP_HMAC_KEY` (profile `edge`) |
 | `ATUS_STACK_DUMP` | unset | serving dump for profile `dump` |
-| `ATUS_EXPECTED_DATA_VERSION` | empty | passed to the API (and the Worker's `DATA_VERSION`) |
+| `ATUS_EXPECTED_DATA_VERSION` | empty | passed to the API (and the Worker's `DATA_VERSION`); `smoke_stack.sh --edge` sets the seed's version |
+| `ATUS_STACK_ASSETS_DIR` | `frontend/dist` | the edge's static assets: an SPA build plus `snap/` (set by `smoke_stack.sh --edge`) |
+| `ATUS_STACK_SNAPSHOT_ID`, `ATUS_STACK_ANALYTICS_VERSION` | empty | the Worker vars `SNAPSHOT_ID` and `ANALYTICS_VERSION` (set by `smoke_stack.sh --edge`; empty turns the edge cache off) |
 | `ATUS_STACK_IMAGE`, `ATUS_STACK_PULL_POLICY` | `atus-api:local`, `build` | run a registry image by digest instead (`missing` + `--no-build`) |
 | `ATUS_BUILD_SHA`, `ATUS_VERSION` | `dev`, `unknown` | image build arguments |
 | `ATUS_STACK_DB_PORT`, `ATUS_STACK_PGBOUNCER_PORT`, `ATUS_STACK_EDGE_PORT` | `5470`, `5471`, `8541` | loopback host ports; empty = a random free port |
@@ -756,6 +760,10 @@ Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_se
 | `ATUS_DOCKER_TEST_PREFIX` | `atus-pytest` | `atus-ci-${GITHUB_RUN_ID}` | prefix of every container, network and compose project the tests create |
 | `ATUS_SMOKE_ARGS` | empty | `--emulation` | extra `scripts/smoke_stack.sh` options for `test_stack_smoke.py` |
 | `ATUS_SMOKE_EDGE_SECRET`, `ATUS_SMOKE_OPS_TOKEN` | set by the `smoke` service | — | the probe's credentials |
+| `ATUS_PROBE_EDGE_OPS_TOKEN`, `ATUS_PROBE_DATA_VERSION` | set by `smoke_stack.sh --edge` | — | `deploy/stack/edge_probe.py`'s Worker ops bearer and expected data version |
+| `E2E_BASE_URL` | unset: vite-preview mode | `http://127.0.0.1:8541` | Playwright stack mode: the suite runs through this edge and starts no server |
+| `E2E_PROJECTS` | `desktop mobile webkit` | `mobile` | the Playwright projects `smoke_stack.sh --edge --e2e` runs |
+| `ATUS_EDGE_RELAY_LISTEN`, `ATUS_EDGE_RELAY_TARGET` | `127.0.0.1:10000`, set by compose to `api:10000` | — | the edge container's loopback relay to the API (`deploy/edge/origin-relay.mjs`) |
 | `E2E_BACKEND_PYTHON` | `../.venv/bin/python` | `python` | interpreter Playwright uses for the E2E backend |
 
 ### Rotation

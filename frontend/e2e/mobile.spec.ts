@@ -2,7 +2,7 @@
  * Mobile viewport (Pixel 7): the core workflow must remain usable —
  * stacked controls, no horizontal page scrolling, readable results.
  */
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 test('the core workflow works on a phone without horizontal scrolling', async ({ page }) => {
   await page.goto('/')

@@ -3,7 +3,7 @@
  * API's own explanation; infrastructure failures are distinguished from
  * invalid requests.
  */
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 /** Builds a share URL for an arbitrary spec (same encoding as the app). */
 function specUrl(operation: string, spec: object): string {

@@ -478,6 +478,24 @@ E2E ports default to 4173 (frontend) and 8137 (backend);
 `ATUS_E2E_DATABASE_URL` selects the disposable database, and
 `E2E_BACKEND_PYTHON` the backend's Python (default `../.venv/bin/python`).
 `npx playwright test --project=desktop` runs Chromium only.
+
+**Stack mode** (wave 2). With `E2E_BASE_URL` set, the same suite runs
+against the production-mode stack through its edge and starts no server:
+`scripts/smoke_stack.sh --edge --e2e` (docs/deployment.md, step 0) builds
+this SPA same-origin, publishes it with the static snapshot under the Worker
+(`wrangler dev`, local mode) in front of the production API on a serving
+database built from the same fixture, and runs `desktop`, `mobile` and
+`webkit`. Everything the deployment adds is in the path: the snapshot (most
+metadata comes from `/snap/`), the KV cache, the governor, the Worker's
+headers and the production limits. Two settings make the suite valid in both
+modes (`e2e/fixtures.ts`): each test is its own visitor (`wrangler dev`
+takes `CF-Connecting-IP` from the request when one is sent, so every test
+sends its own address from 198.19.0.0/16, and the per-visitor limits apply
+per test rather than to the whole suite), and tests that inject failures
+into `/api/v1/meta` first hide the snapshot (`withoutSnapshot`), since the
+deployed SPA would otherwise read `/meta` from `/snap/`. On 2026-10-20 all
+50 runs passed in stack mode (Chromium desktop 35, mobile 2, WebKit 13);
+Firefox cannot launch on macOS 27 and runs in Linux CI.
 - An adversarial review fleet (96 agents: 8 code-dimension reviewers,
   3 live browser probes, an aggregator, and two independent refuters per
   finding) audited the implementation; 37 confirmed findings — including

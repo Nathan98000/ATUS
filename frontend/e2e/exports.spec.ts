@@ -4,8 +4,9 @@
  * hand-computed fixture database (see helpers.ts); every CSV number must
  * equal the API's own value in the JSON download — nothing recomputed.
  */
-import { type Page, expect, test } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
+import { expect, test } from './fixtures'
 import {
   CORE,
   analysisUrl,

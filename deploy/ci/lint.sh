@@ -47,7 +47,7 @@ stack_env=(
 )
 compose_sets=(
   "-f docker-compose.yml"
-  "-f docker-compose.prod.yml --profile dump --profile edge --profile smoke"
+  "-f docker-compose.prod.yml --profile dump --profile snapshot --profile edge --profile smoke"
   "-f docker-compose.prod.yml -f docker-compose.emulation.yml --profile pgbouncer"
 )
 

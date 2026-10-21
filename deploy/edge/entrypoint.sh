@@ -5,7 +5,15 @@
 # container only), never through the command line, where `ps` would show
 # them. Worker vars that deploy.yml publishes are passed as --var when set;
 # unset ones keep the values in edge/wrangler.jsonc.
+#
+# With ATUS_EDGE_RELAY_TARGET set (the local stack: api:10000), a loopback
+# relay (origin-relay.mjs) forwards 127.0.0.1:10000 to the API first, because
+# the Worker accepts a plain-HTTP RENDER_ORIGIN on loopback only.
 set -eu
+
+if [ -n "${ATUS_EDGE_RELAY_TARGET:-}" ]; then
+  node /usr/local/bin/atus-edge-origin-relay.mjs &
+fi
 
 umask 077
 : > .dev.vars
