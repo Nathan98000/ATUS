@@ -36,7 +36,11 @@ invalidates it itself (review r2). Pinned production never changes data in
 place (ADR-012).
 
 Cache hits and joiners never take a lane or an analysis token; only a request
-that will actually compute does. The computation runs as a task detached from
+that will actually compute does. A computation that fails before the engine
+starts (no connection, a Neon pause, a full pool, a data version other than
+the pinned one) gives its daily-cap unit and its analysis token back, so a
+database outage cannot use up the day's cap (review r4); one whose engine
+started stays charged, whatever its outcome. The computation runs as a task detached from
 the request that started it: if that client disconnects, the admitted
 computation still finishes (bounded by the statement timeout and the request
 deadline) and its result is cached, so a retry after a proxy timeout hits the
@@ -65,7 +69,6 @@ from . import RESPONSE_FORMAT
 from .cache import AnalysisCache, cache_key
 from .database import Database
 from .errors import (
-    DailyCapacityReachedError,
     DataNotLoadedError,
     DataVersionMismatchError,
     OverloadedError,
@@ -102,6 +105,15 @@ class _Outcome:
     cache_status: str                       # miss | bypass
     data_version: str
     key: str
+
+
+class _Progress:
+    """How far a computation got: ``computing`` is set (in the worker thread)
+    just before the engine starts, after the connection checkout and the
+    data-version read. A computation that fails before that ran no
+    statistics query and is not charged (``AnalysisRunner._lead``)."""
+
+    computing = False
 
 
 class _Flight:
@@ -234,19 +246,29 @@ class AnalysisRunner:
         snapshot: DataSnapshot,
     ) -> None:
         protection = self.protection
+        progress = _Progress()
+        charged = False
         try:
             async with protection.lanes.admit(job.heavy):
                 if not protection.daily_cap.try_take():
                     raise protection.daily_cap.refuse()
+                charged = True
                 self.computations += 1
                 result = await anyio.to_thread.run_sync(
-                    self._compute, job, key, cache, db, engine_factory, snapshot
+                    self._compute, job, key, cache, db, engine_factory, snapshot, progress
                 )
-        except (OverloadedError, DailyCapacityReachedError) as exc:
-            if rate_key is not None:  # refused before computing: give the token back
-                protection.analysis_limiter.refund(rate_key)
-            flight.future.set_exception(exc)
         except Exception as exc:
+            if not progress.computing:
+                # Refused, or failed before the engine started (no connection,
+                # a Neon pause, a full pool, a release switch): no statistics
+                # query ran, so the day's cap and the client's bucket get back
+                # what this request took (review r4).
+                if charged:
+                    protection.daily_cap.refund()
+                if rate_key is not None:
+                    protection.analysis_limiter.refund(rate_key)
+            elif rate_key is not None and isinstance(exc, OverloadedError):
+                protection.analysis_limiter.refund(rate_key)  # shed: the token back
             flight.future.set_exception(exc)
         except BaseException:  # cancelled (shutdown): release the waiters, then stop
             flight.future.set_exception(OverloadedError("server shutting down"))
@@ -259,7 +281,7 @@ class AnalysisRunner:
 
     def _compute(
         self, job: AnalysisJob, key: str, cache: AnalysisCache, db: Database,
-        engine_factory: EngineFactory, snapshot: DataSnapshot,
+        engine_factory: EngineFactory, snapshot: DataSnapshot, progress: _Progress,
     ) -> _Outcome:
         """Runs in a worker thread: one analysis transaction, then the cache.
 
@@ -293,6 +315,7 @@ class AnalysisRunner:
                 engine = engine_factory(conn)
             else:
                 engine = engine_factory(conn, **snapshot.engine_kwargs())
+            progress.computing = True  # from here on the request stays charged
             try:
                 payload = job.compute(engine)
             except InsufficientDataError:

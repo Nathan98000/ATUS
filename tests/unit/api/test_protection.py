@@ -94,6 +94,16 @@ class TestDailyCap:
         now[0] += timedelta(days=1)
         assert cap.used_today() == 0  # the day rolled over
 
+    def test_refund_gives_back_one_unit_never_below_zero(self):
+        now = [datetime(2026, 10, 20, 12, 0, tzinfo=UTC)]
+        cap = DailyCap(1, clock=lambda: now[0])
+        assert cap.try_take() and cap.exhausted()
+        cap.refund()
+        assert cap.used_today() == 0 and cap.try_take()
+        now[0] += timedelta(days=1)
+        cap.refund()  # taken yesterday: the new day's count stays at zero
+        assert cap.used_today() == 0
+
 
 class TestHeavyClassifier:
     @pytest.mark.parametrize(
