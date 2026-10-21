@@ -12,6 +12,10 @@ RESPONSE_FORMAT = "1"
 """Version of the analysis response *bytes* (sent as ``X-Response-Format``).
 
 Edge caches key stored responses on it together with the data and analytics
-versions; bump it whenever the serialized form of an analysis response
-changes without a change in ``ANALYTICS_VERSION``.
+versions, and their entries survive code-only deploys (ADR-015); bump it
+whenever the bytes of an analysis response change (fields, their order or
+formatting, warning or label text) without a change in
+``ANALYTICS_VERSION``, together with the Worker's ``RESPONSE_FORMAT`` var.
+``tests/unit/api/test_response_format.py`` pins the response schemas and
+bytes to this value.
 """
