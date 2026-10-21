@@ -651,6 +651,28 @@ def test_the_image_job_follows_the_documented_recipe():
     assert build["with"]["push"] is False and build["with"]["load"] is True
 
 
+BUILDKIT_PIN = re.compile(r"image=moby/buildkit:v\d+\.\d+\.\d+@sha256:[0-9a-f]{64}")
+
+
+def test_every_buildx_builder_runs_a_buildkit_pinned_by_digest():
+    """buildkit-daemon-unpinned (review round 3): setup-buildx-action without
+    driver-opts starts buildx's default BuildKit, the mutable Docker Hub tag
+    moby/buildkit:buildx-stable-1, and that daemon runs every Dockerfile step of the
+    image deploy.yml pushes and Render runs by digest (and supplies the Dockerfile
+    frontend, which test_packaging_files.py forbids pulling by tag)."""
+    builders = [(path.name, step) for path in WORKFLOWS
+                for job in jobs(load(path)).values() for step in steps(job)
+                if uses_action(step, "docker/setup-buildx-action")]
+    assert builders
+    for name, step in builders:
+        options = step.get("with") or {}
+        assert options.get("driver", "docker-container") == "docker-container", name
+        assert BUILDKIT_PIN.fullmatch(str(options.get("driver-opts", "")).strip()), name
+    # Dependabot does not update driver-opts: the workflow says how to bump it.
+    image = (WORKFLOWS_DIR / "image.yml").read_text()
+    assert "docker buildx imagetools inspect moby/buildkit:" in image
+
+
 def test_trivy_is_a_pinned_binary_never_the_hijacked_actions():
     text = (WORKFLOWS_DIR / "image.yml").read_text()
     assert "aquasecurity/trivy-action" not in text.replace("trivy-action/setup-trivy", "")

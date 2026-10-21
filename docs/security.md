@@ -338,6 +338,7 @@ Tests:
   - `packages: write` is granted only to the deploy `push` job, the deploy `promote` job (which only adds the tags `live` and `deployed-<commit>` to the digest that passed the smoke) and the GHCR cleanup.
 - **Inputs:**
   - base images are pinned by digest, and so is the `postgres:16` client the owner's restore runs through docker with the owner's password (`serving/pgtools.py`; `ATUS_PG_CLIENT_IMAGE` overrides it);
+  - the BuildKit daemon that builds the deployed image (and supplies its Dockerfile frontend) is pinned by digest too, through `driver-opts` of `docker/setup-buildx-action` in `image.yml`, instead of buildx's default, the mutable tag `moby/buildkit:buildx-stable-1` (review round 3). Dependabot does not update it; the workflow comment has the bump procedure. The runner's own Docker engine and buildx CLI stay unpinned (R15);
   - the owner's `wrangler login` (an OAuth token with broad account scopes) and every other owner `wrangler` command run the version locked in `edge/package-lock.json`, after `npm ci` in `edge/`, with `npx --no-install`, which refuses to download another version;
   - Python installs are hash-locked and binary wheels only (`--require-hashes --only-binary=:all:`, in the image, CI and the deploy), so no install builds an sdist;
   - npm installs come from lockfiles (`npm ci`);
@@ -472,7 +473,7 @@ Tests:
   - Render pulls the exact digest that the `push` job pushed.
   - Workers Builds and Render's Git integration are never connected. The `edge/wrangler.jsonc` invariants are tested in `edge/test/node/config.test.ts`.
 - **The deploy secrets' job.** The `deploy` job holds `CLOUDFLARE_API_TOKEN`, the Render deploy hook and the origin URL. On a GitHub-hosted runner a process started by one step can outlive it and read later steps, so that job installs only what it runs: the API's runtime lock (binary wheels) for the smoke's §9 comparison, and the edge's lockfile for `wrangler`. The `wrangler.jsonc` tests (vitest) run in `edge-config`, the browser journey (the frontend tree, Playwright) in `browser-smoke`; neither job has an environment or a secret (review round 2).
-- **Remaining:** scanners only see known vulnerabilities, and coverage has gaps (R10). The deploy job's `npm ci` in `edge/` still installs the whole locked edge tree with install scripts enabled (`wrangler` needs those of `esbuild` and `workerd`), so a compromised pinned version of a package in that tree could read the deploy secrets. Lockfile integrity hashes and Dependabot's 7-day cooldown bound this to a compromised version that was pinned on purpose.
+- **Remaining:** scanners only see known vulnerabilities, and coverage has gaps (R10). The GitHub-hosted runner's toolchain is trusted as it comes (R15). The deploy job's `npm ci` in `edge/` still installs the whole locked edge tree with install scripts enabled (`wrangler` needs those of `esbuild` and `workerd`), so a compromised pinned version of a package in that tree could read the deploy secrets. Lockfile integrity hashes and Dependabot's 7-day cooldown bound this to a compromised version that was pinned on purpose.
 
 ### 10. Leaked tokens
 
@@ -566,6 +567,8 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 - The numbers are always those of the link's codes and populations. The "How was this calculated?" panel lists them (`frontend/src/features/results/MethodologyPanel.tsx`, `EstimateView.tsx`, `CompareView.tsx`), but it is collapsed by default, so a reader who does not open it cannot tell a misleading label from what was computed.
 - Labels are rendered as text with no markup (abuse case 4), and nothing is stored, so a link can only mislead whoever opens it.
 - Showing the codes, or a "label set by this link" hint, next to a custom label would narrow this. It is not implemented.
+
+**R15. The CI runner's toolchain is trusted.** The deployed image is built on a GitHub-hosted `ubuntu-24.04` runner whose image GitHub updates on its own schedule. It supplies the Docker engine, containerd and the buildx CLI that drive the build (no `version:` is pinned for buildx), the `docker save` and `docker load` that hand the image to the push job, and the shell and Python that run every step. Every input the repository names is pinned (actions by commit SHA, base images and the BuildKit daemon by digest, Trivy and actionlint by version and SHA-256, wheels by hash, npm packages by lockfile), but a compromised runner image or Docker release would reach the build regardless, and neither the image gate nor Trivy can detect injected code. Pinning the BuildKit daemon (C19) narrows what a mutable upstream tag can change; it does not remove this trust.
 
 ## Verification status
 

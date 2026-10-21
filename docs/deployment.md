@@ -921,6 +921,7 @@ Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_se
 | `E2E_BACKEND_PYTHON` | `../.venv/bin/python` | `python` | interpreter Playwright uses for the E2E backend |
 | `PUBLIC_BASE_URL` | unset (required) | `http://127.0.0.1:8541` | the site `frontend/playwright.deployed.config.ts` and `scripts/ops/monitors.py` check: the deployed origin, or the local stack's edge |
 | `TRIVY_VERSION`, `TRIVY_SHA256` | `image.yml` | `0.75.0`, `c6e65abd…` | the pinned scanner (an immutable release); bump both together after checking the release's checksums |
+| BuildKit image (`driver-opts` of `docker/setup-buildx-action`) | `image.yml` | `moby/buildkit:v0.33.1@sha256:cec9f139…` | the daemon that builds the image, pinned by digest (review round 3); Dependabot does not update it: bump the tag and digest together to a release at least two weeks old (`docker buildx imagetools inspect moby/buildkit:vX.Y.Z` prints the digest) |
 | `ACTIONLINT_VERSION`, `ACTIONLINT_SHA256` | `ci.yml` | `1.7.12`, `8aca8db9…` | the pinned workflow linter; locally: `uvx --from actionlint-py actionlint` |
 
 ### Rotation

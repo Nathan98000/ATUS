@@ -70,8 +70,20 @@ jobs:
       - name: Lint the packaging files (Dockerfiles, compose, shell, ShellCheck)
         run: deploy/ci/lint.sh
 
-      - name: Set up Docker Buildx
+      # The builder's BuildKit daemon runs every Dockerfile step of the image
+      # deploy.yml pushes and Render runs by digest, and supplies the Dockerfile
+      # frontend, so it is pinned like the bases (review round 3,
+      # buildkit-daemon-unpinned): without driver-opts, buildx starts the
+      # mutable Docker Hub tag moby/buildkit:buildx-stable-1 (here v0.33.1, the
+      # image that tag named on 2026-10-21). Dependabot does not update
+      # driver-opts. To bump: pick a BuildKit release at least two weeks old,
+      # read its index digest with
+      #   docker buildx imagetools inspect moby/buildkit:vX.Y.Z
+      # and update the tag and digest together.
+      - name: Set up Docker Buildx (BuildKit pinned by digest)
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          driver-opts: image=moby/buildkit:v0.33.1@sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea
 
       - name: Read the package version
         id: version
