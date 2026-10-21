@@ -552,6 +552,62 @@ def test_the_commands_build_verify_and_compare(full, target, tmp_path):
     assert diff["specs"] >= 25 and all(r["equivalent"] for r in diff["results"])
 
 
+def _loopback_alias(url: str) -> str:
+    """The same database through the other loopback name."""
+    parts = urlsplit(url)
+    host = "127.0.0.1" if parts.hostname == "localhost" else "localhost"
+    return urlunsplit(parts._replace(netloc=parts.netloc.replace(parts.hostname, host, 1)))
+
+
+def test_compare_refuses_to_compare_a_database_with_itself(full, builds, mutable_full):
+    """Review r3 (compare-serving-db-self-comparison): the engine-level diff
+    never checked which databases it compared. A database compared with
+    itself (the drill runbook's ATUS_DATABASE_URL left on the drill, say)
+    printed "N equivalent, 0 not" and exited 0, a pass that proves nothing.
+    Now the same database, a serving database as --full, and a database
+    without the serving marker as --serving are each refused before any
+    comparison, and both data versions are printed."""
+    (serving, _), (other_serving, _) = builds
+    cases = [
+        (serving, serving, "name the same database"),
+        (full, _loopback_alias(full), "name the same database"),
+        (other_serving, serving, "--full ("),            # a serving build as --full
+        (serving, _loopback_alias(serving), "name the same database"),
+        (full, mutable_full, "carries no serving marker"),    # a copy of the full one
+    ]
+    for full_side, serving_side, reason in cases:
+        result = _cli("compare-serving-db", "--full", full_side, "--serving", serving_side,
+                      "--specs", "1")
+        assert result.exit_code == 1, (full_side, serving_side, result.output)
+        assert reason in result.output, result.output
+        assert " equivalent, " not in result.output and "Traceback" not in result.output
+    passed = _cli("compare-serving-db", "--full", full, "--serving", serving, "--specs", "1")
+    assert passed.exit_code == 0, passed.output
+    with psycopg.connect(full) as a, psycopg.connect(serving) as b:
+        assert f"Full data version:    {read_data_version(a)}" in passed.output
+        assert f"Serving data version: {read_data_version(b)}" in passed.output
+
+
+def test_compare_fails_on_a_serving_copy_that_differs(full, builds, test_db_url):
+    """Review r3: the CLI's negative case. One sleep episode recoded in a
+    copy of the serving database makes the diff fail (exit 1)."""
+    (serving, _), _ = builds
+    changed = clone_database(test_db_url, serving, "srvb_changed")
+    try:
+        with psycopg.connect(changed) as conn:
+            updated = conn.execute(
+                "UPDATE atus.activities SET activity_code = '010201' WHERE ctid = ("
+                "SELECT ctid FROM atus.activities WHERE activity_code = '010101' LIMIT 1)"
+            ).rowcount
+            assert updated == 1
+        result = _cli("compare-serving-db", "--full", full, "--serving", changed,
+                      "--specs", "5")
+        assert result.exit_code == 1, result.output
+        assert "NOT EQUIVALENT" in result.output
+    finally:
+        drop_scratch_database(changed)
+
+
 def test_verify_reports_a_database_that_does_not_match_its_manifest(builds, tmp_path):
     (serving, report), _ = builds
     manifest = {"kind": "atus-serving-db", "data_version": report.data_version,

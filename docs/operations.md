@@ -737,7 +737,7 @@ Two answers to the same specification (from the full and the serving database, o
 | `tests/integration/test_year_pushdown.py` | Phase 2–4 SQL vs the current SQL: raw statistics for the extremes plus 250 random specifications, and engine outputs for 120, on the randomized and the hand-computed fixtures | CI (integration) |
 | `tests/integration/test_serving_build.py` | full vs serving fixture database: engine results and API responses | CI (integration) |
 | `tests/integration/test_equivalence_harness.py` | real servers b and c, on a fixture full database and a serving database built from it; a mutated serving copy must be caught | CI (integration) |
-| `atus compare-serving-db [--specs 200] [--seed 20261020] [--report FILE]` | engine-level randomized diff of the full database (`$ATUS_DATABASE_URL`) against the serving one (`$ATUS_SERVING_DATABASE_URL`). Both are read only with `jit=off` | each release, on the build and on the drill ([runbooks](#serving-db-build-and-restore)) |
+| `atus compare-serving-db [--specs 200] [--seed 20261020] [--report FILE]` | engine-level randomized diff of the full database (`$ATUS_DATABASE_URL`) against the serving one (`$ATUS_SERVING_DATABASE_URL`). Both are read only with `jit=off`. It refuses one database on both sides, a serving database as the full side and an unmarked database as the serving side, and prints both data versions (review round 3; `test_serving_build.py::test_compare_refuses_to_compare_a_database_with_itself`, `::test_compare_fails_on_a_serving_copy_that_differs`) | each release, on the build and on the drill ([runbooks](#serving-db-build-and-restore)) |
 | `scripts/equivalence/run.sh` | three-way HTTP replay: a = Phase 1–4 API (387fc2d) on the full database, b = Phase 5 on the full database, c = Phase 5 on the serving database. Corpus: `docs/evidence/phase5/equivalence/specs/` | each release, and after any engine SQL change ([`scripts/equivalence/README.md`](../scripts/equivalence/README.md)) |
 | `ATUS_DATA_QUALITY=1 pytest tests/data_quality/test_query_plans.py` | full database, opt-in: the seven hazard specifications scan `atus.activities` only inside the materialized CTE, answer within the 85 s budget, and match the Phase 2–4 sufficient statistics | after any engine SQL change |
 | `scripts/ops/deploy_smoke.py --recompute 2` (`deploy.yml`) | two home-page starters served from the static snapshot vs recomputed live through the Worker with different request bytes | every deploy |
@@ -1042,7 +1042,7 @@ Restore every release artifact once, as production will, into a fresh cluster wi
    ATUS_DATA_QUALITY=1 pytest tests/data_quality/test_analytics_benchmarks.py tests/data_quality/test_api_benchmarks.py
    ```
 
-   Then, with `ATUS_DATABASE_URL` set back to the full database and `ATUS_SERVING_DATABASE_URL` set to the drill's `ATUS_API_DATABASE_URL`:
+   `compare-serving-db` prints both data versions, and refuses (exit 1, nothing compared) when both sides name the same database, when the full side is a serving database, or when the serving side has no serving marker: an `ATUS_DATABASE_URL` left on the drill would otherwise compare the drill with itself and pass (review round 3). Then, with `ATUS_DATABASE_URL` set back to the full database and `ATUS_SERVING_DATABASE_URL` set to the drill's `ATUS_API_DATABASE_URL`:
 
    ```bash
    atus compare-serving-db --specs 150 --report compare-drill.json
