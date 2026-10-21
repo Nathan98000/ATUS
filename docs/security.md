@@ -2,7 +2,7 @@
 
 Threat model for the Phase 5 production design ([ADR-011](adr/ADR-011-hosting.md)): assets, trust boundaries, the controls as implemented, abuse cases, production exposure decisions and accepted risks.
 
-**Status (2026-10-20): nothing is deployed.** Every control below is implemented in this repository and covered by the tests named with it. The CI workflows that run those tests have not yet run on GitHub ([roadmap](roadmap.md#remaining-for-the-definition-of-done), item 4), so every test result so far is local. None of the controls has been observed on the real providers yet. Owner settings and provider behaviours that the repository cannot test are marked as such.
+**Status (2026-10-20): nothing is deployed.** Every control below is implemented in this repository and covered by the tests named with it. The CI workflows that run those tests have not yet run on GitHub ([roadmap](roadmap.md#remaining-for-the-definition-of-done), item 1), so every test result so far is local. None of the controls has been observed on the real providers yet. Owner settings and provider behaviours that the repository cannot test are marked as such.
 
 Related documents:
 
@@ -35,13 +35,13 @@ browser ──TLS──▶ Cloudflare edge ─┬─ static assets: SPA, /snap/ 
                                                                      Neon (serving DB)
 
 GitHub Actions: image → GHCR, Render deploy hook, wrangler deploy (environment `production`, owner approval)
-owner machine:  ~/.config/atus/edge.env and neon.env, the neondb_owner DSN, every provider login
+owner machine:  ~/.config/atus/edge.env and neon-*.env (one per Neon project), the neondb_owner DSN, every provider login
 ```
 
 | Boundary | What the receiving side trusts | Enforced by |
 |---|---|---|
 | browser → Worker | nothing the client sends; only Cloudflare's `CF-Connecting-IP` | C1, C3, C4 |
-| Worker → API | `X-ATUS-Client-IP` and `X-Request-ID`, and only together with a valid `X-ATUS-Edge-Auth`. All other traffic to the onrender.com hostname is treated as direct-origin traffic | C2, C3 |
+| Worker → API | `X-ATUS-Client-IP` and `X-Request-ID`, and only together with a valid `X-ATUS-Edge-Auth`. All other traffic to the onrender.com hostname is treated as direct-origin traffic and gets 403, except `/health` and, with a valid `ATUS_OPS_TOKEN` bearer, `/ready` and `/metrics` | C2, C3, C14 |
 | API → Neon | the API can read the served tables and nothing else | C8, C9; TLS settings from the connection string (R11) |
 | GitHub → production | only `.github/workflows/deploy.yml` deploys, on a `v*` tag or a manual run, after the owner approves the `production` environment | C19, C20 |
 | owner machine → everything | fully trusted: it holds the owner DSN and every generated secret | C18 keeps those files private; protecting the machine and accounts is the owner's job (R12) |
@@ -54,7 +54,7 @@ Defaults are the values in the code today. The calibration of timeouts and concu
 Code: `edge/src/routes.ts`. Tests: `edge/test/worker/routing.test.ts`.
 
 **C2. Edge authentication at the API.**
-- Every path except `/health` needs one of at most two accepted `X-ATUS-Edge-Auth` values (two, so the secret can be rotated). The presented value is compared in constant time against every accepted value.
+- Every path except `/health` needs one of at most two accepted `X-ATUS-Edge-Auth` values (two, so the secret can be rotated), with one exception: `/ready` and `/metrics` also accept a valid `Authorization: Bearer <ATUS_OPS_TOKEN>` without the edge secret (C14). That makes the ops token a second credential at the origin, and a leaked one can wake Neon through `/ready` ([Leaked tokens](#10-leaked-tokens)). The presented value is compared in constant time against every accepted value.
 - A failed check gets 403 `forbidden_origin` before rate limiting, routing or any database work.
 - In production the API refuses to start without a secret of at least 32 characters.
 
@@ -276,7 +276,7 @@ Tests:
 
 **C17. Visitor privacy.**
 - **API logs.** Access lines keep only the client's IPv4 /24 or IPv6 /48. They never contain bodies, specs or query strings, and uvicorn's own access log is off.
-- **Worker logs.** No IP, no prefix hash, no body.
+- **Worker logs.** No IP, no prefix hash, no body. Cloudflare's per-request invocation logs are off (`invocation_logs: false` in `edge/wrangler.jsonc`), because they may record request headers, `CF-Connecting-IP` included (ADR-014).
 - **Governor storage.**
   - It stores an HMAC-SHA256 of the /24 or /48, truncated to 128 bits. The key is derived each UTC day from `IP_HMAC_KEY` and the date.
   - Prefix rows are deleted at the first event after 00:00 UTC, and by a midnight alarm when there is no traffic.
@@ -287,7 +287,7 @@ Tests:
   - by inspection (no test), `frontend/src` sets no cookies and uses no Web Storage.
 - **Retention** is the providers' log retention (ADR-014).
 
-Code: `src/atus_pipeline/api/observability.py` (`ip_prefix`), `src/atus_pipeline/api/middleware.py`, `edge/src/admission.ts` (`prefixHmac`), `edge/src/governor.ts`, `edge/src/index.ts`.
+Code: `src/atus_pipeline/api/observability.py` (`ip_prefix`), `src/atus_pipeline/api/middleware.py`, `edge/src/admission.ts` (`prefixHmac`), `edge/src/governor.ts`, `edge/src/index.ts`, `edge/wrangler.jsonc` (`observability`; held by `edge/test/node/config.test.ts`).
 Tests:
 - `tests/unit/api/test_observability.py` (`TestIpTruncation`, `TestAccessLog::test_no_full_address_body_or_spec_is_logged`);
 - `tests/unit/api/test_edge_contract.py::TestMissingClientIp`;
@@ -412,6 +412,7 @@ Tests:
 - **Plausible but invalid specs.** These are sent, and the API refuses them with a 422. Most cost no database statement (C4, C7); the exceptions are listed under abuse case 2.
 - **Labels.** Free-text labels are rendered as React text. By inspection, `frontend/src` contains no `dangerouslySetInnerHTML` or `innerHTML`, and the CSP forbids inline script.
 - **No stored content.** There is no link storage, so a link cannot plant content on the site ([ADR-016](adr/ADR-016-short-share-links.md)).
+- **Content spoofing through labels (accepted, R13).** A link chooses the free-text activity label (up to 120 characters) and group labels (up to 80 each), which become the page heading and the result sentence on the site's own hostname: a sleep estimate can be headed "Working (official BLS figure)". The codes and populations actually computed are listed only in the collapsed "How was this calculated?" panel.
 - **No cross-spec answers.** A link cannot select a cached answer for another spec: the KV key covers the exact request bytes (C10).
 
 ### 5. Forged forwarded-IP and edge headers
@@ -426,7 +427,7 @@ Tests:
 ### 6. Direct-origin access
 
 - **The hostname.** The onrender.com hostname cannot be disabled without a custom domain (ADR-011). It is never published, and the recommended service name has a random suffix.
-- **The origin lock.** Without the edge secret, every request except to `/health` gets 403 `forbidden_origin`, with no database work (C2). The one earlier check is the body cap: a declared body over the cap gets 413 first.
+- **The origin lock.** Without the edge secret, every request gets 403 `forbidden_origin`, with no database work (C2), except `/health`, and `/ready` and `/metrics` with a valid `ATUS_OPS_TOKEN` bearer (C14). The one earlier check is the body cap: a declared body over the cap gets 413 first.
   - Checked locally by the `origin_lock` check in `deploy/stack/edge_probe.py`.
   - After deploy, `scripts/ops/deploy_smoke.py --origin-lock` checks it; that has not run yet.
 - **`/health`.** It answers anyone with `{"status": "ok", "build": <git SHA>}` and touches nothing. The SHA is public in the repository anyway.
@@ -474,8 +475,8 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 | `OPS_TOKEN` | Worker secret, `edge.env`, GitHub `EDGE_OPS_TOKEN` | The read-only budget report: counts and limits, no IPs or prefix hashes |
 | `IP_HMAC_KEY` | Worker secret, `edge.env` | Today's prefix HMACs can be reversed by enumerating prefixes; IPv4 has 2^24 /24s. Rows from earlier days are already deleted |
 | `RENDER_ORIGIN` | Worker secret, GitHub secret, `edge.env` | Not a credential. It reveals the direct-origin hostname (R3) |
-| `atus_api` password (in `ATUS_DATABASE_URL`) | Render env, `neon.env` | Reads of the served tables, which hold public data, and Neon compute spend. No writes (C9). The role defaults do not bind the holder (R4). At most 10 connections |
-| `neondb_owner` DSN | `neon.env` on the owner machine only | Full control of the serving DB: the statistics could be altered. Recovery is a restore from the sha256-verified release dump |
+| `atus_api` password (in `ATUS_DATABASE_URL`) | Render env, the project's `neon-<release>-<build8>.env` | Reads of the served tables, which hold public data, and Neon compute spend. No writes (C9). The role defaults do not bind the holder (R4). At most 10 connections |
+| `neondb_owner` DSN | the project's `neon-<release>-<build8>.env`, on the owner machine only | Full control of the serving DB: the statistics could be altered. Recovery is a restore from the sha256-verified release dump |
 | `NEON_API_KEY` (optional) | Worker secret | Editor rights on the project (R6) |
 | `CLOUDFLARE_API_TOKEN` | GitHub environment `production` | Deploys arbitrary Worker code, vars and static assets on the public origin, so it controls everything visitors see, statistics included |
 | `RENDER_DEPLOY_HOOK_URL` | GitHub environment `production` | Redeploys the API with any image whose URL matches the service's image except for the digest (Render's documented rule, ADR-011), that is, another version of `ghcr.io/nathan98000/atus-api` |
@@ -523,12 +524,12 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 - which headers reach the app through the Worker, and whether `X-ATUS-Client-IP` arrives unchanged; that a client cannot override `CF-Connecting-IP` on workers.dev is assumed, not tested;
 - whether `_headers` applies to the SPA-fallback `index.html`. The `<meta>` CSP backstop covers every directive except `frame-ancestors`, which a meta element cannot carry, and `scripts/ops/deploy_smoke.py` reports it;
 - whether Cloudflare's 125 s proxy read timeout applies to the Worker→Render hop;
-- whether Workers invocation logs (enabled in `edge/wrangler.jsonc`) record client IPs or headers;
+- whether Workers invocation logs record client IPs or headers. They stay off (`invocation_logs: false`, `edge/test/node/config.test.ts`) until a record on the deployed Worker shows they do not (ADR-014);
 - the minimal Cloudflare token for `wrangler deploy`;
 - whether the Free plan can create project-scoped Neon keys;
 - whether Neon accepts `ALTER ROLE atus_api SET ...`;
 - whether `sslrootcert=system` verifies Neon's live certificate;
-- the exact response after the 100k/day Worker limit, and Neon's error when its quota is exhausted. Both are handled in code and never induced.
+- the exact response after the 100k/day Worker limit, and Neon's error when its quota is exhausted. Neither is induced. Only a non-JSON 429 gets the SPA's daily-allowance page; an Error 1027 page with another status does not (a 5xx is retried as a cold start, another 4xx is a generic error). Neon's error maps to `database_paused`.
 
 **R9. The API's limits reset on restart.** Its buckets, daily cap and lanes live in one process, and Render may restart a Free service at any time. The governor's durable state is the primary limit.
 
@@ -542,6 +543,11 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 - The owner copies that value to Render.
 
 **R12. The owner machine is fully trusted.** It holds the `neondb_owner` DSN, every generated secret and the provider logins. The repository can only keep those files private (mode 0600) and never print them. Protecting the machine and the accounts is the owner's job.
+
+**R13. Link-supplied labels (content spoofing).** A share link is stateless, so whoever writes it chooses the label text the site shows as the heading and in the result sentence: up to 120 characters for the activity and 80 per group (`src/atus_pipeline/api/schemas/analysis.py`).
+- The numbers are always those of the link's codes and populations. The "How was this calculated?" panel lists them (`frontend/src/features/results/MethodologyPanel.tsx`, `EstimateView.tsx`, `CompareView.tsx`), but it is collapsed by default, so a reader who does not open it cannot tell a misleading label from what was computed.
+- Labels are rendered as text with no markup (abuse case 4), and nothing is stored, so a link can only mislead whoever opens it.
+- Showing the codes, or a "label set by this link" hint, next to a custom label would narrow this. It is not implemented.
 
 ## Verification status
 

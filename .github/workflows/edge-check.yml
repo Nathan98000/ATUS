@@ -9,7 +9,7 @@
 # A failure emails the owner: GitHub notifies about failed scheduled runs, with
 # Settings -> Notifications -> System -> Actions set to "Email" and "Only
 # notify for failed workflows" (docs/deployment.md, owner step 4.3). Skipped
-# until the repository variable PUBLIC_BASE_URL is set (before the first deploy).
+# until the repository variable PUBLIC_BASE_URL is set (after the first verified deploy).
 name: Edge check
 
 on:

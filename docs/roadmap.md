@@ -266,4 +266,5 @@ implemented, and no Worker var selects the API origin).
    replay must confirm the emulation's calibration on Neon, F66 included
    (ADR-012, "What stays open").
 5. **Monitors live**: the scheduled workflows stay skipped until the
-   repository variable `PUBLIC_BASE_URL` is set after the first deploy.
+   repository variable `PUBLIC_BASE_URL` is set, after the first deploy has
+   been verified (deployment.md, owner step 4.1 and step 8).

@@ -206,7 +206,8 @@ This ADR describes only the API's logs. The Worker writes one JSON line per `/ap
 
 ### Workers invocation logs
 
-`edge/wrangler.jsonc` enables `observability.logs.invocation_logs`. Whether Cloudflare's invocation records include the client IP or request headers is unverified ([ADR-011](ADR-011-hosting.md), "Unknowns").
+The Phase 5 review (round 1, 2026-10-21) turns them off: `edge/wrangler.jsonc` sets `invocation_logs: false`, and `edge/test/node/config.test.ts` keeps it so. Workers Logs still stores the Worker's own line (above).
 
-- **What is verified.** "Logs and metrics never see more than the /24 or /48 prefix" is verified only for the API's records and the Worker's own line.
-- **If they do hold full addresses.** They are kept for Workers Logs' retention, unless `invocation_logs` is turned off.
+- **Why.** Cloudflare's per-request invocation records can carry request metadata and headers, `CF-Connecting-IP` included. Whether they do on this Worker is unverified ([ADR-011](ADR-011-hosting.md), "Unknowns"). If they did, full client addresses would be kept for Workers Logs' retention, against "raw IPs only in memory" (brief §12; [security.md](../security.md) C17) and the About page.
+- **What is lost.** Nothing the Worker's line lacks: it has the route, status, outcome, cache and governor verdicts and the duration. CPU time per request is in the Worker's metrics.
+- **Turning them back on** needs one invocation record on the deployed Worker inspected first and found to hold no client IP or headers, and then C17 and the About page updated to say so.

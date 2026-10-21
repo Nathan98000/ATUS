@@ -533,6 +533,8 @@ jobs:
             (without an id: the version before the current one), then
             \`python scripts/ops/monitors.py edge --base-url $PUBLIC_BASE_URL\`.
           - **Data:** the release switch in reverse (ADR-013): restore the previous Render
-            \`ATUS_DATABASE_URL\` and \`ATUS_EXPECTED_DATA_VERSION\`, then re-run this workflow at the
-            commit whose releases/current.json names the previous release.
+            \`ATUS_DATABASE_URL\` and \`ATUS_EXPECTED_DATA_VERSION\`; restore the previous
+            release's manifest on main (\`git checkout <its commit> -- releases/current.json\`),
+            commit and push; then \`gh workflow run deploy.yml --ref main\` and approve
+            (docs/operations.md, "Rollback").
           EOF
