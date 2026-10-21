@@ -187,7 +187,10 @@ services:
         condition: service_healthy
     environment:
       # Worker secrets (written to .dev.vars inside the container, never argv).
-      RENDER_ORIGIN: http://api:10000
+      # The Worker takes plain HTTP only from a loopback origin, so the
+      # entrypoint relays 127.0.0.1:10000 to the api container.
+      RENDER_ORIGIN: http://127.0.0.1:10000
+      ATUS_EDGE_UPSTREAM: api:10000
       EDGE_AUTH_SECRET: ${ATUS_STACK_EDGE_SECRET:?set it in the stack env file (deploy/stack/stack.env.example)}
       OPS_TOKEN: ${ATUS_STACK_EDGE_OPS_TOKEN:-}
       IP_HMAC_KEY: ${ATUS_STACK_IP_HMAC_KEY:-}

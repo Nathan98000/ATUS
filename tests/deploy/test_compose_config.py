@@ -206,7 +206,10 @@ class TestProductionCompose:
         assert edge["profiles"] == ["edge"]
         assert edge["build"]["dockerfile"] == "deploy/edge/Dockerfile"
         env = edge["environment"]
-        assert env["RENDER_ORIGIN"] == "http://api:10000"
+        # The Worker refuses plain HTTP to a non-loopback origin; the entrypoint
+        # relays loopback to the api container (deploy/edge/relay.mjs).
+        assert env["RENDER_ORIGIN"] == "http://127.0.0.1:10000"
+        assert env["ATUS_EDGE_UPSTREAM"] == "api:10000"
         assert env["EDGE_AUTH_SECRET"] == DUMMY_STACK_ENV["ATUS_STACK_EDGE_SECRET"]
         assert env["WRANGLER_SEND_METRICS"] == "false"
         (assets,) = edge["volumes"]

@@ -25,6 +25,15 @@ for name in DATA_VERSION ANALYTICS_VERSION RESPONSE_FORMAT SNAPSHOT_ID EPOCH \
   fi
 done
 
+# The Worker accepts plain HTTP only to a loopback origin (every upstream call
+# carries the edge secret). In the stack the API is another container, so
+# ATUS_EDGE_UPSTREAM=<host>:<port> starts a loopback relay to it on
+# ATUS_EDGE_RELAY_PORT, and RENDER_ORIGIN names http://127.0.0.1:<that port>.
+if [ -n "${ATUS_EDGE_UPSTREAM:-}" ]; then
+  node /usr/local/lib/atus-edge-relay.mjs "127.0.0.1:${ATUS_EDGE_RELAY_PORT:-10000}" \
+    "$ATUS_EDGE_UPSTREAM" &
+fi
+
 # --no-install: run the wrangler the lockfile installed, never a download.
 exec npx --no-install wrangler dev --ip 0.0.0.0 --port 8787 \
   --persist-to /tmp/wrangler-state --show-interactive-dev-session=false "$@"

@@ -111,7 +111,7 @@ def test_edge_build_context_sends_only_the_worker():
     ]
     assert lines[0] == "*"
     assert {line for line in lines if line.startswith("!")} == {
-        "!edge/", "!deploy/edge/entrypoint.sh"
+        "!edge/", "!deploy/edge/entrypoint.sh", "!deploy/edge/relay.mjs"
     }
     assert "edge/node_modules" in lines and "edge/.dev.vars*" in lines
 
