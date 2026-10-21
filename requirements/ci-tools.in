@@ -1,0 +1,10 @@
+# CI-only tools (input to ci-tools.lock.txt). Installed with --require-hashes
+# into their own virtualenv by .github/workflows/ci.yml (job supply-chain),
+# never into the application's environment or image.
+#
+#   pip-audit  known vulnerabilities in requirements/api.lock.txt (brief §11)
+#
+# actionlint is not here: PyPI's actionlint-py is an sdist that downloads the
+# binary while it builds, which a hash check cannot cover. CI installs the
+# release binary pinned by version and SHA-256 instead.
+pip-audit>=2.9

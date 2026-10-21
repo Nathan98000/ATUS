@@ -1,0 +1,44 @@
+# Daily quota report (ADR-011 "Quota governor: Visibility", ADR-015): fails, and
+# so emails the owner, when any provider budget is above 70% of its pro-rated
+# value.
+#
+# One request: GET /api/_ops/budget with the Worker's OPS_TOKEN (GitHub secret
+# EDGE_OPS_TOKEN in the `ops` environment). The Worker answers from the quota
+# governor's own storage; nothing reaches Render or Neon. Runs at 22:05 UTC, so
+# the governor's daily counters (reset at 00:00 UTC) cover most of the day and
+# a delayed run still lands before the reset.
+name: Quota report
+
+on:
+  schedule:
+    - cron: "5 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quota-report
+  cancel-in-progress: false
+
+jobs:
+  quota:
+    name: Governor budgets against their pro-rated quotas
+    if: ${{ vars.PUBLIC_BASE_URL != '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: ops
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the monitor scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/ops
+
+      - name: Read and judge the budgets (the token is read from the environment, never printed)
+        env:
+          PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+          EDGE_OPS_TOKEN: ${{ secrets.EDGE_OPS_TOKEN }}
+        run: python3 scripts/ops/monitors.py quota --threshold 0.7

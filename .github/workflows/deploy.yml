@@ -1,0 +1,524 @@
+# Deploy: the only path to production (ADR-011 "Deploy"; docs/deployment.md,
+# "7. First approved deploy" and "Rollback").
+#
+# Runs on a vMAJOR.MINOR.PATCH tag or a manual run from main; a push to main
+# deploys nothing (Render's image-backed service never auto-deploys, Workers
+# Builds is never connected). Jobs, each with the least permission it needs:
+#
+#   preflight  the ref is a semver tag or main; releases/current.json names a
+#              published serving-DB release
+#   build      image.yml from scratch (no build cache): the strict gate,
+#              deployment tests, stack smoke plain and emulated, Trivy
+#   push       the one job with packages: write: pushes exactly the tested
+#              image (same image ID) to GHCR and outputs its digest
+#   snapshot   restores the release dump (sha256-verified) into postgres:16
+#              with the production roles (scripts/ops/roles.sql), runs the
+#              pushed digest read-only against it, builds the static snapshot
+#              and the same-origin SPA. Before any deploy step, so a failure
+#              here deploys nothing
+#   deploy     environment `production` (the owner approves): Render deploy
+#              hook by digest, wait for the build, wrangler deploy with the
+#              release vars, post-deploy smoke (<= 40 requests), browser smoke,
+#              rollback notes in the job summary
+#
+# Secrets are read from the environment by the scripts and never echoed.
+name: Deploy
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Why this manual deploy (shown in the summary)
+        type: string
+        required: false
+
+permissions: {}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  GHCR_REPOSITORY: ghcr.io/nathan98000/atus-api
+  NODE_VERSION: "24"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      data_version: ${{ steps.release.outputs.data_version }}
+      release_tag: ${{ steps.release.outputs.release_tag }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Deploy only vMAJOR.MINOR.PATCH tags, or main by hand
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          if [ "$REF_TYPE" = tag ]; then
+            if ! [[ "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::deploy tags are vMAJOR.MINOR.PATCH; got $REF_NAME"
+              exit 1
+            fi
+          elif [ "$REF_NAME" != main ]; then
+            echo "::error::manual deploys run from main only; got $REF_NAME"
+            exit 1
+          fi
+          {
+            echo "### Deploy $REF_NAME ($GITHUB_SHA)"
+            if [ -n "$REASON" ]; then echo "Reason: $REASON"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: The release manifest names a published release
+        id: release
+        run: python3 scripts/ops/release_manifest.py check --require-published
+
+  build:
+    name: Image
+    needs: preflight
+    uses: ./.github/workflows/image.yml
+    permissions:
+      contents: read
+    with:
+      build-sha: ${{ github.sha }}
+      use-cache: false
+
+  push:
+    name: Push the tested image
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_ref: ${{ steps.push.outputs.image_ref }}
+    steps:
+      - name: Download the tested image
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: atus-api-image
+          path: ${{ runner.temp }}/image
+
+      - name: Load it (same image ID as the one the build job tested)
+        env:
+          TESTED_ID: ${{ needs.build.outputs.image-id }}
+        run: |
+          docker load -i "$RUNNER_TEMP/image/atus-api.tar"
+          loaded=$(docker image inspect --format '{{.Id}}' atus-api:ci)
+          test "$loaded" = "$TESTED_ID"
+          test "$loaded" = "$(cat "$RUNNER_TEMP/image/atus-api.id")"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push by digest
+        id: push
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          tags="sha-$GITHUB_SHA"
+          docker tag atus-api:ci "$GHCR_REPOSITORY:sha-$GITHUB_SHA"
+          docker push "$GHCR_REPOSITORY:sha-$GITHUB_SHA"
+          if [ "$REF_TYPE" = tag ]; then
+            docker tag atus-api:ci "$GHCR_REPOSITORY:$REF_NAME"
+            docker push "$GHCR_REPOSITORY:$REF_NAME"
+            tags="$tags, $REF_NAME"
+          fi
+          image_ref=$(docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' atus-api:ci \
+            | grep -E "^${GHCR_REPOSITORY}@sha256:[0-9a-f]{64}$" | head -n 1)
+          if [ -z "$image_ref" ]; then
+            echo "::error::no GHCR digest recorded for the pushed image"
+            exit 1
+          fi
+          docker buildx imagetools inspect "$image_ref" > /dev/null
+          echo "image_ref=$image_ref" >> "$GITHUB_OUTPUT"
+          echo "Pushed \`$image_ref\` (tags: $tags)" >> "$GITHUB_STEP_SUMMARY"
+
+  snapshot:
+    name: Static snapshot from the release, with this image
+    needs: [preflight, push]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: read
+    services:
+      postgres:
+        # Postgres 16 like Neon (ADR-011); the release is restored as a
+        # non-superuser owner with scripts/ops/roles.sql, as on Neon.
+        image: postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          # Runner-local bootstrap superuser, only used to create the owner.
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --shm-size=1g
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    outputs:
+      snapshot_id: ${{ steps.snapshot.outputs.snapshot_id }}
+      data_version: ${{ steps.snapshot.outputs.data_version }}
+      analytics_version: ${{ steps.snapshot.outputs.analytics_version }}
+      response_format: ${{ steps.snapshot.outputs.response_format }}
+    env:
+      IMAGE_REF: ${{ needs.push.outputs.image_ref }}
+      DATA_VERSION: ${{ needs.preflight.outputs.data_version }}
+      API_PORT: "8571"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock.txt
+
+      - name: Install the hash-locked environment (atus restore-serving-db)
+        run: |
+          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --no-deps --no-build-isolation -e .
+
+      - name: Download the release artifact (sizes and SHA-256 from releases/current.json)
+        id: release
+        run: python scripts/ops/release_manifest.py fetch --out "$RUNNER_TEMP/release"
+
+      - name: Restore it as on Neon (non-superuser owner, roles.sql, VACUUM, checks)
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          DUMP: ${{ steps.release.outputs.dump_path }}
+        run: |
+          umask 077
+          OWNER_PASSWORD=$(openssl rand -hex 24)
+          export OWNER_PASSWORD
+          echo "::add-mask::$OWNER_PASSWORD"
+          psql -v ON_ERROR_STOP=1 -d postgres <<'SQL'
+          \getenv pw OWNER_PASSWORD
+          CREATE ROLE neondb_owner LOGIN CREATEDB CREATEROLE PASSWORD :'pw';
+          CREATE DATABASE atus OWNER neondb_owner;
+          SQL
+          printf 'ATUS_OWNER_DATABASE_URL=postgresql://neondb_owner:%s@localhost:5432/atus\n' \
+            "$OWNER_PASSWORD" > "$RUNNER_TEMP/owner.env"
+          atus restore-serving-db --artifact "$DUMP" --secrets-file "$RUNNER_TEMP/owner.env" \
+            --report "$RUNNER_TEMP/restore-report.json"
+
+      - name: Log in to GHCR (read)
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run the pushed digest read-only against the restored release
+        run: |
+          umask 077
+          docker pull "$IMAGE_REF"
+          # Read with the restore's own parser (values may be single-quoted).
+          api_url=$(python -c 'import sys; from pathlib import Path
+          from atus_pipeline.serving.secrets_file import read_env_file
+          print(read_env_file(Path(sys.argv[1])).get("ATUS_API_DATABASE_URL", ""))' \
+            "$RUNNER_TEMP/owner.env")
+          if [ -z "$api_url" ]; then
+            echo "::error::the restore wrote no ATUS_API_DATABASE_URL"
+            exit 1
+          fi
+          edge_secret=$(openssl rand -hex 32)
+          echo "::add-mask::$edge_secret"
+          printf 'EDGE_AUTH_SECRET=%s\n' "$edge_secret" > "$RUNNER_TEMP/edge-secret.env"
+          # Production mode, the API role, the release's expected data version;
+          # generous per-client limits so the builder is not rate limited.
+          {
+            echo "ATUS_ENV=production"
+            echo "ATUS_DATABASE_URL=$api_url"
+            echo "ATUS_EDGE_SECRETS=$edge_secret"
+            echo "ATUS_EXPECTED_DATA_VERSION=$DATA_VERSION"
+            echo "ATUS_API_RATE_ANALYSIS=100000/60"
+            echo "ATUS_API_RATE_REQUESTS=100000/60"
+            echo "ATUS_API_DAILY_ANALYSIS_CAP=100000"
+          } > "$RUNNER_TEMP/api.env"
+          docker run -d --name atus-snapshot-api --network host --read-only --tmpfs /tmp \
+            --cap-drop ALL --security-opt no-new-privileges:true \
+            --env-file "$RUNNER_TEMP/api.env" "$IMAGE_REF" \
+            atus api --host 127.0.0.1 --port "$API_PORT"
+          for _ in $(seq 1 90); do
+            if curl -fsS -o "$RUNNER_TEMP/health.json" "http://127.0.0.1:$API_PORT/health"; then
+              break
+            fi
+            sleep 2
+          done
+          build=$(python -c 'import json, sys; print(json.load(open(sys.argv[1]))["build"])' \
+            "$RUNNER_TEMP/health.json")
+          if [ "$build" != "$GITHUB_SHA" ]; then
+            echo "::error::the pulled image reports build $build, not $GITHUB_SHA"
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build the SPA (same-origin)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build the static snapshot with this image (tier L0, ADR-015)
+        id: snapshot
+        run: |
+          snapshot_id=$(python scripts/build_snapshot.py --api-base "http://127.0.0.1:$API_PORT" \
+            --edge-secret-file "$RUNNER_TEMP/edge-secret.env" \
+            --requests-script frontend/scripts/snapshot-requests.mjs \
+            --api-build "$GITHUB_SHA" --data-version "$DATA_VERSION" --out frontend/dist/snap)
+          python scripts/build_snapshot.py --verify frontend/dist/snap
+          python - "$snapshot_id" <<'PY' >> "$GITHUB_OUTPUT"
+          import json, sys
+          pointer = json.load(open("frontend/dist/snap/current.json"))
+          assert pointer["snapshot_id"] == sys.argv[1], "snapshot id mismatch"
+          for key in ("snapshot_id", "data_version", "analytics_version", "response_format"):
+              print(f"{key}={pointer[key]}")
+          PY
+
+      - name: Guard the site (bundle checks; Workers static-asset limits)
+        run: |
+          (cd frontend && npm run check:bundle)
+          files=$(find frontend/dist -type f | wc -l)
+          if [ "$files" -gt 20000 ]; then
+            echo "::error::$files files; Workers static assets allow 20,000"
+            exit 1
+          fi
+          if [ -n "$(find frontend/dist -type f -size +25M)" ]; then
+            echo "::error::a static file is over 25 MiB"
+            exit 1
+          fi
+          echo "Site: $files files, snapshot $(jq -r .snapshot_id frontend/dist/snap/current.json)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Hand the site to the deploy job
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site-dist
+          path: frontend/dist/
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: API logs
+        if: ${{ failure() }}
+        run: docker logs --tail 200 atus-snapshot-api || true
+
+      - name: Stop the API
+        if: ${{ always() }}
+        run: docker rm -f atus-snapshot-api || true
+
+  deploy:
+    name: Deploy to production
+    needs: [push, snapshot]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment:
+      name: production
+      url: ${{ vars.PUBLIC_BASE_URL }}
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE_REF: ${{ needs.push.outputs.image_ref }}
+      SNAPSHOT_ID: ${{ needs.snapshot.outputs.snapshot_id }}
+      DATA_VERSION: ${{ needs.snapshot.outputs.data_version }}
+      ANALYTICS_VERSION: ${{ needs.snapshot.outputs.analytics_version }}
+      RESPONSE_FORMAT: ${{ needs.snapshot.outputs.response_format }}
+      PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The production environment is configured
+        env:
+          HAVE_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+          HAVE_ORIGIN: ${{ secrets.RENDER_ORIGIN != '' }}
+          HAVE_CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAVE_CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          missing=()
+          [ "$HAVE_HOOK" = true ] || missing+=(RENDER_DEPLOY_HOOK_URL)
+          [ "$HAVE_ORIGIN" = true ] || missing+=(RENDER_ORIGIN)
+          [ "$HAVE_CF_TOKEN" = true ] || missing+=(CLOUDFLARE_API_TOKEN)
+          [ "$HAVE_CF_ACCOUNT" = true ] || missing+=(CLOUDFLARE_ACCOUNT_ID)
+          [ -n "$PUBLIC_BASE_URL" ] || missing+=("PUBLIC_BASE_URL (variable)")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::not configured (docs/deployment.md, owner step 4): ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock.txt
+
+      - name: Install the hash-locked environment (the smoke's §9 comparison)
+        run: |
+          python -m pip install --require-hashes --no-deps -r requirements/dev.lock.txt
+          python -m pip install --no-deps --no-build-isolation -e .
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: |
+            edge/package-lock.json
+            frontend/package-lock.json
+
+      - name: Download the site (SPA + snapshot) built in the snapshot job
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site-dist
+          path: frontend/dist
+
+      - name: Edge toolchain (wrangler pinned by edge/package-lock.json) and config invariants
+        working-directory: edge
+        run: |
+          npm ci
+          npx --no-install vitest run --project node
+          if grep -Eq '"id": *"0{32}"' wrangler.jsonc; then
+            echo "::error::edge/wrangler.jsonc still has the placeholder KV namespace id (owner step 1.3)"
+            exit 1
+          fi
+
+      - name: Record what runs now (rollback targets)
+        id: before
+        continue-on-error: true
+        env:
+          RENDER_ORIGIN: ${{ secrets.RENDER_ORIGIN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python scripts/ops/render_deploy.py current-build --wake-timeout 180
+          (cd edge && npx --no-install wrangler deployments status --json) \
+            > "$RUNNER_TEMP/worker-before.json" 2> /dev/null || true
+
+      - name: Log in to GHCR (read; previous digest)
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Previous image digest
+        id: previous
+        continue-on-error: true
+        env:
+          PREVIOUS_BUILD: ${{ steps.before.outputs.build }}
+        run: |
+          if [[ "$PREVIOUS_BUILD" =~ ^[0-9a-f]{40}$ ]]; then
+            digest=$(docker buildx imagetools inspect "$GHCR_REPOSITORY:sha-$PREVIOUS_BUILD" \
+              --format '{{json .Manifest}}' | jq -r .digest)
+            echo "image_ref=$GHCR_REPOSITORY@$digest" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy the API image by digest (Render deploy hook)
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: python scripts/ops/render_deploy.py trigger --image-ref "$IMAGE_REF" --image-repo "$GHCR_REPOSITORY"
+
+      - name: Wait until Render serves this build (cold start, image pull)
+        env:
+          RENDER_ORIGIN: ${{ secrets.RENDER_ORIGIN }}
+        run: python scripts/ops/render_deploy.py wait --expect-build "$GITHUB_SHA" --timeout 900 --interval 15
+
+      - name: Deploy the edge (SPA, snapshot, Worker and its release vars)
+        working-directory: edge
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --no-install wrangler deploy \
+            --var "DATA_VERSION:$DATA_VERSION" \
+            --var "ANALYTICS_VERSION:$ANALYTICS_VERSION" \
+            --var "RESPONSE_FORMAT:$RESPONSE_FORMAT" \
+            --var "SNAPSHOT_ID:$SNAPSHOT_ID"
+
+      - name: Post-deploy smoke (at most 30 requests; secrets from the environment)
+        env:
+          RENDER_ORIGIN: ${{ secrets.RENDER_ORIGIN }}
+          EDGE_OPS_TOKEN: ${{ secrets.EDGE_OPS_TOKEN }}
+        run: |
+          args=(--base-url "$PUBLIC_BASE_URL" --expect-build "$GITHUB_SHA"
+                --expect-data-version "$DATA_VERSION" --expect-snapshot-id "$SNAPSHOT_ID"
+                --require-snapshot --recompute 2 --max-requests 30 --origin-lock
+                --report "$RUNNER_TEMP/smoke.json")
+          if [ -n "$EDGE_OPS_TOKEN" ]; then args+=(--ops-budget); fi
+          python scripts/ops/deploy_smoke.py "${args[@]}"
+
+      - name: Browser smoke against the public URL (one starter analysis)
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test -c playwright.deployed.config.ts
+
+      - name: Rollback notes
+        if: ${{ always() }}
+        env:
+          PREVIOUS_BUILD: ${{ steps.before.outputs.build }}
+          PREVIOUS_IMAGE: ${{ steps.previous.outputs.image_ref }}
+        run: |
+          worker_before="(not recorded)"
+          if [ -s "$RUNNER_TEMP/worker-before.json" ]; then
+            worker_before=$(jq -c '[.versions[]? | {version_id, percentage}]' \
+              "$RUNNER_TEMP/worker-before.json" 2> /dev/null || echo "(unreadable)")
+          fi
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ### Rollback (docs/deployment.md, "Rollback")
+
+          | Component | Before this run | This run |
+          |---|---|---|
+          | API (Render) | build \`${PREVIOUS_BUILD:-unknown}\`, image \`${PREVIOUS_IMAGE:-unknown}\` | \`$IMAGE_REF\` |
+          | Edge (Worker + static site) | versions \`$worker_before\` | snapshot \`$SNAPSHOT_ID\`, data \`$DATA_VERSION\` |
+
+          - **API:** with \`RENDER_DEPLOY_HOOK_URL\` exported from your password manager, run
+            \`python scripts/ops/render_deploy.py trigger --image-ref <previous image>\`, then
+            \`RENDER_ORIGIN=... python scripts/ops/render_deploy.py wait --expect-build <previous build>\`.
+            GHCR keeps the last 20 digests (ghcr-cleanup.yml).
+          - **Edge:** \`cd edge && npx wrangler rollback <previous version id> --message "rollback"\`
+            (without an id: the version before the current one), then
+            \`python scripts/ops/monitors.py edge --base-url $PUBLIC_BASE_URL\`.
+          - **Data:** the release switch in reverse (ADR-013): restore the previous Render
+            \`ATUS_DATABASE_URL\` and \`ATUS_EXPECTED_DATA_VERSION\`, then re-run this workflow at the
+            commit whose releases/current.json names the previous release.
+          EOF
