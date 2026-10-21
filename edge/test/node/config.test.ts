@@ -7,6 +7,7 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { experimental_readRawConfig, unstable_readConfig } from 'wrangler'
+import { TEST_RELEASE } from '../release'
 
 const CONFIG_PATH = fileURLToPath(new URL('../../wrangler.jsonc', import.meta.url))
 
@@ -14,24 +15,44 @@ const { rawConfig: raw } = experimental_readRawConfig({ config: CONFIG_PATH })
 const config = unstable_readConfig({ config: CONFIG_PATH })
 
 /**
- * The release vars: fixed safe defaults, except `NEON_PROJECT_ID`, which is
- * empty until the owner commits the project id (ADR-015; the same shape
- * `Governor.neonConfigured` accepts). A project id is not a secret; the key
- * (`NEON_API_KEY`) is a Worker secret and never a var.
+ * The vars the owner changes in wrangler.jsonc by hand and commits
+ * (docs/deployment.md, "Cloudflare Worker"), with the values CI accepts:
+ *
+ * - `EPOCH`: bumped to orphan every KV entry at once, a full edge-cache flush
+ *   (and a step of the leaked-token runbook, "Rotation" item 5). Never empty,
+ *   which would turn the edge cache off, and never `|`, its scope separator.
+ * - `PREWAKE`: `off` stops `GET /api/v1/wake` from waking Render.
+ * - `NEON_PROJECT_ID`: empty until the owner commits the project id (ADR-015;
+ *   the shape `Governor.neonConfigured` accepts). Not a secret; the key
+ *   (`NEON_API_KEY`) is a Worker secret and never a var.
+ *
+ * The worker tests pin all three (test/release.ts), so such a commit passes CI
+ * and deploy.yml's edge-config job (review round 4,
+ * epoch-prewake-levers-blocked-by-config-test).
  */
+const OWNER_LEVERS: Record<string, RegExp> = {
+  EPOCH: /^[A-Za-z0-9._-]{1,32}$/,
+  PREWAKE: /^(on|off)$/,
+  NEON_PROJECT_ID: /^([A-Za-z0-9-]{1,64})?$/,
+}
+
+/** The release vars: fixed safe defaults, except the owner's levers above. */
 function expectReleaseVars(vars: Record<string, unknown> | undefined): void {
-  const { NEON_PROJECT_ID: projectId, ...fixed } = vars ?? {}
+  const fixed = Object.fromEntries(
+    Object.entries(vars ?? {}).filter(([name]) => !(name in OWNER_LEVERS)),
+  )
   expect(fixed).toEqual({
     API_VERSION: 'v1',
     ANALYTICS_VERSION: '',
     DATA_VERSION: '',
     RESPONSE_FORMAT: '1',
     SNAPSHOT_ID: '',
-    EPOCH: '1',
-    PREWAKE: 'on',
   })
-  expect(projectId).toBeTypeOf('string')
-  expect(projectId).toMatch(/^([A-Za-z0-9-]{1,64})?$/)
+  for (const [name, pattern] of Object.entries(OWNER_LEVERS)) {
+    const value = vars?.[name]
+    expect(value, name).toBeTypeOf('string')
+    expect(value, name).toMatch(pattern)
+  }
 }
 
 describe('wrangler.jsonc', () => {
@@ -79,6 +100,35 @@ describe('wrangler.jsonc', () => {
     for (const bad of ['proud sun', 'x'.repeat(65), 'napi_key/with-slash', 7]) {
       expect(() => expectReleaseVars({ ...raw.vars, NEON_PROJECT_ID: bad })).toThrow()
     }
+  })
+
+  it('accepts the documented manual levers: an EPOCH bump (cache flush) and PREWAKE off', () => {
+    // docs/deployment.md "Cloudflare Worker" and "Rotation" item 5 have the owner
+    // change these here and deploy; CI and the deploy job's config step must then
+    // still pass (review round 4, epoch-prewake-levers-blocked-by-config-test).
+    expectReleaseVars({ ...raw.vars, EPOCH: '2', PREWAKE: 'off' })
+    expectReleaseVars({ ...raw.vars, EPOCH: '2026-10-21.b', PREWAKE: 'on' })
+    for (const bad of ['', '1|v1', 'x'.repeat(33), 2]) {
+      expect(() => expectReleaseVars({ ...raw.vars, EPOCH: bad })).toThrow()
+    }
+    for (const bad of ['', 'OFF', 'false', 0]) {
+      expect(() => expectReleaseVars({ ...raw.vars, PREWAKE: bad })).toThrow()
+    }
+    const { EPOCH: _epoch, ...withoutEpoch } = raw.vars ?? {}
+    expect(() => expectReleaseVars(withoutEpoch)).toThrow()
+  })
+
+  it('pins every owner lever for the worker tests, at the values their fixtures expect', () => {
+    // Bound over wrangler.jsonc's values (vitest.config.ts), so changing a lever
+    // there changes no worker test (review round 4).
+    const pinned: Record<string, string> = TEST_RELEASE
+    for (const [name, pattern] of Object.entries(OWNER_LEVERS)) {
+      expect(pinned, name).toHaveProperty(name)
+      expect(pinned[name], name).toMatch(pattern)
+    }
+    // The fixtures' values (the RESPONSE_FORMAT pin is checked by
+    // tests/unit/api/test_response_format.py, which reads this file's own value).
+    expect(TEST_RELEASE).toMatchObject({ EPOCH: '1', PREWAKE: 'on', NEON_PROJECT_ID: '' })
   })
 
   it('requires the runtime secrets, so a deploy without them is refused', () => {

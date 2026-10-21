@@ -5,9 +5,10 @@ back. Wherever the statement has a source of truth (code, a workflow, a test,
 a script), the test reads that source too, so a change there fails here until
 the docs follow.
 
-Read-only. Needs neither Docker nor the network; the git checks skip in a
-shallow clone, except where ``ATUS_REQUIRE_GIT_HISTORY=1`` says the history must
-be there (CI's backend job, which checks out the full history).
+Read-only. Needs neither Docker nor the network; the git checks skip outside a
+git checkout, except where ``ATUS_REQUIRE_GIT_HISTORY=1`` says git must be there
+(CI's backend job). The stack-mode record's guard compares content, not commits,
+so it needs no history (review round 4).
 """
 
 from __future__ import annotations
@@ -558,8 +559,10 @@ def test_adr_013_agrees_that_the_openapi_descriptions_are_release_neutral():
 
 
 _STACK_RECORD = re.compile(
-    r"On (20\d\d-\d\d-\d\d), at ([0-9a-f]{7,40}), all (\d+) runs passed in stack mode "
-    r"\(Chromium desktop (\d+), mobile (\d+), WebKit (\d+)\)")
+    r"On (20\d\d-\d\d-\d\d), at ([0-9a-f]{7,40}) \(E2E suite: frontend/e2e tree "
+    r"([0-9a-f]{12,40}), frontend/playwright\.config\.ts blob ([0-9a-f]{12,40})\), "
+    r"all (\d+) runs passed in stack mode \(Chromium desktop (\d+), mobile (\d+), "
+    r"WebKit (\d+)\)")
 
 
 #: The browser suite the stack-mode record covers: every file under frontend/e2e (the
@@ -579,27 +582,70 @@ def e2e_suite_changes_since(commit: str, root: Path = REPO_ROOT) -> list[str]:
     return sorted(set(filter(None, f"{changed}\n{untracked}".splitlines())))
 
 
+def e2e_suite_objects(rev: str = "HEAD", root: Path = REPO_ROOT) -> tuple[str, ...] | None:
+    """The git object ids of E2E_SUITE at ``rev`` (the tree of frontend/e2e, the blob of
+    the Playwright config), or None. Content addresses: a squash, a rebase or a curated
+    landing of the branch keeps them, where it drops the recorded commit itself."""
+    ids = tuple(_git("rev-parse", "--verify", "--quiet", f"{rev}:{path}", cwd=root)
+                for path in E2E_SUITE)
+    return None if None in ids else ids
+
+
+def stack_record_problems(commit: str, objects: tuple[str, ...],
+                          root: Path = REPO_ROOT) -> list[str]:
+    """Why the stack-mode record (``commit`` and the suite's ``objects`` it names) no
+    longer covers the E2E suite at HEAD, or ``[]``.
+
+    The suite is compared by content, so it needs no history (review round 4,
+    ci-git-history-guard-breaks-on-squash: CI on main failed for good once the branch
+    landed squashed, rebased or curated, since the recorded commit was then nowhere in
+    the checkout). Untracked suite files, which no commit holds, count as changes. When
+    the recorded commit is in the checkout, the record's ids must be its own."""
+    def same(full: tuple[str, ...] | None) -> bool:
+        return full is not None and all(f.startswith(o)
+                                        for f, o in zip(full, objects, strict=True))
+
+    head = e2e_suite_objects("HEAD", root)
+    untracked = _git("ls-files", "--others", "--exclude-standard", "--", *E2E_SUITE, cwd=root)
+    assert head is not None and untracked is not None, "git cannot read the checkout's HEAD"
+    problems = [f"untracked: {path}" for path in untracked.splitlines() if path]
+    if not same(head):
+        problems.append(f"HEAD's suite is {' '.join(h[:12] for h in head)}, not the "
+                        f"recorded {' '.join(objects)}")
+    if _git("cat-file", "-e", f"{commit}^{{commit}}", cwd=root) is not None:
+        if not same(e2e_suite_objects(commit, root)):
+            problems.append(f"the recorded object ids are not those of {commit}")
+        if not same(head):
+            problems += [f"changed since {commit}: {path}"
+                         for path in e2e_suite_changes_since(commit, root)
+                         if f"untracked: {path}" not in problems]
+    return problems
+
+
 def test_the_stack_mode_e2e_record_names_a_commit_that_has_every_e2e_spec():
     """stack-mode-e2e-evidence-stale: the record predated two specs that need the edge.
     Review round 2 (stack-e2e-evidence-guard-skips-in-ci): CI's shallow checkout skipped
-    this guard, and it compared only *.spec.ts."""
+    this guard, and it compared only *.spec.ts. Review round 4
+    (ci-git-history-guard-breaks-on-squash): it needed the recorded commit in the
+    checkout, so a squashed landing failed CI on main; it compares content now."""
     records = {}
     for path in (FRONTEND, DEPLOYMENT):
         match = _STACK_RECORD.search(_flat(_read(path)))
         assert match, _name(path)
         records[_name(path)] = match.groups()
     assert len(set(records.values())) == 1, records
-    _, commit, total, desktop, mobile, webkit = next(iter(records.values()))
+    _, commit, tree, blob, total, desktop, mobile, webkit = next(iter(records.values()))
     assert int(total) == int(desktop) + int(mobile) + int(webkit)
-    if _git("rev-parse", "--is-shallow-repository") != "false" or \
-            _git("cat-file", "-e", f"{commit}^{{commit}}") is None:
+    if _git("rev-parse", "--verify", "--quiet", "HEAD") is None:
         if os.environ.get("ATUS_REQUIRE_GIT_HISTORY") == "1":
-            pytest.fail("ATUS_REQUIRE_GIT_HISTORY=1, but the checkout is shallow or lacks "
-                        f"{commit}: check out the full history (fetch-depth: 0)")
-        pytest.skip("needs the full git history")
-    assert e2e_suite_changes_since(commit) == [], \
+            pytest.fail("ATUS_REQUIRE_GIT_HISTORY=1, but this is no git checkout")
+        pytest.skip("needs a git checkout")
+    problems = stack_record_problems(commit, (tree, blob))
+    assert problems == [], \
         f"the E2E suite changed after the stack-mode record ({commit}): rerun it in stack " \
-        "mode (scripts/smoke_stack.sh --edge --e2e) and update the record"
+        "mode (scripts/smoke_stack.sh --edge --e2e) and update the record: date, commit and " \
+        "the suite's ids (git rev-parse HEAD:frontend/e2e HEAD:frontend/playwright.config.ts)" \
+        f"; {problems}"
 
 
 # --- monitors-fail-during-bootstrap ---------------------------------------------------------------

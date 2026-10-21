@@ -34,9 +34,19 @@ Checks, in order (brief §16, §17; deployment.md "8. Prove the deployment"):
                    Worker answers it from the snapshot; the starters check
                    the API's own X-Data-Version)
   starter_<n>      a home-page starter analysis served from the static
-                   snapshot, recomputed live through the Worker with different
-                   request bytes (so the edge cache cannot answer it) and
-                   diffed under the §9 equivalence criterion
+                   snapshot, recomputed live through the Worker and diffed
+                   under the §9 equivalence criterion. The request bytes are
+                   unique to the run (JSON whitespace encoding a random
+                   nonce): the edge cache keys on the exact bytes and keeps
+                   its entries across code-only deploys, so fixed bytes were
+                   a KV hit from a release's second deploy on, and no step
+                   ran the new image against the database (review round 4,
+                   smoke-recompute-answered-from-kv). An answer from the edge
+                   cache (``X-Cache: edge``) fails the check. A refusal by the
+                   quota governor or the API's budgets (``rate_limited``,
+                   ``daily_capacity_reached``, ``capacity_paused``) is OWED,
+                   not FAIL: nothing was recomputed, through no fault of the
+                   deploy, and the starters after it are not sent
   api_errors       an unknown /api path: the v1 404 envelope and the Worker's
                    security headers
   origin_lock      (--origin-lock, RENDER_ORIGIN) the onrender.com origin
@@ -46,7 +56,11 @@ Checks, in order (brief §16, §17; deployment.md "8. Prove the deployment"):
 Without a deployed snapshot (a site published without /snap/) the starter is
 computed live and only its shape is checked. Secrets come from the
 environment and are never printed. The §9 comparison needs the atus_pipeline
-package (``pip install -e .``). Exit status: 0 pass, 1 fail, 2 usage.
+package (``pip install -e .``). Exit status: 0 pass, 1 fail, 2 usage, 3 every
+check passed except the live recompute, which the quota governor refused
+(OWED): the release is serving and is not to be rolled back for it; the
+recompute is owed until the time the OWED line names (review round 4,
+smoke-fails-on-governor-refusal; docs/operations.md "Deploy", step 6).
 """
 
 from __future__ import annotations
@@ -56,6 +70,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import sys
 from pathlib import Path
 from typing import Any
@@ -79,6 +94,15 @@ ANALYSIS_STATUSES = ("miss", "hit", "join", "bypass", "edge")
 #: fits the deploy's 30-request budget with every other check at its maximum.
 PROPAGATION_ATTEMPTS = 4
 PROPAGATION_INTERVAL_S = 15.0
+#: Bits of the per-run nonce the recompute bodies carry as JSON whitespace.
+NONCE_BITS = 64
+#: Refusals that compute nothing: the quota governor's (edge/src/governor.ts) and
+#: the API's own budgets (docs/api.md, "Errors"). Not ``capacity_unavailable``
+#: (the governor failed, which a broken Worker deploy can cause) nor
+#: ``overloaded``.
+QUOTA_REFUSALS = frozenset({"rate_limited", "daily_capacity_reached", "capacity_paused"})
+#: Exit status when the live recompute is all that is missing.
+EXIT_RECOMPUTE_OWED = 3
 
 #: The home page's first and third starters (frontend/src/domain/prewarm.ts,
 #: STARTER_EXAMPLES; tests/unit/ops/test_deploy_smoke.py keeps them in step).
@@ -102,6 +126,26 @@ def request_key(path: str, body: str) -> str:
     return hashlib.sha256(f"{path}?\n{body}".encode()).hexdigest()
 
 
+def recompute_body(spec: dict[str, Any], nonce: int) -> bytes:
+    """``spec`` as JSON followed by whitespace that encodes ``nonce`` (space 0, tab 1).
+
+    The value parses to ``spec`` alone, while the bytes, and so the edge cache's
+    key, are new for every nonce: neither the snapshot's key (the SPA's
+    serialization) nor the entry an earlier smoke stored can answer it.
+    """
+    padding = "".join(" \t"[(nonce >> bit) & 1] for bit in range(NONCE_BITS))
+    return (json.dumps(spec, indent=1) + "\n" + padding).encode()
+
+
+def _envelope_details(reply) -> dict[str, Any]:
+    """The v1 error envelope's ``details``, or ``{}``."""
+    try:
+        details = (reply.json().get("error") or {}).get("details")
+    except (OpsError, AttributeError):
+        return {}
+    return details if isinstance(details, dict) else {}
+
+
 def compare_under_criterion(a: Any, b: Any) -> tuple[bool, str]:
     """The §9 criterion (``atus_pipeline.serving.equivalence``)."""
     try:
@@ -116,7 +160,8 @@ def compare_under_criterion(a: Any, b: Any) -> tuple[bool, str]:
 
 
 class Smoke:
-    def __init__(self, client: Client, report: Report, args: argparse.Namespace) -> None:
+    def __init__(self, client: Client, report: Report, args: argparse.Namespace,
+                 nonce: int | None = None) -> None:
         self.client = client
         self.report = report
         self.args = args
@@ -125,6 +170,10 @@ class Smoke:
         self.latest_year: int | None = None
         #: The owner's pause switch as /api/_edge/health reports it, when on.
         self.paused: dict | None = None
+        #: This run's recompute nonce (``recompute_body``): new bytes on every run.
+        self.nonce = secrets.randbits(NONCE_BITS) if nonce is None else nonce
+        #: The quota refusal that stopped the live recomputes, once one did.
+        self.refusal: str | None = None
 
     # -- the release reaching this colo --------------------------------------
     def _names_this_release(self, reply) -> bool:
@@ -313,7 +362,29 @@ class Smoke:
             self.report.fail("starters", "no years known (/meta failed)")
             return
         for index, (name, operation, spec) in enumerate(STARTERS[: self.args.recompute], 1):
+            if self.refusal is not None:
+                # The same budgets would refuse it: spend no request on it.
+                self.report.add(f"starter_{index}_{name}", "OWED",
+                                f"not sent: {self.refusal}")
+                continue
             self.starter(index, name, operation, {**spec, "years": [self.latest_year]})
+
+    def _owe(self, check: str, live) -> None:
+        """A quota refusal of the live recompute: OWED, not FAIL (review round 4,
+        smoke-fails-on-governor-refusal). The release is already serving and nothing
+        is wrong with it; the recompute must wait until the budget resumes."""
+        details = _envelope_details(live)
+        resumes = details.get("resumes_at") or (
+            f"Retry-After {live.header('retry-after')} s" if live.header("retry-after")
+            else "unknown")
+        budget = ", ".join(f"{key} {details[key]}" for key in ("scope", "budget")
+                           if details.get(key))
+        self.refusal = (f"the quota governor refused the live analysis ({live.describe()}"
+                        + (f"; {budget}" if budget else "") + f"; resumes {resumes})")
+        self.report.add(check, "OWED", (
+            f"not recomputed: {self.refusal}. Not a defect of this deploy and not a reason "
+            "to roll back: re-run the failed jobs once the budget resumes "
+            "(docs/operations.md, Deploy step 6)"))
 
     def starter(self, index: int, name: str, operation: str, spec: dict) -> None:
         check = f"starter_{index}_{name}"
@@ -331,12 +402,21 @@ class Smoke:
                 self.report.fail(check, f"snapshot file: {reply.describe()}")
                 return
             static = reply.json()
-        # Different bytes than the SPA sends, so the edge cache cannot answer it.
-        live = self.client.post_json(path, json.dumps(spec, indent=1).encode(), timeout=150.0)
+        # Bytes no earlier request sent (the SPA's, or an earlier smoke's, which the
+        # edge cache may hold for 30 days under a scope a code-only deploy keeps).
+        live = self.client.post_json(path, recompute_body(spec, self.nonce), timeout=150.0)
+        if live.error_code in QUOTA_REFUSALS:
+            self._owe(check, live)
+            return
         if live.status != 200 or not live.is_json:
             self.report.fail(check, f"live analysis: {live.describe()}")
             return
         x_cache = live.header("x-cache")
+        if x_cache == "edge":
+            self.report.fail(check, "the live call was answered from the edge cache "
+                                    "(X-Cache edge), not recomputed: the new image never "
+                                    "ran it against the database")
+            return
         dv = self.args.expect_data_version
         if dv and live.header("x-data-version") != dv:
             self.report.fail(check, f"live X-Data-Version {live.header('x-data-version')}")
@@ -352,9 +432,6 @@ class Smoke:
         equivalent, detail = compare_under_criterion(static, live.json())
         if not equivalent:
             self.report.fail(check, f"snapshot and live results differ under §9: {detail}")
-        elif x_cache == "edge":
-            self.report.add(check, "WARN", f"equivalent, but the live call was an edge-cache "
-                                           f"hit, not a recompute ({detail})")
         else:
             self.report.ok(check, f"snapshot vs live (X-Cache {x_cache}): {detail}")
 
@@ -456,8 +533,13 @@ def main(argv: list[str] | None = None) -> int:
         args.report.write_text(json.dumps(
             {"requests": client.sent, "results": [r.__dict__ for r in report.results]},
             indent=2) + "\n")
-    print(f"smoke: {report.failed} failed, {client.sent} requests", flush=True)
-    return 1 if report.failed else 0
+    owed = sum(1 for result in report.results if result.status == "OWED")
+    print(f"smoke: {report.failed} failed, {client.sent} requests"
+          + (f", {owed} live recompute(s) owed (quota refusal; not a reason to roll back)"
+             if owed else ""), flush=True)
+    if report.failed:
+        return 1
+    return EXIT_RECOMPUTE_OWED if owed else 0
 
 
 if __name__ == "__main__":

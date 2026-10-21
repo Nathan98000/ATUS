@@ -83,9 +83,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          # The full history: tests/deploy/test_docs_accuracy.py compares the
-          # dated stack-mode E2E record with the commits since (it skips in a
-          # shallow clone, and ATUS_REQUIRE_GIT_HISTORY makes that a failure here).
+          # The full history, for the docs tests that read a dated commit (they
+          # skip without it). The stack-mode E2E record's guard compares the
+          # suite's git object ids instead, so a branch landed squashed, rebased
+          # or curated (which drops the recorded commit) passes too (review
+          # round 4); ATUS_REQUIRE_GIT_HISTORY fails it here without git.
           fetch-depth: 0
 
       - name: Set up Python

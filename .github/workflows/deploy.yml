@@ -587,6 +587,10 @@ jobs:
             --var "RESPONSE_FORMAT:$RESPONSE_FORMAT" \
             --var "SNAPSHOT_ID:$SNAPSHOT_ID"
 
+      # Exit 3: every check passed but the quota governor refused the live
+      # recompute (OWED; review round 4, smoke-fails-on-governor-refusal). The
+      # job still fails, so `promote` tags no digest the database never ran, but
+      # the release is healthy: no rollback (docs/operations.md, Deploy step 6).
       - name: Post-deploy smoke (at most 30 requests; secrets from the environment)
         env:
           RENDER_ORIGIN: ${{ secrets.RENDER_ORIGIN }}
@@ -597,7 +601,16 @@ jobs:
                 --require-snapshot --recompute 2 --max-requests 30 --origin-lock
                 --report "$RUNNER_TEMP/smoke.json")
           if [ -n "$EDGE_OPS_TOKEN" ]; then args+=(--ops-budget); fi
-          python scripts/ops/deploy_smoke.py "${args[@]}"
+          status=0
+          python scripts/ops/deploy_smoke.py "${args[@]}" || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::error title=Live recompute owed (no rollback)::The quota governor refused the smoke's live analyses (the OWED rows); every other check passed and this release is serving. Do not roll back: re-run the failed jobs once the budget resumes (docs/operations.md, Deploy step 6)."
+            {
+              echo "**Live recompute owed (exit 3), not a reason to roll back.** The quota governor refused the smoke's live analyses; every other check passed. Re-run the failed jobs once the budget resumes, the time in the OWED rows (docs/operations.md, Deploy step 6)."
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"
 
       - name: Rollback notes
         if: ${{ always() }}
@@ -619,6 +632,8 @@ jobs:
           | API (Render) | build \`${PREVIOUS_BUILD:-unknown}\`, image \`${PREVIOUS_IMAGE:-unknown (Render → Events)}\` (${PREVIOUS_SOURCE:-not looked up}) | \`$IMAGE_REF\` |
           | Edge (Worker + static site) | versions \`$worker_before\` | snapshot \`$SNAPSHOT_ID\`, data \`$DATA_VERSION\` |
 
+          - **Smoke failed only with OWED rows** (exit 3, live recompute owed): nothing below
+            applies; re-run the failed jobs once the budget resumes (docs/operations.md, Deploy step 6).
           - **API:** with \`RENDER_DEPLOY_HOOK_URL\` exported from your password manager, run
             \`python scripts/ops/render_deploy.py trigger --image-ref <previous image>\`, then
             \`RENDER_ORIGIN=... python scripts/ops/render_deploy.py wait --expect-build <previous build>\`.
