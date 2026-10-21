@@ -38,7 +38,9 @@ function renderExplore(route = '/explore') {
 }
 
 async function waitForBuilder() {
-  await waitFor(() => expect(screen.getByText('Build an analysis')).toBeInTheDocument())
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Analyze' })).toBeInTheDocument(),
+  )
 }
 
 describe('builder defaults and discovery', () => {

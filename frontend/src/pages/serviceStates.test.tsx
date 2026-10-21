@@ -109,7 +109,7 @@ describe('cold start (F11, F12)', () => {
       expect(document.activeElement).toBe(document.body)
 
       await vi.advanceTimersByTimeAsync(17_000)
-      expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
       expect(screen.queryByText(WAKING_MESSAGE)).not.toBeInTheDocument()
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
@@ -134,7 +134,7 @@ describe('cold start (F11, F12)', () => {
       await vi.advanceTimersByTimeAsync(100)
       expect(screen.getByText(WAKING_MESSAGE)).toBeInTheDocument()
       await vi.advanceTimersByTimeAsync(10_000)
-      expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
       expect(calls).toBe(3)
       expect(screen.queryByText(WAKING_MESSAGE)).not.toBeInTheDocument()
     })
@@ -153,7 +153,7 @@ describe('cold start (F11, F12)', () => {
       )
       renderApp('/explore')
       await vi.advanceTimersByTimeAsync(16_000)
-      expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
   })
@@ -587,7 +587,7 @@ describe('no background metadata refetch (F62)', () => {
     await withFakeClock(async () => {
       const requests = countRequests()
       renderApp('/explore')
-      await screen.findByText('Build an analysis')
+      await screen.findByRole('button', { name: 'Analyze' })
       expect(requests('GET /api/v1/meta')).toBe(1)
       // Before Phase 5, /meta went stale after 5 minutes and refetched on focus.
       await vi.advanceTimersByTimeAsync(30 * 60_000)
@@ -743,6 +743,32 @@ describe('focus after "Try again" (review round 1)', () => {
     await waitFor(() => expect(document.activeElement).toBe(heading))
   })
 
+  it('Explore: focus stays on the page heading while a retry runs and after it fails again (review round 2)', async () => {
+    // Explore's loading and error states had no h1, so useRetryFocus found
+    // nothing to focus and focus sat on <body> for the whole retry.
+    const user = userEvent.setup()
+    let gets = 0
+    server.use(
+      http.get(api('/meta'), async () => {
+        gets += 1
+        if (gets > 1) await delay(200)
+        return errorResponse(500, 'internal_error', 'Boom.')
+      }),
+    )
+    renderApp('/explore')
+    const retry = await screen.findByRole('button', { name: 'Try again' })
+    retry.focus()
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(document.querySelector('.loading-panel')).not.toBeNull())
+    const heading = screen.getByRole('heading', { level: 1, name: 'Build an analysis' })
+    expect(document.activeElement).toBe(heading)
+    expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument()
+    expect(gets).toBe(2)
+    expect(document.activeElement).toBe(
+      screen.getByRole('heading', { level: 1, name: 'Build an analysis' }),
+    )
+  })
+
   it('Home: a retry of the starter examples lands on their heading', async () => {
     const user = userEvent.setup()
     let failing = true
@@ -762,6 +788,49 @@ describe('focus after "Try again" (review round 1)', () => {
     expect(document.activeElement).toBe(
       screen.getByRole('heading', { name: 'Start from a question' }),
     )
+  })
+})
+
+describe('focus after in-app navigation (review round 2)', () => {
+  // Client-side navigation left focus on <body>: nothing said the page had
+  // changed, and the next Tab started from the top of the document.
+  it('moves focus to the new page’s heading, Home → Explore → result', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+    const build = await screen.findByRole('link', { name: 'Build your own analysis' })
+    build.focus()
+    await user.keyboard('{Enter}')
+    const exploreHeading = await screen.findByRole('heading', {
+      level: 1,
+      name: 'Build an analysis',
+    })
+    await waitFor(() => expect(document.activeElement).toBe(exploreHeading))
+
+    const analyze = await screen.findByRole('button', { name: 'Analyze' })
+    analyze.focus()
+    await user.keyboard('{Enter}')
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1 })),
+    )
+    expect(document.activeElement).toHaveTextContent('Sleeping')
+  })
+
+  it('the canonical URL rewrite (a replace) does not move focus', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+    const starter = await screen.findByRole('link', { name: /How much do Americans sleep\?/ })
+    await user.click(starter)
+    const share = await screen.findByRole('button', { name: /Copy link|Share/ })
+    share.focus()
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(document.activeElement).toBe(share)
+  })
+
+  it('the first page of a visit keeps focus where the browser puts it', async () => {
+    renderApp('/explore')
+    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+    expect(document.activeElement).toBe(document.body)
   })
 })
 
@@ -880,13 +949,13 @@ describe('background failures and retries (F26, F63)', () => {
   it('a failed background /meta refetch keeps the builder and its edits', async () => {
     const user = userEvent.setup()
     const client = renderApp('/explore')
-    await screen.findByText('Build an analysis')
+    await screen.findByRole('button', { name: 'Analyze' })
     await user.selectOptions(screen.getByLabelText('Sex'), 'female')
 
     server.use(http.get(api('/meta'), () => errorResponse(500, 'internal_error', 'Boom.')))
     await client.refetchQueries({ queryKey: ['meta'] })
 
-    expect(screen.getByText('Build an analysis')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Analyze' })).toBeInTheDocument()
     expect(screen.getByLabelText('Sex')).toHaveValue('female')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
@@ -922,7 +991,7 @@ describe('background failures and retries (F26, F63)', () => {
 
     failing = false
     await user.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
     expect(requests('GET /api/v1/meta')).toBe(2)
     expect(requests('GET /api/v1/population/metadata')).toBe(2)
   })
@@ -970,7 +1039,7 @@ describe('static snapshot and prewake', () => {
     )
     const requests = countRequests()
     renderApp('/explore')
-    expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
     await waitFor(() => expect(wakes).toBe(1))
     expect(requests('GET /api/v1/meta')).toBe(0)
     expect(requests('GET /api/v1/population/metadata')).toBe(0)
@@ -981,7 +1050,7 @@ describe('static snapshot and prewake', () => {
   it('without a snapshot (development, E2E) no prewake is sent', async () => {
     const requests = countRequests()
     renderApp('/explore')
-    expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
     expect(requests('GET /api/v1/wake')).toBe(0)
   })
 

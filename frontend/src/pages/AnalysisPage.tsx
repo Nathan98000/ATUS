@@ -90,7 +90,7 @@ function InvalidLink({ message }: { message: string }) {
       role="alert"
       style={{ maxWidth: '36rem', margin: '2rem auto' }}
     >
-      <h2>This analysis link cannot be opened</h2>
+      <h1 tabIndex={-1}>This analysis link cannot be opened</h1>
       <p>{message}</p>
       <p style={{ margin: 0 }}>
         <Link className="btn" to="/explore">

@@ -14,7 +14,7 @@ export function AboutPage() {
 
   return (
     <div className="about-page" style={{ maxWidth: '46rem' }}>
-      <h1>About ATUS Explorer</h1>
+      <h1 tabIndex={-1}>About ATUS Explorer</h1>
       <p>
         ATUS Explorer is an independent, open-source tool for exploring the{' '}
         <a href="https://www.bls.gov/tus/" rel="noreferrer">

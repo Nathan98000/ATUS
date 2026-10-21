@@ -473,7 +473,14 @@ facts are `null`, never guessed. File names are
   focus to the page's heading (`<h1 tabIndex={-1}>`; on Home, the starter
   examples' heading) before the retry and, until it settles, back to the
   heading the page then shows whenever focus fell to `<body>` (review
-  round 1).
+  round 1). Explore keeps its "Build an analysis" heading mounted in the
+  loading and error states too, so focus stays on it while a retry runs and
+  after one that fails again (review round 2).
+- After an in-app navigation (a link, Analyze, Back/Forward) focus moves to
+  the new page's `<h1>` (`AppShell`), so the change of page is announced and
+  the next Tab continues from it. Not on the first page of a visit, and not
+  when the analysis page only replaces its query string with the canonical
+  spec (review round 2).
 - The download buttons are ordinary buttons; a persistent `<output>` says
   which file was started, and focus stays on the button.
 - Playwright runs axe checks (no serious or critical violations) on the five

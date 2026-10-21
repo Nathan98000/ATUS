@@ -1,8 +1,32 @@
-import type { ReactNode } from 'react'
-import { Link, NavLink } from 'react-router'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { Link, NavLink, NavigationType, useLocation, useNavigationType } from 'react-router'
 
 import { useMeta } from '../api/queries'
 import { ServiceNotice } from './ServiceNotice'
+import { PAGE_HEADING } from './useRetryFocus'
+
+/**
+ * After an in-app navigation, focus moves to the new page's heading, so
+ * keyboard and screen-reader users learn that the page changed and the next
+ * Tab continues from it instead of from the top of the document (review
+ * round 2). Not on the first page of a visit (the browser's own load), and
+ * not when only the query string is replaced: that is the analysis page
+ * rewriting its URL to the canonical spec, not a new page.
+ */
+function useFocusOnNavigation(): void {
+  const { pathname, search } = useLocation()
+  const navigationType = useNavigationType()
+  const shown = useRef({ pathname, search })
+
+  useEffect(() => {
+    const before = shown.current
+    shown.current = { pathname, search }
+    const newPage =
+      pathname !== before.pathname ||
+      (search !== before.search && navigationType !== NavigationType.Replace)
+    if (newPage) document.querySelector<HTMLElement>(PAGE_HEADING)?.focus()
+  }, [pathname, search, navigationType])
+}
 
 /**
  * Header, footer and the site-wide service notices around every page. The
@@ -12,6 +36,7 @@ import { ServiceNotice } from './ServiceNotice'
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const meta = useMeta()
+  useFocusOnNavigation()
 
   return (
     <>

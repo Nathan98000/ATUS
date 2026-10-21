@@ -110,7 +110,7 @@ function renderApp(route: string, client = testQueryClient()) {
 }
 
 async function waitForBuilder() {
-  expect(await screen.findByText('Build an analysis')).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
 }
 
 function optionValues(select: HTMLElement): number[] {
