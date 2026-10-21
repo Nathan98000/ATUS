@@ -177,6 +177,20 @@ def test_every_weaker_sslmode_becomes_verify_full(given, expected):
     assert params["host"] == "db.example.test" and params["dbname"] == "atus"
 
 
+def test_the_other_parameters_of_the_owner_url_are_kept_verbatim():
+    """Review r3 verification: the upgrade decoded and re-encoded every other
+    query parameter, and urlencode writes a space as "+", which libpq reads
+    as itself: ``options=-c%20statement_timeout%3D0`` reached the server as
+    ``-c+statement_timeout=0``. Only sslmode and sslrootcert may change."""
+    given = ("postgresql://o:p@db.example.test/atus?sslmode=require"
+             "&options=-c%20statement_timeout%3D0&application_name=a+b&channel_binding=require")
+    before, after = conninfo_to_dict(given), conninfo_to_dict(verified_owner_url(given))
+    assert after.pop("sslmode") == "verify-full" and after.pop("sslrootcert") == "system"
+    before.pop("sslmode")
+    assert after == before
+    assert after["options"] == "-c statement_timeout=0" and after["application_name"] == "a+b"
+
+
 @pytest.mark.parametrize("given", [
     PROJECT_A,                                           # already verify-full
     "postgresql://o:p@db.example.test/atus?sslmode=verify-full&sslrootcert=/ca.pem",

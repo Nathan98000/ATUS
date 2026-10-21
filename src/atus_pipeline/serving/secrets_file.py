@@ -24,7 +24,7 @@ import secrets
 import stat
 import tempfile
 from pathlib import Path
-from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
+from urllib.parse import quote, unquote, urlencode, urlsplit, urlunsplit
 
 from psycopg.conninfo import conninfo_to_dict, make_conninfo
 
@@ -162,10 +162,15 @@ def verified_owner_url(url: str) -> str:
         overrides["sslrootcert"] = "system"
     if not url.startswith(("postgres://", "postgresql://")):
         return make_conninfo(url, **overrides)
+    # The other parameters are kept byte for byte: libpq percent-decodes a
+    # URI's query but reads "+" as itself, so decoding and re-encoding them
+    # (urlencode writes a space as "+") would change values such as
+    # options=-c%20...
     parts = urlsplit(url)
-    query = [(key, value) for key, value in parse_qsl(parts.query, keep_blank_values=True)
-             if key not in overrides]
-    return urlunsplit(parts._replace(query=urlencode([*query, *overrides.items()])))
+    kept = [item for item in parts.query.split("&")
+            if item and unquote(item.split("=", 1)[0]) not in overrides]
+    added = [f"{key}={quote(value, safe='')}" for key, value in overrides.items()]
+    return urlunsplit(parts._replace(query="&".join([*kept, *added])))
 
 
 def api_database_url(owner_url: str, role: str, password: str) -> str:
