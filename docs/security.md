@@ -2,7 +2,7 @@
 
 Threat model for the Phase 5 production design ([ADR-011](adr/ADR-011-hosting.md)): assets, trust boundaries, the controls as implemented, abuse cases, production exposure decisions and accepted risks.
 
-**Status (2026-10-20): nothing is deployed.** Every control below is implemented in this repository and demonstrated by the tests named with it, locally or in CI. None has been observed on the real providers yet. Owner settings and provider behaviours that the repository cannot test are marked as such.
+**Status (2026-10-20): nothing is deployed.** Every control below is implemented in this repository and covered by the tests named with it. The CI workflows that run those tests have not yet run on GitHub ([roadmap](roadmap.md#remaining-for-the-definition-of-done), item 4), so every test result so far is local. None of the controls has been observed on the real providers yet. Owner settings and provider behaviours that the repository cannot test are marked as such.
 
 Related documents:
 
@@ -373,7 +373,7 @@ Tests:
 ### 1. Quota exhaustion
 
 - **Uncached analyses.** These are the only requests that spend Render work on the database and Neon CU-hours. C6 caps them per network and globally and charges them conservatively. C5 and C7 are a second, per-process layer, which also covers a misconfigured edge.
-- **Metadata cannot keep Neon awake.** With `ATUS_EXPECTED_DATA_VERSION` set, the API pins its in-process data snapshot. Metadata, cache hits and every 4xx then cost no database statement (`src/atus_pipeline/api/snapshot.py`; `tests/unit/api/test_snapshot.py::TestPinnedSnapshot`, `::TestZeroStatementPaths`). No monitor touches the database (`tests/deploy/test_workflows.py::test_monitors_never_touch_the_database`).
+- **Metadata cannot keep Neon awake.** With `ATUS_EXPECTED_DATA_VERSION` set, the API pins its in-process data snapshot. Metadata, cache hits and every 4xx decided before the statistics query then cost no database statement (`src/atus_pipeline/api/snapshot.py`; `tests/unit/api/test_snapshot.py::TestPinnedSnapshot`, `::TestZeroStatementPaths`). No monitor touches the database (`tests/deploy/test_workflows.py::test_monitors_never_touch_the_database`).
 - **KV over its daily write quota** fails rather than bills (ADR-011, cited terms). A failed write is ignored and a failed read is a miss (`edge/test/worker/cache.test.ts`).
 - **Durable Object rows.** A denial writes no rows, and refunded admissions are capped at 300 per network per day (`edge/test/worker/governor.test.ts`: "writes nothing when it denies", "writes at most 8 rows to admit and 4 to settle").
 - **Render:**
@@ -387,7 +387,7 @@ Tests:
 - **Per request.** C8 bounds the cost: statement timeout, a deadline that cancels the query, and lock and idle timeouts. `client_connection_check_interval` lets the server stop a query whose client connection is gone.
 - **In aggregate.** C7's lanes and the 4-connection pool bound the total. The edge and the API classify heavy specs by the same rule, and the edge treats a body it cannot parse as heavy.
 - **Valid but costly specs.** The schema bounds them (C4).
-- **Invalid specs.** They are refused before any statement (`tests/unit/api/test_guard.py::TestValidationCostsNothing`, `tests/unit/api/test_snapshot.py::TestDryRun`).
+- **Invalid specs.** Those the schema or the dry run catches are refused before any statement (`tests/unit/api/test_guard.py::TestValidationCostsNothing`, `tests/unit/api/test_snapshot.py::TestDryRun`). A diary-date window outside the requested years, and `insufficient_data`, are found only by the statistics query, which they run first (bounded by C8).
 - **Retries.** A retry after a disconnect or a proxy timeout joins the running computation or hits the cache; it does not compute again (`tests/integration/api_prod/test_server.py::TestClientDisconnect`).
 - **Measured scale.**
   - The audit measured the pre-fix code under emulation: worst cases took 47–52 s at p50 at Neon's 0.25 CU floor, and database CPU saturated at 2 concurrent uncached analyses ([`docs/evidence/phase5/01-audit-timed.md`](evidence/phase5/01-audit-timed.md)).
@@ -409,7 +409,7 @@ Tests:
   - a structurally wrong spec.
 
   Code: `frontend/src/domain/urlSpec.ts`. Tests: `frontend/src/domain/urlSpec.test.ts`, `frontend/e2e/share.spec.ts`.
-- **Plausible but invalid specs.** These are sent, and the API refuses them with a 422 that costs no database statement (C4, C7).
+- **Plausible but invalid specs.** These are sent, and the API refuses them with a 422. Most cost no database statement (C4, C7); the exceptions are listed under abuse case 2.
 - **Labels.** Free-text labels are rendered as React text. By inspection, `frontend/src` contains no `dangerouslySetInnerHTML` or `innerHTML`, and the CSP forbids inline script.
 - **No stored content.** There is no link storage, so a link cannot plant content on the site ([ADR-016](adr/ADR-016-short-share-links.md)).
 - **No cross-spec answers.** A link cannot select a cached answer for another spec: the KV key covers the exact request bytes (C10).
@@ -545,12 +545,13 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 
 ## Verification status
 
-- **Done, locally and in CI:**
+- **Done locally:**
   - unit and integration tests;
-  - container tests (`ATUS_DOCKER_TESTS=1`, run in CI by `.github/workflows/image.yml`);
+  - container tests (`ATUS_DOCKER_TESTS=1`; in CI, `.github/workflows/image.yml` runs them);
   - Worker tests in workerd;
-  - Playwright under `vite preview`;
+  - Playwright in Chromium and WebKit (the last recorded run is in stack mode, through the local edge; [frontend.md](frontend.md#testing)); Firefox does not launch on the development machine;
   - the production compose stack behind `wrangler dev`: `scripts/smoke_stack.sh --edge`, with the checks in `deploy/stack/edge_probe.py`.
+- **Not done yet on GitHub:** the CI workflows that run all of the above, including the Firefox projects, have no recorded run.
 - **Not done, because nothing is deployed:**
   - `scripts/ops/deploy_smoke.py` on the real site: the site's headers, the SPA fallback's `<meta>` CSP, the Worker's headers on an `/api` error, and the origin lock;
   - the R8 measurements.

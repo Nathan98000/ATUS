@@ -275,11 +275,12 @@ Seven canonical tables mirror the conceptual structure of the survey — see
   provenance (including each load's `data_version`) and the results of
   `validate-db`, `load --validate` and `validate-analytics`
 
-In production the API reads a serving database derived from this one: activity
-minutes summed per respondent and code, replicate weights as `float8`, roster
-and CPS reduced to the respondent's line, companions dropped. It serves the
-same numbers under the equivalence criterion
-([ADR-013](docs/adr/ADR-013-data-releases-and-serving-db.md)).
+In the planned deployment the API reads a serving database derived from this
+one: activity minutes summed per respondent and code, replicate weights as
+`float8`, roster and CPS reduced to the respondent's line, companions
+dropped. Locally it served the same numbers under the equivalence criterion
+([ADR-013](docs/adr/ADR-013-data-releases-and-serving-db.md),
+[docs/operations.md](docs/operations.md#equivalence-criterion-9)).
 
 Methodological ground rules (read before analyzing): survey weights are
 mandatory for population statements; 2020 is a partial year with its own

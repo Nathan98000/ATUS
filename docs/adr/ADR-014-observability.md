@@ -183,6 +183,10 @@ The decisions are unchanged. This section records where the implementation diffe
 
   Re-enabling a workflow stays manual (Actions → workflow → "Enable workflow"). If the schedule check itself has been disabled, it cannot alert.
 
+### Statement budget: "every 4xx"
+
+"Every 4xx" costs 0 statements only when the 4xx is decided before the statistics query. `insufficient_data`, and the 422 for a diary-date window outside the requested years, are found by the statistics query itself (`src/atus_pipeline/analytics/engine.py`), so those requests run it first and report `db;dur` above 0. [api.md](../api.md#statements-per-request) has the qualified table.
+
 ### Metrics
 
 Two series were added after the table above: `atus_snapshot_pinned` (gauge) and `atus_snapshot_stale_serves_total` (counter). They report the pinned and stale-if-error data snapshot of [ADR-012](ADR-012-load-and-quota-protection.md) (`src/atus_pipeline/api/metrics.py`).

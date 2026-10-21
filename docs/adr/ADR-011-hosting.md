@@ -751,7 +751,7 @@ The decision is unchanged. This section records where the implementation (code, 
 - The labels "to be finalized in ADR-012" on "Quota governor" and "final values in ADR-012" on its "Starting budgets" name the wrong ADR. The governor, its budgets and the edge tiers are finalized in [ADR-015](ADR-015-edge-cache-snapshot-and-governor.md), whose title is "Edge result cache, static snapshot and quota governor" (broader than the "persistent result cache" under **Related**).
 - [ADR-012](ADR-012-load-and-quota-protection.md) holds the API's own limits, the "Bounded work" values (still provisional) and the API's error codes. [ADR-013](ADR-013-data-releases-and-serving-db.md) finalizes "Release switch". [ADR-014](ADR-014-observability.md) finalizes the IP truncation in logs and the monitor cadence.
 - [ADR-016](ADR-016-short-share-links.md) (short share links, deferred) was added.
-- Error code names: the API's codes are in ADR-012 "Error mapping". The Worker-generated `service_waking`, `upstream_unavailable`, `capacity_unavailable` and `capacity_paused` are specified in ADR-015 and defined in `edge/src/proxy.ts`, `edge/src/ops.ts` and `edge/src/index.ts`. The client-facing table is `docs/api.md`, "Errors".
+- Error code names: the API's codes are in ADR-012 "Error mapping". The Worker-generated `service_waking`, `upstream_unavailable`, `capacity_unavailable` and `capacity_paused` are specified in ADR-015 and defined in `edge/src/proxy.ts`, `edge/src/ops.ts` and `edge/src/governor.ts`. The client-facing table is `docs/api.md`, "Errors".
 
 ### Deploy workflow (`.github/workflows/deploy.yml`)
 

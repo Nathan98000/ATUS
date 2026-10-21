@@ -184,8 +184,9 @@ Phase 5 changes how the system runs, not what it computes:
   authentication, per-client token buckets, a daily cap, admission lanes,
   single-flight, per-transaction timeouts and a request deadline,
   stale-connection handling, and specific error codes with `Retry-After`.
-  Cache hits, metadata and 4xx answers run no SQL while the in-process data
-  snapshot is fresh. The limits are provisional until calibration.
+  Cache hits, metadata and 4xx answers decided before the statistics query
+  run no SQL while the in-process data snapshot is fresh. The limits are
+  provisional until calibration.
 - **Edge** ([ADR-015](adr/ADR-015-edge-cache-snapshot-and-governor.md)): the
   Worker in `edge/`, the KV result cache, the static snapshot of all
   metadata and about 130 prewarmed analyses, and the quota governor.
@@ -223,10 +224,17 @@ Each item must be done or verified before Phase 5 is marked complete and
 2. **Timed restore drill**: the drill was performed, but its times were
    taken on a shared machine and are marked illustrative (ADR-013,
    Decision 8). It needs a serialized, timed run.
-3. **Documentation** (§18): at this commit `docs/security.md` (the threat
-   model, §11) does not exist, and the "Equivalence criterion" and
-   "Runbooks" sections of [operations.md](operations.md) are placeholders,
-   although [deployment.md](deployment.md) links to them.
+3. **Documentation** (§18): [security.md](security.md) (the threat model,
+   §11) and the equivalence criterion and runbooks in
+   [operations.md](operations.md) now exist. Still open: the performance
+   numbers wait for item 1;
+   [ADR-008](adr/ADR-008-server-state.md) and the module docstring of
+   `src/atus_pipeline/api/cache.py` still describe the Phase 4 data-version
+   format (audit F06, F69;
+   [operations.md, "What remains open"](operations.md#what-remains-open));
+   and [deployment.md](deployment.md) must match the ADR-011 amendments,
+   which record that the Vercel fallback is not implemented and that no
+   Worker var selects the API origin.
 4. **CI on GitHub**: the Phase 5 workflows have not yet run on GitHub-hosted
    runners; their steps were rehearsed locally. That first run is also the
    first Firefox E2E result.

@@ -276,7 +276,8 @@ Phase 5 added protection in front of the engine (ADR-012):
   `api/database.py`).
 - **In-process data snapshot.** Data version, latest run, years, respondent
   count and lexicon are read in one read-only transaction and reused, so
-  metadata routes, cache hits and 4xx answers run no SQL. With
+  metadata routes, cache hits and 4xx answers decided before the statistics
+  query run no SQL. With
   `ATUS_EXPECTED_DATA_VERSION` set (production) the snapshot is pinned, and a
   database serving another version gets 503 `data_version_mismatch`.
 - **Admission lanes.** At most 2 uncached analyses compute at once, at most 1
@@ -418,10 +419,11 @@ runner-up (Vercel Hobby as the API host) is the documented fallback.
   available while they sleep, and the frontend explains the wait.
 - **Deploy path.** `.github/workflows/deploy.yml` is the only path: on a
   version tag or manual run, behind the `production` environment's required
-  reviewer, it deploys the exact image CI built, tested and scanned, builds
-  the static snapshot for the release, runs `wrangler deploy`, and runs a
-  smoke test of at most 40 requests. Rollback per component is in
-  [deployment.md](deployment.md#rollback).
+  reviewer, it deploys the exact image its build job built, tested and
+  scanned, with the static snapshot built for the release before the
+  approval; it runs `wrangler deploy`, a post-deploy smoke of at most 30
+  requests (`scripts/ops/deploy_smoke.py`) and a one-journey browser smoke.
+  Rollback per component is in [deployment.md](deployment.md#rollback).
 - **Release switch.** A new data release is restored into a new Neon
   project; the owner then changes the API's `ATUS_DATABASE_URL` and
   `ATUS_EXPECTED_DATA_VERSION` together, and the deploy workflow publishes the
