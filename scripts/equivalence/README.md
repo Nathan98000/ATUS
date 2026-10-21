@@ -105,6 +105,8 @@ Spec sources:
   and the protocol cases.
 - `make_specs.py --out DIR --random N` writes the engine-level diff's fixed extreme cases
   plus N seeded random specs, as API requests.
+- `docs/evidence/phase5/equivalence/specs/` holds the 544 generated specs of the Phase 5
+  run (5 categories), next to that run's report and summary.
 
 The GET endpoints are always compared too, unless `--no-gets` is given:
 
