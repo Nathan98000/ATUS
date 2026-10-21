@@ -77,6 +77,23 @@ def tool_versions(conn: psycopg.Connection, dump_tool: pgtools.PgTool | None) ->
     }
 
 
+def dump_tool(conninfo: str, *, image: str | None = None) -> pgtools.PgTool:
+    """``pg_dump`` for the database at ``conninfo``, resolved and run once
+    (``--version``), so a missing or unusable client is found before a build
+    that depends on it (a built target refuses a second build; review r1)."""
+    with psycopg.connect(conninfo, autocommit=True) as conn:
+        server_major = int(conn.execute("SHOW server_version_num").fetchone()[0]) // 10000
+    tool = pgtools.resolve("pg_dump", conninfo, server_major=server_major, image=image)
+    version = tool.version()
+    major = pgtools.parse_major(version)
+    if major is None or major < server_major:
+        raise pgtools.PgToolError(
+            f"pg_dump ({tool.origin}) did not report version {server_major} or newer: "
+            f"{version[:200]!r}"
+        )
+    return tool
+
+
 def write_artifact(conninfo: str, out_dir: Path, report: BuildReport, *,
                    image: str | None = None) -> Path:
     """Dump the serving database at ``conninfo`` into ``out_dir`` and write its
