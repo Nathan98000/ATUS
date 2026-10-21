@@ -86,6 +86,14 @@ describe('wrangler.jsonc', () => {
     expect(raw.send_metrics).toBe(false)
   })
 
+  it('keeps Workers invocation logs off: raw client IPs live only in memory (brief §12)', () => {
+    // Cloudflare's per-request invocation records can carry the request's
+    // headers, CF-Connecting-IP included, for the logs' retention. The
+    // Worker's own JSON line already has the route, status, outcome and
+    // duration (ADR-014, "Workers invocation logs").
+    expect(raw.observability?.logs?.invocation_logs).toBe(false)
+  })
+
   it('contains nothing that looks like a secret value', () => {
     const text = JSON.stringify(raw)
     expect(text).not.toMatch(/[0-9a-f]{40,}/i)
