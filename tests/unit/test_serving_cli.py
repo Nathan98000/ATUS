@@ -125,6 +125,37 @@ def test_the_file_is_used_without_the_environment(tmp_path, monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
+# a new API password is announced, whatever the verdict                       #
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.parametrize("passed", [True, False])
+@pytest.mark.parametrize("changed", [True, False])
+def test_a_new_api_password_is_announced_whatever_the_verdict(tmp_path, monkeypatch,
+                                                              passed, changed):
+    """Review r2 (roles-only-silent-api-password-rotation): the note that the
+    API role's password changed was printed only when a check failed, so a
+    passing run that set a new password said nothing, and the API's
+    ATUS_DATABASE_URL silently stopped opening connections."""
+    dump = tmp_path / "atus-serving-0325-x.dump"
+    dump.write_bytes(b"PGDMP")
+    secrets_file = tmp_path / "neon.env"
+    monkeypatch.setattr(restore_module, "restore", lambda options, echo=print: (
+        restore_module.RestoreReport(passed=passed, api_password_changed=changed)))
+    result = CliRunner().invoke(cli, [
+        "restore-serving-db", "--artifact", str(dump), "--roles-only",
+        "--secrets-file", str(secrets_file),
+    ], env={"ATUS_OWNER_DATABASE_URL": OWNER_URL, "ATUS_LOG_LEVEL": "WARNING"})
+    assert result.exit_code == (0 if passed else 1)
+    assert ("Restore passed." if passed else "Restore FAILED.") in result.output
+    note = "the API role's password was changed"
+    assert (note in result.output) is changed
+    if changed:
+        assert f"only ATUS_API_DATABASE_URL in {secrets_file} works now" in result.output
+        assert "update the API's ATUS_DATABASE_URL (Render)" in result.output
+        assert ("before the checks ran" in result.output) is not passed
+
+
+# --------------------------------------------------------------------------- #
 # a release dump without its manifest                                         #
 # --------------------------------------------------------------------------- #
 

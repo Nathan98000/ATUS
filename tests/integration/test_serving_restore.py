@@ -147,8 +147,11 @@ def artifact(test_db_url, tmp_path_factory):
         drop_scratch_database(serving)
 
 
-def restore(dump: Path, secrets_file: Path, api_role: str, *extra: str):
+def restore(dump: Path, secrets_file: Path, api_role: str, *extra: str,
+            owner_url_env: str | None = None):
     env = {k: v for k, v in os.environ.items() if k != "ATUS_OWNER_DATABASE_URL"}
+    if owner_url_env is not None:
+        env["ATUS_OWNER_DATABASE_URL"] = owner_url_env
     env["ATUS_BIN"] = str(Path(os.environ.get("VIRTUAL_ENV", REPO / ".venv")) / "bin" / "atus")
     if not Path(env["ATUS_BIN"]).exists():
         env["ATUS_BIN"] = shutil.which("atus") or "atus"
@@ -348,6 +351,10 @@ def test_roles_only_rotates_the_api_password(restored, cluster):
     result = restore(restored["dump"], restored["secrets_file"], cluster.api_role,
                      "--roles-only", "--rotate-api-password")
     assert result.returncode == 0, result.stdout + result.stderr
+    # Review r2: a passing rotation says so too, not only a failing one.
+    assert "Restore passed." in result.stdout
+    assert "Note: the API role's password was changed;" in result.stdout
+    assert "update the API's ATUS_DATABASE_URL (Render)" in result.stdout
     new_url = read_env_file(restored["secrets_file"])[API_URL_KEY]
     assert new_url != old_url
     with psycopg.connect(new_url) as conn:
@@ -394,6 +401,33 @@ def test_a_failed_check_after_a_rotation_says_the_new_password_is_in_effect(
     assert "Restore FAILED." in output
     assert "the API role's password was changed before the checks ran" in output
     with psycopg.connect(restored["api_url"]) as conn:
+        assert conn.execute("SELECT 1").fetchone() == (1,)
+
+
+def test_roles_only_never_replaces_the_live_password_unasked(restored, cluster, tmp_path):
+    """Review r2 (roles-only-silent-api-password-rotation): with a secrets file
+    that holds no ATUS_API_DB_PASSWORD, or none at the --secrets-file path
+    while ATUS_OWNER_DATABASE_URL is exported, --roles-only generated a new
+    password, applied it to the live role and printed "Restore passed." with
+    no note: the deployed connection string stopped working, silently. Now it
+    refuses and changes nothing; --rotate-api-password does it on purpose."""
+    live_url = read_env_file(restored["secrets_file"])[API_URL_KEY]
+    owner_only = tmp_path / "owner-only.env"
+    owner_only.write_text(f"ATUS_OWNER_DATABASE_URL={restored['owner_url']}\n")
+    owner_only.chmod(0o600)
+    missing = tmp_path / "empty-home" / ".config" / "atus" / "neon.env"
+    for secrets_file, exported in ((owner_only, None), (missing, restored["owner_url"])):
+        before = secrets_file.read_text() if secrets_file.exists() else None
+        result = restore(restored["dump"], secrets_file, cluster.api_role, "--roles-only",
+                         owner_url_env=exported)
+        output = result.stdout + result.stderr
+        assert result.returncode == 1, output
+        assert f"holds no {API_PASSWORD_KEY}" in output, output
+        assert "--rotate-api-password" in output and "nothing was changed" in output
+        assert "Restore passed." not in output and "Traceback" not in output
+        assert cluster.owner_password not in output
+        assert (secrets_file.read_text() if secrets_file.exists() else None) == before
+    with psycopg.connect(live_url) as conn:          # the deployed URL still works
         assert conn.execute("SELECT 1").fetchone() == (1,)
 
 

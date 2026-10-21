@@ -230,12 +230,14 @@ def restore_serving_db(artifact, secrets_file, api_role, rotate_api_password, ro
     if report_path:
         write_report(report, report_path, url)
     click.echo("Restore " + ("passed." if report.passed else "FAILED."))
+    if report.api_password_changed:
+        # Whatever the verdict: the checks run after roles.sql, and a failure
+        # does not undo it (review r2: a passing run used to say nothing).
+        when = "" if report.passed else " before the checks ran"
+        click.echo(f"Note: the API role's password was changed{when}; only "
+                   f"ATUS_API_DATABASE_URL in {secrets_file} works now (update the API's "
+                   "ATUS_DATABASE_URL (Render) to it, then Save and deploy).")
     if not report.passed:
-        if report.api_password_changed:
-            # The checks run after roles.sql: a failure does not undo it.
-            click.echo(f"Note: the API role's password was changed before the checks ran; "
-                       f"only ATUS_API_DATABASE_URL in {secrets_file} works now (update the "
-                       "API's ATUS_DATABASE_URL).")
         sys.exit(1)
 
 
