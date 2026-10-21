@@ -878,7 +878,7 @@ Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_se
 
 | File | Holds | Written by | Feeds |
 |---|---|---|---|
-| `edge.env` | `EDGE_AUTH_SECRET` (and `EDGE_AUTH_SECRET_PREVIOUS` while rotating), `OPS_TOKEN`, `IP_HMAC_KEY`, the API's `ATUS_OPS_TOKEN`, then `RENDER_ORIGIN`; optionally `NEON_API_KEY`, which you add and the script keeps | `scripts/ops/gen_edge_secrets.sh`: 256-bit hex values, re-runs keep them, `--rotate NAME` replaces one, `--render-origin URL` records the origin | `wrangler secret put` (piped) for the Worker's names only; `ATUS_OPS_TOKEN` goes to Render env only; `OPS_TOKEN` also to the GitHub secret `EDGE_OPS_TOKEN` (`ops`, optionally `production`) |
+| `edge.env` | `EDGE_AUTH_SECRET` (and, once it has been rotated, `EDGE_AUTH_SECRET_PREVIOUS` with the rotation's state `EDGE_AUTH_SECRET_ROTATION`, `pending` or `finished`), `OPS_TOKEN`, `IP_HMAC_KEY`, the API's `ATUS_OPS_TOKEN`, then `RENDER_ORIGIN`; optionally `NEON_API_KEY`, which you add and the script keeps | `scripts/ops/gen_edge_secrets.sh`: 256-bit hex values, re-runs keep them, `--rotate NAME` replaces one (not `EDGE_AUTH_SECRET` while its rotation is pending), `--finish-rotation` ends that rotation, `--render-origin URL` records the origin | `wrangler secret put` (piped) for the Worker's names only; `ATUS_OPS_TOKEN` goes to Render env only; `OPS_TOKEN` also to the GitHub secret `EDGE_OPS_TOKEN` (`ops`, optionally `production`) |
 | `neon-<release>-<build8>.env` | one file per Neon project, named like the project: `ATUS_OWNER_DATABASE_URL`, the `neondb_owner` direct DSN (pasted from Neon → Connect, pooling off; a bare `postgresql://` line also counts), then `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` | you (the owner DSN) and `scripts/ops/restore_serving_db.sh --secrets-file <it>` (the two `ATUS_API_*` lines) | restores, the API password rotation, Render's `ATUS_DATABASE_URL` (= `ATUS_API_DATABASE_URL`). Keep the previous project's file until that project's deletion is approved: a data rollback needs its `atus_api` DSN |
 
 ### Local stack (`deploy/stack/stack.env.example`)
@@ -928,10 +928,11 @@ Secrets are generated into `~/.config/atus/edge.env` by `scripts/ops/gen_edge_se
 Every secret has one procedure.
 
 1. **Edge secret.** This one is designed so that no request fails.
-   1. `scripts/ops/gen_edge_secrets.sh --rotate EDGE_AUTH_SECRET` writes the new value into `edge.env` and keeps the old one as `EDGE_AUTH_SECRET_PREVIOUS`.
-   2. Render `ATUS_EDGE_SECRETS=<old>,<new>`, then "Save and deploy". Wait until Render → Events shows the deploy as live.
+   1. `scripts/ops/gen_edge_secrets.sh --rotate EDGE_AUTH_SECRET` writes the new value into `edge.env` and keeps the old one as `EDGE_AUTH_SECRET_PREVIOUS`: the value the Worker sends until step 3. It records the rotation as pending, and refuses another `--rotate EDGE_AUTH_SECRET` until step 5: a second rotation would replace that value with one that was never deployed, and step 2 would then lock the Worker out (403 `forbidden_origin` on every proxied request; review round 3). If you lost track of where you are, Render's current `ATUS_EDGE_SECRETS` shows which values the API accepts.
+   2. Render `ATUS_EDGE_SECRETS=<old>,<new>` (`<old>` is `EDGE_AUTH_SECRET_PREVIOUS`, `<new>` is `EDGE_AUTH_SECRET`), then "Save and deploy". Wait until Render → Events shows the deploy as live.
    3. `npx --no-install wrangler secret put EDGE_AUTH_SECRET` with `<new>`.
    4. Render `ATUS_EDGE_SECRETS=<new>`, then "Save and deploy".
+   5. `scripts/ops/gen_edge_secrets.sh --finish-rotation` records that the Worker and the API use only `<new>`. `EDGE_AUTH_SECRET_PREVIOUS` stays in `edge.env` for an edge rollback to a version from before the rotation ("Rollback", Edge, step 2).
 2. **`atus_api` database password.**
    1. `scripts/ops/restore_serving_db.sh --artifact <the release dump> --secrets-file <that project's file> --roles-only --rotate-api-password` re-applies `scripts/ops/roles.sql` as `neondb_owner` with a new generated 192-bit password (sent as a SCRAM verifier) and rewrites `ATUS_API_DB_PASSWORD` and `ATUS_API_DATABASE_URL` in that file.
    2. Update Render's `ATUS_DATABASE_URL`, then "Save and deploy". Do this even if step 1 ended with `Restore FAILED.` after the note "the API role's password was changed before the checks ran", or with an error after the note "the API role's password was changed before the restore stopped with an error": the new password is already in effect.

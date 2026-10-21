@@ -3,6 +3,7 @@
 # ever printing them.
 #
 #   scripts/ops/gen_edge_secrets.sh [--file PATH] [--render-origin URL] [--rotate NAME]...
+#                                   [--finish-rotation]
 #
 # Writes EDGE_AUTH_SECRET, OPS_TOKEN, IP_HMAC_KEY and ATUS_OPS_TOKEN -- each 256
 # bits from the operating system's CSPRNG, hex-encoded -- to
@@ -20,9 +21,15 @@
 # OPS_TOKEN, IP_HMAC_KEY, ATUS_OPS_TOKEN or all; repeatable) replaces one.
 # Rotating EDGE_AUTH_SECRET keeps the old value as EDGE_AUTH_SECRET_PREVIOUS,
 # so the API can accept both while the Worker switches
-# (ATUS_EDGE_SECRETS=new,old). `--render-origin https://<service>.onrender.com`
-# records RENDER_ORIGIN. Any other NAME=value lines already in the file
-# (NEON_API_KEY, say) are kept.
+# (ATUS_EDGE_SECRETS=new,old), and records the rotation as pending
+# (EDGE_AUTH_SECRET_ROTATION). While it is pending, the Worker may still send
+# the previous value, so another `--rotate EDGE_AUTH_SECRET` is refused: it
+# would replace the previous value with one that was never deployed (review
+# round 3). `--finish-rotation` records that the Worker and the API use only
+# EDGE_AUTH_SECRET now; the previous value stays in the file for an edge
+# rollback. `--render-origin https://<service>.onrender.com` records
+# RENDER_ORIGIN. Any other NAME=value lines already in the file (NEON_API_KEY,
+# say) are kept.
 #
 # Output: the file path, which names were created, kept or rotated, and the
 # commands that read each value from the file (`wrangler secret put` for the
@@ -32,7 +39,7 @@
 set -euo pipefail
 umask 077
 
-MANAGED_RE='^(EDGE_AUTH_SECRET|EDGE_AUTH_SECRET_PREVIOUS|OPS_TOKEN|IP_HMAC_KEY|ATUS_OPS_TOKEN|RENDER_ORIGIN)='
+MANAGED_RE='^(EDGE_AUTH_SECRET|EDGE_AUTH_SECRET_PREVIOUS|EDGE_AUTH_SECRET_ROTATION|OPS_TOKEN|IP_HMAC_KEY|ATUS_OPS_TOKEN|RENDER_ORIGIN)='
 GENERATED="EDGE_AUTH_SECRET OPS_TOKEN IP_HMAC_KEY ATUS_OPS_TOKEN"
 # Loaded into the Worker; ATUS_OPS_TOKEN belongs to the API (Render only).
 WORKER_SECRETS="EDGE_AUTH_SECRET OPS_TOKEN IP_HMAC_KEY"
@@ -49,6 +56,7 @@ usage() {
 file="${ATUS_EDGE_ENV_FILE:-${HOME}/.config/atus/edge.env}"
 render_origin=""
 rotate=" "
+finish=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -70,6 +78,10 @@ while [[ $# -gt 0 ]]; do
         *) die "--rotate takes EDGE_AUTH_SECRET, OPS_TOKEN, IP_HMAC_KEY, ATUS_OPS_TOKEN or all" ;;
       esac
       shift 2
+      ;;
+    --finish-rotation)
+      finish=1
+      shift
       ;;
     -h | --help)
       usage
@@ -113,13 +125,36 @@ random_hex() {
 report=""
 rotated=" "
 edge_previous="$(current EDGE_AUTH_SECRET_PREVIOUS)"
+# pending: the Worker may still send EDGE_AUTH_SECRET_PREVIOUS. A previous value
+# without a recorded state (a file from before the state existed) counts as
+# pending: only the owner knows that rotation was finished.
+rotation_state="$(current EDGE_AUTH_SECRET_ROTATION)"
+if [[ -n "$edge_previous" && "$rotation_state" != finished ]]; then
+  rotation_state=pending
+elif [[ -z "$edge_previous" ]]; then
+  rotation_state=""
+fi
+if [[ "$finish" == 1 ]]; then
+  if [[ "$rotation_state" == pending ]]; then
+    rotation_state=finished
+    report="${report}  EDGE_AUTH_SECRET rotation: finished\n"
+  else
+    report="${report}  EDGE_AUTH_SECRET rotation: none pending\n"
+  fi
+fi
+if [[ "$rotate" == *" EDGE_AUTH_SECRET "* && "$rotation_state" == pending && -n "$(current EDGE_AUTH_SECRET)" ]]; then
+  die "a rotation of EDGE_AUTH_SECRET is pending (EDGE_AUTH_SECRET_PREVIOUS in $file may still be what the Worker sends); nothing was written. Rotating again would replace it with a value that was never deployed. Finish that rotation first (docs/deployment.md, Rotation, item 1): once the Worker sends EDGE_AUTH_SECRET and Render's ATUS_EDGE_SECRETS holds only that value, run with --finish-rotation (add --rotate EDGE_AUTH_SECRET to start the next one)."
+fi
 for name in $GENERATED; do
   value="$(current "$name")"
   if [[ -z "$value" ]]; then
     value="$(random_hex)"
     report="${report}  ${name}: created\n"
   elif [[ "$rotate" == *" ${name} "* ]]; then
-    [[ "$name" != EDGE_AUTH_SECRET ]] || edge_previous="$value"
+    if [[ "$name" == EDGE_AUTH_SECRET ]]; then
+      edge_previous="$value"
+      rotation_state=pending
+    fi
     value="$(random_hex)"
     rotated="${rotated}${name} "
     report="${report}  ${name}: rotated\n"
@@ -152,6 +187,7 @@ trap 'rm -f -- "$tmp"' EXIT
   printf 'EDGE_AUTH_SECRET=%s\n' "$value_EDGE_AUTH_SECRET"
   if [[ -n "$edge_previous" ]]; then
     printf 'EDGE_AUTH_SECRET_PREVIOUS=%s\n' "$edge_previous"
+    printf 'EDGE_AUTH_SECRET_ROTATION=%s\n' "$rotation_state"
   fi
   printf 'OPS_TOKEN=%s\n' "$value_OPS_TOKEN"
   printf 'IP_HMAC_KEY=%s\n' "$value_IP_HMAC_KEY"
@@ -210,9 +246,13 @@ for environment in ops production; do
   printf "    grep '^OPS_TOKEN=' %s | cut -d= -f2- | gh secret set EDGE_OPS_TOKEN --env %s\n" \
     "$quoted_file" "$environment"
 done
-if [[ "$rotated" == *" EDGE_AUTH_SECRET "* ]]; then
-  printf 'Rotation order: set ATUS_EDGE_SECRETS=<EDGE_AUTH_SECRET>,<EDGE_AUTH_SECRET_PREVIOUS> and\n'
-  printf 'redeploy the API, then load EDGE_AUTH_SECRET into the Worker, then drop the old value.\n'
+if [[ "$rotation_state" == pending ]]; then
+  printf '\nEDGE_AUTH_SECRET rotation: pending. EDGE_AUTH_SECRET_PREVIOUS is the value the Worker\n'
+  printf 'sends until it gets EDGE_AUTH_SECRET. Rotation order: set Render ATUS_EDGE_SECRETS to\n'
+  printf '<EDGE_AUTH_SECRET>,<EDGE_AUTH_SECRET_PREVIOUS> and redeploy the API, then load\n'
+  printf 'EDGE_AUTH_SECRET into the Worker, then set ATUS_EDGE_SECRETS=<EDGE_AUTH_SECRET> and\n'
+  printf 'redeploy the API, then run this script with --finish-rotation. Until then it refuses\n'
+  printf 'another --rotate EDGE_AUTH_SECRET.\n'
 fi
 if [[ "$rotated" == *" OPS_TOKEN "* ]]; then
   printf 'Also update every copy of OPS_TOKEN that monitors use (GitHub secret EDGE_OPS_TOKEN).\n'
