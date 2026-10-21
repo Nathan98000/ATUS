@@ -9,10 +9,12 @@ from __future__ import annotations
 import psycopg
 import pytest
 from click.testing import CliRunner
+from psycopg.conninfo import conninfo_to_dict
 
 from atus_pipeline.cli import cli
 from atus_pipeline.serving import restore as restore_module
 from atus_pipeline.serving.pgtools import PgToolError
+from atus_pipeline.serving.secrets_file import verified_owner_url
 
 OWNER_URL = "postgresql://neondb_owner:s3cret-owner-pw@db.example.test:5432/atus"
 
@@ -123,6 +125,82 @@ def test_the_file_is_used_without_the_environment(tmp_path, monkeypatch):
     path = _secrets_file(tmp_path, PROJECT_B)
     monkeypatch.delenv("ATUS_OWNER_DATABASE_URL", raising=False)
     assert restore_module.owner_url(_options(path)) == PROJECT_B
+
+
+# --------------------------------------------------------------------------- #
+# the owner's connection verifies the server (review r3)                      #
+# --------------------------------------------------------------------------- #
+
+NEON_PASTED = ("postgresql://neondb_owner:pw-n@ep-cool-1.us-east-1.aws.neon.tech/atus"
+               "?sslmode=require&channel_binding=require")
+
+
+@pytest.mark.parametrize("from_env", [True, False])
+@pytest.mark.parametrize("line", [f"ATUS_OWNER_DATABASE_URL={NEON_PASTED}", NEON_PASTED])
+def test_a_pasted_neon_string_is_verified(tmp_path, monkeypatch, from_env, line):
+    """Review r3 (owner-restore-unverified-tls): owner step 3.5.1 pastes Neon's
+    string as is (``sslmode=require``), and the restore used it unchanged, so
+    the owner's session, which streams every served row and sends the API
+    role's SCRAM verifier, authenticated no server. Now a remote owner URL
+    always verifies the certificate and host name, as the API's URL does;
+    channel binding is kept."""
+    path = tmp_path / "neon.env"
+    path.write_text("# empty\n" if from_env else line + "\n")
+    path.chmod(0o600)
+    if from_env:
+        monkeypatch.setenv("ATUS_OWNER_DATABASE_URL", NEON_PASTED)
+    else:
+        monkeypatch.delenv("ATUS_OWNER_DATABASE_URL", raising=False)
+    params = conninfo_to_dict(restore_module.owner_url(_options(path)))
+    assert params["sslmode"] == "verify-full"
+    assert params["sslrootcert"] == "system"
+    assert params["channel_binding"] == "require"
+    assert (params["host"], params["user"], params["password"], params["dbname"]) == (
+        "ep-cool-1.us-east-1.aws.neon.tech", "neondb_owner", "pw-n", "atus")
+
+
+@pytest.mark.parametrize(("given", "expected"), [
+    ("postgresql://o:p@db.example.test/atus", {"sslmode": "verify-full",
+                                               "sslrootcert": "system"}),
+    ("postgresql://o:p@db.example.test/atus?sslmode=disable",
+     {"sslmode": "verify-full", "sslrootcert": "system"}),
+    ("postgresql://o:p@db.example.test/atus?sslmode=verify-ca&sslrootcert=/ca.pem",
+     {"sslmode": "verify-full", "sslrootcert": "/ca.pem"}),
+    ("host=db.example.test user=o password='p q' dbname=atus sslmode=prefer",
+     {"sslmode": "verify-full", "sslrootcert": "system", "password": "p q"}),
+    ("postgresql://o:p@db.example.test/atus?sslmode=require&hostaddr=192.0.2.7",
+     {"sslmode": "verify-full", "sslrootcert": "system", "hostaddr": "192.0.2.7"}),
+])
+def test_every_weaker_sslmode_becomes_verify_full(given, expected):
+    params = conninfo_to_dict(verified_owner_url(given))
+    assert {key: params.get(key) for key in expected} == expected
+    assert params["host"] == "db.example.test" and params["dbname"] == "atus"
+
+
+def test_the_other_parameters_of_the_owner_url_are_kept_verbatim():
+    """Review r3 verification: the upgrade decoded and re-encoded every other
+    query parameter, and urlencode writes a space as "+", which libpq reads
+    as itself: ``options=-c%20statement_timeout%3D0`` reached the server as
+    ``-c+statement_timeout=0``. Only sslmode and sslrootcert may change."""
+    given = ("postgresql://o:p@db.example.test/atus?sslmode=require"
+             "&options=-c%20statement_timeout%3D0&application_name=a+b&channel_binding=require")
+    before, after = conninfo_to_dict(given), conninfo_to_dict(verified_owner_url(given))
+    assert after.pop("sslmode") == "verify-full" and after.pop("sslrootcert") == "system"
+    before.pop("sslmode")
+    assert after == before
+    assert after["options"] == "-c statement_timeout=0" and after["application_name"] == "a+b"
+
+
+@pytest.mark.parametrize("given", [
+    PROJECT_A,                                           # already verify-full
+    "postgresql://o:p@db.example.test/atus?sslmode=verify-full&sslrootcert=/ca.pem",
+    "postgresql://neondb_owner:p@127.0.0.1:5470/atus",   # the drill: the owner's choice
+    "postgresql://neondb_owner:p@localhost:5470/atus?sslmode=disable",
+    "postgresql://neondb_owner:p@[::1]:5470/atus",
+    "host=/tmp user=o dbname=atus",                       # a Unix socket
+])
+def test_verified_and_local_owner_urls_are_kept(given):
+    assert verified_owner_url(given) == given
 
 
 # --------------------------------------------------------------------------- #

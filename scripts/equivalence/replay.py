@@ -105,6 +105,7 @@ from atus_pipeline.serving.secrets_file import (
     OWNER_URL_KEY,
     SecretsFileError,
     read_env_file,
+    verified_owner_url,
 )
 
 REPO = Path(__file__).resolve().parents[2]
@@ -247,7 +248,9 @@ def database_urls(args: argparse.Namespace) -> dict[str, tuple[str, str]]:
             key = API_URL_KEY if values.get(API_URL_KEY) else OWNER_URL_KEY
             if not values.get(key):
                 raise SetupError(f"{path} has neither {API_URL_KEY} nor {OWNER_URL_KEY}")
-            urls["c"] = (values[key], f"{path.name}:{key}")
+            # The owner's pasted string verifies no server (review r3).
+            url = values[key] if key == API_URL_KEY else verified_owner_url(values[key])
+            urls["c"] = (url, f"{path.name}:{key}")
         elif os.environ.get(SERVING_URL_ENV):
             urls["c"] = (os.environ[SERVING_URL_ENV], f"${SERVING_URL_ENV}")
         else:

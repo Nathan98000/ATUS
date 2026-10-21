@@ -100,6 +100,7 @@ Every response carries `Server-Timing: db;dur=<ms>, app;dur=<ms>`: the request's
 | `atus_client_disconnects_total{route}` | counter | clients that disconnected before their response (analyses) |
 | `atus_rate_limit_rejections_total{bucket}` | counter: `request`, `analysis` | token buckets |
 | `atus_daily_cap_rejections_total`, `atus_daily_cap_used`, `atus_daily_cap_limit` | counter, gauges | daily cap |
+| `atus_requests_in_flight`, `atus_requests_in_flight_limit`, `atus_requests_shed_total` | gauges, counter | the bound on requests in flight, `/health` excepted (ADR-012 "Process", review round 3) |
 | `atus_analysis_computations_total`, `atus_analysis_joins_total` | counter | analysis runner |
 | `atus_analysis_cache_entries` | gauge | result cache |
 | `atus_query_timeouts_total` | counter: statement timeout, request deadline, shutdown | database layer |

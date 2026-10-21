@@ -5,7 +5,8 @@ The procedure of brief §9 and ADR-013, in order:
 
 1. read the owner's connection string from ``$ATUS_OWNER_DATABASE_URL`` or the
    owner's secrets file (default ``~/.config/atus/neon.env``); it is never
-   printed, and when both are set they must name the same database
+   printed, when both are set they must name the same database, and a remote
+   server is always verified, whatever ``sslmode`` was pasted
    (:func:`owner_url`);
 2. verify the dump against its ``.sha256`` file and its manifest;
 3. refuse a target database that is not empty (each release goes into a new
@@ -23,12 +24,20 @@ The procedure of brief §9 and ADR-013, in order:
    and write the password and the API's connection string back into the
    secrets file (mode 600). ``--roles-only`` never generates one for a role
    that already exists unless ``--rotate-api-password`` asks for it: that
-   would silently break the deployed connection string;
+   would silently break the deployed connection string. When an existing
+   role's password is about to change, the role is first locked out
+   (``NOLOGIN``) and its open sessions are ended, so roles.sql runs while
+   no session of the role exists and none can start until it sets ``LOGIN``
+   with the new password (a new password ends no session, and a session
+   left open could re-set the role's password or settings right after
+   roles.sql; review r3). If a session cannot be ended, nothing else is
+   done (:func:`lock_out_api_role`);
 6. ``VACUUM (ANALYZE)`` every table (a scale-to-zero compute may suspend
    before autovacuum runs);
 7. checks: the serving checks against the manifest (``serving/checks.py``),
-   the API role's session defaults, live proof that the API role cannot
-   write, and the worst-case query plans as the API role;
+   the API role's stored settings (exactly roles.sql's) and session defaults,
+   that its earlier sessions ended before a password change, live proof that
+   the API role cannot write, and the worst-case query plans as the API role;
 8. the metered size, ``sum(pg_database_size(datname))`` over every database
    the owner can see, against the provider's limit.
 
@@ -46,6 +55,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import psycopg
+from psycopg import sql
 from psycopg.conninfo import conninfo_to_dict
 
 from ..database.dsn import describe, ensure_system_roots, redact
@@ -64,6 +74,7 @@ from .secrets_file import (
     read_env_file,
     scram_sha256_verifier,
     update_env_file,
+    verified_owner_url,
 )
 
 DEFAULT_SIZE_LIMIT_BYTES = 1_000_000_000   # Neon Free: "1 GB" per project (1e9 or 2^30:
@@ -131,7 +142,9 @@ class RestoreReport:
 
 
 def owner_url(options: RestoreOptions) -> str:
-    """The owner's connection string: the environment first, then the file.
+    """The owner's connection string: the environment first, then the file,
+    always verifying a remote server (:func:`verified_owner_url`: Neon's
+    pasted ``sslmode=require`` becomes ``verify-full``, review r3).
 
     The API role's password and connection string are written into the
     secrets file, which the runbooks keep one per Neon project. So when both
@@ -150,7 +163,7 @@ def owner_url(options: RestoreOptions) -> str:
                 f"so both must name the same database. Unset {OWNER_URL_KEY}, or pass "
                 "that database's --secrets-file. Nothing was changed."
             )
-        return from_env
+        return verified_owner_url(from_env)
     if not path.is_file():
         raise RestoreError(
             f"set {OWNER_URL_KEY}, or put {OWNER_URL_KEY}=<owner connection string> "
@@ -158,11 +171,95 @@ def owner_url(options: RestoreOptions) -> str:
         )
     if from_file is None:
         raise RestoreError(f"{path} has no {OWNER_URL_KEY}")
-    return from_file
+    return verified_owner_url(from_file)
 
 
 def _role_settings(conn: psycopg.Connection) -> dict[str, str]:
     return {name: conn.execute(f"SHOW {name}").fetchone()[0] for name in EXPECTED_ROLE_SETTINGS}
+
+
+def role_settings_check(conn: psycopg.Connection, role: str) -> CheckResult:
+    """The API role's stored settings (``pg_db_role_setting``, role-wide and
+    for this database) are exactly roles.sql's five. SHOW alone (the session
+    defaults check) cannot see a setting the role gave itself beside them,
+    such as ``enable_indexscan=off`` (review r3)."""
+    stored = conn.execute(
+        "SELECT setting FROM pg_db_role_setting s CROSS JOIN unnest(s.setconfig) AS setting "
+        "WHERE s.setrole = (SELECT oid FROM pg_roles WHERE rolname = %s) AND s.setdatabase IN "
+        "(0, (SELECT oid FROM pg_database WHERE datname = current_database()))",
+        (role,),
+    ).fetchall()
+    found = sorted(setting for (setting,) in stored)
+    expected = sorted(f"{name}={value}" for name, value in EXPECTED_ROLE_SETTINGS.items())
+    if found == expected:
+        observed = "exactly the five defaults"
+    else:
+        extra = [setting for setting in found if setting not in expected]
+        missing = [setting for setting in expected if setting not in found]
+        observed = (f"beyond them: {', '.join(extra) or 'none'}; "
+                    f"missing: {', '.join(missing) or 'none'}")
+    return _check(
+        "API role settings are roles.sql's alone", found == expected, observed,
+        "re-run roles.sql (--roles-only), which resets every setting of the role; the role "
+        "can set its own defaults, so rotate its password too (--rotate-api-password)",
+    )
+
+
+def end_sessions(conn: psycopg.Connection, role: str) -> tuple[int, int]:
+    """End every open session of ``role``; returns ``(ended, still open)``.
+    Needs the privileges of that role or of ``pg_signal_backend`` (Neon's
+    ``neondb_owner`` has the latter); without them nothing is ended and the
+    sessions are reported as still open."""
+    pids = [pid for (pid,) in conn.execute(
+        "SELECT pid FROM pg_stat_activity WHERE usename = %s AND pid <> pg_backend_pid()",
+        (role,),
+    )]
+    ended = 0
+    for pid in pids:
+        try:
+            # Waits up to 5 s for the session to exit.
+            if conn.execute("SELECT pg_terminate_backend(%s, 5000)", (pid,)).fetchone()[0]:
+                ended += 1
+        except psycopg.errors.InsufficientPrivilege:
+            pass
+    if not pids:
+        return 0, 0
+    still_open = conn.execute(
+        "SELECT count(*) FROM pg_stat_activity WHERE pid = ANY(%s)", (pids,)
+    ).fetchone()[0]
+    return ended, still_open
+
+
+SESSIONS_REMEDY = (
+    "a new password does not end open sessions: end them as a role with pg_signal_backend "
+    "(Neon's neondb_owner has it), or restart the database's compute (Neon: the branch -> "
+    "Postgres database -> Computes -> Restart compute), which ends every session"
+)
+
+
+def lock_out_api_role(conn: psycopg.Connection, role: str) -> tuple[int, int]:
+    """Before an existing API role gets a new password: ``NOLOGIN``, then end
+    its open sessions; returns ``(ended, still open)`` as :func:`end_sessions`.
+
+    A new password ends no session, and the role may change its own password
+    and settings (``ALTER ROLE``), so a session of whoever held the old
+    password, left open after roles.sql, could set them again at once, a
+    password of its own included (review r3). Locked out first, no session of
+    the role can start until roles.sql sets ``LOGIN`` with the new password,
+    and once these end none is left to undo it. The role cannot change its
+    own ``LOGIN`` attribute (that needs ``CREATEROLE``)."""
+    statement = sql.SQL("ALTER ROLE {} NOLOGIN").format(sql.Identifier(role))
+    for attempt in range(5):
+        try:
+            conn.execute(statement)
+            break
+        except psycopg.errors.InternalError_:
+            # "tuple concurrently updated": a session of the role altered it
+            # (its password, say) at the same moment; try again.
+            if attempt == 4:
+                raise
+            time.sleep(0.2)
+    return end_sessions(conn, role)
 
 
 def write_probes(conn: psycopg.Connection) -> dict[str, str]:
@@ -300,10 +397,42 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
                            image=options.pg_client_image,
                            extra_env={"ATUS_API_ROLE_PASSWORD": verifier})
     report.tools["psql"] = f"{psql.version()} ({psql.origin})"
+
+    role_checks: list[CheckResult] = []
+    locked = changed and api_role_exists
+    if locked:
+        # Review r3: a new password ends no open session, and a session of
+        # whoever held the old one, left open, could set the role's password
+        # and settings again right after roles.sql. So the role is locked out
+        # and its sessions are ended first; roles.sql then sets LOGIN again.
+        with psycopg.connect(url, autocommit=True) as conn:
+            ended, still_open = lock_out_api_role(conn, options.api_role)
+        say(f"Locked {options.api_role} out (NOLOGIN) and ended {ended} open session(s)"
+            + (f"; {still_open} could not be ended" if still_open else ""))
+        if still_open:
+            raise RestoreError(
+                f"{still_open} open session(s) of {options.api_role} could not be ended, so "
+                "roles.sql was not applied: a session left open could set the role's password "
+                f"and settings again right after it. {SESSIONS_REMEDY}. The role cannot log in "
+                "until then (NOLOGIN); its password and the secrets file are unchanged. Then "
+                "run again with --roles-only --rotate-api-password."
+            )
+        role_checks.append(_check(
+            "API role's earlier sessions ended", True,
+            f"{ended} ended before roles.sql, with the role locked out",
+        ))
+
     started = time.perf_counter()
-    result = psql.run(["-X", "-q", "-v", "ON_ERROR_STOP=1", "-v", f"api_role={options.api_role}",
-                       f"--dbname={dbname}", "-f", "-"],
-                      input_bytes=options.roles_sql.read_bytes(), secrets=tuple(secrets))
+    try:
+        result = psql.run(["-X", "-q", "-v", "ON_ERROR_STOP=1",
+                           "-v", f"api_role={options.api_role}",
+                           f"--dbname={dbname}", "-f", "-"],
+                          input_bytes=options.roles_sql.read_bytes(), secrets=tuple(secrets))
+    except BaseException:
+        if locked:
+            say(f"Note: {options.api_role} is locked out (NOLOGIN) until roles.sql succeeds; "
+                "after fixing the cause, run again with --roles-only --rotate-api-password.")
+        raise
     step("roles.sql", started)
     report.api_password_changed = changed
     say(result.stdout.decode(errors="replace").strip())
@@ -311,6 +440,9 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
     say(f"Wrote {API_PASSWORD_KEY} and {API_URL_KEY} to {path} (mode 600)")
 
     with psycopg.connect(url, autocommit=True) as conn:
+        # After the lock-out above, no session of the role can have changed
+        # its settings since roles.sql: this is the final word.
+        role_checks.insert(0, role_settings_check(conn, options.api_role))
         # --roles-only also finishes a restore that failed after pg_restore
         # (roles.sql refused, say): that database has no planner statistics
         # yet. A suspend never loses them (pg_stats is catalog data).
@@ -328,6 +460,7 @@ def restore(options: RestoreOptions, echo: Callable[[str], None] = print) -> Res
 
         started = time.perf_counter()
         checks = serving_checks(conn, manifest, content_hash=options.verify_content_hash)
+        checks += role_checks
         step("serving checks", started)
         report.sizes = sizes(conn)
 

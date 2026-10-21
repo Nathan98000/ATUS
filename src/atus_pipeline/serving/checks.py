@@ -10,7 +10,12 @@ activity-code order that makes the activity index scan cheap. Two checks are opt
 
 * ``content_hash`` re-hashes every served row and compares it with the
   manifest. It reads the whole database, which on a metered host counts as
-  egress (about the size of the data), so it is meant for local drills;
+  egress (about the size of the data), so it is meant for local drills. It
+  covers row contents only, as read by the connecting role: catalog changes
+  that alter what the API role computes without changing a row (a
+  row-level security policy the owner bypasses, a ``search_path`` setting
+  with a function of the same name) pass it, so it is no check of a
+  database whose owner credentials leaked (review r3);
 * ``explain`` plans (without running) the worst-case analyses (F37/F66): a
   narrow activity pooled over every year must reach ``activities`` through
   the activity-code index, and every plan's cost is reported.

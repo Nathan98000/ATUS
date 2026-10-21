@@ -140,8 +140,9 @@ def build_serving_db(source_url, target_url, artifact_dir, allow_unvalidated, bu
 @click.option("--manifest", "manifest_path", type=click.Path(dir_okay=False, path_type=Path),
               default=None, help="Release manifest to check the data version and rows against.")
 @click.option("--content-hash", is_flag=True,
-              help="Re-hash every served row (reads the whole database: egress on a "
-                   "metered host).")
+              help="Re-hash every served row as the connecting role (reads the whole "
+                   "database: egress on a metered host). Row contents only: it cannot "
+                   "show that a database whose owner credentials leaked is unchanged.")
 @click.option("--explain", is_flag=True, help="Check the worst-case query plans.")
 def verify_serving_db(database_url, manifest_path, content_hash, explain) -> None:
     from .serving.artifact import ArtifactError, read_manifest
@@ -278,6 +279,8 @@ def compare_serving_db(full_url, serving_url, n_specs, seed, report_path) -> Non
     import random
 
     from .analytics import AnalysisEngine
+    from .database.dsn import same_database
+    from .database.versions import read_data_version
     from .serving.equivalence import (
         Comparison,
         compare_results,
@@ -286,6 +289,7 @@ def compare_serving_db(full_url, serving_url, n_specs, seed, report_path) -> Non
         seed_specs,
         spec_dict,
     )
+    from .serving.guard import serving_marker
 
     settings = _settings()
     full_url = full_url or settings.database_url
@@ -295,12 +299,34 @@ def compare_serving_db(full_url, serving_url, n_specs, seed, report_path) -> Non
     ensure_system_roots(full_url, serving_url)
     click.echo(f"Full:    {describe(full_url)}")
     click.echo(f"Serving: {describe(serving_url)}")
+    if same_database(full_url, serving_url):
+        # Review r3: a database compared with itself passed as "N equivalent".
+        raise click.ClickException(
+            f"--full and --serving name the same database ({describe(serving_url)}): that "
+            "would compare a database with itself and prove nothing. Point --full (or "
+            f"$ATUS_DATABASE_URL) at the full database and --serving (or ${SERVING_URL_ENV}) "
+            "at the serving database."
+        )
     options = "-c default_transaction_read_only=on -c jit=off"
     total = Comparison()
     rows = []
     try:
         with psycopg.connect(full_url, autocommit=True, options=options) as full, \
                 psycopg.connect(serving_url, autocommit=True, options=options) as serving:
+            # Which side is which, by the builder's marker: an alias of one
+            # database (another host name, a pooler) passes same_database.
+            if serving_marker(full) is not None:
+                raise click.ClickException(
+                    f"--full ({describe(full_url)}) is a serving database; point it (or "
+                    "$ATUS_DATABASE_URL) at the full database. Nothing was compared."
+                )
+            if serving_marker(serving) is None:
+                raise click.ClickException(
+                    f"--serving ({describe(serving_url)}) carries no serving marker: it is "
+                    "not a serving build (the full database, say). Nothing was compared."
+                )
+            click.echo(f"Full data version:    {read_data_version(full)}")
+            click.echo(f"Serving data version: {read_data_version(serving)}")
             years = [y for (y,) in full.execute(
                 "SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1")]
             tier1 = [c for (c,) in full.execute(

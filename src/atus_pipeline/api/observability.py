@@ -14,7 +14,9 @@ them, so their cost is charged to that request and joiners pay nothing).
   ``COMMIT``/``ROLLBACK`` psycopg sends around each transaction.
 * ``db_ms``: wall time inside :meth:`Database.transaction`, from asking the
   pool for a connection to giving it back, so a waking database shows up
-  here and not as application time.
+  here and not as application time. A transaction still running counts up
+  to now: a request answered while its computation runs (one cut off at
+  shutdown, review r3) reports what that computation has spent so far.
 
 **Client IPs** are personal data (brief §12). Raw addresses exist only in
 memory, for the token buckets; logs and metrics only ever see
@@ -39,10 +41,13 @@ class RequestStats:
     db_statements: int = 0
     db_seconds: float = 0.0
     transactions: int = 0
+    open_since: float | None = None   # perf_counter() at the start of a running transaction
 
     @property
     def db_ms(self) -> float:
-        return self.db_seconds * 1000.0
+        running = self.open_since
+        ongoing = time.perf_counter() - running if running is not None else 0.0
+        return (self.db_seconds + ongoing) * 1000.0
 
 
 _CURRENT: ContextVar[RequestStats | None] = ContextVar("atus_request_stats", default=None)
@@ -73,10 +78,13 @@ def database_time() -> Iterator[None]:
     """Charge the wall time of the enclosed block to the current request."""
     stats = _CURRENT.get()
     started = time.perf_counter()
+    if stats is not None:
+        stats.open_since = started
     try:
         yield
     finally:
         if stats is not None:
+            stats.open_since = None
             stats.db_seconds += time.perf_counter() - started
             stats.transactions += 1
 

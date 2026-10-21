@@ -52,6 +52,24 @@ def test_roles_sql_sets_the_role_defaults_the_restore_checks():
     assert "max_parallel_workers_per_gather" not in _code(ROLES_SQL)   # per request (WS-A)
 
 
+def test_roles_sql_resets_every_setting_of_the_role_and_checks_what_is_left():
+    """Review r3 (api-role-persists-changes-past-rotation): the role can set
+    its own defaults, role-wide and IN DATABASE, and roles.sql only ever set
+    its five, so a rotation left what a leaked password had added. It now
+    resets both first, and fails unless exactly the five remain."""
+    code = _code(ROLES_SQL)
+    first_set = code.index('ALTER ROLE :"api_role" SET ')
+    assert code.index('ALTER ROLE :"api_role" RESET ALL;') < first_set
+    assert code.index('ALTER ROLE :"api_role" IN DATABASE :"DBNAME" RESET ALL;') < first_set
+    check = re.search(r"pg_db_role_setting.*?= ARRAY\[(.*?)\]::text\[\]\s+AS settings_ok \\gset"
+                      r"\s+\\if :settings_ok\s+\\else\s+DO \$\$ BEGIN RAISE EXCEPTION", code, re.S)
+    assert check, "no settings check"
+    listed = [item.strip().strip("'") for item in check.group(1).split(",")]
+    assert listed == sorted(f"{k}={v}" for k, v in EXPECTED_ROLE_SETTINGS.items())
+    assert "setdatabase IN (0," in check.group(0)          # role-wide and this database
+    assert code.index("AS settings_ok") < code.index("COMMIT;")
+
+
 def test_the_restore_wrapper_never_traces_and_writes_privately():
     text = RESTORE_SH.read_text()
     assert os.access(RESTORE_SH, os.X_OK)

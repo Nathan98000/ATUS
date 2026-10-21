@@ -32,8 +32,10 @@ python -m atus_pipeline.api.serve   # the same server without the CLI
 in [ADR-012](adr/ADR-012-load-and-quota-protection.md#process)
 (`src/atus_pipeline/api/serve.py`): it listens on `$PORT`, keeps proxy
 headers off, sends no `server` header, closes idle keep-alive connections
-after 5 s, sheds connections beyond `limit_concurrency` (`max(32, 4 ×
-ATUS_API_THREADS)`, so 64 by default) and shuts down gracefully within 20 s.
+after 5 s, serves at most `max(32, 4 × ATUS_API_THREADS)` requests besides
+`/health` at once (64 by default; the next one gets 503 `overloaded`), sheds
+connections beyond `limit_concurrency` (twice that, so 128 by default) and
+shuts down gracefully within 20 s.
 It binds to 127.0.0.1 in development and 0.0.0.0 when `ATUS_ENV=production`.
 `--reload` is refused in production.
 
@@ -279,7 +281,7 @@ One envelope everywhere:
 | 422 | `insufficient_data` | empty population / subgroup too small for replicate variance | |
 | 422 | `invalid_analysis` | fallback for an engine domain error without its own code; the current engine raises none | |
 | 429 | `rate_limited` | this client's request or analysis bucket is empty | until the bucket holds a token; `client` |
-| 503 | `overloaded` | no analysis lane within the admission wait; every pool connection busy past `ATUS_API_POOL_TIMEOUT_S`; the database refused a connection or a query for capacity (lock timeout, deadlock, SQLSTATE class 53 such as too many connections or a full `/dev/shm`); a metadata query was cancelled (also the data snapshot read an analysis request triggered); or the server shut down while the analysis waited | 10; `global` |
+| 503 | `overloaded` | no analysis lane within the admission wait; every pool connection busy past `ATUS_API_POOL_TIMEOUT_S`; the database refused a connection or a query for capacity (lock timeout, deadlock, SQLSTATE class 53 such as too many connections or a full `/dev/shm`); a metadata query was cancelled (also the data snapshot read an analysis request triggered); the app was already serving its limit of requests (`max(32, 4 × ATUS_API_THREADS)`, 64; `/health` excepted); or the server shut down while the analysis waited, or cut the request off at the end of its 20 s graceful-shutdown window | 10; `global` |
 | 503 | `analysis_timeout` | the analysis hit the statement timeout or the request deadline; never cached | 60; `global` |
 | 503 | `daily_capacity_reached` | the day's uncached-analysis cap is used | until 00:00 UTC; `daily` |
 | 503 | `database_paused` | the database provider refuses connections because a usage quota is exhausted or the endpoint is disabled (matched on Neon's refusal texts, `NEON_PAUSED_MARKERS` in `src/atus_pipeline/api/errors.py`) | 3600; `monthly` |
