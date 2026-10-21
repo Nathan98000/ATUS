@@ -29,7 +29,9 @@ scripts/equivalence/run.sh --specs DIR --out OUT \
 `~/.cache/atus/baseline-387fc2d`) and then runs `replay.py`, which you can also call
 directly (`python scripts/equivalence/replay.py --help`). Useful options:
 `--targets bc` (full vs serving only, no baseline needed), `--category NAME`,
-`--limit N`, `--jobs N` (specs in flight; each goes to all servers at once),
+`--limit N`, `--jobs N` (specs in flight, default 1; each goes to all servers at once.
+`a` and `b` share the full database, and 2 jobs once filled its container's 64 MiB
+`/dev/shm`, audit F33),
 `--ports 8641,8642,8643`, `--no-gets`, `--save-responses none|failures|all`,
 `--fail-on-unexpected`.
 
@@ -49,11 +51,13 @@ under `OUT/run/`, and the harness refuses to start if a `.env` file could reach 
 The Phase 5 servers run in development mode without edge authentication. When edge
 authentication is off, loopback clients are exempt from the per-client buckets. Their
 limits are set so that no capacity answer replaces a result: daily cap 1,000,000, four
-analyses at once, a 120 s lane wait, and a 10-minute statement timeout (the baseline has
-none). All other settings keep their defaults. `servers.phase5_env` lists them, and the
-report records them. Capacity answers (429, and 503 `overloaded`,
-`database_unavailable` or `daily_capacity_reached`) and lost connections are retried up
-to `--retries` times. Nothing is timed.
+analyses at once, a 120 s lane wait, a 10-minute statement timeout and a 2-minute
+metadata timeout (the baseline has none). All other settings keep their defaults.
+`servers.phase5_env` lists them, and the report records them. Capacity answers are
+retried up to `--retries` times: 429, and 503 `overloaded`, `database_unavailable`,
+`daily_capacity_reached` or `analysis_timeout`. At these limits, `analysis_timeout`
+means a saturated database. Lost connections are retried too, but a request with no
+answer within `--request-timeout` is not. Nothing is timed.
 
 Exit status: 0 everything passed, 1 a spec or GET failed (see `summary.md`), 2 a usage,
 input or start-up error.

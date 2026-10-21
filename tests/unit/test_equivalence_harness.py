@@ -497,7 +497,8 @@ def test_missing_or_capacity_answers_make_a_spec_incomplete():
         assert entry["status"] == "incomplete" and not entry["passed"]
     assert httpdiff.is_retryable(busy) and httpdiff.is_retryable(lost)
     timeout = response(503, envelope("analysis_timeout", "slow"))
-    assert not httpdiff.is_retryable(timeout)
+    assert httpdiff.is_retryable(timeout)          # load, at a 10-minute statement timeout
+    assert not httpdiff.is_retryable(response(503, envelope("data_not_loaded", "x")))
 
 
 def test_expectation_misses_are_reported_not_failed():
@@ -773,6 +774,7 @@ def test_phase5_servers_run_without_edge_auth_and_with_generous_limits():
     assert settings.api_max_inflight >= 2 and settings.api_max_inflight_heavy >= 1
     assert settings.api_rate_analysis.limit >= 1_000_000
     assert settings.api_statement_timeout_ms >= 600_000
+    assert settings.api_meta_statement_timeout_ms >= 120_000
     assert settings.api_max_body_bytes == servers.DEFAULT_MAX_BODY_BYTES
     assert settings.port == 8642 and settings.build_sha == "abc123"
 

@@ -88,8 +88,10 @@ def phase5_env(database_url: str, port: int, *, build_sha: str = "dev",
     ``ATUS_EXPECTED_DATA_VERSION`` (the harness checks ``X-Data-Version``
     itself). The daily cap and both rate buckets are effectively unlimited;
     four analyses may compute at once and wait up to 120 s for a lane; the
-    statement timeout is 10 minutes (the baseline has none, so a timeout
-    would be a harness artefact, not a difference). The snapshot TTL is the
+    statement timeout is 10 minutes and the metadata one 2 minutes (the
+    baseline has none, so a timeout would be a harness artefact, not a
+    difference: a 10 s metadata read did time out once while the full
+    database ran the other servers' analyses). The snapshot TTL is the
     production value. Body limit, cache size, pool size and every other
     setting keep their defaults.
     """
@@ -109,6 +111,7 @@ def phase5_env(database_url: str, port: int, *, build_sha: str = "dev",
         "ATUS_API_ADMISSION_WAIT_S": "120",
         "ATUS_API_POOL_TIMEOUT_S": "60",
         "ATUS_API_STATEMENT_TIMEOUT_MS": "600000",
+        "ATUS_API_META_STATEMENT_TIMEOUT_MS": "120000",
         "ATUS_API_SNAPSHOT_TTL_S": "600",
     }
 

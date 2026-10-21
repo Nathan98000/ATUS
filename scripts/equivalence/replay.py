@@ -157,8 +157,10 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
                              f"serving database (default ${SERVING_URL_ENV}).")
     parser.add_argument("--ports", default=DEFAULT_PORTS,
                         help=f"Loopback ports of a,b,c (default {DEFAULT_PORTS}).")
-    parser.add_argument("--jobs", type=int, default=2,
-                        help="Specs in flight at once (each goes to every server at once).")
+    parser.add_argument("--jobs", type=int, default=1,
+                        help="Specs in flight at once (each goes to every server at once; "
+                             "a and b share the full database, where 2 jobs filled the "
+                             "container's 64 MiB /dev/shm once, audit F33).")
     parser.add_argument("--retries", type=int, default=3,
                         help="Retries of a 429/503 capacity answer or a lost connection.")
     parser.add_argument("--request-timeout", type=float, default=900.0,

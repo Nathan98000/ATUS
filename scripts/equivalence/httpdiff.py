@@ -85,9 +85,14 @@ DOMAIN_ERROR_CODES = frozenset({
 
 # Capacity answers that say "not now" rather than "no": the harness retries
 # them (and a request that never got an HTTP answer). Anything else is final.
+# analysis_timeout is one of them: with the harness's 10-minute statement
+# timeout it means a saturated database (a metadata read over its limit while
+# the full database ran the other servers' analyses, seen once in a 544-spec
+# run), not a property of the spec.
 RETRYABLE_STATUSES = frozenset({429, 503})
 RETRYABLE_CODES = frozenset({
     "rate_limited", "overloaded", "database_unavailable", "daily_capacity_reached",
+    "analysis_timeout",
 })
 
 # Response headers that must be identical on b and c (same code, so they can
