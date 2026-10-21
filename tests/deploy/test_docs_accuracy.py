@@ -147,7 +147,7 @@ def test_the_bootstrap_commits_the_kv_namespace_id_before_the_run_is_dispatched(
     assert "kv namespace create" in before
     assert re.search(r"commit and push [^.]*\bto main\b", before)
     step_132 = next(line for line in text.splitlines()
-                    if "npx wrangler kv namespace create" in line
+                    if "npx --no-install wrangler kv namespace create" in line
                     and line.lstrip().startswith("2."))
     assert "Bootstrap" in step_132 and "commit" in step_132
 

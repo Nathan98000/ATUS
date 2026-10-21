@@ -257,3 +257,30 @@ def test_the_stack_mode_guard_covers_the_whole_e2e_suite(tmp_path):
     assert e2e_suite_changes_since(record, tmp_path) == [
         "frontend/e2e/b.spec.ts", "frontend/e2e/deployed/starter.deployed.ts",
         "frontend/e2e/helpers.ts"]
+
+
+# --- owner-credential-tools-unpinned -----------------------------------------------------
+
+#: Everything that tells the owner (or prints for the owner) a wrangler command.
+WRANGLER_INSTRUCTIONS = (
+    DEPLOYMENT, OPERATIONS, DOCS_DIR / "security.md", REPO_ROOT / "edge" / "README.md",
+    REPO_ROOT / "scripts" / "ops" / "gen_edge_secrets.sh", WORKFLOWS / "deploy.yml",
+)
+
+
+def test_the_owner_runs_only_the_wrangler_the_lockfile_installed():
+    """owner-credential-tools-unpinned: owner step 1.3 (and its copies in the deploy
+    guide and Bootstrap) ran `npx wrangler@4 login` from the repository root before
+    `npm ci` in edge/, so npx downloaded whatever wrangler 4.x was newest and that
+    performed the OAuth login. Every wrangler command now runs with `--no-install`
+    (npx refuses to download), and each login follows `npm ci` in edge/."""
+    for path in WRANGLER_INSTRUCTIONS:
+        unlocked = re.findall(r"npx\s+(?:-y\s+)?wrangler\S*", _read(path))
+        assert unlocked == [], (path.name, unlocked)
+    logins = [line for line in _read(DEPLOYMENT).splitlines() if "wrangler login" in line]
+    assert len(logins) == 3                    # step 1.3.1, the guide's 6, Bootstrap 2
+    for line in logins:
+        assert "npx --no-install wrangler login" in line
+        assert 0 <= line.index("cd edge && npm ci") < line.index("wrangler login"), line
+    security = _flat(_read(DOCS_DIR / "security.md"))
+    assert "wrangler login" in security and "serving/pgtools.py" in security

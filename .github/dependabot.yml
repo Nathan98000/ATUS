@@ -88,7 +88,8 @@ updates:
   # postgres:16 is pinned by the same digest in the compose files (bumped by
   # the docker-compose entry below), deploy/pgbouncer/Dockerfile (this entry),
   # and copies no ecosystem updates: the `services:` images of ci.yml and
-  # deploy.yml, deploy/ci/check_image.py and tests/deploy/test_container_image.py.
+  # deploy.yml, deploy/ci/check_image.py, tests/deploy/test_container_image.py
+  # and src/atus_pipeline/serving/pgtools.py (the restore's docker client).
   # A pull request that bumps one copy fails
   # tests/deploy/test_dependabot.py::test_every_postgres_16_pin_names_the_same_digest
   # until every copy carries the new digest: update them in the same pull request.

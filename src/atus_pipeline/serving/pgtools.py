@@ -2,8 +2,11 @@
 
 A tool runs from the local installation when its major version is at least
 the server's (brief §9: restore with a client at least as new as the
-server), and otherwise from the official ``postgres:<server major>`` image
-through ``docker run``. ``pg_dump`` alone must match the server's major
+server), and otherwise from the official postgres image of the server's
+major through ``docker run``: ``PINNED_IMAGES``, pinned by digest like every
+other ``postgres:16`` in the repository, because the container receives the
+connection's password. ``ATUS_PG_CLIENT_IMAGE`` (or ``image=``) overrides
+it; a major without a pinned image needs one. ``pg_dump`` alone must match the server's major
 exactly: a newer one writes an archive format that an older ``pg_restore``
 (the deploy runner's 16) cannot read, and statements an older server
 rejects. Either way the connection, password included,
@@ -43,6 +46,15 @@ TOOLS = ("pg_dump", "pg_restore", "psql")
 IMAGE_ENV = "ATUS_PG_CLIENT_IMAGE"
 CONTAINER_CA_FILE = "/etc/atus-tls/system-roots.pem"     # for sslrootcert=system
 CONTAINER_ROOT_CERT = "/etc/atus-tls/root.crt"           # for an sslrootcert file
+
+#: The docker client per server major. The digest is the one CI, the deploy's
+#: snapshot and the stack pin (tests/deploy/test_dependabot.py keeps every copy
+#: equal); never a mutable tag, which would hand the owner's password to
+#: whatever the registry serves that day (review round 2,
+#: owner-credential-tools-unpinned).
+PINNED_IMAGES = {
+    16: "postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94",
+}
 
 _VERSION = re.compile(r"\(PostgreSQL\)\s+(\d+)(?:\.(\d+))?")
 
@@ -153,6 +165,19 @@ def _base_environment() -> dict[str, str]:
     return {k: v for k, v in os.environ.items() if not k.startswith("PG")}
 
 
+def client_image(server_major: int, image: str | None = None) -> str:
+    """The docker image for a client of ``server_major``: ``image``, else
+    ``ATUS_PG_CLIENT_IMAGE``, else the digest in ``PINNED_IMAGES``."""
+    chosen = image or os.environ.get(IMAGE_ENV) or PINNED_IMAGES.get(server_major)
+    if not chosen:
+        raise PgToolError(
+            f"no pinned postgres image for PostgreSQL {server_major}: install a client "
+            f"{server_major} or newer, or set {IMAGE_ENV} to an image pinned by digest "
+            f"(postgres:{server_major}@sha256:...)"
+        )
+    return chosen
+
+
 def resolve(tool: str, conninfo: str, *, server_major: int, image: str | None = None,
             prefer_docker: bool = False, extra_env: dict[str, str] | None = None) -> PgTool:
     """``tool`` connected to ``conninfo``: local if new enough (``pg_dump``:
@@ -177,7 +202,7 @@ def resolve(tool: str, conninfo: str, *, server_major: int, image: str | None = 
             f"{needed} ({found}) and docker is not available to run it from the "
             "postgres image"
         )
-    image = image or os.environ.get(IMAGE_ENV) or f"postgres:{server_major}"
+    image = client_image(server_major, image)
     argv, env = docker_argv(tool, env, image,
                             ca_file=os.environ.get("SSL_CERT_FILE") or system_ca_bundle())
     return PgTool(tool, argv, {**_base_environment(), **env}, f"docker {image}",

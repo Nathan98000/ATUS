@@ -335,7 +335,8 @@ Tests:
   - checkouts do not persist credentials;
   - `packages: write` is granted only to the deploy `push` job, the deploy `promote` job (which only adds the tags `live` and `deployed-<commit>` to the digest that passed the smoke) and the GHCR cleanup.
 - **Inputs:**
-  - base images are pinned by digest;
+  - base images are pinned by digest, and so is the `postgres:16` client the owner's restore runs through docker with the owner's password (`serving/pgtools.py`; `ATUS_PG_CLIENT_IMAGE` overrides it);
+  - the owner's `wrangler login` (an OAuth token with broad account scopes) and every other owner `wrangler` command run the version locked in `edge/package-lock.json`, after `npm ci` in `edge/`, with `npx --no-install`, which refuses to download another version;
   - Python installs are hash-locked and binary wheels only (`--require-hashes --only-binary=:all:`, in the image, CI and the deploy), so no install builds an sdist;
   - npm installs come from lockfiles (`npm ci`);
   - the image runs as UID 10001, not root.
@@ -343,7 +344,7 @@ Tests:
   - Trivy, from a pinned release binary checked against its SHA-256, which fails on HIGH or CRITICAL vulnerabilities that have a fix;
   - `pip-audit --strict` on `requirements/api.lock.txt`;
   - `npm audit --omit=dev` (the frontend's at `--audit-level=high`).
-- **Updates.** Dependabot proposes weekly updates for pip, npm (frontend and edge), GitHub Actions, Docker and Compose, each after a 7-day cooldown. The `postgres:16` digest also has copies no ecosystem updates (the workflows' `services:` images, `deploy/ci/check_image.py`, `tests/deploy/test_container_image.py`): `tests/deploy/test_dependabot.py::test_every_postgres_16_pin_names_the_same_digest` fails a pull request that bumps only some of them, so CI, the deploy snapshot and the stack keep one PostgreSQL build.
+- **Updates.** Dependabot proposes weekly updates for pip, npm (frontend and edge), GitHub Actions, Docker and Compose, each after a 7-day cooldown. The `postgres:16` digest also has copies no ecosystem updates (the workflows' `services:` images, `deploy/ci/check_image.py`, `tests/deploy/test_container_image.py`, `serving/pgtools.py`): `tests/deploy/test_dependabot.py::test_every_postgres_16_pin_names_the_same_digest` fails a pull request that bumps only some of them, so CI, the deploy snapshot and the stack keep one PostgreSQL build.
 - **Deploy.** It pushes exactly the tested image ID, and Render deploys it by digest.
 
 Code: `.github/workflows/`, `.github/dependabot.yml`, `Dockerfile`, `deploy/*/Dockerfile`, `requirements/*.lock.txt`.

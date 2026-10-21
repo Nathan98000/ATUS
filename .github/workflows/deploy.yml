@@ -581,7 +581,7 @@ jobs:
             Then move the GHCR tag \`live\` back to it: re-run job \`promote\` of the Deploy run that
             deployed it (GitHub allows that for 30 days; later by hand, docs/operations.md, "Rollback").
             GHCR keeps the last 20 digests and \`live\`.
-          - **Edge:** \`cd edge && npx wrangler rollback <previous version id> --message "rollback"\`
+          - **Edge:** \`cd edge && npx --no-install wrangler rollback <previous version id> --message "rollback"\`
             (without an id: the version before the current one), then
             \`python scripts/ops/monitors.py edge --base-url $PUBLIC_BASE_URL\` and one analysis
             through the site. If wrangler says secrets have changed since that version, decline

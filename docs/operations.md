@@ -842,17 +842,17 @@ The summary of every Deploy run has a "Rollback" table: the build, image digest 
     If `inspect` shows another digest, the tag names a new manifest: stop and point Render's Image URL at `ghcr.io/nathan98000/atus-api@sha256:<previous digest>` instead, until the next deploy's `promote` (then set it back to `:live`).
 
   GHCR keeps the newest 20 digests and `live` (`ghcr-cleanup.yml`). Render's dashboard can also roll back to an earlier deploy.
-- **Edge** (SPA, snapshot, Worker and its vars; needs `npx wrangler login` or `CLOUDFLARE_API_TOKEN`):
+- **Edge** (SPA, snapshot, Worker and its vars; needs `npx --no-install wrangler login` or `CLOUDFLARE_API_TOKEN`):
 
   ```bash
   cd edge
-  npx wrangler deployments list                      # find the previous version id
-  npx wrangler rollback <version id> --message "rollback"
+  npx --no-install wrangler deployments list                      # find the previous version id
+  npx --no-install wrangler rollback <version id> --message "rollback"
   cd .. && python scripts/ops/monitors.py edge --base-url "$SITE"
   ```
 
   - **Changed secrets.** If wrangler asks you to confirm because "The following secrets have changed since version … was deployed", confirming redeploys that version **with its old secret values**. After an edge-secret rotation, the old `EDGE_AUTH_SECRET` is no longer in the API's `ATUS_EDGE_SECRETS`, so every proxied request would get 403 `forbidden_origin`. An old `RENDER_ORIGIN`, or a revoked `NEON_API_KEY` (the governor then falls back to conservative mode), comes back the same way.
-    - Decline, and pick a version deployed after the secret change (`npx wrangler deployments list`).
+    - Decline, and pick a version deployed after the secret change (`npx --no-install wrangler deployments list`).
     - If only an older version will do, first make the API accept the old edge secret as well: Render `ATUS_EDGE_SECRETS=<current>,<EDGE_AUTH_SECRET_PREVIOUS from edge.env>`, "Save and deploy", wait until it is live. Then confirm.
     - Do not count on fixing it afterwards: `wrangler secret put` (4.148) refuses to edit a secret while a version other than the latest is deployed. Roll forward with a new deploy, then rotate again.
   - **Check one analysis through the site** as well as `monitors.py edge`, which never reaches the origin with the edge secret.
@@ -861,10 +861,10 @@ The summary of every Deploy run has a "Rollback" table: the build, image digest 
 - **Browsers may hold HTML under rolled-back URLs.** Between a deploy and its rollback, a request for a file of the other version (`/snap/<snapshot_id>/…`, `/assets/<hash>.js`) gets the SPA's `index.html` with the one-year `immutable` Cache-Control of its path (`frontend/public/_headers`). The SPA re-fetches such a snapshot file once with `cache: "reload"`, so the snapshot recovers by itself. A bundle cached that way does not: that browser shows the boot fallback ("ATUS Explorer did not start") until its cache is cleared. Only a page that loaded during the gap and requested the other version's hashed bundle is affected; the SPA has a single entry bundle and no lazy chunks.
 - **Data: the release switch in reverse** (ADR-013 "Rollback"). Steps 1 and 2 need no build, scan or CI, so they work even while [the image scan blocks every deploy](#the-image-scan-blocks-a-deploy).
   1. In Render → Environment, set `ATUS_DATABASE_URL` back to the previous project's `atus_api` DSN and `ATUS_EXPECTED_DATA_VERSION` to that release's `data_version`, together, then "Save and deploy".
-  2. Roll the edge back right away, to the Worker version that ran before the release's deploy (the "Rollback" table of that Deploy run, "Before this run"; or `npx wrangler deployments list`): `cd edge && npx wrangler rollback <version id> --message "data rollback"`, as in the Edge item above. It restores the Worker's `DATA_VERSION`, `SNAPSHOT_ID` and the old snapshot, so the API and the edge agree again within minutes. If wrangler says secrets have changed since that version, read the Edge item first: after a release switch the changed secret is normally the new project's `NEON_API_KEY`, which the rollback then puts back as it was; decline if any other secret (an edge-secret rotation) is listed.
+  2. Roll the edge back right away, to the Worker version that ran before the release's deploy (the "Rollback" table of that Deploy run, "Before this run"; or `npx --no-install wrangler deployments list`): `cd edge && npx --no-install wrangler rollback <version id> --message "data rollback"`, as in the Edge item above. It restores the Worker's `DATA_VERSION`, `SNAPSHOT_ID` and the old snapshot, so the API and the edge agree again within minutes. If wrangler says secrets have changed since that version, read the Edge item first: after a release switch the changed secret is normally the new project's `NEON_API_KEY`, which the rollback then puts back as it was; decline if any other secret (an edge-secret rotation) is listed.
   3. Make `releases/current.json` on `main` name the previous release again (`git checkout <commit of the previous release> -- releases/current.json`). If the governor reads Neon usage, set `NEON_PROJECT_ID` in `edge/wrangler.jsonc` back too. Commit and push. Until this lands, every deploy from `main` would publish the newer release again.
   4. `gh workflow run deploy.yml --ref main -f reason="data rollback to <tag>"`, then approve, so `main`, the Worker's code and the snapshot agree. It rebuilds and scans the image: if the scan blocks it, the rollback from steps 1-2 stays in place meanwhile.
-  5. Put the previous project's `NEON_API_KEY` back with `npx wrangler secret put NEON_API_KEY`, if one is used and step 2 did not restore it.
+  5. Put the previous project's `NEON_API_KEY` back with `npx --no-install wrangler secret put NEON_API_KEY`, if one is used and step 2 did not restore it.
   6. Check that `curl -s "$SITE/api/_edge/health"` shows the previous `data_version`.
 
   Keep the newer project; it is deleted only with the owner's approval.
@@ -988,7 +988,7 @@ The normative procedure is ADR-013 "Release procedure on the free stack (§15)".
 6. **Switch.**
    1. Push the commit from step 3 and run `gh workflow run deploy.yml --ref main -f reason="data release <tag>"`.
    2. While `deploy` waits for approval (its snapshot is already built), set Render's `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` (the manifest's `data_version`) together, "Save and deploy", and wait until Render → Events shows it live. Until the next step the API answers with the new version while every page load still reads the old snapshot, and the Worker stores nothing in KV. Every visitor who opens an analysis the snapshot does not hold — in an open tab, after a reload, or in a new tab — gets it from the new release next to starter examples and descriptions from the old one, and sees a notice that the service is switching data releases and that reloading does not change that yet (no "Reload page" button: a reload loads the same old snapshot). After `deploy` publishes the new snapshot, the notice in open tabs offers the reload within about a minute (each visible tab re-reads the pointer every minute), and the reload then helps. Keep this window short: approve `deploy` as soon as Render shows the switch live.
-   3. If used, load the new project's `NEON_API_KEY` with `npx wrangler secret put NEON_API_KEY`.
+   3. If used, load the new project's `NEON_API_KEY` with `npx --no-install wrangler secret put NEON_API_KEY`.
    4. Approve `deploy`. Its wait step refuses to publish anything at the edge unless Render's `/health` reports the new `ATUS_EXPECTED_DATA_VERSION`, and its smoke checks `X-Data-Version`. From the push in 6.1 on, every deploy from `main` carries the new release: a hotfix approved before the Render switch fails at that wait (nothing is published at the edge).
 7. **Verify (at most 40 requests; wakes Neon):**
 
@@ -1099,7 +1099,7 @@ Restore every release artifact once, as production will, into a fresh cluster wi
 | `$SITE/` fails | Cloudflare, or a broken Worker deploy | Cloudflare status; Deployments; edge [rollback](#rollback) |
 | `/api/*` gives a non-JSON 429 (the SPA says "daily request allowance reached"), or Cloudflare's Error 1027 page with another status (a 5xx looks like a cold start to the SPA, another 4xx like a generic error) | Worker 100,000 requests/day used | [quota runbook](#a-quota-is-exhausted) |
 | 503 `service_waking` | Render spinning up, or suspended (its answer then is undocumented; [security.md R13](security.md#accepted-risks)) | normal if it lasts about a minute; if it persists, Render → Events and [Render suspends the service](#render-suspends-the-service) |
-| 502 `upstream_unavailable`, `reason` `not_configured` (Workers Logs: `origin_not_configured`, for either cause) | Worker secret `RENDER_ORIGIN` missing or invalid, or `EDGE_AUTH_SECRET` missing | `npx wrangler secret list` in `edge/` shows which name is absent; put it from `edge.env` (`wrangler secret put RENDER_ORIGIN` or `EDGE_AUTH_SECRET`) |
+| 502 `upstream_unavailable`, `reason` `not_configured` (Workers Logs: `origin_not_configured`, for either cause) | Worker secret `RENDER_ORIGIN` missing or invalid, or `EDGE_AUTH_SECRET` missing | `npx --no-install wrangler secret list` in `edge/` shows which name is absent; put it from `edge.env` (`wrangler secret put RENDER_ORIGIN` or `EDGE_AUTH_SECRET`) |
 | `upstream_unavailable`, `reason` `connect_failed`, `circuit_open` or `platform_error` | Render down, suspended, or image pull failed | Render → Events; [Render suspends the service](#render-suspends-the-service) |
 | `upstream_unavailable`, `reason` `origin_timeout` | a 524: the origin held the request past the proxy timeout | Render logs for `analysis_timeout` and `db_ms` |
 | 403 `forbidden_origin` through the site | the Worker's `EDGE_AUTH_SECRET` is not in the API's `ATUS_EDGE_SECRETS` (a rotation step skipped) | [rotation](#rotating-tokens-and-secrets), edge secret |
@@ -1119,14 +1119,14 @@ The procedures are in [deployment.md "Rotation"](deployment.md#rotation). `tests
 
 | Secret | Commands | Check afterwards | Visitors |
 |---|---|---|---|
-| Edge secret (`EDGE_AUTH_SECRET` / `ATUS_EDGE_SECRETS`) | `scripts/ops/gen_edge_secrets.sh --rotate EDGE_AUTH_SECRET` (keeps the old value as `EDGE_AUTH_SECRET_PREVIOUS`) → Render `ATUS_EDGE_SECRETS=<new>,<old>`, Save and deploy, wait for live → in `edge/`: `grep '^EDGE_AUTH_SECRET=' ~/.config/atus/edge.env \| cut -d= -f2- \| npx wrangler secret put EDGE_AUTH_SECRET` → Render `ATUS_EDGE_SECRETS=<new>`, Save and deploy | `monitors.py deep`; one analysis on the site; `curl -s -o /dev/null -w '%{http_code}' "$ORIGIN/api/v1/meta"` still prints 403 | none, if the order is kept |
-| Worker `OPS_TOKEN` (GitHub `EDGE_OPS_TOKEN`) | `gen_edge_secrets.sh --rotate OPS_TOKEN` → `grep '^OPS_TOKEN=' ~/.config/atus/edge.env \| cut -d= -f2- \| npx wrangler secret put OPS_TOKEN` → `grep '^OPS_TOKEN=' ~/.config/atus/edge.env \| cut -d= -f2- \| gh secret set EDGE_OPS_TOKEN --env ops` (and `--env production` if set there) | `gh workflow run quota-report.yml` | none |
+| Edge secret (`EDGE_AUTH_SECRET` / `ATUS_EDGE_SECRETS`) | `scripts/ops/gen_edge_secrets.sh --rotate EDGE_AUTH_SECRET` (keeps the old value as `EDGE_AUTH_SECRET_PREVIOUS`) → Render `ATUS_EDGE_SECRETS=<new>,<old>`, Save and deploy, wait for live → in `edge/`: `grep '^EDGE_AUTH_SECRET=' ~/.config/atus/edge.env \| cut -d= -f2- \| npx --no-install wrangler secret put EDGE_AUTH_SECRET` → Render `ATUS_EDGE_SECRETS=<new>`, Save and deploy | `monitors.py deep`; one analysis on the site; `curl -s -o /dev/null -w '%{http_code}' "$ORIGIN/api/v1/meta"` still prints 403 | none, if the order is kept |
+| Worker `OPS_TOKEN` (GitHub `EDGE_OPS_TOKEN`) | `gen_edge_secrets.sh --rotate OPS_TOKEN` → `grep '^OPS_TOKEN=' ~/.config/atus/edge.env \| cut -d= -f2- \| npx --no-install wrangler secret put OPS_TOKEN` → `grep '^OPS_TOKEN=' ~/.config/atus/edge.env \| cut -d= -f2- \| gh secret set EDGE_OPS_TOKEN --env ops` (and `--env production` if set there) | `gh workflow run quota-report.yml` | none |
 | API `ATUS_OPS_TOKEN` | `gen_edge_secrets.sh --rotate ATUS_OPS_TOKEN` → Render env, Save and deploy | `/metrics` with the new bearer | none |
 | `atus_api` password | `scripts/ops/restore_serving_db.sh --artifact <release dump> --secrets-file <project file> --roles-only --rotate-api-password` → copy the new `ATUS_API_DATABASE_URL` to Render's `ATUS_DATABASE_URL`, Save and deploy | `monitors.py deep`, then one uncached analysis (wakes Neon) | new connections fail between the two steps (503 `database_unavailable`); do it while idle |
 | Cloudflare API token (90-day TTL) | a new Custom token with the same scope ([owner step 1.5](deployment.md#1-cloudflare-workers-free)) → `gh secret set CLOUDFLARE_API_TOKEN --env production` (paste at the prompt) → delete the old token. If it leaked, also bump `EPOCH` in `edge/wrangler.jsonc` and deploy: the token could write KV (ADR-015) | the next Deploy run | none |
 | Render deploy hook | Render → Settings → Deploy Hook → Regenerate (the old URL stops at once) → `gh secret set RENDER_DEPLOY_HOOK_URL --env production` | the next Deploy run | none |
 | `IP_HMAC_KEY` | `gen_edge_secrets.sh --rotate IP_HMAC_KEY` → `wrangler secret put IP_HMAC_KEY` piped as above | `monitors.py quota` | per-network counters restart |
-| Neon owner password, `NEON_API_KEY` | reset in the Neon console and update the project's `neon*.env`; revoke and re-create the key, then `npx wrangler secret put NEON_API_KEY` | `monitors.py quota` (last poll error) | none |
+| Neon owner password, `NEON_API_KEY` | reset in the Neon console and update the project's `neon*.env`; revoke and re-create the key, then `npx --no-install wrangler secret put NEON_API_KEY` | `monitors.py quota` (last poll error) | none |
 
 After a suspected leak, rotate first. Then look for use in Render logs, Workers Logs and Neon ([deployment.md "Rotation"](deployment.md#rotation)). What each leaked secret allows is in [security.md, "Leaked tokens"](security.md#10-leaked-tokens).
 

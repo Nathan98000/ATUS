@@ -85,11 +85,14 @@ POSTGRES_PIN = re.compile(r"postgres:16@sha256:([0-9a-f]{64})")
 #: Where the stack's postgres:16 is pinned. Dependabot bumps only the compose
 #: files (docker-compose) and deploy/pgbouncer/Dockerfile (docker), in
 #: separate pull requests; the workflows' `services:` images and the Python
-#: constants are copies no ecosystem updates.
+#: constants are copies no ecosystem updates. serving/pgtools.py's is the
+#: docker client the owner's restore runs with the owner's password (review
+#: round 2, owner-credential-tools-unpinned).
 POSTGRES_PINS = {
     "docker-compose.yml": 1, "docker-compose.prod.yml": 3, "deploy/pgbouncer/Dockerfile": 1,
     ".github/workflows/ci.yml": 2, ".github/workflows/deploy.yml": 1,
     "deploy/ci/check_image.py": 1, "tests/deploy/test_container_image.py": 1,
+    "src/atus_pipeline/serving/pgtools.py": 1,
 }
 # Recorded evidence quotes the digest of its day and is never updated.
 EVIDENCE = ("docs/", "loadtests/results/")
