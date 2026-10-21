@@ -46,6 +46,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/ops/github_ops.py schedules --repo "$GITHUB_REPOSITORY"
 
+      # Only the run summary: a passing run emails no one (owner step 4.4), so
+      # the owner opens it, or the copy in docs/deployment.md ("Owner
+      # checklist"), which tests/deploy/test_docs_accuracy_r2.py keeps equal.
       - name: Owner reminder
         if: ${{ always() }}
         run: |

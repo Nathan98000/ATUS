@@ -859,12 +859,15 @@ The summary of every Deploy run has a "Rollback" table: the build, image digest 
 
 - **Keep the API and edge on the same data version.** If the two deploys carry different `DATA_VERSION`s, roll back the data binding as well (next item). Otherwise the edge cache stores nothing and the SPA shows its reload notice.
 - **Browsers may hold HTML under rolled-back URLs.** Between a deploy and its rollback, a request for a file of the other version (`/snap/<snapshot_id>/…`, `/assets/<hash>.js`) gets the SPA's `index.html` with the one-year `immutable` Cache-Control of its path (`frontend/public/_headers`). The SPA re-fetches such a snapshot file once with `cache: "reload"`, so the snapshot recovers by itself. A bundle cached that way does not: that browser shows the boot fallback ("ATUS Explorer did not start") until its cache is cleared. Only a page that loaded during the gap and requested the other version's hashed bundle is affected; the SPA has a single entry bundle and no lazy chunks.
-- **Data: the release switch in reverse** (ADR-013 "Rollback").
-  1. In Render → Environment, set `ATUS_DATABASE_URL` back to the previous project's `atus_api` DSN and `ATUS_EXPECTED_DATA_VERSION` to that release's `data_version`, together, then "Save and deploy".
-  2. Make `releases/current.json` on `main` name the previous release again (`git checkout <commit of the previous release> -- releases/current.json`). If the governor reads Neon usage, set `NEON_PROJECT_ID` in `edge/wrangler.jsonc` back too. Commit and push.
-  3. `gh workflow run deploy.yml --ref main -f reason="data rollback to <tag>"`, then approve. The Worker's `DATA_VERSION` and the snapshot follow.
-  4. Put the previous project's `NEON_API_KEY` back with `npx wrangler secret put NEON_API_KEY`, if one is used.
-  5. Check that `curl -s "$SITE/api/_edge/health"` shows the previous `data_version`.
+- **Data: the release switch in reverse** (ADR-013 "Rollback"), in the release switch's order, so that the API and the edge serve different releases only while `deploy` waits for your approval.
+  1. Make `releases/current.json` on `main` name the previous release again (`git checkout <commit of the previous release> -- releases/current.json`). If the governor reads Neon usage, set `NEON_PROJECT_ID` in `edge/wrangler.jsonc` back too. Commit and push.
+  2. Wait until CI on that push has passed (`gh run watch`): `deploy.yml`'s preflight refuses a commit without a successful `ci.yml` run on a push to `main`, so a red CI run blocks the rollback until it is fixed. Then `gh workflow run deploy.yml --ref main -f reason="data rollback to <tag>"`.
+  3. While `deploy` waits for approval (the previous release's snapshot is already built), set Render's `ATUS_DATABASE_URL` back to the previous project's `atus_api` DSN and `ATUS_EXPECTED_DATA_VERSION` to that release's `data_version`, together, then "Save and deploy", and wait until Render → Events shows it live.
+  4. Approve `deploy`. The Worker's `DATA_VERSION` and the snapshot follow.
+  5. If the governor reads Neon usage: nothing keeps the previous project's `NEON_API_KEY` (wrangler cannot read a Worker secret back, and `edge.env` holds the newer project's key), so create a new project-scoped key for the previous project in Neon, load it with `npx wrangler secret put NEON_API_KEY`, and revoke the newer project's key. Without this, the governor polls the previous project with the newer project's key, every poll fails, and once its last figures are a day old it runs in conservative mode (a daily ceiling of 2.903 CU-h instead of 10).
+  6. Check that `curl -s "$SITE/api/_edge/health"` shows the previous `data_version`.
+
+  If the newer release serves wrong answers and cannot wait for CI and the snapshot job, do step 3 first: the API then serves the previous release at once, and every page shows the "switching releases" notice until `deploy` is approved.
 
   Keep the newer project; it is deleted only with the owner's approval.
 - **API host:** see [Render suspends the service](#render-suspends-the-service).
@@ -969,7 +972,7 @@ The normative procedure is ADR-013 "Release procedure on the free stack (§15)".
    ```
 
 6. **Switch.**
-   1. Push the commit from step 3 and run `gh workflow run deploy.yml --ref main -f reason="data release <tag>"`.
+   1. Push the commit from step 3. Wait until CI on that push has passed (`gh run watch`; `deploy.yml`'s preflight refuses the commit until then), then run `gh workflow run deploy.yml --ref main -f reason="data release <tag>"`.
    2. While `deploy` waits for approval (its snapshot is already built), set Render's `ATUS_DATABASE_URL` and `ATUS_EXPECTED_DATA_VERSION` (the manifest's `data_version`) together, "Save and deploy", and wait until Render → Events shows it live. Until the next step the API answers with the new version while every page load still reads the old snapshot, and the Worker stores nothing in KV. Every visitor who opens an analysis the snapshot does not hold — in an open tab, after a reload, or in a new tab — gets it from the new release next to starter examples and descriptions from the old one, and sees a notice that the service is switching data releases and that reloading does not change that yet (no "Reload page" button: a reload loads the same old snapshot). After `deploy` publishes the new snapshot, the notice in open tabs offers the reload within about a minute (each visible tab re-reads the pointer every minute), and the reload then helps. Keep this window short: approve `deploy` as soon as Render shows the switch live.
    3. If used, load the new project's `NEON_API_KEY` with `npx wrangler secret put NEON_API_KEY`.
    4. Approve `deploy`. Its smoke checks `X-Data-Version`.
@@ -1033,14 +1036,22 @@ Restore every release artifact once, as production will, into a fresh cluster wi
    ```
 
    Never run `atus validate-db` or `tests/data_quality/test_full_database.py` on the drill: they check the full database and fail by design.
-5. **Optionally smoke the image on the drill's data:** the stack's `dump` profile and smoke probe ([deployment.md step 2](deployment.md#2-restore-drill)).
-6. **Tear down:**
+5. **Tear down:**
 
    ```bash
    docker compose -p atus-drill --env-file .env.stack -f docker-compose.prod.yml down -v
    ```
 
    Then delete `drill.env`.
+6. **Optionally smoke the image on the same dump**, after the teardown: the stack's `dump` profile restores it into a stack of its own and runs the smoke probe against it. Not while the drill runs: that stack's `db` publishes the same `127.0.0.1:${ATUS_STACK_DB_PORT}` as the drill's (5470 by default), and its `roles` service re-applies `roles.sql` with the stack's `ATUS_STACK_API_DB_PASSWORD`, which would replace the `atus_api` password that `drill.env` holds. Set `ATUS_STACK_DUMP` in `.env.stack` to the dump, then:
+
+   ```bash
+   docker compose -p atus-drill-smoke --env-file .env.stack -f docker-compose.prod.yml --profile dump up -d --wait api
+   docker compose -p atus-drill-smoke --env-file .env.stack -f docker-compose.prod.yml --profile smoke run --rm smoke
+   docker compose -p atus-drill-smoke --env-file .env.stack -f docker-compose.prod.yml --profile dump --profile smoke down -v
+   ```
+
+   The teardown names both profiles: a plain `down -v` leaves the exited `restore` container behind. This is the same check as [deployment.md step 2](deployment.md#2-restore-drill).
 
 ### Incident first steps
 
@@ -1065,7 +1076,7 @@ Restore every release artifact once, as production will, into a fresh cluster wi
    ```bash
    curl -sS "$ORIGIN/health"                                               # build; touches nothing
    curl -sS -H "Authorization: Bearer $ATUS_OPS_TOKEN" "$ORIGIN/metrics"   # counters since the process started
-   curl -sS -H "Authorization: Bearer $ATUS_OPS_TOKEN" "$ORIGIN/ready"     # data_version vs expected (can wake Neon)
+   curl -sS -H "Authorization: Bearer $ATUS_OPS_TOKEN" "$ORIGIN/ready"     # data_version vs expected; reads the DB (can wake Neon) only when its snapshot is older than ATUS_API_SNAPSHOT_TTL_S (600 s), so check snapshot_age_s
    ```
 
 5. **Contain:**
@@ -1105,12 +1116,13 @@ The procedures are in [deployment.md "Rotation"](deployment.md#rotation). `tests
 | Worker `OPS_TOKEN` (GitHub `EDGE_OPS_TOKEN`) | `gen_edge_secrets.sh --rotate OPS_TOKEN` → `grep '^OPS_TOKEN=' ~/.config/atus/edge.env \| cut -d= -f2- \| npx wrangler secret put OPS_TOKEN` → `grep '^OPS_TOKEN=' ~/.config/atus/edge.env \| cut -d= -f2- \| gh secret set EDGE_OPS_TOKEN --env ops` (and `--env production` if set there) | `gh workflow run quota-report.yml` | none |
 | API `ATUS_OPS_TOKEN` | `gen_edge_secrets.sh --rotate ATUS_OPS_TOKEN` → Render env, Save and deploy | `/metrics` with the new bearer | none |
 | `atus_api` password | `scripts/ops/restore_serving_db.sh --artifact <release dump> --secrets-file <project file> --roles-only --rotate-api-password` → copy the new `ATUS_API_DATABASE_URL` to Render's `ATUS_DATABASE_URL`, Save and deploy | `monitors.py deep`, then one uncached analysis (wakes Neon) | new connections fail between the two steps (503 `database_unavailable`); do it while idle |
-| Cloudflare API token (90-day TTL) | a new Custom token with the same scope ([owner step 1.5](deployment.md#1-cloudflare-workers-free)) → `gh secret set CLOUDFLARE_API_TOKEN --env production` (paste at the prompt) → delete the old token. If it leaked, also bump `EPOCH` in `edge/wrangler.jsonc` and deploy: the token could write KV (ADR-015) | the next Deploy run | none |
+| Cloudflare API token (90-day TTL) | a new Custom token with the same scope ([owner step 1.5](deployment.md#1-cloudflare-workers-free)) → `gh secret set CLOUDFLARE_API_TOKEN --env production` (paste at the prompt) → delete the old token. If it leaked (or the Cloudflare account did), also: rotate every Worker secret, since code deployed with the token can read them all (the edge secret `EDGE_AUTH_SECRET`, `OPS_TOKEN`, `IP_HMAC_KEY` and, if set, `NEON_API_KEY` with its data check: the rows here); bump `EPOCH` in `edge/wrangler.jsonc` and deploy, since the token could write KV (ADR-015); and look for versions you did not deploy with `npx wrangler deployments list` ([deployment.md "Rotation"](deployment.md#rotation), item 5) | the next Deploy run | none |
+| Cloudflare analytics token (optional, 90-day TTL) | a new Custom token with Account Analytics: Read on this account ([owner step 4.3](deployment.md#4-github-repository-nathan98000atus-stays-public)) → `gh secret set CLOUDFLARE_ANALYTICS_TOKEN --env ops` (paste at the prompt) → delete the old token | `gh workflow run quota-report.yml`: the "Worker requests today" line passes | none |
 | Render deploy hook | Render → Settings → Deploy Hook → Regenerate (the old URL stops at once) → `gh secret set RENDER_DEPLOY_HOOK_URL --env production` | the next Deploy run | none |
 | `IP_HMAC_KEY` | `gen_edge_secrets.sh --rotate IP_HMAC_KEY` → `wrangler secret put IP_HMAC_KEY` piped as above | `monitors.py quota` | per-network counters restart |
-| Neon owner password, `NEON_API_KEY` | reset in the Neon console and update the project's `neon*.env`; revoke and re-create the key, then `npx wrangler secret put NEON_API_KEY` | `monitors.py quota` (last poll error) | none |
+| Neon owner password, `NEON_API_KEY` | reset in the Neon console and update the project's `neon*.env`; revoke and re-create the key, then `npx wrangler secret put NEON_API_KEY`. If either may have leaked, also rotate the `atus_api` password (row above), then, as the owner, `ATUS_DATABASE_URL="$ATUS_OWNER_DATABASE_URL" atus verify-serving-db --manifest <release manifest> --content-hash` (wakes Neon; about the data's size in egress), or restore the release into a new project ([Serving-DB build and restore](#serving-db-build-and-restore), "Restore after a lost project") | `monitors.py quota` (last poll error); the content-hash check passes | none |
 
-After a suspected leak, rotate first. Then look for use in Render logs, Workers Logs and Neon ([deployment.md "Rotation"](deployment.md#rotation)). What each leaked secret allows is in [security.md, "Leaked tokens"](security.md#10-leaked-tokens).
+After a suspected leak, rotate first: the secret, and every secret it exposes ([security.md, "Leaked tokens"](security.md#10-leaked-tokens)). Then look for use in Render logs, Workers Logs and Neon ([deployment.md "Rotation"](deployment.md#rotation)). What each leaked secret allows is in [security.md, "Leaked tokens"](security.md#10-leaked-tokens).
 
 ### A quota is exhausted
 
@@ -1121,11 +1133,11 @@ Every exhaustion degrades toward the static floor: the SPA, the snapshot (starte
 | Worker requests, 100,000/day, account-wide | Before: the daily quota report's "Worker requests today" line above 70% of the pro-rated allowance (only with the optional analytics token, owner step 4.3). After: `/api` answers a non-JSON 429 (the SPA's daily-allowance page), or Cloudflare's Error 1027 page with another status, which the SPA retries as a cold start (5xx) or shows as a generic error (4xx) | Wait for 00:00 UTC. Find the source in Workers Logs (deployment.md scenarios S1–S3). Nothing at $0 can rate-limit before the Worker runs (ADR-011 accepted risk 4) |
 | KV reads or writes | none visible; more misses | wait for 00:00 UTC |
 | Durable Object requests or rows written | 503 `capacity_unavailable` for new analyses | wait for 00:00 UTC; `/api/_ops/budget` may fail too |
-| Governor daily caps | 503 `daily_capacity_reached` (`budget` `global`, `heavy`, `cu_day`, `egress_day`, `metadata`); 429 `budget: "prefix"` (a network's 60 analyses, 300 admissions or fifth of the day's compute) or `"metadata"` | Working as designed; wait for 00:00 UTC. If real visitors often hit `cu_day`, `egress_day` or their network's compute share without a Neon key, add the project-scoped `NEON_API_KEY`: with fresh usage figures the daily ceiling is 10 CU-h instead of 2.903, and egress is checked against Neon's own month-to-date figure (ADR-015). `metadata` means clients are sending query strings or unknown codes: the SPA never does; check that the deploy set `SNAPSHOT_ID` (the Worker answers plain metadata GETs from the snapshot only then) |
+| Governor daily caps | 503 `daily_capacity_reached` (`budget` `global`, `heavy`, `cu_day`, `egress_day`, `metadata`); 429 `budget: "prefix"` (a network's 60 analyses, 300 admissions or fifth of the day's compute) or `"metadata"` | Working as designed; wait for 00:00 UTC. If real visitors often hit `cu_day`, `egress_day` or their network's compute share without a Neon key, give the governor Neon's usage figures: commit the project id as `NEON_PROJECT_ID` in `edge/wrangler.jsonc` and deploy it with `deploy.yml` (a dashboard value does not survive the next deploy: `keep_vars` is not set), then load the project-scoped key with `npx wrangler secret put NEON_API_KEY` ([owner step 3.6](deployment.md#3-neon-free)). The governor polls only with both, so check that `/api/_ops/budget` reports the mode `ground_truth`, not `conservative`. With fresh usage figures the daily ceiling is 10 CU-h instead of 2.903, and egress is checked against Neon's own month-to-date figure (ADR-015). `metadata` means clients are sending query strings or unknown codes: the SPA never does; check that the deploy set `SNAPSHOT_ID` (the Worker answers plain metadata GETs from the snapshot only then) |
 | Governor monthly pacing | 503 `capacity_paused` (`budget` `egress` or `cu_month`) with `resumes_at` | Wait for `resumes_at`. If it happens every month, apply the calibration lever ([deployment.md step 10](deployment.md#10-week-1-calibration)): lower the compute's maximum CU and set `NEON_MAX_CU` in `edge/src/constants.ts` to match |
 | Neon compute (100 CU-h) or egress (5 GB) | 503 `database_paused`; the SPA's paused page | Wait for the next Neon consumption period (Neon console, or the Neon `period_end` in `/api/_ops/budget` when `NEON_API_KEY` is set). Then find out why the governor did not stop first |
 | Neon storage (1 GB per project) | owner writes fail (`validate-analytics`); the API is unaffected | Never keep two copies in one project; a release goes into a new project |
-| Render outbound (5 GB/month) | Before: nothing automated (no monitor can read it without an account-wide Render API key); the weekly schedules-check summary reminds you to look at the workspace's usage. After: services suspended until the 1st (Render email or dashboard). Render's answer while suspended is undocumented: the Worker answers `service_waking` or `upstream_unavailable`, and the SPA shows the waking notice, then "still not answering … may be paused" — it cannot tell a suspension from a cold start ([security.md R13](security.md#accepted-risks)) | Wait. Find the cause in Render logs (direct hits show `edge_authenticated: false` and 403) and in `/api/_ops/budget` (`metadata.origin_calls`, `analyses.refunded`; ADR-015 "Render outbound through the Worker"). Never pay; never recreate the service |
+| Render outbound (5 GB/month) | Before: nothing automated (no monitor can read it without an account-wide Render API key), and nothing prompts you: the weekly look at the workspace's usage is an item of the [owner checklist](deployment.md#owner-checklist), which you open yourself (the schedule check's run summary holds it, but a passing run sends no email). After: services suspended until the 1st (Render email or dashboard). Render's answer while suspended is undocumented: the Worker answers `service_waking` or `upstream_unavailable`, and the SPA shows the waking notice, then "still not answering … may be paused" — it cannot tell a suspension from a cold start ([security.md R13](security.md#accepted-risks)) | Wait. Find the cause in Render logs (direct hits show `edge_authenticated: false` and 403) and in `/api/_ops/budget` (`metadata.origin_calls`, `analyses.refunded`; ADR-015 "Render outbound through the Worker"). Never pay; never recreate the service |
 | Render pipeline minutes | deploys wait; the running service keeps serving | Wait for the next month. Image deploys build nothing; whether pulls count is undocumented |
 | Render instance hours | cannot run out with one service | never add a second Free web service |
 | Workers Logs | edge logs stop until 00:00 UTC | none needed |

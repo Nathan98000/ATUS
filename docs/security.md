@@ -2,7 +2,7 @@
 
 Threat model for the Phase 5 production design ([ADR-011](adr/ADR-011-hosting.md)): assets, trust boundaries, the controls as implemented, abuse cases, production exposure decisions and accepted risks.
 
-**Status (2026-10-20): nothing is deployed.** Every control below is implemented in this repository and covered by the tests named with it. The CI workflows that run those tests have not yet run on GitHub ([roadmap](roadmap.md#remaining-for-the-definition-of-done), item 1), so every test result so far is local. None of the controls has been observed on the real providers yet. Owner settings and provider behaviours that the repository cannot test are marked as such.
+**Status (2026-10-20): nothing is deployed.** Every control below is implemented in this repository and covered by the tests named with it. The CI workflows that run those tests have not yet run on GitHub ([roadmap](roadmap.md#remaining-for-the-definition-of-done), item 1), so every test result so far is local. None of the controls has been observed on the real providers yet. Owner settings and provider behaviours that the repository cannot test are marked as such (C20, R8). Two claims that had no test before review round 2, C17's "no cookies or Web Storage" and abuse case 4's "no raw HTML", now have one.
 
 Related documents:
 
@@ -283,11 +283,12 @@ Tests:
 - **Governor storage.**
   - It stores an HMAC-SHA256 of the /24 or /48, truncated to 128 bits. The key is derived each UTC day from `IP_HMAC_KEY` and the date.
   - Prefix rows are deleted at the first event after 00:00 UTC, and by a midnight alarm when there is no traffic.
+  - Deleted rows can still be brought back for 30 days. Cloudflare documents point-in-time recovery that restores a SQLite-backed Durable Object "to any point in time in the past 30 days" ([SQLite storage API](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/), read 2026-10-21; no plan restriction is stated). Whoever can deploy code to the Worker (the Cloudflare account, or a leaked `CLOUDFLARE_API_TOKEN`, either of which also yields `IP_HMAC_KEY`) could restore up to 30 days of per-network daily counts and reverse them by enumerating prefixes. `IP_HMAC_KEY` changes only when rotated, so whoever holds it can derive any day's key. That attacker controls the Worker and could log raw addresses from then on anyway, so what this adds is the past 30 days of coarse per-network counts (review round 2).
   - The budget report contains no prefix hashes.
 - **Raw client IPs** exist only in memory (the Worker's request, the API's bucket keys) and in the `X-ATUS-Client-IP` header.
 - **The SPA:**
   - its CSP allows only its own origin, so it loads nothing from third parties;
-  - by inspection (no test), `frontend/src` sets no cookies and uses no Web Storage.
+  - its shipped sources (`frontend/src` without its tests, and `index.html`) set no cookies and use no Web Storage or IndexedDB (`tests/deploy/test_docs_accuracy_r2.py::test_the_spa_sets_no_cookies_uses_no_web_storage_and_writes_no_raw_html`; review round 2 added the test).
 - **Retention** is the providers' log retention (ADR-014).
 
 Code: `src/atus_pipeline/api/observability.py` (`ip_prefix`), `src/atus_pipeline/api/middleware.py`, `edge/src/admission.ts` (`prefixHmac`), `edge/src/governor.ts`, `edge/src/index.ts`, `edge/wrangler.jsonc` (`observability`; held by `edge/test/node/config.test.ts`).
@@ -297,7 +298,8 @@ Tests:
 - `edge/test/worker/admission.test.ts` (`prefixHmac`);
 - `edge/test/worker/governor-flow.test.ts` ("logs the governor and cache results without the client address or prefix hash");
 - `edge/test/worker/governor.test.ts` ("purge and alarms");
-- `edge/test/worker/ops.test.ts`.
+- `edge/test/worker/ops.test.ts`;
+- `tests/deploy/test_docs_accuracy_r2.py::test_the_spa_sets_no_cookies_uses_no_web_storage_and_writes_no_raw_html` (the SPA's sources).
 
 **C18. Secret handling.**
 - **Generation.** `scripts/ops/gen_edge_secrets.sh` generates 256-bit secrets; the database password is 192 bits.
@@ -415,7 +417,7 @@ Tests:
 
   Code: `frontend/src/domain/urlSpec.ts`. Tests: `frontend/src/domain/urlSpec.test.ts`, `frontend/e2e/share.spec.ts`.
 - **Plausible but invalid specs.** These are sent, and the API refuses them with a 422. Most cost no database statement (C4, C7); the exceptions are listed under abuse case 2.
-- **Labels.** Free-text labels are rendered as React text. By inspection, `frontend/src` contains no `dangerouslySetInnerHTML` or `innerHTML`, and the CSP forbids inline script.
+- **Labels.** Free-text labels are rendered as React text. The SPA's non-test sources contain no `dangerouslySetInnerHTML`, `innerHTML`, `outerHTML` assignment, `insertAdjacentHTML` or `document.write` (`tests/deploy/test_docs_accuracy_r2.py::test_the_spa_sets_no_cookies_uses_no_web_storage_and_writes_no_raw_html`; a component test may still read `innerHTML`), and the CSP forbids inline script.
 - **No stored content.** There is no link storage, so a link cannot plant content on the site ([ADR-016](adr/ADR-016-short-share-links.md)).
 - **Content spoofing through labels (accepted, R14).** A link chooses the free-text activity label (up to 120 characters) and group labels (up to 80 each), which become the page heading and the result sentence on the site's own hostname: a sleep estimate can be headed "Working (official BLS figure)". The codes and populations actually computed are listed only in the collapsed "How was this calculated?" panel.
 - **No cross-spec answers.** A link cannot select a cached answer for another spec: the KV key covers the exact request bytes (C10).
@@ -471,19 +473,20 @@ Tests:
 
 ### 10. Leaked tokens
 
-Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After any leak, rotate, then check provider logs for use.
+Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After any leak, rotate the secret and every secret its row says it exposes, then check provider logs for use.
 
 | Secret | Lives in | If leaked |
 |---|---|---|
 | `EDGE_AUTH_SECRET` (`ATUS_EDGE_SECRETS` on Render) | Worker secret, Render env, `edge.env` | Direct API calls that bypass the edge governor. The caller can also choose `X-ATUS-Client-IP` per request, which defeats the API's per-client buckets. The API's lanes, per-process daily cap and timeouts still apply. Rotation uses two accepted values, so no request fails |
-| `ATUS_OPS_TOKEN` | Render env, `edge.env` | `/ready` and `/metrics` directly at the origin. Each `/ready` call queries the database and can wake Neon. `/metrics` holds counters only |
+| `ATUS_OPS_TOKEN` | Render env, `edge.env` | `/ready` and `/metrics` directly at the origin. `/ready` reads the database, and can wake Neon, only when the process's snapshot is older than `ATUS_API_SNAPSHOT_TTL_S` (600 s in production), so at most about once per 10 minutes per process. `/metrics` holds counters only |
 | `OPS_TOKEN` | Worker secret, `edge.env`, GitHub `EDGE_OPS_TOKEN` | The read-only budget report: counts and limits, no IPs or prefix hashes |
-| `IP_HMAC_KEY` | Worker secret, `edge.env` | Today's prefix HMACs can be reversed by enumerating prefixes; IPv4 has 2^24 /24s. Rows from earlier days are already deleted |
+| `IP_HMAC_KEY` | Worker secret, `edge.env` | Today's prefix HMACs can be reversed by enumerating prefixes; IPv4 has 2^24 /24s. Earlier days' keys derive from the same secret, which changes only when rotated. Earlier days' rows are deleted, but the Durable Object's point-in-time recovery can bring back up to 30 days of them: with Worker-deploy access as well (the Cloudflare account or `CLOUDFLARE_API_TOKEN`, which also expose this key), up to 30 days of per-network daily counts can be reversed (C17) |
 | `RENDER_ORIGIN` | Worker secret, GitHub secret, `edge.env` | Not a credential. It reveals the direct-origin hostname (R3) |
 | `atus_api` password (in `ATUS_DATABASE_URL`) | Render env, the project's `neon-<release>-<build8>.env` | Reads of the served tables, which hold public data, and Neon compute spend. No writes (C9). The role defaults do not bind the holder (R4). At most 10 connections |
-| `neondb_owner` DSN | the project's `neon-<release>-<build8>.env`, on the owner machine only | Full control of the serving DB: the statistics could be altered. Recovery is a restore from the sha256-verified release dump |
-| `NEON_API_KEY` (optional) | Worker secret | Editor rights on the project (R6) |
-| `CLOUDFLARE_API_TOKEN` | GitHub environment `production` | Deploys arbitrary Worker code, vars and static assets on the public origin, so it controls everything visitors see, statistics included |
+| `neondb_owner` DSN | the project's `neon-<release>-<build8>.env`, on the owner machine only | Full control of the serving DB: the statistics could be altered. After resetting the password, `atus verify-serving-db --manifest <release manifest> --content-hash` shows whether any served row changed; recovery is a restore from the sha256-verified release dump ([deployment.md "Rotation"](deployment.md#rotation), item 7) |
+| `NEON_API_KEY` (optional) | Worker secret | Editor rights on the project (R6), enough to alter the served statistics. After a leak, revoke it, reset the `neondb_owner` and `atus_api` passwords, and check every served row against the release (`atus verify-serving-db --manifest <release manifest> --content-hash`) or restore the release dump into a new project ([deployment.md "Rotation"](deployment.md#rotation), item 7) |
+| `CLOUDFLARE_API_TOKEN` | GitHub environment `production` | Deploys arbitrary Worker code, vars and static assets on the public origin, so it controls everything visitors see, statistics included. Worker code deployed with it can read every Worker secret (`EDGE_AUTH_SECRET`, `OPS_TOKEN`, `IP_HMAC_KEY`, `RENDER_ORIGIN` and, when set, `NEON_API_KEY`) and send it anywhere, then be rolled back, so a leak of the token, or of the Cloudflare account, discloses all of them: rotate each, treat `RENDER_ORIGIN` as known (R3), and follow the `NEON_API_KEY` row too. It may also write KV: bump `EPOCH` ([deployment.md "Rotation"](deployment.md#rotation), item 5) |
+| `CLOUDFLARE_ANALYTICS_TOKEN` (optional) | GitHub environment `ops` | Reads this account's analytics through Cloudflare's GraphQL API (Account Analytics: Read): usage and traffic figures, no secrets, no write access. Rotate it before its 90-day expiry like the deploy token ([deployment.md "Rotation"](deployment.md#rotation), item 8) |
 | `RENDER_DEPLOY_HOOK_URL` | GitHub environment `production` | Redeploys the API with any image whose URL matches the service's image except for the digest (Render's documented rule, ADR-011), that is, another version of `ghcr.io/nathan98000/atus-api` |
 
 ## Production exposure decisions
@@ -492,7 +495,7 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 |---|---|---|---|
 | `/docs`, `/docs/oauth2-redirect`, `/redoc` | 404 (not allowlisted) | 403 without the edge secret; 404 with it (routes removed) | **Off** (`ATUS_API_DOCS=off`, the production default). The pages load third-party CDN scripts without SRI and serve no visitor (audit F43) |
 | `/openapi.json` | 404 | as above | **Off.** The same schema is committed as `frontend/openapi.json` and exported by `scripts/export_openapi.py`; `tests/unit/api/test_exposure.py::TestDocumentationSwitch::test_published_snapshot_is_current` keeps it current. The public site publishes that committed copy as a static asset at `/openapi.json` (the site root, outside `/api`): it holds no secrets, and serving it runs neither the Worker nor the API |
-| `/ready` | 404, never routed | 403 without the edge secret; 404 with it; 200 or 503 with `Authorization: Bearer <ATUS_OPS_TOKEN>` | **Operator only.** It queries the database on every call and names data versions, so without a token it must not be a way to wake Neon (audit F16). Its failures are ordinary envelopes; hints go to the log |
+| `/ready` | 404, never routed | 403 without the edge secret; 404 with it; 200 or 503 with `Authorization: Bearer <ATUS_OPS_TOKEN>` | **Operator only.** It reads the database whenever its snapshot is older than `ATUS_API_SNAPSHOT_TTL_S` (600 s in production; within that time it answers from the snapshot) and names data versions, so without a token it must not be a way to wake Neon (audit F16). Its failures are ordinary envelopes; hints go to the log |
 | `/metrics` | 404, never routed | same as `/ready` | **Operator only.** Prometheus text with bounded label values (route templates, codes), no client input or addresses |
 | `/health` | `/api/health` → origin `/health` | 200 `{status, build}` | **Public.** Render's health check and the monitors need it. It touches no database and needs no edge auth; it is exempt from rate limiting |
 | `/api/_edge/health` | answered by the Worker | — | **Public.** Versions, snapshot ID and cache scope, none of them secret. No origin call |
@@ -503,13 +506,13 @@ Rotation procedures: [`docs/deployment.md`](deployment.md), "Rotation". After an
 
 **R1. Distributed abuse beyond the per-network caps.** Budgets are per /24 or /48, and a few networks are enough to spend the shared ones: ten at their 60 analyses spend the global 600, five sending heavy analyses spend the heavy 300, and five spacing analyses so that each is charged its own wake session spend the daily compute ceiling (each network is held to a fifth of it; before review round 1 one network alone could). An attacker with that many networks (a botnet, a few IPv6 /48s) passes every per-network limit. The global (600/day), heavy (300/day), CU-hour and egress budgets still hold, but legitimate visitors then get 503 `daily_capacity_reached` for new analyses until 00:00 UTC. Static and cached results keep working. Admissions that end refunded (the API shed them, or answered from its cache) are bounded per network only, at 300 a day and a few KB of Render outbound each: dozens of networks keeping that up for a whole month could spend Render's 5 GB and suspend it until the 1st (`deployment.md`, S6).
 
-**R2. Workers Free's 100,000 requests per day are account-wide.** Every `/api` request counts, including those the Worker refuses. On workers.dev at $0, nothing can rate-limit before the Worker runs (ADR-011, accepted risk 4). Once the requests are spent, `/api` is down until 00:00 UTC, KV-cached results included. The SPA and the static snapshot keep working, because static asset requests never invoke the Worker. Early warning: only with the optional read-only analytics token (owner step 4.3), when the daily quota report finds more than 70% of the pro-rated allowance used; it runs once a day, so a flood that starts after 22:05 UTC is seen only when `/api` stops. Without the token there is none, only the weekly reminder to look at the dashboard.
+**R2. Workers Free's 100,000 requests per day are account-wide.** Every `/api` request counts, including those the Worker refuses. On workers.dev at $0, nothing can rate-limit before the Worker runs (ADR-011, accepted risk 4). Once the requests are spent, `/api` is down until 00:00 UTC, KV-cached results included. The SPA and the static snapshot keep working, because static asset requests never invoke the Worker. Early warning: only with the optional read-only analytics token (owner step 4.3), when the daily quota report finds more than 70% of the pro-rated allowance used; it runs once a day, so a flood that starts after 22:05 UTC is seen only when `/api` stops. Without the token there is none: only the owner's own weekly look at the dashboard ([owner checklist](deployment.md#owner-checklist)), which no notification prompts.
 
 **R3. Render direct-origin bandwidth.** The onrender.com hostname cannot be disabled.
 - Every direct request costs Render outbound bandwidth, even when refused, and `/health` answers anyone without a rate limit.
 - A sustained flood could exhaust the workspace's monthly outbound allowance. Render would then suspend the service until the next month (ADR-011, accepted risk 8).
 - Mitigations: an unpublished name with a random suffix, minimal 403 bodies, zero database work, and Render's own Cloudflare layer.
-- No early warning: reading Render's bandwidth needs an account-wide Render API key, which is never created, so no monitor sees the allowance running out. The weekly schedules-check summary reminds the owner to look at the workspace's usage; the first automated signal is the suspension itself.
+- No early warning: reading Render's bandwidth needs an account-wide Render API key, which is never created, so no monitor sees the allowance running out. The [owner checklist](deployment.md#owner-checklist) asks for a weekly look at the workspace's usage, but nothing sends it: the schedule check writes it only into its run summary, and a passing run emails no one. The first automated signal is the suspension itself.
 
 **R4. Role defaults are a backstop, not a boundary.**
 - `atus_api`'s defaults are session defaults: `statement_timeout`, `lock_timeout`, `idle_in_transaction_session_timeout`, `jit` and `default_transaction_read_only`. The role can `SET` each of them itself.

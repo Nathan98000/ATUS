@@ -102,8 +102,9 @@ In short:
 ### Request flow
 
 1. **Browser to Cloudflare.** The browser connects over TLS with Cloudflare's workers.dev certificate. HSTS comes from `_headers`, and `.dev` is HSTS-preloaded.
-2. **Static paths.** These never invoke the Worker and never count toward the 100k/day limit: `/`, `/explore`, `/analysis/*`, `/about`, `/assets/*` and `/snap/<SNAPSHOT_ID>/**`.
+2. **Static paths.** These are `/`, `/explore`, `/analysis/*`, `/about`, `/assets/*` and `/snap/<SNAPSHOT_ID>/**`. A request for a file that exists (`/`, `/assets/*`, `/snap/…`) never invokes the Worker and never counts toward the 100k/day limit, and neither does a navigation (`Sec-Fetch-Mode: navigate`) that matches no file, such as `/explore`, `/about` or `/analysis/*`, which have no file of their own.
    - Unknown paths get `index.html` with a 200 (SPA mode).
+   - **Corrected in review round 2:** a non-navigation request that matches no file does invoke the Worker and is metered (Cloudflare's [SPA routing](https://developers.cloudflare.com/workers/static-assets/routing/single-page-application/) page, read 2026-10-21: "navigation requests will not invoke the Worker script", and "Requests are only billable if a Worker script is invoked"). That is a link-preview unfurler, crawler or `curl` fetching a share link or an SPA route, the deploy smoke's deep link, and a tab still on the previous release fetching a `/snap/` file the new deploy no longer has. The Worker hands such a request to its assets binding (`edge/src/index.ts`), which answers with the SPA fallback; once the 100k/day are spent, it gets the platform's 429 or Error 1027 instead. Under `wrangler dev` (4.148) even a plain `curl` was handled as a navigation in review round 2, so the local stack cannot show this ("Unknowns").
    - The SPA reads all metadata from `/snap/…`: `/meta` content, population metadata, the activity lexicon and details, and presets. It also reads from there any analysis listed in the snapshot manifest.
 3. **`/api` and `/api/*`.** These match `run_worker_first` (both forms are listed) and invoke the Worker.
    1. **Allowlist.** The routes below are allowed. Anything else gets a v1 404 envelope with no origin call, and `/ready`, `/docs`, `/redoc` and `/openapi.json` are never routed.
@@ -458,7 +459,7 @@ P1's distinctive ideas are therefore grafted into the decision. P3 is the highes
 | Ops-frugal access: in-process snapshot of `data_version`, years and lexicon, so cache hits, 4xx and metadata cost 0 DB statements; `db_statements` counted per request | P2; judges 1, 2 and 3 | Every avoided DB touch avoids a Neon wake, which costs ≥ 75 CU-s at 0.25 CU |
 | Worker answers `/api/_edge/health` itself; routine monitors cost 0 Render wakes and 0 Neon | P2; judge 2 | Monitoring should not spend quota |
 | No DB-touching monitor at all (P5's daily DB check removed) | judge 1 | Brief §10: DB wakes only from real traffic |
-| Daily quota-report workflow that fails above 70% of the pro-rated budget, plus a monthly check for auto-disabled schedules | P3; judges 1 and 2 | $0 alerting that does not depend on dashboards |
+| Daily quota-report workflow that fails above 70% of the pro-rated budget, plus a check for auto-disabled schedules (planned monthly; implemented as a weekly workflow, ADR-014 amendments) | P3; judges 1 and 2 | $0 alerting that does not depend on dashboards |
 | KV key scope uses `api_version`, `ANALYTICS_VERSION`, `DATA_VERSION`, `RESPONSE_FORMAT` and a manual `EPOCH`, not the git SHA | P1; judge 2 | P5 orphaned the whole KV keyspace on every code deploy |
 | Single-flight joins; admitted analyses complete and are cached on disconnect; one Worker retry on connection failure before headers; meta-CSP backstop in `index.html`; CORP `same-origin` on `/api` | P1; judge 3 | A retry after a 524 never pays twice; `_headers` on the SPA fallback is unverified |
 | Allowlisted upstream header set; HMAC(daily key, IP prefix) in the Durable Object; `Server-Timing` (db/app) logged at the edge | P3; judge 3 | Smaller trust surface; latency attribution that Render Hobby lacks |
@@ -667,7 +668,7 @@ Status codes:
 ### Accepted risks (no $0 mitigation removes them)
 
 1. **Render discretionary suspension.** Render may suspend a Free service for "uncommonly high" traffic that the service initiates, with accessing an external database as the named example. That describes this design. No threshold is published, and the only documented restore is a paid plan.
-   - **Mitigation:** DB traffic stays small and governed (PROJECTION: ~0.05 GB/month of Render outbound at realistic traffic; ≤ 0.74 GB of DB traffic at the governor's caps, since every analysis that reaches the database keeps its count; about 2.8 GB of all Render outbound through the Worker in the worst case, ADR-015 "Render outbound through the Worker"). The static snapshot and KV keep serving.
+   - **Mitigation:** DB traffic stays small and governed (PROJECTION: ~0.05 GB/month of Render outbound at realistic traffic; ≤ 0.74 GB of DB traffic at the governor's caps, since every analysis that reaches the database keeps its count; about 3.1 GB of all Render outbound through the Worker in the worst case before Render's own response headers, which are unmeasured; review round 2 corrected the earlier 2.8 GB, ADR-015 "Render outbound through the Worker"). The static snapshot and KV keep serving.
    - **Recovery:** switch to the fallback by changing a Worker var. Never pay, and never recreate the service on Render to get around the suspension.
 2. **Cloudflare may rename the workers.dev subdomain** "for any or no reason", attempting a week's notice. Every share link would break. Only a custom domain removes this risk, and constraint 2 excludes one. The owner chooses the subdomain once.
 3. **Card prompts.** Render's Terms reserve a $1 authorization hold, and prompts were reported at deploy time in 2024–25. Vercel's and Tailscale's pages say nothing either way. If a prompt appears: stop, report and decide (constraint 1).
@@ -698,7 +699,7 @@ Status codes:
 - **Neon branch archiving** after quiet days slows the first query by an unmeasured amount.
 - **Neon compute update restarts** drop connections. `check_connection` replaces them; a test terminates backends and expects no 5xx.
 - **The governor's model can drift.** Ground-truth polling and reconciliation correct it, and the owner can apply the brake manually.
-- **GitHub scheduled workflows** auto-disable after 60 days without repo activity and may be delayed or dropped. A monthly runbook check covers this.
+- **GitHub scheduled workflows** auto-disable after 60 days without repo activity and may be delayed or dropped. A weekly workflow, `schedules-check.yml`, fails, and so emails the owner, when a schedule is disabled, a monitor has stopped running, or `main` has had no commit for 28 days; it re-enables nothing, so re-enabling stays manual. If it is disabled itself, the owner's monthly look at the Actions tab is the backstop ([owner checklist](../deployment.md#owner-checklist)). (Amended in review round 2: this line said a monthly check by hand covers it; review round 1 made the check a weekly workflow, ADR-014 amendments.)
 - **`_headers` may not apply to the SPA-fallback `index.html`.** A meta CSP is the backstop; check with curl after deploy. Under `wrangler dev`, whose asset worker is Cloudflare's, the rules are chosen by request path after the fallback: a missing `/assets/*` or `/snap/<id>/*` file gets `index.html` with that path's one-year `immutable` Cache-Control (review round 1; the SPA re-fetches such a snapshot file once with `cache: "reload"`, [`../frontend.md`](../frontend.md#static-snapshot)).
 - **KV eventual consistency** costs extra misses, never wrong results, because keys are version-scoped.
 - **Snapshot coverage of real traffic is unknown.** If most users build novel specs, the latency gain is limited to the home and starter paths.
@@ -707,7 +708,7 @@ Status codes:
 ## Consequences
 
 - **Share links.** They depend only on the workers.dev hostname. The API host, the database project and the data release can all change behind the Worker without breaking a link.
-- **Quota failures.** Whatever runs out (Worker daily, KV, governor caps, Render monthly or discretionary, Neon monthly), the home page, the starter analyses, presets, metadata and about 130 prewarmed analyses keep working as static files. They never invoke the Worker.
+- **Quota failures.** Whatever runs out (Worker daily, KV, governor caps, Render monthly or discretionary, Neon monthly), the home page, the starter analyses, presets, metadata and about 130 prewarmed analyses keep working as static files. A browser loads them without invoking the Worker: its page loads are navigations and its fetches name files that exist. A non-navigation request for a path without a file (an unfurler or crawler fetching a share link, a stale tab's missing `/snap/` file) invokes it, and gets the platform's 429 or Error 1027 once the Worker's daily requests are spent (review round 2; "Request flow").
 - **What novel analyses pay.** They carry all the cold-start and quota cost, and their messages are honest: waking, rate-limited, daily capacity reached, paused until a date.
 - **Statistics are untouched.** Caches only replay origin responses for the same globally unique version. Cost optimizations (parallel query off, year pushdown) need the §9 proof first.
 - **New code.**
@@ -732,10 +733,11 @@ Status codes:
 | Real latency matrix on Neon 0.25–2 CU (≤ 10 worst cases + typical); calibrate `statement_timeout`, deadline and lanes | URL-targeted replay script (§16) | ≤ 30 requests, ≤ 1 CU-h |
 | Render↔Neon round-trip time; Neon wake latency; unarchive delay after a quiet day | `Server-Timing` on probes | ≤ 10 requests |
 | Whether `_headers` applies to the SPA-fallback `index.html`; whether `/api` without a trailing path matches | curl a deep link | 0 Neon |
+| Whether a non-navigation GET of a path without a file invokes the Worker, as Cloudflare documents (review round 2; `wrangler dev` cannot show it) | one `curl` of `/explore` without `Sec-Fetch-Mode: navigate`, then the Worker's request count in its metrics | 1 Worker request |
 | Metered Neon storage after restore; 1e9 B or 1 GiB (`branch_logical_size_limit`) | read-only API GET | 1 API call |
 | Whether `GET /projects/{id}` wakes the compute or unarchives the branch; freshness of `compute_time_seconds`; whether Free can create project-scoped keys | observe while suspended | a few API calls |
 | Whether `ALTER ROLE atus_api SET ...` is accepted on Neon; whether `sslrootcert=system` works with the image's libpq | restore script and image build | 0 |
-| Render outbound and Neon `data_transfer_bytes` per uncached analysis (checks the ~40 KB and ~80 KB estimates) | dashboards after the replay | 0 |
+| Render outbound and Neon `data_transfer_bytes` per uncached analysis (checks the ~40 KB and ~80 KB estimates) | dashboards after the replay; for the ungoverned `/api/health`, the headers Render adds to the 571 B the API sends (`curl -sv "$ORIGIN/health"`; ADR-015 "Render outbound through the Worker", review round 2) | 1 Render request |
 | Render behaviour during an env-var switch; whether image pulls consume pipeline minutes; hook digest encoding | the first release switch; Billing page | 0 |
 | GHCR visibility after the first `GITHUB_TOKEN` push | packages page | 0 |
 | Worker CPU ms per request; Workers Logs events per request; whether invocation logs, off until this is known ([ADR-014](ADR-014-observability.md)), would record client IPs or headers | the Worker's metrics; Workers Logs | 0 |
@@ -800,7 +802,7 @@ The decision is unchanged. This section records where the implementation (code, 
 
 ### Worker details
 
-- **Size.** `edge/src` is 13 TypeScript files and 2,816 lines, comments included (`wc -l`). "Consequences" projected roughly 300–400 lines.
+- **Size.** At 0066649, `edge/src` was 14 TypeScript files and 3,279 lines, comments included (`wc -l`). "Consequences" projected roughly 300–400 lines. (Review round 2 dated the figure: it first said 13 files and 2,816 lines, true at 92aac34, before review round 1 added `edge/src/snapshot.ts`.)
 - **Error mapping** (`edge/src/proxy.ts`, `edge/src/routes.ts`, `edge/src/index.ts`):
   - `upstream_unavailable` is a 502, or a 503 while the circuit breaker is open. It carries `details.reason`: `connect_failed`, `circuit_open`, `platform_error`, `origin_timeout` (a 524), `broken_response` or `not_configured`. Reason: only some causes mean the API may have computed the request, and the SPA retries those once.
   - uvicorn's own plain-text 503 becomes `overloaded`.
