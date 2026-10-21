@@ -520,7 +520,7 @@ def test_the_api_configuration_reference_states_the_database_tls_rule():
     assert 'VERIFYING_SSLMODES' in config and '"ATUS_DATABASE_TLS"' in config
     api = _read(DOCS_DIR / "api.md")
     url = _row(api, "`ATUS_DATABASE_URL`")
-    assert "verify-full" in url and "verify-ca" in url
+    assert "verify-full" in url and "`verify-ca` is refused" in url
     tls = _row(api, "`ATUS_DATABASE_TLS`")
     assert "local-stack-only" in tls and "deployment.md#tls-to-the-database" in tls
     assert "sslmode" in _row(api, "`ATUS_ENV`")

@@ -176,7 +176,7 @@ class TestDatabaseTls:
         [
             "postgresql://atus_api:pw@ep-1.us-east-1.aws.neon.tech:5432/atus"
             "?sslmode=verify-full&sslrootcert=system",
-            "postgresql://atus_api:pw@db.internal/atus?sslmode=verify-ca&sslrootcert=/ca.pem",
+            "postgresql://atus_api:pw@db.internal/atus?sslmode=verify-full&sslrootcert=/ca.pem",
             "host=ep-1.neon.tech dbname=atus user=atus_api sslmode=verify-full",
         ],
     )
@@ -184,6 +184,26 @@ class TestDatabaseTls:
         settings = load_settings(prod_env(ATUS_DATABASE_URL=url))
         check_api_settings(settings)
         assert settings.database_tls == "verify"
+
+    @pytest.mark.parametrize("rootcert", [
+        "/etc/ssl/certs/ca-certificates.crt",     # the image's SSL_CERT_FILE bundle
+        "/etc/ssl/cert.pem",
+        "system",
+        "/ca.pem",                                # even a private CA: the host is unchecked
+        None,
+    ])
+    def test_production_refuses_verify_ca(self, rootcert):
+        """Review r2 (verify-ca-accepted-without-hostname-check): verify-ca
+        checks the certificate chain but never the host name, so with a
+        public bundle any publicly issued certificate, for any domain, passed
+        the rule. libpq itself refuses it only with sslrootcert=system."""
+        query = "?sslmode=verify-ca" + (f"&sslrootcert={rootcert}" if rootcert else "")
+        url = f"postgresql://atus_api:{STACK_PASSWORD}@ep-1.us-east-1.aws.neon.tech/atus{query}"
+        with pytest.raises(ConfigError, match="sslmode=verify-ca") as info:
+            load_settings(prod_env(ATUS_DATABASE_URL=url))
+        message = str(info.value)
+        assert "host name" in message and "sslmode=verify-full" in message
+        assert STACK_PASSWORD not in message and "neon.tech" not in message
 
     def test_pgsslmode_in_the_environment_does_not_count(self):
         """The rule reads the URL: libpq's PGSSLMODE fallback is not proof."""
