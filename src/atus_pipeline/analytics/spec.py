@@ -250,6 +250,14 @@ class AnalysisSpec:
             raise InvalidSpecError(
                 f"confidence_level must be in (0.5, 1.0), got {self.confidence_level}"
             )
+        # The two-sided quantile 0.5 + cl/2 (variance.z_value) must stay below
+        # 1.0: for the largest double below 1.0 it rounds up to exactly 1.0,
+        # which has no normal quantile.
+        if 0.5 + self.confidence_level / 2.0 >= 1.0:
+            raise InvalidSpecError(
+                f"confidence_level {self.confidence_level!r} is too close to 1.0: its "
+                "two-sided quantile 0.5 + confidence_level/2 rounds to 1.0"
+            )
 
     # -- serialization ----------------------------------------------------- #
 

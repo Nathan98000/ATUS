@@ -164,7 +164,9 @@ Field notes (full semantics in [analytics.md](analytics.md)):
 - `variance: "none"` skips replicate SEs (faster; `standard_error` is null).
 - Defaults (`src/atus_pipeline/api/schemas/analysis.py`): `measure`
   `average_minutes_per_day`, `weights` `multiyear`, `variance` `replicate`,
-  `confidence_level` 0.95 (must lie strictly between 0.5 and 1), `population`
+  `confidence_level` 0.95 (must lie strictly between 0.5 and 1; the largest
+  double below 1, `0.9999999999999999`, is refused as `invalid_spec` because
+  its two-sided quantile `0.5 + confidence_level/2` rounds to 1), `population`
   empty. `activity` and `years` are required; compare also requires `group_a`
   and `group_b` (`label_a`/`label_b` default to `group_a`/`group_b`).
 

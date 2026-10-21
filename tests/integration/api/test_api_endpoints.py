@@ -167,6 +167,27 @@ class TestAnalysisEndpoints:
         assert response.status_code == 422
         assert response.json()["error"]["code"] == "insufficient_data"
 
+    @pytest.mark.parametrize(
+        ("operation", "extra"),
+        [("estimate", {}), ("trend", {"years": [2019, 2023]}),
+         ("compare", {"group_a": {"sex": "male"}, "group_b": {"sex": "female"}})],
+    )
+    def test_a_confidence_level_without_a_quantile_is_refused_uncharged(
+            self, client, operation, extra):
+        """Review r2 (confidence-level-max-double-500): with the real engine,
+        1 - 2**-53 ran the statistics query, then failed in the z quantile
+        (StatisticsError: 500 internal_error), charged like a computation."""
+        runner = client.app.state.runner
+        before = runner.computations
+        body = {**self.BODY, "confidence_level": 1 - 2**-53, **extra}
+        response = client.post(f"/api/v1/analysis/{operation}", json=body)
+        assert response.status_code == 422, response.text
+        assert response.json()["error"]["code"] == "invalid_spec"
+        assert runner.computations == before
+        nearest_valid = client.post(f"/api/v1/analysis/{operation}",
+                                    json={**body, "confidence_level": 1 - 2**-52})
+        assert nearest_valid.status_code == 200, nearest_valid.text
+
 
 class TestActivitiesEndpoints:
     def test_full_lexicon_listing(self, client):

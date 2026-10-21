@@ -1,5 +1,6 @@
 """Validation and serialization of analysis specifications."""
 
+import math
 from datetime import date
 
 import pytest
@@ -14,6 +15,7 @@ from atus_pipeline.analytics.spec import (
     PopulationFilter,
     merge_filters,
 )
+from atus_pipeline.analytics.variance import z_value
 
 
 def make_spec(**overrides) -> AnalysisSpec:
@@ -91,6 +93,19 @@ class TestAnalysisSpec:
     def test_bad_variance_rejected(self):
         with pytest.raises(InvalidSpecError):
             make_spec(variance="bootstrap")
+
+    def test_confidence_level_whose_quantile_rounds_to_one_is_rejected(self):
+        """Review r2 (confidence-level-max-double-500): 1 - 2**-53 lies in
+        (0.5, 1), but 0.5 + cl/2 rounds to 1.0, so the z quantile raised
+        StatisticsError after the statistics query had run (a 500)."""
+        largest = 1 - 2**-53
+        assert 0.5 < largest < 1.0 and 0.5 + largest / 2.0 == 1.0
+        with pytest.raises(InvalidSpecError, match="confidence_level"):
+            make_spec(confidence_level=largest)
+        below = 1 - 2**-52            # the next double down still has a quantile
+        assert math.isfinite(z_value(make_spec(confidence_level=below).confidence_level))
+        for level in (0.5 + 2**-53, 0.9, 0.95, 0.99):
+            assert make_spec(confidence_level=level).confidence_level == level
 
     def test_roundtrip_serialization(self):
         spec = make_spec(
