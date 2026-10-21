@@ -944,7 +944,7 @@ Every secret has one procedure.
       - treat `RENDER_ORIGIN` as known: it is not a credential, and direct requests still need the edge secret ([security.md R3](security.md#accepted-risks));
       - set the pause switch (`API_PAUSED_UNTIL`, `API_PAUSED_REASON`) again with `deploy.yml` operation `pause-api` or `resume-api`: it holds no secret values, but the token can set or clear it;
       - bump `EPOCH` in `edge/wrangler.jsonc` and deploy, since the token may write KV (ADR-015);
-      - check `npx wrangler deployments list` in `edge/` for versions you did not deploy.
+      - check `npx --no-install wrangler deployments list` in `edge/` for versions you did not deploy.
 6. **Render deploy hook.** Render → Settings → Deploy Hook → Regenerate. The old URL stops working at once. Then replace `RENDER_DEPLOY_HOOK_URL`.
 7. **Neon owner password and project key.** Reset the password in the Neon console and update that project's `neon-<release>-<build8>.env`. Revoke and re-create `NEON_API_KEY`.
 

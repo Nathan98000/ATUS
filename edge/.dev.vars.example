@@ -9,4 +9,4 @@ IP_HMAC_KEY=dev-only-ip-hmac-key
 # The owner's pause switch (src/pause.ts) cannot be set in this file: with
 # `secrets.required` in wrangler.jsonc, `wrangler dev` loads only those names
 # (and the vars) from it. Its values are not secret, so pass them as vars:
-#   npx wrangler dev --var API_PAUSED_UNTIL:2036-11-01 --var API_PAUSED_REASON:maintenance
+#   npx --no-install wrangler dev --var API_PAUSED_UNTIL:2036-11-01 --var API_PAUSED_REASON:maintenance

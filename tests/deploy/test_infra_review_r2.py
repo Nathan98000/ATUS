@@ -184,11 +184,16 @@ def test_the_job_holding_deploy_secrets_runs_no_test_or_browser_tooling():
     workflow = _workflow("deploy.yml")
     holders = {job_id for job_id, job in workflow["jobs"].items()
                if any(f"secrets.{name}" in yaml.safe_dump(job) for name in DEPLOY_SECRETS)}
-    assert holders == {"deploy"}
+    # api-switch (the owner's pause switch, review round 2 edge) holds the
+    # Cloudflare token for `wrangler secret bulk`, behind the same approval.
+    assert holders == {"deploy", "api-switch"}
+    for holder in sorted(holders):
+        runs = "\n".join(step.get("run", "") for step in _steps(workflow["jobs"][holder])
+                         if step.get("name") != "Rollback notes")
+        for tool in ("vitest", "playwright", "requirements/dev.lock.txt", "frontend"):
+            assert tool not in runs, (holder, tool)
     runs = "\n".join(step.get("run", "") for step in _steps(workflow["jobs"]["deploy"])
                      if step.get("name") != "Rollback notes")
-    for tool in ("vitest", "playwright", "requirements/dev.lock.txt", "frontend"):
-        assert tool not in runs, tool
     assert "-r requirements/api.lock.txt" in runs
     for job_id, tool in (("edge-config", "vitest run --project node"),
                          ("browser-smoke", "playwright.deployed.config.ts")):

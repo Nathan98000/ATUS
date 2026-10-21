@@ -442,7 +442,10 @@ def test_every_push_then_dispatch_waits_for_ci_first():
     deploy = _read(WORKFLOWS / "deploy.yml")
     assert "github_ops.py deploy-gate" in deploy
     gate = _read(REPO_ROOT / "scripts" / "ops" / "github_ops.py")
-    assert "wait until CI has passed for this commit" in gate
+    # The refusal names what happened to the commit's CI run (review round 2,
+    # ci-concurrency-strands-main-commits); a pending run is waited for.
+    assert "run for {sha[:12]} on a push to {branch}" in gate
+    assert "wait until it passes, then re-run" in gate
     procedures = (
         (DEPLOYMENT, "**Bootstrap: the very first deploy.**", "### 8. Prove",
          "**Actions → Deploy → Run workflow**"),
