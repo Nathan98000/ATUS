@@ -66,7 +66,7 @@ class TestCacheDegradation:
         """If `atus load` finishes while a result is being computed, the result
         must not be stored under the pre-reload version key."""
         stub_engine.estimate_behavior = lambda spec: known_estimate_result()
-        # The recheck (via the connection) sees run1; pretend the request
+        # The computation's first read (via the connection) sees run1; pretend the request
         # started when the version was run0.
         fake_db.data_version = "0325:run0"
         first = client.post("/api/v1/analysis/estimate", json=_estimate_body())

@@ -24,9 +24,9 @@ it; there is no background refresh, so an idle API never touches the database
 
 While the snapshot is usable, analysis cache hits, every 4xx, ``/meta``,
 ``/activities*`` and ``/population/metadata`` cost no database statement.
-Uncached analyses still re-read the data version inside their own
-transaction after computing (the concurrent-reload guard in
-``analysis_runner``); a changed version invalidates the snapshot.
+Uncached analyses still read the data version first in their own
+transaction (the concurrent-reload guard in ``analysis_runner``); a changed
+version invalidates the snapshot.
 
 **When it is read again** (ADR-012, "Metadata reads and the quota"):
 

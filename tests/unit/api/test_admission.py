@@ -220,6 +220,25 @@ class TestSingleFlight:
             assert leader.result(10).status_code == 200
             assert joiner.result(10).headers["X-Cache"] == "join"
 
+    def test_joiners_of_a_bypass_see_the_bypass_and_its_labels(self, build, stub_engine):
+        """The snapshot says run0, the computation reads run1: the leader and
+        its joiner both get ``bypass`` and run1's labels (review r1: the
+        joiner got ``join``, hiding the bypass)."""
+        gate = Gate()
+        stub_engine.estimate_behavior = gate.behavior
+        client, app = build(fake_db=FakeDatabase(data_version="0325:run0"))
+        with ThreadPoolExecutor(2) as pool:
+            leader = pool.submit(client.post, ESTIMATE, json=body(2021))
+            assert gate.entered.wait(5)
+            joiner = pool.submit(client.post, ESTIMATE, json=body(2021))
+            wait_for(lambda: app.state.runner.joins == 1)
+            gate.release.set()
+            first, second = leader.result(10), joiner.result(10)
+        assert first.headers["X-Cache"] == second.headers["X-Cache"] == "bypass"
+        assert first.headers["X-Data-Version"] == second.headers["X-Data-Version"] == "0325:run1"
+        assert first.headers["X-Analysis-Key"] == second.headers["X-Analysis-Key"]
+        assert first.json() == second.json()
+
     def test_joiners_receive_the_same_error_and_nothing_is_cached(self, build, stub_engine):
         gate = Gate()
 

@@ -258,9 +258,8 @@ def test_reload_during_continuous_reads_fails_no_request(db_url, api, tmp_path):
         (old_key, V1_SLEEP_2023),
         (new_key, V2_SLEEP_2023),
     }
-    for obs in estimates:
-        if obs.x_cache in ("hit", "miss"):
-            assert (obs.key, obs.values[0]) in allowed, obs
+    for obs in estimates:  # every X-Cache value: hit, miss, join and bypass (review r1)
+        assert (obs.key, obs.values[0]) in allowed, obs
     # every estimate, cached or not, is the old or the new value: never a mix
     for obs in estimates + ordered("estimate_uncached"):
         assert obs.values[0] in (V1_SLEEP_2023, V2_SLEEP_2023), obs

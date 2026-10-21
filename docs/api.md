@@ -206,7 +206,9 @@ Response headers:
   - `hit`: served from the cache;
   - `miss`: computed and cached;
   - `join`: shared an identical computation that was already running;
-  - `bypass`: computed during a data reload and not cached;
+  - `bypass`: computed after a data reload that the snapshot did not know
+    yet (on the new data, labelled with its version) and not cached; a
+    request that joined such a computation gets `bypass` too;
   - `edge`: answered by the edge Worker's result cache (Worker only).
 - `X-Data-Version`, `X-Analytics-Version` and `X-Response-Format` (`1`) on
   successful analyses: what the response bytes depend on. Edge caches key on
@@ -330,18 +332,21 @@ store later.
 The data version used in the key comes from the in-process data snapshot
 (below), so a cache hit costs no database statement.
 
-Concurrent-reload guard: if `atus load` finishes while a request is
-computing, the data version is re-read in the computation's own transaction
-before storing. If it differs from the snapshot's, the result is returned
-uncached (`X-Cache: bypass`) instead of being stored under the pre-reload
-key, and the snapshot is read again on the next request. With
-`ATUS_EXPECTED_DATA_VERSION` set, such a result is refused with 503
-`data_version_mismatch` instead. Residual caveat: a computation that started
-from a snapshot taken before the reload can use that snapshot's years and
-lexicon, and a request whose statements straddle the reload commit can
-*observe* mixed data once (standard READ COMMITTED behavior); such results
-are never cached, so they cannot persist. In production the data never
-changes in place (ADR-013).
+Concurrent-reload guard: the computation's own transaction reads the data
+version first. That read holds a share lock on `ingestion_runs` until the
+transaction ends, and the `atus load` switch must lock that table before it
+swaps any table in, so every statement of the computation reads the version
+it read first. If that version is the snapshot's, the result is cached under
+the snapshot's key (`X-Cache: miss`). If the data changed after the snapshot
+was read (a local, in-place `atus load`), the snapshot is invalidated and the
+engine reads its own lexicon and years in that transaction instead of the
+snapshot's: the result is computed entirely on the new data, labelled with
+the version it read (`X-Data-Version`, and `X-Analysis-Key` for that
+version), and returned once, uncached (`X-Cache: bypass`; requests that
+joined it also get `bypass`). The next request reads the snapshot again.
+With `ATUS_EXPECTED_DATA_VERSION` set, such a request is refused with 503
+`data_version_mismatch` before anything is computed. In production the data
+never changes in place (ADR-013).
 
 Single-flight: concurrent requests for the same key share one computation.
 Every request after the first gets `X-Cache: join`.
@@ -407,7 +412,7 @@ snapshot is usable:
 - analysis cache hits and every 4xx decided before the statistics query run
   no statement;
 - uncached analyses reuse its activity resolver and years, so they run only
-  their statistics queries and the version recheck.
+  the data-version read and their statistics queries.
 
 The lexicon search returns exactly what the SQL `ILIKE` returned, for ASCII
 and non-ASCII terms alike (proved by an integration test over thousands of
@@ -509,7 +514,7 @@ psycopg sends around each transaction.
 | `/meta`, `/activities` (any search term), `/activities/{code}` (also 404), `/activities/presets`, `/population/metadata` | 0 | 0 |
 | analysis cache hit, or single-flight join | 0 | 0 |
 | any 400, 403, 404, 405, 413, 415 or 429, and every 422 decided before the statistics query | 0 | 0 |
-| uncached estimate or trend: check, limits, statistics query, version recheck | 4 | 6 |
+| uncached estimate or trend: check, limits, data-version read, statistics query | 4 | 6 |
 | uncached compare: one statistics query per group | 5 | 7 |
 | `/health`, `/metrics`; `/ready` with a fresh snapshot | 0 | 0 |
 

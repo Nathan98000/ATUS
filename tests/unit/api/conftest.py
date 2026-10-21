@@ -75,7 +75,7 @@ def stub_engine() -> StubEngine:
 
 
 class FakeVersionConnection:
-    """Answers only the data-version query (used by the cache recheck) and
+    """Answers only the data-version query (each computation reads it first) and
     the loaded-data probe; any other SQL in a DB-less test is a bug and fails
     loudly. Every statement is counted against the current request, like the
     real pool's cursors do."""

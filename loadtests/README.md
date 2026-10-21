@@ -110,7 +110,7 @@ The full database keeps its own server settings (`jit=on`, `shared_buffers=128MB
 |---|---|---|---|
 | metadata | the API process alone: with the snapshot fresh, these routes run no SQL (ADR-012) | `200` | a new address every 100 requests (bucket: 120/min) |
 | cached | validation, cache lookup and response for repeated analyses: hits run no SQL | `200`, `X-Cache: hit` | every 100 |
-| uncached | one statistics query (plus a version recheck) per request, single-year with replicate SEs | `200`, or `422 insufficient_data` for a rare generated selection | every 5 analyses (bucket: 6/min) |
+| uncached | one statistics query (plus the data-version read) per request, single-year with replicate SEs | `200`, or `422 insufficient_data` for a rare generated selection | every 5 analyses (bucket: 6/min) |
 | worstcase | the requests that size `statement_timeout` (ADR-012 "Calibration": `clamp(3 × p99, 30 s, 85 s)`) | `200`; under concurrency also `503 overloaded` from the heavy lane, which is the protection working | every 5 |
 | mix | a demo visit's requests (see below) | `200`, `422 insufficient_data` | one address per visit |
 
