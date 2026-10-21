@@ -1015,6 +1015,55 @@ describe('focus after in-app navigation (review round 2)', () => {
     expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
     expect(document.activeElement).toBe(document.body)
   })
+
+  // Review round 4: a full-page quota or pause state replaced the analysis
+  // page whose heading the navigation had focused, and focus fell to <body>.
+  it.each([
+    [
+      'capacity_paused',
+      { scope: 'monthly', budget: 'cu_month' },
+      'New analyses are paused for now',
+    ],
+    [
+      'api_paused',
+      { until: '2099-01-01T00:00:00Z', reason: 'render_quota', retry_after_seconds: 3600 },
+      'The analysis service is paused',
+    ],
+    ['database_paused', null, 'The analysis database is paused'],
+  ] as const)(
+    'a %s page that replaces the analysis after Analyze takes the focus (review round 4)',
+    async (code, details, name) => {
+      const user = userEvent.setup()
+      server.use(
+        http.post(api('/analysis/estimate'), async () => {
+          await delay(150)
+          return errorResponse(503, code, 'Paused.', details)
+        }),
+      )
+      renderApp('/explore')
+      const analyze = await screen.findByRole('button', { name: 'Analyze' })
+      analyze.focus()
+      await user.keyboard('{Enter}')
+      // The navigation focused the analysis heading first.
+      await waitFor(() => expect(document.activeElement).toHaveTextContent(/^Sleeping/))
+      const heading = await screen.findByRole('heading', { level: 1, name })
+      await waitFor(() => expect(document.activeElement).toBe(heading))
+    },
+  )
+
+  it('a paused page that the first page of a visit shows does not move focus', async () => {
+    server.use(
+      http.post(api('/analysis/estimate'), () =>
+        errorResponse(503, 'capacity_paused', 'Paused.', { scope: 'monthly' }),
+      ),
+    )
+    renderApp(sleepRoute)
+    expect(
+      await screen.findByRole('heading', { name: 'New analyses are paused for now' }),
+    ).toBeInTheDocument()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(document.activeElement).toBe(document.body)
+  })
 })
 
 describe('offline (review round 1)', () => {

@@ -233,7 +233,7 @@ def test_the_stack_mode_guard_checks_the_record_against_its_commit_when_present(
 
 def test_the_stack_mode_record_names_the_suites_object_ids_in_both_docs():
     for path in (FRONTEND, DEPLOYMENT):
-        assert re.search(r"at 3a984fa \(E2E suite: frontend/e2e tree c074a74c6025, "
+        assert re.search(r"at 46293d1 \(E2E suite: frontend/e2e tree 0c3985b65c5e, "
                          r"frontend/playwright\.config\.ts blob 4ada0afae03a\)",
                          _flat(_read(path))), path
     # The old failure message advised fetch-depth: 0, which CI already used.

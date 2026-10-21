@@ -1,9 +1,9 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
 import { Link, NavLink, NavigationType, useLocation, useNavigationType } from 'react-router'
 
 import { useMeta } from '../api/queries'
 import { ServiceNotice } from './ServiceNotice'
-import { PAGE_HEADING } from './useRetryFocus'
+import { NavigationFocus, PAGE_HEADING } from './useRetryFocus'
 
 /**
  * After an in-app navigation, focus moves to the new page's heading, so
@@ -12,11 +12,16 @@ import { PAGE_HEADING } from './useRetryFocus'
  * round 2). Not on the first page of a visit (the browser's own load), and
  * not when only the query string is replaced: that is the analysis page
  * rewriting its URL to the canonical spec, not a new page.
+ *
+ * Returns whether a navigation has moved focus this visit, for
+ * `NavigationFocus`: a full-page state that then replaces the focused
+ * heading moves focus to its own (review round 4).
  */
-function useFocusOnNavigation(): void {
+function useFocusOnNavigation(): RefObject<boolean> {
   const { pathname, search } = useLocation()
   const navigationType = useNavigationType()
   const shown = useRef({ pathname, search })
+  const navigated = useRef(false)
 
   useEffect(() => {
     const before = shown.current
@@ -24,8 +29,12 @@ function useFocusOnNavigation(): void {
     const newPage =
       pathname !== before.pathname ||
       (search !== before.search && navigationType !== NavigationType.Replace)
-    if (newPage) document.querySelector<HTMLElement>(PAGE_HEADING)?.focus()
+    if (newPage) {
+      navigated.current = true
+      document.querySelector<HTMLElement>(PAGE_HEADING)?.focus()
+    }
   }, [pathname, search, navigationType])
+  return navigated
 }
 
 /**
@@ -36,7 +45,7 @@ function useFocusOnNavigation(): void {
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const meta = useMeta()
-  useFocusOnNavigation()
+  const navigated = useFocusOnNavigation()
 
   return (
     <>
@@ -57,7 +66,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
       <main id="main">
         <ServiceNotice />
-        {children}
+        <NavigationFocus value={navigated}>{children}</NavigationFocus>
       </main>
       <footer className="site-footer">
         <div className="site-footer__inner">

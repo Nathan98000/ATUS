@@ -186,6 +186,129 @@ describe('wrongly typed fields (review round 2)', () => {
     expect(() => decodeSpec(link(spec), operation as Operation)).toThrow(InvalidShareLinkError)
   })
 
+  // Review round 4: the API reads "no", "false", "0" and "off" as
+  // has_household_children false; the page described any non-empty string
+  // as "with household children", so the link was labelled with the
+  // opposite of the population it computed.
+  it.each([
+    [
+      'has_household_children "no"',
+      'estimate',
+      { ...base, population: { has_household_children: 'no' } },
+    ],
+    [
+      'has_household_children "false"',
+      'trend',
+      { ...base, population: { has_household_children: 'false' } },
+    ],
+    [
+      'has_household_children "0"',
+      'estimate',
+      { ...base, population: { has_household_children: '0' } },
+    ],
+    [
+      'has_household_children 0',
+      'estimate',
+      { ...base, population: { has_household_children: 0 } },
+    ],
+    [
+      'a shared has_household_children "off"',
+      'compare',
+      { ...compareBase, population: { has_household_children: 'off' } },
+    ],
+    [
+      'group_a has_household_children "n"',
+      'compare',
+      { ...compareBase, group_a: { has_household_children: 'n' } },
+    ],
+    [
+      'group_b has_household_children "false"',
+      'compare',
+      { ...compareBase, group_b: { has_household_children: 'false' } },
+    ],
+    ['age_min a string', 'estimate', { ...base, population: { age_min: '25' } }],
+    ['region a boolean', 'estimate', { ...base, population: { region: true } }],
+    ['sex a number', 'compare', { ...compareBase, group_a: { sex: 1 } }],
+    ['state_fips a number', 'estimate', { ...base, population: { state_fips: 6 } }],
+    [
+      'diary_date_min a number',
+      'estimate',
+      { ...base, population: { diary_date_min: 20190101 } },
+    ],
+    // The API reads a string of digits as a Unix time: 2020-01-01 here.
+    [
+      'diary_date_max a Unix time',
+      'compare',
+      { ...compareBase, population: { diary_date_max: '1577836800' } },
+    ],
+    [
+      'diary_date_min not YYYY-MM-DD',
+      'estimate',
+      { ...base, population: { diary_date_min: '2019-01-01T00:00:00Z' } },
+    ],
+  ] as const)('rejects a population with %s (review round 4)', (_label, operation, spec) => {
+    expect(() => decodeSpec(link(spec), operation as Operation)).toThrow(
+      /(population|group_[ab]) has the wrong type/,
+    )
+  })
+
+  // JSON.parse reads 1e400 as Infinity: the page described "age Infinity+"
+  // while the POSTed JSON sent null, so the API filtered nothing.
+  it.each([
+    ['population', 'estimate', '"population":{"age_min":1e400}'],
+    [
+      'population',
+      'compare',
+      '"population":{"region":-1e400},"group_a":{"sex":"male"},"group_b":{}',
+    ],
+    ['group_a', 'compare', '"group_a":{"age_max":1e400},"group_b":{"sex":"female"}'],
+  ] as const)(
+    'rejects a non-finite number in %s (review round 4)',
+    (field, operation, rest) => {
+      const json = `{"activity":{"preset":"sleep"},"years":[2023],${rest}}`
+      expect(Object.values(JSON.parse(json)[field])).toContain(
+        rest.includes('-1e400') ? -Infinity : Infinity,
+      )
+      expect(() => decodeSpec(btoa(json), operation)).toThrow(
+        new RegExp(`its ${field} has the wrong type`),
+      )
+    },
+  )
+
+  it('accepts each population dimension with its own type, and null', () => {
+    const population = {
+      age_min: 25,
+      age_max: 54,
+      sex: 'female',
+      employment_status: 'employed',
+      has_household_children: false,
+      region: 3,
+      state_fips: '06',
+      education_level: 'high_school',
+      day_type: 'weekend',
+      diary_date_min: '2019-01-01',
+      diary_date_max: '2019-12-31',
+    }
+    expect(decodeSpec(link({ ...base, population }), 'estimate')).toEqual({
+      ...base,
+      population,
+    })
+    const groups = {
+      ...compareBase,
+      group_a: { has_household_children: true, region: null },
+      group_b: { has_household_children: false },
+    }
+    expect(decodeSpec(link(groups), 'compare')).toEqual(groups)
+    // A dimension the page does not know is left for the API to refuse (422).
+    expect(() =>
+      decodeSpec(link({ ...base, population: { shoe_size: '9' } }), 'estimate'),
+    ).not.toThrow()
+    // So is a year past 9999, which the builder's date input can produce.
+    expect(() =>
+      decodeSpec(link({ ...base, population: { diary_date_min: '20190-01-01' } }), 'estimate'),
+    ).not.toThrow()
+  })
+
   it('accepts every canonical spec the API returns and every starter link', () => {
     for (const [operation, spec] of [
       ['estimate', estimateSleepFixture.spec],

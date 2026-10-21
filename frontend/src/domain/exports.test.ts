@@ -299,6 +299,115 @@ describe('compare CSV', () => {
   })
 })
 
+describe('formula guard where spreadsheets split on ";" (review round 4)', () => {
+  // Excel in a ';' list-separator locale splits each CSV line on ';' (and
+  // some import dialogs on tabs); the quotes of a comma-separated field in
+  // the middle of a line are ordinary characters to it. A label such as
+  // "Sleep;=1+1;" was written unguarded, so "=1+1" became a cell of its own.
+  const STARTS_FORMULA = /^[=+\-@\t\r]/
+  /**
+   * The cells such a spreadsheet makes of the file (leading spaces and
+   * quotes skipped): a cell ends at a ';', a tab or a line break, and a
+   * double quote is special only at the start of a cell, where it opens a
+   * quoted cell that may hold all three ('""' is a quote). So the quotes of
+   * a comma-separated field in the middle of a line are ordinary
+   * characters, and a line break inside one starts a new row.
+   */
+  function separatedCells(text: string): string[] {
+    const body = text.slice(1)
+    const cells: string[] = []
+    let cell = ''
+    let state: 'start' | 'plain' | 'quoted' = 'start'
+    for (let index = 0; index < body.length; index += 1) {
+      const char = body[index]
+      if (state === 'quoted') {
+        if (char === '"' && body[index + 1] === '"') {
+          cell += '"'
+          index += 1
+        } else if (char === '"') {
+          state = 'plain'
+        } else {
+          cell += char
+        }
+      } else if (state === 'start' && char === '"') {
+        state = 'quoted'
+      } else if (char === ';' || char === '\t' || char === '\r' || char === '\n') {
+        cells.push(cell)
+        cell = ''
+        state = 'start'
+        if (char === '\r' && body[index + 1] === '\n') index += 1
+      } else {
+        cell += char
+        state = 'plain'
+      }
+    }
+    cells.push(cell)
+    return cells.map((value) => value.replace(/^[ "]*/, ''))
+  }
+
+  it('guards a formula after a ";" in an activity label (the first column)', () => {
+    const labelled: EstimateResponse = {
+      ...estimateSleepFixture,
+      activity: { ...estimateSleepFixture.activity, label: 'Sleep;=1+1;' },
+    }
+    const text = estimateCsv(labelled, context())
+    expect(separatedCells(text).filter((cell) => STARTS_FORMULA.test(cell))).toEqual([])
+    // A comma-separated reader sees the label with the guard, as for a leading "=".
+    expect(records(text)[0]?.activity).toBe("Sleep;'=1+1;")
+  })
+
+  it('guards group labels after ";" or a tab, past spaces and quotes, leaving lists alone', () => {
+    const compare: CompareResponse = {
+      ...compareChildrenFixture,
+      label_a: 'Men;=HYPERLINK("https://evil.example");x',
+      label_b: 'Women; -2+3;"=1+1;\t@SUM(A1)',
+    }
+    const text = compareCsv(compare, context({ operation: 'compare' }))
+    expect(separatedCells(text).filter((cell) => STARTS_FORMULA.test(cell))).toEqual([])
+    const rows = records(text)
+    expect(rows.map((row) => row.label)).toEqual([
+      `Men;'=HYPERLINK("https://evil.example");x`,
+      `Women;' -2+3;'"=1+1;'\t'@SUM(A1)`,
+      `Men;'=HYPERLINK("https://evil.example");x minus Women;' -2+3;'"=1+1;'\t'@SUM(A1)`,
+    ])
+    // Lists of codes and years are joined with ';' and never start a formula.
+    expect(rows[0]).toMatchObject({
+      activity_include: '02;1802',
+      activity_exclude: '020903;020904',
+    })
+  })
+
+  it('guards a formula after a line break in a label in the middle of a line', () => {
+    // A trend's activity label and a comparison's labels are not in the
+    // first column, so their quotes are ordinary characters to such a
+    // spreadsheet: a line break inside one ended the row, and the text after
+    // it began the next row, "=1+1" in a cell of its own.
+    const trend: TrendResponse = {
+      ...trendLeisureFixture,
+      activity: { ...trendLeisureFixture.activity, label: 'Leisure\r\n@SUM(A1);' },
+    }
+    const compare: CompareResponse = {
+      ...compareChildrenFixture,
+      label_a: 'Men\n=1+1;x',
+      label_b: 'Women\r "-2+3',
+    }
+    const trendText = trendCsv(trend, context({ operation: 'trend' }))
+    const compareText = compareCsv(compare, context({ operation: 'compare' }))
+    for (const text of [trendText, compareText]) {
+      expect(separatedCells(text).filter((cell) => STARTS_FORMULA.test(cell))).toEqual([])
+    }
+    // A comma-separated reader sees each label in one cell, with the guard.
+    expect(records(trendText).map((row) => row.activity)).toEqual(
+      trendLeisureFixture.points.map(() => "Leisure\r\n'@SUM(A1);"),
+    )
+    expect(records(compareText).map((row) => row.label)).toEqual([
+      "Men\n'=1+1;x",
+      `Women\r' "-2+3`,
+      `Men\n'=1+1;x minus Women\r' "-2+3`,
+    ])
+  })
+})
+
 describe('JSON export', () => {
   it('records the canonical spec, versions, warnings, attribution and the untouched response', () => {
     const document = JSON.parse(resultJson(estimateSleepFixture, context()))
