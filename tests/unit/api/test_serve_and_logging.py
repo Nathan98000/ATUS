@@ -134,8 +134,12 @@ class TestApiCommand:
         bundle = tmp_path / "cert.pem"
         bundle.write_text("roots")
         monkeypatch.setattr(dsn, "SYSTEM_CA_BUNDLES", (str(bundle),), raising=False)
-        monkeypatch.delenv("SSL_CERT_FILE", raising=False)
+        # Unset now and after the test: the code under test sets it, and a
+        # delenv of an unset variable records nothing to undo.
+        monkeypatch.setenv("SSL_CERT_FILE", "unset-below")
+        monkeypatch.delenv("SSL_CERT_FILE")
         seen = []
+        monkeypatch.setattr(serve, "configure_logging", lambda *a, **k: None)  # process-wide
         monkeypatch.setattr(uvicorn, "run", lambda **k: seen.append(os.environ.get(
             "SSL_CERT_FILE")))
         url = "postgresql://atus_api:pw@ep-1.us-east-1.aws.neon.tech/atus" \

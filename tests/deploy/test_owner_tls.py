@@ -126,7 +126,10 @@ def owner_machine(monkeypatch, owner_certificates):
     """This machine with the throwaway CA as its only system bundle and no
     SSL_CERT_FILE, like the owner's Mac before any `atus` command runs."""
     monkeypatch.setattr(dsn, "SYSTEM_CA_BUNDLES", (str(owner_certificates / "ca.crt"),))
-    monkeypatch.delenv("SSL_CERT_FILE", raising=False)
+    # Unset now and after the test: the code under test sets it, and a
+    # delenv of an unset variable records nothing to undo.
+    monkeypatch.setenv("SSL_CERT_FILE", "unset-below")
+    monkeypatch.delenv("SSL_CERT_FILE")
     return owner_certificates
 
 
@@ -161,6 +164,9 @@ def test_the_docker_client_still_rejects_an_unknown_ca(tls_only_postgres, owner_
 def test_without_any_bundle_the_docker_client_refuses_with_advice(tls_only_postgres,
                                                                   monkeypatch):
     monkeypatch.setattr(dsn, "SYSTEM_CA_BUNDLES", ())
-    monkeypatch.delenv("SSL_CERT_FILE", raising=False)
+    # Unset now and after the test: the code under test sets it, and a
+    # delenv of an unset variable records nothing to undo.
+    monkeypatch.setenv("SSL_CERT_FILE", "unset-below")
+    monkeypatch.delenv("SSL_CERT_FILE")
     with pytest.raises(pgtools.PgToolError, match="SSL_CERT_FILE"):
         _ssl_through_psql(tls_only_postgres)

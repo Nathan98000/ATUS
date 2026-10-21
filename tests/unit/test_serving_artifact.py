@@ -244,7 +244,10 @@ def test_the_restore_finds_ca_roots_before_its_first_connection(tmp_path, monkey
     bundle = tmp_path / "cert.pem"
     bundle.write_text("roots")
     monkeypatch.setattr(dsn, "SYSTEM_CA_BUNDLES", (str(bundle),), raising=False)
-    monkeypatch.delenv("SSL_CERT_FILE", raising=False)
+    # Unset now and after the test: the code under test sets it, and a
+    # delenv of an unset variable records nothing to undo.
+    monkeypatch.setenv("SSL_CERT_FILE", "unset-below")
+    monkeypatch.delenv("SSL_CERT_FILE")
     monkeypatch.setenv("ATUS_OWNER_DATABASE_URL",
                        f"postgresql://neondb_owner:pw@ep-1.us-east-1.aws.neon.tech/atus"
                        f"?{owner_query}")
