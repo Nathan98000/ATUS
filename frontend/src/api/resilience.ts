@@ -42,6 +42,7 @@ export type FailureClass = 'waking' | 'transient' | 'rate_limited' | 'final'
 /** Answers that retrying cannot change (or that would spend quota to no effect). */
 const FINAL_CODES = new Set([
   'analysis_timeout',
+  'api_paused',
   'capacity_paused',
   'capacity_unavailable',
   'daily_capacity_reached',

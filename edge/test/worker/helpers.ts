@@ -16,7 +16,6 @@ import { env } from 'cloudflare:workers'
 import { expect, vi } from 'vitest'
 import worker from '../../src/index'
 import { GOVERNOR_NAME, type Governor } from '../../src/governor'
-import { SECURITY_HEADERS } from '../../src/http'
 import { originBreaker } from '../../src/upstream'
 import { resetWakeState } from '../../src/wake'
 
@@ -152,9 +151,28 @@ export function apiJson(
   })
 }
 
-/** Assert the edge's security headers are present with their exact values. */
+/**
+ * The security headers every /api response must carry, written out here
+ * rather than imported from src/http.ts: a check against the source's own
+ * constant could only catch a header missing from a response path, never one
+ * deleted from (or weakened in) the constant (review round 2). These are the
+ * only security headers browsers get on /api, since the Worker rebuilds every
+ * response's headers. They match the API's own (tests/unit/api/test_guard.py)
+ * plus HSTS and `Cache-Control: no-store` (docs/api.md, "Edge Worker").
+ */
+export const EXPECTED_SECURITY_HEADERS: Readonly<Record<string, string>> = {
+  'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+  'Strict-Transport-Security': 'max-age=31536000',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+  'Cache-Control': 'no-store',
+}
+
+/** Assert the edge's security headers are present with their exact, pinned values. */
 export function expectSecurityHeaders(response: Response): void {
-  for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+  for (const [name, value] of Object.entries(EXPECTED_SECURITY_HEADERS)) {
     expect(response.headers.get(name), name).toBe(value)
   }
 }

@@ -15,6 +15,7 @@ import {
   EGRESS_ESTIMATE_BYTES,
   EGRESS_STOP_BYTES,
   PREFIX_DAILY_CU_SHARE,
+  SNAPSHOT_READ_EGRESS_BYTES,
 } from '../../src/constants'
 import {
   Governor as GovernorClass,
@@ -372,10 +373,21 @@ describe('Durable Object row budget (Workers Free: 100k rows written, 5M read pe
     }
   })
 
-  it('writes at most 5 rows per metadata lookup, and none to deny one', async () => {
-    controlClock(T)
-    const first = await rowsDuring(() => governor().admitLookup({ prefix: PREFIX }))
-    const second = await rowsDuring(() => governor().admitLookup({ prefix: PREFIX }))
+  it('writes at most 7 rows to admit a metadata lookup and 4 to settle it, and none to deny one', async () => {
+    // A lookup holds a lease since review round 2 (it can wake Neon): a
+    // settle with db;dur=0, a warm API's answer, only deletes it.
+    const clock = controlClock(T)
+    const leases: string[] = []
+    const admitLookup = async (): Promise<void> => {
+      const result = (await governor().admitLookup({ prefix: PREFIX })) as AdmitResult
+      if (!result.ok) throw new Error(`lookup denied: ${result.budget}`)
+      leases.push(result.leaseId)
+    }
+    const first = await rowsDuring(admitLookup)
+    const second = await rowsDuring(admitLookup)
+    clock.advance(S)
+    const settleFree = await rowsDuring(() => settle(leases[0]!, 'computed', 0))
+    const settleCharged = await rowsDuring(() => settle(leases[1]!, 'computed', 48))
     await governorSql('UPDATE prefixes SET lookups = 200 WHERE prefix = ?', PREFIX)
     const refused = await rowsDuring(async () => {
       expect(await governor().admitLookup({ prefix: PREFIX })).toMatchObject({
@@ -384,8 +396,10 @@ describe('Durable Object row budget (Workers Free: 100k rows written, 5M read pe
         budget: 'metadata',
       })
     })
-    expect(first.written).toBeLessThanOrEqual(5)
-    expect(second.written).toBeLessThanOrEqual(5)
+    expect(first.written).toBeLessThanOrEqual(7)
+    expect(second.written).toBeLessThanOrEqual(7)
+    expect(settleFree.written).toBeLessThanOrEqual(1)
+    expect(settleCharged.written).toBeLessThanOrEqual(4)
     expect(refused.written).toBe(0)
     expect(refused.read).toBeLessThanOrEqual(1)
   })
@@ -704,6 +718,136 @@ describe("each network's share of the day's compute", () => {
   })
 })
 
+async function lookupAdmitted(prefix = PREFIX): Promise<string> {
+  const result = (await governor().admitLookup({ prefix })) as AdmitResult
+  if (!result.ok) throw new Error(`lookup denied: ${result.budget}`)
+  expect(typeof result.leaseId).toBe('string')
+  return result.leaseId
+}
+
+async function lookupDenied(prefix = PREFIX): Promise<Denied> {
+  const result = (await governor().admitLookup({ prefix })) as AdmitResult
+  if (result.ok) throw new Error('lookup admitted')
+  return result
+}
+
+describe('metadata lookups that reach the database', () => {
+  // Review round 2 (lookup-wakes-neon-uncharged): a lookup was only counted.
+  // The first data request on a freshly spun-up API process runs the
+  // snapshot read against Neon (Server-Timing db;dur > 0), so one network
+  // sending a lookup after each Render spin-down (about every 16 minutes)
+  // woke Neon ~90 times a day without any charge, also past the daily
+  // ceiling, its compute share and the monthly stop.
+
+  it('charges a lookup that reported DB time its wake session, to the day and its network', async () => {
+    const clock = controlClock(T)
+    const lease = await lookupAdmitted()
+    await settle(lease, 'computed', 48.2)
+    // [T, T + 300 s] at 2 CU: the snapshot read plus Neon's idle tail.
+    expect(await day()).toMatchObject({
+      admitted: 0,
+      heavy: 0,
+      refunded: 0,
+      cu_s: 600,
+      egress_bytes: SNAPSHOT_READ_EGRESS_BYTES,
+    })
+    expect(await prefixCuS()).toBe(600)
+    expect(await prefixCount()).toBe(0)
+    expect(await governorSql('SELECT id FROM leases')).toEqual([])
+    // A 404 the API gave only after that read (an unknown code) is charged too.
+    clock.advance(16 * MIN)
+    const unknown = await lookupAdmitted(OTHER)
+    await settle(unknown, 'rejected', 36.5)
+    expect(await prefixCuS(OTHER)).toBe(600)
+    expect((await governor().budget()).metadata.origin_calls).toBe(2)
+  })
+
+  it('charges nothing for a lookup answered from the pinned snapshot (db;dur=0) or never reached', async () => {
+    controlClock(T)
+    await settle(await lookupAdmitted(), 'computed', 0)
+    await settle(await lookupAdmitted(), 'not_reached')
+    await settle(await lookupAdmitted(), 'shed', 0)
+    expect(await day()).toMatchObject({ cu_s: 0, egress_bytes: 0, admitted: 0, refunded: 0 })
+    expect(await prefixCuS()).toBe(0)
+    expect(await governorSql('SELECT id FROM leases')).toEqual([])
+    const report = await governor().budget()
+    expect(report.metadata.origin_calls).toBe(3)
+    expect(report.analyses.in_flight).toBe(0)
+  })
+
+  it('charges a lookup whose settle was lost like a lost analysis, counts kept', async () => {
+    const clock = controlClock(T)
+    await lookupAdmitted()
+    expect((await governor().budget()).analyses.in_flight).toBe(0)
+    clock.advance(11 * MIN)
+    await lookupAdmitted(OTHER)
+    expect(await governorSql('SELECT prefix FROM leases')).toEqual([{ prefix: OTHER }])
+    expect(await day()).toMatchObject({ admitted: 0, cu_s: 780 })
+    expect(await prefixCuS()).toBe(780)
+  })
+
+  it("stops one network's lookups at its share of the day's compute", async () => {
+    const clock = controlClock(T)
+    let served = 0
+    for (let i = 0; i < 30; i += 1) {
+      const result = (await governor().admitLookup({ prefix: PREFIX })) as AdmitResult
+      if (!result.ok) {
+        expect(result).toMatchObject({
+          code: 'rate_limited',
+          scope: 'client',
+          budget: 'prefix',
+        })
+        break
+      }
+      served += 1
+      await settle(result.leaseId, 'computed', 48.2)
+      clock.advance(16 * MIN)
+    }
+    // 600 CU-s each; the fourth's provisional 780 would pass a fifth of 10,452.
+    expect(served).toBe(3)
+    expect(await prefixCuS()).toBe(1800)
+    expect(PREFIX_DAILY_CU_SHARE * DAILY_CU_HOURS_CONSERVATIVE * 3600).toBeLessThan(1800 + 780)
+    // Another network's analyses and lookups still get in.
+    await admitted(OTHER)
+    await lookupAdmitted(OTHER)
+  })
+
+  it("refuses lookups once the day's compute or estimated egress is spent", async () => {
+    controlClock(T)
+    const ceilingS = DAILY_CU_HOURS_CONSERVATIVE * 3600
+    await governorSql('INSERT INTO days (day, cu_s) VALUES (?, ?)', TODAY, ceilingS - 779)
+    expect(await lookupDenied()).toMatchObject({
+      code: 'daily_capacity_reached',
+      scope: 'daily',
+      budget: 'cu_day',
+      resumesAt: new Date(MIDNIGHT).toISOString(),
+    })
+    await governorSql(
+      'UPDATE days SET cu_s = 0, egress_bytes = ? WHERE day = ?',
+      EGRESS_STOP_BYTES / 31 - SNAPSHOT_READ_EGRESS_BYTES + 1,
+      TODAY,
+    )
+    expect(await lookupDenied()).toMatchObject({
+      code: 'daily_capacity_reached',
+      budget: 'egress_day',
+    })
+  })
+
+  it('refuses lookups above the monthly pacing line and after the 85 CU-h stop', async () => {
+    controlClock(PERIOD_END - DAY_MS / 4)
+    await setNeon({ key: NEON_KEY, project: NEON_PROJECT })
+    mockNeon({ compute_time_seconds: 85 * 3600 })
+    await admitted()
+    await runDurableObjectAlarm(governor())
+    expect(await lookupDenied(OTHER)).toMatchObject({
+      code: 'capacity_paused',
+      scope: 'monthly',
+      budget: 'cu_month',
+      resumesAt: new Date(PERIOD_END).toISOString(),
+    })
+  })
+})
+
 describe('Neon egress without ground truth', () => {
   it("refuses analyses once today's estimated egress would pass 4.5 GB / 31", async () => {
     controlClock(T)
@@ -927,7 +1071,9 @@ describe('schema', () => {
   it('adds the newer columns to a database created before them', async () => {
     await runInDurableObject(governor(), (_instance, state) => {
       state.storage.sql.exec(`
-        DROP TABLE days; DROP TABLE prefixes;
+        DROP TABLE days; DROP TABLE prefixes; DROP TABLE leases;
+        CREATE TABLE leases (id TEXT PRIMARY KEY, day TEXT NOT NULL, prefix TEXT NOT NULL,
+          heavy INTEGER NOT NULL, admitted_at INTEGER NOT NULL, egress_bytes REAL NOT NULL);
         CREATE TABLE days (day TEXT PRIMARY KEY, admitted INTEGER NOT NULL DEFAULT 0,
           heavy INTEGER NOT NULL DEFAULT 0, cu_s REAL NOT NULL DEFAULT 0,
           egress_bytes REAL NOT NULL DEFAULT 0, refunded INTEGER NOT NULL DEFAULT 0);
@@ -946,11 +1092,14 @@ describe('schema', () => {
         expect.arrayContaining(['count', 'attempts', 'cu_s', 'lookups']),
       )
       expect(columns('days')).toContain('lookups')
+      expect(columns('leases')).toContain('lookup')
     })
     controlClock(T)
     expect(await prefixCount()).toBe(2)
     await admitted()
     expect(await prefixCount()).toBe(3)
+    await lookupAdmitted(OTHER)
+    expect((await governor().budget()).analyses.in_flight).toBe(1)
   })
 })
 

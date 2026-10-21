@@ -22,7 +22,12 @@ Checks, in order (brief §16, §17; deployment.md "8. Prove the deployment"):
                    ADR-011 lists "_headers on the SPA fallback" as unverified)
   snapshot         /snap/current.json and its manifest: the expected snapshot
                    id and data version (static files, no Worker)
-  edge_health      GET /api/_edge/health: the Worker's vars match the deploy
+  edge_health      GET /api/_edge/health: the Worker's vars match the deploy.
+                   If it reports the owner's pause switch (``api_paused``;
+                   edge/src/pause.ts), the smoke fails at once with how to
+                   clear it (deploy.yml operation ``resume-api``) and sends
+                   nothing that would reach Render: api_health, the starters
+                   and the origin lock are reported as not checked
   api_health       GET /api/health through the Worker to Render's /health,
                    with a cold-start budget; reports the expected build
   meta             GET /api/v1/meta: v1, and X-Data-Version as expected (the
@@ -118,6 +123,8 @@ class Smoke:
         self.snapshot_id: str | None = None
         self.manifest: dict | None = None
         self.latest_year: int | None = None
+        #: The owner's pause switch as /api/_edge/health reports it, when on.
+        self.paused: dict | None = None
 
     # -- the release reaching this colo --------------------------------------
     def _names_this_release(self, reply) -> bool:
@@ -232,6 +239,14 @@ class Smoke:
         if self.args.expect_snapshot_id and body.get("snapshot_id") != \
                 self.args.expect_snapshot_id:
             wrong.append(f"SNAPSHOT_ID {body.get('snapshot_id')}")
+        paused = body.get("api_paused")
+        if isinstance(paused, dict):
+            self.paused = paused
+            self.report.fail("api_paused", (
+                f"the owner's pause switch is on (until {paused.get('until') or 'unknown'}, "
+                f"reason {paused.get('reason') or 'none'}): every request that would reach "
+                "Render gets 503 api_paused. Clear it with deploy.yml operation resume-api "
+                "once Render is back, then check this deploy again"))
         if problems:
             self.report.fail("edge_health", "security headers: " + ", ".join(problems))
         elif wrong:
@@ -240,7 +255,16 @@ class Smoke:
             self.report.ok("edge_health", f"edge {body.get('edge_version')}, cache scope "
                                           f"{body.get('cache_scope')}")
 
+    def _paused(self, check: str) -> bool:
+        if self.paused is None:
+            return False
+        self.report.fail(check, "not checked: the owner's pause switch is on (api_paused)")
+        return True
+
     def api_health(self) -> None:
+        if self._paused("api_health"):
+            return
+
         def ok(reply) -> bool:
             if reply.status != 200 or not reply.is_json:
                 return False
@@ -283,6 +307,8 @@ class Smoke:
                                    f"analytics {body.get('analytics_version')}")
 
     def starters(self) -> None:
+        if self._paused("starters"):
+            return
         if self.latest_year is None:
             self.report.fail("starters", "no years known (/meta failed)")
             return
@@ -345,6 +371,9 @@ class Smoke:
 
     # -- optional, secret-backed ---------------------------------------------
     def origin_lock(self) -> None:
+        # The one request sent to Render directly, not through the Worker.
+        if self._paused("origin_lock"):
+            return
         origin_url = os.environ.get("RENDER_ORIGIN", "").strip()
         if not origin_url:
             self.report.fail("origin_lock", "--origin-lock needs RENDER_ORIGIN")

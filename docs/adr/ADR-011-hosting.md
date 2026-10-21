@@ -213,11 +213,11 @@ visitor ──TLS──▶ Cloudflare edge (sets CF-Connecting-IP = visitor)
     - Admission continues while month-to-date plus the bridge estimate stays below `min(85, 10 + 75 × elapsed share of the consumption period)`.
     - There is also a ceiling of 10 CU-h per UTC day.
   - **Bridge estimate.** Between polls, and as the whole estimate when no ground truth is available, busy time and the full 300 s idle tail are charged at the compute's maximum (2 CU). This holds until at least 7 days of reconciled data justify a smaller factor.
-  - **Without ground truth.** The daily ceiling drops to `(100 × 0.9) / 31 ≈ 2.9` CU-h. That way no 30- or 31-day window can exceed the quota, wherever Neon's reset falls.
+  - **Without ground truth.** The daily ceiling drops to `(100 × 0.9) / 31 ≈ 2.9` CU-h. That way no 30- or 31-day window can exceed the quota, wherever Neon's reset falls, as long as everything that wakes Neon through the Worker is charged: analyses, and since review round 2 the metadata lookups that reach a freshly started API process (ADR-015, "Metadata lookups"). The model's own error is in ADR-015 ("Model error").
   - **Neon egress.** Stop at 4.5 GB month-to-date (ground truth only), and admit at most 300 heavy analyses per day. Without ground truth each day's estimated egress is held to 4.5 GB / 31 (ADR-015).
   - **Global.** At most 600 uncached analyses per UTC day. This also bounds KV writes (only computed answers are stored). It bounds Render outbound only for analyses that keep their count; refunded admissions are bounded per network, and metadata lookups by their own cap (ADR-015, "Render outbound through the Worker").
   - **Per IP prefix** (/24 or /48): at most 60 uncached analyses per day, and a fifth of the day's compute ceiling (ADR-015).
-  - **Metadata.** The Worker answers metadata GETs from the static snapshot; the rest reach Render as lookups, at most 200 per prefix and 2,000 in all per day (ADR-015).
+  - **Metadata.** The Worker answers metadata GETs from the static snapshot; the rest reach Render as lookups, at most 200 per prefix and 2,000 in all per day, each charged compute like an analysis when the API reports DB time (ADR-015).
 - **Failure behaviour.** The governor fails closed for uncached analyses and metadata lookups only. Static content, KV hits and the metadata the snapshot answers keep working.
 - **Credentials.** The Neon key is a **project-scoped** API key, stored as a Worker secret and used only by the alarm.
   - Such a key can edit one project but cannot delete it, and only organization admins can create one. Whether the Free plan offers it is undocumented.
@@ -689,7 +689,7 @@ Status codes:
    - **Mitigation:** an unpublished name with a random suffix, a minimal 403 response, and Render's own Cloudflare DDoS layer.
 9. **Plain HTTP inside Render**, between its load balancer and the container (documented by Render).
 10. **Mixed-version windows** of a few minutes during deploys and data releases. Results always carry their own `data_version`, and the version gate prevents cache poisoning.
-11. **A Render suspension is presented as a cold start** (review round 1; [`../security.md`](../security.md#accepted-risks), R13). What a suspended Free service answers is undocumented, so the Worker maps it to `service_waking` or `upstream_unavailable`. The SPA waits out its 150 s budget per novel analysis, then says the service is still not answering and may be paused until next month; it has no dedicated page saying that the API host is paused for the month. The static floor keeps serving.
+11. **A Render suspension is presented as a cold start until the owner sets the pause switch** (review rounds 1 and 2; [`../security.md`](../security.md#accepted-risks), R13). What a suspended Free service answers is undocumented, so the Worker maps it to `service_waking` or `upstream_unavailable`, and the SPA waits out its 150 s budget per novel analysis, then says the service is still not answering and may be paused until next month. Since review round 2 the owner can set the edge's pause switch once they know (`deploy.yml` operation `pause-api`; `edge/src/pause.ts`): every request that would reach Render then gets 503 `api_paused` with the date, and the SPA shows one page saying the API is paused and until when. Nothing sets it automatically. The static floor keeps serving either way.
 
 ### Other risks and their mitigations
 
@@ -753,7 +753,7 @@ The decision is unchanged. This section records where the implementation (code, 
 - The labels "to be finalized in ADR-012" on "Quota governor" and "final values in ADR-012" on its "Starting budgets" name the wrong ADR. The governor, its budgets and the edge tiers are finalized in [ADR-015](ADR-015-edge-cache-snapshot-and-governor.md), whose title is "Edge result cache, static snapshot and quota governor" (broader than the "persistent result cache" under **Related**).
 - [ADR-012](ADR-012-load-and-quota-protection.md) holds the API's own limits, the "Bounded work" values (calibrated on the emulation profile on 2026-10-21, its "Calibration (§13)") and the API's error codes. [ADR-013](ADR-013-data-releases-and-serving-db.md) finalizes "Release switch". [ADR-014](ADR-014-observability.md) finalizes the IP truncation in logs and the monitor cadence.
 - [ADR-016](ADR-016-short-share-links.md) (short share links, deferred) was added.
-- Error code names: the API's codes are in ADR-012 "Error mapping". The Worker-generated `service_waking`, `upstream_unavailable`, `capacity_unavailable` and `capacity_paused` are specified in ADR-015 and defined in `edge/src/proxy.ts`, `edge/src/ops.ts` and `edge/src/governor.ts`. The client-facing table is `docs/api.md`, "Errors".
+- Error code names: the API's codes are in ADR-012 "Error mapping". The Worker-generated `service_waking`, `upstream_unavailable`, `capacity_unavailable` and `capacity_paused` are specified in ADR-015 and defined in `edge/src/proxy.ts`, `edge/src/ops.ts` and `edge/src/governor.ts`; `api_paused` (review round 2) in `edge/src/pause.ts`. The client-facing table is `docs/api.md`, "Errors".
 
 ### Deploy workflow (`.github/workflows/deploy.yml`)
 
@@ -808,6 +808,7 @@ The decision is unchanged. This section records where the implementation (code, 
   - An analysis POST that is not JSON gets 415 `unsupported_media_type`.
 - **Headers.** The Worker's security headers also include `Permissions-Policy` (`edge/src/http.ts`).
 - **Prewake.** The answer is `{origin: warm|waking|unknown, wake: sent|recent|off|circuit_open}` (`edge/src/wake.ts`).
+- **Pause switch** (review round 2, `edge/src/pause.ts`). Two optional Worker secrets, `API_PAUSED_UNTIL` (a UTC date or time, or `unknown`) and `API_PAUSED_REASON`, set and cleared only by `deploy.yml`'s operations `pause-api` and `resume-api` (job `api-switch`, behind the `production` approval) with `wrangler secret bulk`. While set and not past, every request that would reach Render (analyses and lookups after the edge tiers, `/api/health`, the prewake) gets 503 `api_paused` with `Retry-After` and `details.until`/`reason`, before the governor. They are secrets rather than vars only because secrets can change without a rebuild and survive every `wrangler deploy`; a var would be reset by the next deploy.
 - **KV and governor** are as finalized in ADR-015. These differ from the text above:
   - the store gate also requires `X-Analytics-Version`;
   - a client prefix is also capped at 300 admissions a day, refunded ones included;

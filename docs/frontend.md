@@ -209,7 +209,7 @@ not an error (`resilience.ts`, audit F11, F12, F64):
 | `rate_limited` (429) with `Retry-After` | retried until 150 s | never (visitor decides) |
 | `rate_limited` with `details.budget: "prefix"` (the edge's per-network daily allowance, waiting until 00:00 UTC) | never | never |
 | client time-out (60 s per metadata attempt, 150 s per analysis) | retried until 150 s | never |
-| anything else: every other 4xx, `analysis_timeout`, `data_version_mismatch`, `data_not_loaded`, `schema_not_initialized`, `daily_capacity_reached`, `database_paused`, `capacity_paused`, `capacity_unavailable`, `edge_daily_limit`, an incompatible API, being offline | never | never |
+| anything else: every other 4xx, `analysis_timeout`, `data_version_mismatch`, `data_not_loaded`, `schema_not_initialized`, `daily_capacity_reached`, `database_paused`, `capacity_paused`, `api_paused`, `capacity_unavailable`, `edge_daily_limit`, an incompatible API, being offline | never | never |
 
 Every wait honours `Retry-After` (at least 1 s); without it the backoff is
 1, 2, 4, 8, 8, … s. A retry is not started when its wait would end after the
@@ -249,8 +249,8 @@ contract and of the edge have public-facing copy:
 | `invalid_spec`, `validation_error`, `malformed_json`, `invalid_analysis`, `unknown_activity`, `activity_not_found`, `unsupported_analysis`, `insufficient_data`, `payload_too_large` | the request is the problem: the API's own explanation, "Adjust analysis"; a 422's `details.errors[]` (`{location, message, type}`) become one line per field, e.g. "measure: Input should be …" |
 | `rate_limited` | "Too many new analyses in a short time" with a `Retry-After` countdown on "Try again" (the ticking seconds are hidden from assistive technology; the message states the wait). The edge's per-network daily allowance (`details.budget: "prefix"`) instead says that the network's new analyses for today are used up and that the limit resets at 00:00 UTC (in local time), with no countdown and no "Try again"; any other wait over 15 minutes names the local time it ends |
 | `daily_capacity_reached` | the service's shared capacity for new analyses is used up for today; resets at 00:00 UTC, shown in local time. Always a shared allowance: the API sends `details.scope: "daily"`, the edge governor `"global"` or `"daily"`; a per-network daily denial is `rate_limited` with budget `prefix` (above) |
-| `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `schema_not_initialized`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); `analysis_timeout` also offers "Adjust analysis". `upstream_unavailable` follows `details.reason`: `connect_failed`/`circuit_open` "could not be reached", `origin_timeout` "did not answer in time", `broken_response` "broke off", `not_configured` "not set up"; only `platform_error` (or a non-JSON 5xx) says the hosting provider answered. `service_waking` and the waking-class `upstream_unavailable` are shown only after the 150 s budget, so they say the service has not answered for more than 2 minutes and that its free hosting may be paused, for example until next month, instead of promising a temporary problem: a Render suspension looks exactly like this ([security.md R13](security.md#accepted-risks)) |
-| `database_paused`, `capacity_paused`, `edge_daily_limit` | **full-page** "paused" state: free hosting quota used up, when it resets, what still works (starter examples and earlier analyses), a link home. A date is named only when the service says when the pause ends (`capacity_paused`: `resumes_at`/`Retry-After`); `database_paused`'s fixed `Retry-After: 3600` only paces retries, so its page names no date |
+| `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `schema_not_initialized`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); `analysis_timeout` also offers "Adjust analysis". `upstream_unavailable` follows `details.reason`: `connect_failed`/`circuit_open` "could not be reached", `origin_timeout` "did not answer in time", `broken_response` "broke off", `not_configured` "not set up"; only `platform_error` (or a non-JSON 5xx) says the hosting provider answered. `service_waking` and the waking-class `upstream_unavailable` are shown only after the 150 s budget, so they say the service has not answered for more than 2 minutes and that its free hosting may be paused, for example until next month, instead of promising a temporary problem: a Render suspension looks exactly like this until the owner sets the edge's pause switch (`api_paused`, below; [security.md R13](security.md#accepted-risks)) |
+| `database_paused`, `capacity_paused`, `api_paused`, `edge_daily_limit` | **full-page** "paused" state: free hosting quota used up, when it resets, what still works (starter examples and earlier analyses), a link home. A date is named only when the service says when the pause ends (`capacity_paused`: `resumes_at`/`Retry-After`; `api_paused`: `details.until`); `database_paused`'s fixed `Retry-After: 3600` only paces retries, so its page names no date. `api_paused` is the owner's pause switch at the edge: "The analysis service is paused", worded by `details.reason` (the host used up this month's allowance, the host suspended it, or maintenance), and "It is not known yet when it will be back" without a date (review round 2) |
 | `not_found`, `method_not_allowed`, `unsupported_media_type` | a request outside the HTTP contract, which the page never sends on purpose: most likely a page and a service from different versions, so the copy says to reload the page; no "Try again" (the retry policy treats these as final) |
 | `forbidden_origin` | the service accepts requests only through the site itself; no "Try again" |
 | incompatible API | **full-page** state with a reload button |
@@ -644,10 +644,13 @@ sends its own address from 198.19.0.0/16, and the per-visitor limits apply
 per test rather than to the whole suite), and tests that inject failures
 into `/api/v1/meta` first hide the snapshot (`withoutSnapshot`), since the
 deployed SPA would otherwise read `/meta` from `/snap/`. On 2026-10-21, at
-5beb6a4, all 66 runs passed in stack mode (Chromium desktop 50, mobile 3,
-WebKit 13), the review-round-1 browser tests (`e2e/service-codes.spec.ts`
-and others) included, after the stack smoke (15/15), the edge probe (13/13)
-and `deploy_smoke.py` (13/13). Earlier that day, at f208719, 52 of 52 had
+9188bb6, all 67 runs passed in stack mode (Chromium desktop 51, mobile 3,
+WebKit 13), the review-round-2 `api_paused` test of
+`e2e/service-codes.spec.ts` included, after the stack smoke (15/15), the
+edge probe (13/13) and `deploy_smoke.py` (13/13). Earlier that day, at
+5beb6a4, 66 of 66 had passed (Chromium desktop 50, mobile 3, WebKit 13),
+with the review-round-1 browser tests (`e2e/service-codes.spec.ts` and
+others), and at f208719, 52 of 52 had
 passed (Chromium desktop 37, mobile 2, WebKit 13), with
 `e2e/new-survey-year.spec.ts` and the static `/openapi.json` test of
 `e2e/service-states.spec.ts`; the first stack-mode run, on 2026-10-20,

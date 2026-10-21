@@ -27,6 +27,15 @@
 #              image Render's service is configured with) and
 #              `deployed-<commit>` (the next run's rollback target)
 #
+# A manual run can instead set or clear the owner's pause switch (operation
+# `pause-api` or `resume-api`; edge/src/pause.ts, docs/operations.md
+# "Pausing the API"). Then only job api-switch runs, behind the same
+# `production` approval: `wrangler secret bulk` changes the two optional
+# Worker secrets API_PAUSED_UNTIL and API_PAUSED_REASON, which makes one new
+# Worker version with the same code, site and snapshot (nothing is built, and
+# Render is never called, so it works while Render is suspended), and
+# /api/_edge/health confirms the new state. Every later deploy keeps it.
+#
 # Secrets are read from the environment by the scripts and never echoed.
 name: Deploy
 
@@ -39,6 +48,20 @@ on:
         description: Why this manual deploy (shown in the summary)
         type: string
         required: false
+      operation:
+        description: deploy, or set (pause-api) / clear (resume-api) the API pause switch
+        type: choice
+        options: [deploy, pause-api, resume-api]
+        default: deploy
+      paused_until:
+        description: "pause-api: when the API is expected back, UTC YYYY-MM-DD or YYYY-MM-DDTHH:MMZ, or unknown"
+        type: string
+        required: false
+      pause_reason:
+        description: "pause-api: why it is paused"
+        type: choice
+        options: [render_quota, render_suspended, maintenance]
+        default: render_quota
 
 permissions: {}
 
@@ -54,6 +77,8 @@ env:
 jobs:
   preflight:
     name: Preflight
+    # Every deploy job needs this one, so the pause operations skip them all.
+    if: ${{ github.event_name == 'push' || inputs.operation == 'deploy' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -588,3 +613,66 @@ jobs:
             fi
           done
           echo "Tagged \`$IMAGE_REF\` as \`live\` and \`deployed-$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+
+  api-switch:
+    name: Set or clear the API pause switch
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.operation != 'deploy' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ vars.PUBLIC_BASE_URL }}
+    permissions:
+      contents: read
+    env:
+      OPERATION: ${{ inputs.operation }}
+      PAUSED_UNTIL: ${{ inputs.paused_until }}
+      PAUSE_REASON: ${{ inputs.pause_reason }}
+      PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: From main only; check the inputs and write the secrets file
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          HAVE_CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAVE_CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          if [ "$REF_NAME" != main ]; then
+            echo "::error::the pause switch is set from main only; got $REF_NAME"
+            exit 1
+          fi
+          if [ "$HAVE_CF_TOKEN" != true ] || [ "$HAVE_CF_ACCOUNT" != true ] || [ -z "$PUBLIC_BASE_URL" ]; then
+            echo "::error::not configured (docs/deployment.md, owner step 4): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, PUBLIC_BASE_URL"
+            exit 1
+          fi
+          python3 scripts/ops/api_pause.py secrets --operation "$OPERATION" \
+            --until "$PAUSED_UNTIL" --reason "$PAUSE_REASON" --out "$RUNNER_TEMP/api-pause.json"
+          echo "### $OPERATION (until: ${PAUSED_UNTIL:-n/a}, reason: $PAUSE_REASON)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: edge/package-lock.json
+
+      - name: Edge toolchain (wrangler pinned by edge/package-lock.json)
+        working-directory: edge
+        run: npm ci
+
+      - name: Change the switch (one new Worker version; code, site and snapshot unchanged)
+        working-directory: edge
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --no-install wrangler secret bulk "$RUNNER_TEMP/api-pause.json"
+
+      - name: The edge reports the new state (/api/_edge/health, at most 6 requests)
+        run: |
+          python3 scripts/ops/api_pause.py verify --operation "$OPERATION" \
+            --until "$PAUSED_UNTIL" --reason "$PAUSE_REASON" --base-url "$PUBLIC_BASE_URL"

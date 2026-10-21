@@ -181,18 +181,69 @@ def test_the_edge_entrypoint_passes_only_names_the_worker_reads():
     Vercel fallback's API_ORIGIN and GATE_INFLIGHT were never read (ADR-011 amendment)."""
     entrypoint = (REPO_ROOT / "deploy" / "edge" / "entrypoint.sh").read_text()
     joined = entrypoint.replace("\\\n", " ")
-    secrets_loop, vars_loop = re.findall(r"^for name in ([A-Z0-9_ ]+); do$", joined,
-                                         re.MULTILINE)
+    secrets_loop, vars_loop, switch_loop = re.findall(r"^for name in ([A-Z0-9_ ]+); do$",
+                                                      joined, re.MULTILINE)
     secrets, variables = set(secrets_loop.split()), set(vars_loop.split())
+    switch = set(switch_loop.split())
     read = worker_env_names()
     assert secrets <= read, secrets - read
     assert variables <= read, variables - read
+    assert switch == {"API_PAUSED_UNTIL", "API_PAUSED_REASON"} and switch <= read
     assert variables <= wrangler_vars(), variables - wrangler_vars()
     assert not secrets & wrangler_vars(), "a secret must never be passed as a --var"
+    assert not switch & (secrets | wrangler_vars())
     # every release var deploy.yml publishes can also reach the local Worker
     assert {"DATA_VERSION", "ANALYTICS_VERSION", "RESPONSE_FORMAT", "SNAPSHOT_ID"} <= variables
     for dead in ("API_ORIGIN", "GATE_INFLIGHT"):
         assert dead not in entrypoint, dead
+
+
+def _run_entrypoint(tmp_path, **env_values) -> tuple[list[str], str]:
+    """deploy/edge/entrypoint.sh with a stand-in `npx`: the arguments it would
+    start wrangler dev with, and the .dev.vars it wrote (in ``tmp_path``)."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    npx = bin_dir / "npx"
+    npx.write_text('#!/bin/sh\nprintf \'%s\\n\' "$@" > "$ARGS_OUT"\n')
+    npx.chmod(0o755)
+    args_out = tmp_path / "args.txt"
+    env = {"PATH": f"{bin_dir}:/usr/bin:/bin", "ARGS_OUT": str(args_out), **env_values}
+    subprocess.run(["sh", str(REPO_ROOT / "deploy" / "edge" / "entrypoint.sh")],
+                   cwd=tmp_path, env=env, check=True, timeout=30)
+    return args_out.read_text().splitlines(), (tmp_path / ".dev.vars").read_text()
+
+
+def test_the_edge_entrypoint_passes_the_pause_switch_where_wrangler_dev_binds_it(tmp_path):
+    """Review round 2 verification: the entrypoint wrote the owner's pause switch to
+    .dev.vars, but with `secrets.required` in edge/wrangler.jsonc `wrangler dev`
+    loads from .dev.vars only those names (and the vars), so the local stack's Worker
+    never paused (`/api/_edge/health` said `api_paused: null`). Its values are not
+    secret: it goes on the command line as --var, which wrangler dev binds."""
+    text = (REPO_ROOT / "edge" / "wrangler.jsonc").read_text()
+    required = re.search(r'"secrets":\s*\{\s*"required":\s*\[([^\]]*)\]', text)
+    assert required is not None, "edge/wrangler.jsonc declares no secrets.required"
+    assert not {"API_PAUSED_UNTIL", "API_PAUSED_REASON"} & set(
+        re.findall(r'"([A-Z0-9_]+)"', required.group(1)))
+
+    secret = "edge-secret-" + "0" * 32
+    args, dev_vars = _run_entrypoint(
+        tmp_path, EDGE_AUTH_SECRET=secret, RENDER_ORIGIN="http://127.0.0.1:10000",
+        DATA_VERSION="dv", API_PAUSED_UNTIL="2036-11-01T06:00Z",
+        API_PAUSED_REASON="maintenance")
+    assert args[:3] == ["--no-install", "wrangler", "dev"]
+    pairs = list(zip(args, args[1:], strict=False))
+    for value in ("API_PAUSED_UNTIL:2036-11-01T06:00Z", "API_PAUSED_REASON:maintenance",
+                  "DATA_VERSION:dv"):
+        assert ("--var", value) in pairs, value
+    assert "API_PAUSED" not in dev_vars
+    assert f"EDGE_AUTH_SECRET={secret}" in dev_vars.splitlines()
+    assert not any(secret in arg for arg in args), "a secret reached the command line"
+    assert (tmp_path / ".dev.vars").stat().st_mode & 0o777 == 0o600
+
+    off = tmp_path / "off"
+    off.mkdir()
+    args, _ = _run_entrypoint(off, EDGE_AUTH_SECRET=secret, API_PAUSED_UNTIL="")
+    assert not any("API_PAUSED" in arg for arg in args)
 
 
 class TestEdgeProbeHelpers:

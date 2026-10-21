@@ -15,7 +15,13 @@ longer overstate the effective sample. No weighted estimate changed; both
 fixes affect denominators/counts for those specific request shapes. `0.1`:
 initial Phase 2 implementation, validated against 24 official BLS values.
 
-The version changes only when computed numbers could differ. Engine changes
+The version changes only when computed numbers could differ. That includes
+redefining an activity preset's codes (`ACTIVITY_PRESETS` in
+`src/atus_pipeline/analytics/spec.py`) or removing a preset: requests name
+presets, and edge-cached results are keyed by the request bytes, not by the
+preset's definition ([ADR-015](adr/ADR-015-edge-cache-snapshot-and-governor.md#staleness-across-releases)),
+so `tests/unit/analytics/test_preset_vocabulary.py` pins every preset to this
+version and fails on such a change. Engine changes
 that keep every number equal under the §9 equivalence criterion (counts and
 point sums exact; standard errors and CIs within floating-point summation
 noise) keep the version, and are listed here:

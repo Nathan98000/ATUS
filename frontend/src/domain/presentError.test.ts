@@ -25,6 +25,7 @@ describe('presentError: every contract code is specific', () => {
     [503, 'analysis_timeout', 'service'],
     [503, 'daily_capacity_reached', 'limit'],
     [503, 'capacity_paused', 'paused'],
+    [503, 'api_paused', 'paused'],
     [503, 'capacity_unavailable', 'service'],
     [503, 'database_paused', 'paused'],
     [503, 'data_version_mismatch', 'service'],
@@ -167,6 +168,55 @@ describe('presentError: every contract code is specific', () => {
     expect(presented.message).toMatch(/free hosting/)
     expect(presented.message).toMatch(/\(around .+\)/)
     expect(presented.hint).toMatch(/Starter examples/)
+  })
+
+  it('the owner’s pause switch (api_paused) names the host, the date and what still works', () => {
+    // Review round 2 (api-paused-owner-switch): a Render suspension looked like
+    // a cold start; the owner's switch now says the API is paused, and until when.
+    const now = Date.UTC(2026, 9, 20, 12, 0, 0)
+    const until = '2026-11-01T00:00:00.000Z'
+    const date = new Date(until).toLocaleDateString(undefined, {
+      month: 'long',
+      day: 'numeric',
+    })
+    const quota = presentError(
+      apiError(503, 'api_paused', {
+        retryAfter: 12 * 24 * 3600,
+        details: { until, reason: 'render_quota' },
+      }),
+      now,
+    )
+    expect(quota.kind).toBe('paused')
+    expect(quota.heading).toBe('The analysis service is paused')
+    expect(quota.message).toMatch(/free hosting/)
+    expect(quota.message).toMatch(/this month’s allowance/)
+    expect(quota.message).toContain(`(around ${date})`)
+    expect(quota.hint).toMatch(/Starter examples/)
+    expect(quota.retryable).toBe(false)
+    expect(quota.retryAfterSeconds).toBeNull()
+
+    const suspended = presentError(
+      apiError(503, 'api_paused', { details: { until: null, reason: 'render_suspended' } }),
+      now,
+    )
+    expect(suspended.message).toMatch(/suspended/)
+    expect(suspended.message).toMatch(/not known yet when it will be back/)
+    expect(suspended.message).not.toMatch(/around/)
+
+    const maintenance = presentError(
+      apiError(503, 'api_paused', { details: { until, reason: 'maintenance' } }),
+      now,
+    )
+    expect(maintenance.message).toMatch(/maintenance/)
+    expect(maintenance.message).toContain(`expected back around ${date}.`)
+
+    // An unknown reason or no details at all still reads as a pause.
+    for (const details of [{ until: null, reason: 'something new' }, null]) {
+      const plain = presentError(apiError(503, 'api_paused', { details }), now)
+      expect(plain.heading).toBe('The analysis service is paused')
+      expect(plain.message).not.toMatch(/server message/)
+    }
+    expect(isFullPageError(apiError(503, 'api_paused'))).toBe(true)
   })
 
   it('the edge daily limit is a full-page state with the UTC reset', () => {

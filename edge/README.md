@@ -20,8 +20,9 @@ One `workers.dev` origin serves the SPA build (`../frontend/dist`) as static ass
 - answers `GET /api/_edge/health` itself and handles the `GET /api/v1/wake` prewake;
 - answers the metadata GETs (`/api/v1/meta`, `/activities`, `/activities/presets`,
   `/population/metadata`, `/activities/<code>`) without a query string from the deployed static
-  snapshot (`src/snapshot.ts`); the rest reach the origin as governor-counted lookups (200 per
-  client /24 or /48 and 2,000 in all per UTC day);
+  snapshot (`src/snapshot.ts`); the rest reach the origin as governed lookups (200 per client
+  /24 or /48 and 2,000 in all per UTC day, and the compute budgets below: a lookup that reaches
+  a freshly started API process reads from Neon, and is charged like an analysis);
 - answers analysis POSTs from Workers KV when the exact request bytes were answered before for the same
   release (`X-Cache: edge`; key `r1/<CACHE_SCOPE>/<k>`, `src/cache.ts`), and stores new 200 results
   the API computed (`X-Cache: miss`) that pass the store gate (≤ 16 KiB, 30-day TTL);
@@ -33,7 +34,10 @@ One `workers.dev` origin serves the SPA build (`../frontend/dist`) as static ass
   governor cannot be reached, uncached analyses and metadata lookups get 503 `capacity_unavailable`;
   everything else keeps working;
 - answers `GET /api/_ops/budget` with the governor's budget state for `Authorization: Bearer <OPS_TOKEN>`
-  (404 for anything else).
+  (404 for anything else);
+- while the owner's pause switch is on (optional secrets `API_PAUSED_UNTIL` and `API_PAUSED_REASON`,
+  set by `deploy.yml` operation `pause-api`; `src/pause.ts`), answers every request that would reach
+  Render with 503 `api_paused` and the date, and reports the switch in `/api/_edge/health`.
 
 ## Commands
 
@@ -59,7 +63,9 @@ HTTP is accepted only for loopback hosts) and start that API with `ATUS_EDGE_SEC
 `wrangler dev` runs fully locally (KV and the Durable Object are simulated under `.wrangler/`); no
 account is needed. To exercise the edge cache, pass the release vars, e.g.
 `npx wrangler dev --var DATA_VERSION:<x-data-version of the local API> --var ANALYTICS_VERSION:<its
-analytics version>`.
+analytics version>`. The owner's pause switch is passed the same way (`--var API_PAUSED_UNTIL:2036-11-01
+--var API_PAUSED_REASON:maintenance`): `wrangler dev` reads from `.dev.vars` only the secrets
+`wrangler.jsonc` lists as required, so it would drop the switch there.
 
 The static result snapshot (`/snap/...`, tier L0) is written into the SPA build by
 `scripts/build_snapshot.py` from a running API; see ADR-015.

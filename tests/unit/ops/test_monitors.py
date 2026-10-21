@@ -106,6 +106,34 @@ def test_deep_check_gives_up_within_its_request_budget(fake_server, capsys):
     assert "not ready after 3 attempt(s)" in capsys.readouterr().out
 
 
+def paused_envelope() -> tuple:
+    return json_reply(503, {"error": {"code": "api_paused", "message": "Paused.", "details": {
+        "until": "2026-11-01T00:00:00.000Z", "reason": "render_quota",
+        "retry_after_seconds": 864000}}}, {"Retry-After": "864000"})
+
+
+def test_deep_check_stops_at_the_owners_pause_switch_and_warns(fake_server, capsys):
+    """Review round 2 (api-paused-owner-switch): while the owner's switch is on,
+    /api/health answers 503 api_paused at the edge. One request is enough, and a
+    deliberate pause is reported (WARN), not retried until the job fails."""
+    fake_server.routes[("GET", "/api/health")] = paused_envelope()
+    assert monitors.main(["deep", "--base-url", fake_server.base]) == 0
+    assert fake_server.count() == 1
+    out = capsys.readouterr().out
+    assert "[WARN] api_paused" in out and "2026-11-01T00:00:00.000Z" in out
+    assert "render_quota" in out and "Render not checked" in out
+
+
+def test_edge_check_reports_the_pause_switch(fake_server, capsys):
+    healthy_site(fake_server)
+    fake_server.routes[("GET", "/api/_edge/health")] = json_reply(200, {
+        "status": "ok", "edge_version": "0.1.0", "data_version": "dv", "snapshot_id": SNAP,
+        "api_paused": {"until": None, "reason": "render_suspended"}})
+    assert monitors.main(["edge", "--base-url", fake_server.base]) == 0
+    out = capsys.readouterr().out
+    assert "[WARN] api_paused" in out and "until unknown" in out and "render_suspended" in out
+
+
 def test_deep_check_refuses_a_large_budget(fake_server):
     assert monitors.main(["deep", "--base-url", fake_server.base, "--max-requests", "50"]) == 2
     assert fake_server.calls == []

@@ -273,10 +273,45 @@ def test_only_the_production_environment_job_holds_deploy_secrets():
     text_by_job = {job_id: flat(job) for job_id, job in jobs(workflow).items()}
     holders = {job_id for job_id, text in text_by_job.items()
                if any(f"secrets.{name}" in text for name in DEPLOY_SECRETS)}
-    assert holders == {"deploy"}
+    assert holders == {"deploy", "api-switch"}
     deploy = jobs(workflow)["deploy"]
     assert deploy["environment"]["name"] == "production"
     assert set(deploy["needs"]) >= {"push", "snapshot"}, "nothing deploys before the snapshot"
+    # The pause switch holds the Cloudflare token only, behind the same approval.
+    assert jobs(workflow)["api-switch"]["environment"]["name"] == "production"
+    assert "RENDER" not in text_by_job["api-switch"]
+
+
+def test_the_pause_switch_changes_two_secrets_and_deploys_nothing_else():
+    """Review round 2 (api-paused-owner-switch): deploy.yml's pause-api and
+    resume-api operations run job api-switch alone. It changes the optional
+    Worker secrets with `wrangler secret bulk` (no rebuild, no Render call, so it
+    works while Render is suspended) and confirms them through /api/_edge/health."""
+    workflow = by_name("deploy.yml")
+    inputs = triggers(workflow)["workflow_dispatch"]["inputs"]
+    assert inputs["operation"]["options"] == ["deploy", "pause-api", "resume-api"]
+    assert inputs["operation"]["default"] == "deploy"
+    assert inputs["pause_reason"]["options"] == ["render_quota", "render_suspended",
+                                                 "maintenance"]
+    every = jobs(workflow)
+    # Every deploy job needs preflight (directly or through another), which a
+    # pause operation skips; none of them runs regardless of its needs.
+    assert every["preflight"]["if"] == \
+        "${{ github.event_name == 'push' || inputs.operation == 'deploy' }}"
+    for job_id in ("build", "push", "snapshot", "deploy", "promote"):
+        assert "always()" not in str(every[job_id].get("if", "")), job_id
+        assert every[job_id]["needs"], job_id
+    switch = every["api-switch"]
+    assert switch["if"] == \
+        "${{ github.event_name == 'workflow_dispatch' && inputs.operation != 'deploy' }}"
+    assert "needs" not in switch
+    assert switch["permissions"] == {"contents": "read"}
+    runs = [step["run"] for step in steps(switch) if "run" in step]
+    text = "\n".join(runs)
+    assert "wrangler secret bulk" in text and "wrangler deploy" not in text
+    assert "render_deploy.py" not in text and "build_snapshot" not in text
+    assert "api_pause.py secrets" in runs[0] and '"$REF_NAME" != main' in runs[0]
+    assert runs[-1].startswith("python3 scripts/ops/api_pause.py verify ")
 
 
 def test_the_deploy_job_follows_adr_011():

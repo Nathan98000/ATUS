@@ -2,7 +2,8 @@
  * The Worker's side of the quota governor (governor.ts; ADR-015): who an
  * uncached analysis (or a metadata lookup the snapshot could not answer) is
  * charged to, what it costs, the RPC calls and their failure policy, and how
- * an analysis's outcome is reported back.
+ * its outcome is reported back (a lookup is settled like an analysis: the
+ * first one on a freshly started API process reads from Neon).
  *
  * - Client: an HMAC of the IPv4 /24 or IPv6 /48 of `CF-Connecting-IP`,
  *   under a key derived from `IP_HMAC_KEY` and the UTC date, so it rotates
@@ -207,30 +208,34 @@ export async function admitAnalysis(
   return { kind: 'unavailable' }
 }
 
-/** As `Admission`; a lookup holds no lease (nothing to settle). */
-export type LookupAdmission =
-  { kind: 'admitted'; leaseId: null } | Exclude<Admission, { kind: 'admitted' }>
-
-/** Ask the governor to admit a metadata GET to the origin. Never rejects. */
+/**
+ * Ask the governor to admit a metadata GET to the origin. Never rejects. Like
+ * an analysis, an admitted lookup holds a lease the Worker settles.
+ */
 export async function admitLookup(
   env: Pick<Env, 'GOVERNOR'>,
   request: LookupRequest,
-): Promise<LookupAdmission> {
+): Promise<Admission> {
   let result: unknown
   try {
     result = await withTimeout<unknown>(governorStub(env).admitLookup(request))
   } catch {
     return { kind: 'unavailable' }
   }
-  const answer = result as Partial<{ ok: boolean; code: unknown }> | null
-  if (answer?.ok === true) return { kind: 'admitted', leaseId: null }
+  const answer = result as Partial<{ ok: boolean; leaseId: unknown; code: unknown }> | null
+  if (answer?.ok === true && typeof answer.leaseId === 'string') {
+    return { kind: 'admitted', leaseId: answer.leaseId }
+  }
   if (answer?.ok === false && typeof answer.code === 'string') {
     return { kind: 'denied', denial: result as Denied }
   }
   return { kind: 'unavailable' }
 }
 
-/** Report how an admitted analysis ended. Never rejects; a lost settle expires (charged). */
+/**
+ * Report how an admitted analysis or lookup ended. Never rejects; a lost
+ * settle expires (charged).
+ */
 export async function settleAnalysis(
   env: Pick<Env, 'GOVERNOR'>,
   leaseId: string,

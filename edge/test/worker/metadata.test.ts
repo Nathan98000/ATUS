@@ -9,7 +9,11 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { prefixHmac } from '../../src/admission'
 import { nextUtcMidnight, utcDay } from '../../src/budget'
-import { GLOBAL_DAILY_LOOKUPS, PREFIX_DAILY_LOOKUPS } from '../../src/constants'
+import {
+  DAILY_CU_HOURS_CONSERVATIVE,
+  GLOBAL_DAILY_LOOKUPS,
+  PREFIX_DAILY_LOOKUPS,
+} from '../../src/constants'
 import { sha256Hex } from '../../src/http'
 import {
   apiJson,
@@ -226,6 +230,75 @@ describe('metadata lookups the snapshot cannot answer', () => {
       prefix_limit: PREFIX_DAILY_LOOKUPS,
     })
     expect(report.utilization.metadata).toBe(1)
+  })
+
+  it('charge a lookup that woke the database, so a network cannot keep Neon awake for free', async () => {
+    // Review round 2 (lookup-wakes-neon-uncharged): one lookup after each
+    // Render spin-down (16 minutes apart) runs a fresh API process's snapshot
+    // read against Neon (db;dur > 0). Before, 89 such lookups were all
+    // admitted and the governor charged 0 CU-h. Now each is charged its wake
+    // session (2 CU x 300 s), and the network's lookups stop at its share of
+    // the day's compute, as its analyses would.
+    const clock = controlClock(T)
+    const calls = mockOrigin(() =>
+      apiJson('{"api_version":"v1"}', 200, { 'server-timing': 'db;dur=48.2, app;dur=1.0' }),
+    )
+    const statuses: number[] = []
+    for (let i = 0; i < 30; i += 1) {
+      const response = await callWorker(`/api/v1/meta?n=${i}`, visitor, deployed())
+      statuses.push(response.status)
+      if (response.status === 429) {
+        const error = await readEnvelope(response)
+        expect(error.code).toBe('rate_limited')
+        expect(error.details).toMatchObject({ scope: 'client', budget: 'prefix' })
+        expect(error.message).toContain('metadata')
+      }
+      clock.advance(16 * 60 * 1000)
+    }
+    expect(calls).toHaveLength(3)
+    expect(statuses.slice(0, 3)).toEqual([200, 200, 200])
+    expect(statuses.slice(3).every((status) => status === 429)).toBe(true)
+    const report = await governorStub().budget()
+    expect(report.compute_today.settled_cu_hours).toBeCloseTo((3 * 600) / 3600, 4)
+    expect(report.prefixes.max_cu_hours).toBeCloseTo((3 * 600) / 3600, 4)
+    expect(report.metadata.origin_calls).toBe(3)
+    expect(await governorSql('SELECT id FROM leases')).toEqual([])
+  })
+
+  it('charge nothing for lookups a warm API answers from memory (db;dur=0)', async () => {
+    const clock = controlClock(T)
+    const calls = mockOrigin(() =>
+      apiJson('{"activities":[]}', 200, { 'server-timing': 'db;dur=0, app;dur=0.4' }),
+    )
+    for (let i = 0; i < 30; i += 1) {
+      expect((await callWorker(`/api/v1/activities?n=${i}`, visitor, deployed())).status).toBe(
+        200,
+      )
+      clock.advance(16 * 60 * 1000)
+    }
+    expect(calls).toHaveLength(30)
+    const report = await governorStub().budget()
+    expect(report.compute_today.settled_cu_hours).toBe(0)
+    expect(report.egress_today.settled_bytes).toBe(0)
+  })
+
+  it("refuse lookups with 503 once the day's compute is spent, with metadata copy", async () => {
+    controlClock(T)
+    await governorSql(
+      'INSERT INTO days (day, cu_s) VALUES (?, ?)',
+      utcDay(T),
+      DAILY_CU_HOURS_CONSERVATIVE * 3600,
+    )
+    const calls = mockOrigin(() => apiJson('{}'))
+    const response = await callWorker('/api/v1/activities/999999', visitor, deployed())
+    expect(calls).toHaveLength(0)
+    expect(response.status).toBe(503)
+    expectSecurityHeaders(response)
+    const error = await readEnvelope(response)
+    expect(error.code).toBe('daily_capacity_reached')
+    expect(error.details).toMatchObject({ scope: 'daily', budget: 'cu_day' })
+    expect(error.message).toContain('metadata')
+    expect(error.message).not.toContain('analyses')
   })
 
   it('fail closed when the governor is unreachable', async () => {

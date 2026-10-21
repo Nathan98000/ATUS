@@ -90,6 +90,15 @@ describe('wrangler.jsonc', () => {
     ])
   })
 
+  it("leaves the owner's pause switch to optional secrets (src/pause.ts)", () => {
+    // A var of the same name would be reset by every deploy and clash with the
+    // secret `wrangler secret bulk` sets; a required one would block deploys.
+    for (const name of ['API_PAUSED_UNTIL', 'API_PAUSED_REASON']) {
+      expect(raw.vars ?? {}).not.toHaveProperty(name)
+      expect(raw.secrets?.required ?? []).not.toContain(name)
+    }
+  })
+
   it('binds one KV namespace and a SQLite-backed governor Durable Object', () => {
     expect(raw.kv_namespaces?.map((ns: { binding: string }) => ns.binding)).toEqual([
       'RESULT_CACHE',

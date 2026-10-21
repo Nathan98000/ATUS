@@ -16,6 +16,12 @@ which invokes the Worker; nothing reaches Render or Neon.
 Worker to Render's ``/health``, which never touches the database (it may
 wake Render, never Neon). Tolerates a cold start.
 
+While the owner's pause switch is on (deploy.yml ``pause-api``;
+edge/src/pause.ts), ``/api/_edge/health`` reports it and ``/api/health``
+answers 503 ``api_paused`` at the edge: ``edge`` and ``deep`` say so as a
+WARN, not a failure, and ``deep`` stops after that one request. The owner
+set it on purpose; it ends at its date or with ``resume-api``.
+
 ``quota`` (daily, ``quota-report.yml``): reads the governor's budget state
 from ``GET /api/_ops/budget`` (bearer ``EDGE_OPS_TOKEN``, never printed) and
 fails when any provider budget is above 70% of its pro-rated value. One
@@ -117,6 +123,8 @@ def check_edge(client: Client, report: Report) -> None:
             report.ok("edge_health", f"edge {body.get('edge_version')}, "
                                      f"data {body.get('data_version')}, "
                                      f"snapshot {edge_snapshot}")
+        if isinstance(body.get("api_paused"), dict):
+            report.add("api_paused", "WARN", _pause_note(body["api_paused"]))
 
     pointer = client.get("/snap/current.json")
     if pointer.status != 200 or not pointer.is_json:
@@ -145,9 +153,18 @@ def check_edge(client: Client, report: Report) -> None:
 # deep                                                                         #
 # --------------------------------------------------------------------------- #
 
+def _pause_note(paused: dict) -> str:
+    until = paused.get("until") or "unknown"
+    return (f"the owner's pause switch is on (until {until}, reason "
+            f"{paused.get('reason') or 'none'}): requests that would reach Render get "
+            "503 api_paused; clear it with deploy.yml operation resume-api")
+
+
 def check_deep(client: Client, report: Report, *, wake_timeout_s: float,
                expect_build: str | None = None) -> None:
     def healthy(reply) -> bool:
+        if reply.error_code == "api_paused":
+            return True  # the owner's switch: retrying cannot change it
         if reply.status != 200 or not reply.is_json:
             return False
         try:
@@ -162,6 +179,12 @@ def check_deep(client: Client, report: Report, *, wake_timeout_s: float,
         )
     except OpsError as exc:
         report.fail("api_health", str(exc))
+        return
+    if reply.error_code == "api_paused":
+        details = (reply.json().get("error") or {}).get("details")
+        report.add("api_paused", "WARN",
+                   _pause_note(details if isinstance(details, dict) else {}) +
+                   "; Render not checked")
         return
     build = reply.json().get("build")
     problems = header_problems(reply, API_HEADERS)

@@ -6,8 +6,10 @@
  */
 
 import { beforeEach, describe, expect, it } from 'vitest'
+import { SECURITY_HEADERS } from '../../src/http'
 import {
   EDGE_SECRET,
+  EXPECTED_SECURITY_HEADERS,
   apiJson,
   callWorker,
   expectSecurityHeaders,
@@ -150,6 +152,13 @@ describe('upstream request headers', () => {
 })
 
 describe('response headers', () => {
+  it('are exactly the pinned security headers, none dropped, weakened or added', () => {
+    // Review round 2: the checks below used to compare responses with this
+    // very constant, so deleting HSTS, nosniff and Referrer-Policy from it
+    // passed every test.
+    expect(SECURITY_HEADERS).toEqual(EXPECTED_SECURITY_HEADERS)
+  })
+
   it('relay the API headers, strip the origin platform headers and add security headers', async () => {
     mockOrigin(() =>
       apiJson('{"ok":true}', 200, {

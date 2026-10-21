@@ -193,6 +193,8 @@ describe('GET /api/_edge/health', () => {
       snapshot_id: 'abcdef012345-0123456789abcdef',
       // sha256("1|v1|0.2|<data_version>|1")[:16], computed independently.
       cache_scope: 'f1b5106ca9aa7e30',
+      // The owner's pause switch is off (pause.test.ts).
+      api_paused: null,
     })
   })
 

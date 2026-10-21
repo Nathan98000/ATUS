@@ -587,7 +587,7 @@ has the design.
 | `/api/v1/analysis/estimate`, `/trend`, `/compare` | POST | the Worker's KV result cache, else the API once the quota governor admits the request |
 | `/api/health` | GET | the API's `/health` |
 | `/api/v1/wake` | GET | the Worker: starts waking the API through its `/health` (never the database) and answers `{"origin": "warm" \| "waking" \| "unknown", "wake": ...}` |
-| `/api/_edge/health` | GET | the Worker, with its versions; no origin call |
+| `/api/_edge/health` | GET | the Worker, with its versions and the owner's pause switch (`api_paused`: `null`, or `{until, reason}`); no origin call |
 | `/api/_ops/budget` | GET | the Worker, with the governor's state, for `Authorization: Bearer <OPS_TOKEN>` only; otherwise 404 |
 
 Any other path under `/api` gets 404 `not_found` without an origin call, so
@@ -635,10 +635,11 @@ through unchanged.
 | 405 | `method_not_allowed` | another method on a listed path | `Allow` header, `details.allowed` |
 | 413 | `payload_too_large` | analysis body over 64 KiB (declared or streamed), checked before the cache and the API | `details.max_bytes` |
 | 415 | `unsupported_media_type` | analysis body not `application/json` | |
-| 429 | `rate_limited` | the governor's per-network daily budget is spent: 60 analyses, 300 admissions, or a fifth of the day's estimated database compute per client IP prefix per UTC day (`budget: "prefix"`); or 200 metadata lookups (`budget: "metadata"`) | until 00:00 UTC; `scope: "client"`, `budget`, `resumes_at` |
-| 503 | `daily_capacity_reached` | a shared daily budget is spent: 600 analyses (`budget: "global"`, `scope: "global"`), 300 heavy analyses (`heavy`), the day's estimated database compute (`cu_day`) or, without the Neon usage poll, the day's estimated database egress (`egress_day`; these three `scope: "daily"`), or 2,000 metadata lookups (`metadata`, `scope: "global"`) | until 00:00 UTC; `scope`, `budget`, `resumes_at` |
-| 503 | `capacity_paused` | with the optional Neon usage poll: the month's egress or compute allowance is (nearly) used | until it resumes; `scope: "monthly"`, `budget`, `resumes_at` |
+| 429 | `rate_limited` | the governor's per-network daily budget is spent: 60 analyses, 300 admissions, or a fifth of the day's estimated database compute per client IP prefix per UTC day (`budget: "prefix"`); or 200 metadata lookups (`budget: "metadata"`). A metadata lookup is also refused when its network's compute share is spent (`budget: "prefix"`) | until 00:00 UTC; `scope: "client"`, `budget`, `resumes_at` |
+| 503 | `daily_capacity_reached` | a shared daily budget is spent: 600 analyses (`budget: "global"`, `scope: "global"`), 300 heavy analyses (`heavy`), the day's estimated database compute (`cu_day`) or, without the Neon usage poll, the day's estimated database egress (`egress_day`; these three `scope: "daily"`), or 2,000 metadata lookups (`metadata`, `scope: "global"`). The compute and egress budgets refuse metadata lookups too: a lookup that reaches a freshly started API process reads from the database | until 00:00 UTC; `scope`, `budget`, `resumes_at` |
+| 503 | `capacity_paused` | with the optional Neon usage poll: the month's egress or compute allowance is (nearly) used (uncached analyses and metadata lookups) | until it resumes; `scope: "monthly"`, `budget`, `resumes_at` |
 | 503 | `capacity_unavailable` | the governor errored, did not answer within 5 s, or the Worker lacks `IP_HMAC_KEY`: uncached analyses and metadata lookups fail closed | 60 |
+| 503 | `api_paused` | the owner's pause switch is on (`edge/src/pause.ts`; set when the API's host is known to be suspended, or for maintenance): every request that would reach the API (uncached analyses, metadata lookups, `/api/health`, `/api/v1/wake`) is refused before the governor, after the request checks (404, 405, 413, 415). Static files, snapshot metadata, KV-cached analyses, `/api/_edge/health` and `/api/_ops/budget` keep working | until `details.until`, or 3600 when it is unknown; `until` (ISO time or `null`), `reason` (`render_quota`, `render_suspended`, `maintenance` or `null`) |
 | 503 | `service_waking` | the API host is spinning up (Render's hibernate answer or an HTML loading page) | 5 |
 | 503 | `overloaded` | uvicorn's own plain-text connection-limit 503 | 10; `scope: "global"` |
 | 502 | `upstream_unavailable` | the answer is not the API's: `details.reason` is `connect_failed`, `platform_error`, `origin_timeout` (Cloudflare 524), `broken_response` or `not_configured` | 10 |

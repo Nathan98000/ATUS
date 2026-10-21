@@ -52,6 +52,7 @@ describe('classifyFailure', () => {
     [apiError(429, 'edge_daily_limit'), 'final'],
     [apiError(503, 'database_paused'), 'final'],
     [apiError(503, 'capacity_paused'), 'final'],
+    [apiError(503, 'api_paused'), 'final'],
     [apiError(503, 'daily_capacity_reached', 3600), 'final'],
     [apiError(503, 'capacity_unavailable'), 'final'],
     [apiError(503, 'analysis_timeout'), 'final'],
