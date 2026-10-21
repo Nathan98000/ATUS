@@ -975,11 +975,21 @@ Every deploy run's summary records what ran before it and what it deployed, what
 |---|---|---|---|---|
 | `edge-check.yml` | every 30 min (`:17`, `:47`) | 4 (1 Worker) | SPA shell or its headers, `/api/_edge/health`, the snapshot pointer or manifest, or a Worker `SNAPSHOT_ID` that differs from the pointer | Cloudflare only |
 | `deep-check.yml` | every 6 h (`17 */6 * * *`) | 1–8 | `/api/health` through the Worker after a cold-start allowance of 4 min | Cloudflare and Render; never Neon |
-| `quota-report.yml` | daily, 22:05 UTC | 1 (+1 to Cloudflare's API with the optional analytics token) | any governor budget above 70% of its pro-rated value (see below); with the analytics token (owner step 4.3), the account's Worker requests today above 70% of the pro-rated 100,000 | the Worker's governor; Cloudflare's GraphQL Analytics API |
+| `quota-report.yml` | daily, 22:05 UTC | 1 (+1 to Cloudflare's API with the optional analytics token) | a quota at risk, at 70% (see below); a configured Neon key whose usage poll keeps failing; with the analytics token (owner step 4.3), the account's Worker requests today above 70% of the pro-rated 100,000 | the Worker's governor; Cloudflare's GraphQL Analytics API |
 | `schedules-check.yml` | weekly (Monday 09:41 UTC) | GitHub API | a scheduled workflow not `active`; a monitor whose last scheduled run is far older than its cadence; no commit on `main` for 28 days | GitHub only |
 | `ghcr-cleanup.yml` | weekly (Monday 04:23 UTC) | GitHub API | a failed deletion | GitHub only |
 
-- **Pro-rating in the quota report.** Daily budgets are pro-rated by the share of the UTC day elapsed: global and heavy analyses, and the Neon CU-hour ceiling. Monthly Neon CU-hours and egress are pro-rated by the share of Neon's consumption period. The rolling 31-day CU total is compared with the whole 100 CU-hour quota. The per-network cap is reported but never alerts.
+- **What the quota report judges.** It fails when a line is above 70% of its reference:
+  - global and heavy analyses today, pro-rated by the share of the UTC day elapsed;
+  - Neon's month-to-date CU-hours (Neon's own figure plus the governor's charges since its last poll), against the governor's pacing allowance, the monthly line above which it pauses analyses (`capacity_paused`). Only with `NEON_API_KEY`;
+  - Neon's month-to-date egress, pro-rated by the share of Neon's consumption period. Only with `NEON_API_KEY`.
+
+  Three lines are reported but never alert, because the governor itself holds them down and reaching them is the protection working:
+  - the busiest network against the per-network cap;
+  - the governor's CU-hours today against its daily ceiling. Reaching it refuses analyses (`daily_capacity_reached`, budget `cu_day`). In conservative mode a typical day of the traffic model does (ADR-015, "Conservative mode is tight"), so this line would otherwise fail every day;
+  - its rolling 31-day charges. They charge 2 CU for every second and the whole idle tail, an upper bound far above what Neon measures on normal traffic: compared with the 100 CU-h quota they crossed 70% from about day 23 (ground truth) or day 26 (conservative mode) of a typical month (review round 2, quota-report-alerts-on-normal-traffic).
+
+  Without `NEON_API_KEY` no Neon CU-hour line can alert. The report shows a WARN instead: Neon's real usage, including what the governor does not count (ADR-012, "Snapshot reads after a cold start"), is visible only in the Neon console. With the key, a poll that keeps failing (conservative mode with a poll error) fails the report.
 - **Not monitored: Render outbound bandwidth** (5 GB a month; the service pauses until the 1st when it runs out). Reading it needs a Render API key, which grants every workspace (owner step 2.6 says never to create one), so no workflow warns before it runs out. The weekly schedules-check summary reminds you to look at the workspace's usage; governed traffic stays far below it (projection in [Free-tier budget](#render-free-web-service-hobby-workspace)), so a rise means direct-origin hits or another ungoverned path. Without the analytics token, the Worker's daily requests are unmonitored too, and the same reminder covers them.
 - **Email.** A failed scheduled run emails its owner when notifications are set as in owner step 4.4.
 - **Skipped monitors.** The monitors stay skipped until the repository variable `PUBLIC_BASE_URL` exists, which you set only after step 8 has verified the site (owner step 4.1).
