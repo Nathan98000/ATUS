@@ -152,6 +152,85 @@ class TestTimeouts:
         assert elapsed < 1.1  # 0.4 s + 0.1 s deadline, not 1.2 s of sleeps
 
 
+LONG_SLEEP_S = 60.0
+"""Longer than any wait below: a query that ends before it was cancelled."""
+
+
+def running_sleeps(url: str) -> int:
+    """API backends of this test database running ``pg_sleep`` right now."""
+    with psycopg.connect(url, autocommit=True) as admin:
+        return admin.execute(
+            "SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() "
+            "AND application_name = %s AND state = 'active' AND query ILIKE %s "
+            "AND pid <> pg_backend_pid()",
+            (dbmod.APPLICATION_NAME, "%pg_sleep%"),
+        ).fetchone()[0]
+
+
+def wait_for(condition, what: str, deadline_s: float = 15.0) -> None:
+    """Poll until ``condition()`` holds (a deadline, not a measurement)."""
+    deadline = time.monotonic() + deadline_s
+    while not condition():
+        assert time.monotonic() < deadline, f"timed out waiting for {what}"
+        time.sleep(0.05)
+
+
+class TestShutdownCancel:
+    """F52: on shutdown the API cancels the queries still running
+    (``Database.cancel_active``) instead of waiting for them or leaving them
+    to run on after the process is gone."""
+
+    def test_cancel_active_cancels_a_running_query(self, loaded_settings):
+        database = dbmod.Database(loaded_settings)
+        outcome: dict = {}
+
+        def analysis() -> None:
+            try:
+                with database.transaction("analysis") as conn:
+                    conn.execute("SELECT pg_sleep(%s)", (LONG_SLEEP_S,))
+                outcome["result"] = "finished"
+            except Exception as exc:  # what the request's worker thread would see
+                outcome["result"] = exc
+
+        worker = threading.Thread(target=analysis, daemon=True)
+        try:
+            assert database.cancel_active() == 0  # nothing in flight yet
+            worker.start()
+            wait_for(lambda: running_sleeps(loaded_settings.database_url) == 1,
+                     "the pg_sleep query to start")
+            assert database.cancel_active() == 1
+            worker.join(LONG_SLEEP_S / 2)
+            assert not worker.is_alive(), "the query was not cancelled"
+            assert isinstance(outcome["result"], psycopg.errors.QueryCanceled)
+            assert database.query_timeouts == 1  # counted like a timeout (metrics)
+            assert running_sleeps(loaded_settings.database_url) == 0
+            assert database.cancel_active() == 0  # the connection left the active set
+            # The cancelled connection went back to the pool in a usable state.
+            with database.transaction("metadata") as conn:
+                assert conn.execute("SELECT 1").fetchone() == (1,)
+        finally:
+            database.close()
+
+    def test_app_shutdown_cancels_an_analysis_in_flight(self, loaded_settings, caplog):
+        def sleeping(conn, **snapshot_parts):
+            return SlowEngine(conn, sleeps=(LONG_SLEEP_S,), **snapshot_parts)
+
+        url = loaded_settings.database_url
+        caplog.set_level("WARNING", logger="atus.api")
+        with ThreadPoolExecutor(1) as pool:
+            with api(loaded_settings, sleeping) as (client, app):
+                in_flight = pool.submit(client.post, ESTIMATE, json=body())
+                wait_for(lambda: running_sleeps(url) == 1, "the analysis query to start")
+            # Leaving the client ran the lifespan shutdown with the query running.
+            response = in_flight.result(LONG_SLEEP_S / 2)
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "analysis_timeout"
+        assert app.state.database.query_timeouts == 1
+        assert len(app.state.cache) == 0  # errors are never cached
+        assert "shutdown: cancelled 1 running queries" in caplog.text
+        assert running_sleeps(url) == 0
+
+
 class TestPoolExhaustion:
     def test_busy_pool_is_overloaded_with_retry_after(self, loaded_settings):
         gate = Gate()
@@ -302,16 +381,17 @@ class TestQueryParameters:
 
 @pytest.fixture(scope="module")
 def empty_db_url(test_db_url):
-    """A migrated database with no data loaded (own name, own lifetime)."""
+    """A migrated database with no data loaded (own lifetime), named after the
+    test database so concurrent runs against other test databases on the
+    same server never share it."""
     parts = urlsplit(test_db_url)
-    url = urlunsplit(parts._replace(path="/atus_wsa_empty"))
+    name = f"{parts.path.lstrip('/')}_empty"
+    url = urlunsplit(parts._replace(path=f"/{name}"))
     admin = urlunsplit(parts._replace(path="/postgres"))
     with psycopg.connect(admin, autocommit=True) as conn:
-        exists = conn.execute(
-            "SELECT 1 FROM pg_database WHERE datname = 'atus_wsa_empty'"
-        ).fetchone()
+        exists = conn.execute("SELECT 1 FROM pg_database WHERE datname = %s", (name,)).fetchone()
         if not exists:
-            conn.execute('CREATE DATABASE "atus_wsa_empty"')
+            conn.execute(f'CREATE DATABASE "{name}"')
     with psycopg.connect(url) as conn:
         with conn.transaction():
             conn.execute("DROP SCHEMA IF EXISTS atus CASCADE")

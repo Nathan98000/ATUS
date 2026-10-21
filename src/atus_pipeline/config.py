@@ -12,21 +12,23 @@ echo the values of secret variables (the database URL, edge secrets, ops
 token).
 
 Production mode never falls back to the development database URL: a missing
-``ATUS_DATABASE_URL`` is an error for every command. The API additionally
-refuses to start in production without ``ATUS_EDGE_SECRETS``
+``ATUS_DATABASE_URL`` is an error for every command, and so is one that does
+not verify the server's certificate (``sslmode=verify-full`` or
+``verify-ca``) unless ``ATUS_DATABASE_TLS=local-stack-only`` is set for a
+database on the local stack (:func:`check_database_tls`). The API
+additionally refuses to start in production without ``ATUS_EDGE_SECRETS``
 (:func:`check_api_settings`).
 """
 
 from __future__ import annotations
 
+import ipaddress
 import math
 import os
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-
-from dotenv import find_dotenv, load_dotenv
 
 DEFAULT_DATABASE_URL = "postgresql://atus:atus@localhost:5434/atus"
 DEFAULT_DATA_DIR = "data"
@@ -42,6 +44,18 @@ _SECRET_PATTERN = re.compile(r"^[!-+\--~]+$")  # 0x21-0x7e except ','
 MIN_PRODUCTION_SECRET_LENGTH = 32
 MAX_EDGE_SECRETS = 2  # current + next, for rotation
 _BUILD_SHA_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+
+# TLS to the database in production (ADR-011 "TLS": never `require` alone).
+DATABASE_TLS_VERIFY = "verify"
+DATABASE_TLS_LOCAL_STACK = "local-stack-only"
+DATABASE_TLS_MODES = (DATABASE_TLS_VERIFY, DATABASE_TLS_LOCAL_STACK)
+VERIFYING_SSLMODES = ("verify-full", "verify-ca")
+_LIBPQ_SSLMODES = ("disable", "allow", "prefer", "require", "verify-ca", "verify-full")
+# Hosts the local production-mode stack uses: compose service names (one DNS
+# label that starts with a letter, so it can never be read as a numeric IPv4
+# address), loopback, Docker Desktop's alias for the host, Unix sockets.
+_LOCAL_STACK_NAMES = frozenset({"localhost", "host.docker.internal"})
+_SERVICE_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,62}$")
 
 
 class ConfigError(ValueError):
@@ -100,6 +114,7 @@ class Settings:
     api_cache_size: int = 256                # analysis-result cache entries (LRU)
     # Phase 5: deployment mode, observability, edge trust
     env: str = "development"
+    database_tls: str = DATABASE_TLS_VERIFY  # production: verify the server certificate
     log_format: str = "text"
     api_docs: bool = True                    # /docs, /redoc, /openapi.json
     edge_secrets: tuple[str, ...] = field(default=(), repr=False)
@@ -244,6 +259,91 @@ def _validate_database_url(url: str) -> None:
         ) from None
 
 
+def is_local_stack_host(host: str) -> bool:
+    """Whether a libpq ``host`` entry can only be the local stack's database:
+    a Unix-socket directory, ``localhost``, a loopback address, Docker
+    Desktop's ``host.docker.internal``, or a compose service name (one DNS
+    label starting with a letter: no dots, so no public DNS name). An empty
+    entry is not: libpq would take the host from ``PGHOST`` instead. A single
+    label is still resolved by the container's resolver (whose search domains
+    could extend it); on the stack, Docker's embedded DNS answers it."""
+    if not host:
+        return False
+    if host.startswith(("/", "@")):  # a Unix-domain socket directory (or abstract name)
+        return True
+    if host.lower() in _LOCAL_STACK_NAMES:
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return bool(_SERVICE_NAME.fullmatch(host))
+
+
+def _is_loopback_address(text: str) -> bool:
+    try:
+        return ipaddress.ip_address(text).is_loopback
+    except ValueError:
+        return False
+
+
+def check_database_tls(
+    database_url: str, tls_mode: str, environ: Mapping[str, str] | None = None
+) -> None:
+    """Production's rule for the database connection (ADR-011 "TLS").
+
+    ``ATUS_DATABASE_URL`` itself must set ``sslmode=verify-full`` or
+    ``verify-ca``: libpq's default (``prefer``) and ``require`` encrypt
+    without checking whom they talk to, and a ``PGSSLMODE`` in the
+    environment is not proof of anything the URL does not say.
+
+    ``tls_mode`` ``local-stack-only`` (``ATUS_DATABASE_TLS``) is the escape
+    hatch for the local production-mode stack, whose Postgres has no TLS. It
+    is accepted only when the URL names its hosts itself and every ``host``
+    is a local-stack host (:func:`is_local_stack_host`), every ``hostaddr``
+    a loopback address, and no ``service`` (whose file could name any host)
+    is used. libpq also takes ``hostaddr`` and ``service`` from
+    ``PGHOSTADDR`` and ``PGSERVICE`` when the URL does not set them, so those
+    in ``environ`` (default: the process environment, which libpq reads) are
+    held to the same rule. The hatch thus never applies to a host the URL
+    does not name as local (a single-label name is still resolved by the
+    container's resolver: :func:`is_local_stack_host`). Messages never echo
+    the URL.
+    """
+    from psycopg.conninfo import conninfo_to_dict
+
+    params = conninfo_to_dict(database_url)  # validated by _validate_database_url
+    if tls_mode == DATABASE_TLS_LOCAL_STACK:
+        environ = os.environ if environ is None else environ
+        hosts = str(params.get("host") or "").split(",")
+        hostaddr = params.get("hostaddr") or environ.get("PGHOSTADDR") or ""
+        addresses = [a for a in str(hostaddr).split(",") if a]
+        if (
+            not (params.get("service") or environ.get("PGSERVICE"))
+            and all(is_local_stack_host(h.strip()) for h in hosts)
+            and all(_is_loopback_address(a.strip()) for a in addresses)
+        ):
+            return
+        raise ConfigError(
+            "ATUS_DATABASE_TLS=local-stack-only is accepted only for a database on the "
+            "local stack, named in ATUS_DATABASE_URL itself (a compose service name "
+            "without dots, localhost or a loopback address, host.docker.internal, or a "
+            "Unix socket; no service file, and no PGSERVICE or non-loopback PGHOSTADDR "
+            "in the environment); ATUS_DATABASE_URL names another or no host. "
+            "Remove ATUS_DATABASE_TLS and use sslmode=verify-full"
+        )
+    sslmode = str(params.get("sslmode") or "")  # libpq compares it case-sensitively
+    if sslmode in VERIFYING_SSLMODES:
+        return
+    shown = f"sslmode={sslmode}" if sslmode in _LIBPQ_SSLMODES else (
+        "no sslmode" if not sslmode else "an unrecognised sslmode"
+    )
+    raise ConfigError(
+        f"ATUS_DATABASE_URL has {shown}; when ATUS_ENV=production it must verify the "
+        "server's certificate: add sslmode=verify-full (with sslrootcert=system for a "
+        "public CA) to the URL"
+    )
+
+
 def _edge_secrets(env: _Env, production: bool) -> tuple[str, ...]:
     raw = env.raw("ATUS_EDGE_SECRETS")
     if raw is None:
@@ -318,6 +418,10 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
     """
     if environ is None:
         if os.environ.get("ATUS_ENV", "").strip().lower() != "production":
+            # Imported here: production never reads a .env file, so the API's
+            # start-up does not import python-dotenv (deploy/ci/check_image.py).
+            from dotenv import find_dotenv, load_dotenv
+
             load_dotenv(find_dotenv(usecwd=True))
         environ = os.environ
     env = _Env(environ)
@@ -339,6 +443,9 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
             "when ATUS_ENV=production"
         )
     _validate_database_url(database_url)
+    database_tls = env.choice("ATUS_DATABASE_TLS", DATABASE_TLS_VERIFY, DATABASE_TLS_MODES)
+    if production:
+        check_database_tls(database_url, database_tls, environ)
 
     max_inflight = env.integer("ATUS_API_MAX_INFLIGHT", 2, 1, 64)
     max_inflight_heavy = env.integer("ATUS_API_MAX_INFLIGHT_HEAVY", 1, 1, 64)
@@ -363,6 +470,7 @@ def load_settings(environ: Mapping[str, str] | None = None) -> Settings:
         api_cors_origins=_cors_origins(env),
         api_cache_size=env.integer("ATUS_API_CACHE_SIZE", 256, 1, 100_000),
         env=mode,
+        database_tls=database_tls,
         log_format=env.choice(
             "ATUS_LOG_FORMAT", "json" if production else "text", LOG_FORMATS
         ),
@@ -407,7 +515,10 @@ def check_api_settings(settings: Settings) -> None:
     Production requires an explicit database URL (enforced by
     :func:`load_settings`) and at least one edge secret: without one, the
     provider hostname would serve the API to anyone, bypassing every
-    protection that lives at the edge.
+    protection that lives at the edge. The database URL rules are checked
+    again here (against the process environment, which is what libpq will
+    read), so programmatically built settings (``Settings(...)``,
+    ``dataclasses.replace``) cannot skip them.
     """
     if not settings.is_production:
         return
@@ -421,3 +532,7 @@ def check_api_settings(settings: Settings) -> None:
             "ATUS_DATABASE_URL is the well-known development URL; refusing it "
             "when ATUS_ENV=production"
         )
+    if settings.database_tls not in DATABASE_TLS_MODES:
+        raise ConfigError(f"ATUS_DATABASE_TLS must be one of: {', '.join(DATABASE_TLS_MODES)}")
+    _validate_database_url(settings.database_url)
+    check_database_tls(settings.database_url, settings.database_tls)

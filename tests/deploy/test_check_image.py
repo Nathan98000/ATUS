@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import sys
@@ -223,6 +224,21 @@ def test_http_snippets_compile_and_carry_no_secret(gate, edge_auth, strict):
     assert ("raise" in code) is strict
 
 
+def test_the_gates_database_urls_pass_the_production_rules(gate):
+    """The gate runs the image in production mode: both API containers must be
+    configured so that the image starts (TLS verification, or the local-stack
+    escape hatch for the throwaway Postgres reachable as `db`)."""
+    from atus_pipeline.config import ConfigError, check_api_settings, load_settings
+
+    base = {"ATUS_ENV": "production", "ATUS_EDGE_SECRETS": "e" * 32}
+    check_api_settings(load_settings({**base, "ATUS_DATABASE_URL": gate.UNRESOLVABLE_DATABASE_URL}))
+    stack_url = f"postgresql://{gate.API_ROLE}@db:5432/postgres"
+    check_api_settings(load_settings({**base, "ATUS_DATABASE_URL": stack_url,
+                                      **gate.LOCAL_STACK_TLS}))
+    with pytest.raises(ConfigError, match="sslmode"):
+        load_settings({**base, "ATUS_DATABASE_URL": stack_url})
+
+
 def test_stack_redacts_edge_secrets(gate):
     stack = gate.Stack("image", "prefix", "postgres", timeout=1)
     stack.edge_secrets.append("s3cr3t-value")
@@ -237,6 +253,120 @@ def test_static_results(gate):
     ]
     results = gate.static_checks({"User": ""}, {**CLEAN_CONTENTS, "tools": ["gcc"]})
     assert [r.status for r in results] == ["FAIL", "FAIL", "FAIL"]
+
+
+# --- bytecode and start-up imports --------------------------------------------------
+
+
+@pytest.fixture
+def compiled(tmp_path):
+    """A source file and its compiled .pyc, in the mode asked for."""
+    import py_compile
+
+    def make(mode=py_compile.PycInvalidationMode.TIMESTAMP):
+        source = tmp_path / "mod.py"
+        source.write_text("VALUE = 1\n")
+        cached = tmp_path / "mod.pyc"
+        py_compile.compile(str(source), cfile=str(cached), invalidation_mode=mode,
+                           doraise=True)
+        return source, cached
+
+    return make
+
+
+def test_pyc_status_timestamp(gate, compiled, tmp_path):
+    source, cached = compiled()
+    assert gate.pyc_status(str(source), str(cached)) == "ok"
+    assert gate.pyc_status(str(source), str(tmp_path / "absent.pyc")) == "missing"
+    stat = source.stat()
+    os.utime(source, (stat.st_atime, stat.st_mtime + 10))  # a changed source mtime
+    assert gate.pyc_status(str(source), str(cached)) == "stale"
+
+
+def test_pyc_status_size_and_magic(gate, compiled):
+    source, cached = compiled()
+    stat = source.stat()
+    source.write_text("VALUE = 22\n")  # one byte longer, same mtime
+    os.utime(source, (stat.st_atime, stat.st_mtime))
+    assert gate.pyc_status(str(source), str(cached)) == "stale"
+    source, cached = compiled()
+    cached.write_bytes(b"\x00\x00\r\n" + cached.read_bytes()[4:])  # another Python's magic
+    assert gate.pyc_status(str(source), str(cached)) == "stale"
+    cached.write_bytes(b"short")
+    assert gate.pyc_status(str(source), str(cached)) == "stale"
+
+
+def test_pyc_status_hash_based(gate, compiled):
+    import py_compile
+
+    source, cached = compiled(py_compile.PycInvalidationMode.CHECKED_HASH)
+    assert gate.pyc_status(str(source), str(cached)) == "ok"
+    source.write_text("VALUE = 2\n")
+    assert gate.pyc_status(str(source), str(cached)) == "stale"
+    source, cached = compiled(py_compile.PycInvalidationMode.UNCHECKED_HASH)
+    source.write_text("VALUE = 2\n")
+    assert gate.pyc_status(str(source), str(cached)) == "ok"  # Python never re-checks it
+
+
+@pytest.mark.parametrize(
+    ("imported", "found"),
+    [
+        (["atus_pipeline.api.app", "psycopg", "click", "dotenvx"], []),
+        (["dotenv", "dotenv.main"], ["dotenv", "dotenv.main"]),
+        (["atus_pipeline.loading.loader", "atus_pipeline.serving_cli"],
+         ["atus_pipeline.loading.loader"]),  # serving_cli is the CLI module, not serving
+        (["curl_cffi.requests"], ["curl_cffi.requests"]),
+    ],
+)
+def test_forbidden_imports(gate, imported, found):
+    assert gate.forbidden_imports(imported) == found
+
+
+def test_startup_checks(gate):
+    clean = {"started": True, "error": None,
+             "modules": {"json": "ok", "atus_pipeline.api.app": "ok"},
+             "imported": ["json", "atus_pipeline.api.app", "sys"]}
+    results = gate.startup_checks(clean)
+    assert [(r.name, r.status) for r in results] == [("bytecode", "PASS"),
+                                                      ("startup_imports", "PASS")]
+    assert "all 2 modules" in results[0].detail
+
+    compiled_at_start = {**clean, "modules": {"json": "missing", "ast": "stale", "re": "ok"},
+                         "imported": ["json", "ast", "re", "dotenv"]}
+    bytecode, imports = gate.startup_checks(compiled_at_start)
+    assert bytecode.status == "FAIL" and "2 of 3 modules" in bytecode.detail
+    assert "ast (stale)" in bytecode.detail and "json (missing)" in bytecode.detail
+    assert imports.status == "FAIL" and imports.detail == "imported at start-up: dotenv"
+
+    many = {**clean, "modules": {f"m{i}": "missing" for i in range(9)}}
+    assert "(+3 more)" in gate.startup_checks(many)[0].detail
+
+    not_started = {"started": False, "error": "ConfigError: x", "modules": {}, "imported": []}
+    assert [r.status for r in gate.startup_checks(not_started)] == ["FAIL", "FAIL"]
+    assert "ConfigError: x" in gate.startup_checks(not_started)[0].detail
+    nothing = {**clean, "modules": {}}
+    assert gate.startup_checks(nothing)[0].status == "FAIL"
+
+
+def test_startup_probe_runs_here(gate, tmp_path):
+    """The in-image probe is plain Python: run it against this checkout (in
+    production mode, as the image runs it) to catch mistakes early. It starts
+    the API on a loopback port the OS picks and stops it again."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("ATUS_", "PG"))}
+    env["ATUS_ENV"] = "production"
+    result = subprocess.run(
+        [sys.executable, "-c", gate.startup_probe_code(timeout=30)],
+        cwd=tmp_path, env=env, capture_output=True, text=True, timeout=120, check=False,
+    )
+    assert result.returncode == 0, result.stderr[-2000:]
+    report = json.loads(result.stdout.strip().splitlines()[-1])
+    assert report["started"] is True, report["error"]
+    assert {"atus_pipeline.cli", "atus_pipeline.api.app", "uvicorn.server"} <= set(
+        report["imported"])
+    assert set(report["modules"]) <= set(report["imported"])
+    assert set(report["modules"].values()) <= {"ok", "missing", "stale"}
+    assert gate.forbidden_imports(report["imported"]) == []
+    assert "secrets.token_urlsafe(32)" in gate.startup_probe_code()  # made in the probe
 
 
 def test_report_exit_codes(gate, capsys):
@@ -301,9 +431,31 @@ def test_api_image_passes_the_gate(api_image, docker_prefix):
     result = _gate(api_image, docker_prefix)
     assert result.returncode == 0, result.stdout + result.stderr[-3000:]
     statuses = _statuses(result.stdout)
-    for name in ("user", "build_tools", "healthcheck", "health_no_db", "user_runtime",
-                 "health_db_quiet", "detector", "startup_db_quiet"):
+    for name in ("user", "build_tools", "healthcheck", "bytecode", "startup_imports",
+                 "health_no_db", "user_runtime", "health_db_quiet", "detector",
+                 "startup_db_quiet"):
         assert statuses[name] == "PASS", name
+    _assert_no_leftovers(docker_prefix)
+
+
+def test_missing_bytecode_and_pipeline_imports_fail_the_gate(derived_image, docker_prefix):
+    """The base image's state before the stdlib was compiled (no .pyc), plus a
+    start-up that imports a forbidden module (a .pth line runs at every start)."""
+    image = derived_image(
+        "cold-start",
+        "USER 0\n"
+        "RUN find /usr/local/lib/python3.12 -name '*.pyc' -delete \\\n"
+        " && echo 'import dotenv' > /opt/venv/lib/python3.12/site-packages/zz_cold.pth\n"
+        "USER 10001:10001",
+    )
+    result = _gate(image, docker_prefix, "--static-only")
+    assert result.returncode == 1, result.stdout + result.stderr[-3000:]
+    statuses = _statuses(result.stdout)
+    assert statuses["bytecode"] == statuses["startup_imports"] == "FAIL"
+    assert "have no usable .pyc and are compiled at every start" in result.stdout
+    assert "(missing)" in result.stdout
+    assert "imported at start-up: dotenv" in result.stdout
+    assert statuses["user"] == statuses["build_tools"] == statuses["healthcheck"] == "PASS"
     _assert_no_leftovers(docker_prefix)
 
 

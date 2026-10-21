@@ -232,6 +232,26 @@ def test_the_snapshot_is_built_from_the_pushed_digest_and_the_committed_release(
     assert "postgres:16@sha256:" in snapshot
 
 
+def test_the_snapshot_api_starts_in_production_mode_against_the_runner_database():
+    """The snapshot job runs the image in production mode against the runner's
+    postgres:16 on localhost, which has no TLS: the URL the restore writes for
+    that owner is refused without the local-stack escape hatch and accepted
+    with it, so the job must set it."""
+    from atus_pipeline.config import ConfigError, check_api_settings, load_settings
+    from atus_pipeline.serving.secrets_file import api_database_url
+
+    snapshot = flat(jobs(by_name("deploy.yml"))["snapshot"])
+    assert 'echo "ATUS_ENV=production"' in snapshot
+    assert 'echo "ATUS_DATABASE_TLS=local-stack-only"' in snapshot
+    owner = re.search(r"ATUS_OWNER_DATABASE_URL=(postgresql://neondb_owner:%s@\S+?)\\n",
+                      snapshot)
+    url = api_database_url(owner.group(1).replace("%s", "pw"), "atus_api", "api-pw")
+    env = {"ATUS_ENV": "production", "ATUS_EDGE_SECRETS": "e" * 64, "ATUS_DATABASE_URL": url}
+    with pytest.raises(ConfigError, match="sslmode"):
+        load_settings(env)
+    check_api_settings(load_settings({**env, "ATUS_DATABASE_TLS": "local-stack-only"}))
+
+
 def test_the_pushed_image_is_the_tested_one():
     push = flat(jobs(by_name("deploy.yml"))["push"])
     assert "needs.build.outputs.image-id" in push

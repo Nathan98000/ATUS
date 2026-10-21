@@ -3,7 +3,9 @@
 Brief §8 asks for "a non-root user ... no build tools or test data, and a
 healthcheck that does not touch the database". This script proves all three on
 the built image itself, with nothing but the Python standard library and the
-Docker CLI, so a CI job can run it on the exact digest it is about to push:
+Docker CLI, so a CI job can run it on the exact digest it is about to push. It
+also checks what a cold start has to do: no module compiled from source, no
+pipeline-only module imported.
 
     python deploy/ci/check_image.py atus-api:local
     python deploy/ci/check_image.py ghcr.io/nathan98000/atus-api@sha256:<digest>
@@ -24,6 +26,12 @@ Checks:
                     pip stays: it is part of the Python base image, not a compiler
   healthcheck       the image declares a Docker HEALTHCHECK that requests /health
                     on loopback and names nothing database-related
+  bytecode          starting the API the way `atus api` does (in a probe container
+                    without network, read-only) imports only modules that load
+                    from a usable .pyc: the app user cannot write __pycache__, so
+                    a module without one would be compiled at every cold start
+  startup_imports   that start-up imports none of FORBIDDEN_STARTUP_MODULES
+                    (pipeline-only packages, python-dotenv)
   health_no_db      with a database host that does not resolve, the image's
                     health check passes (liveness does not depend on the DB)
   health_db_quiet   against a throwaway Postgres that logs every connection and
@@ -64,8 +72,14 @@ POSTGRES_IMAGE = (
 )
 # The role the API connects as, here and in production (ADR-011 "Roles").
 API_ROLE = "atus_api"
-# A database host that can never resolve (RFC 6761 reserves .invalid).
-UNRESOLVABLE_DATABASE_URL = f"postgresql://{API_ROLE}@db.invalid:5432/atus"
+# A database host that can never resolve (RFC 6761 reserves .invalid), with the
+# certificate verification production requires of every database URL.
+UNRESOLVABLE_DATABASE_URL = (
+    f"postgresql://{API_ROLE}@db.invalid:5432/atus?sslmode=verify-full&sslrootcert=system"
+)
+# The throwaway Postgres below has no TLS: the API's local-stack escape hatch,
+# which production mode accepts only for such a host (here the alias `db`).
+LOCAL_STACK_TLS = {"ATUS_DATABASE_TLS": "local-stack-only"}
 EDGE_AUTH_HEADER = "X-ATUS-Edge-Auth"
 # Every backend's log lines start with this prefix, so the API role's lines are
 # found by `user=atus_api ` whatever application_name the API sets.
@@ -142,6 +156,104 @@ print(json.dumps({
     "archives": wheels, "writable": writable,
 }))
 """
+
+
+# --- what the API's start-up may import, and in what form -------------------------
+
+# Modules the API's start-up must never import: the pipeline's own stages
+# (download, staging, transformation, loading, the serving-DB builder), the
+# pipeline-only HTTP client, and the development-only .env loader. Each would
+# only add import work to every cold start (`atus api` imports the CLI module,
+# which keeps these imports inside the commands that need them).
+FORBIDDEN_STARTUP_MODULES = (
+    "curl_cffi", "dotenv",
+    "atus_pipeline.acquisition", "atus_pipeline.staging", "atus_pipeline.transformation",
+    "atus_pipeline.loading", "atus_pipeline.serving",
+)
+
+
+def pyc_status(source: str, cached: str) -> str:
+    """Whether Python will load ``cached`` for ``source`` instead of compiling
+    it: ``ok``, ``missing`` or ``stale``. The same validation importlib applies
+    (``SourceLoader.get_code``) to timestamp and hash-based .pyc files.
+
+    Self-contained: its source also runs inside the image (STARTUP_PROBE)."""
+    import importlib.util
+    import os
+
+    try:
+        with open(cached, "rb") as handle:
+            header = handle.read(16)
+    except OSError:
+        return "missing"
+    if len(header) < 16 or header[:4] != importlib.util.MAGIC_NUMBER:
+        return "stale"
+    flags = int.from_bytes(header[4:8], "little")
+    if flags & ~0b11:
+        return "stale"
+    if flags & 0b01:  # hash-based
+        if not flags & 0b10:  # unchecked: used as is
+            return "ok"
+        with open(source, "rb") as handle:
+            current = importlib.util.source_hash(handle.read())
+        return "ok" if current == header[8:16] else "stale"
+    stat = os.stat(source)
+    mtime = int.from_bytes(header[8:12], "little")
+    size = int.from_bytes(header[12:16], "little")
+    if mtime == int(stat.st_mtime) & 0xFFFFFFFF and size == stat.st_size & 0xFFFFFFFF:
+        return "ok"
+    return "stale"
+
+
+# Runs inside the image (its default user and environment, no network, a
+# read-only root): starts the API exactly as `atus api` does — the CLI module
+# the console script loads, then uvicorn with the production options and the
+# app factory, lifespan included — on a loopback port, stops it, and reports
+# every module that start-up imported and whether each one loaded from a
+# usable .pyc. DATABASE_URL and TIMEOUT are prepended by `startup_probe_code`;
+# the edge secret is generated here, so it never appears on a command line.
+STARTUP_PROBE = r"""
+import json, os, secrets, sys, threading, time
+os.environ["ATUS_DATABASE_URL"] = DATABASE_URL
+os.environ["ATUS_EDGE_SECRETS"] = secrets.token_urlsafe(32)
+started, error = False, None
+try:
+    import atus_pipeline.cli  # the `atus` console script's module
+    import uvicorn
+    from atus_pipeline.api import serve
+    from atus_pipeline.config import check_api_settings, load_settings
+    settings = load_settings()
+    check_api_settings(settings)
+    server = uvicorn.Server(uvicorn.Config(
+        **serve.uvicorn_options(settings, host="127.0.0.1", port=0)))
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    deadline = time.monotonic() + TIMEOUT  # a deadline, nothing is timed
+    while not server.started and thread.is_alive() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    started = bool(server.started)
+    server.should_exit = True
+    thread.join(TIMEOUT)
+except Exception as exc:
+    error = f"{type(exc).__name__}: {exc}"[:300]
+modules = {}
+for name, module in list(sys.modules.items()):
+    spec = getattr(module, "__spec__", None)
+    origin, cached = getattr(spec, "origin", None), getattr(spec, "cached", None)
+    if isinstance(origin, str) and origin.endswith(".py") and cached:
+        modules[name] = pyc_status(origin, cached)
+print(json.dumps({"started": started, "error": error, "modules": modules,
+                  "imported": sorted(sys.modules)}))
+"""
+
+
+def startup_probe_code(database_url: str = UNRESOLVABLE_DATABASE_URL,
+                       timeout: float = 60.0) -> str:
+    """STARTUP_PROBE with its inputs and ``pyc_status`` defined, for ``python -c``."""
+    import inspect
+
+    return (f"DATABASE_URL = {database_url!r}\nTIMEOUT = {float(timeout)!r}\n"
+            + inspect.getsource(pyc_status) + STARTUP_PROBE)
 
 
 class CheckError(RuntimeError):
@@ -295,6 +407,50 @@ def summarize(lines: Sequence[str], limit: int = 3) -> str:
     return "; ".join(shown) + more
 
 
+def forbidden_imports(imported: Iterable[str]) -> list[str]:
+    """The FORBIDDEN_STARTUP_MODULES (or their submodules) among ``imported``."""
+    return sorted(
+        name for name in imported
+        if any(name == f or name.startswith(f + ".") for f in FORBIDDEN_STARTUP_MODULES)
+    )
+
+
+def bytecode_problem(report: dict) -> str | None:
+    """Why the start-up probe's report shows modules compiled at start-up, or None."""
+    if not report.get("started"):
+        return f"the API did not start in the probe ({report.get('error') or 'no error'})"
+    modules = report.get("modules") or {}
+    if not modules:
+        return "the probe saw no module loaded from source: it cannot vouch for bytecode"
+    bad = sorted(name for name, status in modules.items() if status != "ok")
+    if not bad:
+        return None
+    shown = ", ".join(f"{name} ({modules[name]})" for name in bad[:6])
+    more = f" (+{len(bad) - 6} more)" if len(bad) > 6 else ""
+    return (f"{len(bad)} of {len(modules)} modules imported at start-up have no usable "
+            f".pyc and are compiled at every start: {shown}{more}")
+
+
+def startup_checks(report: dict) -> list[Result]:
+    """``bytecode`` and ``startup_imports`` from the start-up probe's report."""
+    problem = bytecode_problem(report)
+    modules = report.get("modules") or {}
+    results = [Result("bytecode", "FAIL" if problem else "PASS",
+                      problem or f"all {len(modules)} modules imported at start-up load from "
+                      "cached bytecode (standard library, site-packages, atus_pipeline)")]
+    if not report.get("started"):
+        results.append(Result("startup_imports", "FAIL",
+                              "the API did not start in the probe"))
+        return results
+    found = forbidden_imports(report.get("imported") or ())
+    results.append(Result(
+        "startup_imports", "FAIL" if found else "PASS",
+        ("imported at start-up: " + ", ".join(found)) if found
+        else "none of " + ", ".join(FORBIDDEN_STARTUP_MODULES) + " imported at start-up",
+    ))
+    return results
+
+
 # --- Docker plumbing ------------------------------------------------------------------
 
 
@@ -331,6 +487,22 @@ def read_contents(image: str) -> dict:
     if result.returncode != 0:
         raise CheckError(f"could not inspect the image's contents: {result.stderr[-500:]}")
     return json.loads(result.stdout)
+
+
+def read_startup(image: str, name: str, timeout: float) -> dict:
+    """Run STARTUP_PROBE in the image: its default user and environment
+    (production mode), no network, a read-only root (so nothing it compiles
+    could be cached for the report to find)."""
+    try:
+        result = docker("run", "--rm", "--name", name, "--network", "none", "--read-only",
+                        "--tmpfs", "/tmp", "--entrypoint", "python", image,
+                        "-c", startup_probe_code(timeout=timeout), check=False,
+                        timeout=2 * timeout + 60)
+    finally:
+        docker("rm", "-f", name, check=False)
+    if result.returncode != 0 or not result.stdout.strip():
+        raise CheckError(f"the start-up probe failed: {result.stderr[-500:]}")
+    return json.loads(result.stdout.strip().splitlines()[-1])
 
 
 def http_get_snippet(path: str, *, edge_auth: bool = False, strict: bool = False) -> str:
@@ -399,8 +571,10 @@ class Stack:
         docker("exec", self.db, "psql", "-h", "127.0.0.1", "-U", "postgres", "-v",
                "ON_ERROR_STOP=1", "-qc", f"CREATE ROLE {API_ROLE} LOGIN")
 
-    def start_api(self, name: str, database_url: str, network: str) -> None:
-        """Run the image's own command, configured the way Render runs it."""
+    def start_api(self, name: str, database_url: str, network: str,
+                  extra_env: dict[str, str] | None = None) -> None:
+        """Run the image's own command, configured the way Render runs it
+        (plus ``extra_env``)."""
         self.containers.append(name)
         secret = secrets.token_urlsafe(24)
         self.edge_secrets.append(secret)
@@ -408,6 +582,8 @@ class Stack:
             env_file = os.path.join(tmp, "api.env")
             with open(os.open(env_file, os.O_WRONLY | os.O_CREAT, 0o600), "w") as handle:
                 handle.write(f"ATUS_DATABASE_URL={database_url}\nATUS_EDGE_SECRETS={secret}\n")
+                for key, value in (extra_env or {}).items():
+                    handle.write(f"{key}={value}\n")
             docker("run", "-d", "--name", name, "--network", network, "--env-file", env_file,
                    self.image)
 
@@ -537,7 +713,8 @@ def dynamic_checks(stack: Stack, config: dict, contents: dict, results: list[Res
 
     # Against a database that logs everything the API role does.
     stack.start_database()
-    stack.start_api(stack.api, f"postgresql://{API_ROLE}@db:5432/postgres", stack.network)
+    stack.start_api(stack.api, f"postgresql://{API_ROLE}@db:5432/postgres", stack.network,
+                    extra_env=LOCAL_STACK_TLS)
     if not stack.wait_until_healthy(stack.api, health):
         raise CheckError(f"{label} never passed against the test database")
     pid1 = docker("exec", stack.api, "cat", "/proc/1/status").stdout
@@ -604,6 +781,9 @@ def run(args: argparse.Namespace) -> int:
     config = inspect_image(args.image)
     contents = read_contents(args.image)
     results = static_checks(config, contents)
+    startup = read_startup(args.image, f"{args.name_prefix}-startup-{secrets.token_hex(4)}",
+                           args.timeout)
+    results += startup_checks(startup)
     if args.static_only:
         return report(results)
     stack = Stack(args.image, args.name_prefix, args.postgres_image, args.timeout)
@@ -625,7 +805,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="report a DB connection at start-up as SKIP, not FAIL "
                         "(images that predate the lazy pool)")
     parser.add_argument("--static-only", action="store_true",
-                        help="only inspect the image; start no API or database container")
+                        help="only inspect the image (one-off probe containers without a "
+                        "network); start no API service or database container")
     parser.add_argument("--health-runs", type=int, default=5,
                         help="health checks to run against the logging database (default 5)")
     parser.add_argument("--name-prefix", default="atus-imagecheck",

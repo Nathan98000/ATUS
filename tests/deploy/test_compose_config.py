@@ -127,6 +127,8 @@ class TestProductionCompose:
         env = api["environment"]
         assert env["ATUS_ENV"] == "production"
         assert env["ATUS_DATABASE_URL"] == "postgresql://atus_api:dummy-api@db:5432/atus"
+        # The one setting Render never has: the stack's Postgres has no TLS.
+        assert env["ATUS_DATABASE_TLS"] == "local-stack-only"
         assert env["ATUS_EDGE_SECRETS"] == "dummy-edge"
         assert env["ATUS_OPS_TOKEN"] == "dummy-ops"
         assert env["WEB_CONCURRENCY"] == "1"
@@ -135,6 +137,25 @@ class TestProductionCompose:
         assert api["cap_drop"] == ["ALL"]
         # the API starts only once roles.sql has created its role
         assert api["depends_on"]["roles"]["condition"] == "service_completed_successfully"
+
+    @pytest.mark.parametrize("route", ["db", "pgbouncer"])
+    def test_api_environment_passes_the_production_checks(self, compose_config, route):
+        """The stack's API settings are accepted by the API's own production
+        validation (TLS rule included), directly and through PgBouncer, and
+        would be refused without the local-stack escape hatch."""
+        from atus_pipeline.config import ConfigError, check_api_settings, load_settings
+
+        env = dict(DUMMY_STACK_ENV, ATUS_STACK_EDGE_SECRET="e" * 40,
+                   ATUS_STACK_OPS_TOKEN="o" * 40)
+        if route == "pgbouncer":
+            env.update(ATUS_STACK_API_DB_HOST="pgbouncer", ATUS_STACK_API_DB_HOST_PORT="6432")
+        config = compose_config(PROD, EMULATION, env=env, profiles=("snapshot", "pgbouncer"))
+        for service in ("api", "snapshot-api"):
+            api_env = config["services"][service]["environment"]
+            check_api_settings(load_settings(api_env))
+            without_hatch = {k: v for k, v in api_env.items() if k != "ATUS_DATABASE_TLS"}
+            with pytest.raises(ConfigError, match="sslmode"):
+                load_settings(without_hatch)
 
     def test_api_runs_the_image_built_from_this_checkout_by_default(self, config):
         api = config["services"]["api"]

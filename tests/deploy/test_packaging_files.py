@@ -86,6 +86,24 @@ def test_api_image_runtime_contract():
         assert f"org.opencontainers.image.{label}=" in runtime, label
 
 
+def test_api_image_compiles_the_standard_library_before_dropping_root():
+    """The base image ships the stdlib without .pyc and the app user can never
+    write one: the runtime stage compiles it as root, at the base image's
+    Python version (compileall silently skips a directory that does not exist,
+    so a base bump must move this path too; check_image.py `bytecode` would
+    then fail)."""
+    text = _read("Dockerfile")
+    runtime = text.split("AS runtime", 1)[1]
+    compile_step = re.search(
+        r"^RUN python -m compileall -q -j 0 -x '/site-packages/' "
+        r"/usr/local/lib/python(\d+\.\d+)$", runtime, re.MULTILINE)
+    assert compile_step, "the runtime stage must compile the standard library"
+    base = re.search(r"^ARG PYTHON_BASE=python:(\d+\.\d+)-slim$", text, re.MULTILINE)
+    assert compile_step.group(1) == base.group(1)
+    assert runtime.index(compile_step.group(0)) < runtime.index("\nUSER 10001:10001")
+    assert "PYTHONDONTWRITEBYTECODE=1" in runtime  # reading .pyc still works
+
+
 def test_dockerignore_is_an_allow_list_of_what_the_image_needs():
     lines = [
         line.strip() for line in _read(".dockerignore").splitlines()
@@ -207,6 +225,22 @@ def test_production_example_values_match_the_contract():
     assert commented["ATUS_API_MAX_PARALLEL_WORKERS"] == ""
     assert commented["PORT"] == "10000"
     assert commented["ATUS_BUILD_SHA"] == "dev"
+    # documented, never active: the local stack's TLS escape hatch is not Render's
+    assert commented["ATUS_DATABASE_TLS"] == ""
+
+
+def test_production_example_database_url_shape_passes_the_tls_rule():
+    """The documented production DSN shape is what production accepts; the
+    weaker `require` the template warns about is refused."""
+    from atus_pipeline.config import ConfigError, load_settings
+
+    text = _read(".env.production.example")
+    shape = re.search(r"^#\s+(postgresql://atus_api:<password>@\S+)$", text, re.MULTILINE)
+    url = shape.group(1).replace("<password>", "pw").replace("<id>", "x")
+    env = {"ATUS_ENV": "production", "ATUS_EDGE_SECRETS": "e" * 40, "ATUS_DATABASE_URL": url}
+    assert load_settings(env).database_tls == "verify"
+    with pytest.raises(ConfigError, match="sslmode=require"):
+        load_settings({**env, "ATUS_DATABASE_URL": url.replace("verify-full", "require")})
 
 
 # ADR-012 "Calibration (§13)": the values the 2026-10-21 emulation runs confirmed
@@ -229,7 +263,8 @@ def test_calibrated_limits_are_the_defaults_and_agree_across_components():
     assert {name: example[name] for name in CALIBRATED} == CALIBRATED
     settings = load_settings({
         "ATUS_ENV": "production", "ATUS_EDGE_SECRETS": "e" * 40,
-        "ATUS_DATABASE_URL": "postgresql://atus_api:not-a-secret@db.invalid:5432/atus",
+        "ATUS_DATABASE_URL": "postgresql://atus_api:not-a-secret@db.invalid:5432/atus"
+                             "?sslmode=verify-full&sslrootcert=system",
     })
     assert (settings.api_statement_timeout_ms, settings.api_max_inflight,
             settings.api_max_inflight_heavy, settings.api_admission_wait_s) == (85_000, 2, 1, 5)

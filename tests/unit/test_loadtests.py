@@ -142,6 +142,33 @@ def test_container_environment_is_redacted():
                    "WEB_CONCURRENCY": "1"}
 
 
+def test_production_api_environments_pass_the_api_checks(tmp_path):
+    """The env files the tools hand to production-mode API containers are
+    accepted by the API's own validation: their databases have no TLS, so
+    they carry the local-stack escape hatch (and need it)."""
+    from atus_pipeline.config import ConfigError, check_api_settings, load_settings
+
+    cold_start = _load("cold_start", "atus_loadtests_cold_start")
+    stage = runner.Stage(tmp_path, "unit")
+    lt.write_private(stage.env_path, "ATUS_STACK_API_DB_PASSWORD=stack-db-password-1\n"
+                     f"ATUS_STACK_EDGE_SECRET={'e' * 40}\nATUS_STACK_OPS_TOKEN={'o' * 40}\n")
+    cold_env = lt.read_env_file(cold_start.container_env(stage, {"data_version": "v"}))
+
+    args = Namespace(baseline_port=8899, no_pg_log=True, daily_cap=runner.LOAD_CAP,
+                     max_parallel_workers=None, statement_timeout_ms=None, api_env=[],
+                     api_cpus=None, api_memory=None)
+    baseline = runner.BaselineTarget(stage, args)
+    baseline.write_env(None, superuser=False)
+    baseline_env = lt.read_env_file(baseline.env_path)
+
+    for env in (cold_env, baseline_env):
+        assert env["ATUS_ENV"] == "production"
+        check_api_settings(load_settings(env))
+        without_hatch = {k: v for k, v in env.items() if k != "ATUS_DATABASE_TLS"}
+        with pytest.raises(ConfigError, match="sslmode"):
+            load_settings(without_hatch)
+
+
 def test_k6_settings_never_carry_the_secret_or_the_target():
     assert runner.parse_sets(["VUS=4", "DURATION=60s"]) == {"VUS": "4", "DURATION": "60s"}
     for bad in ("ATUS_LT_EDGE_SECRET=x", "BASE_URL=http://example.org", "vus=1", "VUS"):

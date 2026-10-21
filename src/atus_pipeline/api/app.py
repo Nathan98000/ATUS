@@ -9,14 +9,16 @@ uvicorn process.
 
 Lifecycle: startup builds the database pool without connecting (``min_size``
 0: an API cold start never wakes the database), the analysis-result cache,
-the (empty) in-process data snapshot, and the per-process protection state
-(rate buckets, daily cap, admission lanes), and sizes the worker-thread
-limiter, and starts the periodic metrics log event (``metrics.py``; it
+the (empty) in-process data snapshot and the per-process protection state
+(rate buckets, daily cap, admission lanes); it sizes the worker-thread
+limiter and starts the periodic metrics log event (``metrics.py``; it
 touches no database). Nothing reads the database until a request needs
 data. Shutdown cancels queries still running, waits briefly for detached
-computations, and closes the pool. Startup performs no data validation and is effectively
-instantaneous; a production configuration without edge secrets is refused
-before anything starts.
+computations, and closes the pool. The lifespan startup performs no data
+validation and no I/O (a cold start's cost is importing the code); a
+production configuration without edge secrets, or with a database URL that
+does not verify the server's certificate, is refused before anything starts
+(``config.check_api_settings``).
 
 Logging is configured here too (``ATUS_LOG_FORMAT``), and uvicorn's own
 access log is switched off: the request-context middleware writes one access
@@ -141,9 +143,10 @@ def create_app(settings: Settings | None = None, *, open_pool: bool = True) -> F
         description=_DESCRIPTION,
         lifespan=lifespan,
         # ATUS_API_DOCS=off (the production default) removes /docs,
-        # /docs/oauth2-redirect, /redoc and /openapi.json; the schema is
-        # published as a static file instead (audit F43,
-        # scripts/export_openapi.py).
+        # /docs/oauth2-redirect, /redoc and /openapi.json from the API; the
+        # same schema is published as a static asset of the site at
+        # /openapi.json instead (audit F43; generated without any docs route
+        # by scripts/export_openapi.py).
         docs_url="/docs" if settings.api_docs else None,
         redoc_url="/redoc" if settings.api_docs else None,
         openapi_url="/openapi.json" if settings.api_docs else None,

@@ -40,15 +40,19 @@ HEAVY_YEAR_QUERIES = 8
 """Year-statistics an analysis must aggregate before it counts as heavy.
 
 An analysis's database cost is dominated by its statistics queries, which
-scale with the number of survey years scanned: at Neon's 0.25 CU floor a
-one-year estimate with replicate SEs took ~7 s while pooled 22-year and
-23-year trend requests took ~47-52 s (docs/operations.md, timed matrix (a)).
-A compare runs one query per group, so it scans its years twice. The
-classifier is therefore
+scale with the number of survey years scanned. Calibrated on the emulation of
+Neon's 0.25 CU floor, one analysis at a time (ADR-012 "Calibration (§13)",
+2026-10-21): a single-year estimate with replicate SEs took 0.99 s at p50
+(4.60 s at most), pooled 8-22-year estimates 5.79-8.39 s, and pooled 22-year
+estimates and 23-year trends 21.35-21.81 s at p50. A compare runs one query
+per group, so it scans its years twice. The classifier is therefore
 
     year_queries = len(years) x (2 if compare else 1)
     heavy        = year_queries >= 8
 
+No measured request was misclassified, but the margin at the boundary is
+narrow at 0.25 CU (the costliest light request, 4.60 s, against the cheapest
+heavy one, 5.33-5.79 s), and requests of 2-7 year queries were not measured.
 It ignores ``variance``: point-only (``variance: none``) requests were not
 measured separately, so they are classified as conservatively as replicate
 ones. It is a pure function of the validated spec — the same request is

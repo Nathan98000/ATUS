@@ -84,6 +84,8 @@ def production_settings(data_settings):
     return load_settings({
         "ATUS_ENV": "production",
         "ATUS_DATABASE_URL": data_settings.database_url,
+        # the local test server has no TLS: the local-stack escape hatch
+        "ATUS_DATABASE_TLS": "local-stack-only",
         "ATUS_EDGE_SECRETS": SECRET,
         "ATUS_LOG_LEVEL": "INFO",
     })
@@ -256,6 +258,8 @@ class TestClientDisconnect:
         messages = [r.getMessage() for r in caplog.records]
         assert any("client disconnected before the response" in m for m in messages)
         assert any("client_disconnected=1" in m and "-> 200" in m for m in messages)
+        # ... and counted on /metrics (F53); the retry was answered, not abandoned.
+        assert app.state.metrics.disconnects.value("/api/v1/analysis/estimate") == 1
 
 
 OPS_TOKEN = "q" * 48
@@ -273,6 +277,7 @@ class TestProductionProcess:
             **os.environ,
             "ATUS_ENV": "production",
             "ATUS_DATABASE_URL": data_settings.database_url,
+            "ATUS_DATABASE_TLS": "local-stack-only",
             "ATUS_EDGE_SECRETS": SECRET,
             "ATUS_OPS_TOKEN": OPS_TOKEN,
             "ATUS_BUILD_SHA": "0123abcd",

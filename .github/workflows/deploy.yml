@@ -254,10 +254,13 @@ jobs:
           echo "::add-mask::$edge_secret"
           printf 'EDGE_AUTH_SECRET=%s\n' "$edge_secret" > "$RUNNER_TEMP/edge-secret.env"
           # Production mode, the API role, the release's expected data version;
-          # generous per-client limits so the builder is not rate limited.
+          # generous per-client limits so the builder is not rate limited. The
+          # runner's postgres:16 on localhost has no TLS: the local-stack escape
+          # hatch (accepted for loopback hosts only).
           {
             echo "ATUS_ENV=production"
             echo "ATUS_DATABASE_URL=$api_url"
+            echo "ATUS_DATABASE_TLS=local-stack-only"
             echo "ATUS_EDGE_SECRETS=$edge_secret"
             echo "ATUS_EXPECTED_DATA_VERSION=$DATA_VERSION"
             echo "ATUS_API_RATE_ANALYSIS=100000/60"

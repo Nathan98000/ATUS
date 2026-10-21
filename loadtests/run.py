@@ -511,6 +511,8 @@ class BaselineTarget(Target):
                f"{FULL_DB['host_port']}/{FULL_DB['db']}?options={quote(options)}")
         values = {
             "ATUS_ENV": "production", "ATUS_DATABASE_URL": url,
+            # the full DB has no TLS: the local-stack escape hatch (host.docker.internal)
+            "ATUS_DATABASE_TLS": "local-stack-only",
             "ATUS_EDGE_SECRETS": existing.get("ATUS_EDGE_SECRETS") or secrets.token_urlsafe(32),
             "ATUS_OPS_TOKEN": existing.get("ATUS_OPS_TOKEN") or secrets.token_urlsafe(32),
             "WEB_CONCURRENCY": "1", "PORT": "10000",
