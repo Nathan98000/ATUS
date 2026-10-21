@@ -22,6 +22,7 @@ from .test_docs_accuracy import (
     ADR_011,
     ADR_015,
     DEPLOYMENT,
+    DOCS_DIR,
     OPERATIONS,
     SECURITY,
     _flat,
@@ -91,6 +92,12 @@ def test_the_other_runbooks_and_the_threat_model_say_the_same():
     c6 = _flat(_section(security, "**C6. Quota governor**", "Code:"))
     assert "named by an HMAC of IP_HMAC_KEY" in c6 and "Neon ground truth" in c6
     assert "(one SQLite Durable Object, global)" not in c6
+    # Without the key no tag can be checked, so KV hits stop too (compromise.test.ts).
+    assert "a missing IP_HMAC_KEY, except that KV hits stop too" in c6
+    api = _flat(_row(_read(DOCS_DIR / "api.md"), "503 | `capacity_unavailable`"))
+    assert "the edge cache is off too" in api
+    frontend = _flat(_read(DOCS_DIR / "frontend.md"))
+    assert "ASSET_SALT in src/deploy/assetNames.ts" in frontend
     risks = _section(security, "## Accepted risks", "\n## ")
     numbers = [int(n) for n in re.findall(r"^\*\*R(\d+)\.", risks, re.M)]
     assert numbers == list(range(1, len(numbers) + 1)), numbers

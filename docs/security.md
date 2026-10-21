@@ -125,7 +125,7 @@ Tests: `tests/unit/api/test_protection.py::TestTokenBucket`, `tests/unit/api/tes
   - a governor error;
   - no answer within 5 s;
   - a malformed answer;
-  - a missing `IP_HMAC_KEY`.
+  - a missing `IP_HMAC_KEY`, except that KV hits stop too: without the key no entry's tag can be checked, so the cache is off (C10).
 - **State a compromised Worker version left** (review round 4). Its storage outlives every Worker version, and one deployed with a leaked Cloudflare token runs code of its own as the governor. Rotating `IP_HMAC_KEY` moves the Worker onto a fresh instance whose name that code could not compute. In any instance, rows dated after today and impossible leases are deleted when it starts (every deploy restarts it), a count that is not a non-negative number counts as spent, and on every load the state drops charged windows that end later than any settle could reach, and Neon ground truth that no poll could have produced or that no configured key could have fetched.
 
 Code: `edge/src/governor.ts`, `edge/src/admission.ts`, `edge/src/budget.ts`, `edge/src/constants.ts`, `edge/src/snapshot.ts`.
