@@ -1,7 +1,36 @@
-import { useCallback, useEffect, useRef } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  type RefObject,
+} from 'react'
 
 /** The page's main heading; every page's `<h1>` carries `tabIndex={-1}` for this. */
 export const PAGE_HEADING = '#main h1'
+
+/**
+ * Whether an in-app navigation has moved focus to a page's heading during
+ * this visit (`AppShell` provides it). False on the first page of a visit,
+ * where focus stays where the browser puts it.
+ */
+export const NavigationFocus = createContext<{ readonly current: boolean }>({ current: false })
+
+/**
+ * For a state that replaces a whole page (`ServiceInterruption`): after an
+ * in-app navigation focused the page's heading, a quota or pause state that
+ * then replaced the page unmounted that heading, and focus fell to `<body>`
+ * (review round 4). When it has, this moves it to the state's own `heading`.
+ * Not on the first page of a visit, and never away from an element that
+ * still holds focus.
+ */
+export function useKeepNavigationFocus(heading: RefObject<HTMLElement | null>): void {
+  const navigated = useContext(NavigationFocus)
+  useEffect(() => {
+    if (navigated.current && focusFellToBody()) heading.current?.focus()
+  }, [navigated, heading])
+}
 
 /**
  * Keeps keyboard focus on the page when "Try again" replaces what held it.

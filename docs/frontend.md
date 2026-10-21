@@ -513,7 +513,10 @@ facts are `null`, never guessed. File names are
   the new page's `<h1>` (`AppShell`), so the change of page is announced and
   the next Tab continues from it. Not on the first page of a visit, and not
   when the analysis page only replaces its query string with the canonical
-  spec (review round 2).
+  spec (review round 2). When a full-page state (a paused quota or API, the
+  edge's daily limit) then replaces the page and its focused heading, focus
+  moves to the state's own heading instead of falling to `<body>`
+  (`useKeepNavigationFocus`; review round 4).
 - The download buttons are ordinary buttons; a persistent `<output>` says
   which file was started, and focus stays on the button. Downloading the
   same file again empties the region and says it again 100 ms later, so the

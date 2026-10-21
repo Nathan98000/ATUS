@@ -269,6 +269,55 @@ test('an exhausted database quota is one honest, accessible page', async ({ page
   await expect(page.getByRole('heading', { name: /Explore how Americans/ })).toBeVisible()
 })
 
+test(
+  'a paused page reached with Analyze takes the focus the navigation gave the analysis (review round 4)',
+  CORE,
+  async ({ page, browserName }) => {
+    // The navigation focuses the analysis heading; the paused state that then
+    // replaced the page unmounted it, and focus fell to <body>. The request is
+    // held until the heading has focus, so no timing is involved.
+    await withoutSnapshot(page)
+    let release = () => {}
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await page.route('**/api/v1/analysis/**', async (route) => {
+      await held
+      await route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            code: 'capacity_paused',
+            message: 'Monthly budget reached.',
+            details: { scope: 'monthly', budget: 'cu_month' },
+          },
+        }),
+      })
+    })
+    await page.goto('/explore')
+    await page.getByRole('button', { name: 'Analyze' }).focus()
+    await page.keyboard.press('Enter')
+    const analysisHeading = page.getByRole('heading', { level: 1 })
+    await expect(analysisHeading).toContainText('Sleeping', { timeout: 15_000 })
+    await expect(analysisHeading).toBeFocused()
+
+    release()
+    const paused = page.getByRole('heading', {
+      level: 1,
+      name: 'New analyses are paused for now',
+    })
+    await expect(paused).toBeVisible({ timeout: 15_000 })
+    await expect(paused).toBeFocused()
+    await expectNoSeriousViolations(page)
+    // Tab continues from the state, not from the top of the document.
+    if (tabReachesAllControls(browserName)) {
+      await page.keyboard.press('Tab')
+      await expect(page.getByRole('link', { name: 'Go to the home page' })).toBeFocused()
+    }
+  },
+)
+
 test("the edge's daily request limit (a non-JSON 429) is named as such", async ({ page }) => {
   await withoutSnapshot(page)
   await page.route('**/api/v1/meta', (route) =>

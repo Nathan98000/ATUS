@@ -1,6 +1,8 @@
+import { useRef } from 'react'
 import { Link, useLocation } from 'react-router'
 
 import { presentError } from '../domain/presentError'
+import { useKeepNavigationFocus } from './useRetryFocus'
 
 /**
  * Full-page state for problems no single panel can fix: the free hosting
@@ -10,8 +12,11 @@ import { presentError } from '../domain/presentError'
  * One honest explanation replaces the page's content instead of a cascade of
  * error panels, says what still works, and offers the one useful action
  * (reload for an incompatible API; the home page and a retry otherwise).
- * Focus is not moved; the alert role announces it. The heading takes focus
- * only when a "Try again" lands here again (`useRetryFocus`).
+ * On the first page of a visit focus is not moved; the alert role announces
+ * it. After an in-app navigation, which focused the heading of the page this
+ * state replaces, focus moves to this state's heading instead of falling to
+ * `<body>` (`useKeepNavigationFocus`, review round 4), as it does when a
+ * "Try again" lands here again (`useRetryFocus`).
  */
 export function ServiceInterruption({
   error,
@@ -22,11 +27,13 @@ export function ServiceInterruption({
 }) {
   const presented = presentError(error)
   const { pathname } = useLocation()
+  const heading = useRef<HTMLHeadingElement>(null)
+  useKeepNavigationFocus(heading)
 
   return (
     <section className="service-interruption" aria-labelledby="service-interruption-heading">
       <div className="error-banner" role="alert">
-        <h1 id="service-interruption-heading" tabIndex={-1}>
+        <h1 id="service-interruption-heading" tabIndex={-1} ref={heading}>
           {presented.heading}
         </h1>
         <p>{presented.message}</p>
