@@ -182,7 +182,11 @@ the new release before the deploy job publishes the new snapshot (ADR-013
 step 8); every page load, a reload or a new tab alike, then reads the old
 snapshot, so the notice instead says the service is switching releases,
 that new results already come from the new one and that reloading does not
-change that yet, with no button (review round 1).
+change that yet, with no button (review round 1). While it says so, the page
+reads the pointer again every minute (only while the tab is visible; a
+static file, never the Worker or the API), so a tab left open through the
+switch offers the reload within a minute of the deploy job publishing the
+new snapshot.
 
 Analyses are retried automatically only in the cold-start cases below;
 superseded requests are aborted via TanStack Query's signal, and stale

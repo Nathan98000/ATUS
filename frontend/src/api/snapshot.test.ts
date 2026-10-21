@@ -20,7 +20,7 @@ import {
 } from '../test/server'
 import { stableStringify } from '../utils/stableStringify'
 import { fetchMeta, runAnalysis } from './endpoints'
-import { SNAPSHOT_POINTER_PATH, requestKey } from './snapshot'
+import { SNAPSHOT_POINTER_PATH, loadSnapshot, reloadLoadsVersion, requestKey } from './snapshot'
 
 const sleepSpec: EstimateRequest = {
   measure: 'average_minutes_per_day',
@@ -264,6 +264,17 @@ describe('revalidation across releases (F27, review round 1)', () => {
     await fetchMeta()
     expect(modes(SNAPSHOT_POINTER_PATH)).toEqual(['no-cache'])
     expect(modes('/api/v1/meta')).toEqual(['no-cache'])
+  })
+
+  it('reads the pointer with cache "no-cache" to decide whether a reload helps (review round 1 verification)', async () => {
+    // During a release switch the answer changes when the deploy job
+    // publishes the new snapshot: a pointer from the HTTP cache would hide it.
+    await installSnapshot({ get: { '/api/v1/meta': metaFixture } })
+    expect(await loadSnapshot()).not.toBeNull()
+    const modes = recordCacheModes()
+    expect(await reloadLoadsVersion(SNAPSHOT_DATA_VERSION)).toBe(true)
+    expect(await reloadLoadsVersion('0326:serving-new:aaa')).toBe(false)
+    expect(modes(SNAPSHOT_POINTER_PATH)).toEqual(['no-cache', 'no-cache'])
   })
 
   it('revalidates the pointer when the snapshot serves /meta', async () => {

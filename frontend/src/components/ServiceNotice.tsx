@@ -19,7 +19,9 @@ export const WAKING_MESSAGE =
  *   reload would load that release: during a release switch the API serves
  *   the new release while the deployed snapshot, which every page load reads,
  *   is still the old one, and reloading cannot help until the deploy job
- *   publishes the new snapshot (ADR-013 step 8).
+ *   publishes the new snapshot (ADR-013 step 8). While that is so, the
+ *   snapshot pointer is read again every minute, so the notice offers the
+ *   reload once the new snapshot is published.
  */
 export function ServiceNotice() {
   const waking = useServiceWaking()
@@ -52,7 +54,7 @@ export function ServiceNotice() {
               The analysis service is switching to a different data release: new results already
               come from it, while this page’s examples and descriptions still come from the
               previous one, and reloading the page does not change that yet. The switch usually
-              completes within minutes.
+              completes within minutes; this notice then offers a reload.
             </span>
           </span>
         ) : null}
@@ -61,17 +63,42 @@ export function ServiceNotice() {
   )
 }
 
-/** Whether a reload would load `version` (null while unknown or without a change). */
+/**
+ * While a reload would not help, the snapshot pointer is read again this
+ * often. It is a static file (no Worker request, never the API), and it is
+ * read only while the page is visible.
+ */
+const RELOAD_RECHECK_MS = 60_000
+
+/**
+ * Whether a reload would load `version` (null while unknown or without a
+ * change). A "no" is checked again every `RELOAD_RECHECK_MS`: the release
+ * switch ends when the deploy job publishes the new snapshot, and a page
+ * left open through it should then offer the reload (review round 1).
+ */
 function useReloadHelps(version: string | null): boolean | null {
   const [answer, setAnswer] = useState<{ version: string; helps: boolean } | null>(null)
   useEffect(() => {
     if (version === null) return
     let current = true
-    void reloadLoadsVersion(version).then((helps) => {
-      if (current) setAnswer({ version, helps })
-    })
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const recheckLater = () => {
+      timer = setTimeout(() => {
+        if (document.visibilityState === 'hidden') recheckLater()
+        else check()
+      }, RELOAD_RECHECK_MS)
+    }
+    const check = () => {
+      void reloadLoadsVersion(version).then((helps) => {
+        if (!current) return
+        setAnswer({ version, helps })
+        if (!helps) recheckLater()
+      })
+    }
+    check()
     return () => {
       current = false
+      clearTimeout(timer)
     }
   }, [version])
   return answer !== null && answer.version === version ? answer.helps : null

@@ -419,6 +419,63 @@ describe('data release changes (F27)', () => {
     expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
   })
 
+  it('a page left open through the switch offers the reload once the new snapshot is published (review round 1 verification)', async () => {
+    // The pointer was read once per changed version: a tab that saw the
+    // "switching" notice kept it after the deploy job had published the new
+    // snapshot, although operations.md step 6.2 says it then offers a reload.
+    await withFakeClock(async () => {
+      const served = '0326:serving-new:aaa'
+      let published = SNAPSHOT_DATA_VERSION
+      let pointerReads = 0
+      await installSnapshot({
+        get: { '/api/v1/meta': metaFixture, '/api/v1/activities/presets': presetsFixture },
+      })
+      server.use(
+        http.get(SNAPSHOT_POINTER_PATH, () => {
+          pointerReads += 1
+          return HttpResponse.json({
+            snapshot_id: SNAPSHOT_ID,
+            data_version: published,
+            api_version: 'v1',
+          })
+        }),
+        http.get(api('/wake'), () => HttpResponse.json({ origin: 'warm' })),
+        http.post(api('/analysis/estimate'), () =>
+          HttpResponse.json(estimateSleepFixture, {
+            headers: { ...analysisHeaders(), 'X-Data-Version': served },
+          }),
+        ),
+      )
+      renderApp(sleepRoute)
+      expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+      const switching = await screen.findByText(/switching to a different data release/)
+      const region = switching.closest('output')
+      expect(region).not.toBeNull()
+      expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
+      const readsWhileSwitching = pointerReads
+
+      // Still mid-switch a minute later: one more read, same notice.
+      await vi.advanceTimersByTimeAsync(60_000)
+      await waitFor(() => expect(pointerReads).toBe(readsWhileSwitching + 1))
+      expect(screen.queryByRole('button', { name: 'Reload page' })).not.toBeInTheDocument()
+
+      // The deploy job publishes the new snapshot: the next read offers the reload,
+      // in the same live region.
+      published = served
+      await vi.advanceTimersByTimeAsync(60_000)
+      const reload = await screen.findByRole('button', { name: 'Reload page' })
+      expect(reload.closest('output')).toBe(region)
+      expect(region).toHaveTextContent(
+        'Reload so that every number comes from the same release.',
+      )
+
+      // Once a reload helps, the pointer is not read again.
+      const readsAfter = pointerReads
+      await vi.advanceTimersByTimeAsync(180_000)
+      expect(pointerReads).toBe(readsAfter)
+    })
+  })
+
   it('once the new snapshot is deployed, offers the reload', async () => {
     await releaseSwitch('0326:serving-new:aaa', '0326:serving-new:aaa')
     renderApp(sleepRoute)
