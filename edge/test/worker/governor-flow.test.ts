@@ -382,13 +382,18 @@ describe('failing closed', () => {
       await new Promise((resolve) => setTimeout(resolve, 5))
     }
     expect(await governorSql('SELECT id FROM leases')).toHaveLength(1)
+    // waitOnExecutionContext takes the promises queued so far, so this drain
+    // owns the settle: await it below rather than draining again, which would
+    // return before the settle finished on a slow runner.
+    const drained = waitOnExecutionContext(ctx)
     const queued = await Promise.race([
-      waitOnExecutionContext(ctx).then(() => 'nothing queued'),
+      drained.then(() => 'nothing queued'),
       new Promise((resolve) => setTimeout(() => resolve('settle queued'), 200)),
     ])
     expect(queued).toBe('settle queued')
     origin.answer!(apiJson('{"ok":true}', 200, COMPUTED))
     expect((await handled).status).toBe(200)
+    await drained
     await waitOnExecutionContext(ctx)
     expect(await governorSql('SELECT id FROM leases')).toEqual([])
     expect((await report()).analyses).toMatchObject({ admitted: 1, in_flight: 0 })
