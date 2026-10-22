@@ -419,7 +419,7 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         heading: 'The analysis service reported an unexpected problem',
         message:
           'The analysis could not be completed. This is a problem in the service, not in your request.',
-        hint: 'Trying again may help; if it persists, the API logs have the details.',
+        hint: 'Trying again may help; if it keeps happening, please try again later.',
         retryable: true,
         retryAfterSeconds: retryAfter,
       }

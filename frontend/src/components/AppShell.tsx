@@ -1,7 +1,6 @@
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
 import { Link, NavLink, NavigationType, useLocation, useNavigationType } from 'react-router'
 
-import { useMeta } from '../api/queries'
 import { ServiceNotice } from './ServiceNotice'
 import { NavigationFocus, PAGE_HEADING } from './useRetryFocus'
 
@@ -53,12 +52,11 @@ function ClockMark() {
 
 /**
  * Header, footer and the site-wide service notices around every page. The
- * footer's release line appears once metadata has loaded; `/meta` arrives
- * already checked for compatibility, so the shell never renders a shape it
- * cannot read (audit F25).
+ * data release and versions are on the About page, not in the footer
+ * (review round 4: "analytics 0.2 · API v1" on every page meant nothing to
+ * a reader).
  */
 export function AppShell({ children }: { children: ReactNode }) {
-  const meta = useMeta()
   const navigated = useFocusOnNavigation()
 
   return (
@@ -74,7 +72,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
           <nav className="site-nav" aria-label="Main">
             <NavLink to="/explore">Explore</NavLink>
-            <NavLink to="/about">About &amp; methodology</NavLink>
+            <NavLink to="/about">
+              About<span className="site-nav__more"> &amp; methodology</span>
+            </NavLink>
           </nav>
         </div>
       </header>
@@ -92,15 +92,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             . Estimates are survey-weighted and subject to sampling uncertainty.
           </p>
           <p>
-            An independent analytical project — not an official BLS product.
-            {meta.data ? (
-              <>
-                {' '}
-                Data release {meta.data.data.release} ({meta.data.data.years[0]}–
-                {meta.data.data.years[meta.data.data.years.length - 1]}) · analytics{' '}
-                {meta.data.analytics_version} · API {meta.data.api_version}
-              </>
-            ) : null}
+            An independent project — not an official BLS product. The data release and versions
+            are on the <Link to="/about#data">About page</Link>.
           </p>
         </div>
       </footer>

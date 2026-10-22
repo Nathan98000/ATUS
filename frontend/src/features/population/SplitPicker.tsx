@@ -1,6 +1,8 @@
 /**
  * A trend's "split into groups": one dimension, then which of its groups
- * to draw — one line each, like the comparison's "compare by" choices.
+ * to draw — one line each. It is labeled "Compare by", in the comparison's
+ * own words and choices (review round 4: "Lines" was not where a reader
+ * looked for "men and women over time").
  */
 import { useId } from 'react'
 
@@ -52,16 +54,16 @@ export function SplitPicker({ state, dimensions, error, onChange }: SplitPickerP
   return (
     <div className="split-picker">
       <div className="field split-picker__by">
-        <label htmlFor={`${id}-split`}>Lines</label>
+        <label htmlFor={`${id}-split`}>Compare by</label>
         <select
           id={`${id}-split`}
           value={choice?.by ?? 'none'}
           onChange={(event) => chooseSplit(event.target.value)}
         >
-          <option value="none">One line for everyone</option>
+          <option value="none">No comparison (one line)</option>
           {choices.map((candidate) => (
             <option key={candidate.by} value={candidate.by}>
-              One line per group: {candidate.label.toLowerCase()}
+              {candidate.label}
             </option>
           ))}
         </select>

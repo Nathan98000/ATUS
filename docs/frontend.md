@@ -54,15 +54,18 @@ frontend/src/
               prewarm.ts (starter examples + prewarmed snapshot specs)
   deploy/     staticHeaders.ts (reads the _headers rules of the static host)
   features/
-    activities/  lexicon.ts (client index), ActivityPicker
+    activities/  lexicon.ts (client index), synonyms.ts (everyday words for
+                 search), ActivityPicker
     builder/     state.ts (builder ⇄ request spec), BuilderControls,
-                 BuilderSummary (the sticky summary with Analyze)
-    home/        StarterPreview (a starter's answer, from the snapshot only)
+                 BuilderSummary (the sticky one-line summary with Analyze)
+    home/        StarterPreview (a starter's answer), HomeChart (the home
+                 page's split trend) — both from the snapshot only
     population/  PopulationFields (generated from population metadata),
                  compareGroups.ts ("compare by" / "split by" choices),
                  CompareGroupsPicker, SplitPicker
     results/     EstimateView, TrendView (+ SplitTrendView) + TrendChart,
                  CompareView + ComparisonChart, ChartFootnote, ShareButton,
+                 splitComparison (a split trend's way to a likely range),
                  chartScale, useElementWidth
   components/ AppShell, ErrorBoundary, LoadingPanel, ErrorPanel, WarningBanner,
               AnalysisTypeIcon,
@@ -194,7 +197,7 @@ its statistical methods"). The cache key keeps the page's versions; a result
 of another release or implementation is not hidden by it but announced by
 the notice (results no longer list their `analytics_version` themselves:
 the methodology panels and exports that did were removed in the 2026-10-22
-design review; the footer names the page's). The notice offers
+design review; the About page names the page's). The notice offers
 "Reload page" only when a reload would load that release: when the snapshot
 pointer, read again with `no-cache`, now names it, or, without a usable
 pointer, when the site's own `/api/v1/meta` (also `no-cache`) already
@@ -342,9 +345,12 @@ the four home-page starters, then — built by the analysis builder's own
 measure, a full-period trend per preset and per tier-1 category, a
 latest-year estimate per tier-1 category, men vs women per preset and per
 tier-1 category, each preset under the pandemic weights in 2019 and
-2020, and each starter as the builder sends it after "Adjust analysis"
+2020, the home page's chart (household activities split by sex: each
+group's point-estimate trend and its 2020 partial-year estimate, in the
+bytes the split-trend page sends; `homeChartSpecs`; design review round 4),
+and each starter as the builder sends it after "Adjust analysis"
 without a change (every default stated; for the two comparison starters
-these bytes are otherwise in no list; review round 2) — 132 for the
+these bytes are otherwise in no list; review round 2) — 135 for the
 2003–2025 release. Two passes:
 
 ```bash
@@ -427,37 +433,62 @@ values and standard errors.
   built from the trend's canonical spec, as the builder writes that
   estimate, with the preset's name — so the snapshot's prewarmed "pandemic
   weights" entries answer a preset's), one per line of a split trend. The
-  answer is drawn as a **hollow point** the line runs through, called
-  “partial year” in the readout and the screen-reader table, with a note in
-  the small print; the one-sentence answer reads full-year estimates only.
-  If that request fails, 2020 falls back to the gap below.
+  answer is drawn as a **hollow point**, called “partial year” in the
+  readout and the screen-reader table, with a note in the small print. The
+  line does not run through it: since design review round 4 the steps to
+  and from it are a thin dotted connector (`segmentPieces`), so a 2020 that
+  "may not compare exactly" is not drawn as an ordinary year. The
+  one-sentence answer reads full-year estimates only and says so ("Leaving
+  out 2020, a partial year, it ranged from …"). If that request fails, 2020
+  falls back to the gap below.
 - `estimate: null` (any other unavailable year, e.g. no respondents in a
   group) renders as a labeled gap band (“No data”); the line never crosses
   it, nothing is interpolated, and the chart's small print says why, with
   the API's reason in plain language — never zero.
 - Choosing 2020 alone for a single number or a comparison switches the
-  weights to the pandemic weights (a visible "Advanced options" choice) and
-  says it is a partial-year estimate; leaving 2020 switches back.
+  weights to the pandemic weights (a visible "More options" choice) and
+  says it is a partial-year estimate; leaving 2020 switches back. A trend
+  through 2020 says so on its chart, not in the builder (review round 4).
 - **Filters are opt-in** (`PopulationFields`): “Everyone age 15 and over”
   until one is added from “+ Add a filter”, which offers only sex, age,
   employment, education, children in the household and day of week. Region,
   state and diary dates are never offered; a shared link that sets one (or
   a dimension the API adds later) still shows it as a row with a remove
-  button. A row stays while it is edited, even when cleared.
+  button. A row stays while it is edited, even when cleared. Age is offered
+  as the comparison's bands ("25–34", "65 and over") with "Other range…"
+  for two ages of one's own; a link's range that is no band opens as
+  "Other range", so it shows (review round 4).
 - **Activities under plain names**: the BLS definition qualifier (“(BLS
   table A-1 definition)”) is never shown — not in the picker, the headings
   or the sentences (`activityName`); where two presets would read the same
   (“Eating and drinking”), only the BLS-table one is offered
   (`offeredPresets`). The “n.e.c.” catch-alls and the “Data Codes” category
-  are not offered in search or browsing (`isOffered`); a selected category
-  still includes them, and counts name the activities a visitor can see.
+  are not offered in search or browsing (`isOffered`), nor is a category
+  left with nothing else (0399); a selected category still includes them,
+  and counts name the activities a visitor can see.
+- **Activity names in plain words** (review round 4, `plainActivityName`):
+  the survey's abbreviations spelled out (“HH” → “household”, “&” →
+  “and”), Title Case as sentence case, and a few top-level categories under
+  plain names keyed by the survey's exact name (“Volunteer Activities” →
+  “Volunteering”); only letter case and those abbreviations change, and the
+  request keeps the survey's own name. Search matches the survey's names,
+  their plain forms, the presets' names and everyday words (`synonyms.ts`:
+  “tv” → Watching TV, “chores” → Housework), presets first. Each popular
+  choice — the presets and four top-level categories (volunteering, sports
+  and exercise, caring for household members, shopping) — and the selected
+  activity say what they include, from the lexicon's own names.
 - Confidence intervals are shown wherever the API provides them, as a
   “likely range”: the estimate's range in words, the trend's shaded band,
   the comparison's whiskers and its difference's range, each named with its
   level in the small print. A trend split into groups draws no bands (it
-  requests point estimates; the small print says so). `variance: "none"`
-  results say explicitly that no likely range was requested. Readouts
-  (tooltips) say values only.
+  requests point estimates; a replicate-weight trend per group would cost
+  about ten times as much, and two to six bands overlap): it links instead
+  to a comparison of two of its groups in its latest year — the two, or the
+  highest and the lowest — whose difference has its likely range
+  (`splitComparison`, written as the builder writes that comparison, so men
+  vs women for a preset is a prewarmed snapshot entry; review round 4).
+  `variance: "none"` results say explicitly that no likely range was
+  requested. Readouts (tooltips) say values only.
 - API `warnings` always render visibly, in plain language
   (`domain/notes.ts`): caveats about the particular result (pooled years,
   pandemic weights, a truncated interval, filter caveats) in the “Keep in
@@ -465,10 +496,14 @@ values and standard errors.
   coding, how a difference's uncertainty is computed) as a quieter line, so
   the warning style keeps its meaning. A warning the module does not
   recognize is shown verbatim, as a caveat. Context notes sit in the chart's
-  small print (`ChartFootnote`), with the source line and the number of
-  diaries behind the figure.
+  small print (`ChartFootnote`), on one line together (review round 4), with
+  the source line and the number of diaries behind the figure.
 - Formatting precision policy (`utils/format.ts`): durations as h + m
-  rounded to the minute (detailed form: one decimal of minutes);
+  rounded to the minute, a whole hour as “9h” and axis ticks in the same
+  form (“9h”, “9h 10m”, never “9h 00m”; review round 4), durations inside a
+  sentence in words (“9 hours 2 minutes”), and a difference's likely range
+  in whole minutes when both ends are 10 minutes or more, else one decimal
+  (“2.8 to 19.4 minutes”) (detailed form: one decimal of minutes);
   percentages one decimal (small nonzero values keep two significant digits
   rather than collapsing to “0.0”); SEs/CIs in the estimate's own scale and
   precision; a **difference** of two proportions is formatted in percentage
@@ -491,10 +526,22 @@ values and standard errors.
   the population and years once in the details line.
 - Every result leads with a one-sentence plain-language answer, a
   deterministic template over response fields (`interpretEstimate`,
-  `interpretTrend`, `describeDifference`) — descriptive wording only, no
-  causal claims, no significance language. A comparison's difference is
-  stated as “N more for <group>” with its likely range as a range of
-  “more for A / more for B”.
+  `interpretTrend`, `interpretSplitTrend`, `describeDifference`) —
+  descriptive wording only, no causal claims, no significance language.
+  Since review round 4 it reads as English: the population as people
+  (`peoplePhrase`: “Americans age 15 and over”, “women ages 25–54”, “people
+  with children under 18 at home”), the activity without quotation marks
+  (“spent … sleeping”, “… on household activities”), durations in words,
+  no nested brackets or interpuncts. A comparison's or a split trend's
+  groups are named as people (“men spent 23 minutes more a day watching TV
+  than women”) only when a group's label is exactly the plain description
+  of its own filters; any other label, a link's included, follows “for” as
+  written (R14). A comparison's difference is stated in one line under its
+  bars as “N more for <group>” with its likely range as a range of “more
+  for A / more for B”. When the API's interval for the difference includes
+  zero, the answer adds “but the likely range includes no difference”: it
+  reads the interval's sign, computes nothing and claims no significance
+  (the owner's decision D3, review round 4).
 - Each result is one chart with its answer as the title (2026-10-22 design
   review, after the earlier Shiny app): an estimate's figure puts it in
   proportion (a duration as a stretch of a 24-hour day, a rate as dots
@@ -503,19 +550,41 @@ values and standard errors.
   than SVG so labels wrap and text keeps its size), with values beside the
   bars; the trend chart draws at its container's measured width
   (`useElementWidth`), with clock-like ticks ("5h 10m"), ringed points and
-  its latest value labeled at the line's end. A trend split into groups
-  draws up to six lines, each its own colour and dash pattern (the series
-  palette in `global.css`, validated together for colour-vision
-  deficiency), with a legend and a readout listing every group at the
-  year under the cursor.
+  its latest value labeled at the line's end (hidden while the readout
+  shows that year). A trend split into groups draws up to six lines, each
+  its own colour and dash pattern (the series palette in `global.css`,
+  validated together for colour-vision deficiency), with a legend above the
+  chart and a readout listing every group at the year under the cursor.
+  Since review round 4 its lines carry points only at their ends (and
+  partial years, and the year under the cursor), 2px on a phone, and with
+  up to four lines and room for them each line's end is labeled with its
+  group and latest value — unless two labels would touch, when the legend
+  alone names them (labels are never nudged off their lines).
 - The builder asks a comparison for one “Compare by” dimension and two of
   its values (`CompareGroupsPicker`; group names are the values' plain
   descriptions); “Custom groups…” opens the two full group editors, and a
-  link whose groups are not one such choice opens there.
+  link whose groups are not one such choice opens there. On a phone the
+  two values stack under “Compare by” at full width (review round 4: beside
+  it they shrank to 82px). A trend's split uses the same words (“Compare
+  by”, “No comparison (one line)”) and choices.
+- The builder (review round 4) opens on “Change over time”, the first of
+  its three types: the default trend of each preset is prewarmed. It asks
+  “Doing what?” (with “Show:”, the statistic, as one select under the
+  activity), “For whom?” and “When?”; one year by default for a single
+  number or a comparison, with “Combine several years” under “More
+  options”, which also holds the weights and the likely range in plain
+  words (no BLS variable names) and opens by itself whenever a link sets
+  one of them away from its default. The sticky summary is one line
+  (“Sleeping · Average time per day · Everyone age 15 and over ·
+  2003–2025”) with Analyze. Request bytes are unchanged (`toRequest`).
 - The home page's starter cards preview their answers from the static
   snapshot only (`snapshotAnalysis`): a home page visit never wakes the
   analysis service or spends its quota, and without a snapshot (development)
-  the cards show their questions alone.
+  the cards show their questions alone. So does its chart (review round 4,
+  `HomeChart`): household activities, men and women, every year — a trend
+  split by sex drawn by the analysis page's own chart, with its answer and
+  a link to open it — beside the headline on a wide screen and straight
+  after it on a phone; without a snapshot it is not shown.
 
 ## Accessibility
 
@@ -619,11 +688,11 @@ listing wherever `frontend/node_modules` is installed.
   `/meta` (or a static snapshot) announcing a release 0326 with years
   2003–2026 and its own data version, and no code change, the year pickers
   (single, pooled, trend) offer 2026 and default to it, the default trend is
-  2003–2026, the home page's starters, the footer, the "View … trend" link
+  2003–2026, the home page's starters, the About page, the "View … trend" link
   and the prewarm list use 2026, results are cached under the 0326 version
   tag, and a shared link through 2026 opens unchanged (under the 0325
   release it loses 2026, with the note). The 2020 rules still hold: the
-  builder's 2020 note follows the range and the weights, a trend through 2026
+  builder's 2020 note follows the year and the weights, a trend through 2026
   shows 2020 as its partial-year point, pandemic weights stay 2019–2020
   only.
 - E2E (real API + fixture database via `scripts/e2e_backend.py`; every

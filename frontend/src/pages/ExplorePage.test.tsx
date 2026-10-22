@@ -52,52 +52,70 @@ async function waitForBuilder() {
   )
 }
 
+/** The builder opens on a trend (review round 4); most tests here want one number. */
+async function chooseOneNumber(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('radio', { name: 'One number' }))
+}
+
+/** The summary's one line (review round 4: no longer a list of rows). */
+function summaryText(): string {
+  const summary = screen.getByRole('region', { name: 'Your chart' })
+  return within(summary).getByText(/·/).textContent ?? ''
+}
+
 describe('builder defaults and discovery', () => {
-  it('offers a supported default analysis using the latest year from /meta', async () => {
+  it('opens on a full-period trend, the latest year from /meta (review round 4)', async () => {
+    const user = userEvent.setup()
     renderExplore()
     await waitForBuilder()
     expect(
       await screen.findByText('Sleeping', { selector: '.activity-picker__name' }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Change over time' })).toBeChecked()
+    expect(screen.getByLabelText('From')).toHaveValue('2003')
+    expect(screen.getByLabelText('To')).toHaveValue('2025')
+    expect(screen.getByLabelText('Show')).toHaveValue('average_minutes_per_day')
+    await chooseOneNumber(user)
     expect(screen.getByLabelText('Year')).toHaveValue('2025')
-    expect(screen.getByRole('radio', { name: /Average time per day/ })).toBeChecked()
   })
 
-  it('summarizes the analysis beside the form, with the Analyze button', async () => {
+  it('summarizes the analysis in one line beside the form, with the Analyze button', async () => {
     const user = userEvent.setup()
     renderExplore()
     await waitForBuilder()
-    const summary = screen.getByRole('region', { name: 'Your analysis' })
-    const detail = (term: string) => within(summary).getByText(term).nextElementSibling
-    expect(detail('Doing what')).toHaveTextContent('Sleeping')
-    expect(detail('For whom')).toHaveTextContent('All respondents (age 15+)')
-    expect(detail('When')).toHaveTextContent('2025')
-    expect(detail('Measured as')).toHaveTextContent('Average time per day')
-    expect(detail('Type')).toHaveTextContent('One number')
+    await chooseOneNumber(user)
+    const summary = screen.getByRole('region', { name: 'Your chart' })
+    expect(summaryText()).toBe(
+      'Sleeping · Average time per day · Everyone age 15 and over · 2025',
+    )
     expect(within(summary).getByRole('button', { name: 'Analyze' })).toBeInTheDocument()
 
     // It follows every edit.
     await addFilter(user, 'sex')
     await user.selectOptions(screen.getByLabelText('Sex'), 'female')
-    expect(detail('For whom')).toHaveTextContent('Women')
+    expect(summaryText()).toContain('· Women ·')
     await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
     // A comparison starts as men vs women; the estimate's "Women" filter
     // would contradict it, so it is not carried over.
-    expect(detail('For whom')).toHaveTextContent(/^Men vs Women$/)
-    expect(detail('Type')).toHaveTextContent('Comparison of two groups')
+    expect(summaryText()).toContain('· Men vs Women ·')
   })
 
-  it('builds measure choices from the capability metadata', async () => {
+  it('builds measure choices from the capability metadata, in one select', async () => {
     renderExplore()
     await waitForBuilder()
-    for (const label of [
-      /Average time per day/,
-      /Share of people who do it/,
-      /Time among those who do it/,
-      /Number of people who do it/,
-    ]) {
-      expect(screen.getByRole('radio', { name: label })).toBeInTheDocument()
-    }
+    const show = screen.getByLabelText('Show')
+    expect(
+      within(show)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual([
+      'Average time per day',
+      'Share of people who do it',
+      'Time among those who do it',
+      'Number of people who do it',
+    ])
+    // The chosen statistic says what it means.
+    expect(show).toHaveAccessibleDescription(/including people who did not do the activity/)
   })
 
   it('shows a clear failure state when the API stays unreachable past the cold-start budget', async () => {
@@ -120,6 +138,7 @@ describe('running an analysis', () => {
     const user = userEvent.setup()
     renderExplore()
     await waitForBuilder()
+    await chooseOneNumber(user)
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
 
     const location = screen.getByTestId('location').textContent ?? ''
@@ -141,6 +160,7 @@ describe('running an analysis', () => {
     renderExplore()
     await waitForBuilder()
     await addFilter(user, 'age')
+    await user.selectOptions(screen.getByLabelText('Age'), 'other')
     await user.type(screen.getByLabelText('Minimum age'), '90')
     await user.type(screen.getByLabelText('Maximum age'), '20')
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
@@ -186,7 +206,7 @@ describe('running an analysis', () => {
     const spec = decodeSpec(location.split('spec=')[1] as string, 'compare') as CompareRequest
     expect(spec.group_a).toEqual({ age_min: 15, age_max: 24 })
     expect(spec.group_b).toEqual({ age_min: 65 })
-    expect([spec.label_a, spec.label_b]).toEqual(['Ages 15–24', 'Age 65+'])
+    expect([spec.label_a, spec.label_b]).toEqual(['Ages 15–24', 'Ages 65 and over'])
   })
 
   it('refuses to compare a group with itself', async () => {
@@ -227,6 +247,35 @@ describe('running an analysis', () => {
   })
 })
 
+describe('several years combined (review round 4: under "More options")', () => {
+  it('turns pooling on under More options and picks the years where the years are', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await chooseOneNumber(user)
+    await user.click(screen.getByText('More options'))
+    await user.click(screen.getByRole('checkbox', { name: /Combine several years/ }))
+    const years = screen.getByRole('group', { name: 'Years to combine' })
+    expect(within(years).getByRole('checkbox', { name: '2025' })).toBeChecked()
+    await user.click(within(years).getByRole('checkbox', { name: '2024' }))
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    const location = screen.getByTestId('location').textContent ?? ''
+    const sent = decodeSpec(location.split('spec=')[1] as string, 'estimate')
+    expect(sent.years).toEqual([2024, 2025])
+  })
+
+  it('goes back to one year, the latest combined, from the years themselves', async () => {
+    const user = userEvent.setup()
+    const spec: EstimateRequest = { activity: { preset: 'sleep' }, years: [2022, 2023] }
+    renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
+    await waitForBuilder()
+    // Pooled from a link: "More options" is open, the years on show.
+    expect(screen.getByRole('checkbox', { name: /Combine several years/ })).toBeChecked()
+    await user.click(screen.getByRole('button', { name: 'Use one year instead' }))
+    expect(screen.getByLabelText('Year')).toHaveValue('2023')
+  })
+})
+
 describe('prefilling from a shared analysis', () => {
   it('reconstructs builder state from ?op & ?spec', async () => {
     const spec: EstimateRequest = {
@@ -243,7 +292,7 @@ describe('prefilling from a shared analysis', () => {
     expect(
       screen.getByText('Watching TV', { selector: '.activity-picker__name' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /Share of people who do it/ })).toBeChecked()
+    expect(screen.getByLabelText('Show')).toHaveValue('participation_rate')
     expect(screen.getByLabelText('Year')).toHaveValue('2024')
     expect(screen.getByLabelText('Sex')).toHaveValue('female')
   })
@@ -321,8 +370,10 @@ describe('confidence levels from a shared analysis (review round 3)', () => {
     }
     renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
     await waitForBuilder()
-    const select = screen.getByLabelText('Confidence level') as HTMLSelectElement
+    const select = screen.getByLabelText('Likely range certainty') as HTMLSelectElement
     expect(select.selectedOptions[0]).toHaveTextContent('97.5%')
+    // Not the default: "More options" opens by itself, so it is in sight.
+    expect(screen.getByText('More options').closest('details')).toHaveAttribute('open')
     expect(
       within(select)
         .getAllByRole('option')
@@ -348,7 +399,7 @@ describe('confidence levels from a shared analysis (review round 3)', () => {
     }
     renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
     await waitForBuilder()
-    const select = screen.getByLabelText('Confidence level') as HTMLSelectElement
+    const select = screen.getByLabelText('Likely range certainty') as HTMLSelectElement
     await user.selectOptions(select, '90%')
     expect(select.selectedOptions[0]).toHaveTextContent('90%')
 
@@ -361,7 +412,8 @@ describe('confidence levels from a shared analysis (review round 3)', () => {
   it('a standard level adds no extra option', async () => {
     renderExplore()
     await waitForBuilder()
-    const select = screen.getByLabelText('Confidence level') as HTMLSelectElement
+    expect(screen.getByText('More options').closest('details')).not.toHaveAttribute('open')
+    const select = screen.getByLabelText('Likely range certainty') as HTMLSelectElement
     expect(select.selectedOptions[0]).toHaveTextContent('95%')
     expect(within(select).getAllByRole('option')).toHaveLength(3)
   })
@@ -386,7 +438,7 @@ describe('shared filters of a comparison (review round 3)', () => {
     }
     renderExplore(`/explore?op=compare&spec=${encodeSpec(spec)}`)
     await waitForBuilder()
-    expect(within(sharedGroup()).getByLabelText('Minimum age')).toHaveValue(65)
+    expect(within(sharedGroup()).getByLabelText('Age')).toHaveValue('65+')
     // Men vs women opens as the simple choice it is.
     expect(screen.getByLabelText('Compare by')).toHaveValue('sex')
   })
@@ -428,10 +480,11 @@ describe('shared filters of a comparison (review round 3)', () => {
     const user = userEvent.setup()
     renderExplore()
     await waitForBuilder()
+    await chooseOneNumber(user)
     await addFilter(user, 'age')
-    await user.type(screen.getByLabelText('Minimum age'), '65')
+    await user.selectOptions(screen.getByLabelText('Age'), '65+')
     await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
-    expect(within(sharedGroup()).getByLabelText('Minimum age')).toHaveValue(65)
+    expect(within(sharedGroup()).getByLabelText('Age')).toHaveValue('65+')
 
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
     const location = screen.getByTestId('location').textContent ?? ''
@@ -443,10 +496,12 @@ describe('shared filters of a comparison (review round 3)', () => {
     const user = userEvent.setup()
     renderExplore()
     await waitForBuilder()
+    await chooseOneNumber(user)
     await addFilter(user, 'age')
-    await user.type(screen.getByLabelText('Minimum age'), '65')
+    await user.selectOptions(screen.getByLabelText('Age'), '65+')
     await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
     // A new filter list: the row is there because the filter is set...
+    await user.selectOptions(within(sharedGroup()).getByLabelText('Age'), 'other')
     fireEvent.change(within(sharedGroup()).getByLabelText('Minimum age'), {
       target: { value: '' },
     })
@@ -481,7 +536,7 @@ describe('browser history (review finding: Back must not reset the builder)', ()
     await waitForBuilder()
     // The configuration survived the round trip through history.
     expect(screen.getByLabelText('Sex')).toHaveValue('female')
-    expect(screen.getByTestId('location').textContent).toMatch(/^\/explore\?op=estimate&spec=/)
+    expect(screen.getByTestId('location').textContent).toMatch(/^\/explore\?op=trend&spec=/)
   })
 })
 
@@ -502,9 +557,11 @@ describe('capability discovery (review finding: no hard-coded measures)', () => 
     )
     renderExplore()
     await waitForBuilder()
-    expect(screen.getByRole('radio', { name: /Average time per day/ })).toBeInTheDocument()
-    expect(screen.queryByRole('radio', { name: /Participation rate/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole('radio', { name: /People per day/ })).not.toBeInTheDocument()
+    expect(
+      within(screen.getByLabelText('Show'))
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual(['Average time per day'])
   })
 
   it('ignores a future measure the UI does not know', async () => {
@@ -528,9 +585,9 @@ describe('capability discovery (review finding: no hard-coded measures)', () => 
     )
     renderExplore()
     await waitForBuilder()
-    expect(screen.queryByRole('radio', { name: /median/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: /median/i })).not.toBeInTheDocument()
     // The known measures are unaffected.
-    expect(screen.getByRole('radio', { name: /Average time per day/ })).toBeChecked()
+    expect(screen.getByLabelText('Show')).toHaveValue('average_minutes_per_day')
   })
 })
 
@@ -540,16 +597,13 @@ describe('a trend split into groups (like the Shiny app)', () => {
     renderExplore()
     await waitForBuilder()
     await user.click(screen.getByRole('radio', { name: 'Change over time' }))
-    await user.selectOptions(screen.getByLabelText('Lines'), 'employment_status')
+    await user.selectOptions(screen.getByLabelText('Compare by'), 'employment_status')
     const groups = screen.getByRole('group', { name: 'Show groups' })
     // Every group starts shown; the split dimension leaves the filters.
     expect(within(groups).getAllByRole('checkbox', { checked: true })).toHaveLength(3)
     expect(screen.queryByLabelText('Employment')).not.toBeInTheDocument()
     await user.click(within(groups).getByRole('checkbox', { name: 'Unemployed' }))
-    const summary = screen.getByRole('region', { name: 'Your analysis' })
-    expect(within(summary).getByText('For whom').nextElementSibling).toHaveTextContent(
-      'Employed, Not in the labor force',
-    )
+    expect(summaryText()).toContain('· Employed, Not in the labor force ·')
 
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
     const location = screen.getByTestId('location').textContent ?? ''
@@ -566,7 +620,7 @@ describe('a trend split into groups (like the Shiny app)', () => {
     renderExplore()
     await waitForBuilder()
     await user.click(screen.getByRole('radio', { name: 'Change over time' }))
-    await user.selectOptions(screen.getByLabelText('Lines'), 'sex')
+    await user.selectOptions(screen.getByLabelText('Compare by'), 'sex')
     await user.click(screen.getByRole('checkbox', { name: 'Women' }))
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Choose at least two groups to show.')
@@ -577,9 +631,9 @@ describe('a trend split into groups (like the Shiny app)', () => {
     const spec: EstimateRequest = { activity: { preset: 'sleep' }, years: [2023, 2024, 2025] }
     renderExplore(`/explore?op=trend&spec=${encodeSpec(spec)}&split=age&groups=15-24,65%2B`)
     await waitForBuilder()
-    expect(screen.getByLabelText('Lines')).toHaveValue('age')
+    expect(screen.getByLabelText('Compare by')).toHaveValue('age')
     expect(screen.getByRole('checkbox', { name: 'Ages 15–24' })).toBeChecked()
-    expect(screen.getByRole('checkbox', { name: 'Age 65+' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Ages 65 and over' })).toBeChecked()
     expect(screen.getByRole('checkbox', { name: 'Ages 25–34' })).not.toBeChecked()
   })
 

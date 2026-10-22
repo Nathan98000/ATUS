@@ -100,9 +100,11 @@ steps, configuration) and
 Every number in the UI comes from the API: estimates carry their likely
 ranges, methodological notes are always displayed, 2020 appears in trends as
 its partial-year (pandemic-weight) estimate, drawn hollow and labeled, never
-an interpolated value, and the "Share
-analysis" URL encodes the full canonical specification so anyone can
-reproduce the result.
+an interpolated value, and the "Copy link"
+URL encodes the full canonical specification so anyone can reproduce the
+result. Each result leads with a one-sentence answer in plain English; a
+trend can be split into one line per group, like the earlier
+[Shiny app](https://nathan98000.shinyapps.io/how-americans-spend-time/).
 
 ## Technology
 

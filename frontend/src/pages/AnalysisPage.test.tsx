@@ -10,7 +10,7 @@ import { MemoryRouter, Route, Routes } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { CompareRequest, EstimateRequest } from '../api/types'
-import { encodeSpec } from '../domain/urlSpec'
+import { decodeSpec, encodeSpec } from '../domain/urlSpec'
 import {
   compareChildrenFixture,
   error2020Fixture,
@@ -169,10 +169,12 @@ describe('trend and compare results', () => {
       years: trendLeisureFixture.points.map((point) => point.year),
     }
     renderAnalysisRoute(`/analysis/trend?spec=${encodeSpec(spec)}`)
-    // 2020 comes from the pandemic weights: a hollow point the line runs through.
+    // 2020 comes from the pandemic weights: a hollow point, reached by a
+    // dotted connector between the line's two full-year runs.
     expect(await screen.findByTestId('point-2020')).toHaveClass('is-partial')
     expect(screen.queryByTestId('unavailable-2020')).not.toBeInTheDocument()
-    expect(screen.getAllByTestId('trend-line-segment').length).toBe(1)
+    expect(screen.getAllByTestId('trend-line-segment').length).toBe(2)
+    expect(screen.getAllByTestId('trend-line-connector').length).toBe(1)
     // One request, written as the builder writes that estimate — the same
     // before and after the link is rewritten to its canonical form.
     await waitFor(() =>
@@ -191,7 +193,7 @@ describe('trend and compare results', () => {
     ])
     // The small print says what 2020 is; the API's jargon stays out.
     expect(screen.getByTestId('partial-note')).toHaveTextContent(
-      /2020 is a partial-year estimate \(hollow point\): data collection paused from March 18 to May 9, 2020/,
+      /^2020 \(hollow point\) is a partial year: the survey paused from March 18 to May 9 because of COVID-19/,
     )
     expect(screen.queryByText(/TUFNWGTP|TU20FWGT/)).not.toBeInTheDocument()
     // API notes must be visible on trend pages too.
@@ -205,12 +207,15 @@ describe('trend and compare results', () => {
     expect(screen.queryByText(/Activity codes/)).not.toBeInTheDocument()
     // The heading drops the definition parenthetical altogether.
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^Leisure and sports$/)
-    expect(screen.getByText('All respondents (age 15+) · 2003–2025')).toBeInTheDocument()
+    expect(screen.getByText('Everyone age 15 and over · 2003–2025')).toBeInTheDocument()
     expect(screen.queryByText(/BLS table/)).not.toBeInTheDocument()
-    // The answer leads, from full-year estimates only: latest and first year in words.
+    // The answer leads, from full-year estimates only: latest and first year
+    // in words, and 2020 named only as left out (review round 4).
     expect(
-      screen.getByText(/^Average time per day on “Leisure and sports” was/),
-    ).not.toHaveTextContent('2020')
+      screen.getByText(/^Americans age 15 and over spent 5 hours 10 minutes a day/),
+    ).toHaveTextContent(
+      /Leaving out 2020, a partial year, it ranged from 5 hours 4 minutes in 2024 to 5 hours 22 minutes in 2012\.$/,
+    )
   })
 
   it('leaves 2020 a labeled gap when its partial-year estimate cannot be had', async () => {
@@ -245,15 +250,17 @@ describe('trend and compare results', () => {
     const difference = await screen.findByTestId('difference')
     // Difference direction is explicit, in words: B is larger here.
     expect(compareChildrenFixture.difference.value).toBeLessThan(0)
-    expect(difference).toHaveTextContent('11 minutes more per day for No household children')
     expect(difference).toHaveTextContent(
-      'Likely range: 2.8 to 19.4 min more for No household children (95% confidence)',
+      'Difference: 11 minutes more per day for No household children.',
+    )
+    expect(difference).toHaveTextContent(
+      'Likely range: 2.8 to 19.4 minutes more for No household children (95% confidence)',
     )
     expect(screen.getAllByText('1h 52m').length).toBeGreaterThan(0)
     expect(screen.getAllByText('2h 3m').length).toBeGreaterThan(0)
     expect(
       screen.getByText(
-        'In 2025, average time per day on “Household activities” was 11 minutes longer for No household children than for Household children present.',
+        'In 2025, average time a day spent on household activities was 11 minutes longer for No household children than for Household children present.',
       ),
     ).toBeInTheDocument()
     // API notes must be visible on compare pages too.
@@ -290,8 +297,8 @@ describe('trend and compare results', () => {
     renderAnalysisRoute(`/analysis/compare?spec=${encodeSpec(spec)}`)
     await screen.findByTestId('difference')
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/: Men vs Women$/)
-    expect(document.title).toMatch(/Men vs Women — Age 65\+ — 2025 · ATUS Explorer$/)
-    const line = screen.getByText(/Both groups: Age 65\+ · 2025$/)
+    expect(document.title).toMatch(/Men vs Women — Ages 65 and over — 2025 · ATUS Explorer$/)
+    const line = screen.getByText(/Both groups: Ages 65 and over · 2025$/)
     expect(line.closest('details')).toBeNull()
   })
 })
@@ -479,10 +486,28 @@ describe('a trend split into groups', () => {
     expect(screen.queryByTestId('ci-band')).not.toBeInTheDocument()
     expect(screen.getByText('Average time per day, by year and sex')).toHaveClass('eyebrow')
     expect(
-      screen.getByText(
-        /^In 2025, average time per day on “Leisure and sports” was 5h 10m for Men/,
-      ),
+      screen.getByText(/^In 2025, men spent 5 hours 10 minutes a day on leisure and sports/),
     ).toBeInTheDocument()
+    // No band: a link to two groups in one year, whose comparison has the
+    // likely range (review round 4), written as the builder writes it.
+    const comparison = screen.getByRole('link', {
+      name: /^How sure is this\? Compare men and women in 2025/,
+    })
+    const compared = decodeSpec(
+      (comparison.getAttribute('href') ?? '').split('spec=')[1] as string,
+      'compare',
+    ) as CompareRequest
+    expect(compared).toMatchObject({
+      activity: { preset: 'leisure_and_sports_bls_table' },
+      years: [2025],
+      group_a: { sex: 'male' },
+      group_b: { sex: 'female' },
+      label_a: 'Men',
+      label_b: 'Women',
+      variance: 'replicate',
+    })
+    // The title names the groups, not everyone.
+    expect(document.title).toMatch(/^Leisure and sports — Men, Women — /)
     // The link keeps its split: it is not rewritten to the canonical spec.
     expect(screen.getByTestId('location').textContent).toContain(
       '&split=sex&groups=male,female',

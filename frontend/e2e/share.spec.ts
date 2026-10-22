@@ -4,7 +4,7 @@
  */
 import { expect, test } from './fixtures'
 
-import { CORE, analyze, collectPolicyErrors, setAge } from './helpers'
+import { CORE, analyze, chooseOneNumber, collectPolicyErrors, setAge } from './helpers'
 
 test(
   'a shared analysis URL reproduces the analysis in a fresh browser context',
@@ -27,12 +27,13 @@ test(
 
     await page.goto('/explore')
     await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+    await chooseOneNumber(page)
     await setAge(page, 25, 54)
     await page.getByLabel('Year', { exact: true }).selectOption('2023')
     await analyze(page)
     await expect(page.locator('.stat-value')).toHaveText('2h 30m', { timeout: 15_000 })
 
-    await page.getByRole('button', { name: 'Share analysis' }).click()
+    await page.getByRole('button', { name: 'Copy link' }).click()
     await expect(page.getByText('Link copied.')).toBeVisible()
     const sharedUrl = await page.evaluate(
       () => (window as unknown as { copiedForTest: string[] }).copiedForTest.at(-1) ?? '',
@@ -63,6 +64,7 @@ test(
 test('refreshing a result page reproduces the same analysis', CORE, async ({ page }) => {
   await page.goto('/explore')
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  await chooseOneNumber(page)
   await setAge(page, 25, 54)
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
   await analyze(page)

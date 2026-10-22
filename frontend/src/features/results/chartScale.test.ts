@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { durationTicks, durationTicksFromZero, ticksFromZero } from './chartScale'
+import {
+  durationTicks,
+  durationTicksFromZero,
+  segmentPieces,
+  ticksFromZero,
+} from './chartScale'
 
 describe('ticks from zero', () => {
   it('reaches at least the maximum on round steps', () => {
@@ -24,5 +29,25 @@ describe('duration ticks inside a range', () => {
 
   it('falls back to round decimals for a range under a minute', () => {
     expect(durationTicks(10.2, 10.6)).toEqual([10.2, 10.3, 10.4, 10.5, 10.6])
+  })
+})
+
+describe('segmentPieces (review round 4)', () => {
+  it('splits a run into full-weight pieces and dotted connectors around a partial year', () => {
+    const run = [2018, 2019, 2020, 2021, 2022].map((year) => ({ year }))
+    const pieces = segmentPieces(run, (year) => year === 2020)
+    expect(
+      pieces.map((piece) => [piece.partial, piece.points.map((point) => point.year)]),
+    ).toEqual([
+      [false, [2018, 2019]],
+      [true, [2019, 2020, 2021]],
+      [false, [2021, 2022]],
+    ])
+  })
+
+  it('keeps a run without partial years whole, and draws nothing for one point', () => {
+    const run = [2021, 2022, 2023].map((year) => ({ year }))
+    expect(segmentPieces(run, () => false)).toEqual([{ points: run, partial: false }])
+    expect(segmentPieces([{ year: 2020 }], () => true)).toEqual([])
   })
 })

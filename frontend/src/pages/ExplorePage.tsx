@@ -23,11 +23,7 @@ import { useRetryFocus } from '../components/useRetryFocus'
 import { isFullPageError } from '../domain/presentError'
 import { analysisPath, decodeSpec, explorePath, parseSplit } from '../domain/urlSpec'
 import { ActivityPicker } from '../features/activities/ActivityPicker'
-import {
-  AdvancedOptions,
-  MeasureSelector,
-  YearSelector,
-} from '../features/builder/BuilderControls'
+import { MeasureSelector, MoreOptions, YearSelector } from '../features/builder/BuilderControls'
 import { BuilderSummary } from '../features/builder/BuilderSummary'
 import {
   defaultBuilderState,
@@ -46,14 +42,15 @@ import {
   resolveSplit,
 } from '../features/population/compareGroups'
 
+/** Change over time first: the builder opens on a trend (review round 4). */
 const OPERATION_LABELS: {
   value: Operation
   label: string
   hint: string
   icon: 'number' | 'line' | 'bars'
 }[] = [
-  { value: 'estimate', label: 'One number', hint: 'A single figure', icon: 'number' },
   { value: 'trend', label: 'Change over time', hint: 'A line across the years', icon: 'line' },
+  { value: 'estimate', label: 'One number', hint: 'A single figure', icon: 'number' },
   {
     value: 'compare',
     label: 'Compare two groups',
@@ -106,10 +103,7 @@ export function ExplorePage() {
       failure !== null ? (
         <ErrorPanel error={failure} onRetry={onRetry} />
       ) : (
-        <LoadingPanel
-          message="Loading the analysis builder…"
-          hint="Fetching what the analytical service supports."
-        />
+        <LoadingPanel message="Loading the chart builder…" />
       )
   } else {
     content = (
@@ -291,6 +285,11 @@ function Builder({
               onChange={(activity) => update({ activity })}
               error={shownErrors.activity}
             />
+            <MeasureSelector
+              measures={meta.capabilities.measures}
+              value={state.measure}
+              onChange={(measure) => update({ measure })}
+            />
           </section>
 
           <section className="card builder-section" aria-labelledby="section-population">
@@ -351,21 +350,7 @@ function Builder({
             />
           </section>
 
-          <section className="card builder-section" aria-labelledby="section-measure">
-            <h2 id="section-measure">
-              <span className="builder-step" aria-hidden="true">
-                4
-              </span>
-              Measured how?
-            </h2>
-            <MeasureSelector
-              measures={meta.capabilities.measures}
-              value={state.measure}
-              onChange={(measure) => update({ measure })}
-            />
-          </section>
-
-          <AdvancedOptions
+          <MoreOptions
             state={state}
             weightSchemes={meta.capabilities.weight_schemes}
             varianceMethods={meta.capabilities.variance_methods}

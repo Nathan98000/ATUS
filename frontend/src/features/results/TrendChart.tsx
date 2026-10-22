@@ -12,18 +12,22 @@
  * The look: 2.5px lines over hairline gridlines, ringed points, clock-like
  * duration ticks. One trend gets its band and its latest value labeled at
  * the end of the line. A trend split into groups draws one line per group —
- * each its own colour and dash pattern, named in a legend below, without
+ * each its own colour and dash pattern, named in a legend above, without
  * bands — and the readout lists every group at the year under the cursor.
- * The readout says values only; the band carries the uncertainty. A
- * partial-year point (2020, from the pandemic weights) is drawn hollow and
- * named as such in the readout.
+ * Its lines carry points only at their ends (and the year under the cursor),
+ * so six lines of 23 years stay lines on a phone; with up to four lines and
+ * room for them, each is also labeled at its end (review round 4). The
+ * readout says values only; the band carries the uncertainty. A
+ * partial-year point (2020, from the pandemic weights) is drawn hollow,
+ * reached by a dotted connector rather than the line itself (it may not
+ * compare exactly with other years), and named as such in the readout.
  */
 import { useMemo, useState } from 'react'
 
 import type { TrendPoint } from '../../api/types'
 import { presentUnavailableReason, shortUnavailableReason } from '../../domain/notes'
 import { formatAxisTicks, formatClockTick, formatEstimate } from '../../utils/format'
-import { durationTicks, linearScale, niceTicks, padDomain } from './chartScale'
+import { durationTicks, linearScale, niceTicks, padDomain, segmentPieces } from './chartScale'
 import { useElementWidth } from './useElementWidth'
 
 /** Drawn at the container's own width, so text keeps its CSS size. */
@@ -34,11 +38,19 @@ const MARGIN = { top: 22, right: 64, bottom: 34, left: 58 }
 const NARROW_MARGIN = { top: 22, right: 52, bottom: 34, left: 50 }
 /** Room each x-axis year label needs. */
 const MIN_YEAR_TICK_SPACING = 52
+/** A split trend labels its lines' ends when it has at most this many lines. */
+const MAX_END_LABELS = 4
+/** Approximate width of one end-label character (13px text), for its margin. */
+const END_LABEL_CHAR = 7.4
+/** Closest two end labels may sit before the legend alone names the lines. */
+const MIN_END_LABEL_GAP = 16
 /**
  * Each line's dash pattern, in series order, so identity never rests on
  * colour alone (the colours are `--series-1`…`--series-6`).
  */
 const SERIES_DASHES = ['none', '7 5', '2 4', '10 4 2 4', '14 6', '4 3']
+/** The dotted connector to and from a partial-year point, in any series. */
+const PARTIAL_DASH = '1 5'
 
 /** One line: a whole trend, or one group of a split trend. */
 export interface TrendSeries {
@@ -133,7 +145,7 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
   const width = Math.max(measuredWidth, MIN_WIDTH)
   const narrow = width < 520
   const height = narrow ? 260 : 360
-  const margin = narrow ? NARROW_MARGIN : MARGIN
+  const baseMargin = narrow ? NARROW_MARGIN : MARGIN
   const single = series.length === 1
 
   const lines = useMemo(
@@ -164,19 +176,50 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
   })
   const minYear = years[0] as number
   const maxYear = years[years.length - 1] as number
-  // A little room on both sides so the first and last points clear the edges.
-  const yearPad = maxYear > minYear ? 0.4 : 1
-  const x = linearScale(
-    [minYear - yearPad, maxYear + yearPad],
-    [margin.left, width - margin.right],
-  )
 
   const lows = available.map((point) => (single ? (point.ciLower ?? point.value) : point.value))
   const highs = available.map((point) =>
     single ? (point.ciUpper ?? point.value) : point.value,
   )
   const [yMin, yMax] = padDomain(Math.min(...lows), Math.max(...highs))
-  const y = linearScale([yMin, yMax], [height - margin.bottom, margin.top])
+  const y = linearScale([yMin, yMax], [height - baseMargin.bottom, baseMargin.top])
+
+  // A split trend of up to four lines labels each line's end with its group
+  // and latest value, when there is room on the right and no two labels
+  // would touch; otherwise the legend alone names the lines (labels are
+  // never nudged off their lines).
+  const endLabels = (() => {
+    if (single || narrow || lines.length > MAX_END_LABELS) return null
+    const labels = lines.flatMap((line, index) => {
+      const point = line.available[line.available.length - 1]
+      return point
+        ? [{ index, point, name: line.label, value: showValue(point.value, unit) }]
+        : []
+    })
+    const room =
+      14 +
+      Math.max(...labels.map((label) => `${label.name} ${label.value}`.length)) * END_LABEL_CHAR
+    if (room > width * 0.3) return null
+    const heights = labels.map((label) => y(label.point.value)).sort((a, b) => a - b)
+    if (
+      heights.some(
+        (value, index) =>
+          index > 0 && value - (heights[index - 1] as number) < MIN_END_LABEL_GAP,
+      )
+    ) {
+      return null
+    }
+    return { labels, room }
+  })()
+  const margin = endLabels
+    ? { ...baseMargin, right: Math.max(baseMargin.right, endLabels.room) }
+    : baseMargin
+  // A little room on both sides so the first and last points clear the edges.
+  const yearPad = maxYear > minYear ? 0.4 : 1
+  const x = linearScale(
+    [minYear - yearPad, maxYear + yearPad],
+    [margin.left, width - margin.right],
+  )
 
   const yTickCount = narrow ? 4 : 5
   const yTicks = isDuration(unit)
@@ -290,6 +333,18 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
 
   return (
     <div className="trend-chart" ref={containerRef}>
+      {/* The key comes before the chart it explains (review round 4). */}
+      {single ? null : (
+        <div className="chart-legend" aria-hidden="true">
+          {legendTitle ? <span className="chart-legend__title">{legendTitle}</span> : null}
+          {lines.map((line, index) => (
+            <span key={line.label + index} className="chart-legend__item">
+              <SeriesKey index={index} />
+              {line.label}
+            </span>
+          ))}
+        </div>
+      )}
       {/* Interactive chart widget: one tab stop, arrow keys inspect years.
           role="application" is deliberate: it switches screen readers into
           focus mode so the arrow keys reach the widget (a plain group would
@@ -311,7 +366,7 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
           viewBox={`0 0 ${width} ${height}`}
           width={width}
           height={height}
-          className="chart-svg"
+          className={single || !narrow ? 'chart-svg' : 'chart-svg is-dense'}
           aria-hidden="true"
           onMouseMove={onMouseMove}
           onMouseLeave={() => setActiveYear(null)}
@@ -393,43 +448,67 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
             />
           ) : null}
 
-          {/* One polyline per contiguous segment — never across a gap. */}
-          {lines.map((line, lineIndex) => (
-            <g
-              key={line.label + lineIndex}
-              className={`chart-series chart-series--${lineIndex + 1}`}
-              data-testid={single ? undefined : `series-${lineIndex}`}
-            >
-              {line.segments.map((segment, segmentIndex) =>
-                segment.length > 1 ? (
-                  <polyline
-                    key={segmentIndex}
-                    className="chart-line"
-                    data-testid="trend-line-segment"
-                    strokeDasharray={SERIES_DASHES[lineIndex] ?? 'none'}
-                    points={segment
-                      .map((point) => `${x(point.year)},${y(point.value)}`)
-                      .join(' ')}
-                  />
-                ) : null,
-              )}
-              {line.available.map((point) => (
-                <circle
-                  key={point.year}
-                  cx={x(point.year)}
-                  cy={y(point.value)}
-                  r={point.year === activeYear ? 6 : single && point === last ? 5 : 4}
-                  className={
-                    isPartial(lineIndex, point.year) ? 'chart-point is-partial' : 'chart-point'
-                  }
-                  data-testid={single ? `point-${point.year}` : undefined}
-                />
-              ))}
-            </g>
-          ))}
+          {/* Polylines per contiguous segment — never across a gap — with
+              dotted connectors to and from a partial-year point. */}
+          {lines.map((line, lineIndex) => {
+            const partial = (year: number) => isPartial(lineIndex, year)
+            const lastYear = line.available[line.available.length - 1]?.year
+            const isolated = new Set(
+              line.segments
+                .filter((segment) => segment.length === 1)
+                .flatMap((segment) => segment.map((point) => point.year)),
+            )
+            // A split trend's lines carry points only where a reader needs one.
+            const marked = (year: number) =>
+              single ||
+              year === activeYear ||
+              year === lastYear ||
+              partial(year) ||
+              isolated.has(year)
+            return (
+              <g
+                key={line.label + lineIndex}
+                className={`chart-series chart-series--${lineIndex + 1}`}
+                data-testid={single ? undefined : `series-${lineIndex}`}
+              >
+                {line.segments.flatMap((segment, segmentIndex) =>
+                  segmentPieces(segment, partial).map((piece, pieceIndex) => (
+                    <polyline
+                      key={`${segmentIndex}-${pieceIndex}`}
+                      className={
+                        piece.partial ? 'chart-line chart-line--partial' : 'chart-line'
+                      }
+                      data-testid={
+                        piece.partial ? 'trend-line-connector' : 'trend-line-segment'
+                      }
+                      strokeDasharray={
+                        piece.partial ? PARTIAL_DASH : (SERIES_DASHES[lineIndex] ?? 'none')
+                      }
+                      points={piece.points
+                        .map((point) => `${x(point.year)},${y(point.value)}`)
+                        .join(' ')}
+                    />
+                  )),
+                )}
+                {line.available
+                  .filter((point) => marked(point.year))
+                  .map((point) => (
+                    <circle
+                      key={point.year}
+                      cx={x(point.year)}
+                      cy={y(point.value)}
+                      r={point.year === activeYear ? 6 : single && point === last ? 5 : 4}
+                      className={partial(point.year) ? 'chart-point is-partial' : 'chart-point'}
+                      data-testid={single ? `point-${point.year}` : undefined}
+                    />
+                  ))}
+              </g>
+            )
+          })}
 
-          {/* One trend: its latest value, labeled at the end of the line. */}
-          {single && last ? (
+          {/* One trend: its latest value, labeled at the end of the line;
+              hidden while the readout shows that year. */}
+          {single && last && activeYear !== last.year ? (
             <text
               x={x(last.year) + 10}
               y={y(last.value)}
@@ -439,6 +518,21 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
               {showValue(last.value, unit)}
             </text>
           ) : null}
+          {/* A split trend: each line's group and latest value at its end. */}
+          {endLabels && activeYear === null
+            ? endLabels.labels.map((label) => (
+                <text
+                  key={label.index}
+                  x={x(label.point.year) + 10}
+                  y={y(label.point.value)}
+                  className="chart-end-label"
+                  data-testid="series-end-label"
+                >
+                  <tspan className="chart-end-label__name">{label.name} </tspan>
+                  {label.value}
+                </text>
+              ))
+            : null}
         </svg>
         {activeYear !== null ? (
           <div
@@ -483,17 +577,6 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
           {activeYear !== null ? describeYear(activeYear) : ''}
         </p>
       </div>
-      {single ? null : (
-        <div className="chart-legend" aria-hidden="true">
-          {legendTitle ? <span className="chart-legend__title">{legendTitle}</span> : null}
-          {lines.map((line, index) => (
-            <span key={line.label + index} className="chart-legend__item">
-              <SeriesKey index={index} />
-              {line.label}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

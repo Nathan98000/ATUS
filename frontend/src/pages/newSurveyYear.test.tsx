@@ -126,7 +126,7 @@ function linkSpec(link: HTMLElement, operation: Operation): AnalysisRequest {
   return decodeSpec(new URLSearchParams(href.split('?')[1]).get('spec') ?? '', operation)
 }
 
-const GAP_NOTE = /2020 is a partial-year estimate \(a hollow point\)/
+const PARTIAL_NOTE = /2020 is a partial-year estimate: the survey paused that spring/
 const RELEASE_NOTICE = /different data release/
 
 afterEach(() => {
@@ -140,58 +140,61 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     renderApp('/explore')
     await waitForBuilder()
 
-    // Single year: every reported year, newest first, 2026 preselected.
-    const year = screen.getByLabelText('Year')
-    expect(year).toHaveValue('2026')
-    expect(optionValues(year)).toEqual([...YEARS_0326].reverse())
-
-    // Several years combined: one checkbox per reported year, starting from 2026.
-    await user.click(screen.getByRole('radio', { name: 'Several years combined' }))
-    const pooled = screen.getByRole('group', { name: 'Years to combine' })
-    const boxes = within(pooled).getAllByRole('checkbox')
-    expect(boxes.map((box) => Number(box.closest('label')?.textContent))).toEqual(YEARS_0326)
-    expect(within(pooled).getByRole('checkbox', { name: '2026' })).toBeChecked()
-    expect(within(pooled).getByRole('checkbox', { name: '2025' })).not.toBeChecked()
-
-    // Trend: the full period by default, 2003–2026.
-    await user.click(screen.getByRole('radio', { name: 'Change over time' }))
+    // Trend (the builder's default): the full period, 2003–2026.
     const from = screen.getByLabelText('From')
     const to = screen.getByLabelText('To')
     expect(from).toHaveValue('2003')
     expect(to).toHaveValue('2026')
     expect(optionValues(from)).toEqual(YEARS_0326)
     expect(optionValues(to)).toEqual(YEARS_0326)
+
+    // Single year: every reported year, newest first, 2026 preselected.
+    await user.click(screen.getByRole('radio', { name: 'One number' }))
+    const year = screen.getByLabelText('Year')
+    expect(year).toHaveValue('2026')
+    expect(optionValues(year)).toEqual([...YEARS_0326].reverse())
+
+    // Several years combined: one checkbox per reported year, starting from 2026.
+    await user.click(screen.getByText('More options'))
+    await user.click(screen.getByRole('checkbox', { name: /Combine several years/ }))
+    const pooled = screen.getByRole('group', { name: 'Years to combine' })
+    const boxes = within(pooled).getAllByRole('checkbox')
+    expect(boxes.map((box) => Number(box.closest('label')?.textContent))).toEqual(YEARS_0326)
+    expect(within(pooled).getByRole('checkbox', { name: '2026' })).toBeChecked()
+    expect(within(pooled).getByRole('checkbox', { name: '2025' })).not.toBeChecked()
   })
 
-  it('the default analyses request 2026: an estimate of [2026], a trend of 2003–2026', async () => {
+  it('the default analyses request 2026: a trend of 2003–2026, an estimate of [2026]', async () => {
     const user = userEvent.setup()
     const posted = serve0326()
     renderApp('/explore')
     await waitForBuilder()
-    await user.click(screen.getByRole('button', { name: 'Analyze' }))
-    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
-    expect(posted).toHaveLength(1)
-    expect(posted[0]?.operation).toBe('estimate')
-    expect(posted[0]?.body.years).toEqual([2026])
-
-    await user.click(screen.getByRole('link', { name: 'Explore' }))
-    await waitForBuilder()
-    await user.click(screen.getByRole('radio', { name: 'Change over time' }))
+    // The builder opens on a trend (review round 4).
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
     expect(await screen.findByTestId('point-2026')).toBeInTheDocument()
     // The trend and, alongside it, its 2020 under the pandemic weights (the
     // mock answers with the leisure trend, so the link's canonical form names
     // another activity and asks for that one's 2020 too).
-    const later = posted.slice(1)
-    const trends = later.filter((entry) => entry.operation === 'trend')
+    const trends = posted.filter((entry) => entry.operation === 'trend')
     expect(trends).toHaveLength(1)
     // Every reported year, 2020 included: the API, not the page, rules it out.
     expect(trends[0]?.body.years).toEqual(YEARS_0326)
-    const partial = later.filter((entry) => entry.operation === 'estimate')
+    const partial = posted.filter((entry) => entry.operation === 'estimate')
     expect(partial.length).toBeGreaterThan(0)
     for (const entry of partial) {
       expect(entry.body).toMatchObject({ years: [2020], weights: 'pandemic' })
     }
+
+    const before = posted.length
+    await user.click(screen.getByRole('link', { name: 'Explore' }))
+    await waitForBuilder()
+    await user.click(screen.getByRole('radio', { name: 'One number' }))
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    expect(await screen.findByText('8h 49m')).toBeInTheDocument()
+    const later = posted.slice(before)
+    expect(later).toHaveLength(1)
+    expect(later[0]?.operation).toBe('estimate')
+    expect(later[0]?.body.years).toEqual([2026])
   })
 
   it('a trend through 2026 still shows 2020 as its partial-year point, and 2026 as a point', async () => {
@@ -208,13 +211,15 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     )
     expect(posted).toHaveLength(2)
 
-    // 2020 from its partial-year estimate: a hollow point the line runs through.
+    // 2020 from its partial-year estimate: a hollow point, reached by a
+    // dotted connector between the two full-year runs.
     expect(screen.queryByTestId('unavailable-2020')).not.toBeInTheDocument()
     expect(screen.getByTestId('point-2020')).toHaveClass('is-partial')
     expect(screen.getByTestId('partial-note')).toHaveTextContent(
-      '2020 is a partial-year estimate',
+      '2020 (hollow point) is a partial year',
     )
-    expect(screen.getAllByTestId('trend-line-segment')).toHaveLength(1)
+    expect(screen.getAllByTestId('trend-line-segment')).toHaveLength(2)
+    expect(screen.getAllByTestId('trend-line-connector')).toHaveLength(1)
 
     const table = screen.getByRole('table')
     const row = (label: string) =>
@@ -223,28 +228,25 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     expect(row('2026')).not.toHaveTextContent('No data')
   })
 
-  it("the builder's 2020 note still follows the range and the weights", async () => {
+  it("the builder's 2020 note still follows the year and the weights", async () => {
+    // A trend through 2020 says so on its chart, not in the builder (review
+    // round 4); 2020 alone switches to its partial-year weights, with a note.
     const user = userEvent.setup()
     serve0326()
     renderApp('/explore')
     await waitForBuilder()
-    await user.click(screen.getByRole('radio', { name: 'Change over time' }))
+    expect(screen.queryByText(PARTIAL_NOTE)).not.toBeInTheDocument()
 
-    // 2003–2026 under the multi-year weights spans 2020.
-    expect(screen.getByText(GAP_NOTE)).toBeInTheDocument()
-    await user.selectOptions(screen.getByLabelText('From'), '2021')
-    expect(screen.queryByText(GAP_NOTE)).not.toBeInTheDocument()
-    await user.selectOptions(screen.getByLabelText('From'), '2019')
-    expect(screen.getByText(GAP_NOTE)).toBeInTheDocument()
-
-    // The pandemic weights are their own 2019–2020 methodology.
-    await user.click(screen.getByText('Advanced options'))
-    await user.click(screen.getByRole('radio', { name: /Pandemic \(TU20FWGT\)/ }))
-    expect(screen.queryByText(GAP_NOTE)).not.toBeInTheDocument()
-    expect(screen.getByText(/distinct methodology for 2019–2020 only/)).toBeInTheDocument()
+    await user.click(screen.getByRole('radio', { name: 'One number' }))
+    await user.selectOptions(screen.getByLabelText('Year'), '2020')
+    expect(screen.getByText(PARTIAL_NOTE)).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /2020 partial-year weights/ })).toBeChecked()
+    await user.selectOptions(screen.getByLabelText('Year'), '2026')
+    expect(screen.queryByText(PARTIAL_NOTE)).not.toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: /Standard weights/ })).toBeChecked()
   })
 
-  it('the home page, its starters and the footer follow the release', async () => {
+  it('the home page and its starters follow the release, and the About page names it', async () => {
     serve0326()
     renderApp('/')
     const sleep = await screen.findByRole('link', { name: /How much do Americans sleep\?/ })
@@ -259,8 +261,14 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
       ])
     }
 
-    const footer = screen.getByRole('contentinfo')
-    expect(footer).toHaveTextContent('Data release 0326 (2003–2026)')
+    // The release is named on the About page, not in every page's footer
+    // (review round 4).
+    await userEvent
+      .setup()
+      .click(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'About page' }))
+    expect(await screen.findByText(/multi-year release/)).toHaveTextContent(
+      /release 0326 \(\s*2003–2026/,
+    )
   })
 
   it('a 2026 result carries the 0326 data version and offers the 2003–2026 trend', async () => {
@@ -351,8 +359,7 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     )
     renderApp('/explore')
     await waitForBuilder()
-    expect(screen.getByLabelText('Year')).toHaveValue('2026')
-    expect(screen.getByRole('contentinfo')).toHaveTextContent('Data release 0326 (2003–2026)')
+    expect(screen.getByLabelText('To')).toHaveValue('2026')
     expect(metaCalls).toBe(0)
   })
 })
@@ -369,11 +376,16 @@ describe('the prewarm list of a 0326 deploy (§15)', () => {
   })
 
   it('uses 2026 as the latest year and 2003–2026 as the full period', () => {
-    // 130, plus the household starter as the builder re-sends it (review round 2).
-    expect(list).toHaveLength(131)
+    // 130, plus the household starter as the builder re-sends it (review
+    // round 2), plus the home page's chart (review round 4).
+    expect(list).toHaveLength(135)
     for (const item of list) {
       const years = item.spec.years
       if (item.name.startsWith('pandemic weights:')) continue
+      if (item.name.startsWith('home chart, 2020:')) {
+        expect(years, item.name).toEqual([2020])
+        continue
+      }
       if (item.operation === 'trend') expect(years, item.name).toEqual(YEARS_0326)
       else expect(years, item.name).toEqual([2026])
     }
@@ -386,6 +398,12 @@ describe('the prewarm list of a 0326 deploy (§15)', () => {
       expect(item.spec.weights).toBe('pandemic')
       expect([[2019], [2020]]).toContainEqual(item.spec.years)
     }
-    expect(list.filter((item) => item.spec.weights === 'pandemic')).toEqual(pandemic)
+    // Besides those, only the home chart's 2020 points use them.
+    expect(
+      list.filter(
+        (item) =>
+          item.spec.weights === 'pandemic' && !item.name.startsWith('home chart, 2020:'),
+      ),
+    ).toEqual(pandemic)
   })
 })

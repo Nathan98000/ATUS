@@ -25,11 +25,15 @@ test('configure, run, understand and reshare a comparison', CORE, async ({ page 
   await expect(values.first()).toHaveText('1h 40m', { timeout: 15_000 })
   await expect(values.nth(1)).toHaveText('1h 7m')
 
+  // The answer names the groups as people (review round 4).
+  await expect(
+    page.getByText('In 2023, men spent 33 minutes more a day sleeping than women.'),
+  ).toBeVisible()
   // The difference comes from the API (covariance-correct), in words.
   const difference = page.getByTestId('difference')
-  await expect(difference).toContainText('33 minutes more per day for Men')
+  await expect(difference).toContainText('Difference: 33 minutes more per day for men.')
   await expect(difference).toContainText(
-    /Likely range: [\d.]+ to [\d.]+ min more for Men \(95% confidence\)/,
+    /Likely range: [\d.]+ to [\d.]+ minutes more for men \(95% confidence\)/,
   )
 
   // Both groups appear in the chart with their labels (never color-only).
@@ -41,5 +45,5 @@ test('configure, run, understand and reshare a comparison', CORE, async ({ page 
   // Reloading the URL reproduces the comparison (stateless share link).
   await page.reload()
   await expect(values.first()).toHaveText('1h 40m', { timeout: 15_000 })
-  await expect(page.getByTestId('difference')).toContainText('33 minutes more per day for Men')
+  await expect(page.getByTestId('difference')).toContainText('33 minutes more per day for men')
 })

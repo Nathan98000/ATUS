@@ -13,7 +13,13 @@
  * value imports carry explicit `.ts` extensions and import nothing that
  * touches the DOM.
  */
-import type { AnalysisRequest, Operation } from '../api/types'
+import type {
+  AnalysisRequest,
+  EstimateRequest,
+  Operation,
+  PopulationRequest,
+  TrendRequest,
+} from '../api/types'
 import type { BuilderState } from '../features/builder/state.ts'
 import {
   KNOWN_MEASURES,
@@ -21,6 +27,7 @@ import {
   fromRequest,
   toRequest,
 } from '../features/builder/state.ts'
+import { needsPartial2020, partial2020Spec } from '../features/results/partial2020.ts'
 import { stableStringify } from '../utils/stableStringify.ts'
 
 export interface StarterExample {
@@ -86,6 +93,56 @@ export const STARTER_EXAMPLES: readonly StarterExample[] = [
   },
 ]
 
+/**
+ * The home page's chart (review round 4): household activities, men and
+ * women, across every year — a trend split by sex, as the analysis page
+ * draws `/analysis/trend?spec=…&split=sex&groups=male,female`. It is read
+ * from the static snapshot only, so its requests are prewarmed here, in
+ * the bytes that page sends: each group's point-estimate trend
+ * (`seriesSpec`'s form) and each group's 2020 as its partial-year estimate
+ * (`partial2020Spec`).
+ */
+export const HOME_CHART = {
+  preset: 'household_activities_bls_table',
+  split: { by: 'sex', groups: ['male', 'female'] },
+} as const
+
+export interface HomeChartSpecs {
+  /** The split trend's own request, as its link encodes it. */
+  trend: AnalysisRequest
+  series: {
+    key: string
+    population: PopulationRequest
+    spec: TrendRequest
+    /** The group's 2020 under the pandemic weights, when the trend runs through 2020. */
+    partial2020: EstimateRequest | null
+  }[]
+}
+
+export function homeChartSpecs(years: readonly number[]): HomeChartSpecs {
+  const trend = toRequest(
+    {
+      ...defaultBuilderState(years),
+      operation: 'trend',
+      activity: { preset: HOME_CHART.preset },
+    },
+    years,
+  )
+  return {
+    trend,
+    series: HOME_CHART.split.groups.map((sex) => {
+      const population: PopulationRequest = { sex }
+      const spec: TrendRequest = { ...trend, population, variance: 'none' }
+      return {
+        key: sex,
+        population,
+        spec,
+        partial2020: needsPartial2020(spec) ? partial2020Spec(spec, years, []) : null,
+      }
+    }),
+  }
+}
+
 /** What the prewarm list is built from: the deployed release's own metadata. */
 export interface PrewarmInput {
   /** `/meta` → data.years */
@@ -107,11 +164,12 @@ export interface PrewarmedAnalysis {
 }
 
 /**
- * About 130 analyses: the four starters; every preset under every measure
+ * About 135 analyses: the four starters; every preset under every measure
  * (latest year); a full-period trend per preset and per tier-1 category; a
  * latest-year estimate per tier-1 category; men vs women per preset and per
- * tier-1 category; each preset in the two pandemic-weight years; and each
- * starter as the builder sends it after "Adjust analysis" without a change.
+ * tier-1 category; each preset in the two pandemic-weight years; the home
+ * page's chart (two group trends and their 2020s); and each starter as the
+ * builder sends it after "Adjust analysis" without a change.
  * Duplicates (same operation and bytes) are dropped, keeping the first.
  */
 export function prewarmedAnalyses(input: PrewarmInput): PrewarmedAnalysis[] {
@@ -171,6 +229,19 @@ export function prewarmedAnalyses(input: PrewarmInput): PrewarmedAnalysis[] {
           activity: { preset },
           weights: 'pandemic',
           singleYear: year,
+        })
+      }
+    }
+  }
+
+  if (input.presets.includes(HOME_CHART.preset)) {
+    for (const series of homeChartSpecs(years).series) {
+      list.push({ name: `home chart: ${series.key}`, operation: 'trend', spec: series.spec })
+      if (series.partial2020 !== null) {
+        list.push({
+          name: `home chart, 2020: ${series.key}`,
+          operation: 'estimate',
+          spec: series.partial2020,
         })
       }
     }

@@ -1,8 +1,12 @@
 /**
- * Activity selection: search, curated presets, and hierarchical browsing of
+ * Activity selection: search, popular choices, and hierarchical browsing of
  * the harmonized lexicon — all driven by the activities API. Selecting a
  * 2- or 4-digit tier means the tier and all of its descendants; the picker
  * says so explicitly rather than pretending every code is one activity.
+ *
+ * Search finds the presets and everyday words too ("tv", "chores";
+ * `synonyms.ts`), and every popular choice and selection says what it
+ * includes, in plain names (review round 4).
  *
  * The search results implement the WAI-ARIA combobox/listbox pattern, which
  * a native <select> cannot express — the two rules below flag exactly that
@@ -15,6 +19,38 @@ import { refetchFailed, useActivities, useActivityPresets } from '../../api/quer
 import type { ActivityEntry, ActivitySelection } from '../../api/types'
 import { activityName, offeredPresets } from '../../domain/describe'
 import { buildLexiconIndex, type LexiconIndex } from './lexicon'
+import { matchingSynonyms } from './synonyms'
+
+interface PresetDefinition {
+  name: string
+  label: string
+  include: string[]
+  exclude: string[]
+}
+
+/**
+ * Top-level categories people ask about that no preset covers, offered
+ * beside the presets: volunteering, sports and exercise, caring for
+ * household members, shopping. A choice selects the category exactly as
+ * browsing to it does, which the snapshot holds for every top-level
+ * category (its latest year and its full trend).
+ */
+const POPULAR_CATEGORIES = ['15', '13', '03', '07']
+
+/** How many included activities a hint names before "and N more". */
+const HINT_NAMES = 3
+
+/** "Includes sleeping; sleeplessness", or '' when nothing is known. */
+function includesHint(names: readonly string[]): string {
+  if (names.length === 0) return ''
+  const shown = names
+    .slice(0, HINT_NAMES)
+    .map((name) =>
+      /^\p{Lu}{2,}\b/u.test(name) ? name : name.charAt(0).toLowerCase() + name.slice(1),
+    )
+  const more = names.length - shown.length
+  return `Includes ${shown.join('; ')}${more > 0 ? `; and ${more} more` : ''}`
+}
 
 interface ActivityPickerProps {
   value: ActivitySelection
@@ -32,11 +68,7 @@ export function ActivityPicker({ value, onChange, error }: ActivityPickerProps) 
     () => (activities.data ? buildLexiconIndex(activities.data.activities) : null),
     [activities.data],
   )
-  const presetLabels = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const preset of presets.data?.presets ?? []) map.set(preset.name, preset.label)
-    return map
-  }, [presets.data])
+  const presetList = presets.data?.presets ?? []
 
   const select = (selection: ActivitySelection) => {
     onChange(selection)
@@ -52,7 +84,7 @@ export function ActivityPicker({ value, onChange, error }: ActivityPickerProps) 
   return (
     <div className="activity-picker">
       <div className="activity-picker__current">
-        <SelectionSummary value={value} index={index} presetLabels={presetLabels} />
+        <SelectionSummary value={value} index={index} presets={presetList} />
         <button
           ref={toggleRef}
           type="button"
@@ -91,7 +123,7 @@ export function ActivityPicker({ value, onChange, error }: ActivityPickerProps) 
           ) : (
             <PickerPanel
               index={index}
-              presets={presets.data?.presets ?? []}
+              presets={presetList}
               onSelect={select}
               onClose={() => {
                 setOpen(false)
@@ -108,18 +140,22 @@ export function ActivityPicker({ value, onChange, error }: ActivityPickerProps) 
 function SelectionSummary({
   value,
   index,
-  presetLabels,
+  presets,
 }: {
   value: ActivitySelection
   index: LexiconIndex | null
-  presetLabels: ReadonlyMap<string, string>
+  presets: readonly PresetDefinition[]
 }) {
   if (value.preset != null) {
+    const preset = presets.find((candidate) => candidate.name === value.preset)
+    const hint =
+      preset && index ? includesHint(index.includedNames(preset.include, preset.exclude)) : ''
     return (
       <div>
         <span className="activity-picker__name">
-          {activityName(presetLabels.get(value.preset) ?? value.preset)}
+          {activityName(preset?.label ?? value.preset)}
         </span>
+        {hint ? <span className="field-hint activity-picker__includes">{hint}</span> : null}
       </div>
     )
   }
@@ -127,13 +163,16 @@ function SelectionSummary({
   if (codes.length === 1 && index) {
     const code = codes[0] as string
     const entry = index.byCode.get(code)
-    const leaves = index.offeredLeafCount(code)
+    const hint =
+      index.offeredLeafCount(code) > 1
+        ? includesHint(index.includedNames(codes, value.exclude ?? []))
+        : ''
     return (
       <div>
-        <span className="activity-picker__name">{entry?.name ?? `Activity ${code}`}</span>
-        {leaves > 1 ? (
-          <span className="field-hint"> — includes all {leaves} activities under it</span>
-        ) : null}
+        <span className="activity-picker__name">
+          {entry ? activityName(entry.name) : `Activity ${code}`}
+        </span>
+        {hint ? <span className="field-hint activity-picker__includes">{hint}</span> : null}
       </div>
     )
   }
@@ -151,6 +190,16 @@ function SelectionSummary({
   )
 }
 
+/** One choice in the search results: a preset or an entry of the lexicon. */
+interface PickerOption {
+  key: string
+  name: string
+  /** The path above an entry, outermost first. */
+  path: string[]
+  hint: string
+  selection: ActivitySelection
+}
+
 function PickerPanel({
   index,
   presets,
@@ -158,26 +207,76 @@ function PickerPanel({
   onClose,
 }: {
   index: LexiconIndex
-  presets: { name: string; label: string; include: string[]; exclude: string[] }[]
+  presets: readonly PresetDefinition[]
   onSelect: (selection: ActivitySelection) => void
   onClose: () => void
 }) {
   const listboxId = useId()
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
-  const results = useMemo(() => index.search(query), [index, query])
+  const offered = useMemo(() => offeredPresets(presets), [presets])
 
-  // Option ids are keyed by activity code (not list position) so
+  const presetOption = (preset: PresetDefinition): PickerOption => ({
+    key: `preset-${preset.name}`,
+    name: activityName(preset.label),
+    path: [],
+    hint: includesHint(index.includedNames(preset.include, preset.exclude)),
+    selection: { preset: preset.name },
+  })
+  const entryOption = (entry: ActivityEntry): PickerOption => ({
+    key: `code-${entry.code}`,
+    name: activityName(entry.name),
+    path: index.pathOf(entry.code).map((ancestor) => activityName(ancestor.name)),
+    hint: entry.level < 3 ? `Includes ${index.offeredLeafCount(entry.code)} activities` : '',
+    selection: { include: [entry.code], label: entry.name },
+  })
+
+  // Presets first (by name, then by an everyday word), then entries an
+  // everyday word points to, then the lexicon's own matches.
+  const results = ((): PickerOption[] => {
+    const needle = query.trim().toLowerCase()
+    if (needle === '') return []
+    const synonyms = matchingSynonyms(needle)
+    const byName = offered.filter((preset) =>
+      activityName(preset.label).toLowerCase().includes(needle),
+    )
+    // In the synonym's own order: "chores" means housework before all
+    // household activities.
+    const bySynonym = synonyms
+      .flatMap((synonym) => synonym.presets ?? [])
+      .flatMap((name) => offered.filter((preset) => preset.name === name))
+    const entries = [
+      ...synonyms
+        .flatMap((synonym) => synonym.codes ?? [])
+        .flatMap((code) => {
+          const entry = index.byCode.get(code)
+          return entry && index.offeredLeafCount(code) > 0 ? [entry] : []
+        }),
+      ...index.search(needle),
+    ]
+    const options = [...byName, ...bySynonym].map(presetOption)
+    for (const entry of entries) options.push(entryOption(entry))
+    const seen = new Set<string>()
+    return options
+      .filter((option) => {
+        if (seen.has(option.key)) return false
+        seen.add(option.key)
+        return true
+      })
+      .slice(0, 30)
+  })()
+
+  // Option ids are keyed by what they select (not list position) so
   // aria-activedescendant changes value as the results change — screen
   // readers then re-announce the active option while the user types.
-  const optionId = (code: string) => `${listboxId}-option-${code}`
+  const optionId = (key: string) => `${listboxId}-option-${key}`
   const activeOptionId =
     query.trim() === ''
       ? undefined
       : results.length === 0
         ? `${listboxId}-no-results`
         : results[activeIndex]
-          ? optionId(results[activeIndex].code)
+          ? optionId(results[activeIndex].key)
           : undefined
 
   // Keep the active option visible inside the scrollable listbox.
@@ -186,10 +285,6 @@ function PickerPanel({
       document.getElementById(activeOptionId)?.scrollIntoView?.({ block: 'nearest' })
     }
   }, [activeOptionId])
-
-  const selectEntry = (entry: ActivityEntry) => {
-    onSelect({ include: [entry.code], label: entry.name })
-  }
 
   const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape') {
@@ -207,10 +302,20 @@ function PickerPanel({
       setActiveIndex((current) => Math.max(current - 1, 0))
     } else if (event.key === 'Enter') {
       event.preventDefault()
-      const entry = results[activeIndex]
-      if (entry) selectEntry(entry)
+      const option = results[activeIndex]
+      if (option) onSelect(option.selection)
     }
   }
+
+  const popular = [
+    ...offered.map(presetOption),
+    ...POPULAR_CATEGORIES.flatMap((code) => {
+      const entry = index.byCode.get(code)
+      if (!entry || index.offeredLeafCount(code) === 0) return []
+      const option = entryOption(entry)
+      return [{ ...option, hint: includesHint(index.includedNames([code])) }]
+    }),
+  ]
 
   return (
     <div>
@@ -225,7 +330,7 @@ function PickerPanel({
           aria-activedescendant={activeOptionId}
           aria-autocomplete="list"
           autoComplete="off"
-          placeholder="e.g. television, sleep, cooking"
+          placeholder="e.g. TV, sleep, cooking, volunteering"
           value={query}
           onChange={(event) => {
             setQuery(event.target.value)
@@ -259,49 +364,55 @@ function PickerPanel({
               No activities match “{query}”.
             </li>
           ) : (
-            results.map((entry, position) => {
-              const path = index.pathOf(entry.code)
-              const leaves = index.offeredLeafCount(entry.code)
-              return (
-                <li
-                  key={entry.code}
-                  role="presentation"
-                  className={position === activeIndex ? 'is-active' : undefined}
+            results.map((option, position) => (
+              <li
+                key={option.key}
+                role="presentation"
+                className={position === activeIndex ? 'is-active' : undefined}
+              >
+                <button
+                  type="button"
+                  role="option"
+                  id={optionId(option.key)}
+                  aria-selected={position === activeIndex}
+                  tabIndex={-1}
+                  onClick={() => onSelect(option.selection)}
                 >
-                  <button
-                    type="button"
-                    role="option"
-                    id={optionId(entry.code)}
-                    aria-selected={position === activeIndex}
-                    tabIndex={-1}
-                    onClick={() => selectEntry(entry)}
-                  >
-                    <span>
-                      {path.map((ancestor) => `${ancestor.name} › `).join('')}
-                      <b>{entry.name}</b>
+                  <span>
+                    {option.path.map((ancestor) => `${ancestor} › `).join('')}
+                    <b>{option.name}</b>
+                  </span>
+                  {option.hint || option.key.startsWith('preset-') ? (
+                    <span className="field-hint">
+                      {option.key.startsWith('preset-')
+                        ? ['Popular', option.hint].filter(Boolean).join(' · ')
+                        : option.hint}
                     </span>
-                    {entry.level < 3 ? (
-                      <span className="field-hint">Includes {leaves} activities</span>
-                    ) : null}
-                  </button>
-                </li>
-              )
-            })
+                  ) : null}
+                </button>
+              </li>
+            ))
           )}
         </ul>
       ) : (
         <>
           <h3 className="activity-picker__heading">Popular activities</h3>
-          <ul className="chip-row" aria-label="Preset activity selections">
-            {offeredPresets(presets).map((preset) => (
-              <li key={preset.name}>
+          <ul className="popular-options" aria-label="Popular activities">
+            {popular.map((option) => (
+              <li key={option.key} className="popular-option">
                 <button
                   type="button"
-                  className="chip"
-                  onClick={() => onSelect({ preset: preset.name })}
+                  className="popular-option__button"
+                  aria-describedby={option.hint ? `${listboxId}-${option.key}` : undefined}
+                  onClick={() => onSelect(option.selection)}
                 >
-                  {activityName(preset.label)}
+                  {option.name}
                 </button>
+                {option.hint ? (
+                  <span className="popular-option__hint" id={`${listboxId}-${option.key}`}>
+                    {option.hint}
+                  </span>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -309,7 +420,12 @@ function PickerPanel({
           <p className="field-hint">Selecting a category includes every activity beneath it.</p>
           <ul className="activity-tree" aria-label="Activity categories">
             {index.topLevel.map((entry) => (
-              <TreeNode key={entry.code} entry={entry} index={index} onSelect={selectEntry} />
+              <TreeNode
+                key={entry.code}
+                entry={entry}
+                index={index}
+                onSelect={(chosen) => onSelect({ include: [chosen.code], label: chosen.name })}
+              />
             ))}
           </ul>
         </>
@@ -330,6 +446,7 @@ function TreeNode({
   const [expanded, setExpanded] = useState(false)
   const children = index.childrenOf.get(entry.code) ?? []
   const leaves = index.offeredLeafCount(entry.code)
+  const name = activityName(entry.name)
 
   return (
     <li>
@@ -338,7 +455,7 @@ function TreeNode({
           <button
             type="button"
             className="activity-tree__toggle"
-            aria-label={`${expanded ? 'Collapse' : 'Expand'} ${entry.name}`}
+            aria-label={`${expanded ? 'Collapse' : 'Expand'} ${name}`}
             onClick={() => setExpanded((current) => !current)}
           >
             <span aria-hidden="true">{expanded ? '▾' : '▸'}</span>
@@ -347,7 +464,7 @@ function TreeNode({
           <span className="activity-tree__toggle" aria-hidden="true" />
         )}
         <button type="button" className="activity-tree__select" onClick={() => onSelect(entry)}>
-          {entry.name}
+          {name}
           {entry.level < 3 ? <span className="field-hint"> · {leaves} activities</span> : null}
         </button>
       </div>

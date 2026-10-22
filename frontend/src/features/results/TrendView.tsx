@@ -6,7 +6,14 @@
  * partial-year estimate when the page has one (`partial2020.ts`): a hollow
  * point with a note; a year with no estimate at all stays a labeled gap.
  */
-import type { EstimateResponse, TrendPoint, TrendResponse } from '../../api/types'
+import { Link } from 'react-router'
+
+import type {
+  EstimateResponse,
+  PopulationRequest,
+  TrendPoint,
+  TrendResponse,
+} from '../../api/types'
 import { WarningBanner } from '../../components/WarningBanner'
 import { interpretSplitTrend, interpretTrend, measureName } from '../../domain/describe'
 import { contextNotes, presentUnavailableReason } from '../../domain/notes'
@@ -20,9 +27,8 @@ function PartialNote() {
   return (
     <span data-testid="partial-note">
       <span className="chart-key__swatch chart-key__swatch--partial" aria-hidden="true" />
-      <b>{PARTIAL_YEAR} is a partial-year estimate</b> (hollow point): data collection paused
-      from March 18 to May 9, {PARTIAL_YEAR} because of COVID-19, so it covers the rest of the
-      year and may not compare exactly with other years.
+      <b>{PARTIAL_YEAR} (hollow point) is a partial year:</b> the survey paused from March 18 to
+      May 9 because of COVID-19, so it may not compare exactly with other years.
     </span>
   )
 }
@@ -57,7 +63,7 @@ export function TrendView({
   const unavailable = points.filter((point) => point.estimate == null)
   const measureLabel = measureName(result.measure)
   // The answer reads full-year estimates only: the trend's own points.
-  const interpretation = interpretTrend(result)
+  const interpretation = interpretTrend(result, partialYears)
   const hasBand = points.some((point) => point.estimate?.ci_lower != null)
 
   return (
@@ -79,8 +85,8 @@ export function TrendView({
             ...(partialYears.length > 0 ? [<PartialNote key="partial" />] : []),
             ...unavailable.map((point) => <GapNote key={point.year} point={point} />),
             ...(note != null ? [note] : []),
-            ...contextNotes(result.warnings),
           ]}
+          context={contextNotes(result.warnings)}
         />
         {/* Hidden by its wrapper: a table ignores the 1px width, and would
             widen the page on a phone. */}
@@ -133,6 +139,8 @@ export function TrendView({
 /** One group's line of a split trend: its name and its own trend. */
 export interface SplitSeries {
   label: string
+  /** The group's own filter (its label is the plain description of it). */
+  filters?: PopulationRequest
   result: TrendResponse
   /** The group's 2020 under the pandemic weights, when its trend has none. */
   partial2020?: EstimateResponse
@@ -142,11 +150,17 @@ export function SplitTrendView({
   series,
   legendTitle,
   note,
+  comparison,
 }: {
   series: readonly SplitSeries[]
   /** What the groups differ in, e.g. "Sex". */
   legendTitle: string
   note?: string | null
+  /**
+   * Two of the groups compared in one year, where a comparison shows the
+   * likely range a split trend does not draw (review round 4).
+   */
+  comparison?: { path: string; text: string } | null
 }) {
   const first = series[0]?.result
   if (first === undefined) return null
@@ -179,14 +193,19 @@ export function SplitTrendView({
           measureLabel={measureLabel}
           legendTitle={legendTitle}
         />
+        {comparison ? (
+          <p className="split-comparison">
+            <Link to={comparison.path}>{comparison.text}</Link>
+          </p>
+        ) : null}
         <ChartFootnote
           notes={[
             ...(partialYears.length > 0 ? [<PartialNote key="partial" />] : []),
             ...gaps.map((point) => <GapNote key={point.year} point={point} />),
-            'Each line is one group’s estimate. The survey asks a sample of people, so each figure is an estimate; likely ranges are drawn when a trend shows one group.',
+            'Lines show estimates from a sample of people. For their likely range, compare two groups in one year.',
             ...(note != null ? [note] : []),
-            ...contextNotes(warnings),
           ]}
+          context={contextNotes(warnings)}
         />
         <div className="visually-hidden">
           <table>

@@ -80,3 +80,25 @@ export function durationTicks(min: number, max: number, maxCount = 5): number[] 
   }
   return niceTicks(min, max, maxCount)
 }
+
+/**
+ * A run of a trend's points as lines: full-weight pieces between full-year
+ * points, and a dotted connector for each step to or from a partial-year
+ * point, so the line never presents 2020 as an ordinary year (review round
+ * 4). Each piece shares its end points with its neighbours.
+ */
+export function segmentPieces<P extends { year: number }>(
+  segment: readonly P[],
+  isPartial: (year: number) => boolean,
+): { points: P[]; partial: boolean }[] {
+  const pieces: { points: P[]; partial: boolean }[] = []
+  for (let index = 0; index < segment.length - 1; index += 1) {
+    const from = segment[index] as P
+    const to = segment[index + 1] as P
+    const partial = isPartial(from.year) || isPartial(to.year)
+    const current = pieces[pieces.length - 1]
+    if (current && current.partial === partial) current.points.push(to)
+    else pieces.push({ points: [from, to], partial })
+  }
+  return pieces
+}

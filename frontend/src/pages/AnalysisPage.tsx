@@ -28,6 +28,7 @@ import { useServiceWaking } from '../api/serviceStatus'
 import type {
   AnalysisRequest,
   AnalysisResponse,
+  CompareRequest,
   CompareResponse,
   EstimateResponse,
   Operation,
@@ -40,9 +41,11 @@ import { ServiceInterruption } from '../components/ServiceInterruption'
 import { useRetryFocus } from '../components/useRetryFocus'
 import {
   activityLabelFromSpec,
+  activityName,
   analysisTitle,
   definitionNote,
   resultHeading,
+  sharedPopulationPhrase,
 } from '../domain/describe'
 import { isFullPageError } from '../domain/presentError'
 import {
@@ -54,13 +57,18 @@ import {
   parseSplit,
   type SplitSelection,
 } from '../domain/urlSpec'
-import { resolveSplit, seriesSpec } from '../features/population/compareGroups'
+import {
+  choiceDimensions,
+  resolveSplit,
+  seriesSpec,
+} from '../features/population/compareGroups'
 import { formatYears } from '../utils/format'
 import { CompareView } from '../features/results/CompareView'
 import { EstimateView } from '../features/results/EstimateView'
 import { ShareButton } from '../features/results/ShareButton'
 import { SplitTrendView, TrendView, type SplitSeries } from '../features/results/TrendView'
 import { needsPartial2020, partial2020Spec } from '../features/results/partial2020'
+import { splitComparison } from '../features/results/splitComparison'
 
 type ParsedLink =
   | { invalid: string }
@@ -120,11 +128,11 @@ function InvalidLink({ message }: { message: string }) {
 }
 
 const LOADING_MESSAGES: Record<Operation, string> = {
-  estimate: 'Calculating estimate…',
-  trend: 'Calculating trend and uncertainty…',
-  compare: 'Comparing groups…',
+  estimate: 'Working out the number…',
+  trend: 'Working out the trend…',
+  compare: 'Comparing the two groups…',
 }
-const SPLIT_LOADING_MESSAGE = 'Calculating a trend for each group…'
+const SPLIT_LOADING_MESSAGE = 'Working out a line for each group…'
 const UNKNOWN_SPLIT =
   'This link splits the trend into groups that this data release does not offer.'
 
@@ -208,20 +216,35 @@ function AnalysisRunner({
   }, [result, operation, spec, presetLabels])
 
   const splitPhrase = resolved ? `by ${resolved.choice.label.toLowerCase()}` : null
-  const title = [analysisTitle(operation, spec, activityLabel), splitPhrase]
-    .filter(Boolean)
-    .join(' — ')
   // The subtitle names a comparison's shared filters: they restrict both
   // groups and must be named with the result, not only inside its collapsed
   // panels (review round 3).
   const heading = resultHeading(operation, spec, activityLabel)
   if (resolved !== null) {
+    // The groups say who; the population is named only when it narrows them.
     const groups = resolved.options.map((option) => option.label)
+    const shared = { ...spec.population } as Record<string, unknown>
+    for (const name of choiceDimensions(resolved.choice.by)) delete shared[name]
+    const sharedPhrase = sharedPopulationPhrase({ ...spec, population: shared })
     heading.eyebrow = `${heading.eyebrow} and ${resolved.choice.label.toLowerCase()}`
-    heading.subtitle = `${heading.subtitle} · ${
-      groups.length <= 3 ? groups.join(', ') : `${groups.length} groups`
-    }`
+    heading.subtitle = [
+      groups.length <= 3 ? groups.join(', ') : `${groups.length} groups`,
+      sharedPhrase,
+      formatYears(spec.years),
+    ]
+      .filter((part) => part !== null)
+      .join(' · ')
   }
+
+  // A split trend's title names its groups, as its subtitle does.
+  const title =
+    resolved !== null
+      ? [
+          activityName(activityLabel),
+          heading.subtitle.replaceAll(' · ', ' — '),
+          splitPhrase,
+        ].join(' — ')
+      : analysisTitle(operation, spec, activityLabel)
 
   useEffect(() => {
     document.title = `${title} · ATUS Explorer`
@@ -310,15 +333,19 @@ function AnalysisRunner({
       ) : meta.data === undefined || query.isPending ? (
         // Not a live region itself: the persistent one below announces each
         // state once (a second region with the same text is read twice).
-        <LoadingPanel
-          announce={false}
-          message={loadingMessage}
-          hint={
-            meta.data !== undefined && !waking && split === null && spec.variance !== 'none'
-              ? 'Standard errors over many years can take up to a minute the first time; repeated analyses are nearly instant.'
-              : undefined
-          }
-        />
+        // In the result's own card, at a chart's height, so nothing jumps
+        // when the chart arrives (review round 4).
+        <section className="card result-card result-card--loading" aria-label="Loading">
+          <LoadingPanel
+            announce={false}
+            message={loadingMessage}
+            hint={
+              meta.data !== undefined && !waking
+                ? 'The first time can take up to a minute; after that it is nearly instant.'
+                : undefined
+            }
+          />
+        </section>
       ) : query.isError ? (
         <ErrorPanel
           error={query.error}
@@ -329,15 +356,22 @@ function AnalysisRunner({
         <SplitTrendView
           series={resolved.options.map((option, index): SplitSeries => ({
             label: option.label,
+            filters: option.population,
             result: query.series?.[index] as TrendResponse,
             partial2020: partialQueries[index]?.data?.data,
           }))}
           legendTitle={resolved.choice.label}
           note={definitionNote(operation, spec, presets.data?.presets)}
+          comparison={
+            meta.data
+              ? splitComparison(spec, resolved, query.series, meta.data.data.years)
+              : null
+          }
         />
       ) : query.data !== undefined ? (
         <ResultBody
           operation={operation}
+          spec={spec}
           result={query.data.data}
           partial2020={partialQueries[0]?.data?.data}
           note={definitionNote(operation, spec, presets.data?.presets)}
@@ -377,11 +411,13 @@ function trendShortcut(spec: AnalysisRequest): boolean {
 
 function ResultBody({
   operation,
+  spec,
   result,
   partial2020,
   note,
 }: {
   operation: Operation
+  spec: AnalysisRequest
   result: AnalysisResponse
   partial2020?: EstimateResponse
   note: string | null
@@ -392,7 +428,9 @@ function ResultBody({
   if (operation === 'trend') {
     return <TrendView result={result as TrendResponse} partial2020={partial2020} note={note} />
   }
-  return <CompareView result={result as CompareResponse} note={note} />
+  return (
+    <CompareView result={result as CompareResponse} spec={spec as CompareRequest} note={note} />
+  )
 }
 
 /**

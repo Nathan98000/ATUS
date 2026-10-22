@@ -69,7 +69,8 @@ export function EstimateView({
           <EstimateFigure result={result} />
         </div>
         <ChartFootnote
-          notes={[...(note != null ? [note] : []), ...contextNotes(result.warnings)]}
+          notes={note != null ? [note] : []}
+          context={contextNotes(result.warnings)}
           sample={`${formatCount(result.n_respondents)} people's diaries`}
         />
       </section>

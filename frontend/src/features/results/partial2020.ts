@@ -16,7 +16,8 @@ import type {
   EstimateResponse,
   TrendPoint,
 } from '../../api/types'
-import { fromRequest, toRequest } from '../builder/state'
+// Explicit extension: prewarm.ts, which Node loads directly, imports this module.
+import { fromRequest, toRequest } from '../builder/state.ts'
 
 export const PARTIAL_YEAR = 2020
 

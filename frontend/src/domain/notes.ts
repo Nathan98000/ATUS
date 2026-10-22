@@ -36,7 +36,7 @@ const PLAIN_NOTES: readonly {
     pattern: /^The difference's standard error uses per-replicate differences\b/,
     present: () => ({
       kind: 'context',
-      text: "The difference's uncertainty accounts for both groups coming from the same survey.",
+      text: "The difference's likely range allows for both groups coming from the same survey.",
     }),
   },
   {
@@ -104,7 +104,7 @@ export function contextNotes(warnings: readonly string[]): string[] {
 export function presentUnavailableReason(reason: string | null | undefined): string {
   if (reason == null || reason.trim() === '') return 'No estimate is available for this year.'
   if (/^TUFNWGTP is undefined for 2020\b/.test(reason)) {
-    return 'Data collection paused in spring 2020 because of COVID-19, so there is no full-year estimate comparable with other years. A partial-year estimate is available with the pandemic weights (Advanced options in the builder).'
+    return 'Data collection paused in spring 2020 because of COVID-19, so there is no full-year estimate comparable with other years.'
   }
   if (/^no respondents match the population filters\b/i.test(reason)) {
     return 'No survey respondents match the selected group in this year.'

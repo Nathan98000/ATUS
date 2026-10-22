@@ -17,6 +17,7 @@ import {
   CORE,
   analysisUrl,
   analyze,
+  chooseOneNumber,
   expectNoSeriousViolations,
   setAge,
   tabReachesAllControls,
@@ -56,7 +57,7 @@ test(
     // Before the 3 s timer fires, the region is already in the page, empty:
     // text added to an existing live region is announced, a region mounted
     // together with its text often is not (review round 1).
-    await expect(page.getByText('Loading the analysis builder…')).toBeVisible()
+    await expect(page.getByText('Loading the chart builder…')).toBeVisible()
     const regions = page.locator('output.service-notice-region')
     await expect(regions).toHaveCount(2)
     await expect(regions.first()).toBeEmpty()
@@ -100,7 +101,7 @@ test('a share link waiting on /meta is "preparing", and sends nothing until /met
   })
   await page.goto(sleep2023)
   await expect(page.locator('.loading-panel')).toContainText('Preparing the analysis…')
-  await expect(page.getByText('Calculating estimate…')).toHaveCount(0)
+  await expect(page.getByText('Working out the number…')).toHaveCount(0)
   expect(posts()).toBe(0)
   await expect(page.locator('.stat-value')).toHaveText('1h 15m', { timeout: 15_000 })
 })
@@ -410,6 +411,7 @@ test(
 
     await page.goto('/explore')
     await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+    await chooseOneNumber(page)
     await setAge(page, 25, 54)
     await page.getByLabel('Year', { exact: true }).selectOption('2023')
     await analyze(page)

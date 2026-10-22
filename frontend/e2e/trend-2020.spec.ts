@@ -1,8 +1,8 @@
 /**
  * 2020 in a trend. The multi-year weights have no 2020 (collection paused
  * March 18 – May 9, 2020), so the page draws 2020 from its partial-year
- * estimate under the pandemic weights: a hollow point with a note, never an
- * interpolated or zero value. A year with no estimate at all would still be
+ * estimate under the pandemic weights: a hollow point reached by a dotted
+ * connector, with a note, never an interpolated or zero value. A year with no estimate at all would still be
  * a labeled gap (src/pages/AnalysisPage.test.tsx covers that fallback).
  */
 import { expect, test } from './fixtures'
@@ -19,10 +19,8 @@ test(
     await page.getByRole('radio', { name: 'Change over time' }).click()
     await page.getByLabel('From', { exact: true }).selectOption('2019')
     await page.getByLabel('To', { exact: true }).selectOption('2023')
-    // The builder already says what 2020 will be.
-    await expect(
-      page.getByText(/2020 is a partial-year estimate \(a hollow point\)/),
-    ).toBeVisible()
+    // The chart says what 2020 is; the builder no longer does (review round 4).
+    await expect(page.getByText(/2020 is a partial-year estimate/)).toHaveCount(0)
 
     const partial = page.waitForRequest(
       (request) =>
@@ -37,18 +35,19 @@ test(
     await expect(page.getByTestId('point-2020')).toHaveClass(/is-partial/, { timeout: 15_000 })
     await expect(page.getByTestId('unavailable-2020')).toHaveCount(0)
     await expect(page.getByTestId('partial-note')).toContainText(
-      '2020 is a partial-year estimate (hollow point): data collection paused from March 18 to May 9, 2020',
+      '2020 (hollow point) is a partial year: the survey paused from March 18 to May 9 because of COVID-19',
     )
-    // 2019–2020 is one run of the line; 2023 is alone after the years this
-    // fixture release does not have.
+    // 2019 reaches 2020 by a dotted connector, not the line itself; 2023 is
+    // alone after the years this fixture release does not have.
     await expect(page.getByTestId('point-2019')).toBeVisible()
     await expect(page.getByTestId('point-2023')).toBeVisible()
-    expect(await page.getByTestId('trend-line-segment').count()).toBe(1)
+    expect(await page.getByTestId('trend-line-connector').count()).toBe(1)
+    expect(await page.getByTestId('trend-line-segment').count()).toBe(0)
 
     // The table for screen readers names 2020 a partial year, with its value:
     // 2019 (240 min), 2020 (240 min, pandemic weights) and 2023 (75 min).
     const row = page.getByRole('rowheader', { name: '2020 (partial year)' }).locator('..')
-    await expect(row).toContainText('4h 0m')
+    await expect(row).toContainText('4h')
     await expect(page.getByRole('table')).toContainText('1h 15m')
   },
 )
@@ -75,7 +74,7 @@ test(
     await chart.focus()
     await page.keyboard.press('ArrowRight')
     // The readout: the value, then the year (240 minutes).
-    await expect(chart).toContainText('4h 0m2019')
+    await expect(chart).toContainText('4h2019')
     await page.keyboard.press('ArrowRight')
     await expect(chart).toContainText('2020 (partial year)')
   },
@@ -87,7 +86,7 @@ test('a trend split by sex draws one line per group, with a legend', CORE, async
   await page.getByRole('radio', { name: 'Change over time' }).click()
   await page.getByLabel('From', { exact: true }).selectOption('2019')
   await page.getByLabel('To', { exact: true }).selectOption('2023')
-  await page.getByLabel('Lines').selectOption('sex')
+  await page.getByLabel('Compare by').selectOption('sex')
   await expect(page.getByRole('checkbox', { name: 'Men', exact: true })).toBeChecked()
   await expect(page.getByRole('checkbox', { name: 'Women' })).toBeChecked()
 

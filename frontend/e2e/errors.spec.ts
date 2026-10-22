@@ -49,7 +49,7 @@ test('an analysis started offline says so, and runs when the connection returns 
   await starter.click()
   const alert = page.getByRole('alert')
   await expect(alert).toContainText('Check your internet connection', { timeout: 15_000 })
-  await expect(page.getByText('Calculating estimate…')).toHaveCount(0)
+  await expect(page.getByText('Working out the number…')).toHaveCount(0)
 
   await context.setOffline(false)
   await expect(page.locator('.stat-value')).toBeVisible({ timeout: 15_000 })

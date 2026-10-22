@@ -51,9 +51,8 @@ test('a release announcing 2026 reaches every year control, and 2020 is still pa
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible({
     timeout: 15_000,
   })
-  await expect(page.getByRole('contentinfo')).toContainText('Data release 0326 (2019–2026)')
-
   // The latest reported year is the default, newest first.
+  await page.getByRole('radio', { name: 'One number' }).click()
   const year = page.getByLabel('Year', { exact: true })
   await expect(year).toHaveValue('2026')
   await expect(year.locator('option')).toHaveText(['2026', '2023', '2020', '2019'])
@@ -74,25 +73,30 @@ test('a release announcing 2026 reaches every year control, and 2020 is still pa
   await expect(from).toHaveValue('2019')
   await expect(to).toHaveValue('2026')
   await expect(to.locator('option')).toHaveText(['2019', '2020', '2023', '2026'])
-  await expect(
-    page.getByText(/2020 is a partial-year estimate \(a hollow point\)/),
-  ).toBeVisible()
 
   // 2020's rules hold in the real API's answer under the new release.
   await to.selectOption('2023')
   await analyze(page)
   await expect(page.getByTestId('point-2020')).toHaveClass(/is-partial/, { timeout: 15_000 })
   await expect(page.getByTestId('partial-note')).toContainText(
-    '2020 is a partial-year estimate',
+    '2020 (hollow point) is a partial year',
   )
   await expect(page.getByTestId('point-2019')).toBeVisible()
   await expect(page.getByTestId('point-2023')).toBeVisible()
-  // 2019–2020 is one run; 2023 stands alone (2021–2022 are not in this release).
-  expect(await page.getByTestId('trend-line-segment').count()).toBe(1)
+  // 2019 reaches 2020 by a dotted connector; 2023 stands alone (2021–2022
+  // are not in this release).
+  expect(await page.getByTestId('trend-line-connector').count()).toBe(1)
+  expect(await page.getByTestId('trend-line-segment').count()).toBe(0)
   // Page and results agree on the release: no reload notice.
   await expect(
     page.getByRole('status').filter({ hasText: 'different data release' }),
   ).toHaveCount(0)
+
+  // The About page names the release (the footer no longer does).
+  await page.goto('/about')
+  await expect(page.getByText(/multi-year release/)).toContainText(
+    /release 0326 \(\s*2019–2026/,
+  )
 
   // The home page's starters ask for 2026, and the full-period trend for every year.
   await page.goto('/')

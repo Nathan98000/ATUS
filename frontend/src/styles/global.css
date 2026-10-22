@@ -122,7 +122,6 @@ h3 {
    lining figures. */
 .stat-value,
 .compare-chart__value,
-.difference-block__value,
 .starter-preview__value {
   font-family: var(--font-display);
   font-stretch: 88%;
@@ -544,83 +543,9 @@ legend {
   .spinner {
     animation-duration: 2.5s;
   }
-}
-
-/* ---------- Segmented control ---------- */
-
-.segmented {
-  display: inline-flex;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  background: var(--surface);
-  padding: 3px;
-  gap: 3px;
-  flex-wrap: wrap;
-}
-
-.segmented label {
-  position: relative;
-  display: inline-flex;
-}
-
-.segmented input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.segmented span {
-  padding: 0.34rem 0.85rem;
-  border-radius: 6px;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-
-.segmented input:checked + span {
-  background: var(--accent);
-  color: #fff;
-}
-
-.segmented input:focus-visible + span {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* ---------- Chips ---------- */
-
-.chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.chip {
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 550;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--ink-soft);
-  border-radius: 999px;
-  padding: 0.22rem 0.75rem;
-  cursor: pointer;
-}
-
-.chip:hover {
-  border-color: var(--accent);
-  color: var(--accent-ink);
-}
-
-.chip[aria-pressed='true'] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent-ink);
+  details.panel > summary::before {
+    transition: none;
+  }
 }
 
 /* ---------- Stat display ---------- */
@@ -705,6 +630,24 @@ details.panel > .panel__body {
   }
 }
 
+/* A phone's header in one row: "About" alone, tighter spacing (review
+   round 4: two rows took about 50px above every chart). */
+@media (max-width: 480px) {
+  .site-header__inner {
+    gap: 0.75rem;
+    padding: 0.6rem 0.9rem;
+  }
+  .site-nav {
+    gap: 0.15rem;
+  }
+  .site-nav a {
+    padding: 0.35rem 0.55rem;
+  }
+  .site-nav__more {
+    display: none;
+  }
+}
+
 /* ---------- Home ---------- */
 
 .home-hero {
@@ -725,6 +668,72 @@ details.panel > .panel__body {
   font-size: 1.12rem;
   color: var(--ink-soft);
   margin-bottom: 1.4rem;
+}
+
+/* With its chart (served from the snapshot), the hero is two columns on a
+   wide screen — words left, chart right — and on a phone the chart comes
+   straight after the headline (review round 4). */
+.home-hero:has(.home-chart) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  grid-template-areas:
+    'title chart'
+    'lead chart'
+    'action chart';
+  grid-template-rows: auto auto 1fr;
+  column-gap: 2.5rem;
+  align-items: start;
+}
+
+.home-hero:has(.home-chart) h1 {
+  grid-area: title;
+  font-size: 2.8rem;
+}
+
+.home-hero:has(.home-chart) .home-hero__lead {
+  grid-area: lead;
+}
+
+.home-hero:has(.home-chart) .home-hero__action {
+  grid-area: action;
+}
+
+.home-chart {
+  grid-area: chart;
+  padding: 1.2rem 1.3rem 1rem;
+}
+
+.home-chart__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--accent);
+}
+
+.home-chart__lead {
+  font-family: var(--font-display);
+  font-stretch: 92%;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 0.8rem;
+}
+
+.home-chart__small-print {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 900px) {
+  .home-hero:has(.home-chart) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'title' 'chart' 'lead' 'action';
+    grid-template-rows: none;
+  }
+  .home-chart {
+    margin-bottom: 1.4rem;
+  }
 }
 
 .home-examples {
@@ -1046,10 +1055,8 @@ details.panel > .panel__body {
 }
 
 .builder-summary__heading,
-.builder-summary__hint,
-.builder-summary dt,
-.builder-summary__item--type {
-  /* Narrow screens: one compact line (the type is chosen at the top). */
+.builder-summary__hint {
+  /* Narrow screens: one compact line. */
   position: absolute;
   width: 1px;
   height: 1px;
@@ -1059,30 +1066,23 @@ details.panel > .panel__body {
   white-space: nowrap;
 }
 
-.builder-summary__list {
+/* The chart being built, in one line (review round 4: a list of five
+   labelled rows repeated the form beside it). */
+.builder-summary__text {
   flex: 1;
   min-width: 0;
   margin: 0;
   font-size: 0.88rem;
   line-height: 1.4;
   color: var(--ink-soft);
+  overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
 
-.builder-summary__item,
-.builder-summary dd {
-  display: inline;
-  margin: 0;
-}
-
-.builder-summary__item + .builder-summary__item:not(.builder-summary__item--type)::before {
-  content: ' · ';
-}
-
-.builder-summary__item:first-child dd {
+.builder-summary__text b {
   font-weight: 650;
   color: var(--ink);
 }
@@ -1114,9 +1114,7 @@ details.panel > .panel__body {
   }
 
   .builder-summary__heading,
-  .builder-summary__hint,
-  .builder-summary dt,
-  .builder-summary__item--type {
+  .builder-summary__hint {
     position: static;
     width: auto;
     height: auto;
@@ -1130,39 +1128,11 @@ details.panel > .panel__body {
     font-size: 1.02rem;
   }
 
-  .builder-summary__list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-    font-size: 0.92rem;
-    color: var(--ink);
-  }
-
-  .builder-summary__item,
-  .builder-summary dd {
+  .builder-summary__text {
     display: block;
-  }
-
-  .builder-summary__item--type {
-    order: -1;
-  }
-
-  .builder-summary__item + .builder-summary__item:not(.builder-summary__item--type)::before {
-    content: none;
-  }
-
-  .builder-summary dt {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--ink-faint);
-  }
-
-  .builder-summary dd {
-    overflow-wrap: anywhere;
-  }
-
-  .builder-summary__item:first-child dd {
-    font-weight: 650;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--ink);
   }
 
   .builder-summary__analyze {
@@ -1235,6 +1205,7 @@ details.panel > .panel__body {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  margin-top: 0.45rem;
 }
 
 .age-pair input {
@@ -1307,18 +1278,28 @@ details.panel > .panel__body {
   width: 13rem;
 }
 
+/* The pair wraps below "Compare by" rather than shrink: squeezed beside it
+   on a phone, the selects cut off their own values (review round 4). */
 .compare-groups__pair {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   gap: 0.8rem;
-  flex: 1;
+  flex: 1 1 18rem;
   min-width: 0;
 }
 
 .compare-groups__value {
   flex: 1 1 12rem;
   max-width: 18rem;
+}
+
+@media (max-width: 560px) {
+  .compare-groups__by,
+  .compare-groups__value {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 .compare-groups__value label {
@@ -1385,6 +1366,29 @@ details.panel > .panel__body {
   font-size: 0.92rem;
 }
 
+/* What the chart shows, under the activity. */
+.measure-select {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+  max-width: 22rem;
+}
+
+.measure-select .field-hint {
+  margin: 0.3rem 0 0;
+}
+
+/* A button that reads as a link inside a sentence. */
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* ---------- Activity picker ---------- */
 
 .activity-picker__current {
@@ -1398,6 +1402,64 @@ details.panel > .panel__body {
 .activity-picker__name {
   font-weight: 650;
   font-size: 1.02rem;
+}
+
+/* What the selected activity includes, under its name. */
+.activity-picker__includes {
+  display: block;
+  margin-top: 0.15rem;
+}
+
+/* Popular choices: a card each, its name and what it includes. The whole
+   card is the button's target; the hint describes it (aria-describedby). */
+.popular-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.45rem;
+}
+
+.popular-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.75rem 0.55rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.popular-option:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.popular-option__button {
+  font: inherit;
+  font-weight: 650;
+  font-size: 0.95rem;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.popular-option__button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+
+.popular-option__hint {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--ink-faint);
 }
 
 .activity-picker__panel {
@@ -1568,6 +1630,21 @@ details.panel > .panel__body {
 /* The result: its answer as the chart's title, the chart, its small print. */
 .result-card {
   padding: 1.6rem 1.8rem 1.3rem;
+}
+
+/* While a result loads: its card at about a chart's height. */
+.result-card--loading {
+  min-height: 26rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* A split trend's way to its likely range: a comparison in one year. */
+.split-comparison {
+  margin: 1rem 0 0;
+  font-size: 0.92rem;
+  font-weight: 550;
 }
 
 .result-lead {
@@ -1760,6 +1837,17 @@ details.panel > .panel__body {
   stroke-linecap: round;
 }
 
+/* A split trend's lines on a phone: thinner, so six of them stay apart. */
+.chart-svg.is-dense .chart-line {
+  stroke-width: 2;
+}
+
+/* To and from a partial-year point: a thin dotted connector, not the line. */
+.chart-line--partial,
+.chart-svg.is-dense .chart-line--partial {
+  stroke-width: 1.75;
+}
+
 /* Points carry a ring in the surface colour where they cross the line. */
 .chart-point {
   fill: var(--series-1);
@@ -1829,10 +1917,9 @@ details.panel > .panel__body {
 .chart-legend {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   align-items: center;
   gap: 0.4rem 1.2rem;
-  margin-top: 0.4rem;
+  margin-bottom: 0.6rem;
   font-size: 0.88rem;
   color: var(--ink-soft);
 }
@@ -1864,6 +1951,11 @@ details.panel > .panel__body {
   font-weight: 700;
   dominant-baseline: middle;
   font-variant-numeric: tabular-nums;
+}
+
+.chart-end-label__name {
+  fill: var(--ink-soft);
+  font-weight: 500;
 }
 
 .chart-unavailable-band {
@@ -2058,36 +2150,17 @@ details.panel > .panel__body {
 }
 
 /* The difference, said in words beside the chart. */
-.difference-block {
-  margin-top: 1.3rem;
-  padding: 0.9rem 1.1rem;
-  border-radius: var(--radius);
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-}
-
-.difference-block__label {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--ink-faint);
-}
-
-.difference-block__value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.3;
-  margin: 0.1rem 0 0.15rem;
-}
-
-.difference-block__range {
-  margin: 0;
-  font-size: 0.9rem;
+/* The difference, once, under the bars: the lead sentence already says it
+   in full (review round 4: a large box repeated it). */
+.difference-line {
+  margin: 1.1rem 0 0;
+  font-size: 0.95rem;
   color: var(--ink-soft);
+  overflow-wrap: anywhere;
 }
 
-.difference-block__group {
-  overflow-wrap: anywhere;
+.difference-line b {
+  color: var(--ink);
 }
 
 @media (max-width: 720px) {
@@ -2097,7 +2170,8 @@ details.panel > .panel__body {
   .analysis-header__actions {
     width: 100%;
   }
-  .home-hero h1 {
+  .home-hero h1,
+  .home-hero:has(.home-chart) h1 {
     font-size: 2.2rem;
   }
   .result-card {

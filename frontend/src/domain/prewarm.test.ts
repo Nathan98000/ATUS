@@ -4,15 +4,29 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { activitiesFixture, metaFixture } from '../test/fixtures'
+import type { AnalysisRequest } from '../api/types'
+import {
+  activitiesFixture,
+  metaFixture,
+  populationMetadataFixture,
+  presetsFixture,
+} from '../test/fixtures'
 import {
   defaultBuilderState,
   fromRequest,
   toRequest,
   type BuilderState,
 } from '../features/builder/state'
+import { resolveSplit, seriesSpec } from '../features/population/compareGroups'
+import { partial2020Spec } from '../features/results/partial2020'
 import { stableStringify } from '../utils/stableStringify'
-import { STARTER_EXAMPLES, prewarmedAnalyses, type PrewarmInput } from './prewarm'
+import {
+  HOME_CHART,
+  STARTER_EXAMPLES,
+  homeChartSpecs,
+  prewarmedAnalyses,
+  type PrewarmInput,
+} from './prewarm'
 
 const input: PrewarmInput = {
   years: metaFixture.data.years,
@@ -28,7 +42,7 @@ describe('prewarmedAnalyses', () => {
   const list = prewarmedAnalyses(input)
 
   it('covers about 130 distinct analyses for the captured release', () => {
-    expect(list).toHaveLength(131)
+    expect(list).toHaveLength(135)
     const identities = new Set(
       list.map((item) => `${item.operation} ${stableStringify(item.spec)}`),
     )
@@ -43,6 +57,37 @@ describe('prewarmedAnalyses', () => {
     expect(counts('trend:')).toBe(9 + 18)
     expect(counts('compare by sex:')).toBe(9 + 18)
     expect(counts('pandemic weights:')).toBe(9 * 2)
+    expect(counts('home chart')).toBe(4) // two group trends and their 2020s
+  })
+
+  it('holds the home chart in the bytes its split-trend page sends (review round 4)', () => {
+    const years = input.years
+    const home = homeChartSpecs(years)
+    const split = resolveSplit(populationMetadataFixture.dimensions, {
+      by: HOME_CHART.split.by,
+      groups: [...HOME_CHART.split.groups],
+    })
+    expect(split).not.toBeNull()
+    const preset = presetsFixture.presets.find(
+      (candidate) => candidate.name === HOME_CHART.preset,
+    )
+    home.series.forEach((series, index) => {
+      const option = split?.options[index]
+      const sent = seriesSpec(home.trend, split as never, option as never)
+      expect(stableStringify(series.spec)).toBe(stableStringify(sent))
+      expect(list.some((item) => stableStringify(item.spec) === stableStringify(sent))).toBe(
+        true,
+      )
+      // The page asks for 2020 from the trend's canonical spec, whose
+      // activity is the preset's codes under its label.
+      const canonical = {
+        ...sent,
+        activity: { include: preset?.include, exclude: preset?.exclude, label: preset?.label },
+      } as AnalysisRequest
+      expect(stableStringify(series.partial2020)).toBe(
+        stableStringify(partial2020Spec(canonical, years, presetsFixture.presets)),
+      )
+    })
   })
 
   it('starts with exactly the home page starters', () => {
@@ -67,7 +112,11 @@ describe('prewarmedAnalyses', () => {
     }
 
     expect(bodyOf('estimate: sleep, participation_rate, 2025')).toBe(
-      builder({ activity: { preset: 'sleep' }, measure: 'participation_rate' }),
+      builder({
+        operation: 'estimate',
+        activity: { preset: 'sleep' },
+        measure: 'participation_rate',
+      }),
     )
     expect(bodyOf('trend: 12 Socializing, Relaxing, and Leisure')).toBe(
       builder({
@@ -84,7 +133,12 @@ describe('prewarmedAnalyses', () => {
       }),
     )
     expect(bodyOf('pandemic weights: sleep, 2020')).toBe(
-      builder({ activity: { preset: 'sleep' }, weights: 'pandemic', singleYear: 2020 }),
+      builder({
+        operation: 'estimate',
+        activity: { preset: 'sleep' },
+        weights: 'pandemic',
+        singleYear: 2020,
+      }),
     )
   })
 

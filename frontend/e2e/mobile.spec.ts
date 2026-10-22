@@ -26,6 +26,7 @@ test('the core workflow works on a phone without horizontal scrolling', async ({
   await expect(page.getByRole('button', { name: 'Analyze' })).toBeVisible()
   await noHorizontalScroll()
 
+  await page.getByRole('radio', { name: 'One number' }).click()
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
   await page.getByRole('button', { name: 'Analyze' }).click()
   await expect(page.locator('.stat-value')).toHaveText('1h 15m', { timeout: 15_000 })
@@ -40,7 +41,7 @@ test('the core workflow works on a phone without horizontal scrolling', async ({
   await noHorizontalScroll()
 
   // Primary actions stay visible on small screens.
-  await expect(page.getByRole('button', { name: 'Share analysis' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Copy link' })).toBeVisible()
 })
 
 test('comparison groups stack vertically and stay readable', async ({ page }) => {
@@ -53,8 +54,13 @@ test('comparison groups stack vertically and stay readable', async ({ page }) =>
   await expect(first).toBeVisible()
   const boxA = await first.boundingBox()
   const boxB = await second.boundingBox()
-  // Stacked, not side by side.
+  // Stacked, not side by side — and wide enough to show their values: beside
+  // "Compare by" they shrank to 82px and read "Ages" (review round 4).
   expect(boxB?.y ?? 0).toBeGreaterThan((boxA?.y ?? 0) + (boxA?.height ?? 0) - 1)
+  expect(boxA?.width ?? 0).toBeGreaterThan(200)
+  await page.getByLabel('Compare by').selectOption('age')
+  expect((await first.boundingBox())?.width ?? 0).toBeGreaterThan(200)
+  await page.getByLabel('Compare by').selectOption('sex')
   await expectNoHorizontalScroll(page)
 
   await page.getByLabel('Year', { exact: true }).selectOption('2023')

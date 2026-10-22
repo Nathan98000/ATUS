@@ -77,7 +77,9 @@ export function defaultBuilderState(availableYears: readonly number[]): BuilderS
   const latestYear = availableYears.length > 0 ? Math.max(...availableYears) : null
   const earliestYear = availableYears.length > 0 ? Math.min(...availableYears) : null
   return {
-    operation: 'estimate',
+    // A trend, like the earlier Shiny app: the richest chart, and prewarmed
+    // for every preset (review round 4).
+    operation: 'trend',
     activity: { preset: 'sleep' },
     measure: 'average_minutes_per_day',
     yearsMode: 'single',
@@ -273,7 +275,7 @@ export function fromRequest(
  * The weights a single year needs: the standard multi-year weights have no
  * 2020, so choosing 2020 switches to its partial-year (pandemic) weights;
  * leaving 2020 and 2019 — the only other year those weights cover —
- * switches back. A visible choice either way (Advanced options).
+ * switches back. A visible choice either way (More options).
  */
 export function weightsForSingleYear(
   year: number,

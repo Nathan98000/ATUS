@@ -40,7 +40,9 @@ export function decodeSpec(encoded: string, operation: Operation): AnalysisReque
     const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
     json = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
   } catch {
-    throw new InvalidShareLinkError('The analysis link could not be decoded.')
+    throw new InvalidShareLinkError(
+      'This link looks incomplete; it may have been cut off when it was copied.',
+    )
   }
 
   let parsed: unknown

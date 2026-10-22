@@ -25,7 +25,7 @@ describe('duration formatting', () => {
   it('renders hours and minutes rounded to the nearest minute', () => {
     expect(formatMinutesAsDuration(528.75)).toBe('8h 49m')
     expect(formatMinutesAsDuration(541.96)).toBe('9h 2m')
-    expect(formatMinutesAsDuration(60)).toBe('1h 0m')
+    expect(formatMinutesAsDuration(60)).toBe('1h')
   })
 
   it('omits hours below one hour', () => {
@@ -193,10 +193,10 @@ describe('durations in words and on axes', () => {
 })
 
 describe('readers’ forms of axis ticks and ranges', () => {
-  it('pads minutes on a clock axis so labels line up', () => {
+  it('labels a clock axis in the page’s one duration form (review round 4)', () => {
     const ticks = [300, 310, 320]
     expect(ticks.map((tick) => formatClockTick(tick, ticks))).toEqual([
-      '5h 00m',
+      '5h',
       '5h 10m',
       '5h 20m',
     ])

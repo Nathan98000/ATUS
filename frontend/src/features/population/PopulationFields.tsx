@@ -14,6 +14,7 @@ import { useId, useState } from 'react'
 
 import type { PopulationDimension, PopulationRequest } from '../../api/types'
 import { dimensionLabel, stripVariableJargon, valueLabel } from '../../domain/describe'
+import { AGE_BANDS } from './compareGroups'
 
 /** The filters offered, in this order ("age" stands for age_min/age_max). */
 const OFFERED = [
@@ -73,21 +74,24 @@ export function PopulationFields({
     .filter(isSet)
   const available = offered.filter((name) => !shown.includes(name))
 
-  const set = (name: string, next: unknown) => {
+  const setFields = (fields: Record<string, unknown>) => {
     // A filter being edited stays on screen even when cleared (it came from
     // a link or another analysis, so it was not "added" here): its row
     // never vanishes under the cursor. Only its remove button removes it.
-    const filter = AGE_FIELDS.includes(name) ? 'age' : name
-    setAdded((list) => (list.includes(filter) ? list : [...list, filter]))
-    onChange({ ...value, [name]: next } as PopulationRequest)
+    for (const name of Object.keys(fields)) {
+      const filter = AGE_FIELDS.includes(name) ? 'age' : name
+      setAdded((list) => (list.includes(filter) ? list : [...list, filter]))
+    }
+    onChange({ ...value, ...fields } as PopulationRequest)
   }
+  const set = (name: string, next: unknown) => setFields({ [name]: next })
 
   const add = (name: string) => {
     if (name === '') return
     setAdded((list) => [...list, name])
     // Move to the new filter's control once it renders.
     requestAnimationFrame(() => {
-      document.getElementById(`${id}-${name === 'age' ? 'age_min' : name}`)?.focus()
+      document.getElementById(`${id}-${name}`)?.focus()
     })
   }
 
@@ -107,7 +111,13 @@ export function PopulationFields({
           {[...shown, ...others].map((name) => (
             <li key={name} className="population-filter">
               {name === 'age' ? (
-                <AgeField idPrefix={id} value={value} set={set} ageError={ageError} />
+                <AgeField
+                  idPrefix={id}
+                  value={value}
+                  set={set}
+                  setFields={setFields}
+                  ageError={ageError}
+                />
               ) : (
                 <DimensionField
                   dimension={byName.get(name) as PopulationDimension}
@@ -153,59 +163,107 @@ export function PopulationFields({
   )
 }
 
+/** The age band a filter's two ages are, if any ('' when neither is set). */
+function ageBand(value: PopulationRequest): string {
+  if (value.age_min == null && value.age_max == null) return ''
+  const band = AGE_BANDS.find(
+    (candidate) => candidate.min === value.age_min && candidate.max === (value.age_max ?? null),
+  )
+  return band?.key ?? OTHER_AGES
+}
+
+const OTHER_AGES = 'other'
+
+/**
+ * Age as the bands comparisons use ("25–34", "65 and over"), or "Other
+ * range…" for two ages of one's own (review round 4: two number boxes were
+ * fiddly on a phone, and "85+" as an empty box's placeholder was cryptic).
+ * A link's range that is not a band opens as "Other range", so it shows.
+ */
 function AgeField({
   idPrefix,
   value,
   set,
+  setFields,
   ageError,
 }: {
   idPrefix: string
   value: PopulationRequest
   set: (name: string, next: unknown) => void
+  setFields: (fields: Record<string, unknown>) => void
   ageError?: string
 }) {
+  const band = ageBand(value)
+  const [other, setOther] = useState(band === OTHER_AGES)
+  const showRange = other || band === OTHER_AGES
   return (
-    <fieldset className="field population-filter__field">
-      <legend>Age</legend>
-      <div className="age-pair">
-        <label className="visually-hidden" htmlFor={`${idPrefix}-age_min`}>
-          Minimum age
-        </label>
-        <input
-          id={`${idPrefix}-age_min`}
-          type="number"
-          inputMode="numeric"
-          min={15}
-          max={130}
-          placeholder="15"
-          aria-invalid={ageError ? true : undefined}
-          aria-describedby={ageError ? `${idPrefix}-age-note` : undefined}
-          value={value.age_min ?? ''}
-          onChange={(event) => set('age_min', numberOrUndefined(event.target.value))}
-        />
-        <span aria-hidden="true">to</span>
-        <label className="visually-hidden" htmlFor={`${idPrefix}-age_max`}>
-          Maximum age
-        </label>
-        <input
-          id={`${idPrefix}-age_max`}
-          type="number"
-          inputMode="numeric"
-          min={15}
-          max={130}
-          placeholder="85+"
-          aria-invalid={ageError ? true : undefined}
-          aria-describedby={ageError ? `${idPrefix}-age-note` : undefined}
-          value={value.age_max ?? ''}
-          onChange={(event) => set('age_max', numberOrUndefined(event.target.value))}
-        />
-      </div>
+    <div className="field population-filter__field">
+      <label htmlFor={`${idPrefix}-age`}>Age</label>
+      <select
+        id={`${idPrefix}-age`}
+        value={showRange ? OTHER_AGES : band}
+        onChange={(event) => {
+          const key = event.target.value
+          if (key === OTHER_AGES) {
+            setOther(true)
+            return
+          }
+          setOther(false)
+          const chosen = AGE_BANDS.find((candidate) => candidate.key === key)
+          setFields({ age_min: chosen?.min, age_max: chosen?.max ?? undefined })
+        }}
+      >
+        {band === '' && !showRange ? <option value="">Choose ages</option> : null}
+        {AGE_BANDS.map((candidate) => (
+          <option key={candidate.key} value={candidate.key}>
+            {candidate.max === null
+              ? `${candidate.min} and over`
+              : `${candidate.min}–${candidate.max}`}
+          </option>
+        ))}
+        <option value={OTHER_AGES}>Other range…</option>
+      </select>
+      {showRange ? (
+        <div className="age-pair">
+          <label className="visually-hidden" htmlFor={`${idPrefix}-age_min`}>
+            Minimum age
+          </label>
+          <input
+            id={`${idPrefix}-age_min`}
+            type="number"
+            inputMode="numeric"
+            min={15}
+            max={130}
+            placeholder="From"
+            aria-invalid={ageError ? true : undefined}
+            aria-describedby={ageError ? `${idPrefix}-age-note` : undefined}
+            value={value.age_min ?? ''}
+            onChange={(event) => set('age_min', numberOrUndefined(event.target.value))}
+          />
+          <span aria-hidden="true">to</span>
+          <label className="visually-hidden" htmlFor={`${idPrefix}-age_max`}>
+            Maximum age
+          </label>
+          <input
+            id={`${idPrefix}-age_max`}
+            type="number"
+            inputMode="numeric"
+            min={15}
+            max={130}
+            placeholder="Any"
+            aria-invalid={ageError ? true : undefined}
+            aria-describedby={ageError ? `${idPrefix}-age-note` : undefined}
+            value={value.age_max ?? ''}
+            onChange={(event) => set('age_max', numberOrUndefined(event.target.value))}
+          />
+        </div>
+      ) : null}
       {ageError ? (
         <p className="error-text" id={`${idPrefix}-age-note`}>
           {ageError}
         </p>
       ) : null}
-    </fieldset>
+    </div>
   )
 }
 

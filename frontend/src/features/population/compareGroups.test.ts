@@ -27,7 +27,7 @@ describe('compare-by choices', () => {
     const age = choices.find((choice) => choice.by === 'age')
     expect(age?.options.at(-1)).toEqual({
       key: '65+',
-      label: 'Age 65+',
+      label: 'Ages 65 and over',
       population: { age_min: 65 },
     })
   })

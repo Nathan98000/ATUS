@@ -1,29 +1,23 @@
 /**
- * The analysis being built, in a few words, with the Analyze button. It
- * stays in view while the builder scrolls: beside the form on wide screens,
- * as a bar along the bottom of the screen on narrow ones — so running the
- * analysis never means scrolling to the end of a long form first.
+ * The chart being built, in one line, with the Analyze button. It stays in
+ * view while the builder scrolls: beside the form on wide screens, as a bar
+ * along the bottom of the screen on narrow ones — so running the analysis
+ * never means scrolling to the end of the form first.
  */
 import { useMemo } from 'react'
 
 import { useActivityPresets } from '../../api/queries'
 import {
   activityLabelFromSpec,
+  activityName,
   measureName,
   populationPhrase,
   sharedPopulationPhrase,
-  splitActivityLabel,
 } from '../../domain/describe'
 import { formatYears } from '../../utils/format'
 import type { PopulationDimension } from '../../api/types'
 import { compareChoices } from '../population/compareGroups'
 import { selectedYears, toRequest, type BuilderState } from './state'
-
-const OPERATION_NAMES = {
-  estimate: 'One number',
-  trend: 'Change over time',
-  compare: 'Comparison of two groups',
-} as const
 
 export function BuilderSummary({
   state,
@@ -47,7 +41,7 @@ export function BuilderSummary({
   const request = toRequest(state, availableYears)
   const hasActivity = state.activity.preset != null || (state.activity.include?.length ?? 0) > 0
   const activity = hasActivity
-    ? splitActivityLabel(activityLabelFromSpec(request, presetLabels)).name
+    ? activityName(activityLabelFromSpec(request, presetLabels))
     : 'No activity chosen'
   let who: string
   if (state.operation === 'compare') {
@@ -61,7 +55,8 @@ export function BuilderSummary({
       const groups = split.options
         .filter((option) => state.splitGroups.includes(option.key))
         .map((option) => option.label)
-      who = `${groups.join(', ')}${who.startsWith('All respondents') ? '' : ` (all: ${who})`}`
+      const shared = sharedPopulationPhrase(request)
+      who = `${groups.join(', ')}${shared === null ? '' : ` (all: ${shared})`}`
     }
   }
   const years = selectedYears(state, availableYears)
@@ -72,32 +67,14 @@ export function BuilderSummary({
         ? `${formatYears(years)}, combined`
         : formatYears(years)
 
-  // The type comes last so the one-line form on narrow screens leads with
-  // the activity; wide screens show it first (CSS order).
-  const items = [
-    { term: 'Doing what', detail: activity },
-    { term: 'For whom', detail: who },
-    { term: 'When', detail: when },
-    { term: 'Measured as', detail: measureName(state.measure) },
-    { term: 'Type', detail: OPERATION_NAMES[state.operation], type: true },
-  ]
-
   return (
     <section className="builder-summary" aria-labelledby="builder-summary-heading">
       <h2 id="builder-summary-heading" className="builder-summary__heading">
-        Your analysis
+        Your chart
       </h2>
-      <dl className="builder-summary__list">
-        {items.map((item) => (
-          <div
-            key={item.term}
-            className={`builder-summary__item${item.type ? ' builder-summary__item--type' : ''}`}
-          >
-            <dt>{item.term}</dt>
-            <dd>{item.detail}</dd>
-          </div>
-        ))}
-      </dl>
+      <p className="builder-summary__text">
+        <b>{activity}</b> · {measureName(state.measure)} · {who} · {when}
+      </p>
       <div className="builder-summary__actions">
         <button
           type="button"

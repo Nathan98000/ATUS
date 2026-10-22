@@ -6,11 +6,15 @@
  *
  * Catch-all codes are not offered: the "n.e.c." (not elsewhere classified)
  * entries and the "Data Codes" category (diaries that could not be coded)
- * are left out of browsing and search. They stay in `byCode`, so a link
- * that selects one still names it, and a selected category still includes
- * them (`leafCount` counts every code the analysis covers).
+ * are left out of browsing and search, and so is a category left with no
+ * offered activity (0399, whose only activity is a catch-all). They stay in
+ * `byCode`, so a link that selects one still names it, and a selected
+ * category still includes them (`leafCount` counts every code the analysis
+ * covers). Search matches the survey's names and their plain forms
+ * (`plainActivityName`: "household" for "HH").
  */
 import type { ActivityEntry } from '../../api/types'
+import { plainActivityName } from '../../domain/describe'
 
 export interface LexiconIndex {
   entries: ActivityEntry[]
@@ -25,6 +29,12 @@ export interface LexiconIndex {
   /** Ancestors of a code, outermost first (excluding the code itself). */
   pathOf: (code: string) => ActivityEntry[]
   search: (query: string, limit?: number) => ActivityEntry[]
+  /**
+   * What a selection covers, in plain names: each six-digit code's own
+   * activity, and the offered activities or subcategories directly under a
+   * shorter code (less any excluded), in code order.
+   */
+  includedNames: (include: readonly string[], exclude?: readonly string[]) => string[]
 }
 
 /** The lexicon's catch-all "Data Codes" category (unable to code, missing). */
@@ -44,12 +54,6 @@ export function buildLexiconIndex(entries: readonly ActivityEntry[]): LexiconInd
 
   for (const entry of sorted) {
     byCode.set(entry.code, entry)
-    const parent = entry.parent_code ?? ''
-    const siblings = childrenOf.get(parent)
-    if (isOffered(entry)) {
-      if (siblings) siblings.push(entry)
-      else childrenOf.set(parent, [entry])
-    }
     if (entry.level === 3) {
       for (const prefix of [entry.code.slice(0, 2), entry.code.slice(0, 4), entry.code]) {
         leafCounts.set(prefix, (leafCounts.get(prefix) ?? 0) + 1)
@@ -59,6 +63,19 @@ export function buildLexiconIndex(entries: readonly ActivityEntry[]): LexiconInd
       }
     }
   }
+  // Offered: not a catch-all, and not a category with nothing to offer.
+  const offered = (entry: ActivityEntry) =>
+    isOffered(entry) && (offeredLeafCounts.get(entry.code) ?? 0) > 0
+  for (const entry of sorted) {
+    if (!offered(entry)) continue
+    const parent = entry.parent_code ?? ''
+    const siblings = childrenOf.get(parent)
+    if (siblings) siblings.push(entry)
+    else childrenOf.set(parent, [entry])
+  }
+  const plainNames = new Map(
+    sorted.map((entry) => [entry.code, plainActivityName(entry.name).toLowerCase()]),
+  )
 
   const pathOf = (code: string): ActivityEntry[] => {
     const path: ActivityEntry[] = []
@@ -78,13 +95,31 @@ export function buildLexiconIndex(entries: readonly ActivityEntry[]): LexiconInd
     const startsWith: ActivityEntry[] = []
     const contains: ActivityEntry[] = []
     for (const entry of sorted) {
-      if (!isOffered(entry)) continue
-      const name = entry.name.toLowerCase()
-      if (name.startsWith(needle) || entry.code.startsWith(needle)) startsWith.push(entry)
-      else if (name.includes(needle)) contains.push(entry)
+      if (!offered(entry)) continue
+      const names = [entry.name.toLowerCase(), plainNames.get(entry.code) ?? '']
+      if (names.some((name) => name.startsWith(needle)) || entry.code.startsWith(needle)) {
+        startsWith.push(entry)
+      } else if (names.some((name) => name.includes(needle))) contains.push(entry)
       if (startsWith.length >= limit) break
     }
     return [...startsWith, ...contains].slice(0, limit)
+  }
+
+  const includedNames = (include: readonly string[], exclude: readonly string[] = []) => {
+    const names: string[] = []
+    for (const code of [...include].sort()) {
+      const entry = byCode.get(code)
+      if (!entry) continue
+      const covered =
+        entry.level === 3
+          ? [entry]
+          : (childrenOf.get(code) ?? []).filter((child) => !exclude.includes(child.code))
+      for (const item of covered) {
+        const name = plainActivityName(item.name)
+        if (!names.includes(name)) names.push(name)
+      }
+    }
+    return names
   }
 
   return {
@@ -96,5 +131,6 @@ export function buildLexiconIndex(entries: readonly ActivityEntry[]): LexiconInd
     offeredLeafCount: (code) => offeredLeafCounts.get(code) ?? 0,
     pathOf,
     search,
+    includedNames,
   }
 }

@@ -28,13 +28,13 @@ const CONFIDENCE_LEVEL = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 20,
 })
 
-/** 528.75 → "8h 49m"; 42.4 → "42m"; 0.2 → "0m". */
+/** 528.75 → "8h 49m"; 540 → "9h"; 42.4 → "42m"; 0.2 → "0m". */
 export function formatMinutesAsDuration(minutes: number): string {
   const totalMinutes = Math.round(minutes)
   const hours = Math.floor(totalMinutes / 60)
   const rest = totalMinutes % 60
   if (hours === 0) return `${rest}m`
-  return `${hours}h ${rest}m`
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`
 }
 
 /** A duration in a sentence: 23.2 → "23 minutes"; 72 → "1 hour 12 minutes"; 0.3 → "under a minute". */
@@ -59,18 +59,15 @@ export function formatDurationTick(minutes: number): string {
 }
 
 /**
- * Axis label for a duration tick on an axis that does not start at zero,
- * with minutes padded so a column of labels lines up: 300 → "5h 00m", 310 →
- * "5h 10m". Ticks on whole hours only read "5h", "6h"; below an hour,
- * "45m". Non-whole-minute ticks (a very narrow axis) keep their decimals.
+ * Axis label for a duration tick on an axis that does not start at zero, in
+ * the form every other duration on the page takes: 300 → "5h", 310 →
+ * "5h 10m", 45 → "45m" (review round 4: "5h 00m" here beside "5h" in the
+ * readout read as two formats). Non-whole-minute ticks (a very narrow axis)
+ * keep their decimals.
  */
 export function formatClockTick(minutes: number, ticks: readonly number[]): string {
   if (!ticks.every((tick) => Number.isInteger(tick))) return `${ONE_DECIMAL.format(minutes)}m`
-  const hours = Math.floor(minutes / 60)
-  const rest = minutes - hours * 60
-  if (ticks.every((tick) => tick % 60 === 0)) return `${hours}h`
-  if (ticks.every((tick) => tick < 60)) return `${rest}m`
-  return `${hours}h ${String(rest).padStart(2, '0')}m`
+  return formatMinutesAsDuration(minutes)
 }
 
 /** 528.75 → "528.8". */

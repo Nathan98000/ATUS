@@ -5,7 +5,7 @@
  */
 import { expect, test } from './fixtures'
 
-import { analyze, expectNoSeriousViolations, setAge } from './helpers'
+import { analyze, chooseOneNumber, expectNoSeriousViolations, setAge } from './helpers'
 
 test('home page has no serious axe violations', async ({ page }) => {
   await page.goto('/')
@@ -31,6 +31,7 @@ test('the About page, with its privacy and logging statement, has no serious axe
 test('estimate, trend and compare results have no serious axe violations', async ({ page }) => {
   await page.goto('/explore')
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  await chooseOneNumber(page)
   await setAge(page, 25, 54)
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
   await analyze(page)
@@ -69,12 +70,16 @@ test('the primary workflow is keyboard-operable', async ({ page }) => {
   const search = page.getByLabel('Search activities')
   await search.focus()
   await page.keyboard.type('sleep')
-  await page.keyboard.press('Enter') // first option
-  await expect(
-    page.getByText('includes all 2 activities under it', { exact: false }),
-  ).toBeVisible()
+  await page.keyboard.press('Enter') // first option: the "Sleeping" preset
+  await expect(page.getByText('Includes sleeping; sleeplessness')).toBeVisible()
   // Focus returned to the toggle for a coherent tab order.
   await expect(page.getByRole('button', { name: 'Change activity' })).toBeFocused()
+
+  // One number, from the analysis types with the arrow keys (the builder
+  // opens on "Change over time", the first of them).
+  await page.getByRole('radio', { name: 'Change over time' }).focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(page.getByRole('radio', { name: 'One number' })).toBeChecked()
 
   // Run the analysis with the keyboard: focus lands on the result's heading
   // and stays there when the URL is rewritten to the canonical spec.

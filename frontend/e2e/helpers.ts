@@ -28,23 +28,35 @@ export async function expectNoSeriousViolations(page: Page) {
 export async function pickSleepBySearch(page: Page) {
   await page.getByRole('button', { name: 'Change activity' }).click()
   await page.getByLabel('Search activities').fill('sleep')
+  // The lexicon's own entry (under its category), not the "Sleeping" preset
+  // the search offers first.
   await page
-    .getByRole('option', { name: /Sleeping/ })
+    .getByRole('option', { name: /› Sleeping/ })
     .first()
     .click()
-  await expect(
-    page.getByText('includes all 2 activities under it', { exact: false }),
-  ).toBeVisible()
+  await expect(page.getByText('Includes sleeping; sleeplessness')).toBeVisible()
 }
 
-/** Sets an age range, adding the age filter first when it is not shown yet. */
+/**
+ * Sets an age range as "Other range…", adding the age filter first when it
+ * is not shown yet (the age filter offers bands; review round 4).
+ */
 export async function setAge(page: Page, min: number, max: number) {
   const minimum = page.getByLabel('Minimum age')
   if (!(await minimum.isVisible())) {
-    await page.getByLabel('Add a filter').first().selectOption('age')
+    const age = page.getByLabel('Age', { exact: true })
+    if (!(await age.isVisible())) {
+      await page.getByLabel('Add a filter').first().selectOption('age')
+    }
+    await age.selectOption('other')
   }
   await minimum.fill(String(min))
   await page.getByLabel('Maximum age').fill(String(max))
+}
+
+/** One number rather than the builder's default trend (review round 4). */
+export async function chooseOneNumber(page: Page) {
+  await page.getByRole('radio', { name: 'One number' }).click()
 }
 
 export async function analyze(page: Page) {

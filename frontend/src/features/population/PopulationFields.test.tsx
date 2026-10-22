@@ -4,7 +4,7 @@
  * list does not offer (or an unknown future type) must still show when a
  * link sets it.
  */
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
@@ -54,7 +54,7 @@ describe('PopulationFields (driven by real population metadata)', () => {
       'Age',
       'Employment',
       'Education',
-      'Children in household',
+      'Children under 18 at home',
       'Day of week',
     ])
     // Never offered: region, state, diary dates.
@@ -85,9 +85,51 @@ describe('PopulationFields (driven by real population metadata)', () => {
     const user = userEvent.setup()
     render(<Harness />)
     await user.selectOptions(screen.getByLabelText('Add a filter'), 'has_household_children')
-    expect(screen.getByLabelText('Children in household')).toBeInTheDocument()
+    expect(screen.getByLabelText('Children under 18 at home')).toBeInTheDocument()
     expect(screen.queryByText(/TRCHILDNUM/)).not.toBeInTheDocument()
     expect(screen.queryByText(/TELFS/)).not.toBeInTheDocument()
+  })
+
+  it('offers age as the comparison bands, and both ages at once (review round 4)', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    await user.selectOptions(screen.getByLabelText('Add a filter'), 'age')
+    const age = screen.getByLabelText('Age')
+    // Focus moves to the new filter's control once it renders.
+    await waitFor(() => expect(age).toHaveFocus())
+    expect(
+      within(age)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual([
+      'Choose ages',
+      '15–24',
+      '25–34',
+      '35–44',
+      '45–54',
+      '55–64',
+      '65 and over',
+      'Other range…',
+    ])
+    await user.selectOptions(age, '25-34')
+    expect(onChange).toHaveBeenLastCalledWith({ age_min: 25, age_max: 34 })
+    await user.selectOptions(age, '65+')
+    expect(onChange).toHaveBeenLastCalledWith({ age_min: 65, age_max: undefined })
+    expect(screen.queryByLabelText('Minimum age')).not.toBeInTheDocument()
+  })
+
+  it('opens a range that is no band as "Other range", so a link’s ages show', () => {
+    render(
+      <PopulationFields
+        dimensions={dimensions}
+        value={{ age_min: 25, age_max: 54 }}
+        onChange={() => {}}
+      />,
+    )
+    expect(screen.getByLabelText('Age')).toHaveValue('other')
+    expect(screen.getByLabelText('Minimum age')).toHaveValue(25)
+    expect(screen.getByLabelText('Maximum age')).toHaveValue(54)
   })
 
   it('parses age input and never emits NaN', async () => {
@@ -95,6 +137,7 @@ describe('PopulationFields (driven by real population metadata)', () => {
     const onChange = vi.fn()
     render(<Harness onChange={onChange} />)
     await user.selectOptions(screen.getByLabelText('Add a filter'), 'age')
+    await user.selectOptions(screen.getByLabelText('Age'), 'other')
     await user.type(screen.getByLabelText('Minimum age'), '2')
     expect(onChange).toHaveBeenLastCalledWith({ age_min: 2 })
     await user.clear(screen.getByLabelText('Minimum age'))

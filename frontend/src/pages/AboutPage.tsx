@@ -27,9 +27,10 @@ export function AboutPage() {
       <h2>What the survey measures</h2>
       <p>
         ATUS is the only federal survey measuring how people divide their time. One person per
-        sampled household reports a complete 24-hour diary; each reported activity is coded
-        against a hierarchical activity lexicon. The survey covers the civilian noninstitutional
-        population age 15 and over, continuously since 2003.
+        sampled household reports a complete 24-hour diary, and each activity in it is coded
+        against a detailed list of activities (sleeping, housework, watching TV, and hundreds
+        more, grouped into categories). The survey covers people age 15 and over living in
+        households (not, for example, in prisons or nursing homes), continuously since 2003.
       </p>
 
       <h2>Why estimates are weighted</h2>
@@ -42,11 +43,13 @@ export function AboutPage() {
 
       <h2>Why uncertainty is shown</h2>
       <p>
-        Every number here is an estimate from a sample, so it carries sampling uncertainty.
-        Standard errors are computed with the survey's official 160 replicate weights and shown
-        together with confidence intervals. When two groups are compared, the difference's
-        uncertainty accounts for the correlation between the groups — it is computed by the
-        analytical engine, never in this interface.
+        Every number here is an estimate from a sample, so it carries sampling uncertainty. The
+        likely range around each figure is a confidence interval, computed from the survey's
+        official 160 replicate weights. When two groups are compared, the likely range of their
+        difference allows for both groups coming from the same survey — it is computed by the
+        analytical engine, never in this interface. A trend split into groups draws each group's
+        estimates without a range; it links to a comparison of two of its groups in one year,
+        which shows the likely range of their difference.
       </p>
 
       <h2>Why 2020 is special</h2>
@@ -56,8 +59,9 @@ export function AboutPage() {
         BLS published 2020 under a dedicated pandemic weighting that represents the weeks that
         were collected (January 1 – March 17 and May 10 – December 31). Trends show 2020 from
         that weighting as a hollow point, with a note that it is a partial-year estimate that
-        may not compare exactly with other years; choosing 2020 alone uses it too (it is also an
-        "Advanced options" choice), and the result always carries its caveat.
+        may not compare exactly with other years, reached by a dotted line; choosing 2020 alone
+        uses it too (it is also a "More options" choice), and the result always carries its
+        caveat.
       </p>
 
       <h2>Interpreting results</h2>
@@ -66,20 +70,20 @@ export function AboutPage() {
           Estimates are <b>descriptive</b>: they say how much time groups spent, not why.
         </li>
         <li>
-          "Participation" is a <b>daily</b> rate — the share doing an activity on an average
-          day, not the share who ever do it.
+          "Share of people who do it" is a <b>daily</b> share — the people doing an activity on
+          an average day, not the share who ever do it.
         </li>
         <li>
-          "Children in household" means any household child under 18 — close to, but not the
+          "Children at home" means any child under 18 in the household — close to, but not the
           same as, being a parent.
         </li>
         <li>
-          Sample sizes are unweighted respondent counts; the "represents" figure is the weighted
-          population — the two are always shown separately.
+          The number of diaries behind a figure, in its small print, counts the people surveyed,
+          not the population they stand for.
         </li>
       </ul>
 
-      <h2>Data and versions</h2>
+      <h2 id="data">Data and versions</h2>
       <p>
         {meta.data ? (
           <>

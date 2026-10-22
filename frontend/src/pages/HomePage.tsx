@@ -1,5 +1,6 @@
 /**
- * Landing page: what this is, where the data comes from, and immediate
+ * Landing page: what this is, a chart that shows it (a trend split by sex,
+ * from the deployed snapshot), where the data comes from, and immediate
  * entry points — a main call to action plus starter analyses that are real,
  * runnable specifications (linked as shareable analysis URLs built against
  * the years the API actually reports), each previewing its answer when the
@@ -15,6 +16,7 @@ import { useRetryFocus } from '../components/useRetryFocus'
 import { isFullPageError } from '../domain/presentError'
 import { STARTER_EXAMPLES } from '../domain/prewarm'
 import { analysisPath } from '../domain/urlSpec'
+import { HomeChart } from '../features/home/HomeChart'
 import { StarterPreview } from '../features/home/StarterPreview'
 
 const STARTER_ICONS = { estimate: 'number', trend: 'line', compare: 'bars' } as const
@@ -41,6 +43,7 @@ export function HomePage() {
     <div className="home-page">
       <section className="home-hero">
         <h1 tabIndex={-1}>Explore how Americans spend their time.</h1>
+        {years.length > 0 ? <HomeChart years={years} /> : null}
         <p className="home-hero__lead">
           Every year, the{' '}
           <a href="https://www.bls.gov/tus/" rel="noreferrer">
@@ -51,7 +54,7 @@ export function HomePage() {
           groups you choose{meta.data ? `, from ${years[0]} to ${years[years.length - 1]}` : ''}
           .
         </p>
-        <p>
+        <p className="home-hero__action">
           <Link to="/explore" className="btn btn--primary btn--large">
             Make your own chart
           </Link>
@@ -110,8 +113,8 @@ export function HomePage() {
             represent all Americans age 15 and over, across every day of the week and the year.
           </li>
           <li>
-            <b>They are estimates.</b> The survey asks a sample of people, so every chart shows
-            a likely range: a shaded band or thin lines around each figure.
+            <b>They are estimates.</b> The survey asks a sample of people, so charts show a
+            likely range around each figure: a shaded band or thin lines.
           </li>
           <li>
             <b>2020 is a partial year.</b> The survey paused in spring 2020 because of COVID-19,

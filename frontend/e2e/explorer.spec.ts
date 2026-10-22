@@ -4,7 +4,7 @@
  */
 import { expect, test } from './fixtures'
 
-import { CORE, analyze, pickSleepBySearch, setAge } from './helpers'
+import { CORE, analyze, chooseOneNumber, pickSleepBySearch, setAge } from './helpers'
 
 test('a first-time user completes an estimate from the home page', CORE, async ({ page }) => {
   await page.goto('/')
@@ -15,6 +15,8 @@ test('a first-time user completes an estimate from the home page', CORE, async (
 
   await page.getByRole('link', { name: 'Make your own chart' }).click()
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  // The builder opens on a trend; this visitor wants one number.
+  await chooseOneNumber(page)
 
   // The activity lexicon is discovered from the API and searchable.
   await pickSleepBySearch(page)
@@ -26,7 +28,7 @@ test('a first-time user completes an estimate from the home page', CORE, async (
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
 
   // Statistic: default "Average time per day" is already selected.
-  await expect(page.getByRole('radio', { name: /Average time per day/ })).toBeChecked()
+  await expect(page.getByLabel('Show', { exact: true })).toHaveValue('average_minutes_per_day')
 
   await analyze(page)
 
@@ -58,14 +60,16 @@ test('the loading state announces the calculation', async ({ page }) => {
   }
   await page.goto('/explore')
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  await chooseOneNumber(page)
   await analyze(page)
-  await expect(page.getByText('Calculating estimate…').first()).toBeVisible()
+  await expect(page.getByText('Working out the number…').first()).toBeVisible()
   await expect(page.locator('.stat-value')).toBeVisible({ timeout: 15_000 })
 })
 
 test('an estimate can be viewed as a trend across all available years', async ({ page }) => {
   await page.goto('/explore')
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  await chooseOneNumber(page)
   await analyze(page)
   await expect(page.locator('.stat-value')).toBeVisible({ timeout: 15_000 })
 

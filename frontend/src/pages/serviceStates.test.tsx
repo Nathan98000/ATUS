@@ -15,11 +15,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../App'
 import type { EstimateRequest } from '../api/types'
 import { WAKING_MESSAGE } from '../components/ServiceNotice'
-import { STARTER_EXAMPLES, prewarmedAnalyses } from '../domain/prewarm'
+import { STARTER_EXAMPLES, homeChartSpecs, prewarmedAnalyses } from '../domain/prewarm'
 import { encodeSpec } from '../domain/urlSpec'
 import {
   activitiesFixture,
   compareChildrenFixture,
+  estimatePandemicFixture,
   estimateSleepFixture,
   metaFixture,
   populationMetadataFixture,
@@ -92,7 +93,7 @@ describe('cold start (F11, F12)', () => {
         }),
       )
       renderApp('/explore')
-      expect(screen.getByText('Loading the analysis builder…')).toBeInTheDocument()
+      expect(screen.getByText('Loading the chart builder…')).toBeInTheDocument()
       // The live region exists, empty, before its text arrives: text added to
       // a region already in the page is announced; a region mounted together
       // with its text often is not (review round 1).
@@ -174,7 +175,7 @@ describe('cold start (F11, F12)', () => {
       renderApp(sleepRoute)
       await vi.advanceTimersByTimeAsync(4_000)
       expect(screen.getAllByText('Preparing the analysis…').length).toBeGreaterThan(0)
-      expect(screen.queryByText('Calculating estimate…')).not.toBeInTheDocument()
+      expect(screen.queryByText('Working out the number…')).not.toBeInTheDocument()
       expect(requests('POST /api/v1/analysis/estimate')).toBe(0)
       await vi.advanceTimersByTimeAsync(5_000)
       expect(await screen.findByText('8h 49m')).toBeInTheDocument()
@@ -837,8 +838,8 @@ describe('one announcement per state (review round 1)', () => {
       }),
     )
     renderApp(sleepRoute)
-    await waitFor(() => expect(liveRegionsWith(/Calculating estimate…/)).not.toHaveLength(0))
-    expect(liveRegionsWith(/Calculating estimate…/)).toHaveLength(1)
+    await waitFor(() => expect(liveRegionsWith(/Working out the number…/)).not.toHaveLength(0))
+    expect(liveRegionsWith(/Working out the number…/)).toHaveLength(1)
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
     expect(liveRegionsWith(/Analysis ready\./)).toHaveLength(1)
   })
@@ -990,6 +991,8 @@ describe('focus after in-app navigation (review round 2)', () => {
     })
     await waitFor(() => expect(document.activeElement).toBe(exploreHeading))
 
+    // One number: the builder opens on a trend (review round 4).
+    await user.click(await screen.findByRole('radio', { name: 'One number' }))
     const analyze = await screen.findByRole('button', { name: 'Analyze' })
     analyze.focus()
     await user.keyboard('{Enter}')
@@ -1042,6 +1045,7 @@ describe('focus after in-app navigation (review round 2)', () => {
         }),
       )
       renderApp('/explore')
+      await user.click(await screen.findByRole('radio', { name: 'One number' }))
       const analyze = await screen.findByRole('button', { name: 'Analyze' })
       analyze.focus()
       await user.keyboard('{Enter}')
@@ -1094,7 +1098,7 @@ describe('offline (review round 1)', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('could not be reached')
     expect(alert).toHaveTextContent('Check your internet connection')
-    expect(screen.queryByText('Calculating estimate…')).not.toBeInTheDocument()
+    expect(screen.queryByText('Working out the number…')).not.toBeInTheDocument()
     // Offline is final: one attempt, not the cold-start budget.
     expect(requests('POST /api/v1/analysis/estimate')).toBe(1)
 
@@ -1446,11 +1450,58 @@ describe('static snapshot and prewake', () => {
     }
   })
 
+  it('the home page draws its split-trend chart from the snapshot alone (review round 4)', async () => {
+    const years = metaFixture.data.years
+    const home = homeChartSpecs(years)
+    const perGroup = (sex: string) => ({
+      ...trendLeisureFixture,
+      spec: { ...trendLeisureFixture.spec, population: { sex } },
+    })
+    await installSnapshot({
+      get: { '/api/v1/meta': metaFixture },
+      post: home.series.flatMap((series) => [
+        {
+          path: '/api/v1/analysis/trend',
+          body: stableStringify(series.spec),
+          response: perGroup(series.key),
+        },
+        ...(series.partial2020
+          ? [
+              {
+                path: '/api/v1/analysis/estimate',
+                body: stableStringify(series.partial2020),
+                response: estimatePandemicFixture,
+              },
+            ]
+          : []),
+      ]),
+    })
+    const requests = countRequests()
+    renderApp('/')
+    const chart = await screen.findByRole('region', {
+      name: /^Time on household activities, men and women/,
+    })
+    expect(within(chart).getByText(/^In 2025, men spent /)).toBeInTheDocument()
+    expect(within(chart).getByRole('application')).toBeInTheDocument()
+    expect(
+      within(chart).getByText('2020 (hollow points) is a partial year.', { exact: false }),
+    ).toBeInTheDocument()
+    expect(within(chart).getByRole('link', { name: 'Open this chart' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('&split=sex&groups=male,female'),
+    )
+    for (const operation of ['estimate', 'trend', 'compare']) {
+      expect(requests(`POST /api/v1/analysis/${operation}`)).toBe(0)
+    }
+  })
+
   it('without a snapshot the home page shows the questions alone and calls no analysis', async () => {
     const requests = countRequests()
     renderApp('/')
     const sleep = await screen.findByRole('link', { name: /How much do Americans sleep\?/ })
     expect(sleep).not.toHaveTextContent('8h 49m')
+    // Nor its chart.
+    expect(screen.queryByRole('region', { name: /^Time on household activities/ })).toBeNull()
     for (const operation of ['estimate', 'trend', 'compare']) {
       expect(requests(`POST /api/v1/analysis/${operation}`)).toBe(0)
     }

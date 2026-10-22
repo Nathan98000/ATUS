@@ -48,8 +48,8 @@ describe('snapshot-requests.mjs', () => {
     join(FIXTURES, 'activities.json'),
   ])
 
-  it('prints ~130 requests whose keys equal the SPA’s WebCrypto keys', async () => {
-    expect(printed).toHaveLength(131)
+  it('prints ~135 requests whose keys equal the SPA’s WebCrypto keys', async () => {
+    expect(printed).toHaveLength(135)
     for (const request of printed) {
       expect(request.path).toMatch(
         new RegExp(`^${API_VERSION_PREFIX}/analysis/(estimate|trend|compare)$`),
