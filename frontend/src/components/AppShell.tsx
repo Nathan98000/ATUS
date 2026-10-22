@@ -38,6 +38,20 @@ function useFocusOnNavigation(): RefObject<boolean> {
 }
 
 /**
+ * The site's mark: a clock face with one slice of the day filled in — what
+ * every estimate here measures. The favicon is the same drawing.
+ */
+function ClockMark() {
+  return (
+    <svg className="wordmark__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <circle cx="16" cy="16" r="16" className="wordmark__dial" />
+      <circle cx="16" cy="16" r="11" className="wordmark__ring" />
+      <path d="M16 16 L16 7.5 A8.5 8.5 0 0 1 23.36 20.25 Z" className="wordmark__slice" />
+    </svg>
+  )
+}
+
+/**
  * Header, footer and the site-wide service notices around every page. The
  * footer's release line appears once metadata has loaded; `/meta` arrives
  * already checked for compatibility, so the shell never renders a shape it
@@ -55,8 +69,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className="site-header">
         <div className="site-header__inner">
           <Link to="/" className="wordmark">
-            <span className="wordmark__badge">ATUS</span>
-            Explorer
+            <ClockMark />
+            ATUS Explorer
           </Link>
           <nav className="site-nav" aria-label="Main">
             <NavLink to="/explore">Explore</NavLink>

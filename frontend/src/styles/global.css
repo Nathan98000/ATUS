@@ -1,20 +1,27 @@
 /* ATUS Explorer — design tokens and global styles.
-   Restrained analytical aesthetic: the data is the visual focus. */
+   Restrained analytical aesthetic: the data is the visual focus. The look
+   borrows from the time sheet — sage-ruled paper, ledger green, manila
+   ochre — and a semi-condensed display face (Archivo) for headings and the
+   big numbers, the way a timetable sets its times. Body text stays in the
+   system face. */
 
 :root {
-  --bg: #f6f7f8;
+  --bg: #f2f4f1;
   --surface: #ffffff;
-  --surface-raised: #fbfcfd;
-  --ink: #191d23;
-  --ink-soft: #3f4854;
-  --ink-faint: #67707c;
-  --border: #dde1e6;
-  --border-strong: #b8bfc8;
+  --surface-raised: #f8f9f7;
+  --ink: #17201c;
+  --ink-soft: #3b4641;
+  --ink-faint: #5c6762;
+  --border: #d9dfda;
+  --border-strong: #b3bcb7;
+  /* Form fields need a 3:1 outline to be found (WCAG 1.4.11). */
+  --field-border: #7f8a85;
 
-  --accent: #1d4ed8;
-  --accent-hover: #1a44bd;
-  --accent-soft: #e8eefc;
-  --accent-ink: #16357f;
+  --accent: #1d5c4d;
+  --accent-hover: #164a3e;
+  --accent-soft: #e1ede8;
+  --accent-border: #b9d3ca;
+  --accent-ink: #143e34;
 
   --warn-bg: #fdf6e3;
   --warn-border: #e4c465;
@@ -27,16 +34,19 @@
   --ok-ink: #166534;
 
   /* Comparison groups: color + always a text label (never color alone). */
-  --group-a: #1d4ed8;
-  --group-b: #b45309;
+  --group-a: #1d5c4d;
+  --group-b: #b0700f;
 
-  --ci-band: rgba(29, 78, 216, 0.14);
+  --ci-band: rgba(29, 92, 77, 0.15);
+  /* The filled slice of the day in the clock mark. */
+  --mark-slice: #f2b84b;
 
   --radius: 8px;
   --radius-large: 12px;
-  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 6px rgba(15, 23, 42, 0.05);
+  --shadow: 0 1px 2px rgba(23, 32, 28, 0.06), 0 1px 6px rgba(23, 32, 28, 0.05);
   --font:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Archivo Variable', var(--font);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --content-width: 76rem;
@@ -59,6 +69,8 @@ body {
   font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  /* Native radios and checkboxes in the site's green, not the browser's blue. */
+  accent-color: var(--accent);
 }
 
 #root {
@@ -70,20 +82,37 @@ body {
 h1,
 h2,
 h3 {
-  line-height: 1.25;
+  font-family: var(--font-display);
+  font-stretch: 88%;
+  font-weight: 680;
+  line-height: 1.15;
   margin: 0 0 0.5rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
 }
 
 h1 {
-  font-size: 1.7rem;
+  font-size: 2.25rem;
+  letter-spacing: -0.015em;
 }
 h2 {
-  font-size: 1.25rem;
+  font-size: 1.4rem;
 }
 h3 {
-  font-size: 1.02rem;
+  font-size: 1.1rem;
+  font-stretch: 92%;
+}
+
+/* The big numbers are set like a timetable's times: the display face,
+   lining tabular figures. */
+.stat-value,
+.compare-card__value,
+.compare-chart__value,
+.difference-block__value,
+.starter-preview__value {
+  font-family: var(--font-display);
+  font-stretch: 88%;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 p {
@@ -156,24 +185,36 @@ code {
 }
 
 .wordmark {
-  font-weight: 700;
-  font-size: 1.06rem;
+  font-family: var(--font-display);
+  font-stretch: 88%;
+  font-weight: 720;
+  font-size: 1.2rem;
   letter-spacing: -0.01em;
   color: var(--ink);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
-.wordmark__badge {
-  background: var(--accent);
-  color: #fff;
-  border-radius: 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 0.15rem 0.4rem;
-  letter-spacing: 0.02em;
+.wordmark__mark {
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: none;
+}
+
+.wordmark__dial {
+  fill: var(--accent);
+}
+
+.wordmark__ring {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.2;
+}
+
+.wordmark__slice {
+  fill: var(--mark-slice);
 }
 
 .site-nav {
@@ -305,7 +346,7 @@ select {
   font: inherit;
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--field-border);
   border-radius: var(--radius);
   padding: 0.42rem 0.6rem;
   width: 100%;
@@ -420,7 +461,7 @@ legend {
   align-items: center;
   gap: 0.6rem 1rem;
   background: var(--accent-soft);
-  border: 1px solid #c7d6f5;
+  border: 1px solid var(--accent-border);
   border-radius: var(--radius);
   color: var(--accent-ink);
   padding: 0.65rem 1rem;
@@ -454,7 +495,7 @@ legend {
 
 .info-note {
   background: var(--accent-soft);
-  border: 1px solid #c7d6f5;
+  border: 1px solid var(--accent-border);
   border-radius: var(--radius);
   color: var(--accent-ink);
   padding: 0.6rem 0.9rem;
@@ -600,9 +641,7 @@ legend {
 .data-table th {
   color: var(--ink-faint);
   font-weight: 600;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  font-size: 0.85rem;
 }
 
 .data-table .num {
@@ -706,7 +745,7 @@ details.panel > .panel__body {
 
 @media (max-width: 720px) {
   h1 {
-    font-size: 1.4rem;
+    font-size: 1.75rem;
   }
   .stat-value {
     font-size: 2.4rem;
@@ -733,8 +772,12 @@ details.panel > .panel__body {
 }
 
 .home-hero h1 {
-  font-size: 2.1rem;
-  max-width: 34rem;
+  font-size: 3.1rem;
+  font-stretch: 85%;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  max-width: 15em;
+  margin-bottom: 1rem;
 }
 
 .home-examples {
@@ -766,7 +809,11 @@ details.panel > .panel__body {
 }
 
 .example-card__question {
+  font-family: var(--font-display);
+  font-stretch: 92%;
+  font-size: 1.12rem;
   font-weight: 650;
+  line-height: 1.25;
   color: var(--accent-ink);
 }
 
@@ -931,7 +978,7 @@ details.panel > .panel__body {
   background: var(--surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-large);
-  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 6px 24px rgba(23, 32, 28, 0.14);
 }
 
 .builder-summary__heading,
@@ -1041,10 +1088,8 @@ details.panel > .panel__body {
   }
 
   .builder-summary dt {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: 0.82rem;
+    font-weight: 600;
     color: var(--ink-faint);
   }
 
@@ -1290,13 +1335,12 @@ details.panel > .panel__body {
   max-width: 48rem;
 }
 
+/* What was measured, above a result's title: sentence case, in the accent. */
 .eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--ink-faint);
-  margin: 0 0 0.15rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0 0 0.2rem;
 }
 
 .analysis-header__actions {
@@ -1640,6 +1684,6 @@ details.panel > .panel__body {
     width: 100%;
   }
   .home-hero h1 {
-    font-size: 1.6rem;
+    font-size: 2.2rem;
   }
 }

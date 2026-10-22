@@ -5,6 +5,8 @@ import { BrowserRouter } from 'react-router'
 
 import { App } from './App'
 import { ErrorBoundary } from './components/ErrorBoundary'
+// The display face, self-hosted (font-src 'self'): weight and width axes.
+import '@fontsource-variable/archivo/wdth.css'
 import './styles/global.css'
 
 // Every query sets its own policy (src/api/queries.ts); these defaults only

@@ -32,7 +32,7 @@ is the entire extent of numeric transformation (`src/utils/format.ts`).
 | Routing | react-router 8 (declarative) | four routes; analyses live in URLs |
 | Server state | TanStack Query 5 | caching, cancellation, race safety ([ADR-008](adr/ADR-008-server-state.md)) |
 | Charts | hand-rolled SVG components | 2020-gap correctness, CI bands, keyboard access, tiny bundle ([ADR-010](adr/ADR-010-visualization.md)) |
-| Styling | plain CSS, design tokens in `src/styles/global.css` | no framework needed at this size |
+| Styling | plain CSS, design tokens in `src/styles/global.css`; one display face, Archivo (variable, self-hosted from `@fontsource-variable/archivo`, so `font-src 'self'` holds), for headings and the big numbers, body text in the system face | no framework needed at this size; no font service |
 | Unit/component tests | Vitest + Testing Library + MSW | fixtures are captured real API payloads |
 | E2E tests | Playwright | real API on the fixture database |
 | Lint/format | oxlint (with jsx-a11y rules) + Prettier | template default, fast |
