@@ -50,11 +50,15 @@ test('a first-time user completes an estimate from the home page', CORE, async (
 })
 
 test('the loading state announces the calculation', async ({ page }) => {
-  // Delay the API response enough to observe the loading state.
-  await page.route('**/api/v1/analysis/estimate', async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 600))
-    await route.continue()
-  })
+  // Delay the response enough to observe the loading state: the API's, and in
+  // stack mode the static snapshot's, which holds this default analysis (read
+  // in milliseconds, the state could vanish before the first check).
+  for (const url of ['**/api/v1/analysis/estimate', '**/snap/*/post/*.json']) {
+    await page.route(url, async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      await route.continue()
+    })
+  }
   await page.goto('/explore')
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
   await analyze(page)
