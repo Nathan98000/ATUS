@@ -136,6 +136,25 @@ export async function runAnalysis<Op extends Operation>(
 }
 
 /**
+ * A prewarmed analysis from the static snapshot only, or null when the
+ * snapshot does not hold it (or there is none, as in development). Never
+ * calls the API: the home page's answer previews use it, and a home page
+ * visit must not wake the analysis service or spend its quota.
+ */
+export async function snapshotAnalysis<Op extends Operation>(
+  operation: Op,
+  spec: OperationContract[Op]['request'],
+): Promise<OperationContract[Op]['response'] | null> {
+  type Response = OperationContract[Op]['response']
+  const body = stableStringify(spec satisfies AnalysisRequest)
+  const fromSnapshot = await snapshotPost<Response>(
+    `${API_VERSION_PREFIX}/analysis/${operation}`,
+    body,
+  )
+  return fromSnapshot?.data ?? null
+}
+
+/**
  * A result names the statistical implementation that computed it; one from
  * another implementation than the page's is noticed like a data release
  * change (review round 2), whether it came with `X-Analytics-Version` or not.

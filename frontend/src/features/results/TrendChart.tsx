@@ -12,6 +12,7 @@
 import { useMemo, useState } from 'react'
 
 import type { TrendPoint } from '../../api/types'
+import { presentUnavailableReason } from '../../domain/notes'
 import {
   formatAxisTicks,
   formatConfidenceInterval,
@@ -21,10 +22,14 @@ import {
   unitLabel,
 } from '../../utils/format'
 import { linearScale, niceTicks, padDomain } from './chartScale'
+import { useElementWidth } from './useElementWidth'
 
-const WIDTH = 760
-const HEIGHT = 340
+/** Drawn at the container's own width, so text keeps its CSS size. */
+const DEFAULT_WIDTH = 760
+const MIN_WIDTH = 280
 const MARGIN = { top: 18, right: 20, bottom: 42, left: 66 }
+/** Room each x-axis year label needs. */
+const MIN_YEAR_TICK_SPACING = 52
 
 interface TrendChartProps {
   points: readonly TrendPoint[]
@@ -75,6 +80,9 @@ export function availableSegments(points: readonly TrendPoint[]): AvailablePoint
 
 export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
   const [activeYear, setActiveYear] = useState<number | null>(null)
+  const [containerRef, measuredWidth] = useElementWidth<HTMLDivElement>(DEFAULT_WIDTH)
+  const width = Math.max(measuredWidth, MIN_WIDTH)
+  const height = width < 520 ? 260 : 340
 
   const segments = useMemo(() => availableSegments(points), [points])
   const available = segments.flat()
@@ -84,7 +92,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
     return (
       <p className="info-note">
         None of the requested years could be estimated.{' '}
-        {unavailable[0]?.unavailable_reason ?? ''}
+        {presentUnavailableReason(unavailable[0]?.unavailable_reason)}
       </p>
     )
   }
@@ -92,16 +100,20 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
   const years = points.map((point) => point.year)
   const minYear = Math.min(...years)
   const maxYear = Math.max(...years)
-  const x = linearScale([minYear, maxYear], [MARGIN.left, WIDTH - MARGIN.right])
+  const x = linearScale([minYear, maxYear], [MARGIN.left, width - MARGIN.right])
 
   const lows = available.map((point) => point.ciLower ?? point.value)
   const highs = available.map((point) => point.ciUpper ?? point.value)
   const [yMin, yMax] = padDomain(Math.min(...lows), Math.max(...highs))
-  const y = linearScale([yMin, yMax], [HEIGHT - MARGIN.bottom, MARGIN.top])
+  const y = linearScale([yMin, yMax], [height - MARGIN.bottom, MARGIN.top])
 
   const yTicks = niceTicks(yMin, yMax, 5)
   const yTickLabels = formatAxisTicks(yTicks, unit)
-  const xTickStep = Math.max(1, Math.ceil((maxYear - minYear) / 8))
+  const maxXTicks = Math.max(
+    2,
+    Math.floor((width - MARGIN.left - MARGIN.right) / MIN_YEAR_TICK_SPACING),
+  )
+  const xTickStep = Math.max(1, Math.ceil((maxYear - minYear) / Math.min(8, maxXTicks)))
   const xTicks = years.filter(
     (year) =>
       year === maxYear ||
@@ -145,7 +157,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
 
   const onMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
-    const positionX = ((event.clientX - rect.left) / rect.width) * WIDTH
+    const positionX = ((event.clientX - rect.left) / rect.width) * width
     let nearest: number | null = null
     let nearestDistance = Infinity
     for (const year of years) {
@@ -160,7 +172,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
 
   const describePoint = (point: TrendPoint): string => {
     if (point.estimate == null) {
-      return `${point.year}: unavailable. ${point.unavailable_reason ?? ''}`.trim()
+      return `${point.year}: no estimate. ${presentUnavailableReason(point.unavailable_reason)}`
     }
     const { value, standard_error, ci_lower, ci_upper, confidence_level } = point.estimate
     let text = `${point.year}: ${formatValueShort(value, unit)}`
@@ -175,7 +187,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
   const hasBand = available.some((point) => point.ciLower != null)
 
   return (
-    <div className="trend-chart">
+    <div className="trend-chart" ref={containerRef}>
       {/* Interactive chart widget: one tab stop, arrow keys inspect years.
           role="application" is deliberate: it switches screen readers into
           focus mode so the arrow keys reach the widget (a plain group would
@@ -192,7 +204,9 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
         onKeyDown={onKeyDown}
       >
         <svg
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          viewBox={`0 0 ${width} ${height}`}
+          width={width}
+          height={height}
           className="chart-svg"
           aria-hidden="true"
           onMouseMove={onMouseMove}
@@ -203,7 +217,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
             <g key={tick}>
               <line
                 x1={MARGIN.left}
-                x2={WIDTH - MARGIN.right}
+                x2={width - MARGIN.right}
                 y1={y(tick)}
                 y2={y(tick)}
                 className="chart-grid"
@@ -215,7 +229,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
           ))}
           {/* X axis ticks */}
           {xTicks.map((year) => (
-            <text key={year} x={x(year)} y={HEIGHT - MARGIN.bottom + 20} className="chart-tick">
+            <text key={year} x={x(year)} y={height - MARGIN.bottom + 20} className="chart-tick">
               {year}
             </text>
           ))}
@@ -232,7 +246,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
                 x={x(point.year) - halfBand}
                 y={MARGIN.top}
                 width={halfBand * 2}
-                height={HEIGHT - MARGIN.top - MARGIN.bottom}
+                height={height - MARGIN.top - MARGIN.bottom}
                 className="chart-unavailable-band"
               />
               <text
@@ -293,7 +307,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
               x1={x(activeYear)}
               x2={x(activeYear)}
               y1={MARGIN.top}
-              y2={HEIGHT - MARGIN.bottom}
+              y2={height - MARGIN.bottom}
               className="chart-guide"
             />
           ) : null}
@@ -302,18 +316,22 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
           <div
             className="chart-tooltip"
             style={{
-              left: `${(x(active.year) / WIDTH) * 100}%`,
-              translate: x(active.year) > WIDTH * 0.72 ? '-100% 0' : '0 0',
+              left: `${(x(active.year) / width) * 100}%`,
+              translate: x(active.year) > width * 0.72 ? '-100% 0' : '0 0',
             }}
           >
             <b>{active.year}</b>
             {active.estimate == null ? (
-              <span>Unavailable — {active.unavailable_reason}</span>
+              <span className="chart-tooltip__wrap">
+                No estimate — {presentUnavailableReason(active.unavailable_reason)}
+              </span>
             ) : (
               <>
                 <span>{formatValueShort(active.estimate.value, unit)}</span>
                 {active.estimate.standard_error != null ? (
-                  <span>SE {formatStandardError(active.estimate.standard_error, unit)}</span>
+                  <span>
+                    Standard error {formatStandardError(active.estimate.standard_error, unit)}
+                  </span>
                 ) : null}
                 {active.estimate.ci_lower != null && active.estimate.ci_upper != null ? (
                   <span>
@@ -326,7 +344,7 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
                   </span>
                 ) : null}
                 {active.n_respondents != null ? (
-                  <span>n = {active.n_respondents.toLocaleString('en-US')}</span>
+                  <span>{active.n_respondents.toLocaleString('en-US')} respondents</span>
                 ) : null}
               </>
             )}
@@ -340,7 +358,8 @@ export function TrendChart({ points, unit, measureLabel }: TrendChartProps) {
         <p className="field-hint chart-gap-note" data-testid="gap-note">
           {unavailable.map((point) => (
             <span key={point.year}>
-              <b>{point.year} has no estimate:</b> {point.unavailable_reason}{' '}
+              <b>{point.year} has no estimate:</b>{' '}
+              {presentUnavailableReason(point.unavailable_reason)}{' '}
             </span>
           ))}
         </p>

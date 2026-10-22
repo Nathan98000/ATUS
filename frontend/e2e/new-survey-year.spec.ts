@@ -63,7 +63,7 @@ test('a release announcing 2026 reaches every year control, and 2020 is still a 
   const sent = page.waitForRequest('**/api/v1/analysis/estimate')
   await analyze(page)
   expect((await sent).postDataJSON().years).toEqual([2026])
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('2026')
+  await expect(page.locator('.analysis-header__details')).toContainText('2026')
   await expect(page.getByRole('alert')).toContainText('2026', { timeout: 15_000 })
 
   // A trend defaults to the full reported period, which now ends in 2026.
@@ -80,7 +80,9 @@ test('a release announcing 2026 reaches every year control, and 2020 is still a 
   await to.selectOption('2023')
   await analyze(page)
   await expect(page.getByTestId('unavailable-2020')).toBeVisible({ timeout: 15_000 })
-  await expect(page.getByTestId('gap-note')).toContainText('TUFNWGTP is undefined for 2020')
+  await expect(page.getByTestId('gap-note')).toContainText(
+    'Data collection paused in spring 2020',
+  )
   await expect(page.getByTestId('point-2019')).toBeVisible()
   await expect(page.getByTestId('point-2023')).toBeVisible()
   expect(await page.getByTestId('trend-line-segment').count()).toBe(0)

@@ -8,11 +8,36 @@ import { ErrorPanel } from './ErrorPanel'
 import { WarningBanner } from './WarningBanner'
 
 describe('WarningBanner', () => {
-  it('renders every warning from the API', () => {
+  it('renders every warning from the API, in plain language', () => {
     render(<WarningBanner warnings={estimatePandemicFixture.warnings} />)
-    expect(screen.getByRole('note')).toHaveTextContent(/May 10 - Dec 31/)
-    expect(screen.getByRole('note')).toHaveTextContent(
-      /annual estimates for 2020 are not possible/,
+    const note = screen.getByRole('note')
+    expect(note).toHaveTextContent(/May 10 – December 31/)
+    expect(note).toHaveTextContent(/not full-year figures/)
+    expect(note).not.toHaveTextContent(/TU20FWGT/)
+  })
+
+  it('shows caveats as a warning and context as a quieter line', () => {
+    const { container } = render(
+      <WarningBanner
+        warnings={[
+          'Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).',
+          'Pooled estimate: represents the average day across 3 survey years (1,095 days combined).',
+        ]}
+      />,
+    )
+    expect(container.querySelector('.warning-banner')).toHaveTextContent(
+      'This is an average day across 3 survey years combined',
+    )
+    expect(container.querySelector('.warning-banner')).not.toHaveTextContent(/coded the same/)
+    expect(container.querySelector('.context-note')).toHaveTextContent(
+      'Activities are coded the same way in every survey year',
+    )
+  })
+
+  it('shows a warning it does not recognize exactly as the API wrote it, as a caveat', () => {
+    const { container } = render(<WarningBanner warnings={['A brand-new caveat (XYZW).']} />)
+    expect(container.querySelector('.warning-banner')).toHaveTextContent(
+      'A brand-new caveat (XYZW).',
     )
   })
 

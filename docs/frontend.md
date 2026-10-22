@@ -48,17 +48,21 @@ frontend/src/
               version stores), snapshot.ts (static snapshot), prewake.ts,
               endpoints.ts, queries.ts
   domain/     urlSpec.ts (shareable-URL encoding), describe.ts (titles,
-              labels, plain-language interpretation), presentError.ts,
+              labels, plain-language interpretation), notes.ts (the API's
+              warnings and unavailable reasons in plain language),
+              presentError.ts,
               prewarm.ts (starter examples + prewarmed snapshot specs),
               exports.ts (CSV and JSON downloads of a result)
   deploy/     staticHeaders.ts (reads the _headers rules of the static host)
   features/
     activities/  lexicon.ts (client index), ActivityPicker
-    builder/     state.ts (builder ⇄ request spec), BuilderControls
+    builder/     state.ts (builder ⇄ request spec), BuilderControls,
+                 BuilderSummary (the sticky summary with Analyze)
+    home/        StarterPreview (a starter's answer, from the snapshot only)
     population/  PopulationFields (generated from population metadata)
     results/     EstimateView, TrendView + TrendChart, CompareView +
                  ComparisonChart, MethodologyPanel, ShareButton,
-                 ResultDownloads, chartScale
+                 ResultDownloads, chartScale, useElementWidth
   components/ AppShell, ErrorBoundary, LoadingPanel, ErrorPanel, WarningBanner,
               ServiceNotice (waking / reload notices), ServiceInterruption
               (full-page paused-quota and incompatible-API states)
@@ -458,11 +462,19 @@ facts are `null`, never guessed. File names are
 
 - `estimate: null` (unavailable trend years) renders as a labeled gap band;
   the line never crosses it, nothing is interpolated, and the data table
-  says “Unavailable” with the API's reason — never zero.
+  says “No estimate” with the API's reason in plain language — never zero.
 - SEs and confidence intervals are shown wherever the API provides them
   (big-number view, chart band, tooltips, tables); `variance: "none"`
   results say explicitly that no uncertainty was requested.
-- API `warnings` always render in a visible note banner.
+- API `warnings` always render visibly, in plain language
+  (`domain/notes.ts`): caveats about the particular result (pooled years,
+  pandemic weights, a truncated interval, filter caveats) in the “Keep in
+  mind” warning style, context true of every such result (the activity
+  coding, how a difference's uncertainty is computed) as a quieter line, so
+  the warning style keeps its meaning. A warning the module does not
+  recognize is shown verbatim, as a caveat. The API's exact wording of every
+  warning and unavailable-year reason is listed under “Technical notes” in
+  “How was this calculated?”, and the downloads carry it unchanged.
 - Unweighted sample sizes (“Survey sample”) and the weighted population
   (“Represents”) are always separate statements.
 - Formatting precision policy (`utils/format.ts`): durations as h + m
@@ -480,11 +492,28 @@ facts are `null`, never guessed. File names are
 - Filters are never active yet invisible. A comparison's shared filters
   restrict both groups: in the builder their section opens and is marked
   “(active)” when set (from a link, or carried over from an estimate or
-  trend), and the result names them in its title and in a “Both groups: …”
-  line, not only inside the collapsed panels (review round 3).
-- The one-sentence interpretation on result pages is a deterministic
-  template over response fields — descriptive wording only, no causal
-  claims, no significance language.
+  trend), and the result names them in its “Both groups: …” details line
+  under the heading, not only inside the collapsed panels (review round 3).
+- Result headings (`resultHeading`): the statistic as the eyebrow, the
+  activity (and a comparison's two groups) as the title, and the definition
+  qualifier (“As defined in BLS table A-1”), population and years once in
+  the details line. The document title keeps the full one-line description.
+- Every result leads with a one-sentence plain-language answer, a
+  deterministic template over response fields (`interpretEstimate`,
+  `interpretTrend`, `describeDifference`) — descriptive wording only, no
+  causal claims, no significance language. A comparison's difference is
+  stated as “N more for <group>” with its confidence interval as a range of
+  “more for A / more for B”; the signed exact value (A − B) and its SE stay
+  beside it.
+- The comparison chart is a bar chart from zero (`ComparisonChart`, HTML
+  rather than SVG so labels wrap and text keeps its size): a zoomed axis
+  made small differences look large. The trend chart draws at its
+  container's measured width (`useElementWidth`) instead of scaling a fixed
+  viewBox, so its text keeps its CSS size on every screen.
+- The home page's starter cards preview their answers from the static
+  snapshot only (`snapshotAnalysis`): a home page visit never wakes the
+  analysis service or spends its quota, and without a snapshot (development)
+  the cards show their questions alone.
 
 ## Accessibility
 

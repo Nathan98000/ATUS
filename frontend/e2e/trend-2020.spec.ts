@@ -18,10 +18,12 @@ test('2020 renders as an explicit, explained gap in trends', CORE, async ({ page
 
   await page.getByRole('button', { name: 'Analyze' }).click()
 
-  // The gap band and its explanation, straight from the API's reason.
+  // The gap band and its explanation: the API's reason, in plain language.
   await expect(page.getByTestId('unavailable-2020')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByTestId('gap-note')).toContainText('2020 has no estimate')
-  await expect(page.getByTestId('gap-note')).toContainText('TUFNWGTP is undefined for 2020')
+  await expect(page.getByTestId('gap-note')).toContainText(
+    'Data collection paused in spring 2020 because of COVID-19',
+  )
 
   // 2019 and 2023 are single points separated by the gap: with only one
   // available year on each side there is NO line segment at all — nothing
@@ -31,9 +33,9 @@ test('2020 renders as an explicit, explained gap in trends', CORE, async ({ page
   expect(await page.getByTestId('trend-line-segment').count()).toBe(0)
   await expect(page.getByTestId('point-2020')).toHaveCount(0)
 
-  // The data table represents 2020 as unavailable — never as zero.
+  // The data table represents 2020 as having no estimate — never as zero.
   const row = page.getByRole('rowheader', { name: '2020', exact: true }).locator('..')
-  await expect(row).toContainText('Unavailable')
+  await expect(row).toContainText('No estimate')
   await expect(row).not.toContainText('0.0 min')
 
   // 2019 (240 min) and 2023 (75 min) show their true values.
@@ -65,6 +67,6 @@ test(
     await expect(chart).toContainText('2019')
     await expect(chart).toContainText('240.0 min')
     await page.keyboard.press('ArrowRight')
-    await expect(chart).toContainText(/2020.*[Uu]navailable|Unavailable/)
+    await expect(chart).toContainText(/2020.*no estimate/i)
   },
 )

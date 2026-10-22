@@ -4,6 +4,8 @@
  */
 import type { TrendResponse } from '../../api/types'
 import { WarningBanner } from '../../components/WarningBanner'
+import { interpretTrend, measureName } from '../../domain/describe'
+import { presentUnavailableReason } from '../../domain/notes'
 import {
   formatConfidenceInterval,
   formatCount,
@@ -14,13 +16,6 @@ import {
 } from '../../utils/format'
 import { MethodologyPanel, type MethodologyRow } from './MethodologyPanel'
 import { TrendChart } from './TrendChart'
-
-const MEASURE_SHORT_LABELS: Record<string, string> = {
-  average_minutes_per_day: 'Average time per day',
-  participation_rate: 'Participation rate',
-  average_minutes_per_participant: 'Time among participants',
-  participants_per_day: 'People per day',
-}
 
 export function trendMethodologyRows(result: TrendResponse): MethodologyRow[] {
   const years = result.points.map((point) => point.year)
@@ -62,12 +57,21 @@ export function TrendView({
     result.points.find((point) => point.estimate != null)?.estimate?.unit ?? 'minutes_per_day'
   const available = result.points.filter((point) => point.estimate != null)
   const unavailable = result.points.filter((point) => point.estimate == null)
-  const measureLabel =
-    MEASURE_SHORT_LABELS[result.measure] ?? result.measure.replaceAll('_', ' ')
+  const measureLabel = measureName(result.measure)
+  const interpretation = interpretTrend(result)
+  // The API's exact wording, for the methodology panel: its notes, then why
+  // each missing year has no estimate.
+  const apiNotes = [
+    ...result.warnings,
+    ...unavailable.map(
+      (point) => `${point.year}: ${point.unavailable_reason ?? 'unavailable'}`,
+    ),
+  ]
 
   return (
     <div className="result-stack">
       <section className="card" aria-label="Trend">
+        {interpretation ? <p className="result-lead">{interpretation}</p> : null}
         <p style={{ marginBottom: '0.4rem' }} className="field-hint">
           {available.length} yearly estimates
           {unavailable.length > 0
@@ -94,7 +98,7 @@ export function TrendView({
                   Estimate
                 </th>
                 <th scope="col" className="num">
-                  SE
+                  Standard error
                 </th>
                 <th scope="col">Confidence interval</th>
                 <th scope="col" className="num">
@@ -108,7 +112,7 @@ export function TrendView({
                   <th scope="row">{point.year}</th>
                   {point.estimate == null ? (
                     <td colSpan={4}>
-                      <i>Unavailable</i> — {point.unavailable_reason}
+                      <i>No estimate</i> — {presentUnavailableReason(point.unavailable_reason)}
                     </td>
                   ) : (
                     <>
@@ -139,7 +143,11 @@ export function TrendView({
         </div>
       </details>
 
-      <MethodologyPanel rows={trendMethodologyRows(result)} analysisKey={analysisKey} />
+      <MethodologyPanel
+        rows={trendMethodologyRows(result)}
+        analysisKey={analysisKey}
+        apiNotes={apiNotes}
+      />
     </div>
   )
 }

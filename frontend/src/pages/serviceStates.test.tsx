@@ -24,6 +24,7 @@ import {
   metaFixture,
   populationMetadataFixture,
   presetsFixture,
+  trendLeisureFixture,
 } from '../test/fixtures'
 import { testQueryClient, withFakeClock } from '../test/render'
 import {
@@ -1403,10 +1404,53 @@ describe('static snapshot and prewake', () => {
       await user.click(await screen.findByRole('button', { name: 'Analyze' }))
       expect(await screen.findByRole('heading', resultHeading)).toBeInTheDocument()
 
-      // Two snapshot entries (the starter's bytes, then the builder's), no API call.
+      // Snapshot entries only, no API call: the home page's previews of the
+      // comparison starters (the clicked starter's bytes among them), then
+      // the builder's bytes.
+      const compareStarters = STARTER_EXAMPLES.filter(
+        (starter) => starter.operation === 'compare',
+      )
       const postFiles = new Set(requested.filter((file) => file.startsWith('post/')))
-      expect(postFiles.size).toBe(2)
+      expect(postFiles.size).toBe(compareStarters.length + 1)
       expect(requests('POST /api/v1/analysis/compare')).toBe(0)
     },
   )
+
+  it('the home page previews each starter answer from the snapshot, never the API', async () => {
+    const years = metaFixture.data.years
+    const latest = Math.max(...years)
+    const responses = {
+      estimate: estimateSleepFixture,
+      trend: trendLeisureFixture,
+      compare: compareChildrenFixture,
+    }
+    await installSnapshot({
+      get: { '/api/v1/meta': metaFixture },
+      post: STARTER_EXAMPLES.map((starter) => ({
+        path: `/api/v1/analysis/${starter.operation}`,
+        body: stableStringify(starter.spec(years, latest)),
+        response: responses[starter.operation],
+      })),
+    })
+    const requests = countRequests()
+    renderApp('/')
+
+    const sleep = await screen.findByRole('link', { name: /How much do Americans sleep\?/ })
+    await waitFor(() => expect(sleep).toHaveTextContent('8h 49m a day in 2025'))
+    const tv = screen.getByRole('link', { name: /Who watches more TV/ })
+    await waitFor(() => expect(tv).toHaveTextContent(compareChildrenFixture.label_a))
+    for (const operation of ['estimate', 'trend', 'compare']) {
+      expect(requests(`POST /api/v1/analysis/${operation}`)).toBe(0)
+    }
+  })
+
+  it('without a snapshot the home page shows the questions alone and calls no analysis', async () => {
+    const requests = countRequests()
+    renderApp('/')
+    const sleep = await screen.findByRole('link', { name: /How much do Americans sleep\?/ })
+    expect(sleep).not.toHaveTextContent('8h 49m')
+    for (const operation of ['estimate', 'trend', 'compare']) {
+      expect(requests(`POST /api/v1/analysis/${operation}`)).toBe(0)
+    }
+  })
 })

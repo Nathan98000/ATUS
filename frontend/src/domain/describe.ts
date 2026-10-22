@@ -8,13 +8,20 @@
 import type {
   AnalysisRequest,
   CompareRequest,
+  CompareResponse,
   EstimateResponse,
+  EstimateValue,
   Operation,
   PopulationRequest,
+  TrendResponse,
 } from '../api/types'
 import {
+  formatConfidenceLevel,
+  formatDurationWords,
   formatEstimate,
+  formatMinutesDetailed,
   formatPeople,
+  formatPercentagePoints,
   formatProportionAsPercent,
   formatYears,
 } from '../utils/format'
@@ -175,6 +182,69 @@ export function analysisTitle(
   return parts.filter((part) => part !== '').join(' — ')
 }
 
+const MEASURE_NAMES: Record<string, string> = {
+  average_minutes_per_day: 'Average time per day',
+  participation_rate: 'Participation rate',
+  average_minutes_per_participant: 'Time among participants',
+  participants_per_day: 'People per day',
+}
+
+/** Display name of a statistic, e.g. "Average time per day". */
+export function measureName(measure: string): string {
+  return MEASURE_NAMES[measure] ?? humanize(measure)
+}
+
+/**
+ * Splits a definition qualifier off an activity label for display:
+ * "Leisure and sports (BLS table A-1 definition)" → name "Leisure and
+ * sports", qualifier "As defined in BLS table A-1". The qualifier must stay
+ * on the page: two presets can share a name and differ only in it.
+ */
+export function splitActivityLabel(label: string): { name: string; qualifier: string | null } {
+  const match = label.match(/^(.+?)\s*\((BLS table [^)]*?)\s+definition\)\s*$/i)
+  if (!match) return { name: label, qualifier: null }
+  return { name: match[1] as string, qualifier: `As defined in ${match[2] as string}` }
+}
+
+export interface ResultHeading {
+  /** The statistic, e.g. "Average time per day" or "…, by year". */
+  eyebrow: string
+  /** The activity (and, for a comparison, the two groups). */
+  title: string
+  /** Everything else, said once: definition, population, years. */
+  subtitle: string
+}
+
+/**
+ * A result page's heading: what was measured, for what, for whom, when —
+ * each said once, without the activity's definition parenthetical in the
+ * title itself.
+ */
+export function resultHeading(
+  operation: Operation,
+  spec: AnalysisRequest,
+  activityLabel: string,
+): ResultHeading {
+  const { name, qualifier } = splitActivityLabel(activityLabel)
+  const measure = measureName(spec.measure ?? 'average_minutes_per_day')
+  const details = qualifier !== null ? [qualifier] : []
+  let title = name
+  if (operation === 'compare') {
+    const compare = spec as CompareRequest
+    title = `${name}: ${compare.label_a ?? 'Group A'} vs ${compare.label_b ?? 'Group B'}`
+    const shared = sharedPopulationPhrase(spec)
+    if (shared !== null) details.push(`Both groups: ${shared}`)
+  } else {
+    details.push(populationPhrase(spec.population))
+  }
+  details.push(formatYears(spec.years))
+  return {
+    eyebrow: operation === 'trend' ? `${measure}, by year` : measure,
+    title,
+    subtitle: details.filter((detail) => detail !== '').join(' · '),
+  }
+}
+
 /**
  * The averaging clause must match what the weights actually average over:
  * a day_type filter restricts the estimate to weekend days or weekdays, and
@@ -247,4 +317,144 @@ export function interpretEstimate(result: EstimateResponse): string {
     default:
       return ''
   }
+}
+
+/** "Average time per day on “Sleeping”", "The share of people doing “Sleeping”…", or null. */
+function measureSubject(measure: string, activity: string): string | null {
+  switch (measure) {
+    case 'average_minutes_per_day':
+      return `Average time per day on ${activity}`
+    case 'participation_rate':
+      return `The share of people doing ${activity} on an average day`
+    case 'average_minutes_per_participant':
+      return `Time per day among those who did ${activity}`
+    case 'participants_per_day':
+      return `The number of people doing ${activity} on an average day`
+    default:
+      return null
+  }
+}
+
+/**
+ * The plain-language answer a trend leads with: the latest year, the first
+ * year, and the range in between. Descriptive only: it names values the API
+ * returned and makes no claim that anything rose or fell.
+ */
+export function interpretTrend(result: TrendResponse): string {
+  const available = result.points.flatMap((point) =>
+    point.estimate != null ? [{ year: point.year, estimate: point.estimate }] : [],
+  )
+  const first = available[0]
+  const last = available[available.length - 1]
+  if (first === undefined || last === undefined) return ''
+  const activity = `“${splitActivityLabel(result.activity.label).name}”`
+  const subject = measureSubject(result.measure, activity)
+  if (subject === null) return ''
+
+  const specPopulation = (result.spec as { population?: PopulationRequest }).population
+  const population = populationPhrase(specPopulation)
+  const who = population === ALL_RESPONDENTS ? '' : ` (${population})`
+  const show = (estimate: EstimateValue) =>
+    formatEstimate(estimate.value, estimate.unit).primary
+
+  let text = `${subject}${who} was ${show(last.estimate)} in ${last.year}`
+  if (available.length > 1) text += `, compared with ${show(first.estimate)} in ${first.year}`
+  text += '.'
+  if (available.length >= 3) {
+    let low = first
+    let high = first
+    for (const point of available) {
+      if (point.estimate.value < low.estimate.value) low = point
+      if (point.estimate.value > high.estimate.value) high = point
+    }
+    text +=
+      show(low.estimate) === show(high.estimate)
+        ? ` It stayed at about ${show(low.estimate)} throughout.`
+        : ` Over these years it ranged from ${show(low.estimate)} in ${low.year} to ${show(high.estimate)} in ${high.year}.`
+  }
+  return text
+}
+
+export interface DifferenceDescription {
+  /** The group whose estimate is larger, or null when they are equal. */
+  larger: 'a' | 'b' | null
+  /** "23 minutes more per day", "6.2 percentage points higher", … */
+  amount: string
+  /** "95% confidence interval: 13.8 to 32.5 min more for Men", or null without one. */
+  interval: string | null
+  /** The one-sentence answer a comparison leads with. */
+  sentence: string
+}
+
+/**
+ * A comparison in words, from the API's difference (group A − group B): who
+ * the estimate is larger for, by how much, and the confidence interval as a
+ * range of "more for A / more for B". Descriptive only — no causal or
+ * significance language. Group labels are any noun phrase a visitor typed,
+ * so they only ever follow "for".
+ */
+export function describeDifference(result: CompareResponse): DifferenceDescription {
+  const { difference, label_a: labelA, label_b: labelB } = result
+  const unit = difference.unit
+  const larger = difference.value > 0 ? 'a' : difference.value < 0 ? 'b' : null
+  const largerLabel = larger === 'b' ? labelB : labelA
+  const smallerLabel = larger === 'b' ? labelA : labelB
+
+  const isTime = unit === 'minutes_per_day' || unit === 'minutes_per_day_of_participants'
+  const isShare = unit === 'proportion_of_population'
+  const word = isShare ? 'higher' : 'more'
+  const magnitude = (value: number): string =>
+    isTime
+      ? formatDurationWords(value)
+      : isShare
+        ? formatPercentagePoints(Math.abs(value))
+        : formatPeople(Math.abs(value))
+  const bound = (value: number): string =>
+    isTime
+      ? `${formatMinutesDetailed(Math.abs(value))} min`
+      : isShare
+        ? formatPercentagePoints(Math.abs(value))
+        : formatPeople(Math.abs(value))
+  // "13.8 to 32.5 min": the unit once, after the second bound.
+  const range = (from: number, to: number): string =>
+    isTime
+      ? `${formatMinutesDetailed(Math.abs(from))} to ${bound(to)}`
+      : isShare
+        ? `${formatPercentagePoints(Math.abs(from), false)} to ${bound(to)}`
+        : `${bound(from)} to ${bound(to)}`
+
+  const amount =
+    larger === null
+      ? 'No difference'
+      : `${magnitude(difference.value)} ${word}${isTime ? ' per day' : ''}`
+
+  let interval: string | null = null
+  const { ci_lower: lower, ci_upper: upper, confidence_level: level } = difference
+  if (lower != null && upper != null && level != null) {
+    const prefix = `${formatConfidenceLevel(level)} confidence interval: `
+    if (lower >= 0) {
+      interval = `${prefix}${range(lower, upper)} ${word} for ${labelA}`
+    } else if (upper <= 0) {
+      interval = `${prefix}${range(upper, lower)} ${word} for ${labelB}`
+    } else {
+      interval = `${prefix}from ${bound(lower)} ${word} for ${labelB} to ${bound(upper)} ${word} for ${labelA}`
+    }
+  }
+
+  const activity = `“${splitActivityLabel(result.group_a.activity.label).name}”`
+  const subject = measureSubject(result.measure, activity) ?? measureName(result.measure)
+  const years = result.group_a.years
+  const when =
+    years.length === 1 ? `In ${formatYears(years)}` : `Across ${formatYears(years)} combined`
+  const comparative = isTime ? 'longer' : 'higher'
+  const sentence =
+    larger === null
+      ? `${when}, ${lowerFirst(subject)} was the same for ${labelA} and for ${labelB}.`
+      : `${when}, ${lowerFirst(subject)} was ${magnitude(difference.value)} ${comparative} for ${largerLabel} than for ${smallerLabel}.`
+  return { larger, amount, interval, sentence }
+}
+
+/** "Average time…" → "average time…" (only the sentence's own first word). */
+function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1)
 }

@@ -6,6 +6,8 @@ import {
   formatDifferenceInterval,
   formatDifferenceValue,
   formatConfidenceLevel,
+  formatDurationTick,
+  formatDurationWords,
   formatEstimate,
   formatMinutesAsDuration,
   formatMinutesDetailed,
@@ -163,5 +165,27 @@ describe('axis tick labels (review finding: no duplicate labels)', () => {
 
   it('labels minute ticks plainly', () => {
     expect(formatAxisTicks([300, 320, 340], 'minutes_per_day')).toEqual(['300', '320', '340'])
+  })
+})
+
+describe('durations in words and on axes', () => {
+  it('writes durations for sentences', () => {
+    expect(formatDurationWords(23.2)).toBe('23 minutes')
+    expect(formatDurationWords(-11.1)).toBe('11 minutes')
+    expect(formatDurationWords(1)).toBe('1 minute')
+    expect(formatDurationWords(72)).toBe('1 hour 12 minutes')
+    expect(formatDurationWords(120)).toBe('2 hours')
+    expect(formatDurationWords(0.3)).toBe('under a minute')
+    expect(formatDurationWords(0)).toBe('0 minutes')
+  })
+
+  it('labels whole-minute ticks like a clock', () => {
+    expect([0, 30, 60, 90, 180].map(formatDurationTick)).toEqual([
+      '0',
+      '30m',
+      '1h',
+      '1h 30m',
+      '3h',
+    ])
   })
 })

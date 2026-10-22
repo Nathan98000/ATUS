@@ -57,7 +57,10 @@ describe('TrendChart 2020 gap rendering', () => {
     expect(screen.getByText(/2020 — no estimate/)).toBeInTheDocument()
     const note = screen.getByTestId('gap-note')
     expect(note).toHaveTextContent('2020 has no estimate')
-    expect(note).toHaveTextContent(/TUFNWGTP is undefined for 2020/)
+    // The API's reason in plain language; its exact wording is in the
+    // methodology panel, not in the chart.
+    expect(note).toHaveTextContent(/Data collection paused in spring 2020 because of COVID-19/)
+    expect(note).not.toHaveTextContent(/TUFNWGTP/)
   })
 
   it('renders no point at zero for the unavailable year', () => {
@@ -88,7 +91,7 @@ describe('TrendChart keyboard access', () => {
     expect(chart).toHaveTextContent('306.6 min')
     await user.keyboard('{End}{ArrowLeft}{ArrowLeft}{ArrowLeft}{ArrowLeft}{ArrowLeft}')
     // 2025 → five steps left = 2020, the unavailable year.
-    expect(chart).toHaveTextContent(/2020.*[Uu]navailable/)
+    expect(chart).toHaveTextContent(/2020.*no estimate/i)
   })
 })
 

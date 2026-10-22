@@ -47,9 +47,32 @@ describe('builder defaults and discovery', () => {
   it('offers a supported default analysis using the latest year from /meta', async () => {
     renderExplore()
     await waitForBuilder()
-    expect(await screen.findByText('Sleeping')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Sleeping', { selector: '.activity-picker__name' }),
+    ).toBeInTheDocument()
     expect(screen.getByLabelText('Year')).toHaveValue('2025')
     expect(screen.getByRole('radio', { name: /Average time per day/ })).toBeChecked()
+  })
+
+  it('summarizes the analysis beside the form, with the Analyze button', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    const summary = screen.getByRole('region', { name: 'Your analysis' })
+    const detail = (term: string) => within(summary).getByText(term).nextElementSibling
+    expect(detail('Doing what')).toHaveTextContent('Sleeping')
+    expect(detail('For whom')).toHaveTextContent('All respondents (age 15+)')
+    expect(detail('When')).toHaveTextContent('2025')
+    expect(detail('Measured as')).toHaveTextContent('Average time per day')
+    expect(detail('Type')).toHaveTextContent('Single estimate')
+    expect(within(summary).getByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+
+    // It follows every edit.
+    await user.selectOptions(screen.getByLabelText('Sex'), 'female')
+    expect(detail('For whom')).toHaveTextContent('Women')
+    await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
+    expect(detail('For whom')).toHaveTextContent('Group A vs Group B')
+    expect(detail('Type')).toHaveTextContent('Comparison of two groups')
   })
 
   it('builds measure choices from the capability metadata', async () => {
@@ -151,7 +174,9 @@ describe('prefilling from a shared analysis', () => {
     }
     renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
     await waitForBuilder()
-    expect(screen.getByText('Watching TV')).toBeInTheDocument()
+    expect(
+      screen.getByText('Watching TV', { selector: '.activity-picker__name' }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: /Participation rate/ })).toBeChecked()
     expect(screen.getByLabelText('Year')).toHaveValue('2024')
     expect(screen.getByLabelText('Sex')).toHaveValue('female')

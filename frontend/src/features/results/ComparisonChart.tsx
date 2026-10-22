@@ -1,47 +1,42 @@
 /**
- * Comparison dot-and-interval chart: two point estimates with confidence
- * intervals on one shared scale. Groups are distinguished by label and
- * position, never by color alone. All values come from the API response.
+ * Comparison bar chart: each group's estimate as a bar from zero, with its
+ * confidence interval as a whisker, on one shared scale. Bars start at zero
+ * so their lengths compare honestly; a zoomed axis made small differences
+ * look large. Built from HTML rather than a scaled SVG, so labels wrap and
+ * text keeps its size on every screen. Groups are distinguished by label
+ * and position, never by color alone. All values come from the API response.
  */
+import type { CSSProperties } from 'react'
+
 import type { EstimateValue } from '../../api/types'
 import {
+  formatAxisTicks,
   formatConfidenceInterval,
-  formatStandardError,
+  formatConfidenceLevel,
+  formatDurationTick,
+  formatEstimate,
   formatValueShort,
   unitLabel,
 } from '../../utils/format'
-import { linearScale, niceTicks, padDomain } from './chartScale'
+import { durationTicksFromZero, ticksFromZero } from './chartScale'
+import { useElementWidth } from './useElementWidth'
 
-const WIDTH = 720
-const ROW_HEIGHT = 64
-const MARGIN = { top: 12, right: 30, bottom: 34, left: 16 }
-/**
- * Longest group label the chart draws. SVG text does not wrap, and a label
- * may be 80 characters (the API's limit); the cards above, the chart's
- * accessible summary and the table keep the whole label.
- */
-const MAX_LABEL_CHARS = 48
-
-function chartLabel(label: string): string {
-  const characters = Array.from(label)
-  return characters.length <= MAX_LABEL_CHARS
-    ? label
-    : `${characters.slice(0, MAX_LABEL_CHARS - 1).join('')}…`
-}
+/** Room each axis label needs, so labels never collide on a narrow chart. */
+const MIN_TICK_SPACING = 72
 
 /**
- * The labels the chart draws. Two labels that read the same once shortened
- * (they share their first 47 characters, or are equal) would leave only the
- * colour to tell the rows apart, so each is then prefixed with its group
- * ("Group A: …"), as the cards above and the table below name them
- * (review round 2).
+ * The labels the chart draws. Two equal labels would leave only the colour
+ * to tell the rows apart, so each is then prefixed with its group ("Group A:
+ * …"), as the table below names them (review round 2).
  */
 function chartLabels(groups: readonly { label: string; role?: string }[]): string[] {
-  const shortened = groups.map((group) => chartLabel(group.label))
-  if (new Set(shortened).size === shortened.length) return shortened
-  return groups.map((group) =>
-    group.role ? chartLabel(`${group.role}: ${group.label}`) : chartLabel(group.label),
-  )
+  const labels = groups.map((group) => group.label)
+  if (new Set(labels).size === labels.length) return labels
+  return groups.map((group) => (group.role ? `${group.role}: ${group.label}` : group.label))
+}
+
+function isDuration(unit: string): boolean {
+  return unit === 'minutes_per_day' || unit === 'minutes_per_day_of_participants'
 }
 
 interface ComparisonChartProps {
@@ -51,15 +46,30 @@ interface ComparisonChartProps {
 }
 
 export function ComparisonChart({ groups, unit }: ComparisonChartProps) {
+  const [wrapRef, width] = useElementWidth<HTMLDivElement>(720)
   if (groups.length === 0) return null
 
-  const lows = groups.map((group) => group.estimate.ci_lower ?? group.estimate.value)
-  const highs = groups.map((group) => group.estimate.ci_upper ?? group.estimate.value)
-  const [xMin, xMax] = padDomain(Math.min(...lows), Math.max(...highs), 0.15)
-  const height = MARGIN.top + groups.length * ROW_HEIGHT + MARGIN.bottom
-  const x = linearScale([xMin, xMax], [MARGIN.left, WIDTH - MARGIN.right])
-  const ticks = niceTicks(xMin, xMax, 5)
+  // The bars' share of the chart: beside the labels on wide screens, below
+  // them (full width, less the value column) on phones (see global.css).
+  const trackWidth = width > 560 ? width - 300 : width - 80
+  const intervals = Math.min(5, Math.max(2, Math.floor(trackWidth / MIN_TICK_SPACING)))
+  const highest = Math.max(
+    ...groups.map((group) => group.estimate.ci_upper ?? group.estimate.value),
+  )
+  const ticks = isDuration(unit)
+    ? durationTicksFromZero(highest, intervals)
+    : ticksFromZero(highest, Math.min(intervals, 4))
+  const tickLabels = isDuration(unit)
+    ? ticks.map(formatDurationTick)
+    : formatAxisTicks(ticks, unit)
+  const domainMax = ticks[ticks.length - 1] || 1
+  const percent = (value: number) => `${(Math.max(0, value) / domainMax) * 100}%`
   const labels = chartLabels(groups)
+  const levels = new Set(groups.map((group) => group.estimate.confidence_level ?? null))
+  const level = levels.size === 1 ? [...levels][0] : null
+  const hasIntervals = groups.some(
+    (group) => group.estimate.ci_lower != null && group.estimate.ci_upper != null,
+  )
 
   const summary = groups
     .map((group) => {
@@ -71,91 +81,74 @@ export function ComparisonChart({ groups, unit }: ComparisonChartProps) {
     })
     .join('; ')
 
+  const gridlines = ticks.map((tick) => (
+    <span key={tick} className="compare-chart__gridline" style={{ left: percent(tick) }} />
+  ))
+
   return (
-    <div>
-      {/* SVG with role="img" + aria-label is the standard accessible-graphic
-          pattern; the exact values are in the table below the chart. */}
-      <svg
+    <div className="compare-chart-wrap" ref={wrapRef}>
+      {/* role="img" + aria-label is the standard accessible-graphic pattern;
+          the exact values are in the table below the chart. */}
+      <div
         // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
         role="img"
-        viewBox={`0 0 ${WIDTH} ${height}`}
-        className="chart-svg"
+        className="compare-chart"
         aria-label={`Comparison of ${unitLabel(unit)}. ${summary}. Exact values are in the table below.`}
       >
-        {ticks.map((tick) => (
-          <g key={tick}>
-            <line
-              x1={x(tick)}
-              x2={x(tick)}
-              y1={MARGIN.top}
-              y2={height - MARGIN.bottom}
-              className="chart-grid"
-            />
-            <text x={x(tick)} y={height - MARGIN.bottom + 18} className="chart-tick">
-              {unit === 'proportion_of_population'
-                ? `${Math.round(tick * 100)}%`
-                : tick.toLocaleString('en-US')}
-            </text>
-          </g>
-        ))}
         {groups.map((group, groupIndex) => {
-          const centerY = MARGIN.top + groupIndex * ROW_HEIGHT + ROW_HEIGHT / 2 + 8
-          const { value, ci_lower, ci_upper, standard_error } = group.estimate
+          const { value, ci_lower, ci_upper } = group.estimate
+          const color = { '--bar-color': `var(${group.colorVar})` } as CSSProperties
           return (
-            <g key={groupIndex} data-testid={`compare-row-${groupIndex}`}>
-              <text x={MARGIN.left} y={centerY - 20} className="chart-group-label">
-                {labels[groupIndex]}
-              </text>
-              {ci_lower != null && ci_upper != null ? (
-                <line
-                  x1={x(ci_lower)}
-                  x2={x(ci_upper)}
-                  y1={centerY}
-                  y2={centerY}
-                  className="chart-ci-line"
-                  style={{ stroke: `var(${group.colorVar})` }}
-                  data-testid="ci-line"
-                />
-              ) : null}
-              {ci_lower != null && ci_upper != null ? (
-                <>
-                  <line
-                    x1={x(ci_lower)}
-                    x2={x(ci_lower)}
-                    y1={centerY - 5}
-                    y2={centerY + 5}
-                    className="chart-ci-cap"
-                    style={{ stroke: `var(${group.colorVar})` }}
+            <div
+              key={groupIndex}
+              className="compare-chart__row"
+              data-testid={`compare-row-${groupIndex}`}
+              style={color}
+            >
+              <span className="compare-chart__label">{labels[groupIndex]}</span>
+              <span className="compare-chart__track">
+                {gridlines}
+                <span className="compare-chart__bar" style={{ width: percent(value) }} />
+                {ci_lower != null && ci_upper != null ? (
+                  <span
+                    className="compare-chart__ci"
+                    data-testid="ci-line"
+                    style={{
+                      left: percent(ci_lower),
+                      width: `calc(${percent(ci_upper)} - ${percent(ci_lower)})`,
+                    }}
                   />
-                  <line
-                    x1={x(ci_upper)}
-                    x2={x(ci_upper)}
-                    y1={centerY - 5}
-                    y2={centerY + 5}
-                    className="chart-ci-cap"
-                    style={{ stroke: `var(${group.colorVar})` }}
-                  />
-                </>
-              ) : null}
-              <circle
-                cx={x(value)}
-                cy={centerY}
-                r={6}
-                style={{ fill: `var(${group.colorVar})` }}
-              />
-              <text x={x(value)} y={centerY + 24} className="chart-value-label">
-                {formatValueShort(value, unit)}
-                {standard_error != null
-                  ? ` ± ${formatStandardError(standard_error, unit)}`
-                  : ''}
-              </text>
-            </g>
+                ) : null}
+              </span>
+              <span className="compare-chart__value">
+                {formatEstimate(value, unit).primary}
+              </span>
+            </div>
           )
         })}
-      </svg>
+        <div className="compare-chart__axis" aria-hidden="true">
+          <span className="compare-chart__track compare-chart__track--axis">
+            {ticks.map((tick, tickIndex) => (
+              <span
+                key={tick}
+                className="compare-chart__tick"
+                style={{ left: percent(tick) }}
+                data-edge={
+                  tickIndex === 0 ? 'start' : tickIndex === ticks.length - 1 ? 'end' : undefined
+                }
+              >
+                {tickLabels[tickIndex]}
+              </span>
+            ))}
+          </span>
+        </div>
+      </div>
       <p className="field-hint">
-        Dots are the estimates; horizontal lines are their confidence intervals on the shared
-        scale ({unitLabel(unit)}).
+        Bars show each group's estimate, starting from zero
+        {hasIntervals
+          ? `; the thin lines mark ${level != null ? `the ${formatConfidenceLevel(level)}` : 'their'} confidence intervals`
+          : ''}
+        .
       </p>
     </div>
   )

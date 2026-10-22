@@ -66,11 +66,24 @@ describe('estimate results', () => {
     // Unweighted sample vs weighted population, clearly distinguished:
     expect(screen.getByText(/2,597 respondents/)).toBeInTheDocument()
     expect(screen.getByText(/131.1 million people on an average day/)).toBeInTheDocument()
-    // API warnings are visible:
-    expect(screen.getByRole('note')).toHaveTextContent(/BLS-harmonized/)
-    // Methodology comes from the response:
+    // API warnings are visible, in plain language:
+    expect(screen.getByRole('note')).toHaveTextContent(
+      /coded the same way in every survey year/,
+    )
+    // Methodology comes from the response, with the API's notes verbatim:
     expect(screen.getByText('How was this calculated?')).toBeInTheDocument()
     expect(screen.getByText(/TUFNWGTP \(multiyear\)/)).toBeInTheDocument()
+    expect(screen.getByText('Technical notes').nextElementSibling).toHaveTextContent(
+      /BLS-harmonized/,
+    )
+  })
+
+  it('heads the result with the statistic, the activity, and the rest said once', async () => {
+    renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
+    await screen.findByText('8h 49m')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^Sleeping$/)
+    expect(screen.getByText('Average time per day')).toHaveClass('eyebrow')
+    expect(screen.getByText('Ages 25–54 · 2025')).toBeInTheDocument()
   })
 
   it('rewrites the URL to the canonical spec from the response without refetching', async () => {
@@ -153,11 +166,22 @@ describe('trend and compare results', () => {
     expect(await screen.findByTestId('unavailable-2020')).toBeInTheDocument()
     expect(screen.getAllByTestId('trend-line-segment').length).toBe(2)
     // API warnings must be visible on trend pages too.
-    expect(screen.getByRole('note')).toHaveTextContent(/BLS-harmonized/)
-    // The data table lists 2020 as unavailable, never as zero.
+    expect(screen.getByRole('note')).toHaveTextContent(
+      /coded the same way in every survey year/,
+    )
+    // The data table lists 2020 as having no estimate, never as zero.
     const row = screen.getByRole('rowheader', { name: '2020' }).closest('tr') as HTMLElement
-    expect(row).toHaveTextContent('Unavailable')
+    expect(row).toHaveTextContent('No estimate')
     expect(row).not.toHaveTextContent('0.0')
+    // The heading drops the definition parenthetical from the title, not the page.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^Leisure and sports$/)
+    expect(
+      screen.getByText(/^As defined in BLS table A-1 · All respondents/),
+    ).toBeInTheDocument()
+    // The answer leads: latest and first year in words.
+    expect(
+      screen.getByText(/^Average time per day on “Leisure and sports” was/),
+    ).toBeInTheDocument()
   })
 
   it('renders both groups and the API-computed difference', async () => {
@@ -170,22 +194,30 @@ describe('trend and compare results', () => {
       label_b: 'No household children',
     }
     renderAnalysisRoute(`/analysis/compare?spec=${encodeSpec(spec)}`)
-    expect(await screen.findByTestId('difference')).toHaveTextContent('-11.1 min')
-    expect(screen.getByTestId('difference')).toHaveTextContent('± 4.2 min')
-    expect(screen.getByText('1h 52m')).toBeInTheDocument()
-    expect(screen.getByText('2h 3m')).toBeInTheDocument()
-    // Difference direction is explicit:
-    expect(screen.getByTestId('difference')).toHaveTextContent(
-      'Household children present − No household children',
-    )
+    const difference = await screen.findByTestId('difference')
+    // Difference direction is explicit, in words: B is larger here.
     expect(compareChildrenFixture.difference.value).toBeLessThan(0)
-    // API warnings must be visible on compare pages too.
-    expect(screen.getByRole('note')).toHaveTextContent(/per-replicate differences/)
-    // No shared filters: no population line, and the title is unchanged.
-    expect(screen.queryByText(/^Both groups:/)).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      /Household children present vs No household children — 2025$/,
+    expect(difference).toHaveTextContent('11 minutes more per day for No household children')
+    expect(difference).toHaveTextContent(
+      'Exact difference (Household children present − No household children): -11.1 min, standard error 4.2 min',
     )
+    expect(screen.getAllByText('1h 52m').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('2h 3m').length).toBeGreaterThan(0)
+    expect(
+      screen.getByText(
+        'In 2025, average time per day on “Household activities” was 11 minutes longer for No household children than for Household children present.',
+      ),
+    ).toBeInTheDocument()
+    // API warnings must be visible on compare pages too.
+    expect(screen.getByRole('note')).toHaveTextContent(
+      /both groups coming from the same survey/,
+    )
+    // No shared filters: the details line names only the definition and year.
+    expect(screen.queryByText(/Both groups:/)).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      /^Household activities: Household children present vs No household children$/,
+    )
+    expect(screen.getByText('As defined in BLS table A-1 · 2025')).toBeInTheDocument()
   })
 
   it("names a comparison's shared population outside the collapsed panels (review round 3)", async () => {
@@ -203,11 +235,9 @@ describe('trend and compare results', () => {
     }
     renderAnalysisRoute(`/analysis/compare?spec=${encodeSpec(spec)}`)
     await screen.findByTestId('difference')
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      /Men vs Women — Age 65\+ — 2025$/,
-    )
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/: Men vs Women$/)
     expect(document.title).toMatch(/Men vs Women — Age 65\+ — 2025 · ATUS Explorer$/)
-    const line = screen.getByText('Both groups: Age 65+ · 2025')
+    const line = screen.getByText(/Both groups: Age 65\+ · 2025$/)
     expect(line.closest('details')).toBeNull()
   })
 })

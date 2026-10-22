@@ -16,9 +16,12 @@ const ANALYTICS_DOCS_URL = 'https://github.com/Nathan98000/ATUS/blob/main/docs/a
 export function MethodologyPanel({
   rows,
   analysisKey,
+  apiNotes = [],
 }: {
   rows: MethodologyRow[]
   analysisKey: string | null
+  /** The API's notes in its own words; the page shows them in plain language. */
+  apiNotes?: readonly string[]
 }) {
   return (
     <details className="panel">
@@ -31,6 +34,18 @@ export function MethodologyPanel({
               <dd>{row.detail}</dd>
             </div>
           ))}
+          {apiNotes.length > 0 ? (
+            <div style={{ display: 'contents' }}>
+              <dt>Technical notes</dt>
+              <dd>
+                <ul className="methodology-notes">
+                  {apiNotes.map((note) => (
+                    <li key={note}>{note}</li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          ) : null}
           {analysisKey ? (
             <div style={{ display: 'contents' }}>
               <dt>Analysis key</dt>

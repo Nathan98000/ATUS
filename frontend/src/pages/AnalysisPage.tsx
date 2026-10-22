@@ -34,12 +34,7 @@ import { ErrorPanel } from '../components/ErrorPanel'
 import { LoadingPanel } from '../components/LoadingPanel'
 import { ServiceInterruption } from '../components/ServiceInterruption'
 import { useRetryFocus } from '../components/useRetryFocus'
-import {
-  activityLabelFromSpec,
-  analysisTitle,
-  populationPhrase,
-  sharedPopulationPhrase,
-} from '../domain/describe'
+import { activityLabelFromSpec, analysisTitle, resultHeading } from '../domain/describe'
 import { isFullPageError } from '../domain/presentError'
 import {
   InvalidShareLinkError,
@@ -144,9 +139,10 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
   }, [result, operation, spec, presetLabels])
 
   const title = analysisTitle(operation, spec, activityLabel)
-  // A comparison's shared filters restrict both groups; they must be named
-  // with the result, not only inside its collapsed panels (review round 3).
-  const sharedPopulation = operation === 'compare' ? sharedPopulationPhrase(spec) : null
+  // The subtitle names a comparison's shared filters: they restrict both
+  // groups and must be named with the result, not only inside its collapsed
+  // panels (review round 3).
+  const heading = resultHeading(operation, spec, activityLabel)
 
   useEffect(() => {
     document.title = `${title} · ATUS Explorer`
@@ -192,23 +188,9 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
     <div className="analysis-page">
       <header className="analysis-header">
         <div>
-          <p className="eyebrow">
-            {operation === 'estimate'
-              ? 'Estimate'
-              : operation === 'trend'
-                ? 'Trend'
-                : 'Comparison'}
-          </p>
-          <h1 tabIndex={-1}>{title}</h1>
-          {operation !== 'compare' ? (
-            <p className="field-hint">
-              {populationPhrase(spec.population)} · {formatYears(spec.years)}
-            </p>
-          ) : sharedPopulation !== null ? (
-            <p className="field-hint">
-              Both groups: {sharedPopulation} · {formatYears(spec.years)}
-            </p>
-          ) : null}
+          <p className="eyebrow">{heading.eyebrow}</p>
+          <h1 tabIndex={-1}>{heading.title}</h1>
+          <p className="analysis-header__details">{heading.subtitle}</p>
         </div>
         <div className="analysis-header__actions">
           <ShareButton />

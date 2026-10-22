@@ -27,6 +27,7 @@ import {
   MeasureSelector,
   YearSelector,
 } from '../features/builder/BuilderControls'
+import { BuilderSummary } from '../features/builder/BuilderSummary'
 import {
   defaultBuilderState,
   fromRequest,
@@ -222,171 +223,165 @@ function Builder({
         </div>
       ) : null}
 
-      <div className="builder-sections">
-        <section className="card builder-section" aria-labelledby="section-activity">
-          <h2 id="section-activity">
-            <span className="builder-step" aria-hidden="true">
-              1
-            </span>
-            Doing what?
-          </h2>
-          <ActivityPicker
-            value={state.activity}
-            onChange={(activity) => update({ activity })}
-            error={shownErrors.activity}
-          />
-        </section>
+      <div className="builder-layout">
+        <div className="builder-sections">
+          <section className="card builder-section" aria-labelledby="section-activity">
+            <h2 id="section-activity">
+              <span className="builder-step" aria-hidden="true">
+                1
+              </span>
+              Doing what?
+            </h2>
+            <ActivityPicker
+              value={state.activity}
+              onChange={(activity) => update({ activity })}
+              error={shownErrors.activity}
+            />
+          </section>
 
-        <section className="card builder-section" aria-labelledby="section-population">
-          <h2 id="section-population">
-            <span className="builder-step" aria-hidden="true">
-              2
-            </span>
-            For whom?
-          </h2>
-          {state.operation === 'compare' ? (
-            <>
-              <p className="field-hint">
-                Define the two groups to compare. Filters set under “Shared filters” apply to
-                both groups.
-              </p>
-              <div className="group-editors">
-                {(
-                  [
-                    {
-                      key: 'A',
-                      label: state.labelA,
-                      population: state.groupA,
-                      ageError: shownErrors.ageA,
-                    },
-                    {
-                      key: 'B',
-                      label: state.labelB,
-                      population: state.groupB,
-                      ageError: shownErrors.ageB,
-                    },
-                  ] as const
-                ).map((group) => (
-                  <fieldset
-                    key={group.key}
-                    className="group-editor"
-                    style={{
-                      borderTopColor: group.key === 'A' ? 'var(--group-a)' : 'var(--group-b)',
-                    }}
-                  >
-                    <legend>Group {group.key}</legend>
-                    <div className="field" style={{ marginBottom: '0.6rem' }}>
-                      <label htmlFor={`group-label-${group.key}`}>Name</label>
-                      <input
-                        id={`group-label-${group.key}`}
-                        type="text"
-                        maxLength={80}
-                        value={group.label}
-                        onChange={(event) =>
+          <section className="card builder-section" aria-labelledby="section-population">
+            <h2 id="section-population">
+              <span className="builder-step" aria-hidden="true">
+                2
+              </span>
+              For whom?
+            </h2>
+            {state.operation === 'compare' ? (
+              <>
+                <p className="field-hint">
+                  Define the two groups to compare. Filters set under “Shared filters” apply to
+                  both groups.
+                </p>
+                <div className="group-editors">
+                  {(
+                    [
+                      {
+                        key: 'A',
+                        label: state.labelA,
+                        population: state.groupA,
+                        ageError: shownErrors.ageA,
+                      },
+                      {
+                        key: 'B',
+                        label: state.labelB,
+                        population: state.groupB,
+                        ageError: shownErrors.ageB,
+                      },
+                    ] as const
+                  ).map((group) => (
+                    <fieldset
+                      key={group.key}
+                      className="group-editor"
+                      style={{
+                        borderTopColor: group.key === 'A' ? 'var(--group-a)' : 'var(--group-b)',
+                      }}
+                    >
+                      <legend>Group {group.key}</legend>
+                      <div className="field" style={{ marginBottom: '0.6rem' }}>
+                        <label htmlFor={`group-label-${group.key}`}>Name</label>
+                        <input
+                          id={`group-label-${group.key}`}
+                          type="text"
+                          maxLength={80}
+                          value={group.label}
+                          onChange={(event) =>
+                            update(
+                              group.key === 'A'
+                                ? { labelA: event.target.value }
+                                : { labelB: event.target.value },
+                            )
+                          }
+                        />
+                      </div>
+                      <PopulationFields
+                        dimensions={dimensions}
+                        value={group.population}
+                        onChange={(population) =>
                           update(
-                            group.key === 'A'
-                              ? { labelA: event.target.value }
-                              : { labelB: event.target.value },
+                            group.key === 'A' ? { groupA: population } : { groupB: population },
                           )
                         }
+                        ageError={group.ageError}
                       />
-                    </div>
+                    </fieldset>
+                  ))}
+                </div>
+                <details
+                  className="more-filters"
+                  style={{ marginTop: '0.8rem' }}
+                  open={sharedActive || sharedOpen}
+                  onToggle={(event) => setSharedOpen(event.currentTarget.open)}
+                >
+                  <summary>
+                    Shared filters (apply to both groups){sharedActive ? ' (active)' : ''}
+                  </summary>
+                  <div style={{ marginTop: '0.6rem' }}>
                     <PopulationFields
                       dimensions={dimensions}
-                      value={group.population}
-                      onChange={(population) =>
-                        update(
-                          group.key === 'A' ? { groupA: population } : { groupB: population },
-                        )
-                      }
-                      ageError={group.ageError}
+                      value={state.population}
+                      onChange={(population) => {
+                        // An edit means the section is open: record it with the
+                        // edit itself, not via the toggle event of its
+                        // programmatic opening, which Chromium may deliver only
+                        // after the edit (it then collapsed when cleared at once).
+                        setSharedOpen(true)
+                        update({ population })
+                      }}
+                      ageError={shownErrors.age}
                     />
-                  </fieldset>
-                ))}
-              </div>
-              <details
-                className="more-filters"
-                style={{ marginTop: '0.8rem' }}
-                open={sharedActive || sharedOpen}
-                onToggle={(event) => setSharedOpen(event.currentTarget.open)}
-              >
-                <summary>
-                  Shared filters (apply to both groups){sharedActive ? ' (active)' : ''}
-                </summary>
-                <div style={{ marginTop: '0.6rem' }}>
-                  <PopulationFields
-                    dimensions={dimensions}
-                    value={state.population}
-                    onChange={(population) => {
-                      // An edit means the section is open: record it with the
-                      // edit itself, not via the toggle event of its
-                      // programmatic opening, which Chromium may deliver only
-                      // after the edit (it then collapsed when cleared at once).
-                      setSharedOpen(true)
-                      update({ population })
-                    }}
-                    ageError={shownErrors.age}
-                  />
-                </div>
-              </details>
-            </>
-          ) : (
-            <PopulationFields
-              dimensions={dimensions}
-              value={state.population}
-              onChange={(population) => update({ population })}
-              ageError={shownErrors.age}
-            />
-          )}
-          <p className="field-hint" style={{ marginTop: '0.6rem' }}>
-            {populationMetadata.missing_data_rule}
-          </p>
-        </section>
+                  </div>
+                </details>
+              </>
+            ) : (
+              <PopulationFields
+                dimensions={dimensions}
+                value={state.population}
+                onChange={(population) => update({ population })}
+                ageError={shownErrors.age}
+              />
+            )}
+            <p className="field-hint" style={{ marginTop: '0.6rem' }}>
+              {populationMetadata.missing_data_rule}
+            </p>
+          </section>
 
-        <section className="card builder-section" aria-labelledby="section-years">
-          <h2 id="section-years">
-            <span className="builder-step" aria-hidden="true">
-              3
-            </span>
-            When?
-          </h2>
-          <YearSelector
+          <section className="card builder-section" aria-labelledby="section-years">
+            <h2 id="section-years">
+              <span className="builder-step" aria-hidden="true">
+                3
+              </span>
+              When?
+            </h2>
+            <YearSelector
+              state={state}
+              availableYears={metaYears}
+              error={shownErrors.years}
+              onChange={update}
+            />
+          </section>
+
+          <section className="card builder-section" aria-labelledby="section-measure">
+            <h2 id="section-measure">
+              <span className="builder-step" aria-hidden="true">
+                4
+              </span>
+              Measured how?
+            </h2>
+            <MeasureSelector
+              measures={meta.capabilities.measures}
+              value={state.measure}
+              onChange={(measure) => update({ measure })}
+            />
+          </section>
+
+          <AdvancedOptions
             state={state}
-            availableYears={metaYears}
-            error={shownErrors.years}
+            weightSchemes={meta.capabilities.weight_schemes}
+            varianceMethods={meta.capabilities.variance_methods}
             onChange={update}
           />
-        </section>
-
-        <section className="card builder-section" aria-labelledby="section-measure">
-          <h2 id="section-measure">
-            <span className="builder-step" aria-hidden="true">
-              4
-            </span>
-            Measured how?
-          </h2>
-          <MeasureSelector
-            measures={meta.capabilities.measures}
-            value={state.measure}
-            onChange={(measure) => update({ measure })}
-          />
-        </section>
-
-        <AdvancedOptions
-          state={state}
-          weightSchemes={meta.capabilities.weight_schemes}
-          varianceMethods={meta.capabilities.variance_methods}
-          onChange={update}
-        />
-
-        <div className="builder-actions">
-          <button type="button" className="btn btn--primary" onClick={submit}>
-            Analyze
-          </button>
-          <p className="field-hint" style={{ margin: 0 }}>
-            Running an analysis creates a shareable link.
-          </p>
         </div>
+        <BuilderSummary state={state} availableYears={metaYears} onAnalyze={submit} />
       </div>
     </>
   )

@@ -41,3 +41,25 @@ export function padDomain(min: number, max: number, fraction = 0.12): [number, n
   const pad = (max - min) * fraction
   return [min - pad, max + pad]
 }
+
+/** Round ticks from zero up to at least `max` (bar charts start at zero). */
+export function ticksFromZero(max: number, targetCount = 4): number[] {
+  const ticks = niceTicks(0, max, targetCount)
+  const last = ticks[ticks.length - 1] ?? 0
+  const step = (ticks[1] ?? 1) - (ticks[0] ?? 0)
+  if (last < max) ticks.push(Number((last + step).toFixed(10)))
+  return ticks
+}
+
+/** Durations read best on clock-like steps (15 min, 30 min, 1 h, 2 h…). */
+const DURATION_STEPS = [1, 2, 5, 10, 15, 20, 30, 60, 90, 120, 180, 240, 360, 480, 720]
+
+/** Ticks in minutes from zero up to at least `max`, on clock-like steps. */
+export function durationTicksFromZero(max: number, maxCount = 5): number[] {
+  const target = Math.max(max, 1)
+  const step =
+    DURATION_STEPS.find((candidate) => Math.ceil(target / candidate) <= maxCount) ??
+    Math.ceil(target / maxCount / 60) * 60
+  const count = Math.ceil(target / step)
+  return Array.from({ length: count + 1 }, (_, index) => index * step)
+}

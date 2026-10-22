@@ -66,13 +66,16 @@ describe('proportion-unit comparisons', () => {
   it('renders the difference and its CI in percentage points, matching the SE', () => {
     render(<CompareView result={proportionCompare()} analysisKey={null} />)
     const difference = screen.getByTestId('difference')
+    const { label_a: labelA } = compareChildrenFixture
     // The difference of two proportions is percentage points, never "%".
-    expect(difference).toHaveTextContent('+3.2 pp')
-    expect(difference).toHaveTextContent('± 1.1 pp')
-    expect(difference).toHaveTextContent('1.0 to 5.4 pp')
-    expect(difference.textContent).not.toMatch(/\+3\.2%/)
-    // Group-level estimates remain percentages.
-    expect(screen.getByText('45.0%')).toBeInTheDocument()
+    expect(difference).toHaveTextContent(`3.2 percentage points higher for ${labelA}`)
+    expect(difference).toHaveTextContent(
+      `95% confidence interval: 1.0 to 5.4 percentage points higher for ${labelA}`,
+    )
+    expect(difference).toHaveTextContent('+3.2 pp, standard error 1.1 pp')
+    expect(difference.textContent).not.toMatch(/3\.2%/)
+    // Group-level estimates remain percentages (in the card and the chart).
+    expect(screen.getAllByText('45.0%')).toHaveLength(2)
   })
 })
 
@@ -106,20 +109,23 @@ describe('non-adjacent trend years', () => {
 })
 
 describe('long group labels (review round 1)', () => {
-  it('the chart draws at most 48 characters of a label; the cards keep it whole', () => {
-    // label_a/label_b may be up to 80 characters (the API's limit), and SVG
-    // text does not wrap: a long label ran off the chart, cut mid-glyph.
+  const chartLabels = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll('.compare-chart__label')).map(
+      (label) => label.textContent ?? '',
+    )
+
+  it('the chart and the cards show a long label whole (the chart wraps it)', () => {
+    // label_a/label_b may be up to 80 characters (the API's limit). The
+    // SVG chart cut them at 48; the HTML chart wraps them instead.
     const longA = 'M'.repeat(80)
     const result: CompareResponse = { ...compareChildrenFixture, label_a: longA }
     const { container } = render(<CompareView result={result} analysisKey={null} />)
-    const chartLabels = Array.from(container.querySelectorAll('.chart-group-label'))
-    expect(chartLabels[0]?.textContent).toBe(`${'M'.repeat(47)}…`)
-    expect(chartLabels[1]?.textContent).toBe(compareChildrenFixture.label_b)
+    expect(chartLabels(container)).toEqual([longA, compareChildrenFixture.label_b])
     expect(screen.getByRole('heading', { name: longA })).toBeInTheDocument()
     expect(screen.getByRole('img').getAttribute('aria-label')).toContain(longA)
   })
 
-  it('two labels that share their first 47 characters stay distinct in the chart (review round 2)', () => {
+  it('two labels that share a long beginning stay distinct in the chart (review round 2)', () => {
     // Both were drawn as "Women 25-54, employed full time, with children…",
     // leaving only the colour to tell which estimate belongs to which group.
     const labelA = 'Women 25-54, employed full time, with children under 18'
@@ -130,14 +136,17 @@ describe('long group labels (review round 1)', () => {
       label_b: labelB,
     }
     const { container } = render(<CompareView result={result} analysisKey={null} />)
-    const chartLabels = Array.from(container.querySelectorAll('.chart-group-label')).map(
-      (label) => label.textContent ?? '',
-    )
-    expect(chartLabels).toHaveLength(2)
-    expect(chartLabels[0]).not.toBe(chartLabels[1])
-    expect(chartLabels[0]).toMatch(/^Group A: Women 25-54/)
-    expect(chartLabels[1]).toMatch(/^Group B: Women 25-54/)
-    for (const label of chartLabels) expect(Array.from(label).length).toBeLessThanOrEqual(48)
+    expect(chartLabels(container)).toEqual([labelA, labelB])
+  })
+
+  it('two equal labels are told apart by their group in the chart', () => {
+    const result: CompareResponse = {
+      ...compareChildrenFixture,
+      label_a: 'Parents',
+      label_b: 'Parents',
+    }
+    const { container } = render(<CompareView result={result} analysisKey={null} />)
+    expect(chartLabels(container)).toEqual(['Group A: Parents', 'Group B: Parents'])
   })
 
   it('a comparison names the analytics version that computed it (review round 2)', () => {
@@ -154,13 +163,14 @@ describe('long group labels (review round 1)', () => {
     expect(term.nextElementSibling).toHaveTextContent('0.3')
   })
 
-  it('labels that are distinct once shortened are drawn without a group prefix', () => {
+  it('distinct labels are drawn without a group prefix', () => {
     const { container } = render(
       <CompareView result={compareChildrenFixture} analysisKey={null} />,
     )
-    const chartLabels = Array.from(container.querySelectorAll('.chart-group-label'))
-    expect(chartLabels[0]?.textContent).toBe(compareChildrenFixture.label_a)
-    expect(chartLabels[1]?.textContent).toBe(compareChildrenFixture.label_b)
+    expect(chartLabels(container)).toEqual([
+      compareChildrenFixture.label_a,
+      compareChildrenFixture.label_b,
+    ])
   })
 })
 
@@ -194,6 +204,6 @@ describe('confidence levels other than 90/95/99% (review round 3)', () => {
       difference: { ...compareChildrenFixture.difference, confidence_level: 0.9545 },
     }
     render(<CompareView result={result} analysisKey={null} />)
-    expect(screen.getByTestId('difference')).toHaveTextContent('95.45% CI')
+    expect(screen.getByTestId('difference')).toHaveTextContent('95.45% confidence interval')
   })
 })

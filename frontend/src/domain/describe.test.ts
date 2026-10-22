@@ -1,16 +1,23 @@
 import { describe, expect, it } from 'vitest'
 
+import type { CompareResponse, TrendResponse } from '../api/types'
 import {
+  compareChildrenFixture,
   estimatePandemicFixture,
   estimateSleepFixture,
   estimateTvFixture,
+  trendLeisureFixture,
 } from '../test/fixtures'
 import {
   activityLabelFromSpec,
   analysisTitle,
+  describeDifference,
   humanize,
   interpretEstimate,
+  interpretTrend,
   populationPhrase,
+  resultHeading,
+  splitActivityLabel,
   stripVariableJargon,
   valueLabel,
 } from './describe'
@@ -166,5 +173,134 @@ describe('interpretation faithfulness (review findings)', () => {
     }
     const sentence = interpretEstimate(fips)
     expect(sentence).toMatch(/^People in the selected population spent/)
+  })
+})
+
+describe('splitActivityLabel', () => {
+  it('moves a BLS-table definition out of the name', () => {
+    expect(splitActivityLabel('Leisure and sports (BLS table A-1 definition)')).toEqual({
+      name: 'Leisure and sports',
+      qualifier: 'As defined in BLS table A-1',
+    })
+  })
+
+  it('leaves every other label alone', () => {
+    expect(splitActivityLabel('Working (main and other jobs)')).toEqual({
+      name: 'Working (main and other jobs)',
+      qualifier: null,
+    })
+  })
+})
+
+describe('resultHeading', () => {
+  it('says the statistic, the activity, and the rest once', () => {
+    expect(resultHeading('estimate', estimateSleepFixture.spec as never, 'Sleeping')).toEqual({
+      eyebrow: 'Average time per day',
+      title: 'Sleeping',
+      subtitle: 'Ages 25–54 · 2025',
+    })
+  })
+
+  it('keeps a definition qualifier and names a trend by year', () => {
+    const heading = resultHeading(
+      'trend',
+      trendLeisureFixture.spec as never,
+      trendLeisureFixture.activity.label,
+    )
+    expect(heading.eyebrow).toBe('Average time per day, by year')
+    expect(heading.title).toBe('Leisure and sports')
+    expect(heading.subtitle).toBe(
+      'As defined in BLS table A-1 · All respondents (age 15+) · 2003–2025',
+    )
+  })
+
+  it("names a comparison's groups in the title and its shared filters below", () => {
+    const spec = {
+      activity: { preset: 'sleep' },
+      years: [2025],
+      population: { age_min: 65 },
+      group_a: { sex: 'male' },
+      group_b: { sex: 'female' },
+      label_a: 'Men',
+      label_b: 'Women',
+    }
+    expect(resultHeading('compare', spec as never, 'Sleeping')).toMatchObject({
+      title: 'Sleeping: Men vs Women',
+      subtitle: 'Both groups: Age 65+ · 2025',
+    })
+  })
+})
+
+describe('interpretTrend', () => {
+  it('leads with the latest and first year and the range between', () => {
+    expect(interpretTrend(trendLeisureFixture)).toBe(
+      'Average time per day on “Leisure and sports” was 5h 10m in 2025, compared with ' +
+        '5h 7m in 2003. Over these years it ranged from 5h 4m in 2024 to 5h 22m in 2012.',
+    )
+  })
+
+  it('names a filtered population and skips the range for two years', () => {
+    const twoYears: TrendResponse = {
+      ...trendLeisureFixture,
+      spec: { ...trendLeisureFixture.spec, population: { sex: 'female' } },
+      points: trendLeisureFixture.points.filter((point) => [2019, 2021].includes(point.year)),
+    }
+    expect(interpretTrend(twoYears)).toBe(
+      'Average time per day on “Leisure and sports” (Women) was 5h 16m in 2021, compared with 5h 11m in 2019.',
+    )
+  })
+
+  it('says nothing when no year has an estimate', () => {
+    const none: TrendResponse = {
+      ...trendLeisureFixture,
+      points: trendLeisureFixture.points.filter((point) => point.estimate == null),
+    }
+    expect(interpretTrend(none)).toBe('')
+  })
+})
+
+describe('describeDifference', () => {
+  it('names the larger group and the interval, in words', () => {
+    // The fixture's difference is negative: B ("No household children") is larger.
+    expect(describeDifference(compareChildrenFixture)).toEqual({
+      larger: 'b',
+      amount: '11 minutes more per day',
+      interval: '95% confidence interval: 2.8 to 19.4 min more for No household children',
+      sentence:
+        'In 2025, average time per day on “Household activities” was 11 minutes longer for ' +
+        'No household children than for Household children present.',
+    })
+  })
+
+  it('spans both groups when the interval includes zero', () => {
+    const straddling: CompareResponse = {
+      ...compareChildrenFixture,
+      difference: {
+        ...compareChildrenFixture.difference,
+        value: 2.4,
+        ci_lower: -3.1,
+        ci_upper: 7.9,
+      },
+    }
+    const described = describeDifference(straddling)
+    expect(described.larger).toBe('a')
+    expect(described.interval).toBe(
+      '95% confidence interval: from 3.1 min more for No household children to 7.9 min more for Household children present',
+    )
+  })
+
+  it('says when there is no difference at all, and pools years in words', () => {
+    const equal: CompareResponse = {
+      ...compareChildrenFixture,
+      group_a: { ...compareChildrenFixture.group_a, years: [2023, 2024, 2025] },
+      difference: { ...compareChildrenFixture.difference, value: 0 },
+    }
+    const described = describeDifference(equal)
+    expect(described.larger).toBeNull()
+    expect(described.amount).toBe('No difference')
+    expect(described.sentence).toBe(
+      'Across 2023–2025 combined, average time per day on “Household activities” was the same ' +
+        'for Household children present and for No household children.',
+    )
   })
 })

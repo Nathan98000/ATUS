@@ -2,7 +2,8 @@
  * Landing page: what this is, where the data comes from, and immediate
  * entry points — a main call to action plus starter analyses that are real,
  * runnable specifications (linked as shareable analysis URLs built against
- * the years the API actually reports).
+ * the years the API actually reports), each previewing its answer when the
+ * deployed snapshot holds it.
  */
 import { useEffect } from 'react'
 import { Link } from 'react-router'
@@ -13,6 +14,7 @@ import { useRetryFocus } from '../components/useRetryFocus'
 import { isFullPageError } from '../domain/presentError'
 import { STARTER_EXAMPLES } from '../domain/prewarm'
 import { analysisPath } from '../domain/urlSpec'
+import { StarterPreview } from '../features/home/StarterPreview'
 
 export function HomePage() {
   const meta = useMeta()
@@ -63,16 +65,20 @@ export function HomePage() {
         </h2>
         {latest !== null ? (
           <div className="example-grid">
-            {STARTER_EXAMPLES.map((example) => (
-              <Link
-                key={example.question}
-                className="example-card"
-                to={analysisPath(example.operation, example.spec(years, latest))}
-              >
-                <span className="example-card__question">{example.question}</span>
-                <span className="field-hint">{example.detail}</span>
-              </Link>
-            ))}
+            {STARTER_EXAMPLES.map((example) => {
+              const spec = example.spec(years, latest)
+              return (
+                <Link
+                  key={example.question}
+                  className="example-card"
+                  to={analysisPath(example.operation, spec)}
+                >
+                  <span className="example-card__question">{example.question}</span>
+                  <span className="field-hint">{example.detail}</span>
+                  <StarterPreview operation={example.operation} spec={spec} />
+                </Link>
+              )
+            })}
           </div>
         ) : (
           <>

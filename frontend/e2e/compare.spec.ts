@@ -30,17 +30,18 @@ test('configure, run, understand and reshare a comparison', CORE, async ({ page 
 
   // The difference comes from the API (covariance-correct), labeled A − B.
   const difference = page.getByTestId('difference')
-  await expect(difference).toContainText('Men − Women')
-  await expect(difference).toContainText('+33.3 min')
-  await expect(difference).toContainText('± 11.8 min')
-  await expect(difference).toContainText('A positive difference means “Men”')
+  await expect(difference).toContainText('33 minutes more per day for Men')
+  await expect(difference).toContainText(
+    'Exact difference (Men − Women): +33.3 min, standard error 11.8 min',
+  )
 
   // Both groups appear in the chart with their labels (never color-only).
   await expect(page.getByRole('img', { name: /Comparison of minutes per day/ })).toBeVisible()
 
   // Methodology explains the difference semantics.
   await page.getByText('How was this calculated?').click()
-  await expect(page.locator('dd', { hasText: 'per-replicate differences' })).toBeVisible()
+  const differenceRow = page.locator('dd', { hasText: 'Computed as Men − Women' })
+  await expect(differenceRow).toContainText('per-replicate differences')
 
   // Reloading the URL reproduces the comparison (stateless share link).
   await page.reload()

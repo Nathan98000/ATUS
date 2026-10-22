@@ -205,8 +205,8 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     const table = screen.getByRole('table')
     const row = (label: string) =>
       within(table).getByRole('rowheader', { name: label }).closest('tr') as HTMLElement
-    expect(row('2020')).toHaveTextContent('Unavailable')
-    expect(row('2026')).not.toHaveTextContent('Unavailable')
+    expect(row('2020')).toHaveTextContent('No estimate')
+    expect(row('2026')).not.toHaveTextContent('No estimate')
   })
 
   it("the builder's 2020 note still follows the range and the weights", async () => {

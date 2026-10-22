@@ -44,6 +44,7 @@ import {
   fetchMeta,
   fetchPopulationMetadata,
   runAnalysis,
+  snapshotAnalysis,
   type LoadedMeta,
 } from './endpoints'
 import type { MetaResponse, Operation, OperationContract } from './types'
@@ -191,6 +192,27 @@ export function useAnalysis<Op extends Operation>(
     refetchOnWindowFocus: false,
     networkMode: 'always',
     refetchOnReconnect,
+  })
+}
+
+/**
+ * A prewarmed analysis from the static snapshot, or null — never from the
+ * API (`snapshotAnalysis`). Previews only: a page that needs the result
+ * itself uses `useAnalysis`.
+ */
+export function useSnapshotAnalysis<Op extends Operation>(
+  operation: Op,
+  spec: OperationContract[Op]['request'] | null,
+) {
+  const versions = useVersionTag()
+  return useQuery({
+    queryKey: ['snapshot-analysis', operation, versions, stableStringify(spec)],
+    queryFn: () => snapshotAnalysis(operation, spec as OperationContract[Op]['request']),
+    enabled: spec !== null && versions !== null,
+    staleTime: Infinity,
+    retry: false,
+    refetchOnWindowFocus: false,
+    networkMode: 'always',
   })
 }
 

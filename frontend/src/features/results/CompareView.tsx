@@ -1,15 +1,15 @@
 /**
- * Comparison result: both group estimates, the API-computed difference
- * (group A − group B, covariance-correct SE — never recomputed here), a
- * dot-and-interval chart, warnings, and methodology.
+ * Comparison result: the answer in one sentence, both group estimates, a bar
+ * chart from zero, and the API-computed difference (group A − group B,
+ * covariance-correct SE — never recomputed here) in words, then warnings
+ * and methodology.
  */
 import type { CompareResponse } from '../../api/types'
 import { WarningBanner } from '../../components/WarningBanner'
+import { describeDifference } from '../../domain/describe'
 import {
   formatConfidenceInterval,
-  formatConfidenceLevel,
   formatCount,
-  formatDifferenceInterval,
   formatDifferenceValue,
   formatEstimate,
   formatStandardError,
@@ -28,6 +28,7 @@ export function CompareView({
 }) {
   const unit = result.group_a.estimate.unit
   const difference = result.difference
+  const described = describeDifference(result)
 
   const methodologyRows = [
     {
@@ -44,6 +45,7 @@ export function CompareView({
   return (
     <div className="result-stack">
       <section className="card" aria-label="Group estimates">
+        <p className="result-lead">{described.sentence}</p>
         <div className="compare-cards">
           {(
             [
@@ -68,7 +70,6 @@ export function CompareView({
                 className="compare-card"
                 style={{ borderTopColor: `var(${colorVar})` }}
               >
-                <p className="compare-card__role">{role}</p>
                 <h3>{label}</h3>
                 <p className="compare-card__value">{formatted.primary}</p>
                 {formatted.secondary ? (
@@ -107,25 +108,28 @@ export function CompareView({
         />
 
         <div className="difference-block" data-testid="difference">
-          <h3>
-            Difference ({result.label_a} − {result.label_b})
-          </h3>
+          <h3>Difference</h3>
           <p className="difference-block__value">
+            {described.larger === null ? (
+              described.amount
+            ) : (
+              <>
+                {described.amount} for{' '}
+                <span className="difference-block__group">
+                  {described.larger === 'a' ? result.label_a : result.label_b}
+                </span>
+              </>
+            )}
+          </p>
+          {described.interval !== null ? <p>{described.interval}</p> : null}
+          <p className="field-hint">
+            Exact difference ({result.label_a} − {result.label_b}):{' '}
             {difference.value > 0 ? '+' : ''}
             {formatDifferenceValue(difference.value, unit)}
-          </p>
-          {difference.standard_error != null ? (
-            <p className="field-hint">
-              Standard error ± {formatStandardError(difference.standard_error, unit)}
-              {difference.ci_lower != null &&
-              difference.ci_upper != null &&
-              difference.confidence_level != null
-                ? ` · ${formatConfidenceLevel(difference.confidence_level)} CI ${formatDifferenceInterval(difference.ci_lower, difference.ci_upper, unit)}`
-                : ''}
-            </p>
-          ) : null}
-          <p className="field-hint">
-            A positive difference means “{result.label_a}” has the larger estimate.
+            {difference.standard_error != null
+              ? `, standard error ${formatStandardError(difference.standard_error, unit)}`
+              : ''}
+            .
           </p>
         </div>
       </section>
@@ -146,7 +150,7 @@ export function CompareView({
                   Estimate
                 </th>
                 <th scope="col" className="num">
-                  SE
+                  Standard error
                 </th>
                 <th scope="col">Confidence interval</th>
                 <th scope="col" className="num">
@@ -187,7 +191,11 @@ export function CompareView({
         </div>
       </details>
 
-      <MethodologyPanel rows={methodologyRows} analysisKey={analysisKey} />
+      <MethodologyPanel
+        rows={methodologyRows}
+        analysisKey={analysisKey}
+        apiNotes={result.warnings}
+      />
     </div>
   )
 }

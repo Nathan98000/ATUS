@@ -38,6 +38,27 @@ export function formatMinutesAsDuration(minutes: number): string {
   return `${hours}h ${rest}m`
 }
 
+/** A duration in a sentence: 23.2 → "23 minutes"; 72 → "1 hour 12 minutes"; 0.3 → "under a minute". */
+export function formatDurationWords(minutes: number): string {
+  const totalMinutes = Math.round(Math.abs(minutes))
+  if (totalMinutes === 0) return minutes === 0 ? '0 minutes' : 'under a minute'
+  const hours = Math.floor(totalMinutes / 60)
+  const rest = totalMinutes % 60
+  const minutePart = `${rest} ${rest === 1 ? 'minute' : 'minutes'}`
+  if (hours === 0) return minutePart
+  const hourPart = `${hours} ${hours === 1 ? 'hour' : 'hours'}`
+  return rest === 0 ? hourPart : `${hourPart} ${minutePart}`
+}
+
+/** Axis label for a whole-minute tick: 0 → "0"; 30 → "30m"; 60 → "1h"; 90 → "1h 30m". */
+export function formatDurationTick(minutes: number): string {
+  if (minutes === 0) return '0'
+  const hours = Math.floor(minutes / 60)
+  const rest = Math.round(minutes % 60)
+  if (hours === 0) return `${rest}m`
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`
+}
+
 /** 528.75 → "528.8". */
 export function formatMinutesDetailed(minutes: number): string {
   return ONE_DECIMAL.format(minutes)
@@ -66,6 +87,12 @@ export function formatProportionAsPercent(proportion: number): string {
 export function formatDifferenceValue(value: number, unit: string): string {
   if (unit === 'proportion_of_population') return `${adaptiveScaled(value * 100)} pp`
   return formatValueShort(value, unit)
+}
+
+/** A difference of proportions in a sentence: 0.062 → "6.2 percentage points" (or "6.2"). */
+export function formatPercentagePoints(value: number, withUnit = true): string {
+  const points = adaptiveScaled(value * 100)
+  return withUnit ? `${points} percentage points` : points
 }
 
 export function formatDifferenceInterval(lower: number, upper: number, unit: string): string {

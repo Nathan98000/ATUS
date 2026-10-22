@@ -116,7 +116,11 @@ export function EstimateView({
       </section>
 
       <WarningBanner warnings={result.warnings} />
-      <MethodologyPanel rows={estimateMethodologyRows(result)} analysisKey={analysisKey} />
+      <MethodologyPanel
+        rows={estimateMethodologyRows(result)}
+        analysisKey={analysisKey}
+        apiNotes={result.warnings}
+      />
 
       <details className="panel">
         <summary>View exact values</summary>
