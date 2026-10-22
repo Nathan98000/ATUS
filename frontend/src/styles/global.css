@@ -1175,11 +1175,60 @@ details.panel > .panel__body {
   }
 }
 
-.population-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
-  gap: 0.8rem 1rem;
-  align-items: start;
+/* Population filters: "Everyone" until one is added, then a row each. */
+.population-filters__empty {
+  margin: 0 0 0.6rem;
+  color: var(--ink-soft);
+}
+
+.population-filters__list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.1rem;
+}
+
+.population-filter {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.population-filter__field {
+  width: 13rem;
+  max-width: calc(100vw - 6.5rem);
+}
+
+.population-filter__remove {
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  font: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--ink-faint);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.population-filter__remove:hover {
+  color: var(--error-ink);
+  background: var(--error-bg);
+}
+
+.population-filters__add-select {
+  width: auto;
+  padding-right: 2rem;
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .age-pair {
@@ -1192,15 +1241,18 @@ details.panel > .panel__body {
   width: 5.2rem;
 }
 
-.more-filters summary {
-  cursor: pointer;
+/* A comparison's filters for both groups, under its two groups. */
+.compare-groups__shared {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.compare-groups__shared-label {
+  margin: 0 0 0.3rem;
   font-weight: 600;
   font-size: 0.88rem;
   color: var(--ink-soft);
-}
-
-.more-filters {
-  margin-top: 0.8rem;
 }
 
 /* A trend's lines: one for everyone, or one per group of a dimension. */
@@ -1740,6 +1792,22 @@ details.panel > .panel__body {
 .chart-series .chart-point,
 .series-key .chart-point {
   fill: var(--series, var(--series-1));
+}
+
+/* A partial-year estimate (2020): a hollow point in the line's colour. */
+.chart-point.is-partial,
+.chart-series .chart-point.is-partial {
+  fill: var(--surface);
+  stroke: var(--series, var(--series-1));
+  stroke-width: 2.5;
+}
+
+.chart-key__swatch--partial {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2.5px solid var(--series-1);
+  border-radius: 50%;
+  background: var(--surface);
 }
 
 /* Legend and readout keys: a short stroke of the line, with its point. */

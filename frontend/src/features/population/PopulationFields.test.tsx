@@ -1,46 +1,104 @@
 /**
- * The generic renderer for API-discovered population dimensions — the one
- * place where an unknown future dimension type must degrade gracefully.
+ * The population filters, driven by the API's real population metadata:
+ * opt-in rows from a short list, and the one place where a dimension the
+ * list does not offer (or an unknown future type) must still show when a
+ * link sets it.
  */
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { PopulationDimension } from '../../api/types'
+import type { PopulationDimension, PopulationRequest } from '../../api/types'
 import { populationMetadataFixture } from '../../test/fixtures'
 import { PopulationFields } from './PopulationFields'
 
 const dimensions = populationMetadataFixture.dimensions
 
+/** The component with its own state, as the builder holds it. */
+function Harness({
+  initial = {},
+  onChange,
+  extra = [],
+}: {
+  initial?: PopulationRequest
+  onChange?: (value: PopulationRequest) => void
+  extra?: PopulationDimension[]
+}) {
+  const [value, setValue] = useState<PopulationRequest>(initial)
+  return (
+    <PopulationFields
+      dimensions={[...dimensions, ...extra]}
+      value={value}
+      onChange={(next) => {
+        setValue(next)
+        onChange?.(next)
+      }}
+    />
+  )
+}
+
 describe('PopulationFields (driven by real population metadata)', () => {
-  it('renders every category dimension with human labels and an Any default', async () => {
-    const onChange = vi.fn()
-    render(<PopulationFields dimensions={dimensions} value={{}} onChange={onChange} />)
-
-    const sex = screen.getByLabelText('Sex')
-    expect(sex).toHaveValue('')
-    expect(screen.getByRole('option', { name: 'Not in the labor force' })).toBeInTheDocument()
-
-    await userEvent.selectOptions(sex, 'female')
-    expect(onChange).toHaveBeenCalledWith({ sex: 'female' })
+  it('starts as everyone, offering only the six plain filters', () => {
+    render(<Harness />)
+    expect(screen.getByText('Everyone age 15 and over.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Sex')).not.toBeInTheDocument()
+    const add = screen.getByLabelText('Add a filter')
+    expect(
+      within(add)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual([
+      '+ Add a filter',
+      'Sex',
+      'Age',
+      'Employment',
+      'Education',
+      'Children in household',
+      'Day of week',
+    ])
+    // Never offered: region, state, diary dates.
+    expect(within(add).queryByRole('option', { name: /Region|State|Diaries/ })).toBeNull()
   })
 
-  it('renders booleans as Any/Yes/No without leaking variable names', () => {
-    render(<PopulationFields dimensions={dimensions} value={{}} onChange={() => {}} />)
+  it('adds a filter as a row with an Any default, and removes it again', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    await user.selectOptions(screen.getByLabelText('Add a filter'), 'sex')
+    const sex = screen.getByLabelText('Sex')
+    expect(sex).toHaveValue('')
+    expect(screen.queryByText('Everyone age 15 and over.')).not.toBeInTheDocument()
+    // An added filter leaves the list.
+    expect(
+      within(screen.getByLabelText('Add a filter')).queryByRole('option', { name: 'Sex' }),
+    ).toBeNull()
+
+    await user.selectOptions(sex, 'female')
+    expect(onChange).toHaveBeenLastCalledWith({ sex: 'female' })
+    await user.click(screen.getByRole('button', { name: 'Remove the sex filter' }))
+    expect(onChange).toHaveBeenLastCalledWith({})
+    expect(screen.getByText('Everyone age 15 and over.')).toBeInTheDocument()
+  })
+
+  it('renders booleans as Any/Yes/No without leaking variable names', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+    await user.selectOptions(screen.getByLabelText('Add a filter'), 'has_household_children')
     expect(screen.getByLabelText('Children in household')).toBeInTheDocument()
     expect(screen.queryByText(/TRCHILDNUM/)).not.toBeInTheDocument()
     expect(screen.queryByText(/TELFS/)).not.toBeInTheDocument()
   })
 
   it('parses age input and never emits NaN', async () => {
+    const user = userEvent.setup()
     const onChange = vi.fn()
-    render(<PopulationFields dimensions={dimensions} value={{}} onChange={onChange} />)
-    const min = screen.getByLabelText('Minimum age')
-    await userEvent.type(min, '2')
+    render(<Harness onChange={onChange} />)
+    await user.selectOptions(screen.getByLabelText('Add a filter'), 'age')
+    await user.type(screen.getByLabelText('Minimum age'), '2')
     expect(onChange).toHaveBeenLastCalledWith({ age_min: 2 })
-    // A non-numeric value degrades to unset, not NaN.
-    onChange.mockClear()
-    render(<PopulationFields dimensions={dimensions} value={{}} onChange={onChange} />)
+    await user.clear(screen.getByLabelText('Minimum age'))
+    expect(onChange).toHaveBeenLastCalledWith({ age_min: undefined })
   })
 
   it('associates age errors with the inputs', () => {
@@ -57,37 +115,31 @@ describe('PopulationFields (driven by real population metadata)', () => {
     expect(min).toHaveAccessibleDescription('Minimum age cannot exceed maximum age.')
   })
 
-  it('auto-opens the secondary section when a hidden filter is active', () => {
-    render(
-      <PopulationFields
-        dimensions={dimensions}
-        value={{ state_fips: '06' }}
-        onChange={() => {}}
-      />,
-    )
-    // The details section must be open so the active filter is visible.
-    const details = screen.getByText(/More filters/).closest('details') as HTMLDetailsElement
-    expect(details.open).toBe(true)
+  it('shows a filter a link set even when it is not offered, so it is never invisible', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<Harness initial={{ state_fips: '06', sex: 'male' }} onChange={onChange} />)
+    expect(screen.getByLabelText('Sex')).toHaveValue('male')
     expect(screen.getByLabelText('State (FIPS code)')).toHaveValue('06')
-  })
-
-  it('keeps the secondary section collapsed when nothing in it is set', () => {
-    render(
-      <PopulationFields dimensions={dimensions} value={{ sex: 'male' }} onChange={() => {}} />,
+    await user.click(
+      screen.getByRole('button', { name: 'Remove the state (fips code) filter' }),
     )
-    const details = screen.getByText('More filters').closest('details') as HTMLDetailsElement
-    expect(details.open).toBe(false)
+    expect(onChange).toHaveBeenLastCalledWith({ sex: 'male' })
+    expect(screen.queryByLabelText('State (FIPS code)')).not.toBeInTheDocument()
   })
 
-  it('renders an unknown future dimension type as a plain text input', () => {
+  it('shows an unknown future dimension a link sets as a plain text input', () => {
     const future: PopulationDimension = {
       name: 'quantile_group',
       type: 'ordinal-bucket', // a type this UI has never heard of
       description: 'A future dimension.',
     }
-    render(
-      <PopulationFields dimensions={[...dimensions, future]} value={{}} onChange={() => {}} />,
-    )
-    expect(screen.getByLabelText('Quantile group')).toBeInTheDocument()
+    render(<Harness extra={[future]} initial={{ quantile_group: 'q1' } as PopulationRequest} />)
+    expect(screen.getByLabelText('Quantile group')).toHaveValue('q1')
+    expect(
+      within(screen.getByLabelText('Add a filter')).queryByRole('option', {
+        name: 'Quantile group',
+      }),
+    ).toBeNull()
   })
 })

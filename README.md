@@ -95,11 +95,12 @@ steps, configuration) and
 
 ### ATUS Explorer
 
-![ATUS Explorer showing a 2003-2025 leisure-time trend with confidence bands and an explicit 2020 gap](docs/images/atus-explorer-trend.png)
+![ATUS Explorer showing a 2003-2025 leisure-time trend with its likely range and 2020 as a hollow partial-year point](docs/images/atus-explorer-trend.png)
 
-Every number in the UI comes from the API: estimates carry standard errors
-and confidence intervals, methodological warnings are always displayed, 2020
-renders as a labeled gap rather than an interpolated value, and the "Share
+Every number in the UI comes from the API: estimates carry their likely
+ranges, methodological notes are always displayed, 2020 appears in trends as
+its partial-year (pandemic-weight) estimate, drawn hollow and labeled, never
+an interpolated value, and the "Share
 analysis" URL encodes the full canonical specification so anyone can
 reproduce the result.
 

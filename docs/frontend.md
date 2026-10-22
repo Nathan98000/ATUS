@@ -31,7 +31,7 @@ is the entire extent of numeric transformation (`src/utils/format.ts`).
 | UI | React 19 | ecosystem default, function components only |
 | Routing | react-router 8 (declarative) | four routes; analyses live in URLs |
 | Server state | TanStack Query 5 | caching, cancellation, race safety ([ADR-008](adr/ADR-008-server-state.md)) |
-| Charts | hand-rolled SVG components | 2020-gap correctness, CI bands, keyboard access, tiny bundle ([ADR-010](adr/ADR-010-visualization.md)) |
+| Charts | hand-rolled SVG components | 2020 partial-year and gap correctness, CI bands, keyboard access, tiny bundle ([ADR-010](adr/ADR-010-visualization.md)) |
 | Styling | plain CSS, design tokens in `src/styles/global.css`; one display face, Archivo (variable, self-hosted from `@fontsource-variable/archivo`, so `font-src 'self'` holds), for headings and the big numbers, body text in the system face | no framework needed at this size; no font service |
 | Unit/component tests | Vitest + Testing Library + MSW | fixtures are captured real API payloads |
 | E2E tests | Playwright | real API on the fixture database |
@@ -420,10 +420,37 @@ values and standard errors.
 
 ## Statistical presentation rules
 
-- `estimate: null` (unavailable trend years) renders as a labeled gap band
-  (“No data”); the line never crosses it, nothing is interpolated, and the
-  chart's small print says why, with the API's reason in plain language —
-  never zero.
+- **2020 in a trend is a partial-year point** (design review of
+  2026-10-22, amending ADR-004/ADR-010 for the explorer). The multi-year
+  weights have no 2020, so the page sends a separate, explicit request for
+  2020 alone under the pandemic weights (`features/results/partial2020.ts`:
+  built from the trend's canonical spec, as the builder writes that
+  estimate, with the preset's name — so the snapshot's prewarmed "pandemic
+  weights" entries answer a preset's), one per line of a split trend. The
+  answer is drawn as a **hollow point** the line runs through, called
+  “partial year” in the readout and the screen-reader table, with a note in
+  the small print; the one-sentence answer reads full-year estimates only.
+  If that request fails, 2020 falls back to the gap below.
+- `estimate: null` (any other unavailable year, e.g. no respondents in a
+  group) renders as a labeled gap band (“No data”); the line never crosses
+  it, nothing is interpolated, and the chart's small print says why, with
+  the API's reason in plain language — never zero.
+- Choosing 2020 alone for a single number or a comparison switches the
+  weights to the pandemic weights (a visible "Advanced options" choice) and
+  says it is a partial-year estimate; leaving 2020 switches back.
+- **Filters are opt-in** (`PopulationFields`): “Everyone age 15 and over”
+  until one is added from “+ Add a filter”, which offers only sex, age,
+  employment, education, children in the household and day of week. Region,
+  state and diary dates are never offered; a shared link that sets one (or
+  a dimension the API adds later) still shows it as a row with a remove
+  button. A row stays while it is edited, even when cleared.
+- **Activities under plain names**: the BLS definition qualifier (“(BLS
+  table A-1 definition)”) is never shown — not in the picker, the headings
+  or the sentences (`activityName`); where two presets would read the same
+  (“Eating and drinking”), only the BLS-table one is offered
+  (`offeredPresets`). The “n.e.c.” catch-alls and the “Data Codes” category
+  are not offered in search or browsing (`isOffered`); a selected category
+  still includes them, and counts name the activities a visitor can see.
 - Confidence intervals are shown wherever the API provides them, as a
   “likely range”: the estimate's range in words, the trend's shaded band,
   the comparison's whiskers and its difference's range, each named with its
@@ -450,20 +477,18 @@ values and standard errors.
   and the builder adds a shared link's non-standard level to its 90/95/99%
   choices rather than showing one level and sending another (review round
   3). Raw API values are never mutated in state.
-- Filters are never active yet invisible. A comparison's shared filters
-  restrict both groups: in the builder their section opens and is marked
-  “(active)” when set (from a link, or carried over from an estimate or
-  trend), and the result names them in its “Both groups: …” details line
-  under the heading (review round 3).
+- Filters are never active yet invisible. A comparison's filters for both
+  groups sit under “Both groups”, one row each when set (from a link, or
+  carried over from an estimate or trend), and the result names them in its
+  “Both groups: …” details line under the heading (review round 3).
 - Labels a link chose are set against what was computed (R14 in
   docs/security.md; `definitionNote`): a comparison whose group names are
   not the plain description of their filters says “Groups compared: <name>
   (<filters>)” in the small print, and a custom activity names its codes —
   unless it is exactly a preset under the preset's own name.
 - Result headings (`resultHeading`): the statistic as the eyebrow, the
-  activity (and a comparison's two groups) as the title, and the definition
-  qualifier (“As defined in BLS table A-1”), population and years once in
-  the details line. The document title keeps the full one-line description.
+  activity's plain name (and a comparison's two groups) as the title, and
+  the population and years once in the details line.
 - Every result leads with a one-sentence plain-language answer, a
   deterministic template over response fields (`interpretEstimate`,
   `interpretTrend`, `describeDifference`) — descriptive wording only, no
@@ -574,7 +599,7 @@ listing wherever `frontend/node_modules` is installed.
   split links, the About page's logging statement, and the boot shell (no inline
   script/style; replaced by React).
 - Component: ActivityPicker (search/keyboard/presets/browse), warning and
-  error panels (incl. the `Retry-After` countdown), TrendChart 2020-gap
+  error panels (incl. the `Retry-After` countdown), TrendChart partial-year and gap
   rendering and keyboard access.
 - Integration (MSW, fixtures = captured real payloads): result pages render
   estimates, likely ranges, figures, notes and small print; split trends
@@ -598,13 +623,14 @@ listing wherever `frontend/node_modules` is installed.
   and the prewarm list use 2026, results are cached under the 0326 version
   tag, and a shared link through 2026 opens unchanged (under the 0325
   release it loses 2026, with the note). The 2020 rules still hold: the
-  builder's gap note follows the range and the weights, a trend through 2026
-  shows the 2020 gap, pandemic weights stay 2019–2020 only.
+  builder's 2020 note follows the range and the weights, a trend through 2026
+  shows 2020 as its partial-year point, pandemic weights stay 2019–2020
+  only.
 - E2E (real API + fixture database via `scripts/e2e_backend.py`; every
   expected number hand-computable; production build served same-origin
   under the production CSP): the full first-time-user scenario, the
   comparison scenario, share-link reproduction in a fresh browser context,
-  refresh, the 2020 gap, error handling incl. backend-down recovery after the
+  refresh, the 2020 partial-year point, error handling incl. backend-down recovery after the
   cold-start budget (page clock), axe checks, keyboard operation, mobile
   viewport; and the Phase 5 states with page.route: delayed `/meta`,
   incompatible API, a data release switch (reload notice), a
@@ -612,7 +638,7 @@ listing wherever `frontend/node_modules` is installed.
   countdown, the boot fallback with the bundle blocked; a trend split by
   sex; a release announcing 2026 through `/meta` (the year controls
   and starters offer it, the default estimate asks the real API for 2026,
-  and the real 2019–2023 trend still shows the 2020 gap); and the headers to
+  and the real 2019–2023 trend still shows 2020 as partial); and the headers to
   be deployed: every page carries the `_headers` rules and the `<meta>` CSP,
   bundles are served immutable, `/openapi.json` is served with its rules and
   equals `frontend/openapi.json`, and the core journeys run with every API
@@ -625,7 +651,7 @@ listing wherever `frontend/node_modules` is installed.
   actions, the error, quota, waking and version pages, the boot fallback and
   the phone layout ran unchecked.
 - Cross-browser: tests tagged `@core` — the first-time-user estimate, the
-  comparison, share links (copy, refresh, invalid), the 2020 gap and chart
+  comparison, share links (copy, refresh, invalid), the 2020 partial-year point and chart
   keyboard access, the split trend, the waking notice, and the headers/CSP
   journey — also run in Firefox and WebKit (`playwright.config.ts`). On the
   development machine (macOS 27) Playwright's Firefox build exits at launch

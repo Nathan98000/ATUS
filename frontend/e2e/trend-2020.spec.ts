@@ -1,52 +1,60 @@
 /**
- * Correctness requirement (spec §85): a trend containing 2020 must render a
- * visible, explained gap — no connecting line, no interpolation, no zero.
+ * 2020 in a trend. The multi-year weights have no 2020 (collection paused
+ * March 18 – May 9, 2020), so the page draws 2020 from its partial-year
+ * estimate under the pandemic weights: a hollow point with a note, never an
+ * interpolated or zero value. A year with no estimate at all would still be
+ * a labeled gap (src/pages/AnalysisPage.test.tsx covers that fallback).
  */
 import { expect, test } from './fixtures'
 
 import { CORE } from './helpers'
 
-test('2020 renders as an explicit, explained gap in trends', CORE, async ({ page }) => {
-  await page.goto('/explore')
-  await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+test(
+  '2020 renders as a hollow partial-year point, explained in the small print',
+  CORE,
+  async ({ page }) => {
+    await page.goto('/explore')
+    await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
 
-  await page.getByRole('radio', { name: 'Change over time' }).click()
-  await page.getByLabel('From', { exact: true }).selectOption('2019')
-  await page.getByLabel('To', { exact: true }).selectOption('2023')
-  // The builder already hints that 2020 will be a gap.
-  await expect(page.getByText(/2020 will show as a gap/)).toBeVisible()
+    await page.getByRole('radio', { name: 'Change over time' }).click()
+    await page.getByLabel('From', { exact: true }).selectOption('2019')
+    await page.getByLabel('To', { exact: true }).selectOption('2023')
+    // The builder already says what 2020 will be.
+    await expect(
+      page.getByText(/2020 is a partial-year estimate \(a hollow point\)/),
+    ).toBeVisible()
 
-  await page.getByRole('button', { name: 'Analyze' }).click()
+    const partial = page.waitForRequest(
+      (request) =>
+        request.url().endsWith('/api/v1/analysis/estimate') &&
+        request.postDataJSON()?.weights === 'pandemic',
+    )
+    await page.getByRole('button', { name: 'Analyze' }).click()
+    // 2020 alone, under the pandemic weights.
+    expect((await partial).postDataJSON()).toMatchObject({ years: [2020], weights: 'pandemic' })
 
-  // The gap band and its explanation: the API's reason, in plain language.
-  await expect(page.getByTestId('unavailable-2020')).toBeVisible({ timeout: 15_000 })
-  await expect(page.getByTestId('unavailable-2020')).toContainText('No data')
-  await expect(page.getByTestId('gap-note')).toContainText('No data for 2020')
-  await expect(page.getByTestId('gap-note')).toContainText(
-    'Data collection paused in spring 2020 because of COVID-19',
-  )
+    // The hollow point, on the line, and its explanation in plain language.
+    await expect(page.getByTestId('point-2020')).toHaveClass(/is-partial/, { timeout: 15_000 })
+    await expect(page.getByTestId('unavailable-2020')).toHaveCount(0)
+    await expect(page.getByTestId('partial-note')).toContainText(
+      '2020 is a partial-year estimate (hollow point): data collection paused from March 18 to May 9, 2020',
+    )
+    // 2019–2020 is one run of the line; 2023 is alone after the years this
+    // fixture release does not have.
+    await expect(page.getByTestId('point-2019')).toBeVisible()
+    await expect(page.getByTestId('point-2023')).toBeVisible()
+    expect(await page.getByTestId('trend-line-segment').count()).toBe(1)
 
-  // 2019 and 2023 are single points separated by the gap: with only one
-  // available year on each side there is NO line segment at all — nothing
-  // can connect across 2020.
-  await expect(page.getByTestId('point-2019')).toBeVisible()
-  await expect(page.getByTestId('point-2023')).toBeVisible()
-  expect(await page.getByTestId('trend-line-segment').count()).toBe(0)
-  await expect(page.getByTestId('point-2020')).toHaveCount(0)
-
-  // The table for screen readers represents 2020 as having no estimate —
-  // never as zero.
-  const row = page.getByRole('rowheader', { name: '2020', exact: true }).locator('..')
-  await expect(row).toContainText('No data')
-  await expect(row).not.toContainText('0m')
-
-  // 2019 (240 min) and 2023 (75 min) show their true values.
-  await expect(page.getByRole('table')).toContainText('4h 0m')
-  await expect(page.getByRole('table')).toContainText('1h 15m')
-})
+    // The table for screen readers names 2020 a partial year, with its value:
+    // 2019 (240 min), 2020 (240 min, pandemic weights) and 2023 (75 min).
+    const row = page.getByRole('rowheader', { name: '2020 (partial year)' }).locator('..')
+    await expect(row).toContainText('4h 0m')
+    await expect(page.getByRole('table')).toContainText('1h 15m')
+  },
+)
 
 test(
-  'the chart is keyboard-inspectable, including the unavailable year',
+  'the chart is keyboard-inspectable, including the partial year',
   CORE,
   async ({ page }) => {
     await page.goto('/explore')
@@ -69,7 +77,7 @@ test(
     // The readout: the value, then the year (240 minutes).
     await expect(chart).toContainText('4h 0m2019')
     await page.keyboard.press('ArrowRight')
-    await expect(chart).toContainText(/2020: no estimate/i)
+    await expect(chart).toContainText('2020 (partial year)')
   },
 )
 
@@ -95,8 +103,9 @@ test('a trend split by sex draws one line per group, with a legend', CORE, async
   await expect(page.locator('.chart-legend')).toContainText('Women')
   await expect(page.getByTestId('series-0')).toBeAttached()
   await expect(page.getByTestId('series-1')).toBeAttached()
-  // 2020 is still a labeled gap, and no band is drawn for several lines.
-  await expect(page.getByTestId('unavailable-2020')).toBeVisible()
+  // Each group's 2020 is its partial-year estimate where it has one (this
+  // fixture has a 2020 diary for a woman only: the men's line breaks there).
+  await expect(page.getByTestId('partial-note')).toBeVisible()
   await expect(page.getByTestId('ci-band')).toHaveCount(0)
   expect(page.url()).toContain('&split=sex&groups=male,female')
   for (const body of sent as { population: object; variance: string }[]) {

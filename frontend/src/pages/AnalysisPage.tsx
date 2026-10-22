@@ -60,6 +60,7 @@ import { CompareView } from '../features/results/CompareView'
 import { EstimateView } from '../features/results/EstimateView'
 import { ShareButton } from '../features/results/ShareButton'
 import { SplitTrendView, TrendView, type SplitSeries } from '../features/results/TrendView'
+import { needsPartial2020, partial2020Spec } from '../features/results/partial2020'
 
 type ParsedLink =
   | { invalid: string }
@@ -152,11 +153,37 @@ function AnalysisRunner({
       ? resolveSplit(populationMetadata.data.dimensions, split)
       : null
   const single = useAnalysis(operation, split === null ? spec : null)
-  const seriesQueries = useAnalyses(
-    'trend',
-    resolved ? resolved.options.map((option) => seriesSpec(spec, resolved, option)) : [],
-  )
-  const query = useCombinedQuery(single, split === null ? null : seriesQueries)
+  const seriesSpecs = resolved
+    ? resolved.options.map((option) => seriesSpec(spec, resolved, option))
+    : []
+  const seriesQueries = useAnalyses('trend', seriesSpecs)
+  // A trend through 2020 also asks for 2020's partial-year estimate, one per
+  // line, once the trend has answered: built from the trend's canonical spec
+  // (the same before and after the link is rewritten to it) with the preset's
+  // name, so it matches the snapshot's prewarmed estimate for a preset.
+  const wantsPartial = operation === 'trend' && needsPartial2020(spec)
+  const trendResults =
+    split === null
+      ? [single.data?.data as TrendResponse | undefined]
+      : seriesQueries.map((entry) => entry.data?.data)
+  const partialSpecs =
+    wantsPartial &&
+    meta.data !== undefined &&
+    (presets.data !== undefined || presets.isError) &&
+    trendResults.every((trend) => trend !== undefined)
+      ? trendResults.map((trend) =>
+          partial2020Spec(
+            (trend as TrendResponse).spec as AnalysisRequest,
+            meta.data?.data.years ?? [],
+            presets.data?.presets ?? [],
+          ),
+        )
+      : []
+  const partialQueries = useAnalyses('estimate', partialSpecs)
+  const partialPending =
+    wantsPartial &&
+    (partialSpecs.length === 0 || partialQueries.some((entry) => entry.isPending))
+  const query = useCombinedQuery(single, split === null ? null : seriesQueries, partialPending)
   const splitUnusable =
     split !== null && populationMetadata.data !== undefined && resolved === null
   const waking = useServiceWaking()
@@ -260,13 +287,12 @@ function AnalysisRunner({
           <Link className="btn btn--small" to={adjustHref}>
             Adjust analysis
           </Link>
-          {operation === 'estimate' && meta.data && spec.weights !== 'pandemic' ? (
-            // Only for the multi-year weights: the pandemic scheme covers
-            // 2019–2020 only, so a full-period trend would always be refused.
+          {operation === 'estimate' && meta.data && trendShortcut(spec) ? (
             <Link
               className="btn btn--small"
               to={analysisPath('trend', {
                 ...spec,
+                weights: 'multiyear',
                 years: meta.data.data.years,
               })}
             >
@@ -304,6 +330,7 @@ function AnalysisRunner({
           series={resolved.options.map((option, index): SplitSeries => ({
             label: option.label,
             result: query.series?.[index] as TrendResponse,
+            partial2020: partialQueries[index]?.data?.data,
           }))}
           legendTitle={resolved.choice.label}
           note={definitionNote(operation, spec, presets.data?.presets)}
@@ -312,6 +339,7 @@ function AnalysisRunner({
         <ResultBody
           operation={operation}
           result={query.data.data}
+          partial2020={partialQueries[0]?.data?.data}
           note={definitionNote(operation, spec, presets.data?.presets)}
         />
       ) : null}
@@ -329,20 +357,40 @@ function AnalysisRunner({
   )
 }
 
+/**
+ * Whether an estimate offers its full-period trend: under the multi-year
+ * weights, or a 2020 estimate under the pandemic weights (the builder's
+ * choice for 2020), whose trend shows 2020 as its partial-year point. Other
+ * pandemic-weight estimates (2019, or a diary-date window) have no
+ * full-period counterpart.
+ */
+function trendShortcut(spec: AnalysisRequest): boolean {
+  if (spec.weights !== 'pandemic') return true
+  const population = spec.population ?? {}
+  return (
+    spec.years.length === 1 &&
+    spec.years[0] === 2020 &&
+    population.diary_date_min == null &&
+    population.diary_date_max == null
+  )
+}
+
 function ResultBody({
   operation,
   result,
+  partial2020,
   note,
 }: {
   operation: Operation
   result: AnalysisResponse
+  partial2020?: EstimateResponse
   note: string | null
 }) {
   if (operation === 'estimate') {
     return <EstimateView result={result as EstimateResponse} note={note} />
   }
   if (operation === 'trend') {
-    return <TrendView result={result as TrendResponse} note={note} />
+    return <TrendView result={result as TrendResponse} partial2020={partial2020} note={note} />
   }
   return <CompareView result={result as CompareResponse} note={note} />
 }
@@ -351,14 +399,17 @@ function ResultBody({
  * One analysis, or a split trend's analyses as one: pending while any is,
  * failed (with the first failure) when any failed, and "Try again" refetches
  * every failed one. `series` holds the split's results, in group order.
+ * `partialPending`: a trend's 2020 partial-year estimates are still on their
+ * way — the chart waits for them (their failure only leaves 2020 a gap).
  */
 function useCombinedQuery(
   single: ReturnType<typeof useAnalysis>,
   many: ReturnType<typeof useAnalyses<'trend'>> | null,
+  partialPending: boolean,
 ) {
   if (many === null) {
     return {
-      isPending: single.isPending,
+      isPending: single.isPending || (partialPending && !single.isError),
       isFetching: single.isFetching,
       isError: single.isError,
       error: single.error,
@@ -370,7 +421,7 @@ function useCombinedQuery(
   const failed = many.find((entry) => entry.isError)
   const done = many.length > 0 && many.every((entry) => entry.data !== undefined)
   return {
-    isPending: !done && failed === undefined,
+    isPending: (!done || partialPending) && failed === undefined,
     isFetching: many.some((entry) => entry.isFetching),
     isError: failed !== undefined,
     error: failed?.error ?? null,

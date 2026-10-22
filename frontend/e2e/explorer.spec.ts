@@ -70,8 +70,8 @@ test('an estimate can be viewed as a trend across all available years', async ({
   await expect(page.locator('.stat-value')).toBeVisible({ timeout: 15_000 })
 
   await page.getByRole('link', { name: /View .* trend/ }).click()
-  // Fixture years 2019–2023: 2019 and 2023 estimated, 2020 an explicit gap.
-  await expect(page.getByTestId('unavailable-2020')).toBeVisible({ timeout: 15_000 })
+  // Fixture years 2019–2023: 2019 and 2023 estimated, 2020 its partial-year point.
+  await expect(page.getByTestId('point-2020')).toHaveClass(/is-partial/, { timeout: 15_000 })
   await expect(page.getByTestId('point-2019')).toBeVisible()
   await expect(page.getByTestId('point-2023')).toBeVisible()
 })

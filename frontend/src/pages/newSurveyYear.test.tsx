@@ -126,7 +126,7 @@ function linkSpec(link: HTMLElement, operation: Operation): AnalysisRequest {
   return decodeSpec(new URLSearchParams(href.split('?')[1]).get('spec') ?? '', operation)
 }
 
-const GAP_NOTE = /2020 will show as a gap/
+const GAP_NOTE = /2020 is a partial-year estimate \(a hollow point\)/
 const RELEASE_NOTICE = /different data release/
 
 afterEach(() => {
@@ -179,13 +179,22 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     await user.click(screen.getByRole('radio', { name: 'Change over time' }))
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
     expect(await screen.findByTestId('point-2026')).toBeInTheDocument()
-    expect(posted).toHaveLength(2)
-    expect(posted[1]?.operation).toBe('trend')
+    // The trend and, alongside it, its 2020 under the pandemic weights (the
+    // mock answers with the leisure trend, so the link's canonical form names
+    // another activity and asks for that one's 2020 too).
+    const later = posted.slice(1)
+    const trends = later.filter((entry) => entry.operation === 'trend')
+    expect(trends).toHaveLength(1)
     // Every reported year, 2020 included: the API, not the page, rules it out.
-    expect(posted[1]?.body.years).toEqual(YEARS_0326)
+    expect(trends[0]?.body.years).toEqual(YEARS_0326)
+    const partial = later.filter((entry) => entry.operation === 'estimate')
+    expect(partial.length).toBeGreaterThan(0)
+    for (const entry of partial) {
+      expect(entry.body).toMatchObject({ years: [2020], weights: 'pandemic' })
+    }
   })
 
-  it('a trend through 2026 still shows 2020 as an explicit gap, and 2026 as a point', async () => {
+  it('a trend through 2026 still shows 2020 as its partial-year point, and 2026 as a point', async () => {
     const posted = serve0326()
     const trend: TrendRequest = {
       measure: 'average_minutes_per_day',
@@ -194,18 +203,23 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     }
     renderApp(`/analysis/trend?spec=${encodeSpec(trend)}`)
     expect(await screen.findByTestId('point-2026')).toBeInTheDocument()
-    expect(posted.map((entry) => entry.body.years)).toEqual([YEARS_0326])
+    expect(posted.map((entry) => entry.body.years)).toEqual(
+      expect.arrayContaining([YEARS_0326, [2020]]),
+    )
+    expect(posted).toHaveLength(2)
 
-    expect(screen.getByTestId('unavailable-2020')).toBeInTheDocument()
-    expect(screen.getByTestId('gap-note')).toHaveTextContent('No data for 2020')
-    expect(screen.queryByTestId('point-2020')).not.toBeInTheDocument()
-    // Two runs, 2003–2019 and 2021–2026: no line crosses 2020.
-    expect(screen.getAllByTestId('trend-line-segment')).toHaveLength(2)
+    // 2020 from its partial-year estimate: a hollow point the line runs through.
+    expect(screen.queryByTestId('unavailable-2020')).not.toBeInTheDocument()
+    expect(screen.getByTestId('point-2020')).toHaveClass('is-partial')
+    expect(screen.getByTestId('partial-note')).toHaveTextContent(
+      '2020 is a partial-year estimate',
+    )
+    expect(screen.getAllByTestId('trend-line-segment')).toHaveLength(1)
 
     const table = screen.getByRole('table')
     const row = (label: string) =>
       within(table).getByRole('rowheader', { name: label }).closest('tr') as HTMLElement
-    expect(row('2020')).toHaveTextContent('No data')
+    expect(row('2020 (partial year)')).not.toHaveTextContent('No data')
     expect(row('2026')).not.toHaveTextContent('No data')
   })
 

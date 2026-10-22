@@ -422,7 +422,7 @@ test(
     await page.getByRole('radio', { name: 'Change over time' }).click()
     await page.getByLabel('From', { exact: true }).selectOption('2019')
     await analyze(page)
-    await expect(page.getByTestId('unavailable-2020')).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByTestId('point-2020')).toBeVisible({ timeout: 15_000 })
 
     await page.goto('/about')
     await expect(page.getByRole('heading', { name: 'About ATUS Explorer' })).toBeVisible()

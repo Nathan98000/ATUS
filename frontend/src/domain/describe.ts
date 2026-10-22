@@ -216,7 +216,7 @@ export function analysisTitle(
   spec: AnalysisRequest,
   activityLabel: string,
 ): string {
-  const parts = [activityLabel]
+  const parts = [activityName(activityLabel)]
   if (operation === 'compare') {
     const compare = spec as CompareRequest
     parts.push(`${compare.label_a ?? 'Group A'} vs ${compare.label_b ?? 'Group B'}`)
@@ -244,13 +244,37 @@ export function measureName(measure: string): string {
 /**
  * Splits a definition qualifier off an activity label for display:
  * "Leisure and sports (BLS table A-1 definition)" → name "Leisure and
- * sports", qualifier "As defined in BLS table A-1". The qualifier must stay
- * on the page: two presets can share a name and differ only in it.
+ * sports", qualifier "As defined in BLS table A-1". The site shows the
+ * name only; where two presets would share one, the pickers offer just the
+ * BLS-table one (`offeredPresets`).
  */
 export function splitActivityLabel(label: string): { name: string; qualifier: string | null } {
   const match = label.match(/^(.+?)\s*\((BLS table [^)]*?)\s+definition\)\s*$/i)
   if (!match) return { name: label, qualifier: null }
   return { name: match[1] as string, qualifier: `As defined in ${match[2] as string}` }
+}
+
+/** An activity's name as the site shows it: without a definition qualifier. */
+export function activityName(label: string): string {
+  return splitActivityLabel(label).name
+}
+
+/**
+ * The presets a picker offers: each under its plain name and, where two
+ * share one ("Eating and drinking"), only the one as defined in the BLS
+ * published tables, so no two choices read the same.
+ */
+export function offeredPresets<T extends { label: string }>(presets: readonly T[]): T[] {
+  const byName = new Map<string, T>()
+  for (const preset of presets) {
+    const name = activityName(preset.label)
+    const kept = byName.get(name)
+    const official = (label: string) => splitActivityLabel(label).qualifier !== null
+    if (kept === undefined || (official(preset.label) && !official(kept.label))) {
+      byName.set(name, preset)
+    }
+  }
+  return presets.filter((preset) => byName.get(activityName(preset.label)) === preset)
 }
 
 export interface ResultHeading {
@@ -272,9 +296,9 @@ export function resultHeading(
   spec: AnalysisRequest,
   activityLabel: string,
 ): ResultHeading {
-  const { name, qualifier } = splitActivityLabel(activityLabel)
+  const name = activityName(activityLabel)
   const measure = measureName(spec.measure ?? 'average_minutes_per_day')
-  const details = qualifier !== null ? [qualifier] : []
+  const details: string[] = []
   let title = name
   if (operation === 'compare') {
     const compare = spec as CompareRequest
@@ -335,7 +359,7 @@ function interpretationSubject(population: PopulationRequest | undefined): strin
 export function interpretEstimate(result: EstimateResponse): string {
   const specPopulation = (result.spec as { population?: PopulationRequest }).population
   const population = populationPhrase(specPopulation)
-  const activity = result.activity.label
+  const activity = activityName(result.activity.label)
   const years = formatYears(result.years)
   const { value, unit } = result.estimate
 

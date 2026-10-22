@@ -13,6 +13,7 @@ import {
   activitiesFixture,
   activityDetailFixture,
   compareChildrenFixture,
+  estimatePandemicFixture,
   estimateSleepFixture,
   metaFixture,
   populationMetadataFixture,
@@ -29,9 +30,12 @@ export const defaultHandlers = [
   http.get(api('/activities'), () => HttpResponse.json(activitiesFixture)),
   http.get(api('/activities/presets'), () => HttpResponse.json(presetsFixture)),
   http.get(api('/activities/:code'), () => HttpResponse.json(activityDetailFixture)),
-  http.post(api('/analysis/estimate'), () =>
-    HttpResponse.json(estimateSleepFixture, { headers: analysisHeaders() }),
-  ),
+  // A trend's 2020 asks for the pandemic weights: the captured 2020 estimate.
+  http.post(api('/analysis/estimate'), async ({ request }) => {
+    const body = (await request.clone().json()) as { weights?: string }
+    const fixture = body.weights === 'pandemic' ? estimatePandemicFixture : estimateSleepFixture
+    return HttpResponse.json(fixture, { headers: analysisHeaders() })
+  }),
   http.post(api('/analysis/trend'), () =>
     HttpResponse.json(trendLeisureFixture, { headers: analysisHeaders() }),
   ),

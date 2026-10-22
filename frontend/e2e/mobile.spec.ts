@@ -36,7 +36,7 @@ test('the core workflow works on a phone without horizontal scrolling', async ({
   await page.getByRole('radio', { name: 'Change over time' }).click()
   await page.getByLabel('From', { exact: true }).selectOption('2019')
   await page.getByRole('button', { name: 'Analyze' }).click()
-  await expect(page.getByTestId('unavailable-2020')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByTestId('point-2020')).toBeVisible({ timeout: 15_000 })
   await noHorizontalScroll()
 
   // Primary actions stay visible on small screens.
@@ -76,7 +76,7 @@ test('long labels without spaces wrap instead of widening the page (review round
   await expectNoHorizontalScroll(page)
 
   await page.goto(analysisUrl('trend', { activity, years: [2019, 2020, 2023] }))
-  await expect(page.getByTestId('unavailable-2020')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByTestId('point-2020')).toBeVisible({ timeout: 15_000 })
   await expectNoHorizontalScroll(page)
 
   await page.goto(

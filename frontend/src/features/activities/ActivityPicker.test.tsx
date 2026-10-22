@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -18,7 +18,8 @@ describe('ActivityPicker', () => {
       <ActivityPicker value={{ include: ['0101'], label: 'Sleeping' }} onChange={() => {}} />,
     )
     await waitFor(() =>
-      expect(screen.getByText(/includes all 3 specific activities/)).toBeInTheDocument(),
+      // Sleeping and sleeplessness; the "n.e.c." catch-all is not offered.
+      expect(screen.getByText(/includes all 2 activities under it/)).toBeInTheDocument(),
     )
   })
 
@@ -39,15 +40,41 @@ describe('ActivityPicker', () => {
     })
   })
 
-  it('offers presets from the API and selects one', async () => {
+  it('offers presets from the API under plain names and selects one', async () => {
     const onChange = vi.fn()
     renderWithProviders(<ActivityPicker value={{ preset: 'sleep' }} onChange={onChange} />)
     const user = await openPicker()
 
-    await user.click(
-      screen.getByRole('button', { name: 'Leisure and sports (BLS table A-1 definition)' }),
-    )
+    const presets = screen.getByRole('list', { name: 'Preset activity selections' })
+    expect(presets).not.toHaveTextContent(/BLS table/)
+    // Two presets are both "Eating and drinking": only the BLS-table one is offered.
+    expect(
+      within(presets).getAllByRole('button', { name: 'Eating and drinking' }),
+    ).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: 'Eating and drinking' }))
+    expect(onChange).toHaveBeenCalledWith({ preset: 'eating_and_drinking_bls_table' })
+    await user.click(screen.getByRole('button', { name: 'Change activity' }))
+    await user.click(screen.getByRole('button', { name: 'Leisure and sports' }))
     expect(onChange).toHaveBeenCalledWith({ preset: 'leisure_and_sports_bls_table' })
+  })
+
+  it('names a selected preset without its definition qualifier', async () => {
+    renderWithProviders(
+      <ActivityPicker value={{ preset: 'leisure_and_sports_bls_table' }} onChange={() => {}} />,
+    )
+    expect(
+      await screen.findByText('Leisure and sports', { selector: '.activity-picker__name' }),
+    ).toBeInTheDocument()
+  })
+
+  it('never offers the "n.e.c." catch-alls or the data codes', async () => {
+    renderWithProviders(<ActivityPicker value={{ preset: 'sleep' }} onChange={() => {}} />)
+    const user = await openPicker()
+    await user.type(screen.getByLabelText('Search activities'), 'n.e.c')
+    expect(await screen.findByText(/No activities match/)).toBeInTheDocument()
+    await user.clear(screen.getByLabelText('Search activities'))
+    const tree = screen.getByRole('list', { name: 'Activity categories' })
+    expect(tree).not.toHaveTextContent(/Data Codes/)
   })
 
   it('browses the hierarchy and communicates category semantics', async () => {
@@ -59,7 +86,7 @@ describe('ActivityPicker', () => {
       screen.getByText(/Selecting a category includes every activity beneath it/),
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Expand Personal Care Activities/ }))
-    await user.click(screen.getByRole('button', { name: /Sleeping.*3 activities/ }))
+    await user.click(screen.getByRole('button', { name: /Sleeping.*2 activities/ }))
     expect(onChange).toHaveBeenCalledWith({ include: ['0101'], label: 'Sleeping' })
   })
 

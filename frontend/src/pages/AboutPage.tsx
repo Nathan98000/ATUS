@@ -52,11 +52,12 @@ export function AboutPage() {
       <h2>Why 2020 is special</h2>
       <p>
         ATUS data collection was suspended from March 18 to May 9, 2020, at the start of the
-        COVID-19 pandemic. The standard multi-year weights are therefore not defined for 2020:
-        trends show 2020 as an explicit gap rather than an interpolated or zero value. BLS
-        published 2020 under a dedicated pandemic weighting for the comparable collection
-        windows only; the explorer supports that methodology explicitly (an "Advanced
-        methodology" option) and always carries its caveat on the result.
+        COVID-19 pandemic. The standard multi-year weights are therefore not defined for 2020.
+        BLS published 2020 under a dedicated pandemic weighting that represents the weeks that
+        were collected (January 1 – March 17 and May 10 – December 31). Trends show 2020 from
+        that weighting as a hollow point, with a note that it is a partial-year estimate that
+        may not compare exactly with other years; choosing 2020 alone uses it too (it is also an
+        "Advanced options" choice), and the result always carries its caveat.
       </p>
 
       <h2>Interpreting results</h2>

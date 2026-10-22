@@ -13,6 +13,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import { refetchFailed, useActivities, useActivityPresets } from '../../api/queries'
 import type { ActivityEntry, ActivitySelection } from '../../api/types'
+import { activityName, offeredPresets } from '../../domain/describe'
 import { buildLexiconIndex, type LexiconIndex } from './lexicon'
 
 interface ActivityPickerProps {
@@ -117,7 +118,7 @@ function SelectionSummary({
     return (
       <div>
         <span className="activity-picker__name">
-          {presetLabels.get(value.preset) ?? value.preset}
+          {activityName(presetLabels.get(value.preset) ?? value.preset)}
         </span>
       </div>
     )
@@ -126,21 +127,21 @@ function SelectionSummary({
   if (codes.length === 1 && index) {
     const code = codes[0] as string
     const entry = index.byCode.get(code)
-    const leaves = index.leafCount(code)
+    const leaves = index.offeredLeafCount(code)
     return (
       <div>
         <span className="activity-picker__name">{entry?.name ?? `Activity ${code}`}</span>
-        <span className="field-hint">
-          {' '}
-          — code {code}
-          {leaves > 1 ? `, includes all ${leaves} specific activities under it` : ''}
-        </span>
+        {leaves > 1 ? (
+          <span className="field-hint"> — includes all {leaves} activities under it</span>
+        ) : null}
       </div>
     )
   }
   return (
     <div>
-      <span className="activity-picker__name">{value.label ?? 'Custom selection'}</span>
+      <span className="activity-picker__name">
+        {value.label != null ? activityName(value.label) : 'Custom selection'}
+      </span>
       <span className="field-hint">
         {' '}
         — {codes.length} codes
@@ -260,7 +261,7 @@ function PickerPanel({
           ) : (
             results.map((entry, position) => {
               const path = index.pathOf(entry.code)
-              const leaves = index.leafCount(entry.code)
+              const leaves = index.offeredLeafCount(entry.code)
               return (
                 <li
                   key={entry.code}
@@ -279,11 +280,9 @@ function PickerPanel({
                       {path.map((ancestor) => `${ancestor.name} › `).join('')}
                       <b>{entry.name}</b>
                     </span>
-                    <span className="field-hint">
-                      {entry.level < 3
-                        ? `category ${entry.code} · ${leaves} activities`
-                        : `code ${entry.code}`}
-                    </span>
+                    {entry.level < 3 ? (
+                      <span className="field-hint">Includes {leaves} activities</span>
+                    ) : null}
                   </button>
                 </li>
               )
@@ -294,14 +293,14 @@ function PickerPanel({
         <>
           <h3 className="activity-picker__heading">Popular activities</h3>
           <ul className="chip-row" aria-label="Preset activity selections">
-            {presets.map((preset) => (
+            {offeredPresets(presets).map((preset) => (
               <li key={preset.name}>
                 <button
                   type="button"
                   className="chip"
                   onClick={() => onSelect({ preset: preset.name })}
                 >
-                  {preset.label}
+                  {activityName(preset.label)}
                 </button>
               </li>
             ))}
@@ -330,7 +329,7 @@ function TreeNode({
 }) {
   const [expanded, setExpanded] = useState(false)
   const children = index.childrenOf.get(entry.code) ?? []
-  const leaves = index.leafCount(entry.code)
+  const leaves = index.offeredLeafCount(entry.code)
 
   return (
     <li>
@@ -349,10 +348,7 @@ function TreeNode({
         )}
         <button type="button" className="activity-tree__select" onClick={() => onSelect(entry)}>
           {entry.name}
-          <span className="field-hint">
-            {' '}
-            {entry.level < 3 ? `· ${leaves} activities` : `· ${entry.code}`}
-          </span>
+          {entry.level < 3 ? <span className="field-hint"> · {leaves} activities</span> : null}
         </button>
       </div>
       {expanded && children.length > 0 ? (

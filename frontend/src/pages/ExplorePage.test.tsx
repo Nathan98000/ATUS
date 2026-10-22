@@ -37,6 +37,15 @@ function renderExplore(route = '/explore') {
   )
 }
 
+/** Adds a population filter from the "Add a filter" list (within a group, if given). */
+async function addFilter(
+  user: ReturnType<typeof userEvent.setup>,
+  name: string,
+  scope: HTMLElement = document.body,
+) {
+  await user.selectOptions(within(scope).getByLabelText('Add a filter'), name)
+}
+
 async function waitForBuilder() {
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Analyze' })).toBeInTheDocument(),
@@ -68,6 +77,7 @@ describe('builder defaults and discovery', () => {
     expect(within(summary).getByRole('button', { name: 'Analyze' })).toBeInTheDocument()
 
     // It follows every edit.
+    await addFilter(user, 'sex')
     await user.selectOptions(screen.getByLabelText('Sex'), 'female')
     expect(detail('For whom')).toHaveTextContent('Women')
     await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
@@ -130,6 +140,7 @@ describe('running an analysis', () => {
     const user = userEvent.setup()
     renderExplore()
     await waitForBuilder()
+    await addFilter(user, 'age')
     await user.type(screen.getByLabelText('Minimum age'), '90')
     await user.type(screen.getByLabelText('Maximum age'), '20')
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
@@ -202,6 +213,7 @@ describe('running an analysis', () => {
     const groupB = screen.getByRole('group', { name: 'Group B' })
     expect(within(groupA).getByLabelText('Sex')).toHaveValue('male')
     expect(within(groupA).getByLabelText('Name')).toHaveValue('Men')
+    await addFilter(user, 'employment_status', groupB)
     await user.selectOptions(within(groupB).getByLabelText('Employment'), 'employed')
     await user.clear(within(groupB).getByLabelText('Name'))
     await user.type(within(groupB).getByLabelText('Name'), 'Working women')
@@ -356,13 +368,13 @@ describe('confidence levels from a shared analysis (review round 3)', () => {
 })
 
 describe('shared filters of a comparison (review round 3)', () => {
-  // "Filters must never be active yet invisible": the comparison's shared
-  // population restricts both groups, so it must not hide in a closed section.
-  function sharedSection(): HTMLDetailsElement {
-    return screen.getByText(/^Narrow down both groups/).closest('details') as HTMLDetailsElement
+  // "Filters must never be active yet invisible": the comparison's filters
+  // for both groups restrict both, so each one set is always on screen.
+  function sharedGroup(): HTMLElement {
+    return screen.getByRole('group', { name: 'Both groups' })
   }
 
-  it('a prefilled shared filter opens its section and marks it active', async () => {
+  it('a prefilled shared filter is shown', async () => {
     const spec: CompareRequest = {
       activity: { preset: 'sleep' },
       years: [2025],
@@ -374,12 +386,7 @@ describe('shared filters of a comparison (review round 3)', () => {
     }
     renderExplore(`/explore?op=compare&spec=${encodeSpec(spec)}`)
     await waitForBuilder()
-    const shared = sharedSection()
-    expect(shared.open).toBe(true)
-    expect(shared.querySelector('summary')).toHaveTextContent(
-      'Narrow down both groups (active)',
-    )
-    expect(within(shared).getByLabelText('Minimum age')).toHaveValue(65)
+    expect(within(sharedGroup()).getByLabelText('Minimum age')).toHaveValue(65)
     // Men vs women opens as the simple choice it is.
     expect(screen.getByLabelText('Compare by')).toHaveValue('sex')
   })
@@ -414,19 +421,17 @@ describe('shared filters of a comparison (review round 3)', () => {
     renderExplore(`/explore?op=compare&spec=${encodeSpec(spec)}`)
     await waitForBuilder()
     expect(screen.getByLabelText('Compare by')).toHaveValue('custom')
-    expect(screen.getByText(/^Filters for both groups/).closest('details')?.open).toBe(true)
+    expect(within(sharedGroup()).getByLabelText('Sex')).toHaveValue('female')
   })
 
   it('filters carried over from an estimate stay visible after switching to compare', async () => {
     const user = userEvent.setup()
     renderExplore()
     await waitForBuilder()
+    await addFilter(user, 'age')
     await user.type(screen.getByLabelText('Minimum age'), '65')
     await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
-    const shared = sharedSection()
-    expect(shared.open).toBe(true)
-    expect(shared.querySelector('summary')).toHaveTextContent('(active)')
-    expect(within(shared).getByLabelText('Minimum age')).toHaveValue(65)
+    expect(within(sharedGroup()).getByLabelText('Minimum age')).toHaveValue(65)
 
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
     const location = screen.getByTestId('location').textContent ?? ''
@@ -434,48 +439,31 @@ describe('shared filters of a comparison (review round 3)', () => {
     expect(sent.population).toEqual({ age_min: 65 })
   })
 
-  it('editing the shared filter does not collapse its section under the cursor', async () => {
+  it('clearing a carried-over filter keeps its row until it is removed', async () => {
     const user = userEvent.setup()
     renderExplore()
     await waitForBuilder()
+    await addFilter(user, 'age')
     await user.type(screen.getByLabelText('Minimum age'), '65')
     await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
-    const shared = sharedSection()
-    await user.clear(within(shared).getByLabelText('Minimum age'))
-    expect(shared.open).toBe(true)
-    expect(shared.querySelector('summary')).not.toHaveTextContent('(active)')
-  })
-
-  it('clearing it before the opening toggle event arrives does not collapse it either', async () => {
-    // The browser delivers the toggle event of the section's programmatic
-    // opening as a later task (Chromium sometimes only after the next edit).
-    // Switching and clearing in one go, before that task runs, collapsed the
-    // section under the cursor when "open" was learned from that event alone.
-    const user = userEvent.setup()
-    renderExplore()
-    await waitForBuilder()
-    await user.type(screen.getByLabelText('Minimum age'), '65')
-    fireEvent.click(screen.getByRole('radio', { name: 'Compare two groups' }))
-    const shared = sharedSection()
-    expect(shared.open).toBe(true)
-    fireEvent.change(within(shared).getByLabelText('Minimum age'), { target: { value: '' } })
-    expect(shared.open).toBe(true)
-    expect(shared.querySelector('summary')).not.toHaveTextContent('(active)')
-    // …and it stays open once the late toggle event has been delivered.
-    await new Promise((resolve) => setTimeout(resolve, 20))
-    expect(shared.open).toBe(true)
-  })
-
-  it('stays collapsed and unmarked when no shared filter is set', async () => {
-    const user = userEvent.setup()
-    renderExplore()
-    await waitForBuilder()
-    await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
-    const shared = sharedSection()
-    expect(shared.open).toBe(false)
-    expect(shared.querySelector('summary')?.textContent).toBe(
-      'Narrow down both groups (optional)',
+    // A new filter list: the row is there because the filter is set...
+    fireEvent.change(within(sharedGroup()).getByLabelText('Minimum age'), {
+      target: { value: '' },
+    })
+    // ...and stays while it is edited, empty or not.
+    expect(within(sharedGroup()).getByLabelText('Minimum age')).toHaveValue(null)
+    await user.click(
+      within(sharedGroup()).getByRole('button', { name: 'Remove the age filter' }),
     )
+    expect(within(sharedGroup()).queryByLabelText('Minimum age')).not.toBeInTheDocument()
+  })
+
+  it('says both groups are everyone when no shared filter is set', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
+    expect(sharedGroup()).toHaveTextContent('Everyone age 15 and over.')
   })
 })
 
@@ -484,6 +472,7 @@ describe('browser history (review finding: Back must not reset the builder)', ()
     const user = userEvent.setup()
     renderExplore()
     await waitForBuilder()
+    await addFilter(user, 'sex')
     await user.selectOptions(screen.getByLabelText('Sex'), 'female')
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
     expect(screen.getByText('analysis page')).toBeInTheDocument()

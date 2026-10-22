@@ -14,7 +14,9 @@
  * the end of the line. A trend split into groups draws one line per group —
  * each its own colour and dash pattern, named in a legend below, without
  * bands — and the readout lists every group at the year under the cursor.
- * The readout says values only; the band carries the uncertainty.
+ * The readout says values only; the band carries the uncertainty. A
+ * partial-year point (2020, from the pandemic weights) is drawn hollow and
+ * named as such in the readout.
  */
 import { useMemo, useState } from 'react'
 
@@ -42,6 +44,8 @@ const SERIES_DASHES = ['none', '7 5', '2 4', '10 4 2 4', '14 6', '4 3']
 export interface TrendSeries {
   label: string
   points: readonly TrendPoint[]
+  /** Years whose point is a partial-year estimate (2020): drawn hollow. */
+  partialYears?: readonly number[]
 }
 
 interface TrendChartProps {
@@ -199,6 +203,10 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
   /** Each line's point for a year (null: that line has no estimate then). */
   const at = (year: number) =>
     lines.map((line) => line.points.find((point) => point.year === year) ?? null)
+  const isPartial = (lineIndex: number, year: number) =>
+    lines[lineIndex]?.partialYears?.includes(year) ?? false
+  const partialYear = (year: number) => lines.some((_, index) => isPartial(index, year))
+  const yearLabel = (year: number) => (partialYear(year) ? `${year} (partial year)` : `${year}`)
   const last = lines[0]?.available[lines[0].available.length - 1]
 
   const moveActive = (direction: 1 | -1) => {
@@ -254,7 +262,7 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
       if (point?.estimate == null) {
         return `${year}: no estimate. ${presentUnavailableReason(point?.unavailable_reason)}`
       }
-      return `${year}: ${showValue(point.estimate.value, unit)}`
+      return `${yearLabel(year)}: ${showValue(point.estimate.value, unit)}`
     }
     if (points.every((point) => point?.estimate == null)) {
       return `${year}: no estimate. ${presentUnavailableReason(points[0]?.unavailable_reason)}`
@@ -264,7 +272,7 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
         ? `${lines[index]?.label} no estimate`
         : `${lines[index]?.label} ${showValue(point.estimate.value, unit)}`,
     )
-    return `${year}: ${parts.join(', ')}`
+    return `${yearLabel(year)}: ${parts.join(', ')}`
   }
 
   const hasBand = single && available.some((point) => point.ciLower != null)
@@ -411,7 +419,9 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
                   cx={x(point.year)}
                   cy={y(point.value)}
                   r={point.year === activeYear ? 6 : single && point === last ? 5 : 4}
-                  className="chart-point"
+                  className={
+                    isPartial(lineIndex, point.year) ? 'chart-point is-partial' : 'chart-point'
+                  }
                   data-testid={single ? `point-${point.year}` : undefined}
                 />
               ))}
@@ -451,11 +461,11 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
                 <span className="chart-tooltip__value">
                   {showValue(activeValues[0] as number, unit)}
                 </span>
-                <span className="chart-tooltip__label">{activeYear}</span>
+                <span className="chart-tooltip__label">{yearLabel(activeYear)}</span>
               </>
             ) : (
               <>
-                <span className="chart-tooltip__label">{activeYear}</span>
+                <span className="chart-tooltip__label">{yearLabel(activeYear)}</span>
                 {activePoints.map((point, index) => (
                   <span key={index} className="chart-tooltip__row">
                     <SeriesKey index={index} />

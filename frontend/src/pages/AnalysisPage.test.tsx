@@ -22,7 +22,7 @@ import { Link } from 'react-router'
 
 import { COLD_START_BUDGET_MS } from '../api/resilience'
 import { LocationProbe, testQueryClient, withFakeClock } from '../test/render'
-import { analysisHeaders, api, server } from '../test/server'
+import { analysisHeaders, api, errorResponse, server } from '../test/server'
 import { AnalysisPage } from './AnalysisPage'
 
 const sleepSpec: EstimateRequest = {
@@ -114,7 +114,7 @@ describe('estimate results', () => {
       years: trendLeisureFixture.points.map((point) => point.year),
     }
     renderAnalysisRoute(`/analysis/trend?spec=${encodeSpec(requestSpec)}`)
-    await screen.findByTestId('unavailable-2020')
+    await screen.findByTestId('point-2020')
     await waitFor(() => {
       const location = screen.getByTestId('location').textContent ?? ''
       expect(location).toBe(
@@ -156,7 +156,69 @@ describe('estimate results', () => {
 })
 
 describe('trend and compare results', () => {
-  it('renders the trend with its 2020 gap, small print, and a table for screen readers', async () => {
+  it('renders the trend with 2020 as a partial-year point, small print, and a table for screen readers', async () => {
+    const estimates: Record<string, unknown>[] = []
+    server.use(
+      http.post(api('/analysis/estimate'), async ({ request }) => {
+        estimates.push((await request.json()) as Record<string, unknown>)
+        return HttpResponse.json(estimatePandemicFixture, { headers: analysisHeaders() })
+      }),
+    )
+    const spec: EstimateRequest = {
+      activity: { preset: 'leisure_and_sports_bls_table' },
+      years: trendLeisureFixture.points.map((point) => point.year),
+    }
+    renderAnalysisRoute(`/analysis/trend?spec=${encodeSpec(spec)}`)
+    // 2020 comes from the pandemic weights: a hollow point the line runs through.
+    expect(await screen.findByTestId('point-2020')).toHaveClass('is-partial')
+    expect(screen.queryByTestId('unavailable-2020')).not.toBeInTheDocument()
+    expect(screen.getAllByTestId('trend-line-segment').length).toBe(1)
+    // One request, written as the builder writes that estimate — the same
+    // before and after the link is rewritten to its canonical form.
+    await waitFor(() =>
+      expect(screen.getByTestId('location').textContent).not.toContain(encodeSpec(spec)),
+    )
+    expect(estimates).toEqual([
+      {
+        measure: 'average_minutes_per_day',
+        activity: { preset: 'leisure_and_sports_bls_table' },
+        years: [2020],
+        population: {},
+        weights: 'pandemic',
+        variance: 'replicate',
+        confidence_level: 0.95,
+      },
+    ])
+    // The small print says what 2020 is; the API's jargon stays out.
+    expect(screen.getByTestId('partial-note')).toHaveTextContent(
+      /2020 is a partial-year estimate \(hollow point\): data collection paused from March 18 to May 9, 2020/,
+    )
+    expect(screen.queryByText(/TUFNWGTP|TU20FWGT/)).not.toBeInTheDocument()
+    // API notes must be visible on trend pages too.
+    expect(screen.getByText(/coded the same way in every survey year/)).toBeInTheDocument()
+    // The hidden table names 2020 as a partial year, with its value.
+    const row = screen
+      .getByRole('rowheader', { name: '2020 (partial year)' })
+      .closest('tr') as HTMLElement
+    expect(row).toHaveTextContent('9h 1m')
+    // A preset's canonical link names no activity codes.
+    expect(screen.queryByText(/Activity codes/)).not.toBeInTheDocument()
+    // The heading drops the definition parenthetical altogether.
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^Leisure and sports$/)
+    expect(screen.getByText('All respondents (age 15+) · 2003–2025')).toBeInTheDocument()
+    expect(screen.queryByText(/BLS table/)).not.toBeInTheDocument()
+    // The answer leads, from full-year estimates only: latest and first year in words.
+    expect(
+      screen.getByText(/^Average time per day on “Leisure and sports” was/),
+    ).not.toHaveTextContent('2020')
+  })
+
+  it('leaves 2020 a labeled gap when its partial-year estimate cannot be had', async () => {
+    server.use(
+      http.post(api('/analysis/estimate'), () =>
+        errorResponse(422, 'unsupported_analysis', 'No pandemic weights here.'),
+      ),
+    )
     const spec: EstimateRequest = {
       activity: { preset: 'leisure_and_sports_bls_table' },
       years: trendLeisureFixture.points.map((point) => point.year),
@@ -164,28 +226,10 @@ describe('trend and compare results', () => {
     renderAnalysisRoute(`/analysis/trend?spec=${encodeSpec(spec)}`)
     expect(await screen.findByTestId('unavailable-2020')).toBeInTheDocument()
     expect(screen.getAllByTestId('trend-line-segment').length).toBe(2)
-    // API notes must be visible on trend pages too.
-    expect(screen.getByText(/coded the same way in every survey year/)).toBeInTheDocument()
-    // The small print says why 2020 has no data.
     expect(screen.getByTestId('gap-note')).toHaveTextContent(
       /No data for 2020: Data collection paused in spring 2020 because of COVID-19/,
     )
-    expect(screen.getByTestId('gap-note')).not.toHaveTextContent(/TUFNWGTP/)
-    // The hidden table lists 2020 as having no estimate, never as zero.
-    const row = screen.getByRole('rowheader', { name: '2020' }).closest('tr') as HTMLElement
-    expect(row).toHaveTextContent('No data')
-    expect(row).not.toHaveTextContent('0.0')
-    // A preset's canonical link names no activity codes.
-    expect(screen.queryByText(/Activity codes/)).not.toBeInTheDocument()
-    // The heading drops the definition parenthetical from the title, not the page.
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^Leisure and sports$/)
-    expect(
-      screen.getByText(/^As defined in BLS table A-1 · All respondents/),
-    ).toBeInTheDocument()
-    // The answer leads: latest and first year in words.
-    expect(
-      screen.getByText(/^Average time per day on “Leisure and sports” was/),
-    ).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('renders both groups and the API-computed difference', async () => {
@@ -225,7 +269,9 @@ describe('trend and compare results', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       /^Household activities: Household children present vs No household children$/,
     )
-    expect(screen.getByText('As defined in BLS table A-1 · 2025')).toBeInTheDocument()
+    expect(
+      screen.getByText('2025', { selector: '.analysis-header__details' }),
+    ).toBeInTheDocument()
   })
 
   it("names a comparison's shared population outside the collapsed panels (review round 3)", async () => {

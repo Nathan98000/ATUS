@@ -9,6 +9,7 @@ import type { MeasureInfo, WeightSchemeInfo } from '../../api/types'
 import { humanize } from '../../domain/describe'
 import { formatConfidenceLevel } from '../../utils/format'
 import {
+  weightsForSingleYear,
   KNOWN_MEASURES,
   KNOWN_WEIGHT_SCHEMES,
   type BuilderState,
@@ -91,7 +92,8 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
         state.trendTo >= 2020 &&
         availableYears.includes(2020) ? (
           <p className="info-note" style={{ marginTop: '0.5rem' }}>
-            2020 will show as a gap: the survey paused that spring because of COVID-19.
+            2020 is a partial-year estimate (a hollow point): the survey paused that spring
+            because of COVID-19.
           </p>
         ) : null}
       </div>
@@ -136,7 +138,10 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
           <select
             id={`${id}-year`}
             value={state.singleYear ?? ''}
-            onChange={(event) => onChange({ singleYear: Number(event.target.value) })}
+            onChange={(event) => {
+              const year = Number(event.target.value)
+              onChange({ singleYear: year, ...weightsForSingleYear(year, state.weights) })
+            }}
           >
             {descending.map((year) => (
               <option key={year} value={year}>
@@ -171,6 +176,14 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
           </p>
         </fieldset>
       )}
+      {state.yearsMode === 'single' &&
+      state.singleYear === 2020 &&
+      state.weights === 'pandemic' ? (
+        <p className="info-note" style={{ marginTop: '0.5rem' }}>
+          2020 is a partial-year estimate: the survey paused that spring because of COVID-19, so
+          it covers the rest of the year.
+        </p>
+      ) : null}
       {error ? <p className="error-text">{error}</p> : null}
     </div>
   )

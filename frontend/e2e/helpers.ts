@@ -33,12 +33,17 @@ export async function pickSleepBySearch(page: Page) {
     .first()
     .click()
   await expect(
-    page.getByText('includes all 3 specific activities', { exact: false }),
+    page.getByText('includes all 2 activities under it', { exact: false }),
   ).toBeVisible()
 }
 
+/** Sets an age range, adding the age filter first when it is not shown yet. */
 export async function setAge(page: Page, min: number, max: number) {
-  await page.getByLabel('Minimum age').fill(String(min))
+  const minimum = page.getByLabel('Minimum age')
+  if (!(await minimum.isVisible())) {
+    await page.getByLabel('Add a filter').first().selectOption('age')
+  }
+  await minimum.fill(String(min))
   await page.getByLabel('Maximum age').fill(String(max))
 }
 

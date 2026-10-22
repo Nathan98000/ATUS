@@ -35,3 +35,20 @@ A 2003–2025 pooled estimate is impossible by design (it is also impossible
 methodologically); the supported longitudinal form is the trend with an
 explicit 2020 gap, or separate multiyear + pandemic estimates. Pooling 2019+
 2020 under the pandemic scheme is supported and warned as window-limited.
+
+## Amendment (2026-10-22): the explorer's trends
+
+The engine and the API are unchanged: a `multiyear` trend still returns
+2020 as an explicit unavailable point, and nothing substitutes weights on
+the server. The explorer (frontend) now asks, separately and explicitly,
+for 2020 alone under the `pandemic` scheme and draws that answer in the
+trend as a **partial-year point**: hollow, named "partial year" in the
+readout and the screen-reader table, with a note in the chart's small print
+that collection paused March 18 – May 9 and that the point may not compare
+exactly with other years. The one-sentence answer above the chart reads the
+full-year estimates only. This is not the silent fallback the rationale
+above rules out: the estimand is a different, labeled request, and the
+reader sees that it differs. If that request fails, 2020 is the labeled gap
+again. Choosing 2020 alone in the builder switches to the pandemic scheme
+the same way, visibly. Details: [frontend.md](../frontend.md), "Statistical
+presentation rules".

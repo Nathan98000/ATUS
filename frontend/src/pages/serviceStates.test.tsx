@@ -1183,6 +1183,7 @@ describe('background failures and retries (F26, F63)', () => {
     const user = userEvent.setup()
     const client = renderApp('/explore')
     await screen.findByRole('button', { name: 'Analyze' })
+    await user.selectOptions(screen.getByLabelText('Add a filter'), 'sex')
     await user.selectOptions(screen.getByLabelText('Sex'), 'female')
 
     server.use(http.get(api('/meta'), () => errorResponse(500, 'internal_error', 'Boom.')))

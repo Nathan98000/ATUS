@@ -1,9 +1,9 @@
 /**
  * The two groups of a comparison: "Compare by" one dimension and pick its
  * two values, or build custom groups with the full filters. Filters that
- * apply to both groups sit below, folded away until used.
+ * apply to both groups sit below, added one at a time.
  */
-import { useId, useState } from 'react'
+import { useId } from 'react'
 
 import type { PopulationDimension } from '../../api/types'
 import type { BuilderState } from '../builder/state'
@@ -33,11 +33,6 @@ export function CompareGroupsPicker({
   const choices = compareChoices(dimensions)
   const choice = choices.find((candidate) => candidate.by === state.compareBy)
   const compareBy: CompareBy = choice ? choice.by : 'custom'
-
-  // Filters for both groups are never active yet invisible: a link or an
-  // estimate's filters open the section, which then stays open while edited.
-  const sharedActive = Object.values(state.population).some((value) => value != null)
-  const [sharedOpen, setSharedOpen] = useState(false)
 
   const chooseDimension = (next: CompareBy) => {
     if (next === 'custom') {
@@ -177,33 +172,19 @@ export function CompareGroupsPicker({
         </div>
       ) : null}
 
-      <details
-        className="more-filters"
-        open={sharedActive || sharedOpen}
-        onToggle={(event) => setSharedOpen(event.currentTarget.open)}
-      >
-        <summary>
-          {compareBy === 'custom' ? 'Filters for both groups' : 'Narrow down both groups'}
-          {sharedActive ? ' (active)' : ' (optional)'}
-        </summary>
-        <div style={{ marginTop: '0.6rem' }}>
-          <PopulationFields
-            dimensions={dimensions.filter(
-              (dimension) => !choiceDimensions(compareBy).includes(dimension.name),
-            )}
-            value={state.population}
-            onChange={(population) => {
-              // An edit means the section is open: record it with the edit
-              // itself, not via the toggle event of its programmatic opening,
-              // which Chromium may deliver only after the edit (it then
-              // collapsed when cleared at once).
-              setSharedOpen(true)
-              onChange({ population })
-            }}
-            ageError={errors.age}
-          />
-        </div>
-      </details>
+      {/* Filters for both groups: opt-in rows, each always visible once set. */}
+      <fieldset className="compare-groups__shared">
+        <legend className="compare-groups__shared-label">Both groups</legend>
+        <PopulationFields
+          dimensions={dimensions.filter(
+            (dimension) => !choiceDimensions(compareBy).includes(dimension.name),
+          )}
+          value={state.population}
+          onChange={(population) => onChange({ population })}
+          ageError={errors.age}
+          emptyText="Everyone age 15 and over."
+        />
+      </fieldset>
     </div>
   )
 }

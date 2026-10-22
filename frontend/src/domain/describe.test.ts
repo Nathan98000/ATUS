@@ -10,6 +10,7 @@ import {
 } from '../test/fixtures'
 import {
   activityLabelFromSpec,
+  activityName,
   analysisTitle,
   definitionNote,
   describeDifference,
@@ -17,6 +18,7 @@ import {
   interpretSplitTrend,
   interpretEstimate,
   interpretTrend,
+  offeredPresets,
   populationPhrase,
   resultHeading,
   splitActivityLabel,
@@ -203,7 +205,7 @@ describe('resultHeading', () => {
     })
   })
 
-  it('keeps a definition qualifier and names a trend by year', () => {
+  it('drops a definition qualifier and names a trend by year', () => {
     const heading = resultHeading(
       'trend',
       trendLeisureFixture.spec as never,
@@ -211,9 +213,20 @@ describe('resultHeading', () => {
     )
     expect(heading.eyebrow).toBe('Average time per day, by year')
     expect(heading.title).toBe('Leisure and sports')
-    expect(heading.subtitle).toBe(
-      'As defined in BLS table A-1 · All respondents (age 15+) · 2003–2025',
-    )
+    expect(heading.subtitle).toBe('All respondents (age 15+) · 2003–2025')
+  })
+
+  it('offers one preset per name, the BLS-table one where two share it', () => {
+    const presets = [
+      { name: 'eating_and_drinking', label: 'Eating and drinking' },
+      { name: 'eating_bls', label: 'Eating and drinking (BLS table A-1 definition)' },
+      { name: 'sleep', label: 'Sleeping' },
+    ]
+    expect(offeredPresets(presets).map((preset) => preset.name)).toEqual([
+      'eating_bls',
+      'sleep',
+    ])
+    expect(activityName(presets[1]?.label as string)).toBe('Eating and drinking')
   })
 
   it("names a comparison's groups in the title and its shared filters below", () => {

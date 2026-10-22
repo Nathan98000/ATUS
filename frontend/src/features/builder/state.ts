@@ -268,3 +268,18 @@ export function fromRequest(
   }
   return state
 }
+
+/**
+ * The weights a single year needs: the standard multi-year weights have no
+ * 2020, so choosing 2020 switches to its partial-year (pandemic) weights;
+ * leaving 2020 and 2019 — the only other year those weights cover —
+ * switches back. A visible choice either way (Advanced options).
+ */
+export function weightsForSingleYear(
+  year: number,
+  weights: WeightScheme,
+): Partial<BuilderState> {
+  if (year === 2020) return { weights: 'pandemic' }
+  if (weights === 'pandemic' && year !== 2019) return { weights: 'multiyear' }
+  return {}
+}

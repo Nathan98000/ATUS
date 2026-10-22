@@ -41,7 +41,7 @@ test('estimate, trend and compare results have no serious axe violations', async
   await page.getByRole('radio', { name: 'Change over time' }).click()
   await page.getByLabel('From', { exact: true }).selectOption('2019')
   await analyze(page)
-  await expect(page.getByTestId('unavailable-2020')).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByTestId('point-2020')).toBeVisible({ timeout: 15_000 })
   await expectNoSeriousViolations(page)
 
   await page.goto('/explore')
@@ -71,7 +71,7 @@ test('the primary workflow is keyboard-operable', async ({ page }) => {
   await page.keyboard.type('sleep')
   await page.keyboard.press('Enter') // first option
   await expect(
-    page.getByText('includes all 3 specific activities', { exact: false }),
+    page.getByText('includes all 2 activities under it', { exact: false }),
   ).toBeVisible()
   // Focus returned to the toggle for a coherent tab order.
   await expect(page.getByRole('button', { name: 'Change activity' })).toBeFocused()

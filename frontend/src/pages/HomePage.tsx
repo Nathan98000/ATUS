@@ -114,8 +114,8 @@ export function HomePage() {
             a likely range: a shaded band or thin lines around each figure.
           </li>
           <li>
-            <b>2020 is missing from trends.</b> The survey paused in spring 2020 because of
-            COVID-19, so trend lines show a gap there.
+            <b>2020 is a partial year.</b> The survey paused in spring 2020 because of COVID-19,
+            so 2020 figures cover the rest of the year; charts draw them as a hollow point.
           </li>
         </ul>
         <p className="field-hint">
