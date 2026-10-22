@@ -9,7 +9,14 @@ import {
   trendLeisureFixture,
 } from '../test/fixtures'
 import { STARTER_EXAMPLES } from './prewarm'
-import { InvalidShareLinkError, analysisPath, decodeSpec, encodeSpec } from './urlSpec'
+import {
+  InvalidShareLinkError,
+  analysisPath,
+  decodeSpec,
+  encodeSpec,
+  explorePath,
+  parseSplit,
+} from './urlSpec'
 
 const estimate: EstimateRequest = {
   measure: 'average_minutes_per_day',
@@ -330,5 +337,38 @@ describe('wrongly typed fields (review round 2)', () => {
         'compare',
       ),
     ).not.toThrow()
+  })
+})
+
+describe('split trend links', () => {
+  const trend = { activity: { preset: 'watching_tv' }, years: [2019, 2020, 2021] }
+
+  it('carries the split beside the spec, which stays the API request', () => {
+    const path = analysisPath('trend', trend, { by: 'age', groups: ['15-24', '65+'] })
+    expect(path).toBe(`/analysis/trend?spec=${encodeSpec(trend)}&split=age&groups=15-24,65%2B`)
+    expect(explorePath('trend', trend, { by: 'sex', groups: ['male', 'female'] })).toBe(
+      `/explore?op=trend&spec=${encodeSpec(trend)}&split=sex&groups=male,female`,
+    )
+    const params = new URL(`https://x${path}`).searchParams
+    expect(parseSplit(params, 'trend')).toEqual({ by: 'age', groups: ['15-24', '65+'] })
+  })
+
+  it('reads no split from a link without one', () => {
+    expect(parseSplit(new URLSearchParams('spec=x'), 'trend')).toBeNull()
+  })
+
+  it.each([
+    ['split=sex', 'trend'],
+    ['groups=male,female', 'trend'],
+    ['split=sex&groups=male', 'trend'],
+    ['split=sex&groups=male,male', 'trend'],
+    ['split=Sex!&groups=male,female', 'trend'],
+    ['split=sex&groups=male,<b>', 'trend'],
+    ['split=sex&groups=male,female', 'estimate'],
+    [`split=age&groups=${Array.from({ length: 9 }, (_, i) => `g${i}`).join(',')}`, 'trend'],
+  ] as const)('refuses a malformed split (%s, %s) as an invalid link', (query, operation) => {
+    expect(() => parseSplit(new URLSearchParams(query), operation)).toThrow(
+      InvalidShareLinkError,
+    )
   })
 })

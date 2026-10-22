@@ -51,23 +51,25 @@ frontend/src/
               labels, plain-language interpretation), notes.ts (the API's
               warnings and unavailable reasons in plain language),
               presentError.ts,
-              prewarm.ts (starter examples + prewarmed snapshot specs),
-              exports.ts (CSV and JSON downloads of a result)
+              prewarm.ts (starter examples + prewarmed snapshot specs)
   deploy/     staticHeaders.ts (reads the _headers rules of the static host)
   features/
     activities/  lexicon.ts (client index), ActivityPicker
     builder/     state.ts (builder ⇄ request spec), BuilderControls,
                  BuilderSummary (the sticky summary with Analyze)
     home/        StarterPreview (a starter's answer, from the snapshot only)
-    population/  PopulationFields (generated from population metadata)
-    results/     EstimateView, TrendView + TrendChart, CompareView +
-                 ComparisonChart, MethodologyPanel, ShareButton,
-                 ResultDownloads, chartScale, useElementWidth
+    population/  PopulationFields (generated from population metadata),
+                 compareGroups.ts ("compare by" / "split by" choices),
+                 CompareGroupsPicker, SplitPicker
+    results/     EstimateView, TrendView (+ SplitTrendView) + TrendChart,
+                 CompareView + ComparisonChart, ChartFootnote, ShareButton,
+                 chartScale, useElementWidth
   components/ AppShell, ErrorBoundary, LoadingPanel, ErrorPanel, WarningBanner,
+              AnalysisTypeIcon,
               ServiceNotice (waking / reload notices), ServiceInterruption
               (full-page paused-quota and incompatible-API states)
   pages/      Home, Explore (builder), Analysis (result), About, NotFound
-  utils/      format.ts (precision policy), stableStringify.ts, download.ts
+  utils/      format.ts (precision policy), stableStringify.ts
   styles/     global.css (design tokens)
   test/       MSW server (+ snapshot publisher), captured fixtures, render helpers
 frontend/e2e/
@@ -190,8 +192,9 @@ with every result's own `analytics_version`, so a release that changes only
 `ANALYTICS_VERSION` shows a notice in its own words ("a different version of
 its statistical methods"). The cache key keeps the page's versions; a result
 of another release or implementation is not hidden by it but announced by
-the notice, and each result still shows its own `analytics_version` (the
-methodology panels of all three views, and the exports). The notice offers
+the notice (results no longer list their `analytics_version` themselves:
+the methodology panels and exports that did were removed in the 2026-10-22
+design review; the footer names the page's). The notice offers
 "Reload page" only when a reload would load that release: when the snapshot
 pointer, read again with `no-cache`, now names it, or, without a usable
 pointer, when the site's own `/api/v1/meta` (also `no-cache`) already
@@ -312,8 +315,7 @@ k = sha256_hex(path + "?" + query + "\n" + body)   (WebCrypto, UTF-8)
 ```
 
 for the exact bytes the SPA would send — the same key the edge cache uses.
-The analysis key shown in the methodology panel is then the manifest's
-`analysis_key`. The manifest is always consulted first; files are never
+The result's analysis key is then the manifest's `analysis_key`. The manifest is always consulted first; files are never
 probed. Any failure reading a listed file falls back to the API, and so does
 every analysis on an origin without WebCrypto (plain http other than
 localhost), where the key cannot be computed. `snapshot_id` is
@@ -382,12 +384,22 @@ stateless. The URL encodes exactly that:
   the same equivalence the backend's `X-Analysis-Key` hashes. Compare
   responses carry no single top-level spec, so compare links keep the
   sorted-keys request encoding.
-- `X-Analysis-Key` is displayed in the methodology panel as the analysis's
-  deterministic identifier; the spec in the URL is what reconstructs it.
-  The key covers the data release, so it changes after a data swap; a result
-  from the static snapshot shows the key recorded when the snapshot was
-  generated; and a cross-origin API must expose the header (CORS
-  `Access-Control-Expose-Headers`) or the panel omits it.
+- `X-Analysis-Key` is kept with each result as the analysis's
+  deterministic identifier (no longer displayed since the methodology panel
+  was removed); the spec in the URL is what reconstructs it. The key covers
+  the data release, so it changes after a data swap; a result from the
+  static snapshot carries the key recorded when the snapshot was generated;
+  and a cross-origin API must expose the header (CORS
+  `Access-Control-Expose-Headers`) or the result has none.
+- A trend **split into groups** adds `&split=<dimension>&groups=<keys>`
+  beside the spec (`urlSpec.ts parseSplit`; keys as `compareGroups.ts`
+  names them, e.g. `sex` with `male,female`, `age` with `15-24,65%2B`). The
+  spec stays exactly the API request; the page runs one point-estimate
+  trend per group (`seriesSpec`: the group's filter in place of any on the
+  same dimension, `variance: "none"`, about a tenth of a replicate trend's
+  time) and does not rewrite such a link to a canonical spec. A malformed
+  split is an invalid link; a split the release's population metadata does
+  not offer is refused with its own message.
 - “Adjust analysis” opens `/explore?op=…&spec=…`, which rebuilds builder
   state from the spec (`features/builder/state.ts: fromRequest`).
 - **No short links** ([ADR-016](adr/ADR-016-short-share-links.md)): they
@@ -397,86 +409,37 @@ stateless. The URL encodes exactly that:
   Deferred; stateless compression of the spec is the first step if length
   ever matters.
 
-## Exports
+## Exports (removed)
 
-Every result page offers **Download CSV** and **Download JSON**
-(`features/results/ResultDownloads.tsx`, built by `domain/exports.ts`). Both
-files are made in the browser from the response already on screen: no
-request, and no statistic is computed, rounded or derived. The file is a Blob
-behind an object URL, opened through a temporary `<a download>`, so it needs
-no CSP exception (no inline script, no `data:` URL, no connection).
-
-**CSV** — the result table (RFC 4180: one header row, comma separators,
-CRLF line endings, quotes only where needed, quotes doubled; UTF-8 with a
-byte-order mark so spreadsheet programs read non-ASCII labels correctly):
-
-| Operation | Rows | Columns |
-| --- | --- | --- |
-| estimate | one | activity (label, included and excluded codes), population, years, measure, `unit`, `estimate`, `standard_error`, `ci_lower`, `ci_upper`, `confidence_level`, respondents, participants, weighted population per day, days in period |
-| trend | one per year | `year`, activity, population, measure, `unit`, the estimate columns, sample columns, `unavailable_reason` |
-| compare | group A, group B, difference (A − B) | `series`, `label` (the difference row's is "<A> minus <B>"), population (`NA` on the difference row), activity, years, measure, `unit`, the estimate columns, sample columns and days in period (`NA` on the difference row) |
-
-Every row ends with its provenance: `weights` (scheme), `weight_variable`
-(e.g. `TUFNWGTP`), `variance_method`, `analytics_version`, `data_version`,
-`warnings` (the API's warnings, joined with ` | `) and `source` (the BLS
-attribution), so a row stays interpretable on its own. Numbers are the API's
-own values in JavaScript's shortest round-trip form — the digits JSON uses —
-so parsing a cell gives back exactly the API's double. A value the API did
-not or could not provide — the 2020 point of a multi-year trend, a standard
-error that was not requested, a difference's sample size — is the literal
-`NA`, never `0` or blank. Lists (years, codes) are joined with `;`. A text
-cell that a spreadsheet would run as a formula (leading `=`, `+`, `-`, `@`,
-tab or carriage return; group labels come from share links, so they are
-untrusted) gets a leading apostrophe. So does such text after a `;`, a tab
-or a line break inside a cell (past any spaces or double quotes):
-spreadsheet programs whose list separator is `;`, such as Excel in much of
-Europe, start a new cell there, and to them the quotes of a field in the
-middle of a line are ordinary characters, so a line break inside a trend's
-activity label or a comparison's group label starts a new row (review
-round 4).
-
-**JSON** — the whole analysis, `format: "atus-explorer/analysis-export"`,
-`format_version: 1`:
-
-```text
-exported_at, operation, link (the page's canonical share link),
-spec + spec_source ("api_canonical" for estimate/trend; "request" for compare,
-  which has no single canonical spec — each group's is inside the response),
-analysis_key, api_version, analytics_version, data_version, data_release,
-unit, warnings, attribution {source, source_url, notice, tool_url},
-response (the API's response, unchanged: every estimate, SE and CI)
-```
-
-`data_version` is the response's `X-Data-Version` (or the static
-snapshot's), else the version the page's metadata reported — the legacy
-`<release>:run<id>` tag for an API that reports none. `data_release` is the
-release that data version names (every format starts with `<release>:`), so
-one export never names two releases — during a release switch a response
-can come from a newer release than the page's metadata; only without a
-data version does it fall back to the release `/meta` reported. Unknown
-facts are `null`, never guessed. File names are
-`atus-<operation>-<activity>-<years>.<csv|json>`, e.g.
-`atus-trend-sleeping-2019-2023.csv`.
+Result pages offered **Download CSV** and **Download JSON** from Phase 5
+until the design review of 2026-10-22, which removed them with the
+methodology panel and the exact-value tables: the site is for reading
+charts. Every number a result shows still comes from the API response
+unchanged; the API itself (and `docs/api.md`) remains the way to get exact
+values and standard errors.
 
 ## Statistical presentation rules
 
-- `estimate: null` (unavailable trend years) renders as a labeled gap band;
-  the line never crosses it, nothing is interpolated, and the data table
-  says “No estimate” with the API's reason in plain language — never zero.
-- SEs and confidence intervals are shown wherever the API provides them
-  (big-number view, chart band, tooltips, tables); `variance: "none"`
-  results say explicitly that no uncertainty was requested.
+- `estimate: null` (unavailable trend years) renders as a labeled gap band
+  (“No data”); the line never crosses it, nothing is interpolated, and the
+  chart's small print says why, with the API's reason in plain language —
+  never zero.
+- Confidence intervals are shown wherever the API provides them, as a
+  “likely range”: the estimate's range in words, the trend's shaded band,
+  the comparison's whiskers and its difference's range, each named with its
+  level in the small print. A trend split into groups draws no bands (it
+  requests point estimates; the small print says so). `variance: "none"`
+  results say explicitly that no likely range was requested. Readouts
+  (tooltips) say values only.
 - API `warnings` always render visibly, in plain language
   (`domain/notes.ts`): caveats about the particular result (pooled years,
   pandemic weights, a truncated interval, filter caveats) in the “Keep in
   mind” warning style, context true of every such result (the activity
   coding, how a difference's uncertainty is computed) as a quieter line, so
   the warning style keeps its meaning. A warning the module does not
-  recognize is shown verbatim, as a caveat. The API's exact wording of every
-  warning and unavailable-year reason is listed under “Technical notes” in
-  “How was this calculated?”, and the downloads carry it unchanged.
-- Unweighted sample sizes (“Survey sample”) and the weighted population
-  (“Represents”) are always separate statements.
+  recognize is shown verbatim, as a caveat. Context notes sit in the chart's
+  small print (`ChartFootnote`), with the source line and the number of
+  diaries behind the figure.
 - Formatting precision policy (`utils/format.ts`): durations as h + m
   rounded to the minute (detailed form: one decimal of minutes);
   percentages one decimal (small nonzero values keep two significant digits
@@ -486,14 +449,17 @@ facts are `null`, never guessed. File names are
   digit (0.975 is “97.5%”, 0.999 “99.9%” — never rounded to another level),
   and the builder adds a shared link's non-standard level to its 90/95/99%
   choices rather than showing one level and sending another (review round
-  3). Estimate and comparison pages expose the raw full-precision API
-  values under “View exact values”; the trend page's “View data” table uses
-  display precision. Raw API values are never mutated in state.
+  3). Raw API values are never mutated in state.
 - Filters are never active yet invisible. A comparison's shared filters
   restrict both groups: in the builder their section opens and is marked
   “(active)” when set (from a link, or carried over from an estimate or
   trend), and the result names them in its “Both groups: …” details line
-  under the heading, not only inside the collapsed panels (review round 3).
+  under the heading (review round 3).
+- Labels a link chose are set against what was computed (R14 in
+  docs/security.md; `definitionNote`): a comparison whose group names are
+  not the plain description of their filters says “Groups compared: <name>
+  (<filters>)” in the small print, and a custom activity names its codes —
+  unless it is exactly a preset under the preset's own name.
 - Result headings (`resultHeading`): the statistic as the eyebrow, the
   activity (and a comparison's two groups) as the title, and the definition
   qualifier (“As defined in BLS table A-1”), population and years once in
@@ -502,14 +468,25 @@ facts are `null`, never guessed. File names are
   deterministic template over response fields (`interpretEstimate`,
   `interpretTrend`, `describeDifference`) — descriptive wording only, no
   causal claims, no significance language. A comparison's difference is
-  stated as “N more for <group>” with its confidence interval as a range of
-  “more for A / more for B”; the signed exact value (A − B) and its SE stay
-  beside it.
-- The comparison chart is a bar chart from zero (`ComparisonChart`, HTML
-  rather than SVG so labels wrap and text keeps its size): a zoomed axis
-  made small differences look large. The trend chart draws at its
-  container's measured width (`useElementWidth`) instead of scaling a fixed
-  viewBox, so its text keeps its CSS size on every screen.
+  stated as “N more for <group>” with its likely range as a range of
+  “more for A / more for B”.
+- Each result is one chart with its answer as the title (2026-10-22 design
+  review, after the earlier Shiny app): an estimate's figure puts it in
+  proportion (a duration as a stretch of a 24-hour day, a rate as dots
+  among a hundred people, a count against the whole population); the
+  comparison chart is a bar chart from zero (`ComparisonChart`, HTML rather
+  than SVG so labels wrap and text keeps its size), with values beside the
+  bars; the trend chart draws at its container's measured width
+  (`useElementWidth`), with clock-like ticks ("5h 10m"), ringed points and
+  its latest value labeled at the line's end. A trend split into groups
+  draws up to six lines, each its own colour and dash pattern (the series
+  palette in `global.css`, validated together for colour-vision
+  deficiency), with a legend and a readout listing every group at the
+  year under the cursor.
+- The builder asks a comparison for one “Compare by” dimension and two of
+  its values (`CompareGroupsPicker`; group names are the values' plain
+  descriptions); “Custom groups…” opens the two full group editors, and a
+  link whose groups are not one such choice opens there.
 - The home page's starter cards preview their answers from the static
   snapshot only (`snapshotAnalysis`): a home page visit never wakes the
   analysis service or spends its quota, and without a snapshot (development)
@@ -522,8 +499,9 @@ facts are `null`, never guessed. File names are
   the category browser is plain nested lists of buttons.
 - The trend chart is an interactive widget: one tab stop, arrow keys move a
   cursor through years (including unavailable ones), announced via a live
-  region; the comparison chart is `role="img"` with a data summary; every
-  chart has a data table alternative.
+  region; the comparison chart and the estimate's figure are `role="img"`
+  with a data summary; a trend's every value is also in a visually hidden
+  table.
 - Loading states are `<output>` (status) elements; errors are
   `role="alert"`; group colors are always paired with text labels. The
   analysis page announces through one persistent polite region of its own,
@@ -549,14 +527,10 @@ facts are `null`, never guessed. File names are
   edge's daily limit) then replaces the page and its focused heading, focus
   moves to the state's own heading instead of falling to `<body>`
   (`useKeepNavigationFocus`; review round 4).
-- The download buttons are ordinary buttons; a persistent `<output>` says
-  which file was started, and focus stays on the button. Downloading the
-  same file again empties the region and says it again 100 ms later, so the
-  repeat is announced too (review round 2).
 - Playwright runs axe checks (no serious or critical violations) on the five
   main screens, the About page, the waking state, the incompatible-API, paused-quota and
   edge-limit pages, the data-release reload notice, the
-  `data_version_mismatch` and rate-limit panels and the downloads, plus
+  `data_version_mismatch` and rate-limit panels, plus
   keyboard checks of the primary workflow and of every new state's action.
   WebKit on macOS follows Safari's default of tabbing only between text
   fields, so Tab-order checks are skipped there (`tabReachesAllControls`);
@@ -568,8 +542,8 @@ facts are `null`, never guessed. File names are
 
 ```bash
 npm test          # unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 84 Playwright runs: 53 tests in Chromium desktop, 3 mobile,
-                  # and the 14 @core journeys again in Firefox and in WebKit
+npm run test:e2e  # 75 Playwright runs: 50 tests in Chromium desktop, 3 mobile,
+                  # and the 11 @core journeys again in Firefox and in WebKit
                   # (one desktop test runs only in stack mode)
 npx playwright install firefox webkit   # once, for the cross-browser projects
 ../scripts/e2e_in_container.sh --project firefox   # Firefox where it cannot launch
@@ -596,15 +570,16 @@ listing wherever `frontend/node_modules` is installed.
   code, the `<meta>` CSP first, `_headers` shipped; and `generated.ts`
   reproduced byte for byte), the `_headers` reader (Cloudflare matching,
   joining and detaching rules), the site's actual header and cache rules and
-  `vite preview` applying them, the exports (exact CSV text, quoting, `NA`,
-  formula guard, every number equal to the API's, the JSON record), the
-  About page's logging statement, and the boot shell (no inline
+  `vite preview` applying them, the “compare by” and “split by” choices and
+  split links, the About page's logging statement, and the boot shell (no inline
   script/style; replaced by React).
 - Component: ActivityPicker (search/keyboard/presets/browse), warning and
   error panels (incl. the `Retry-After` countdown), TrendChart 2020-gap
   rendering and keyboard access.
 - Integration (MSW, fixtures = captured real payloads): result pages render
-  estimates/uncertainty/samples/warnings/methodology; URL canonicalization;
+  estimates, likely ranges, figures, notes and small print; split trends
+  (one point-estimate request per group, legend, no canonical rewrite);
+  URL canonicalization;
   API errors; invalid share links; the race test (a slow superseded response
   can never overwrite a newer one); and, through the whole app shell, the
   Phase 5 states — a delayed `/meta` (waking notice after 3 s, focus
@@ -614,9 +589,7 @@ listing wherever `frontend/node_modules` is installed.
   one-retry transient 503s, timeouts, the data-release reload notice,
   no metadata refetch on focus or reconnect after 30 minutes, background
   refetch failures, "Try again" for every failed query, prewake, and
-  snapshot-served metadata, and the downloads (the saved file is built from
-  the response on screen, through a Blob URL, with the page's analysis key,
-  data version and canonical link).
+  and snapshot-served metadata.
 - New survey year (brief §15, `src/pages/newSurveyYear.test.tsx`): with a
   `/meta` (or a static snapshot) announcing a release 0326 with years
   2003–2026 and its own data version, and no code change, the year pickers
@@ -636,15 +609,14 @@ listing wherever `frontend/node_modules` is installed.
   viewport; and the Phase 5 states with page.route: delayed `/meta`,
   incompatible API, a data release switch (reload notice), a
   `data_version_mismatch` 503, paused database, edge daily limit, rate-limit
-  countdown, the boot fallback with the bundle blocked; downloads read back
-  from disk (CSV values equal to the JSON response's, `NA` for 2020, keyboard
-  operation); a release announcing 2026 through `/meta` (the year controls
+  countdown, the boot fallback with the bundle blocked; a trend split by
+  sex; a release announcing 2026 through `/meta` (the year controls
   and starters offer it, the default estimate asks the real API for 2026,
   and the real 2019–2023 trend still shows the 2020 gap); and the headers to
   be deployed: every page carries the `_headers` rules and the `<meta>` CSP,
   bundles are served immutable, `/openapi.json` is served with its rules and
-  equals `frontend/openapi.json`, and the core journeys (including a
-  download) run with every API request on the page's own origin. Every E2E
+  equals `frontend/openapi.json`, and the core journeys run with every API
+  request on the page's own origin. Every E2E
   test, in every project and in stack mode, collects the CSP violations and
   Permissions-Policy errors of every page in its browser context and fails
   on one (`e2e/fixtures.ts` `policyErrors`; the share test checks its fresh
@@ -654,7 +626,7 @@ listing wherever `frontend/node_modules` is installed.
   the phone layout ran unchecked.
 - Cross-browser: tests tagged `@core` — the first-time-user estimate, the
   comparison, share links (copy, refresh, invalid), the 2020 gap and chart
-  keyboard access, the exports, the waking notice, and the headers/CSP
+  keyboard access, the split trend, the waking notice, and the headers/CSP
   journey — also run in Firefox and WebKit (`playwright.config.ts`). On the
   development machine (macOS 27) Playwright's Firefox build exits at launch
   with "Could not find profile folder", so Firefox runs there in the
@@ -708,8 +680,6 @@ E2E_FRONTEND_PORT=4174 E2E_BACKEND_PORT=8138 E2E_BROWSER_SERVER_PORT=8140 \
   scripts/e2e_in_container.sh --project firefox
 ```
 
-Downloads are read through `download.createReadStream()`, which works for
-local and remote browsers alike (`download.path()` throws when the browser is remote).
 One known Playwright-Firefox limitation shows in long repeated runs: in a
 Firefox instance that has made many navigations into documents served with
 `Cross-Origin-Opener-Policy: same-origin`, `page.goto` sometimes never

@@ -38,7 +38,7 @@ test('estimate, trend and compare results have no serious axe violations', async
   await expectNoSeriousViolations(page)
 
   await page.goto('/explore')
-  await page.getByRole('radio', { name: 'Trend over time' }).click()
+  await page.getByRole('radio', { name: 'Change over time' }).click()
   await page.getByLabel('From', { exact: true }).selectOption('2019')
   await analyze(page)
   await expect(page.getByTestId('unavailable-2020')).toBeVisible({ timeout: 15_000 })
@@ -46,8 +46,7 @@ test('estimate, trend and compare results have no serious axe violations', async
 
   await page.goto('/explore')
   await page.getByRole('radio', { name: 'Compare two groups' }).click()
-  await page.getByRole('group', { name: 'Group A' }).getByLabel('Sex').selectOption('male')
-  await page.getByRole('group', { name: 'Group B' }).getByLabel('Sex').selectOption('female')
+  // Men vs women, the default comparison.
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
   await analyze(page)
   await expect(page.getByTestId('difference')).toBeVisible({ timeout: 15_000 })
@@ -59,7 +58,7 @@ test('the primary workflow is keyboard-operable', async ({ page }) => {
   // page is announced and Tab continues from it (review round 2: focus
   // stayed on <body>).
   await page.goto('/')
-  await page.getByRole('link', { name: 'Build your own analysis' }).focus()
+  await page.getByRole('link', { name: 'Make your own chart' }).focus()
   await page.keyboard.press('Enter')
   await expect(page.getByRole('heading', { level: 1, name: 'Build an analysis' })).toBeFocused()
   await expect(page.getByRole('button', { name: 'Analyze' })).toBeVisible()

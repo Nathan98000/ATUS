@@ -361,8 +361,10 @@ deferred (ADR-016).
   check that the API's `api_version` is compatible (`api/compat.ts`),
   full-page states for paused quotas and an incompatible API, and a prewake
   request on user intent (`api/prewake.ts`).
-- **Exports**: CSV and JSON of the response on screen, with no recomputed
-  numbers (`domain/exports.ts`).
+- **Charts first**: each result is one chart with its answer as the
+  title; a trend can be split into one line per group (one point-estimate
+  trend request per group). The CSV/JSON exports, methodology panels and
+  exact-value tables were removed in the 2026-10-22 design review.
 - **Headers**: `public/_headers` carries the CSP (`connect-src 'self'`),
   HSTS and cache rules; the build also embeds the CSP as a `<meta>`
   backstop.

@@ -13,7 +13,7 @@
  * another data release or statistical implementation than the page's is
  * never silent either: `serviceStatus.ts` compares every response's
  * versions with the page's and the page shows a notice (review round 2 added
- * the analytics version), and each result shows its own `analytics_version`.
+ * the analytics version).
  *
  * Retries are not TanStack Query's: `endpoints.ts` runs every API call through
  * a time-budgeted retry loop that understands cold starts and `Retry-After`.
@@ -33,7 +33,7 @@
  * goes stale (`staleTime: Infinity`), so a reconnect refetches nothing that
  * has data.
  */
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { ApiResult } from './client'
 import { isOfflineFailure } from './resilience'
@@ -171,15 +171,14 @@ export function analysisQueryKey(
  * can never overwrite newer requests: a different spec is a different key,
  * and TanStack Query aborts the superseded request via its AbortSignal.
  */
-export function useAnalysis<Op extends Operation>(
+function analysisQuery<Op extends Operation>(
   operation: Op,
   spec: OperationContract[Op]['request'] | null,
+  versions: string | null,
 ) {
-  const versions = useVersionTag()
-
-  return useQuery<ApiResult<OperationContract[Op]['response']>, Error>({
+  return {
     queryKey: analysisQueryKey(operation, spec, versions ?? 'unknown'),
-    queryFn: ({ signal }) =>
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
       runAnalysis(operation, spec as OperationContract[Op]['request'], signal),
     enabled: spec !== null && versions !== null,
     // Results are immutable for a given (spec, versions) key; the version tag
@@ -190,8 +189,32 @@ export function useAnalysis<Op extends Operation>(
     // 503); anything else waits for the visitor's "Try again".
     retry: false,
     refetchOnWindowFocus: false,
-    networkMode: 'always',
+    networkMode: 'always' as const,
     refetchOnReconnect,
+  }
+}
+
+export function useAnalysis<Op extends Operation>(
+  operation: Op,
+  spec: OperationContract[Op]['request'] | null,
+) {
+  const versions = useVersionTag()
+  return useQuery<ApiResult<OperationContract[Op]['response']>, Error>(
+    analysisQuery(operation, spec, versions),
+  )
+}
+
+/**
+ * Several analyses of one operation at once — a split trend's line per
+ * group — each cached and retried exactly as `useAnalysis` runs one.
+ */
+export function useAnalyses<Op extends Operation>(
+  operation: Op,
+  specs: readonly OperationContract[Op]['request'][],
+) {
+  const versions = useVersionTag()
+  return useQueries({
+    queries: specs.map((spec) => analysisQuery(operation, spec, versions)),
   })
 }
 

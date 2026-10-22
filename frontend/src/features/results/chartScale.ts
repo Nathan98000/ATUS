@@ -63,3 +63,20 @@ export function durationTicksFromZero(max: number, maxCount = 5): number[] {
   const count = Math.ceil(target / step)
   return Array.from({ length: count + 1 }, (_, index) => index * step)
 }
+
+/**
+ * Ticks in minutes inside [min, max] on clock-like steps (5h, 5h 10m, 5h
+ * 20m…), for a line chart's axis that does not start at zero. Falls back to
+ * `niceTicks` when the range is too narrow for two whole-minute ticks.
+ */
+export function durationTicks(min: number, max: number, maxCount = 5): number[] {
+  const step = DURATION_STEPS.find(
+    (candidate) => Math.floor(max / candidate) - Math.ceil(min / candidate) + 1 <= maxCount,
+  )
+  if (step !== undefined) {
+    const ticks: number[] = []
+    for (let tick = Math.ceil(min / step) * step; tick <= max; tick += step) ticks.push(tick)
+    if (ticks.length >= 2) return ticks
+  }
+  return niceTicks(min, max, maxCount)
+}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   formatAxisTicks,
+  formatClockTick,
   formatConfidenceInterval,
   formatDifferenceInterval,
   formatDifferenceValue,
@@ -9,6 +10,7 @@ import {
   formatDurationTick,
   formatDurationWords,
   formatEstimate,
+  formatLikelyRange,
   formatMinutesAsDuration,
   formatMinutesDetailed,
   formatPeople,
@@ -187,5 +189,24 @@ describe('durations in words and on axes', () => {
       '1h 30m',
       '3h',
     ])
+  })
+})
+
+describe('readers’ forms of axis ticks and ranges', () => {
+  it('pads minutes on a clock axis so labels line up', () => {
+    const ticks = [300, 310, 320]
+    expect(ticks.map((tick) => formatClockTick(tick, ticks))).toEqual([
+      '5h 00m',
+      '5h 10m',
+      '5h 20m',
+    ])
+    expect([360, 420].map((tick) => formatClockTick(tick, [360, 420]))).toEqual(['6h', '7h'])
+    expect([30, 45].map((tick) => formatClockTick(tick, [30, 45]))).toEqual(['30m', '45m'])
+  })
+
+  it('says a likely range as clock times, or in minutes when they would read the same', () => {
+    expect(formatLikelyRange(522.995, 534.513, 'minutes_per_day')).toBe('8h 43m to 8h 55m')
+    expect(formatLikelyRange(42.2, 42.4, 'minutes_per_day')).toBe('42.2 to 42.4 min')
+    expect(formatLikelyRange(0.7135, 0.742, 'proportion_of_population')).toBe('71.4% to 74.2%')
   })
 })

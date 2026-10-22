@@ -4,7 +4,9 @@
  * so their lengths compare honestly; a zoomed axis made small differences
  * look large. Built from HTML rather than a scaled SVG, so labels wrap and
  * text keeps its size on every screen. Groups are distinguished by label
- * and position, never by color alone. All values come from the API response.
+ * and position, never by color alone; each value is labeled beside its bar,
+ * and the chart's small print (ChartFootnote) explains the whiskers. All
+ * values come from the API response.
  */
 import type { CSSProperties } from 'react'
 
@@ -12,7 +14,6 @@ import type { EstimateValue } from '../../api/types'
 import {
   formatAxisTicks,
   formatConfidenceInterval,
-  formatConfidenceLevel,
   formatDurationTick,
   formatEstimate,
   formatValueShort,
@@ -65,17 +66,12 @@ export function ComparisonChart({ groups, unit }: ComparisonChartProps) {
   const domainMax = ticks[ticks.length - 1] || 1
   const percent = (value: number) => `${(Math.max(0, value) / domainMax) * 100}%`
   const labels = chartLabels(groups)
-  const levels = new Set(groups.map((group) => group.estimate.confidence_level ?? null))
-  const level = levels.size === 1 ? [...levels][0] : null
-  const hasIntervals = groups.some(
-    (group) => group.estimate.ci_lower != null && group.estimate.ci_upper != null,
-  )
 
   const summary = groups
     .map((group) => {
       let text = `${group.label}: ${formatValueShort(group.estimate.value, unit)}`
       if (group.estimate.ci_lower != null && group.estimate.ci_upper != null) {
-        text += ` (CI ${formatConfidenceInterval(group.estimate.ci_lower, group.estimate.ci_upper, unit)})`
+        text += ` (likely range ${formatConfidenceInterval(group.estimate.ci_lower, group.estimate.ci_upper, unit)})`
       }
       return text
     })
@@ -88,12 +84,12 @@ export function ComparisonChart({ groups, unit }: ComparisonChartProps) {
   return (
     <div className="compare-chart-wrap" ref={wrapRef}>
       {/* role="img" + aria-label is the standard accessible-graphic pattern;
-          the exact values are in the table below the chart. */}
+          the label carries every value the bars show. */}
       <div
         // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
         role="img"
         className="compare-chart"
-        aria-label={`Comparison of ${unitLabel(unit)}. ${summary}. Exact values are in the table below.`}
+        aria-label={`Comparison of ${unitLabel(unit)}. ${summary}.`}
       >
         {groups.map((group, groupIndex) => {
           const { value, ci_lower, ci_upper } = group.estimate
@@ -143,13 +139,6 @@ export function ComparisonChart({ groups, unit }: ComparisonChartProps) {
           </span>
         </div>
       </div>
-      <p className="field-hint">
-        Bars show each group's estimate, starting from zero
-        {hasIntervals
-          ? `; the thin lines mark ${level != null ? `the ${formatConfidenceLevel(level)}` : 'their'} confidence intervals`
-          : ''}
-        .
-      </p>
     </div>
   )
 }

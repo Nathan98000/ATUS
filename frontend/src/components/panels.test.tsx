@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ApiError, NetworkError } from '../api/client'
+import { contextNotes } from '../domain/notes'
 import { estimatePandemicFixture } from '../test/fixtures'
 import { ErrorPanel } from './ErrorPanel'
 import { WarningBanner } from './WarningBanner'
@@ -16,22 +17,30 @@ describe('WarningBanner', () => {
     expect(note).not.toHaveTextContent(/TU20FWGT/)
   })
 
-  it('shows caveats as a warning and context as a quieter line', () => {
-    const { container } = render(
-      <WarningBanner
-        warnings={[
-          'Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).',
-          'Pooled estimate: represents the average day across 3 survey years (1,095 days combined).',
-        ]}
-      />,
-    )
+  it('shows caveats as a warning and leaves context to the chart’s small print', () => {
+    const warnings = [
+      'Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).',
+      'Pooled estimate: represents the average day across 3 survey years (1,095 days combined).',
+    ]
+    const { container } = render(<WarningBanner warnings={warnings} />)
     expect(container.querySelector('.warning-banner')).toHaveTextContent(
       'This is an average day across 3 survey years combined',
     )
-    expect(container.querySelector('.warning-banner')).not.toHaveTextContent(/coded the same/)
-    expect(container.querySelector('.context-note')).toHaveTextContent(
-      'Activities are coded the same way in every survey year',
+    expect(container).not.toHaveTextContent(/coded the same/)
+    expect(contextNotes(warnings)).toEqual([
+      'Activities are coded the same way in every survey year, so years can be compared directly.',
+    ])
+  })
+
+  it('renders nothing when every note is context', () => {
+    render(
+      <WarningBanner
+        warnings={[
+          'Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).',
+        ]}
+      />,
     )
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
   })
 
   it('shows a warning it does not recognize exactly as the API wrote it, as a caveat', () => {

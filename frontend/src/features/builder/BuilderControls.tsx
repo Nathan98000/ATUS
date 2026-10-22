@@ -24,16 +24,16 @@ const MEASURE_LABELS: Record<Measure, { label: string; hint: string }> = {
     hint: 'Across everyone in the population, including people who did not do the activity that day.',
   },
   participation_rate: {
-    label: 'Participation rate',
-    hint: 'Share of the population doing the activity on an average day.',
+    label: 'Share of people who do it',
+    hint: 'The percentage of people who do the activity on an average day.',
   },
   average_minutes_per_participant: {
-    label: 'Time among participants',
-    hint: 'Average time among only those who did the activity that day.',
+    label: 'Time among those who do it',
+    hint: 'Average time among only the people who did the activity that day.',
   },
   participants_per_day: {
-    label: 'People per day',
-    hint: 'Number of people doing the activity on an average day.',
+    label: 'Number of people who do it',
+    hint: 'How many people do the activity on an average day.',
   },
 }
 
@@ -83,7 +83,7 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
           </div>
         </div>
         {error ? <p className="error-text">{error}</p> : null}
-        <p className="field-hint">One estimate per year, plotted as a trend.</p>
+        <p className="field-hint">One point per year, drawn as a line.</p>
         {state.weights === 'multiyear' &&
         state.trendFrom !== null &&
         state.trendTo !== null &&
@@ -91,8 +91,7 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
         state.trendTo >= 2020 &&
         availableYears.includes(2020) ? (
           <p className="info-note" style={{ marginTop: '0.5rem' }}>
-            2020 will appear as an explicit gap: its data collection was interrupted by the
-            pandemic and the standard weights are not defined for it.
+            2020 will show as a gap: the survey paused that spring because of COVID-19.
           </p>
         ) : null}
       </div>
@@ -109,7 +108,7 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
             checked={state.yearsMode === 'single'}
             onChange={() => onChange({ yearsMode: 'single' })}
           />
-          <span>Single year</span>
+          <span>One year</span>
         </label>
         <label>
           <input
@@ -128,7 +127,7 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
               })
             }
           />
-          <span>Pooled years</span>
+          <span>Several years combined</span>
         </label>
       </div>
       {state.yearsMode === 'single' ? (
@@ -148,7 +147,7 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
         </div>
       ) : (
         <fieldset style={{ marginTop: '0.6rem' }}>
-          <legend>Years to pool into one estimate</legend>
+          <legend>Years to combine</legend>
           <div className="year-checkboxes">
             {ascending.map((year) => (
               <label key={year} className="year-checkbox">
@@ -168,7 +167,7 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
             ))}
           </div>
           <p className="field-hint">
-            Pooling years combines their samples into a single estimate for the whole period.
+            Their diaries are combined into one estimate for the whole period.
           </p>
         </fieldset>
       )}
@@ -246,7 +245,7 @@ export function AdvancedOptions({
 
   return (
     <details className="panel">
-      <summary>Advanced methodology</summary>
+      <summary>Advanced options</summary>
       <div className="panel__body">
         <fieldset>
           <legend>Weighting scheme</legend>

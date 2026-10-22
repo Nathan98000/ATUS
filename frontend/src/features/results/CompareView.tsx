@@ -1,114 +1,55 @@
 /**
- * Comparison result: the answer in one sentence, both group estimates, a bar
- * chart from zero, and the API-computed difference (group A − group B,
- * covariance-correct SE — never recomputed here) in words, then warnings
- * and methodology.
+ * Comparison result: the answer in one sentence over a bar chart from zero,
+ * then the API-computed difference (group A − group B, covariance-correct
+ * SE — never recomputed here) in words, the chart's small print, and the
+ * result's notes.
  */
 import type { CompareResponse } from '../../api/types'
 import { WarningBanner } from '../../components/WarningBanner'
+import { contextNotes } from '../../domain/notes'
 import { describeDifference } from '../../domain/describe'
-import {
-  formatConfidenceInterval,
-  formatCount,
-  formatDifferenceValue,
-  formatEstimate,
-  formatStandardError,
-  unitLabel,
-} from '../../utils/format'
+import { formatCount } from '../../utils/format'
+import { ChartFootnote } from './ChartFootnote'
 import { ComparisonChart } from './ComparisonChart'
-import { estimateMethodologyRows } from './EstimateView'
-import { MethodologyPanel } from './MethodologyPanel'
 
 export function CompareView({
   result,
-  analysisKey,
+  note,
 }: {
   result: CompareResponse
-  analysisKey: string | null
+  /** What a link's own labels stand for (`definitionNote`), if anything. */
+  note?: string | null
 }) {
   const unit = result.group_a.estimate.unit
-  const difference = result.difference
   const described = describeDifference(result)
-
-  const methodologyRows = [
-    {
-      term: 'Groups',
-      detail: `${result.label_a}: ${result.group_a.population}. ${result.label_b}: ${result.group_b.population}.`,
-    },
-    {
-      term: 'Difference',
-      detail: `Computed as ${result.label_a} − ${result.label_b}; its standard error uses per-replicate differences, which accounts for the correlation between the two groups' estimates.`,
-    },
-    ...estimateMethodologyRows(result.group_a).filter((row) => row.term !== 'Population'),
-  ]
+  const hasIntervals = [result.group_a, result.group_b].some(
+    (group) => group.estimate.ci_lower != null && group.estimate.ci_upper != null,
+  )
 
   return (
     <div className="result-stack">
-      <section className="card" aria-label="Group estimates">
+      <section className="card result-card" aria-label="Group estimates">
         <p className="result-lead">{described.sentence}</p>
-        <div className="compare-cards">
-          {(
-            [
-              {
-                label: result.label_a,
-                group: result.group_a,
-                colorVar: '--group-a',
-                role: 'Group A',
-              },
-              {
-                label: result.label_b,
-                group: result.group_b,
-                colorVar: '--group-b',
-                role: 'Group B',
-              },
-            ] as const
-          ).map(({ label, group, colorVar, role }) => {
-            const formatted = formatEstimate(group.estimate.value, unit)
-            return (
-              <div
-                key={role}
-                className="compare-card"
-                style={{ borderTopColor: `var(${colorVar})` }}
-              >
-                <h3>{label}</h3>
-                <p className="compare-card__value">{formatted.primary}</p>
-                {formatted.secondary ? (
-                  <p className="field-hint">{formatted.secondary}</p>
-                ) : null}
-                {group.estimate.standard_error != null ? (
-                  <p className="field-hint">
-                    ± {formatStandardError(group.estimate.standard_error, unit)}
-                    {group.estimate.ci_lower != null && group.estimate.ci_upper != null
-                      ? ` · CI ${formatConfidenceInterval(group.estimate.ci_lower, group.estimate.ci_upper, unit)}`
-                      : ''}
-                  </p>
-                ) : null}
-                <p className="field-hint">{formatCount(group.n_respondents)} respondents</p>
-              </div>
-            )
-          })}
-        </div>
-
         <ComparisonChart
           unit={unit}
           groups={[
             {
               label: result.label_a,
               estimate: result.group_a.estimate,
-              colorVar: '--group-a',
+              colorVar: '--series-1',
               role: 'Group A',
             },
             {
               label: result.label_b,
               estimate: result.group_b.estimate,
-              colorVar: '--group-b',
+              colorVar: '--series-2',
               role: 'Group B',
             },
           ]}
         />
 
         <div className="difference-block" data-testid="difference">
-          <h3>Difference</h3>
+          <p className="difference-block__label">Difference</p>
           <p className="difference-block__value">
             {described.larger === null ? (
               described.amount
@@ -121,81 +62,23 @@ export function CompareView({
               </>
             )}
           </p>
-          {described.interval !== null ? <p>{described.interval}</p> : null}
-          <p className="field-hint">
-            Exact difference ({result.label_a} − {result.label_b}):{' '}
-            {difference.value > 0 ? '+' : ''}
-            {formatDifferenceValue(difference.value, unit)}
-            {difference.standard_error != null
-              ? `, standard error ${formatStandardError(difference.standard_error, unit)}`
-              : ''}
-            .
-          </p>
+          {described.interval !== null ? (
+            <p className="difference-block__range">{described.interval}</p>
+          ) : null}
         </div>
+
+        <ChartFootnote
+          range={
+            hasIntervals
+              ? { mark: 'whisker', level: result.group_a.estimate.confidence_level ?? null }
+              : undefined
+          }
+          notes={[...(note != null ? [note] : []), ...contextNotes(result.warnings)]}
+          sample={`${result.label_a}: ${formatCount(result.group_a.n_respondents)} diaries; ${result.label_b}: ${formatCount(result.group_b.n_respondents)} diaries`}
+        />
       </section>
 
       <WarningBanner warnings={result.warnings} />
-
-      <details className="panel">
-        <summary>View exact values</summary>
-        <div className="panel__body table-scroll">
-          <table className="data-table">
-            <caption className="visually-hidden">
-              Exact comparison values ({unitLabel(unit)})
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">Series</th>
-                <th scope="col" className="num">
-                  Estimate
-                </th>
-                <th scope="col" className="num">
-                  Standard error
-                </th>
-                <th scope="col">Confidence interval</th>
-                <th scope="col" className="num">
-                  Respondents
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {(
-                [
-                  {
-                    name: `${result.label_a} (Group A)`,
-                    estimate: result.group_a.estimate,
-                    n: result.group_a.n_respondents,
-                  },
-                  {
-                    name: `${result.label_b} (Group B)`,
-                    estimate: result.group_b.estimate,
-                    n: result.group_b.n_respondents,
-                  },
-                  { name: `Difference (A − B)`, estimate: difference, n: null },
-                ] as const
-              ).map((row) => (
-                <tr key={row.name}>
-                  <th scope="row">{row.name}</th>
-                  <td className="num">{row.estimate.value}</td>
-                  <td className="num">{row.estimate.standard_error ?? '—'}</td>
-                  <td>
-                    {row.estimate.ci_lower != null && row.estimate.ci_upper != null
-                      ? `${row.estimate.ci_lower} to ${row.estimate.ci_upper}`
-                      : '—'}
-                  </td>
-                  <td className="num">{row.n ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
-
-      <MethodologyPanel
-        rows={methodologyRows}
-        analysisKey={analysisKey}
-        apiNotes={result.warnings}
-      />
     </div>
   )
 }

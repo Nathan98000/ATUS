@@ -12,6 +12,7 @@ import type {
   Operation,
   PopulationRequest,
 } from '../../api/types'
+import type { CompareBy } from '../population/compareGroups.ts'
 
 export type Measure = NonNullable<EstimateRequest['measure']>
 export type WeightScheme = NonNullable<EstimateRequest['weights']>
@@ -51,6 +52,18 @@ export interface BuilderState {
   trendFrom: number | null
   trendTo: number | null
   population: PopulationRequest
+  /**
+   * compare: how the builder shows the two groups — one dimension two
+   * groups differ in ("Compare by", e.g. 'sex'), or 'custom' editors. The
+   * groups and their names below are what is sent either way.
+   */
+  compareBy: CompareBy
+  /**
+   * trend: one line per group of this dimension (null: one line for
+   * everyone), showing the groups with these keys (compareGroups.ts).
+   */
+  splitBy: Exclude<CompareBy, 'custom'> | null
+  splitGroups: string[]
   groupA: PopulationRequest
   groupB: PopulationRequest
   labelA: string
@@ -73,10 +86,14 @@ export function defaultBuilderState(availableYears: readonly number[]): BuilderS
     trendFrom: earliestYear,
     trendTo: latestYear,
     population: {},
-    groupA: {},
-    groupB: {},
-    labelA: 'Group A',
-    labelB: 'Group B',
+    // A new comparison starts as men vs women (see compareGroups.ts).
+    compareBy: 'sex',
+    splitBy: null,
+    splitGroups: [],
+    groupA: { sex: 'male' },
+    groupB: { sex: 'female' },
+    labelA: 'Men',
+    labelB: 'Women',
     weights: 'multiyear',
     variance: 'replicate',
     confidenceLevel: 0.95,
@@ -109,7 +126,7 @@ export function selectedYears(
 }
 
 export interface BuilderValidation {
-  errors: Partial<Record<'years' | 'age' | 'ageA' | 'ageB' | 'activity', string>>
+  errors: Partial<Record<'years' | 'age' | 'ageA' | 'ageB' | 'groups' | 'activity', string>>
   valid: boolean
 }
 
@@ -144,6 +161,12 @@ export function validateBuilder(
   if (state.operation === 'compare') {
     if (agesInvalid(state.groupA)) errors.ageA = 'Minimum age cannot exceed maximum age.'
     if (agesInvalid(state.groupB)) errors.ageB = 'Minimum age cannot exceed maximum age.'
+    if (state.compareBy !== 'custom' && state.labelA === state.labelB) {
+      errors.groups = 'Choose two different groups to compare.'
+    }
+  }
+  if (state.operation === 'trend' && state.splitBy !== null && state.splitGroups.length < 2) {
+    errors.groups = 'Choose at least two groups to show.'
   }
 
   if (
@@ -238,6 +261,10 @@ export function fromRequest(
     state.groupB = compare.group_b ?? {}
     state.labelA = compare.label_a ?? 'Group A'
     state.labelB = compare.label_b ?? 'Group B'
+    // The builder works out whether these groups are a simple "compare by"
+    // once it has the population metadata (deriveCompareBy); until then the
+    // custom editors show everything the link sets.
+    state.compareBy = 'custom'
   }
   return state
 }

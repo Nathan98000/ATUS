@@ -64,14 +64,16 @@ describe('builder defaults and discovery', () => {
     expect(detail('For whom')).toHaveTextContent('All respondents (age 15+)')
     expect(detail('When')).toHaveTextContent('2025')
     expect(detail('Measured as')).toHaveTextContent('Average time per day')
-    expect(detail('Type')).toHaveTextContent('Single estimate')
+    expect(detail('Type')).toHaveTextContent('One number')
     expect(within(summary).getByRole('button', { name: 'Analyze' })).toBeInTheDocument()
 
     // It follows every edit.
     await user.selectOptions(screen.getByLabelText('Sex'), 'female')
     expect(detail('For whom')).toHaveTextContent('Women')
     await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
-    expect(detail('For whom')).toHaveTextContent('Group A vs Group B')
+    // A comparison starts as men vs women; the estimate's "Women" filter
+    // would contradict it, so it is not carried over.
+    expect(detail('For whom')).toHaveTextContent(/^Men vs Women$/)
     expect(detail('Type')).toHaveTextContent('Comparison of two groups')
   })
 
@@ -80,9 +82,9 @@ describe('builder defaults and discovery', () => {
     await waitForBuilder()
     for (const label of [
       /Average time per day/,
-      /Participation rate/,
-      /Time among participants/,
-      /People per day/,
+      /Share of people who do it/,
+      /Time among those who do it/,
+      /Number of people who do it/,
     ]) {
       expect(screen.getByRole('radio', { name: label })).toBeInTheDocument()
     }
@@ -138,26 +140,78 @@ describe('running an analysis', () => {
     expect(screen.getByTestId('location').textContent).toBe('/explore')
   })
 
-  it('configures and submits a comparison', async () => {
+  it('configures and submits a comparison by one dimension', async () => {
     const user = userEvent.setup()
     renderExplore()
     await waitForBuilder()
     await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
 
-    const groupA = screen.getByRole('group', { name: 'Group A' })
-    const groupB = screen.getByRole('group', { name: 'Group B' })
-    await user.selectOptions(within(groupA).getByLabelText('Sex'), 'male')
-    await user.selectOptions(within(groupB).getByLabelText('Sex'), 'female')
-    await user.clear(within(groupA).getByLabelText('Name'))
-    await user.type(within(groupA).getByLabelText('Name'), 'Men')
+    // One choice and two values, not two sets of filters.
+    expect(screen.getByLabelText('Compare by')).toHaveValue('sex')
+    expect(screen.queryByRole('group', { name: 'Group A' })).not.toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText('Compare by'), 'employment_status')
+    expect(screen.getByLabelText('First group')).toHaveValue('employed')
+    expect(screen.getByLabelText('Second group')).toHaveValue('not_in_labor_force')
+    await user.selectOptions(screen.getByLabelText('Second group'), 'unemployed')
 
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
     const location = screen.getByTestId('location').textContent ?? ''
     expect(location).toMatch(/^\/analysis\/compare\?spec=/)
     const spec = decodeSpec(location.split('spec=')[1] as string, 'compare') as CompareRequest
+    expect(spec.group_a).toEqual({ employment_status: 'employed' })
+    expect(spec.group_b).toEqual({ employment_status: 'unemployed' })
+    expect(spec.label_a).toBe('Employed')
+    expect(spec.label_b).toBe('Unemployed')
+  })
+
+  it('compares age groups as bands, the oldest open-ended', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
+    await user.selectOptions(screen.getByLabelText('Compare by'), 'age')
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    const location = screen.getByTestId('location').textContent ?? ''
+    const spec = decodeSpec(location.split('spec=')[1] as string, 'compare') as CompareRequest
+    expect(spec.group_a).toEqual({ age_min: 15, age_max: 24 })
+    expect(spec.group_b).toEqual({ age_min: 65 })
+    expect([spec.label_a, spec.label_b]).toEqual(['Ages 15–24', 'Age 65+'])
+  })
+
+  it('refuses to compare a group with itself', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
+    await user.selectOptions(screen.getByLabelText('Second group'), 'male')
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Choose two different groups to compare.',
+    )
+    expect(screen.getByTestId('location').textContent).toBe('/explore')
+  })
+
+  it('builds custom groups with the full filters, starting from the current pair', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await user.click(screen.getByRole('radio', { name: 'Compare two groups' }))
+    await user.selectOptions(screen.getByLabelText('Compare by'), 'custom')
+
+    const groupA = screen.getByRole('group', { name: 'Group A' })
+    const groupB = screen.getByRole('group', { name: 'Group B' })
+    expect(within(groupA).getByLabelText('Sex')).toHaveValue('male')
+    expect(within(groupA).getByLabelText('Name')).toHaveValue('Men')
+    await user.selectOptions(within(groupB).getByLabelText('Employment'), 'employed')
+    await user.clear(within(groupB).getByLabelText('Name'))
+    await user.type(within(groupB).getByLabelText('Name'), 'Working women')
+
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    const location = screen.getByTestId('location').textContent ?? ''
+    const spec = decodeSpec(location.split('spec=')[1] as string, 'compare') as CompareRequest
     expect(spec.group_a).toEqual({ sex: 'male' })
-    expect(spec.group_b).toEqual({ sex: 'female' })
-    expect(spec.label_a).toBe('Men')
+    expect(spec.group_b).toEqual({ sex: 'female', employment_status: 'employed' })
+    expect(spec.label_b).toBe('Working women')
   })
 })
 
@@ -177,7 +231,7 @@ describe('prefilling from a shared analysis', () => {
     expect(
       screen.getByText('Watching TV', { selector: '.activity-picker__name' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /Participation rate/ })).toBeChecked()
+    expect(screen.getByRole('radio', { name: /Share of people who do it/ })).toBeChecked()
     expect(screen.getByLabelText('Year')).toHaveValue('2024')
     expect(screen.getByLabelText('Sex')).toHaveValue('female')
   })
@@ -305,7 +359,7 @@ describe('shared filters of a comparison (review round 3)', () => {
   // "Filters must never be active yet invisible": the comparison's shared
   // population restricts both groups, so it must not hide in a closed section.
   function sharedSection(): HTMLDetailsElement {
-    return screen.getByText(/^Shared filters/).closest('details') as HTMLDetailsElement
+    return screen.getByText(/^Narrow down both groups/).closest('details') as HTMLDetailsElement
   }
 
   it('a prefilled shared filter opens its section and marks it active', async () => {
@@ -323,9 +377,44 @@ describe('shared filters of a comparison (review round 3)', () => {
     const shared = sharedSection()
     expect(shared.open).toBe(true)
     expect(shared.querySelector('summary')).toHaveTextContent(
-      'Shared filters (apply to both groups) (active)',
+      'Narrow down both groups (active)',
     )
     expect(within(shared).getByLabelText('Minimum age')).toHaveValue(65)
+    // Men vs women opens as the simple choice it is.
+    expect(screen.getByLabelText('Compare by')).toHaveValue('sex')
+  })
+
+  it('a link whose groups are not one simple choice opens in the custom editors', async () => {
+    const spec: CompareRequest = {
+      activity: { preset: 'sleep' },
+      years: [2025],
+      group_a: { sex: 'male' },
+      group_b: { sex: 'female' },
+      label_a: 'Dads',
+      label_b: 'Moms',
+    }
+    renderExplore(`/explore?op=compare&spec=${encodeSpec(spec)}`)
+    await waitForBuilder()
+    // Its own names stay visible and editable, never sent unseen.
+    expect(screen.getByLabelText('Compare by')).toHaveValue('custom')
+    const groupA = screen.getByRole('group', { name: 'Group A' })
+    expect(within(groupA).getByLabelText('Name')).toHaveValue('Dads')
+  })
+
+  it('a shared filter on the compared dimension opens the custom editors', async () => {
+    const spec: CompareRequest = {
+      activity: { preset: 'sleep' },
+      years: [2025],
+      population: { sex: 'female' },
+      group_a: { sex: 'male' },
+      group_b: { sex: 'female' },
+      label_a: 'Men',
+      label_b: 'Women',
+    }
+    renderExplore(`/explore?op=compare&spec=${encodeSpec(spec)}`)
+    await waitForBuilder()
+    expect(screen.getByLabelText('Compare by')).toHaveValue('custom')
+    expect(screen.getByText(/^Filters for both groups/).closest('details')?.open).toBe(true)
   })
 
   it('filters carried over from an estimate stay visible after switching to compare', async () => {
@@ -385,7 +474,7 @@ describe('shared filters of a comparison (review round 3)', () => {
     const shared = sharedSection()
     expect(shared.open).toBe(false)
     expect(shared.querySelector('summary')?.textContent).toBe(
-      'Shared filters (apply to both groups)',
+      'Narrow down both groups (optional)',
     )
   })
 })
@@ -453,5 +542,62 @@ describe('capability discovery (review finding: no hard-coded measures)', () => 
     expect(screen.queryByRole('radio', { name: /median/i })).not.toBeInTheDocument()
     // The known measures are unaffected.
     expect(screen.getByRole('radio', { name: /Average time per day/ })).toBeChecked()
+  })
+})
+
+describe('a trend split into groups (like the Shiny app)', () => {
+  it('draws one line per group: the link names the split beside the spec', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await user.click(screen.getByRole('radio', { name: 'Change over time' }))
+    await user.selectOptions(screen.getByLabelText('Lines'), 'employment_status')
+    const groups = screen.getByRole('group', { name: 'Show groups' })
+    // Every group starts shown; the split dimension leaves the filters.
+    expect(within(groups).getAllByRole('checkbox', { checked: true })).toHaveLength(3)
+    expect(screen.queryByLabelText('Employment')).not.toBeInTheDocument()
+    await user.click(within(groups).getByRole('checkbox', { name: 'Unemployed' }))
+    const summary = screen.getByRole('region', { name: 'Your analysis' })
+    expect(within(summary).getByText('For whom').nextElementSibling).toHaveTextContent(
+      'Employed, Not in the labor force',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    const location = screen.getByTestId('location').textContent ?? ''
+    expect(location).toMatch(
+      /^\/analysis\/trend\?spec=[\w-]+&split=employment_status&groups=employed,not_in_labor_force$/,
+    )
+    // The spec itself is the plain trend, filter-free on the split dimension.
+    const spec = decodeSpec(/spec=([\w-]+)/.exec(location)?.[1] as string, 'trend')
+    expect(spec.population).toEqual({})
+  })
+
+  it('needs at least two groups to draw', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await user.click(screen.getByRole('radio', { name: 'Change over time' }))
+    await user.selectOptions(screen.getByLabelText('Lines'), 'sex')
+    await user.click(screen.getByRole('checkbox', { name: 'Women' }))
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose at least two groups to show.')
+    expect(screen.getByTestId('location').textContent).toBe('/explore')
+  })
+
+  it('reopens a split link with its groups', async () => {
+    const spec: EstimateRequest = { activity: { preset: 'sleep' }, years: [2023, 2024, 2025] }
+    renderExplore(`/explore?op=trend&spec=${encodeSpec(spec)}&split=age&groups=15-24,65%2B`)
+    await waitForBuilder()
+    expect(screen.getByLabelText('Lines')).toHaveValue('age')
+    expect(screen.getByRole('checkbox', { name: 'Ages 15–24' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Age 65+' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Ages 25–34' })).not.toBeChecked()
+  })
+
+  it('a split this release does not offer opens the default analysis with a note', async () => {
+    const spec: EstimateRequest = { activity: { preset: 'sleep' }, years: [2025] }
+    renderExplore(`/explore?op=trend&spec=${encodeSpec(spec)}&split=sex&groups=male,other`)
+    await waitForBuilder()
+    expect(screen.getByText(/could not be opened in the builder/)).toBeInTheDocument()
   })
 })

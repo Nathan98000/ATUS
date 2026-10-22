@@ -331,7 +331,7 @@ docs/                  documentation, decision records, audit and equivalence ev
 - [docs/operations.md](docs/operations.md) — the Phase 5 audit, the equivalence criterion, runbooks
 - [docs/analytics.md](docs/analytics.md) — the statistical contract: estimators, weights, variance, filters
 - [docs/api.md](docs/api.md) — HTTP API reference: endpoints, errors, caching, limits, observability
-- [docs/frontend.md](docs/frontend.md) — ATUS Explorer: API integration, cold start, snapshot, exports, testing
+- [docs/frontend.md](docs/frontend.md) — ATUS Explorer: API integration, cold start, snapshot, charts, testing
 - [docs/examples.md](docs/examples.md) — worked example analyses with real outputs
 - [docs/database.md](docs/database.md) — schema reference (grain, keys, indexes, ER diagram)
 - [docs/data-lineage.md](docs/data-lineage.md) — every canonical column traced to its BLS variable

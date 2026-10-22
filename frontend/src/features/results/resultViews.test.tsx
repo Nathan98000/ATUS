@@ -1,16 +1,23 @@
 /**
  * Result-view coverage added from the adversarial review: variance='none'
  * presentation, proportion-unit comparisons (differences in percentage
- * points, never "%"), and non-adjacent-year trend segmentation.
+ * points, never "%"), non-adjacent-year trend segmentation — and the
+ * figures and small print each result's chart carries.
  */
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import type { CompareResponse, EstimateResponse, TrendPoint } from '../../api/types'
-import { compareChildrenFixture, estimateSleepFixture } from '../../test/fixtures'
+import {
+  compareChildrenFixture,
+  estimateSleepFixture,
+  estimateTvFixture,
+  trendLeisureFixture,
+} from '../../test/fixtures'
 import { CompareView } from './CompareView'
 import { EstimateView } from './EstimateView'
 import { TrendChart, availableSegments } from './TrendChart'
+import { TrendView } from './TrendView'
 
 describe('variance="none" presentation', () => {
   it('says explicitly that no uncertainty was requested — never fabricates one', () => {
@@ -26,10 +33,10 @@ describe('variance="none" presentation', () => {
         ci_upper: null,
       },
     }
-    render(<EstimateView result={noVariance} analysisKey={null} />)
-    expect(screen.getByText(/No uncertainty was requested/)).toBeInTheDocument()
+    render(<EstimateView result={noVariance} />)
+    expect(screen.getByText(/No likely range was requested/)).toBeInTheDocument()
     expect(screen.queryByText(/±/)).not.toBeInTheDocument()
-    expect(screen.queryByText(/confidence interval/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/confidence\)/i)).not.toBeInTheDocument()
   })
 })
 
@@ -64,18 +71,17 @@ describe('proportion-unit comparisons', () => {
   }
 
   it('renders the difference and its CI in percentage points, matching the SE', () => {
-    render(<CompareView result={proportionCompare()} analysisKey={null} />)
+    render(<CompareView result={proportionCompare()} />)
     const difference = screen.getByTestId('difference')
     const { label_a: labelA } = compareChildrenFixture
     // The difference of two proportions is percentage points, never "%".
     expect(difference).toHaveTextContent(`3.2 percentage points higher for ${labelA}`)
     expect(difference).toHaveTextContent(
-      `95% confidence interval: 1.0 to 5.4 percentage points higher for ${labelA}`,
+      `Likely range: 1.0 to 5.4 percentage points higher for ${labelA} (95% confidence)`,
     )
-    expect(difference).toHaveTextContent('+3.2 pp, standard error 1.1 pp')
     expect(difference.textContent).not.toMatch(/3\.2%/)
-    // Group-level estimates remain percentages (in the card and the chart).
-    expect(screen.getAllByText('45.0%')).toHaveLength(2)
+    // Group-level estimates remain percentages (beside their bars).
+    expect(screen.getAllByText('45.0%')).toHaveLength(1)
   })
 })
 
@@ -98,7 +104,11 @@ describe('non-adjacent trend years', () => {
       [2021, 2022],
     ])
     render(
-      <TrendChart points={points} unit="minutes_per_day" measureLabel="Average time per day" />,
+      <TrendChart
+        series={[{ label: 'All', points: points }]}
+        unit="minutes_per_day"
+        measureLabel="Average time per day"
+      />,
     )
     const segments = screen.getAllByTestId('trend-line-segment')
     expect(segments.length).toBe(2)
@@ -114,14 +124,13 @@ describe('long group labels (review round 1)', () => {
       (label) => label.textContent ?? '',
     )
 
-  it('the chart and the cards show a long label whole (the chart wraps it)', () => {
+  it('the chart shows a long label whole (it wraps it)', () => {
     // label_a/label_b may be up to 80 characters (the API's limit). The
     // SVG chart cut them at 48; the HTML chart wraps them instead.
     const longA = 'M'.repeat(80)
     const result: CompareResponse = { ...compareChildrenFixture, label_a: longA }
-    const { container } = render(<CompareView result={result} analysisKey={null} />)
+    const { container } = render(<CompareView result={result} />)
     expect(chartLabels(container)).toEqual([longA, compareChildrenFixture.label_b])
-    expect(screen.getByRole('heading', { name: longA })).toBeInTheDocument()
     expect(screen.getByRole('img').getAttribute('aria-label')).toContain(longA)
   })
 
@@ -135,7 +144,7 @@ describe('long group labels (review round 1)', () => {
       label_a: labelA,
       label_b: labelB,
     }
-    const { container } = render(<CompareView result={result} analysisKey={null} />)
+    const { container } = render(<CompareView result={result} />)
     expect(chartLabels(container)).toEqual([labelA, labelB])
   })
 
@@ -145,28 +154,12 @@ describe('long group labels (review round 1)', () => {
       label_a: 'Parents',
       label_b: 'Parents',
     }
-    const { container } = render(<CompareView result={result} analysisKey={null} />)
+    const { container } = render(<CompareView result={result} />)
     expect(chartLabels(container)).toEqual(['Group A: Parents', 'Group B: Parents'])
   })
 
-  it('a comparison names the analytics version that computed it (review round 2)', () => {
-    // The page's footer names the version of the page's /meta; each result
-    // names its own, the comparison too (its methodology panel).
-    const result: CompareResponse = {
-      ...compareChildrenFixture,
-      analytics_version: '0.3',
-      group_a: { ...compareChildrenFixture.group_a, analytics_version: '0.3' },
-      group_b: { ...compareChildrenFixture.group_b, analytics_version: '0.3' },
-    }
-    render(<CompareView result={result} analysisKey={null} />)
-    const term = screen.getByText('Analytics version')
-    expect(term.nextElementSibling).toHaveTextContent('0.3')
-  })
-
   it('distinct labels are drawn without a group prefix', () => {
-    const { container } = render(
-      <CompareView result={compareChildrenFixture} analysisKey={null} />,
-    )
+    const { container } = render(<CompareView result={compareChildrenFixture} />)
     expect(chartLabels(container)).toEqual([
       compareChildrenFixture.label_a,
       compareChildrenFixture.label_b,
@@ -176,15 +169,30 @@ describe('long group labels (review round 1)', () => {
 
 describe('confidence levels other than 90/95/99% (review round 3)', () => {
   // The API accepts any level in (0.5, 1) from a hand-made link or request;
-  // the page must name the level it computed, as the exports do.
-  it('an estimate labels its 97.5% interval and methodology as 97.5%, not 98%', () => {
+  // the page must name the level it computed.
+  it('an estimate labels its 97.5% likely range as 97.5%, not 98%', () => {
     const result: EstimateResponse = {
       ...estimateSleepFixture,
       estimate: { ...estimateSleepFixture.estimate, confidence_level: 0.975 },
     }
-    render(<EstimateView result={result} analysisKey={null} />)
-    expect(screen.getByText(/97\.5% confidence interval/)).toBeInTheDocument()
-    expect(screen.getByText(/97\.5% normal approximation/)).toBeInTheDocument()
+    render(<EstimateView result={result} />)
+    expect(screen.getByText(/97\.5% confidence/)).toBeInTheDocument()
+    expect(screen.queryByText(/98%/)).not.toBeInTheDocument()
+  })
+
+  it("a trend's small print names the level of its band", () => {
+    const result = {
+      ...trendLeisureFixture,
+      points: trendLeisureFixture.points.map((point) =>
+        point.estimate == null
+          ? point
+          : { ...point, estimate: { ...point.estimate, confidence_level: 0.975 } },
+      ),
+    }
+    render(<TrendView result={result} />)
+    expect(
+      screen.getByText(/Shaded band: likely range \(97\.5% confidence\)/),
+    ).toBeInTheDocument()
     expect(screen.queryByText(/98%/)).not.toBeInTheDocument()
   })
 
@@ -193,8 +201,8 @@ describe('confidence levels other than 90/95/99% (review round 3)', () => {
       ...estimateSleepFixture,
       estimate: { ...estimateSleepFixture.estimate, confidence_level: 0.999 },
     }
-    render(<EstimateView result={result} analysisKey={null} />)
-    expect(screen.getByText(/99\.9% confidence interval/)).toBeInTheDocument()
+    render(<EstimateView result={result} />)
+    expect(screen.getByText(/99\.9% confidence/)).toBeInTheDocument()
     expect(screen.queryByText(/100%/)).not.toBeInTheDocument()
   })
 
@@ -203,7 +211,39 @@ describe('confidence levels other than 90/95/99% (review round 3)', () => {
       ...compareChildrenFixture,
       difference: { ...compareChildrenFixture.difference, confidence_level: 0.9545 },
     }
-    render(<CompareView result={result} analysisKey={null} />)
-    expect(screen.getByTestId('difference')).toHaveTextContent('95.45% confidence interval')
+    render(<CompareView result={result} />)
+    expect(screen.getByTestId('difference')).toHaveTextContent('(95.45% confidence)')
+  })
+})
+
+describe('estimate figures', () => {
+  it('shows a duration as a stretch of a 24-hour day', () => {
+    // 528.8 minutes: 36.7% of the day.
+    render(<EstimateView result={estimateSleepFixture} />)
+    expect(screen.getByRole('img', { name: '8h 49m out of 24 hours' })).toBeInTheDocument()
+    expect(screen.getByTestId('day-fill').style.getPropertyValue('--share')).toBe(
+      String(estimateSleepFixture.estimate.value / 1440),
+    )
+    expect(screen.getByText(/Likely range/)).toHaveTextContent('8h 43m to 8h 55m')
+  })
+
+  it('shows a rate as dots among a hundred people', () => {
+    // 72.8%
+    const { container } = render(<EstimateView result={estimateTvFixture} />)
+    expect(
+      screen.getByRole('img', { name: 'About 73 in every 100 people' }),
+    ).toBeInTheDocument()
+    expect(container.querySelectorAll('.hundred-grid__dot')).toHaveLength(100)
+    expect(container.querySelectorAll('.hundred-grid__dot.is-filled')).toHaveLength(73)
+  })
+
+  it('names the sample and the source in the small print', () => {
+    render(<EstimateView result={estimateSleepFixture} />)
+    expect(
+      screen.getByText(/Source: American Time Use Survey, U\.S\. Bureau of Labor Statistics/),
+    ).toHaveTextContent("2,597 people's diaries")
+    // Context notes are small print, not warnings.
+    expect(screen.getByText(/Activities are coded the same way/)).toBeInTheDocument()
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
   })
 })

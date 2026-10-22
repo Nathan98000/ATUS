@@ -1,8 +1,7 @@
 /**
  * Presentation-only number formatting. These functions transform units for
  * display ("528.75" → "8h 49m"); they never change, round, or derive the
- * underlying data — raw API values stay untouched in state, and exact values
- * are always available in each result's data table.
+ * underlying data — raw API values stay untouched in state.
  *
  * Precision policy (documented in docs/frontend.md):
  * - durations: hours+minutes rounded to the nearest minute; detailed form
@@ -57,6 +56,21 @@ export function formatDurationTick(minutes: number): string {
   const rest = Math.round(minutes % 60)
   if (hours === 0) return `${rest}m`
   return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`
+}
+
+/**
+ * Axis label for a duration tick on an axis that does not start at zero,
+ * with minutes padded so a column of labels lines up: 300 → "5h 00m", 310 →
+ * "5h 10m". Ticks on whole hours only read "5h", "6h"; below an hour,
+ * "45m". Non-whole-minute ticks (a very narrow axis) keep their decimals.
+ */
+export function formatClockTick(minutes: number, ticks: readonly number[]): string {
+  if (!ticks.every((tick) => Number.isInteger(tick))) return `${ONE_DECIMAL.format(minutes)}m`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes - hours * 60
+  if (ticks.every((tick) => tick % 60 === 0)) return `${hours}h`
+  if (ticks.every((tick) => tick < 60)) return `${rest}m`
+  return `${hours}h ${String(rest).padStart(2, '0')}m`
 }
 
 /** 528.75 → "528.8". */
@@ -196,6 +210,20 @@ export function formatConfidenceInterval(lower: number, upper: number, unit: str
     default:
       return `${formatValueShort(lower, unit)} to ${upperShort}`
   }
+}
+
+/**
+ * A confidence interval for readers: durations as clock times ("8h 43m to
+ * 8h 55m"), or in minutes with one decimal when both ends round to the same
+ * minute; other units as `formatConfidenceInterval`.
+ */
+export function formatLikelyRange(lower: number, upper: number, unit: string): string {
+  if (unit === 'minutes_per_day' || unit === 'minutes_per_day_of_participants') {
+    const from = formatMinutesAsDuration(lower)
+    const to = formatMinutesAsDuration(upper)
+    if (from !== to) return `${from} to ${to}`
+  }
+  return formatConfidenceInterval(lower, upper, unit)
 }
 
 /**

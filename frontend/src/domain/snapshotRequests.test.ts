@@ -49,7 +49,7 @@ describe('snapshot-requests.mjs', () => {
   ])
 
   it('prints ~130 requests whose keys equal the SPA’s WebCrypto keys', async () => {
-    expect(printed).toHaveLength(132)
+    expect(printed).toHaveLength(131)
     for (const request of printed) {
       expect(request.path).toMatch(
         new RegExp(`^${API_VERSION_PREFIX}/analysis/(estimate|trend|compare)$`),

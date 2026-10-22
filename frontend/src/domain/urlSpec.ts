@@ -227,10 +227,71 @@ export function validateRequestShape(value: unknown, operation: Operation): Anal
   return spec as unknown as AnalysisRequest
 }
 
-export function analysisPath(operation: Operation, spec: AnalysisRequest): string {
-  return `/analysis/${operation}?spec=${encodeSpec(spec)}`
+/**
+ * A trend split into one line per group: the population dimension (`by`,
+ * e.g. "sex" or "age") and the groups shown, by the keys
+ * `features/population/compareGroups.ts` gives them ("male", "15-24",
+ * "true"). It travels beside the spec as `&split=…&groups=…`: the spec stays
+ * exactly the request the API knows, and the page runs one trend per group.
+ */
+export interface SplitSelection {
+  by: string
+  groups: string[]
 }
 
-export function explorePath(operation: Operation, spec: AnalysisRequest): string {
-  return `/explore?op=${operation}&spec=${encodeSpec(spec)}`
+const SPLIT_NAME = /^[a-z_]{1,40}$/
+const GROUP_KEY = /^[0-9A-Za-z_+-]{1,40}$/
+/** The most lines a split chart draws (the most groups any dimension offers). */
+export const MAX_SPLIT_GROUPS = 8
+
+function splitQuery(split: SplitSelection | null | undefined): string {
+  if (!split) return ''
+  const groups = split.groups.map(encodeURIComponent).join(',')
+  return `&split=${encodeURIComponent(split.by)}&groups=${groups}`
+}
+
+/**
+ * The split a link asks for, or null for none. A malformed one is an
+ * invalid link, never silently dropped: a link to a split chart must not
+ * open as a different chart. Whether this data release has the dimension
+ * and the groups is checked against its metadata (`resolveSplit`).
+ */
+export function parseSplit(
+  params: URLSearchParams,
+  operation: Operation,
+): SplitSelection | null {
+  const by = params.get('split')
+  const groups = params.get('groups')
+  if (by === null && groups === null) return null
+  if (operation !== 'trend') {
+    throw new InvalidShareLinkError('Only a trend can be split into groups.')
+  }
+  const keys = (groups ?? '').split(',')
+  if (
+    by === null ||
+    !SPLIT_NAME.test(by) ||
+    keys.length < 2 ||
+    keys.length > MAX_SPLIT_GROUPS ||
+    !keys.every((key) => GROUP_KEY.test(key)) ||
+    new Set(keys).size !== keys.length
+  ) {
+    throw new InvalidShareLinkError('The groups in this analysis link are not valid.')
+  }
+  return { by, groups: keys }
+}
+
+export function analysisPath(
+  operation: Operation,
+  spec: AnalysisRequest,
+  split?: SplitSelection | null,
+): string {
+  return `/analysis/${operation}?spec=${encodeSpec(spec)}${splitQuery(split)}`
+}
+
+export function explorePath(
+  operation: Operation,
+  spec: AnalysisRequest,
+  split?: SplitSelection | null,
+): string {
+  return `/explore?op=${operation}&spec=${encodeSpec(spec)}${splitQuery(split)}`
 }

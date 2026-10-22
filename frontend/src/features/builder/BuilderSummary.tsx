@@ -15,21 +15,26 @@ import {
   splitActivityLabel,
 } from '../../domain/describe'
 import { formatYears } from '../../utils/format'
+import type { PopulationDimension } from '../../api/types'
+import { compareChoices } from '../population/compareGroups'
 import { selectedYears, toRequest, type BuilderState } from './state'
 
 const OPERATION_NAMES = {
-  estimate: 'Single estimate',
-  trend: 'Trend over time',
+  estimate: 'One number',
+  trend: 'Change over time',
   compare: 'Comparison of two groups',
 } as const
 
 export function BuilderSummary({
   state,
   availableYears,
+  dimensions,
   onAnalyze,
 }: {
   state: BuilderState
   availableYears: readonly number[]
+  /** The population metadata's dimensions, to name a split trend's groups. */
+  dimensions: readonly PopulationDimension[]
   onAnalyze: () => void
 }) {
   const presets = useActivityPresets()
@@ -51,6 +56,13 @@ export function BuilderSummary({
     who = shared !== null ? `${groups} (both: ${shared})` : groups
   } else {
     who = populationPhrase(request.population)
+    const split = compareChoices(dimensions).find((choice) => choice.by === state.splitBy)
+    if (state.operation === 'trend' && split) {
+      const groups = split.options
+        .filter((option) => state.splitGroups.includes(option.key))
+        .map((option) => option.label)
+      who = `${groups.join(', ')}${who.startsWith('All respondents') ? '' : ` (all: ${who})`}`
+    }
   }
   const years = selectedYears(state, availableYears)
   const when =

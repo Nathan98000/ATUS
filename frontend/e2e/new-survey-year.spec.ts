@@ -68,13 +68,13 @@ test('a release announcing 2026 reaches every year control, and 2020 is still a 
 
   // A trend defaults to the full reported period, which now ends in 2026.
   await page.goto('/explore')
-  await page.getByRole('radio', { name: 'Trend over time' }).click()
+  await page.getByRole('radio', { name: 'Change over time' }).click()
   const from = page.getByLabel('From', { exact: true })
   const to = page.getByLabel('To', { exact: true })
   await expect(from).toHaveValue('2019')
   await expect(to).toHaveValue('2026')
   await expect(to.locator('option')).toHaveText(['2019', '2020', '2023', '2026'])
-  await expect(page.getByText(/2020 will appear as an explicit gap/)).toBeVisible()
+  await expect(page.getByText(/2020 will show as a gap/)).toBeVisible()
 
   // 2020's rules hold in the real API's answer under the new release.
   await to.selectOption('2023')

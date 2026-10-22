@@ -119,7 +119,6 @@ function SelectionSummary({
         <span className="activity-picker__name">
           {presetLabels.get(value.preset) ?? value.preset}
         </span>
-        <span className="field-hint"> — curated selection</span>
       </div>
     )
   }
@@ -293,7 +292,7 @@ function PickerPanel({
         </ul>
       ) : (
         <>
-          <h3 className="activity-picker__heading">Common selections</h3>
+          <h3 className="activity-picker__heading">Popular activities</h3>
           <ul className="chip-row" aria-label="Preset activity selections">
             {presets.map((preset) => (
               <li key={preset.name}>

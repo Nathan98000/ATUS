@@ -9,12 +9,15 @@ import { useEffect } from 'react'
 import { Link } from 'react-router'
 
 import { useMeta } from '../api/queries'
+import { AnalysisTypeIcon } from '../components/AnalysisTypeIcon'
 import { ServiceInterruption } from '../components/ServiceInterruption'
 import { useRetryFocus } from '../components/useRetryFocus'
 import { isFullPageError } from '../domain/presentError'
 import { STARTER_EXAMPLES } from '../domain/prewarm'
 import { analysisPath } from '../domain/urlSpec'
 import { StarterPreview } from '../features/home/StarterPreview'
+
+const STARTER_ICONS = { estimate: 'number', trend: 'line', compare: 'bars' } as const
 
 export function HomePage() {
   const meta = useMeta()
@@ -38,23 +41,19 @@ export function HomePage() {
     <div className="home-page">
       <section className="home-hero">
         <h1 tabIndex={-1}>Explore how Americans spend their time.</h1>
-        <p style={{ maxWidth: '44rem' }}>
+        <p className="home-hero__lead">
           Every year, the{' '}
           <a href="https://www.bls.gov/tus/" rel="noreferrer">
             American Time Use Survey
           </a>{' '}
-          (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day —
-          minute by minute. This explorer turns those diaries into population estimates: how
-          much time people spend sleeping, working, caring for others, or watching TV, for any
-          group you define{meta.data ? `, from ${years[0]} to ${years[years.length - 1]}` : ''}.
-        </p>
-        <p style={{ maxWidth: '44rem' }}>
-          Every number is survey-weighted and shown with its sampling uncertainty — an estimate,
-          not a headcount.
+          asks thousands of people to walk through one full day, minute by minute. See what
+          those diaries say about sleep, work, chores, TV and more — for everyone, or for the
+          groups you choose{meta.data ? `, from ${years[0]} to ${years[years.length - 1]}` : ''}
+          .
         </p>
         <p>
-          <Link to="/explore" className="btn btn--primary">
-            Build your own analysis
+          <Link to="/explore" className="btn btn--primary btn--large">
+            Make your own chart
           </Link>
         </p>
       </section>
@@ -73,6 +72,7 @@ export function HomePage() {
                   className="example-card"
                   to={analysisPath(example.operation, spec)}
                 >
+                  <AnalysisTypeIcon kind={STARTER_ICONS[example.operation]} />
                   <span className="example-card__question">{example.question}</span>
                   <span className="field-hint">{example.detail}</span>
                   <StarterPreview operation={example.operation} spec={spec} />
@@ -103,24 +103,23 @@ export function HomePage() {
       </section>
 
       <section className="home-notes">
-        <h2>What you are looking at</h2>
+        <h2>Good to know</h2>
         <ul>
           <li>
-            <b>Weighted estimates.</b> Survey weights make each diary stand in for the people it
-            represents, balanced across days of the week and the year.
+            <b>The figures stand for everyone.</b> Each diary is weighted so the results
+            represent all Americans age 15 and over, across every day of the week and the year.
           </li>
           <li>
-            <b>Uncertainty, always.</b> Standard errors and confidence intervals use the
-            survey's official replicate weights.
+            <b>They are estimates.</b> The survey asks a sample of people, so every chart shows
+            a likely range: a shaded band or thin lines around each figure.
           </li>
           <li>
-            <b>2020 is special.</b> Data collection was suspended in spring 2020; the explorer
-            shows 2020 as an explicit gap or under its dedicated methodology — never smoothed
-            over.
+            <b>2020 is missing from trends.</b> The survey paused in spring 2020 because of
+            COVID-19, so trend lines show a gap there.
           </li>
         </ul>
         <p className="field-hint">
-          More on the methodology on the <Link to="/about">About page</Link>.
+          More about the survey and the methods on the <Link to="/about">About page</Link>.
         </p>
       </section>
     </div>

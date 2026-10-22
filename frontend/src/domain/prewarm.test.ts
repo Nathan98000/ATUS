@@ -28,7 +28,7 @@ describe('prewarmedAnalyses', () => {
   const list = prewarmedAnalyses(input)
 
   it('covers about 130 distinct analyses for the captured release', () => {
-    expect(list).toHaveLength(132)
+    expect(list).toHaveLength(131)
     const identities = new Set(
       list.map((item) => `${item.operation} ${stableStringify(item.spec)}`),
     )
@@ -36,8 +36,9 @@ describe('prewarmedAnalyses', () => {
     const counts = (prefix: string) =>
       list.filter((item) => item.name.startsWith(prefix)).length
     expect(counts('starter:')).toBe(4)
-    // The two comparison starters; the others equal builder entries above.
-    expect(counts('starter via the builder:')).toBe(2)
+    // The household starter: the others equal builder entries above (men vs
+    // women is the builder's own default comparison).
+    expect(counts('starter via the builder:')).toBe(1)
     expect(counts('estimate:')).toBe(9 * 4 + 18) // presets × measures, tier-1 categories
     expect(counts('trend:')).toBe(9 + 18)
     expect(counts('compare by sex:')).toBe(9 + 18)

@@ -114,6 +114,7 @@ export function PopulationFields({
             idPrefix={id}
             value={value}
             set={set}
+            showHint={false}
           />
         ))}
       </div>
@@ -128,6 +129,7 @@ export function PopulationFields({
                 idPrefix={id}
                 value={value}
                 set={set}
+                showHint
               />
             ))}
           </div>
@@ -137,16 +139,23 @@ export function PopulationFields({
   )
 }
 
+/**
+ * One filter. The common filters up front are self-explanatory and show no
+ * description, so the grid stays light; the rarer ones under "More filters"
+ * keep the API's description.
+ */
 function DimensionField({
   dimension,
   idPrefix,
   value,
   set,
+  showHint,
 }: {
   dimension: PopulationDimension
   idPrefix: string
   value: PopulationRequest
   set: (name: string, next: unknown) => void
+  showHint: boolean
 }) {
   const fieldId = `${idPrefix}-${dimension.name}`
   const current = (value as Record<string, unknown>)[dimension.name]
@@ -169,7 +178,7 @@ function DimensionField({
           <option value="true">Yes</option>
           <option value="false">No</option>
         </select>
-        {dimension.description ? (
+        {showHint && dimension.description ? (
           <p className="field-hint">{stripVariableJargon(dimension.description)}</p>
         ) : null}
       </div>
@@ -215,7 +224,7 @@ function DimensionField({
             set(dimension.name, event.target.value === '' ? undefined : event.target.value)
           }
         />
-        {dimension.description ? (
+        {showHint && dimension.description ? (
           <p className="field-hint">{stripVariableJargon(dimension.description)}</p>
         ) : null}
       </div>
@@ -235,7 +244,7 @@ function DimensionField({
           set(dimension.name, event.target.value === '' ? undefined : event.target.value)
         }
       />
-      {dimension.description ? (
+      {showHint && dimension.description ? (
         <p className="field-hint">{stripVariableJargon(dimension.description)}</p>
       ) : null}
     </div>

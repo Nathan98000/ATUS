@@ -414,14 +414,12 @@ test(
     await page.getByLabel('Year', { exact: true }).selectOption('2023')
     await analyze(page)
     await expect(page.locator('.stat-value')).toHaveText('2h 30m', { timeout: 15_000 })
-    await page.getByText('How was this calculated?').click()
-    // A download is a Blob URL: allowed without any CSP exception.
-    const downloading = page.waitForEvent('download')
-    await page.getByRole('button', { name: 'Download CSV' }).click()
-    expect((await downloading).suggestedFilename()).toBe('atus-estimate-sleeping-2023.csv')
+    // The figure's fill is sized by a custom property React sets through the
+    // CSSOM, which style-src 'self' does not restrict: no violation.
+    await expect(page.getByTestId('day-fill')).toBeVisible()
 
     await page.goto('/explore')
-    await page.getByRole('radio', { name: 'Trend over time' }).click()
+    await page.getByRole('radio', { name: 'Change over time' }).click()
     await page.getByLabel('From', { exact: true }).selectOption('2019')
     await analyze(page)
     await expect(page.getByTestId('unavailable-2020')).toBeVisible({ timeout: 15_000 })

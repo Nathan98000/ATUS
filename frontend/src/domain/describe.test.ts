@@ -11,8 +11,10 @@ import {
 import {
   activityLabelFromSpec,
   analysisTitle,
+  definitionNote,
   describeDifference,
   humanize,
+  interpretSplitTrend,
   interpretEstimate,
   interpretTrend,
   populationPhrase,
@@ -265,7 +267,7 @@ describe('describeDifference', () => {
     expect(describeDifference(compareChildrenFixture)).toEqual({
       larger: 'b',
       amount: '11 minutes more per day',
-      interval: '95% confidence interval: 2.8 to 19.4 min more for No household children',
+      interval: 'Likely range: 2.8 to 19.4 min more for No household children (95% confidence)',
       sentence:
         'In 2025, average time per day on “Household activities” was 11 minutes longer for ' +
         'No household children than for Household children present.',
@@ -285,7 +287,7 @@ describe('describeDifference', () => {
     const described = describeDifference(straddling)
     expect(described.larger).toBe('a')
     expect(described.interval).toBe(
-      '95% confidence interval: from 3.1 min more for No household children to 7.9 min more for Household children present',
+      'Likely range: from 3.1 min more for No household children to 7.9 min more for Household children present (95% confidence)',
     )
   })
 
@@ -301,6 +303,93 @@ describe('describeDifference', () => {
     expect(described.sentence).toBe(
       'Across 2023–2025 combined, average time per day on “Household activities” was the same ' +
         'for Household children present and for No household children.',
+    )
+  })
+})
+
+describe('definitionNote (R14)', () => {
+  const presets = [{ label: 'Sleeping', include: ['0101'], exclude: [] }]
+
+  it('says nothing when the names are the plain descriptions and the activity a preset', () => {
+    expect(
+      definitionNote('compare', {
+        activity: { preset: 'sleep' },
+        years: [2025],
+        group_a: { sex: 'male' },
+        group_b: { sex: 'female' },
+        label_a: 'Men',
+        label_b: 'Women',
+      }),
+    ).toBeNull()
+    // A preset's canonical link: its codes under its own name.
+    expect(
+      definitionNote(
+        'trend',
+        { activity: { include: ['0101'], exclude: [], label: 'Sleeping' }, years: [2025] },
+        presets,
+      ),
+    ).toBeNull()
+  })
+
+  it('sets names a link chose against the filters computed', () => {
+    expect(
+      definitionNote('compare', {
+        activity: { preset: 'sleep' },
+        years: [2025],
+        group_a: { sex: 'male' },
+        group_b: { sex: 'female' },
+        label_a: 'Women',
+        label_b: 'Men',
+      }),
+    ).toBe('Groups compared: Women (men) and Men (women).')
+  })
+
+  it('names the codes behind a custom activity name', () => {
+    expect(
+      definitionNote(
+        'estimate',
+        { activity: { include: ['0101'], label: 'Working' }, years: [2025] },
+        presets,
+      ),
+    ).toBe('Activity code 0101.')
+    expect(
+      definitionNote('estimate', {
+        activity: { include: ['02', '1802'], exclude: ['020903'], label: 'Chores' },
+        years: [2025],
+      }),
+    ).toBe('Activity codes 02, 1802, excluding 020903.')
+  })
+})
+
+describe('interpretSplitTrend', () => {
+  const shifted = (minutes: number): TrendResponse => ({
+    ...trendLeisureFixture,
+    points: trendLeisureFixture.points.map((point) =>
+      point.estimate == null
+        ? point
+        : { ...point, estimate: { ...point.estimate, value: point.estimate.value + minutes } },
+    ),
+  })
+
+  it('names each group’s latest value when there are two or three', () => {
+    // 2025: 309.6 minutes; 60 less is 249.6.
+    expect(
+      interpretSplitTrend([
+        { label: 'Men', result: trendLeisureFixture },
+        { label: 'Women', result: shifted(-60) },
+      ]),
+    ).toBe(
+      'In 2025, average time per day on “Leisure and sports” was 5h 10m for Men and 4h 10m for Women.',
+    )
+  })
+
+  it('names the highest and the lowest when there are more', () => {
+    const series = [0, 30, -30, 10].map((minutes, index) => ({
+      label: `Group ${index + 1}`,
+      result: shifted(minutes),
+    }))
+    expect(interpretSplitTrend(series)).toBe(
+      'In 2025, average time per day on “Leisure and sports” was highest for Group 2 (5h 40m) and lowest for Group 3 (4h 40m).',
     )
   })
 })

@@ -131,8 +131,8 @@ Vite, client-side only):
   API call.
 
 Deliberately not built: exports (CSV/PNG/PDF; CSV and JSON exports came in
-Phase 5), saved analyses/accounts, persistent history, dark mode, SSR/SEO
-work.
+Phase 5 and were removed again in the 2026-10-22 design review), saved
+analyses/accounts, persistent history, dark mode, SSR/SEO work.
 
 ## Phase 5 — Production Hardening & $0 Deployment
 

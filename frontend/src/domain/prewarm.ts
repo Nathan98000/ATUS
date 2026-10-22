@@ -80,8 +80,8 @@ export const STARTER_EXAMPLES: readonly StarterExample[] = [
       years: [latest],
       group_a: { has_household_children: true },
       group_b: { has_household_children: false },
-      label_a: 'Household children present',
-      label_b: 'No household children',
+      label_a: 'With household children',
+      label_b: 'Without household children',
     }),
   },
 ]

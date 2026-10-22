@@ -1,5 +1,7 @@
 /**
- * Shareable analysis result page: /analysis/:operation?spec=<encoded spec>.
+ * Shareable analysis result page: /analysis/:operation?spec=<encoded spec>,
+ * plus `&split=…&groups=…` for a trend split into one line per group (one
+ * point-estimate trend request per group; such links are not rewritten).
  *
  * The URL alone reconstructs the analysis (decode → validate → run → render).
  * After a successful estimate/trend run the URL is rewritten (replace, no
@@ -14,10 +16,12 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 
 import {
   analysisQueryKey,
+  refetchFailed,
+  useAnalyses,
   useAnalysis,
   useActivityPresets,
-  useLoadedDataVersion,
   useMeta,
+  usePopulationMetadata,
   useVersionTag,
 } from '../api/queries'
 import { useServiceWaking } from '../api/serviceStatus'
@@ -34,7 +38,12 @@ import { ErrorPanel } from '../components/ErrorPanel'
 import { LoadingPanel } from '../components/LoadingPanel'
 import { ServiceInterruption } from '../components/ServiceInterruption'
 import { useRetryFocus } from '../components/useRetryFocus'
-import { activityLabelFromSpec, analysisTitle, resultHeading } from '../domain/describe'
+import {
+  activityLabelFromSpec,
+  analysisTitle,
+  definitionNote,
+  resultHeading,
+} from '../domain/describe'
 import { isFullPageError } from '../domain/presentError'
 import {
   InvalidShareLinkError,
@@ -42,15 +51,19 @@ import {
   decodeSpec,
   encodeSpec,
   explorePath,
+  parseSplit,
+  type SplitSelection,
 } from '../domain/urlSpec'
+import { resolveSplit, seriesSpec } from '../features/population/compareGroups'
 import { formatYears } from '../utils/format'
 import { CompareView } from '../features/results/CompareView'
 import { EstimateView } from '../features/results/EstimateView'
-import { ResultDownloads } from '../features/results/ResultDownloads'
 import { ShareButton } from '../features/results/ShareButton'
-import { TrendView } from '../features/results/TrendView'
+import { SplitTrendView, TrendView, type SplitSeries } from '../features/results/TrendView'
 
-type ParsedLink = { invalid: string } | { operation: Operation; spec: AnalysisRequest }
+type ParsedLink =
+  | { invalid: string }
+  | { operation: Operation; spec: AnalysisRequest; split: SplitSelection | null }
 
 export function AnalysisPage() {
   const params = useParams()
@@ -66,7 +79,11 @@ export function AnalysisPage() {
       return { invalid: 'This analysis link is missing its specification.' }
     }
     try {
-      return { operation, spec: decodeSpec(encoded, operation) }
+      return {
+        operation,
+        spec: decodeSpec(encoded, operation),
+        split: parseSplit(searchParams, operation),
+      }
     } catch (error) {
       return {
         invalid:
@@ -80,7 +97,7 @@ export function AnalysisPage() {
   if ('invalid' in parsed) {
     return <InvalidLink message={parsed.invalid} />
   }
-  return <AnalysisRunner operation={parsed.operation} spec={parsed.spec} />
+  return <AnalysisRunner operation={parsed.operation} spec={parsed.spec} split={parsed.split} />
 }
 
 function InvalidLink({ message }: { message: string }) {
@@ -106,22 +123,47 @@ const LOADING_MESSAGES: Record<Operation, string> = {
   trend: 'Calculating trend and uncertainty…',
   compare: 'Comparing groups…',
 }
+const SPLIT_LOADING_MESSAGE = 'Calculating a trend for each group…'
+const UNKNOWN_SPLIT =
+  'This link splits the trend into groups that this data release does not offer.'
 
 /** Before /meta arrives no analysis has been sent, so nothing is "calculating" yet (audit F11). */
 const PREPARING_MESSAGE = 'Preparing the analysis…'
 const WAKING_LOADING_MESSAGE = 'Waiting for the analysis service to wake up…'
 
-function AnalysisRunner({ operation, spec }: { operation: Operation; spec: AnalysisRequest }) {
+function AnalysisRunner({
+  operation,
+  spec,
+  split,
+}: {
+  operation: Operation
+  spec: AnalysisRequest
+  split: SplitSelection | null
+}) {
   const meta = useMeta()
   const versions = useVersionTag()
-  const loadedDataVersion = useLoadedDataVersion()
   const presets = useActivityPresets()
+  const populationMetadata = usePopulationMetadata()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const query = useAnalysis(operation, spec)
+  // A split trend runs one trend per group instead of the spec itself.
+  const resolved =
+    split !== null && populationMetadata.data !== undefined
+      ? resolveSplit(populationMetadata.data.dimensions, split)
+      : null
+  const single = useAnalysis(operation, split === null ? spec : null)
+  const seriesQueries = useAnalyses(
+    'trend',
+    resolved ? resolved.options.map((option) => seriesSpec(spec, resolved, option)) : [],
+  )
+  const query = useCombinedQuery(single, split === null ? null : seriesQueries)
+  const splitUnusable =
+    split !== null && populationMetadata.data !== undefined && resolved === null
   const waking = useServiceWaking()
   // "Try again" keeps focus on the page (the panel holding the button unmounts).
-  const retry = useRetryFocus(meta.isFetching || query.isFetching)
+  const retry = useRetryFocus(
+    meta.isFetching || query.isFetching || populationMetadata.isFetching,
+  )
 
   const presetLabels = useMemo(() => {
     const map = new Map<string, string>()
@@ -129,7 +171,7 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
     return map
   }, [presets.data])
 
-  const result: AnalysisResponse | undefined = query.data?.data
+  const result: AnalysisResponse | undefined = query.data?.data ?? query.series?.[0]
   const activityLabel = useMemo(() => {
     if (result) {
       if (operation === 'compare') return (result as CompareResponse).group_a.activity.label
@@ -138,11 +180,21 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
     return activityLabelFromSpec(spec, presetLabels)
   }, [result, operation, spec, presetLabels])
 
-  const title = analysisTitle(operation, spec, activityLabel)
+  const splitPhrase = resolved ? `by ${resolved.choice.label.toLowerCase()}` : null
+  const title = [analysisTitle(operation, spec, activityLabel), splitPhrase]
+    .filter(Boolean)
+    .join(' — ')
   // The subtitle names a comparison's shared filters: they restrict both
   // groups and must be named with the result, not only inside its collapsed
   // panels (review round 3).
   const heading = resultHeading(operation, spec, activityLabel)
+  if (resolved !== null) {
+    const groups = resolved.options.map((option) => option.label)
+    heading.eyebrow = `${heading.eyebrow} and ${resolved.choice.label.toLowerCase()}`
+    heading.subtitle = `${heading.subtitle} · ${
+      groups.length <= 3 ? groups.join(', ') : `${groups.length} groups`
+    }`
+  }
 
   useEffect(() => {
     document.title = `${title} · ATUS Explorer`
@@ -151,35 +203,46 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
     }
   }, [title])
 
-  // Canonicalize the URL from the API's own canonical spec (estimate/trend).
+  // Canonicalize the URL from the API's own canonical spec (estimate/trend;
+  // a split trend's link names its groups and stays as written).
   useEffect(() => {
-    if (!result || operation === 'compare' || versions === null) return
+    if (!result || operation === 'compare' || split !== null || versions === null) return
     const canonical = (result as EstimateResponse | TrendResponse).spec as AnalysisRequest
     const canonicalEncoded = encodeSpec(canonical)
     if (canonicalEncoded === encodeSpec(spec)) return
     queryClient.setQueryData(analysisQueryKey(operation, canonical, versions), query.data)
     navigate(`/analysis/${operation}?spec=${canonicalEncoded}`, { replace: true })
-  }, [result, operation, spec, versions, navigate, query.data, queryClient])
+  }, [result, operation, spec, split, versions, navigate, query.data, queryClient])
 
-  const adjustHref = explorePath(operation, spec)
+  const adjustHref = explorePath(operation, spec, split)
   // Only a /meta failure with nothing loaded blocks the page; a failed
   // background refetch never hides a displayed result (audit F26).
-  const metaFailed = meta.data === undefined && meta.isError
-  const blockingError = metaFailed ? meta.error : query.isError ? query.error : null
+  const metaFailed =
+    (meta.data === undefined && meta.isError) ||
+    (split !== null && populationMetadata.data === undefined && populationMetadata.isError)
+  const metaError = meta.isError ? meta.error : populationMetadata.error
+  const blockingError = metaFailed ? metaError : query.isError ? query.error : null
   // What the page announces while it loads: the site-wide notice already
   // announces the waking state, so the persistent live region below keeps
   // the operation's own message and only the visible text says "waking".
   const announcedLoadingMessage =
-    meta.data === undefined ? PREPARING_MESSAGE : LOADING_MESSAGES[operation]
+    meta.data === undefined
+      ? PREPARING_MESSAGE
+      : split !== null
+        ? SPLIT_LOADING_MESSAGE
+        : LOADING_MESSAGES[operation]
   const loadingMessage =
     meta.data !== undefined && waking ? WAKING_LOADING_MESSAGE : announcedLoadingMessage
 
+  const retryMeta = () => retry(() => refetchFailed(meta, populationMetadata))
+
+  if (splitUnusable) return <InvalidLink message={UNKNOWN_SPLIT} />
   // A paused quota or an incompatible API replaces the whole page.
   if (blockingError !== null && isFullPageError(blockingError)) {
     return (
       <ServiceInterruption
         error={blockingError}
-        onRetry={() => retry(() => (metaFailed ? meta.refetch() : query.refetch()))}
+        onRetry={metaFailed ? retryMeta : () => retry(() => query.refetch())}
       />
     )
   }
@@ -217,7 +280,7 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
         // The analysis query is version-keyed on /meta and stays disabled
         // while it has no version tag — a failing /meta must surface here,
         // or a cold deep link would show the loading state forever.
-        <ErrorPanel error={meta.error} onRetry={() => retry(() => meta.refetch())} />
+        <ErrorPanel error={metaError} onRetry={retryMeta} />
       ) : meta.data === undefined || query.isPending ? (
         // Not a live region itself: the persistent one below announces each
         // state once (a second region with the same text is read twice).
@@ -225,7 +288,7 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
           announce={false}
           message={loadingMessage}
           hint={
-            meta.data !== undefined && !waking && spec.variance !== 'none'
+            meta.data !== undefined && !waking && split === null && spec.variance !== 'none'
               ? 'Standard errors over many years can take up to a minute the first time; repeated analyses are nearly instant.'
               : undefined
           }
@@ -236,25 +299,22 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
           onRetry={() => retry(() => query.refetch())}
           adjustHref={adjustHref}
         />
-      ) : (
-        <>
-          <ResultBody
-            operation={operation}
-            result={query.data.data}
-            analysisKey={query.data.analysisKey}
-          />
-          <ResultDownloads
-            operation={operation}
-            requestSpec={spec}
-            result={query.data.data}
-            analysisKey={query.data.analysisKey}
-            // The release that produced this response; the page's own if it did not say.
-            dataVersion={query.data.dataVersion ?? loadedDataVersion}
-            apiVersion={meta.data.api_version}
-            dataRelease={meta.data.data.release}
-          />
-        </>
-      )}
+      ) : query.series !== undefined && resolved ? (
+        <SplitTrendView
+          series={resolved.options.map((option, index): SplitSeries => ({
+            label: option.label,
+            result: query.series?.[index] as TrendResponse,
+          }))}
+          legendTitle={resolved.choice.label}
+          note={definitionNote(operation, spec, presets.data?.presets)}
+        />
+      ) : query.data !== undefined ? (
+        <ResultBody
+          operation={operation}
+          result={query.data.data}
+          note={definitionNote(operation, spec, presets.data?.presets)}
+        />
+      ) : null}
       {/* Persistent live region: reliably announces the start and end of a
           potentially ~10 s computation (content mounted with its text
           already present is often not announced by screen readers). */}
@@ -272,17 +332,53 @@ function AnalysisRunner({ operation, spec }: { operation: Operation; spec: Analy
 function ResultBody({
   operation,
   result,
-  analysisKey,
+  note,
 }: {
   operation: Operation
   result: AnalysisResponse
-  analysisKey: string | null
+  note: string | null
 }) {
   if (operation === 'estimate') {
-    return <EstimateView result={result as EstimateResponse} analysisKey={analysisKey} />
+    return <EstimateView result={result as EstimateResponse} note={note} />
   }
   if (operation === 'trend') {
-    return <TrendView result={result as TrendResponse} analysisKey={analysisKey} />
+    return <TrendView result={result as TrendResponse} note={note} />
   }
-  return <CompareView result={result as CompareResponse} analysisKey={analysisKey} />
+  return <CompareView result={result as CompareResponse} note={note} />
+}
+
+/**
+ * One analysis, or a split trend's analyses as one: pending while any is,
+ * failed (with the first failure) when any failed, and "Try again" refetches
+ * every failed one. `series` holds the split's results, in group order.
+ */
+function useCombinedQuery(
+  single: ReturnType<typeof useAnalysis>,
+  many: ReturnType<typeof useAnalyses<'trend'>> | null,
+) {
+  if (many === null) {
+    return {
+      isPending: single.isPending,
+      isFetching: single.isFetching,
+      isError: single.isError,
+      error: single.error,
+      refetch: single.refetch,
+      data: single.data,
+      series: undefined,
+    }
+  }
+  const failed = many.find((entry) => entry.isError)
+  const done = many.length > 0 && many.every((entry) => entry.data !== undefined)
+  return {
+    isPending: !done && failed === undefined,
+    isFetching: many.some((entry) => entry.isFetching),
+    isError: failed !== undefined,
+    error: failed?.error ?? null,
+    refetch: () => {
+      refetchFailed(...many)
+      return Promise.resolve()
+    },
+    data: undefined,
+    series: done ? many.map((entry) => entry.data?.data as TrendResponse) : undefined,
+  }
 }

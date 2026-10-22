@@ -9,13 +9,7 @@
  */
 
 import AxeBuilder from '@axe-core/playwright'
-import {
-  type BrowserContext,
-  type ConsoleMessage,
-  type Download,
-  type Page,
-  expect,
-} from '@playwright/test'
+import { type BrowserContext, type ConsoleMessage, type Page, expect } from '@playwright/test'
 
 import { browserPlatform, tabReachesAllControls as tabReachesAll } from './browserServer'
 
@@ -84,54 +78,6 @@ export async function tabTo(
     await page.keyboard.press('Tab')
   }
   await expect(target).toBeFocused()
-}
-
-/**
- * The text of a downloaded file, byte-order mark included. The bytes are
- * streamed from wherever the browser saved them: `download.path()` throws
- * when the browser runs remotely (scripts/e2e_in_container.sh), the stream
- * works in both places.
- */
-export async function downloadedText(download: Download) {
-  const chunks: Buffer[] = []
-  for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer)
-  return new TextDecoder('utf-8', { ignoreBOM: true }).decode(Buffer.concat(chunks))
-}
-
-/** CSV rows as header → value records (RFC 4180 quoting; the file starts with a BOM). */
-export function csvRecords(text: string): Record<string, string>[] {
-  expect(text.startsWith('﻿')).toBe(true)
-  expect(text.endsWith('\r\n')).toBe(true)
-  const rows: string[][] = []
-  let row: string[] = []
-  let field = ''
-  let quoted = false
-  const body = text.slice(1)
-  for (let index = 0; index < body.length; index += 1) {
-    const char = body[index] as string
-    if (quoted) {
-      if (char === '"' && body[index + 1] === '"') {
-        field += '"'
-        index += 1
-      } else if (char === '"') quoted = false
-      else field += char
-    } else if (char === '"') quoted = true
-    else if (char === ',') {
-      row.push(field)
-      field = ''
-    } else if (char === '\r' && body[index + 1] === '\n') {
-      row.push(field)
-      rows.push(row)
-      row = []
-      field = ''
-      index += 1
-    } else field += char
-  }
-  const [header = [], ...data] = rows
-  return data.map((cells) => {
-    expect(cells).toHaveLength(header.length)
-    return Object.fromEntries(header.map((name, index) => [name, cells[index] ?? '']))
-  })
 }
 
 /**

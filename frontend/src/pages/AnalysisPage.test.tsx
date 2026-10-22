@@ -56,26 +56,25 @@ function renderAnalysisRoute(
 }
 
 describe('estimate results', () => {
-  it('shows the estimate, uncertainty, samples, warnings, and methodology', async () => {
+  it('shows the estimate, its likely range, a figure, and its small print', async () => {
     renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
 
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
-    expect(screen.getByText('528.8 minutes per day')).toBeInTheDocument()
-    expect(screen.getByText(/± 2.9 min/)).toBeInTheDocument()
-    expect(screen.getByText(/523.0 to 534.5 min/)).toBeInTheDocument()
-    // Unweighted sample vs weighted population, clearly distinguished:
-    expect(screen.getByText(/2,597 respondents/)).toBeInTheDocument()
-    expect(screen.getByText(/131.1 million people on an average day/)).toBeInTheDocument()
-    // API warnings are visible, in plain language:
-    expect(screen.getByRole('note')).toHaveTextContent(
-      /coded the same way in every survey year/,
+    expect(screen.getByText('per day, on average')).toBeInTheDocument()
+    // The interval 523.0 to 534.5 minutes, as clock times:
+    expect(screen.getByText(/Likely range/)).toHaveTextContent(
+      'Likely range 8h 43m to 8h 55m (95% confidence)',
     )
-    // Methodology comes from the response, with the API's notes verbatim:
-    expect(screen.getByText('How was this calculated?')).toBeInTheDocument()
-    expect(screen.getByText(/TUFNWGTP \(multiyear\)/)).toBeInTheDocument()
-    expect(screen.getByText('Technical notes').nextElementSibling).toHaveTextContent(
-      /BLS-harmonized/,
-    )
+    expect(screen.getByRole('img', { name: '8h 49m out of 24 hours' })).toBeInTheDocument()
+    // The sample and the source, in the small print:
+    expect(screen.getByText(/2,597 people's diaries/)).toBeInTheDocument()
+    // API notes are visible, in plain language:
+    expect(screen.getByText(/coded the same way in every survey year/)).toBeInTheDocument()
+    // Nothing technical: no methodology panel, table or downloads.
+    expect(screen.queryByText('How was this calculated?')).not.toBeInTheDocument()
+    expect(screen.queryByText(/TUFNWGTP/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /download/i })).not.toBeInTheDocument()
   })
 
   it('heads the result with the statistic, the activity, and the rest said once', async () => {
@@ -157,7 +156,7 @@ describe('estimate results', () => {
 })
 
 describe('trend and compare results', () => {
-  it('renders the trend with its 2020 gap and data table', async () => {
+  it('renders the trend with its 2020 gap, small print, and a table for screen readers', async () => {
     const spec: EstimateRequest = {
       activity: { preset: 'leisure_and_sports_bls_table' },
       years: trendLeisureFixture.points.map((point) => point.year),
@@ -165,14 +164,19 @@ describe('trend and compare results', () => {
     renderAnalysisRoute(`/analysis/trend?spec=${encodeSpec(spec)}`)
     expect(await screen.findByTestId('unavailable-2020')).toBeInTheDocument()
     expect(screen.getAllByTestId('trend-line-segment').length).toBe(2)
-    // API warnings must be visible on trend pages too.
-    expect(screen.getByRole('note')).toHaveTextContent(
-      /coded the same way in every survey year/,
+    // API notes must be visible on trend pages too.
+    expect(screen.getByText(/coded the same way in every survey year/)).toBeInTheDocument()
+    // The small print says why 2020 has no data.
+    expect(screen.getByTestId('gap-note')).toHaveTextContent(
+      /No data for 2020: Data collection paused in spring 2020 because of COVID-19/,
     )
-    // The data table lists 2020 as having no estimate, never as zero.
+    expect(screen.getByTestId('gap-note')).not.toHaveTextContent(/TUFNWGTP/)
+    // The hidden table lists 2020 as having no estimate, never as zero.
     const row = screen.getByRole('rowheader', { name: '2020' }).closest('tr') as HTMLElement
-    expect(row).toHaveTextContent('No estimate')
+    expect(row).toHaveTextContent('No data')
     expect(row).not.toHaveTextContent('0.0')
+    // A preset's canonical link names no activity codes.
+    expect(screen.queryByText(/Activity codes/)).not.toBeInTheDocument()
     // The heading drops the definition parenthetical from the title, not the page.
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^Leisure and sports$/)
     expect(
@@ -199,7 +203,7 @@ describe('trend and compare results', () => {
     expect(compareChildrenFixture.difference.value).toBeLessThan(0)
     expect(difference).toHaveTextContent('11 minutes more per day for No household children')
     expect(difference).toHaveTextContent(
-      'Exact difference (Household children present − No household children): -11.1 min, standard error 4.2 min',
+      'Likely range: 2.8 to 19.4 min more for No household children (95% confidence)',
     )
     expect(screen.getAllByText('1h 52m').length).toBeGreaterThan(0)
     expect(screen.getAllByText('2h 3m').length).toBeGreaterThan(0)
@@ -208,10 +212,14 @@ describe('trend and compare results', () => {
         'In 2025, average time per day on “Household activities” was 11 minutes longer for No household children than for Household children present.',
       ),
     ).toBeInTheDocument()
-    // API warnings must be visible on compare pages too.
-    expect(screen.getByRole('note')).toHaveTextContent(
-      /both groups coming from the same survey/,
-    )
+    // API notes must be visible on compare pages too.
+    expect(screen.getByText(/both groups coming from the same survey/)).toBeInTheDocument()
+    // Names the link chose are set against the filters computed (R14).
+    expect(
+      screen.getByText(
+        'Groups compared: Household children present (with household children) and No household children (without household children).',
+      ),
+    ).toBeInTheDocument()
     // No shared filters: the details line names only the definition and year.
     expect(screen.queryByText(/Both groups:/)).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
@@ -394,5 +402,61 @@ describe('race safety', () => {
     await new Promise((resolve) => setTimeout(resolve, 500))
     expect(screen.queryByText(/16h 39m/)).not.toBeInTheDocument()
     expect(screen.getByText('8h 49m')).toBeInTheDocument()
+  })
+})
+
+describe('a trend split into groups', () => {
+  const trend: EstimateRequest = {
+    activity: { preset: 'leisure_and_sports_bls_table' },
+    years: trendLeisureFixture.points.map((point) => point.year),
+  }
+
+  it('runs one point-estimate trend per group and draws a line for each', async () => {
+    const bodies: Record<string, unknown>[] = []
+    server.use(
+      http.post(api('/analysis/trend'), async ({ request }) => {
+        bodies.push((await request.json()) as Record<string, unknown>)
+        return HttpResponse.json(trendLeisureFixture, { headers: analysisHeaders() })
+      }),
+    )
+    renderAnalysisRoute(
+      `/analysis/trend?spec=${encodeSpec(trend)}&split=sex&groups=male,female`,
+    )
+    expect(await screen.findByTestId('series-1')).toBeInTheDocument()
+    expect(screen.getByTestId('series-0')).toBeInTheDocument()
+    expect(bodies.map((body) => [body.population, body.variance])).toEqual([
+      [{ sex: 'male' }, 'none'],
+      [{ sex: 'female' }, 'none'],
+    ])
+    // A legend names the lines; no band is drawn for several.
+    expect(screen.getByText('Sex')).toHaveClass('chart-legend__title')
+    expect(screen.queryByTestId('ci-band')).not.toBeInTheDocument()
+    expect(screen.getByText('Average time per day, by year and sex')).toHaveClass('eyebrow')
+    expect(
+      screen.getByText(
+        /^In 2025, average time per day on “Leisure and sports” was 5h 10m for Men/,
+      ),
+    ).toBeInTheDocument()
+    // The link keeps its split: it is not rewritten to the canonical spec.
+    expect(screen.getByTestId('location').textContent).toContain(
+      '&split=sex&groups=male,female',
+    )
+    expect(screen.getByRole('link', { name: 'Adjust analysis' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('&split=sex&groups=male,female'),
+    )
+  })
+
+  it('a split this release does not offer is an invalid link', async () => {
+    renderAnalysisRoute(`/analysis/trend?spec=${encodeSpec(trend)}&split=sex&groups=male,other`)
+    expect(await screen.findByRole('heading', { name: /cannot be opened/ })).toBeInTheDocument()
+    expect(screen.getByText(/groups that this data release does not offer/)).toBeInTheDocument()
+  })
+
+  it('a malformed split is an invalid link before anything is sent', async () => {
+    renderAnalysisRoute(`/analysis/trend?spec=${encodeSpec(trend)}&split=sex&groups=male`)
+    expect(
+      screen.getByText('The groups in this analysis link are not valid.'),
+    ).toBeInTheDocument()
   })
 })

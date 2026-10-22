@@ -144,6 +144,53 @@ export function sharedPopulationPhrase(spec: AnalysisRequest): string | null {
   return phrase === ALL_RESPONDENTS ? null : phrase
 }
 
+/**
+ * Labels a share link chose, set against what was computed (R14 in
+ * docs/security.md). A comparison's group names are free text, so when a
+ * name is not the plain description of its group's filters the note says
+ * which filters it stands for; a custom activity's name is free text too,
+ * so the note names its activity codes — unless the selection is exactly a
+ * preset under the preset's own name (the canonical form of a preset's
+ * link). Null when there is nothing to add.
+ */
+export function definitionNote(
+  operation: Operation,
+  spec: AnalysisRequest,
+  presets: readonly { label: string; include: string[]; exclude: string[] }[] = [],
+): string | null {
+  const parts: string[] = []
+  if (operation === 'compare') {
+    const compare = spec as CompareRequest
+    const groups = [
+      { label: compare.label_a ?? 'Group A', phrase: populationPhrase(compare.group_a) },
+      { label: compare.label_b ?? 'Group B', phrase: populationPhrase(compare.group_b) },
+    ]
+    if (groups.some((group) => group.label !== group.phrase)) {
+      parts.push(
+        `Groups compared: ${groups.map((group) => `${group.label} (${group.phrase.toLowerCase()})`).join(' and ')}.`,
+      )
+    }
+  }
+  const activity = spec.activity
+  const sameCodes = (a: readonly string[], b: readonly string[]) =>
+    a.length === b.length && [...a].sort().join() === [...b].sort().join()
+  const isPreset = presets.some(
+    (preset) =>
+      preset.label === activity.label &&
+      sameCodes(preset.include, activity.include ?? []) &&
+      sameCodes(preset.exclude, activity.exclude ?? []),
+  )
+  if (activity.preset == null && !isPreset && (activity.include?.length ?? 0) > 0) {
+    const codes = activity.include ?? []
+    let text = `Activity ${codes.length === 1 ? 'code' : 'codes'} ${codes.join(', ')}`
+    if (activity.exclude && activity.exclude.length > 0) {
+      text += `, excluding ${activity.exclude.join(', ')}`
+    }
+    parts.push(`${text}.`)
+  }
+  return parts.length > 0 ? parts.join(' ') : null
+}
+
 /** Display label for the spec's activity selection (before results arrive). */
 export function activityLabelFromSpec(
   spec: AnalysisRequest,
@@ -184,9 +231,9 @@ export function analysisTitle(
 
 const MEASURE_NAMES: Record<string, string> = {
   average_minutes_per_day: 'Average time per day',
-  participation_rate: 'Participation rate',
-  average_minutes_per_participant: 'Time among participants',
-  participants_per_day: 'People per day',
+  participation_rate: 'Share of people who do it',
+  average_minutes_per_participant: 'Time among those who do it',
+  participants_per_day: 'Number of people who do it',
 }
 
 /** Display name of a statistic, e.g. "Average time per day". */
@@ -375,12 +422,53 @@ export function interpretTrend(result: TrendResponse): string {
   return text
 }
 
+/**
+ * The answer a split trend leads with: each group's value in the latest
+ * year every group has one — named in turn for two or three groups, as the
+ * highest and the lowest for more. Descriptive only.
+ */
+export function interpretSplitTrend(
+  series: readonly { label: string; result: TrendResponse }[],
+): string {
+  const first = series[0]?.result
+  if (first === undefined) return ''
+  const activity = `“${splitActivityLabel(first.activity.label).name}”`
+  const subject = measureSubject(first.measure, activity)
+  if (subject === null) return ''
+  const years = first.points.map((point) => point.year).sort((a, b) => b - a)
+  for (const year of years) {
+    const values = series.map(({ label, result }) => ({
+      label,
+      estimate: result.points.find((point) => point.year === year)?.estimate ?? null,
+    }))
+    if (values.some((value) => value.estimate == null)) continue
+    const show = ({ estimate }: (typeof values)[number]) =>
+      formatEstimate((estimate as EstimateValue).value, (estimate as EstimateValue).unit)
+        .primary
+    if (values.length <= 3) {
+      const parts = values.map((value) => `${show(value)} for ${value.label}`)
+      const listed =
+        parts.length === 2
+          ? parts.join(' and ')
+          : `${parts.slice(0, -1).join(', ')}, and ${parts.at(-1)}`
+      return `In ${year}, ${lowerFirst(subject)} was ${listed}.`
+    }
+    const sorted = [...values].sort(
+      (a, b) => (b.estimate as EstimateValue).value - (a.estimate as EstimateValue).value,
+    )
+    const high = sorted[0] as (typeof values)[number]
+    const low = sorted[sorted.length - 1] as (typeof values)[number]
+    return `In ${year}, ${lowerFirst(subject)} was highest for ${high.label} (${show(high)}) and lowest for ${low.label} (${show(low)}).`
+  }
+  return ''
+}
+
 export interface DifferenceDescription {
   /** The group whose estimate is larger, or null when they are equal. */
   larger: 'a' | 'b' | null
   /** "23 minutes more per day", "6.2 percentage points higher", … */
   amount: string
-  /** "95% confidence interval: 13.8 to 32.5 min more for Men", or null without one. */
+  /** "Likely range: 13.8 to 32.5 min more for Men (95% confidence)", or null without one. */
   interval: string | null
   /** The one-sentence answer a comparison leads with. */
   sentence: string
@@ -431,13 +519,14 @@ export function describeDifference(result: CompareResponse): DifferenceDescripti
   let interval: string | null = null
   const { ci_lower: lower, ci_upper: upper, confidence_level: level } = difference
   if (lower != null && upper != null && level != null) {
-    const prefix = `${formatConfidenceLevel(level)} confidence interval: `
+    const prefix = 'Likely range: '
+    const suffix = ` (${formatConfidenceLevel(level)} confidence)`
     if (lower >= 0) {
-      interval = `${prefix}${range(lower, upper)} ${word} for ${labelA}`
+      interval = `${prefix}${range(lower, upper)} ${word} for ${labelA}${suffix}`
     } else if (upper <= 0) {
-      interval = `${prefix}${range(upper, lower)} ${word} for ${labelB}`
+      interval = `${prefix}${range(upper, lower)} ${word} for ${labelB}${suffix}`
     } else {
-      interval = `${prefix}from ${bound(lower)} ${word} for ${labelB} to ${bound(upper)} ${word} for ${labelA}`
+      interval = `${prefix}from ${bound(lower)} ${word} for ${labelB} to ${bound(upper)} ${word} for ${labelA}${suffix}`
     }
   }
 

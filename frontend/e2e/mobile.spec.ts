@@ -21,7 +21,7 @@ test('the core workflow works on a phone without horizontal scrolling', async ({
   const noHorizontalScroll = () => expectNoHorizontalScroll(page)
   await noHorizontalScroll()
 
-  await page.getByRole('link', { name: 'Build your own analysis' }).click()
+  await page.getByRole('link', { name: 'Make your own chart' }).click()
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Analyze' })).toBeVisible()
   await noHorizontalScroll()
@@ -33,7 +33,7 @@ test('the core workflow works on a phone without horizontal scrolling', async ({
 
   // The trend chart scales to the viewport.
   await page.goto('/explore')
-  await page.getByRole('radio', { name: 'Trend over time' }).click()
+  await page.getByRole('radio', { name: 'Change over time' }).click()
   await page.getByLabel('From', { exact: true }).selectOption('2019')
   await page.getByRole('button', { name: 'Analyze' }).click()
   await expect(page.getByTestId('unavailable-2020')).toBeVisible({ timeout: 15_000 })
@@ -48,16 +48,15 @@ test('comparison groups stack vertically and stay readable', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
   await page.getByRole('radio', { name: 'Compare two groups' }).click()
 
-  const groupA = page.getByRole('group', { name: 'Group A' })
-  const groupB = page.getByRole('group', { name: 'Group B' })
-  await expect(groupA).toBeVisible()
-  const boxA = await groupA.boundingBox()
-  const boxB = await groupB.boundingBox()
+  const first = page.getByLabel('First group')
+  const second = page.getByLabel('Second group')
+  await expect(first).toBeVisible()
+  const boxA = await first.boundingBox()
+  const boxB = await second.boundingBox()
   // Stacked, not side by side.
   expect(boxB?.y ?? 0).toBeGreaterThan((boxA?.y ?? 0) + (boxA?.height ?? 0) - 1)
+  await expectNoHorizontalScroll(page)
 
-  await groupA.getByLabel('Sex').selectOption('male')
-  await groupB.getByLabel('Sex').selectOption('female')
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
   await page.getByRole('button', { name: 'Analyze' }).click()
   await expect(page.getByTestId('difference')).toBeVisible({ timeout: 15_000 })

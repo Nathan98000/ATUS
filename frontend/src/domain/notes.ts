@@ -3,9 +3,8 @@
  *
  * The API words its `warnings` and each trend year's `unavailable_reason`
  * for analysts (BLS variable names, replicate variance, the activity
- * lexicon). Result pages show every note in plain language instead; the
- * API's exact text stays in "How was this calculated?" and in the downloads.
- * A note this module does not recognize is shown exactly as the API wrote
+ * lexicon). Result pages show every note in plain language instead. A note
+ * this module does not recognize is shown exactly as the API wrote
  * it, as a caveat: a new note is never hidden or softened.
  */
 
@@ -93,14 +92,33 @@ export function presentNote(warning: string): PresentedNote {
   return { kind: 'caveat', text: warning }
 }
 
+/** The notes that are context rather than caveats, in plain language. */
+export function contextNotes(warnings: readonly string[]): string[] {
+  return warnings
+    .map(presentNote)
+    .filter((note) => note.kind === 'context')
+    .map((note) => note.text)
+}
+
 /** Why a trend year has no estimate, in plain language (unrecognized: verbatim). */
 export function presentUnavailableReason(reason: string | null | undefined): string {
   if (reason == null || reason.trim() === '') return 'No estimate is available for this year.'
   if (/^TUFNWGTP is undefined for 2020\b/.test(reason)) {
-    return 'Data collection paused in spring 2020 because of COVID-19, so there is no full-year estimate comparable with other years. A partial-year estimate is available with the pandemic weights (Advanced methodology in the builder).'
+    return 'Data collection paused in spring 2020 because of COVID-19, so there is no full-year estimate comparable with other years. A partial-year estimate is available with the pandemic weights (Advanced options in the builder).'
   }
   if (/^no respondents match the population filters\b/i.test(reason)) {
     return 'No survey respondents match the selected group in this year.'
   }
   return reason
+}
+
+/** The same reason in a few words, for a chart's tooltip (unrecognized: verbatim). */
+export function shortUnavailableReason(reason: string | null | undefined): string {
+  if (reason != null && /^TUFNWGTP is undefined for 2020\b/.test(reason)) {
+    return 'the survey paused in spring 2020 (COVID-19).'
+  }
+  if (reason != null && /^no respondents match the population filters\b/i.test(reason)) {
+    return 'no survey respondents in this group that year.'
+  }
+  return presentUnavailableReason(reason)
 }

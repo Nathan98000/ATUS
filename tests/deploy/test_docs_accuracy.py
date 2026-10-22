@@ -678,4 +678,4 @@ def test_link_supplied_labels_are_an_accepted_risk():
     labels = _flat(_section(text, "### 4. Malformed share links", "### 5."))
     assert "content spoofing" in labels.lower() and "R14" in labels
     risk = _flat(_section(text, "**R14.", "## Verification status"))
-    assert "How was this calculated?" in risk and "label" in risk
+    assert "definitionNote" in risk and "label" in risk

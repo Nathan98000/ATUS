@@ -981,7 +981,7 @@ describe('focus after in-app navigation (review round 2)', () => {
   it('moves focus to the new page’s heading, Home → Explore → result', async () => {
     const user = userEvent.setup()
     renderApp('/')
-    const build = await screen.findByRole('link', { name: 'Build your own analysis' })
+    const build = await screen.findByRole('link', { name: 'Make your own chart' })
     build.focus()
     await user.keyboard('{Enter}')
     const exploreHeading = await screen.findByRole('heading', {
@@ -1398,11 +1398,12 @@ describe('static snapshot and prewake', () => {
       await user.click(
         await screen.findByRole('link', { name: (name) => name.includes(question) }),
       )
-      const resultHeading = { level: 3, name: compareChildrenFixture.label_a }
-      expect(await screen.findByRole('heading', resultHeading)).toBeInTheDocument()
+      const barLabel = () =>
+        screen.findByText(compareChildrenFixture.label_a, { selector: '.compare-chart__label' })
+      expect(await barLabel()).toBeInTheDocument()
       await user.click(screen.getByRole('link', { name: 'Adjust analysis' }))
       await user.click(await screen.findByRole('button', { name: 'Analyze' }))
-      expect(await screen.findByRole('heading', resultHeading)).toBeInTheDocument()
+      expect(await barLabel()).toBeInTheDocument()
 
       // Snapshot entries only, no API call: the home page's previews of the
       // comparison starters (the clicked starter's bytes among them), then
