@@ -694,6 +694,25 @@ not a product defect, and the header stays. A normal run makes about 20 such
 navigations per Firefox instance; across 1,365 Firefox test runs with
 `--repeat-each` (5 to 30) it caused 2 failures.
 
+On GitHub's runners it is not rare: each of the first two CI runs of the
+`phase5` pull request had two Firefox tests stall at `page.goto`, and one of
+them stalled again on its retry and failed the job. The bug is Playwright's
+Firefox driver, [microsoft/playwright#42731](https://github.com/microsoft/playwright/issues/42731):
+it loses track of the navigation when Firefox replaces the browsing context
+for COOP. So the `firefox` project launches Firefox with
+`browser.tabs.remote.useCrossOriginOpenerPolicy` set to `false`
+(`playwright.config.ts`), which turns off COOP enforcement in the test
+Firefox only; Chromium and WebKit still enforce it, and every response still
+carries the header. In the container, 300 fresh-context loads of a page with
+only that header stalled 17 and 55 times (two runs) without the setting and
+0 times with it; the full Firefox suite repeated 10 times passed 140 of 140
+with it. Playwright 1.64 fixes the stall itself (0 in 300), but its WebKit
+reports a `style-src-attr` CSP violation for every `<select>`, from the
+control's own built-in styles
+([microsoft/playwright#43497](https://github.com/microsoft/playwright/issues/43497)),
+which fails most WebKit journeys under this CSP. Upgrade once a release has
+neither problem, and then remove the setting.
+
 **Stack mode** (wave 2). With `E2E_BASE_URL` set, the same suite runs
 against the production-mode stack through its edge and starts no server:
 `scripts/smoke_stack.sh --edge --e2e` (docs/deployment.md, step 0) builds

@@ -56,6 +56,18 @@ const BACKEND_ORIGIN = `http://127.0.0.1:${BACKEND_PORT}`
 const DESKTOP_VIEWPORT = { width: 1280, height: 800 }
 /** Tests that also run in Firefox and WebKit. */
 const CORE_JOURNEYS = /@core/
+/**
+ * The test Firefox does not enforce Cross-Origin-Opener-Policy. Under the
+ * site's `COOP: same-origin`, Playwright 1.63's Firefox driver can leave
+ * `page.goto` pending after the page has loaded (microsoft/playwright#42731;
+ * two stalled tests in each of the first CI runs). Chromium and WebKit still
+ * enforce COOP.
+ * Playwright 1.64 fixes the stall, but its WebKit reports a CSP violation for
+ * every `<select>` (#43497): drop this once an upgrade has neither.
+ */
+const FIREFOX_WITHOUT_COOP = {
+  firefoxUserPrefs: { 'browser.tabs.remote.useCrossOriginOpenerPolicy': false },
+}
 
 export default defineConfig({
   testDir: './e2e',
@@ -83,7 +95,11 @@ export default defineConfig({
     },
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'], viewport: DESKTOP_VIEWPORT },
+      use: {
+        ...devices['Desktop Firefox'],
+        viewport: DESKTOP_VIEWPORT,
+        launchOptions: FIREFOX_WITHOUT_COOP,
+      },
       testIgnore: /mobile\.spec\.ts/,
       grep: CORE_JOURNEYS,
     },
