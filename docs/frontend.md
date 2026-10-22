@@ -728,13 +728,21 @@ sends its own address from 198.19.0.0/16, and the per-visitor limits apply
 per test rather than to the whole suite), and tests that inject failures
 into `/api/v1/meta` first hide the snapshot (`withoutSnapshot`), since the
 deployed SPA would otherwise read `/meta` from `/snap/`. On 2026-10-21, at
-46293d1 (E2E suite: `frontend/e2e` tree 0c3985b65c5e,
-`frontend/playwright.config.ts` blob 4ada0afae03a), all 70 runs passed in
-stack mode (Chromium desktop 53, mobile 3, WebKit 14), with the
+56b0a42 (E2E suite: `frontend/e2e` tree e3c301b382c9,
+`frontend/playwright.config.ts` blob 18a0605b8ef4), all 70 runs passed in
+stack mode (Chromium desktop 53, mobile 3, WebKit 14), after the stack smoke
+(15/15), the edge probe (13/13) and `deploy_smoke.py` (13/13), with the API
+image built from that commit. Two suite changes came before that run: the
+`firefox` project's launch setting (above), which stack mode does not run,
+and the loading-state test of `e2e/explorer.spec.ts`. That test now also
+delays the snapshot's analysis file, because a run at ff03ba8 failed it once
+in 70: the default analysis came from `/snap/` within milliseconds, so the
+loading state could vanish before the first check. Before that, at 46293d1, 70
+of 70 had passed (Chromium desktop 53, mobile 3, WebKit 14), with the
 review-round-4 test of `e2e/service-states.spec.ts` that reaches a paused
-page through Analyze and checks that its heading has focus, after the stack
-smoke (15/15), the edge probe (13/13) and `deploy_smoke.py` (13/13); the API
-image was built from 3dffe1a, whose API that commit does not change. Earlier
+page through Analyze and checks that its heading has focus, after the same
+smoke, edge probe and `deploy_smoke.py` results; the API image was built from
+3dffe1a, whose API 46293d1 does not change. Earlier
 that day, at 3a984fa, 68 of 68 had passed (Chromium desktop 52, mobile 3,
 WebKit 13), after the review-round-2 merges: the edge's `api_paused` test of
 `e2e/service-codes.spec.ts`, and the frontend's fixture that fails every test

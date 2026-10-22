@@ -232,9 +232,11 @@ def test_the_stack_mode_guard_checks_the_record_against_its_commit_when_present(
 
 
 def test_the_stack_mode_record_names_the_suites_object_ids_in_both_docs():
+    # Any record's commit and ids: each new stack-mode run replaces them
+    # (test_docs_accuracy checks that they are HEAD's suite).
     for path in (FRONTEND, DEPLOYMENT):
-        assert re.search(r"at 46293d1 \(E2E suite: frontend/e2e tree 0c3985b65c5e, "
-                         r"frontend/playwright\.config\.ts blob 4ada0afae03a\)",
+        assert re.search(r"at [0-9a-f]{7,40} \(E2E suite: frontend/e2e tree [0-9a-f]{12,40}, "
+                         r"frontend/playwright\.config\.ts blob [0-9a-f]{12,40}\)",
                          _flat(_read(path))), path
     # The old failure message advised fetch-depth: 0, which CI already used.
     assert "check out the full history (fetch-depth: 0)" not in _read(
