@@ -15,7 +15,7 @@
  */
 import { useEffect, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router'
 
 import {
   analysisQueryKey,
@@ -53,6 +53,7 @@ import {
 } from '../domain/describe'
 import { isFullPageError } from '../domain/presentError'
 import {
+  CUT_OFF,
   InvalidShareLinkError,
   analysisPath,
   decodeSpec,
@@ -73,6 +74,7 @@ import { ShareButton } from '../features/results/ShareButton'
 import { SplitTrendView, TrendView, type SplitSeries } from '../features/results/TrendView'
 import { withAnalysisSettings } from '../features/builder/state'
 import { needsPartial2020, partial2020Spec } from '../features/results/partial2020'
+import { combineYearsLink } from '../features/results/combineYears'
 import { splitComparison } from '../features/results/splitComparison'
 
 type ParsedLink =
@@ -81,7 +83,9 @@ type ParsedLink =
       operation: Operation
       spec: AnalysisRequest
       split: SplitSelection | null
-      /** Whether the link's own spec had other settings than the site's. */
+      /** Whether the link's own spec is written otherwise than it runs. */
+      rewritten: boolean
+      /** Whether it had other settings than the site's (review round 6: say so). */
       resettled: boolean
     }
 
@@ -93,35 +97,41 @@ export function AnalysisPage() {
   const parsed = useMemo((): ParsedLink => {
     const operation = params.operation
     if (!isOperation(operation)) {
-      return { invalid: 'This analysis link points to an unknown analysis type.' }
+      return { invalid: 'It points to a kind of chart this site does not make.' }
     }
     const encoded = searchParams.get('spec')
     if (!encoded) {
-      return { invalid: 'This analysis link is missing its specification.' }
+      return { invalid: CUT_OFF }
     }
     try {
-      const spec = withAnalysisSettings(operation, decodeSpec(encoded, operation))
+      const decoded = decodeSpec(encoded, operation)
+      const spec = withAnalysisSettings(operation, decoded)
       return {
         operation,
         spec,
         split: parseSplit(searchParams, operation),
-        resettled: encodeSpec(spec) !== encoded,
+        rewritten: encodeSpec(spec) !== encoded,
+        // Only the settings: a link whose keys are in another order is
+        // rewritten too, but runs as written.
+        resettled: encodeSpec(spec) !== encodeSpec(decoded),
       }
     } catch (error) {
       return {
         invalid:
           error instanceof InvalidShareLinkError
             ? error.message
-            : 'This analysis link is invalid or no longer supported.',
+            : 'It is not valid, or no longer supported.',
       }
     }
   }, [params.operation, searchParams])
 
-  // The link shows what runs: one written with other settings is rewritten.
+  // The link shows what runs: one written with other settings is rewritten,
+  // and the page says so (review round 6).
   useEffect(() => {
-    if ('invalid' in parsed || !parsed.resettled) return
+    if ('invalid' in parsed || !parsed.rewritten) return
     navigate(analysisPath(parsed.operation, parsed.spec, parsed.split), {
       replace: true,
+      state: { resettled: parsed.resettled } satisfies LinkState,
     })
   }, [parsed, navigate])
 
@@ -131,18 +141,29 @@ export function AnalysisPage() {
   return <AnalysisRunner operation={parsed.operation} spec={parsed.spec} split={parsed.split} />
 }
 
+/**
+ * What a result page carries in its history entry: whether its link was
+ * written with settings the site no longer uses (review round 6).
+ */
+interface LinkState {
+  resettled?: boolean
+}
+
+/**
+ * A link that opens no chart: a calm card, not an alarm (review round 6),
+ * with the two ways on.
+ */
 function InvalidLink({ message }: { message: string }) {
   return (
-    <div
-      className="error-banner"
-      role="alert"
-      style={{ maxWidth: '36rem', margin: '2rem auto' }}
-    >
-      <h1 tabIndex={-1}>This analysis link cannot be opened</h1>
+    <div className="card notice-page" role="alert">
+      <h1 tabIndex={-1}>This link doesn't open a chart</h1>
       <p>{message}</p>
-      <p style={{ margin: 0 }}>
-        <Link className="btn" to="/explore">
-          Build an analysis instead
+      <p className="notice-page__actions">
+        <Link className="btn btn--primary" to="/explore">
+          Make a chart
+        </Link>
+        <Link className="btn" to="/">
+          Home
         </Link>
       </p>
     </div>
@@ -155,11 +176,10 @@ const LOADING_MESSAGES: Record<Operation, string> = {
   compare: 'Comparing the two groups…',
 }
 const SPLIT_LOADING_MESSAGE = 'Working out a line for each group…'
-const UNKNOWN_SPLIT =
-  'This link splits the trend into groups that this data release does not offer.'
+const UNKNOWN_SPLIT = 'It splits the trend into groups that this data release does not offer.'
 
 /** Before /meta arrives no analysis has been sent, so nothing is "calculating" yet (audit F11). */
-const PREPARING_MESSAGE = 'Preparing the analysis…'
+const PREPARING_MESSAGE = 'Getting the chart ready…'
 const WAKING_LOADING_MESSAGE = 'Waiting for the analysis service to wake up…'
 
 function AnalysisRunner({
@@ -173,6 +193,8 @@ function AnalysisRunner({
 }) {
   const meta = useMeta()
   const versions = useVersionTag()
+  const location = useLocation()
+  const resettled = (location.state as LinkState | null)?.resettled === true
   const presets = useActivityPresets()
   const populationMetadata = usePopulationMetadata()
   const navigate = useNavigate()
@@ -294,10 +316,31 @@ function AnalysisRunner({
     const canonicalEncoded = encodeSpec(canonical)
     if (canonicalEncoded === encodeSpec(spec)) return
     queryClient.setQueryData(analysisQueryKey(operation, canonical, versions), query.data)
-    navigate(`/analysis/${operation}?spec=${canonicalEncoded}`, { replace: true })
-  }, [result, operation, spec, split, versions, navigate, query.data, queryClient])
+    navigate(`/analysis/${operation}?spec=${canonicalEncoded}`, {
+      replace: true,
+      state: location.state,
+    })
+  }, [
+    result,
+    operation,
+    spec,
+    split,
+    versions,
+    navigate,
+    query.data,
+    queryClient,
+    location.state,
+  ])
 
   const adjustHref = explorePath(operation, spec, split)
+  const trendPath =
+    operation === 'estimate' && meta.data && trendShortcut(spec)
+      ? analysisPath(
+          'trend',
+          withAnalysisSettings('trend', { ...spec, years: meta.data.data.years }),
+        )
+      : null
+  const allYears = meta.data ? formatYears(meta.data.data.years) : ''
   // Only a /meta failure with nothing loaded blocks the page; a failed
   // background refetch never hides a displayed result (audit F26).
   const metaFailed =
@@ -337,21 +380,21 @@ function AnalysisRunner({
           <p className="eyebrow">{heading.eyebrow}</p>
           <h1 tabIndex={-1}>{heading.title}</h1>
           <p className="analysis-header__details">{heading.subtitle}</p>
+          {resettled ? (
+            <p className="analysis-header__note" data-testid="resettled-note">
+              This link was made with older settings. It now uses the site's current ones, so
+              its numbers may differ slightly from when it was shared.
+            </p>
+          ) : null}
         </div>
         <div className="analysis-header__actions">
           <ShareButton />
           <Link className="btn btn--small" to={adjustHref}>
-            Adjust analysis
+            Change this chart
           </Link>
-          {operation === 'estimate' && meta.data && trendShortcut(spec) ? (
-            <Link
-              className="btn btn--small"
-              to={analysisPath(
-                'trend',
-                withAnalysisSettings('trend', { ...spec, years: meta.data.data.years }),
-              )}
-            >
-              View {formatYears(meta.data.data.years)} trend
+          {trendPath !== null ? (
+            <Link className="btn btn--small analysis-header__trend" to={trendPath}>
+              View {allYears} trend
             </Link>
           ) : null}
         </div>
@@ -407,17 +450,27 @@ function AnalysisRunner({
           result={query.data.data}
           partial2020={partialQueries[0]?.data?.data}
           note={note}
+          combine={meta.data ? combineYearsLink(operation, spec, meta.data.data.years) : null}
         />
+      ) : null}
+      {/* On a phone the next question, every year, follows the answer
+          instead of crowding the buttons above it (review round 6). */}
+      {trendPath !== null && query.data !== undefined && !query.isError ? (
+        <p className="analysis-next">
+          <Link className="btn" to={trendPath}>
+            See every year, {allYears}
+          </Link>
+        </p>
       ) : null}
       {/* Persistent live region: reliably announces the start and end of a
           potentially ~10 s computation (content mounted with its text
           already present is often not announced by screen readers). */}
       <p className="visually-hidden" aria-live="polite">
         {metaFailed || query.isError
-          ? 'The analysis could not be completed.'
+          ? 'The chart could not be drawn.'
           : meta.data === undefined || query.isPending
             ? announcedLoadingMessage
-            : 'Analysis ready.'}
+            : 'Chart ready.'}
       </p>
     </div>
   )
@@ -447,21 +500,28 @@ function ResultBody({
   result,
   partial2020,
   note,
+  combine,
 }: {
   operation: Operation
   spec: AnalysisRequest
   result: AnalysisResponse
   partial2020?: EstimateResponse
   note: string | null
+  combine: ReturnType<typeof combineYearsLink>
 }) {
   if (operation === 'estimate') {
-    return <EstimateView result={result as EstimateResponse} note={note} />
+    return <EstimateView result={result as EstimateResponse} note={note} combine={combine} />
   }
   if (operation === 'trend') {
     return <TrendView result={result as TrendResponse} partial2020={partial2020} note={note} />
   }
   return (
-    <CompareView result={result as CompareResponse} spec={spec as CompareRequest} note={note} />
+    <CompareView
+      result={result as CompareResponse}
+      spec={spec as CompareRequest}
+      note={note}
+      combine={combine}
+    />
   )
 }
 

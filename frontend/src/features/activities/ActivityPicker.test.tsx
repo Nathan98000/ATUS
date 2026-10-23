@@ -79,6 +79,23 @@ describe('ActivityPicker', () => {
     expect(onChange).toHaveBeenCalledWith({ preset: 'housework' })
   })
 
+  it('ranks a word that starts with the search before one containing it (review round 6)', async () => {
+    renderWithProviders(<ActivityPicker value={{ preset: 'sleep' }} onChange={() => {}} />)
+    const user = await openPicker()
+    await user.type(screen.getByLabelText('Search activities'), 'work')
+    const options = await screen.findAllByRole('option')
+    const names = options.map((option) => option.textContent ?? '')
+    const working = names.findIndex((name) => name.startsWith('Working (main and other jobs)'))
+    const housework = names.findIndex((name) => name.startsWith('Housework'))
+    expect(working).toBeGreaterThanOrEqual(0)
+    expect(working).toBeLessThan(housework)
+    // A catch-all the preset lists is counted, never named (review round 6).
+    expect(options[working]).toHaveTextContent(
+      'Includes work, main job; work, other job(s); and 1 more',
+    )
+    expect(options[working]).not.toHaveTextContent('n.e.c.')
+  })
+
   it('offers presets from the API under plain names and selects one', async () => {
     const onChange = vi.fn()
     renderWithProviders(<ActivityPicker value={{ preset: 'sleep' }} onChange={onChange} />)

@@ -16,7 +16,7 @@ import type {
 } from '../../api/types'
 import { WarningBanner } from '../../components/WarningBanner'
 import { interpretSplitTrend, interpretTrend, measureName } from '../../domain/describe'
-import { contextNotes, presentUnavailableReason } from '../../domain/notes'
+import { contextNotes, fewDiariesTrendNote, presentUnavailableReason } from '../../domain/notes'
 import {
   confidenceIntervalName,
   formatEstimate,
@@ -68,8 +68,12 @@ export function TrendView({
   const unavailable = points.filter((point) => point.estimate == null)
   const measureLabel = measureName(result.measure)
   // The answer reads full-year estimates only: the trend's own points.
-  const interpretation = interpretTrend(result, partialYears)
+  const interpretation = interpretTrend(result)
   const hasBand = points.some((point) => point.estimate?.ci_lower != null)
+  const few = fewDiariesTrendNote(
+    result.points.map((point) => (point.estimate != null ? point.n_respondents : null)),
+    hasBand,
+  )
 
   return (
     <div className="result-stack">
@@ -80,6 +84,7 @@ export function TrendView({
           unit={unit}
           measureLabel={measureLabel}
         />
+        <WarningBanner warnings={result.warnings} notes={few === null ? [] : [few]} />
         <ChartFootnote
           range={
             hasBand
@@ -137,8 +142,6 @@ export function TrendView({
           </table>
         </div>
       </section>
-
-      <WarningBanner warnings={result.warnings} />
     </div>
   )
 }
@@ -189,6 +192,12 @@ export function SplitTrendView({
     return point && points.every((candidate) => candidate?.estimate == null) ? [point] : []
   })
   const warnings = [...new Set(series.flatMap(({ result }) => result.warnings))]
+  const few = fewDiariesTrendNote(
+    series.flatMap(({ result }) =>
+      result.points.map((point) => (point.estimate != null ? point.n_respondents : null)),
+    ),
+    false,
+  )
 
   return (
     <div className="result-stack">
@@ -205,6 +214,7 @@ export function SplitTrendView({
             <Link to={comparison.path}>{comparison.text}</Link>
           </p>
         ) : null}
+        <WarningBanner warnings={warnings} notes={few === null ? [] : [few]} />
         <ChartFootnote
           notes={[
             ...(partialYears.length > 0 ? [<PartialNote key="partial" />] : []),
@@ -248,8 +258,6 @@ export function SplitTrendView({
           </table>
         </div>
       </section>
-
-      <WarningBanner warnings={warnings} />
     </div>
   )
 }

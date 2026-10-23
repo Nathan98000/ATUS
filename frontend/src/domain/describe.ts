@@ -17,9 +17,9 @@ import type {
 } from '../api/types'
 import {
   confidenceIntervalName,
-  formatCount,
   formatDurationWords,
   formatEstimate,
+  formatMinutesAsDuration,
   formatMinutesDetailed,
   formatPeople,
   formatPercentagePoints,
@@ -114,10 +114,9 @@ export function populationPhrase(population: PopulationRequest | undefined): str
     parts.push(valueLabel('education_level', population.education_level).toLowerCase())
   }
   if (population.has_household_children != null) {
+    // The builder's words (review round 6, D10): "Children at home".
     parts.push(
-      population.has_household_children
-        ? 'with household children'
-        : 'without household children',
+      population.has_household_children ? 'with children at home' : 'without children at home',
     )
   }
   if (population.region != null)
@@ -131,6 +130,35 @@ export function populationPhrase(population: PopulationRequest | undefined): str
 
   if (parts.length === 0) return EVERYONE
   return upperFirst(parts.join(' · '))
+}
+
+/**
+ * The plain descriptions built-in groups had before review round 6 ("With
+ * household children"). A link shared then still names built-in groups (the
+ * owner's decision D10), so it gains no "Groups compared" note (R14).
+ */
+const EARLIER_PHRASES: readonly (readonly [string, string])[] = [
+  ['with children at home', 'with household children'],
+  ['without children at home', 'without household children'],
+]
+
+/**
+ * Whether a group's label is the plain description of its own filters — a
+ * built-in group's name — rather than a link's or a visitor's own label,
+ * which is kept as written (R14). An earlier plain description counts too.
+ */
+export function isPlainGroupLabel(
+  label: string,
+  filters: PopulationRequest | undefined,
+): boolean {
+  const phrase = populationPhrase(filters)
+  if (label === phrase) return true
+  const earlier = EARLIER_PHRASES.reduce(
+    (text, [now, before]) =>
+      text.replace(now, before).replace(upperFirst(now), upperFirst(before)),
+    phrase,
+  )
+  return earlier !== phrase && label === earlier
 }
 
 const EDUCATION_PHRASES: Record<string, string> = {
@@ -247,10 +275,10 @@ export function definitionNote(
   if (operation === 'compare') {
     const compare = spec as CompareRequest
     const groups = [
-      { label: compare.label_a ?? 'Group A', phrase: populationPhrase(compare.group_a) },
-      { label: compare.label_b ?? 'Group B', phrase: populationPhrase(compare.group_b) },
-    ]
-    if (groups.some((group) => group.label !== group.phrase)) {
+      { label: compare.label_a ?? 'Group A', filters: compare.group_a },
+      { label: compare.label_b ?? 'Group B', filters: compare.group_b },
+    ].map((group) => ({ ...group, phrase: populationPhrase(group.filters) }))
+    if (groups.some((group) => !isPlainGroupLabel(group.label, group.filters))) {
       parts.push(
         `Groups compared: ${groups.map((group) => `${group.label} (${group.phrase.toLowerCase()})`).join(' and ')}.`,
       )
@@ -296,13 +324,34 @@ export function definitionNote(
 }
 
 /** Display label for the spec's activity selection (before results arrive). */
+/**
+ * The presets' names while the preset list is still on its way (without a
+ * static snapshot): the heading read "Sleep" for "sleep" until it arrived
+ * (review round 6). The list's own label always wins once it is here.
+ */
+const PRESET_NAMES: Readonly<Record<string, string>> = {
+  sleep: 'Sleeping',
+  watching_tv: 'Watching TV',
+  housework: 'Housework',
+  eating_and_drinking: 'Eating and drinking',
+  eating_and_drinking_bls_table: 'Eating and drinking',
+  household_activities_bls_table: 'Household activities',
+  leisure_and_sports_bls_table: 'Leisure and sports',
+  work_main_and_other_jobs: 'Working (main and other jobs)',
+  work_related_bls_table: 'Working and work-related activities',
+}
+
 export function activityLabelFromSpec(
   spec: AnalysisRequest,
   presetLabels?: ReadonlyMap<string, string>,
 ): string {
   const activity = spec.activity
   if (activity.preset != null) {
-    return presetLabels?.get(activity.preset) ?? humanize(activity.preset)
+    return (
+      presetLabels?.get(activity.preset) ??
+      PRESET_NAMES[activity.preset] ??
+      humanize(activity.preset)
+    )
   }
   if (activity.label != null && activity.label !== '') return activity.label
   const codes = activity.include ?? []
@@ -395,13 +444,15 @@ export function plainActivityName(name: string): string {
   const [first = '', ...rest] = text.split(' ')
   // Title Case: a later word starts with a capital followed by lowercase.
   if (!rest.some((word) => /^\(?\p{Lu}\p{Ll}/u.test(word))) return upperFirst(text)
-  const lowered = rest.map((word) =>
+  const lower = (word: string, start: RegExp) =>
     word.replace(
-      /(^|[(/-])(\p{Lu})(?=\p{Ll})/gu,
+      start,
       (_, before: string, letter: string) => `${before}${letter.toLowerCase()}`,
-    ),
-  )
-  return upperFirst([first, ...lowered].join(' '))
+    )
+  const lowered = rest.map((word) => lower(word, /(^|[(/-])(\p{Lu})(?=\p{Ll})/gu))
+  // The first word keeps its capital, but not after a hyphen or a slash
+  // (review round 6: "Work-Related" read "work-Related" in a hint).
+  return upperFirst([lower(first, /([(/-])(\p{Lu})(?=\p{Ll})/gu), ...lowered].join(' '))
 }
 
 /**
@@ -563,16 +614,14 @@ function measureSubject(
 }
 
 /**
- * The plain-language answer a trend leads with: the latest year, the first
- * year, and the range in between. Descriptive only: it names values the API
- * returned and makes no claim that anything rose or fell. `partialYears`:
- * years the chart draws from a partial-year estimate (2020); the answer
- * reads only the full-year points, so with one it names no range.
+ * The plain-language answer a trend leads with: the latest year, then the
+ * first. Descriptive only: it names values the API returned and makes no
+ * claim that anything rose or fell. It reads only the trend's own full-year
+ * points, never a partial year (2020). Since review round 6 (the owner's
+ * decision D9) it names no range across the years, with or without 2020:
+ * one shape for every trend, and the chart shows the range.
  */
-export function interpretTrend(
-  result: TrendResponse,
-  partialYears: readonly number[] = [],
-): string {
+export function interpretTrend(result: TrendResponse): string {
   const available = result.points.flatMap((point) =>
     point.estimate != null ? [{ year: point.year, estimate: point.estimate }] : [],
   )
@@ -592,38 +641,21 @@ export function interpretTrend(
   if (available.length > 1)
     text += `, compared with ${proseValue(first.estimate)} in ${first.year}`
   text += '.'
-  // The range across the years reads the trend's full-year points only, so
-  // a chart with a partial year (2020) gives no range rather than one that
-  // leaves a drawn point out (review round 5).
-  if (available.length >= 3 && partialYears.length === 0) {
-    let low = first
-    let high = first
-    for (const point of available) {
-      if (point.estimate.value < low.estimate.value) low = point
-      if (point.estimate.value > high.estimate.value) high = point
-    }
-    const over = 'Over these years it'
-    const show = (estimate: EstimateValue) =>
-      formatEstimate(estimate.value, estimate.unit).primary
-    text +=
-      show(low.estimate) === show(high.estimate)
-        ? ` ${over} stayed at about ${proseValue(low.estimate)} throughout.`
-        : ` ${over} ranged from ${proseValue(low.estimate)} in ${low.year} to ${proseValue(high.estimate)} in ${high.year}.`
-  }
   return text
 }
 
 /** "a, b, and c" / "a and b" / "a". */
 function listed(parts: readonly string[]): string {
   if (parts.length <= 1) return parts.join('')
-  if (parts.length === 2) return `${parts[0]}, and ${parts[1]}`
+  if (parts.length === 2) return `${parts[0]} and ${parts[1]}`
   return `${parts.slice(0, -1).join(', ')}, and ${parts.at(-1)}`
 }
 
 /**
  * The answer a split trend leads with: each group's value in the latest
- * year every group has one — named in turn for two or three groups, as the
- * highest and the lowest for more. Built-in groups (`filters`: the group's
+ * year every group has one — named in turn for two or three groups, then
+ * their values in the first such year, as a trend's answer does (review
+ * round 6, D9); as the highest and the lowest for more. Built-in groups (`filters`: the group's
  * own filter, whose plain description is its label) are named as people
  * ("men", "people ages 25–34") or, for weekdays and weekend days, as days;
  * any other label follows "for", as written. Descriptive only.
@@ -641,7 +673,7 @@ export function interpretSplitTrend(
       ...(result.spec as { population?: PopulationRequest }).population,
       ...filters,
     }
-    const builtIn = filters !== undefined && label === populationPhrase(filters)
+    const builtIn = filters !== undefined && isPlainGroupLabel(label, filters)
     return {
       result,
       builtIn,
@@ -677,10 +709,25 @@ export function interpretSplitTrend(
       const low = sorted[sorted.length - 1] as (typeof values)[number]
       return `In ${year}, ${subject} was highest for ${high.name} (${show(high)}) and lowest for ${low.name} (${show(low)}).`
     }
+    // The first year every group has an estimate, before this one.
+    const earliest = [...years]
+      .reverse()
+      .find(
+        (candidate) =>
+          candidate < year &&
+          groups.every((group) => estimateIn(group.result, candidate) !== null),
+      )
+    const compared =
+      earliest === undefined
+        ? ''
+        : `, compared with ${listed(
+            groups.map((group) =>
+              proseValue(estimateIn(group.result, earliest) as EstimateValue),
+            ),
+          )} in ${earliest}`
     if (!natural) {
       const parts = values.map((value) => `${show(value)} for ${value.name}`)
-      const joined = parts.length === 2 ? parts.join(' and ') : listed(parts)
-      return `In ${year}, ${subject} was ${joined}.`
+      return `In ${year}, ${subject} was ${listed(parts)}${compared}.`
     }
     const perDay = first.measure === 'average_minutes_per_day'
     const others = rest.map((value) => {
@@ -693,9 +740,14 @@ export function interpretSplitTrend(
         ? `of ${value.who} ${show(value)}`
         : `${value.who} ${show(value)}`
     })
-    return `In ${year}, ${listed([opening(show(head)), ...others])}.`
+    return `In ${year}, ${listed([opening(show(head)), ...others])}${compared}.`
   }
   return ''
+}
+
+/** A trend's estimate for a year, or null. */
+function estimateIn(result: TrendResponse, year: number): EstimateValue | null {
+  return result.points.find((point) => point.year === year)?.estimate ?? null
 }
 
 export interface DifferenceDescription {
@@ -703,9 +755,17 @@ export interface DifferenceDescription {
   larger: 'a' | 'b' | null
   /** The larger group as a sentence names it ("men", "weekend days", or a link's own label). */
   largerName: string | null
-  /** "23 minutes more per day", "6.2 percentage points higher", … */
+  /**
+   * The difference as a data line shows it, in the estimate's own form
+   * (review round 6): "23m more a day for men", "0.4 percentage points
+   * higher on weekdays", "No difference".
+   */
   amount: string
-  /** "95% confidence interval: 14 to 33 minutes more for men", or null without one. */
+  /**
+   * Its confidence interval, read from the larger group's side so no group
+   * is named twice: "95% confidence interval: 14m to 33m", "…: 4m less to
+   * 4m more"; null without one.
+   */
   interval: string | null
   /** Whether the difference's confidence interval includes zero. */
   includesZero: boolean
@@ -720,6 +780,8 @@ interface NamedGroup {
   day: ReturnType<typeof dayPhrase>
   /** After "for": "men", "weekdays", or the label. */
   name: string
+  /** A built-in weekday or weekend group: "on weekdays" rather than "for". */
+  isDay: boolean
 }
 
 function namedGroup(
@@ -730,11 +792,12 @@ function namedGroup(
   const day = dayPhrase(population)
   // A built-in group's label is the plain description of its own filters;
   // any other label is a link's or a visitor's own, kept as written (R14).
-  if (groupFilters === undefined || label !== populationPhrase(groupFilters)) {
-    return { who: null, day, name: label }
+  if (groupFilters === undefined || !isPlainGroupLabel(label, groupFilters)) {
+    return { who: null, day, name: label, isDay: false }
   }
   const who = peoplePhrase(population)
-  return { who, day, name: groupFilters.day_type != null ? lowerFirst(label) : who }
+  const isDay = groupFilters.day_type != null
+  return { who, day, name: isDay ? lowerFirst(label) : who, isDay }
 }
 
 /**
@@ -770,42 +833,57 @@ export function describeDifference(
       : isShare
         ? formatPercentagePoints(Math.abs(value))
         : formatPeople(Math.abs(value))
+  // The data line names the larger group once, after the amount: "for men",
+  // or "on weekdays" for days.
+  const towards = big.isDay ? `on ${big.name}` : `for ${big.name}`
+  const compact = (value: number): string =>
+    !isTime
+      ? magnitude(value)
+      : Math.round(Math.abs(value)) === 0
+        ? 'under a minute'
+        : formatMinutesAsDuration(Math.abs(value))
   const amount =
     larger === null
       ? 'No difference'
-      : `${magnitude(difference.value)} ${word}${isTime ? ' per day' : ''}`
+      : `${compact(difference.value)} ${word}${isTime ? ' a day' : ''} ${towards}`
 
   const { ci_lower: lower, ci_upper: upper, confidence_level: level } = difference
   const includesZero = lower != null && upper != null && lower <= 0 && upper >= 0
   let interval: string | null = null
   if (lower != null && upper != null && level != null) {
-    // Whole minutes unless an end is under 10, where a decimal still shows
-    // a narrow range's two ends apart (review round 4: "13.8 to 32.5 min").
-    const precise = Math.min(Math.abs(lower), Math.abs(upper)) < 10
-    const minutes = (value: number) =>
-      precise
-        ? formatMinutesDetailed(Math.abs(value))
-        : formatCount(Math.round(Math.abs(value)))
+    // Read from the larger group's side (A − B, or B − A when B is larger):
+    // only the sign changes, and no group is named again.
+    const side = larger === 'b' ? -1 : 1
+    const low = Math.min(side * lower, side * upper)
+    const high = Math.max(side * lower, side * upper)
+    const [less, more] = isTime
+      ? ['less', 'more']
+      : isShare
+        ? ['lower', 'higher']
+        : ['fewer', 'more']
+    // Durations in the estimate's form ("14m", "3h 4m"); a decimal of a
+    // minute only where the ends would otherwise read the same — two ends
+    // on one side, or an end under half a minute ("0.3m less").
+    const sameMinute =
+      (low >= 0 || high <= 0) &&
+      formatMinutesAsDuration(Math.abs(low)) === formatMinutesAsDuration(Math.abs(high))
     const bound = (value: number): string =>
       isTime
-        ? `${minutes(value)} minutes`
+        ? sameMinute || Math.round(Math.abs(value)) === 0
+          ? `${formatMinutesDetailed(Math.abs(value))}m`
+          : formatMinutesAsDuration(Math.abs(value))
         : isShare
-          ? formatPercentagePoints(Math.abs(value))
+          ? formatPercentagePoints(Math.abs(value), false)
           : formatPeople(Math.abs(value))
-    const range = (from: number, to: number): string =>
-      isTime
-        ? `${minutes(from)} to ${bound(to)}`
-        : isShare
-          ? `${formatPercentagePoints(Math.abs(from), false)} to ${bound(to)}`
-          : `${bound(from)} to ${bound(to)}`
-    const prefix = `${confidenceIntervalName(level)}: `
-    if (lower >= 0) {
-      interval = `${prefix}${range(lower, upper)} ${word} for ${a.name}`
-    } else if (upper <= 0) {
-      interval = `${prefix}${range(upper, lower)} ${word} for ${b.name}`
+    let range: string
+    if (low >= 0) {
+      range = `${bound(low)} to ${bound(high)}${isShare ? ' percentage points' : ''}`
+    } else if (high <= 0) {
+      range = `${bound(low)} ${less} to ${bound(high)} ${less}`
     } else {
-      interval = `${prefix}from ${bound(lower)} ${word} for ${b.name} to ${bound(upper)} ${word} for ${a.name}`
+      range = `${bound(low)} ${less} to ${bound(high)} ${more}`
     }
+    interval = `${confidenceIntervalName(level)}: ${range}${larger === null ? ` ${towards}` : ''}`
   }
 
   const activity = activityPhrase(result.group_a.activity.label)

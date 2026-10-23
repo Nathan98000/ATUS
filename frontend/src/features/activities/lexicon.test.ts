@@ -25,6 +25,14 @@ describe('lexicon index (built from the real 556-entry lexicon)', () => {
     expect(index.leafCount('12')).toBeGreaterThan(10)
   })
 
+  it('names what a selection includes, counting a listed catch-all unnamed (review round 6)', () => {
+    expect(index.included(['050101', '050102', '050189'])).toEqual({
+      names: ['Work, main job', 'Work, other job(s)'],
+      unnamed: 1,
+    })
+    expect(index.included(['0101']).names).toEqual(['Sleeping', 'Sleeplessness'])
+  })
+
   it('searches by name and code, prefix matches first', () => {
     const byName = index.search('television')
     expect(byName.length).toBeGreaterThan(0)

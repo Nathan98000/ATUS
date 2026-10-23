@@ -16,7 +16,7 @@ test('home page has no serious axe violations', async ({ page }) => {
 test('explorer has no serious axe violations', async ({ page }) => {
   await page.goto('/explore')
   // The builder itself: its heading is there in the loading state too.
-  await expect(page.getByRole('button', { name: 'Analyze' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Show chart' })).toBeVisible()
   await expectNoSeriousViolations(page)
 })
 
@@ -24,13 +24,18 @@ test('the About page, with its privacy and logging statement, has no serious axe
   page,
 }) => {
   await page.goto('/about')
-  await expect(page.getByRole('heading', { name: 'Privacy and logs' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Your privacy' })).toBeVisible()
+  // The full account of what is logged, one click under its summary (review round 6).
+  await page.getByText('Everything that is logged, and for how long').click()
+  await expect(
+    page.getByText('Request bodies are never logged.', { exact: false }),
+  ).toBeVisible()
   await expectNoSeriousViolations(page)
 })
 
 test('estimate, trend and compare results have no serious axe violations', async ({ page }) => {
   await page.goto('/explore')
-  await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible()
   await chooseOneNumber(page)
   await setAge(page, 25, 54)
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
@@ -61,8 +66,8 @@ test('the primary workflow is keyboard-operable', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('link', { name: 'Make your own chart' }).focus()
   await page.keyboard.press('Enter')
-  await expect(page.getByRole('heading', { level: 1, name: 'Build an analysis' })).toBeFocused()
-  await expect(page.getByRole('button', { name: 'Analyze' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Make a chart' })).toBeFocused()
+  await expect(page.getByRole('button', { name: 'Show chart' })).toBeVisible()
 
   // Open the activity picker and select via keyboard only.
   await page.getByRole('button', { name: 'Change activity' }).focus()
@@ -83,7 +88,7 @@ test('the primary workflow is keyboard-operable', async ({ page }) => {
 
   // Run the analysis with the keyboard: focus lands on the result's heading
   // and stays there when the URL is rewritten to the canonical spec.
-  await page.getByRole('button', { name: 'Analyze' }).focus()
+  await page.getByRole('button', { name: 'Show chart' }).focus()
   await page.keyboard.press('Enter')
   const resultHeading = page.getByRole('heading', { level: 1 })
   await expect(resultHeading).toBeFocused()

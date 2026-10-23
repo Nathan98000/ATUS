@@ -70,7 +70,9 @@ export function splitComparison(
         : peoplePhrase({ ...shared, ...option.population })
     return {
       path: analysisPath('compare', request),
-      text: `How sure is this? Compare ${name(a)} and ${name(b)} in ${year}, with a 95% confidence interval for the difference`,
+      // Short (review round 6: 17 words, three lines on a phone); the
+      // comparison it opens shows and names the interval.
+      text: `How sure is this? Compare ${name(a)} and ${name(b)} in ${year} →`,
     }
   }
   return null

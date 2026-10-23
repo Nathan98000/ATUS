@@ -26,7 +26,7 @@ test(
     })
 
     await page.goto('/explore')
-    await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible()
     await chooseOneNumber(page)
     await setAge(page, 25, 54)
     await page.getByLabel('Year', { exact: true }).selectOption('2023')
@@ -54,7 +54,7 @@ test(
     )
     // …and the same reconstructable configuration.
     await expect(freshPage).toHaveTitle(/Sleeping — Ages 25–54 — 2023/)
-    await freshPage.getByRole('link', { name: 'Adjust analysis' }).click()
+    await freshPage.getByRole('link', { name: 'Change this chart' }).click()
     await expect(freshPage.getByLabel('Minimum age')).toHaveValue('25')
     await expect(freshPage.getByLabel('Maximum age')).toHaveValue('54')
     await expect(freshPage.getByLabel('Year', { exact: true })).toHaveValue('2023')
@@ -65,7 +65,7 @@ test(
 
 test('refreshing a result page reproduces the same analysis', CORE, async ({ page }) => {
   await page.goto('/explore')
-  await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible()
   await chooseOneNumber(page)
   await setAge(page, 25, 54)
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
@@ -82,9 +82,9 @@ test(
   CORE,
   async ({ page }) => {
     await page.goto('/analysis/estimate?spec=this-is-not-a-spec')
-    await expect(page.getByRole('alert')).toContainText('This analysis link cannot be opened')
-    await page.getByRole('link', { name: /Build an analysis/ }).click()
-    await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+    await expect(page.getByRole('alert')).toContainText("This link doesn't open a chart")
+    await page.getByRole('link', { name: /Make a chart/ }).click()
+    await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible()
   },
 )
 
@@ -101,7 +101,7 @@ test('a link nested thousands of levels deep is an invalid link, not an app erro
   const json = `{"activity":{"preset":"sleep"},"years":[2023],"population":{"x":${arrays}}}`
   await page.goto(`/analysis/estimate?spec=${Buffer.from(json).toString('base64url')}`)
   await expect(
-    page.getByRole('heading', { name: 'This analysis link cannot be opened' }),
+    page.getByRole('heading', { name: "This link doesn't open a chart" }),
   ).toBeVisible({ timeout: 15_000 })
   await expect(page.getByText(/nested too deeply/)).toBeVisible()
   await expect(page.getByText(/Something went wrong in the application/)).toHaveCount(0)

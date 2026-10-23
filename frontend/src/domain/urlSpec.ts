@@ -17,6 +17,13 @@
 import type { AnalysisRequest, CompareRequest, Operation } from '../api/types'
 import { stableStringify } from '../utils/stableStringify'
 
+/**
+ * Why a link most often opens nothing — it was cut off when it was copied —
+ * and what to do about it (review round 6).
+ */
+export const CUT_OFF =
+  'It may have been cut off when it was copied. Ask the person who sent it for the full link, or make your own chart.'
+
 export class InvalidShareLinkError extends Error {
   constructor(message: string) {
     super(message)
@@ -40,9 +47,7 @@ export function decodeSpec(encoded: string, operation: Operation): AnalysisReque
     const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
     json = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
   } catch {
-    throw new InvalidShareLinkError(
-      'This link looks incomplete; it may have been cut off when it was copied.',
-    )
+    throw new InvalidShareLinkError(CUT_OFF)
   }
 
   let parsed: unknown
@@ -58,7 +63,9 @@ export function decodeSpec(encoded: string, operation: Operation): AnalysisReque
     })
   } catch (error) {
     if (error instanceof InvalidShareLinkError) throw error
-    throw new InvalidShareLinkError('The analysis link does not contain a valid specification.')
+    // A link cut off mid-way still decodes, but its JSON ends early (review
+    // round 6: it got the jargon, not the likely cause).
+    throw new InvalidShareLinkError(CUT_OFF)
   }
 
   if (exceedsDepth(parsed, MAX_SPEC_DEPTH)) {
@@ -118,7 +125,7 @@ const isStringList = (value: unknown) => Array.isArray(value) && value.every(isS
  * The population dimensions the page describes, with the JSON type it reads
  * each as. The API reads its fields leniently — "no", "false", "0" and "off"
  * are all `has_household_children: false` to it — while the page described
- * any non-empty string as "with household children", so a hand-written link
+ * any non-empty string as "with children at home", so a hand-written link
  * was computed for one population and labelled with the opposite one
  * (review round 4). Other dimensions (unknown to the page) may hold any
  * scalar; the API refuses them.

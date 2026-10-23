@@ -38,7 +38,9 @@ interface YearSelectorProps {
 }
 
 /**
- * When: a range for a trend, one year otherwise. Several years combined
+ * When: a range for a trend, one year otherwise. "From" offers the years up
+ * to "To" and "To" the years from "From" on, so the range cannot run
+ * backwards (review round 6). Several years combined
  * (pooled) comes only from a shared link, and shows here with its years
  * and a way back to one year, so nothing in effect is hidden.
  */
@@ -58,11 +60,13 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
               value={state.trendFrom ?? ''}
               onChange={(event) => onChange({ trendFrom: Number(event.target.value) })}
             >
-              {ascending.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
+              {ascending
+                .filter((year) => state.trendTo == null || year <= state.trendTo)
+                .map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
             </select>
           </div>
           <div className="field">
@@ -72,11 +76,13 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
               value={state.trendTo ?? ''}
               onChange={(event) => onChange({ trendTo: Number(event.target.value) })}
             >
-              {ascending.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
+              {ascending
+                .filter((year) => state.trendFrom == null || year >= state.trendFrom)
+                .map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
             </select>
           </div>
         </div>

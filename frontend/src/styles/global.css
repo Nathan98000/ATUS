@@ -441,6 +441,34 @@ legend {
   gap: 0.45rem;
 }
 
+/* Inside the result's card, between the chart and its small print (review
+   round 6: below the card they followed the source line). */
+.result-card .result-notes {
+  margin-top: 1.1rem;
+}
+
+/* A page with nothing to show — an address or a link that opens no chart —
+   and the two ways on: a calm card, not an alarm (review round 6). */
+.notice-page {
+  max-width: 34rem;
+  margin: 2.5rem auto;
+  padding: 1.6rem 1.7rem;
+  text-align: center;
+}
+
+.notice-page h1 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.notice-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin: 1.2rem 0 0;
+}
+
 .error-banner {
   background: var(--error-bg);
   border: 1px solid var(--error-border);
@@ -578,6 +606,12 @@ legend {
 .stat-uncertainty b {
   color: var(--ink-soft);
   font-weight: 600;
+}
+
+/* "What does 95% mean?", under the interval (review round 6). */
+.stat-help {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
 }
 
 /* ---------- Details ---------- */
@@ -1080,6 +1114,24 @@ details.panel > .panel__body {
   line-height: 1.4;
   color: var(--ink-soft);
   overflow-wrap: anywhere;
+}
+
+/* Narrow screens: the activity on one line, who and when always on the
+   next; the statistic is the "Show" select under the activity (review round
+   6: two clamped lines hid who and when). */
+.builder-summary__activity {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.builder-summary__measure,
+.builder-summary__who > .builder-summary__sep {
+  display: none;
+}
+
+.builder-summary__who {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -1093,8 +1145,12 @@ details.panel > .panel__body {
 
 .builder-summary__analyze {
   flex: none;
-  padding: 0.6rem 1.4rem;
+  padding: 0.6rem 1rem;
   font-size: 1.02rem;
+}
+
+.builder-summary__when {
+  white-space: nowrap;
 }
 
 @media (min-width: 64rem) {
@@ -1137,6 +1193,17 @@ details.panel > .panel__body {
     font-size: 0.95rem;
     line-height: 1.5;
     color: var(--ink);
+  }
+
+  .builder-summary__activity,
+  .builder-summary__who {
+    display: inline;
+    white-space: normal;
+  }
+
+  .builder-summary__measure,
+  .builder-summary__who > .builder-summary__sep {
+    display: inline;
   }
 
   .builder-summary__analyze {
@@ -1567,6 +1634,24 @@ details.panel > .panel__body {
   background: var(--accent-soft);
 }
 
+/* ---------- About page ---------- */
+
+.about-page {
+  max-width: 46rem;
+}
+
+/* The full account of what is logged, one click under the plain summary
+   (review round 6). */
+.about-details {
+  margin: 0.4rem 0 1.2rem;
+}
+
+.about-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 /* ---------- Analysis page ---------- */
 
 .analysis-header {
@@ -1600,6 +1685,34 @@ details.panel > .panel__body {
   margin: 0;
   font-size: 0.9rem;
   color: var(--ink-faint);
+}
+
+/* A link written with settings the site no longer uses (review round 6). */
+.analysis-header__note {
+  margin: 0.45rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  max-width: 40rem;
+}
+
+/* The trend of an estimate: a button beside the others on a wide screen,
+   after the answer on a phone (review round 6: three buttons wrapped to two
+   rows above it). */
+.analysis-next {
+  display: none;
+  margin: 1rem 0 0;
+}
+
+@media (max-width: 40rem) {
+  .analysis-header__trend {
+    display: none;
+  }
+  .analysis-next {
+    display: block;
+  }
+  .analysis-next .btn {
+    width: 100%;
+  }
 }
 
 /* What was measured, above a result's title: sentence case, in the accent. */
@@ -1648,7 +1761,7 @@ details.panel > .panel__body {
   justify-content: center;
 }
 
-/* A split trend's way to its likely range: a comparison in one year. */
+/* A split trend's way to a confidence interval: a comparison in one year. */
 .split-comparison {
   margin: 1rem 0 0;
   font-size: 0.92rem;
@@ -1668,7 +1781,7 @@ details.panel > .panel__body {
   text-wrap: pretty;
 }
 
-/* A chart's small print: the likely-range key, notes, the source. */
+/* A chart's small print: the interval's key, notes, the diaries, the source. */
 .chart-footnote {
   margin-top: 1.2rem;
   padding-top: 0.75rem;
@@ -1685,6 +1798,11 @@ details.panel > .panel__body {
 .chart-footnote b {
   color: var(--ink-soft);
   font-weight: 600;
+}
+
+/* The credit's handle never breaks from "X:" (review round 6). */
+.chart-source__handle {
+  white-space: nowrap;
 }
 
 .chart-key__swatch {
@@ -1774,6 +1892,51 @@ details.panel > .panel__body {
 
 .day-bar__hours span:last-child {
   translate: -100% 0;
+}
+
+/* Under an hour: the first hour of the day bar is marked, and drawn again
+   below, enlarged, with the interval as the comparison's whisker (review
+   round 6: 7 minutes was a sliver). The day bar's 25% separators read as
+   15-minute marks on it. */
+.day-bar__zoom {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(100% / 24);
+  border-radius: 6px 0 0 6px;
+  box-shadow: inset 0 0 0 1.5px var(--ink-soft);
+}
+
+.day-hour {
+  margin-top: 0.9rem;
+}
+
+.day-bar__whisker {
+  position: absolute;
+  top: calc(50% - 0.75px);
+  left: calc(var(--from) * 100%);
+  width: calc((var(--to) - var(--from)) * 100%);
+  height: 1.5px;
+  background: var(--ink);
+  box-shadow: 0 0 0 1px var(--surface);
+}
+
+.day-bar__whisker::before,
+.day-bar__whisker::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  width: 1.5px;
+  height: 11px;
+  background: var(--ink);
+  box-shadow: 0 0 0 1px var(--surface);
+}
+
+.day-bar__whisker::before {
+  left: 0;
+}
+
+.day-bar__whisker::after {
+  right: 0;
 }
 
 /* A rate among a hundred people: ten rows of ten dots. */

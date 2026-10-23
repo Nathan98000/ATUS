@@ -6,7 +6,7 @@ import { ServiceInterruption } from './ServiceInterruption'
 interface ErrorPanelProps {
   error: unknown
   onRetry?: () => void
-  /** Link target for "Adjust analysis" (when the request itself is the problem). */
+  /** Link target for "Change this chart" (when the request itself is the problem). */
   adjustHref?: string
 }
 
@@ -45,7 +45,7 @@ export function ErrorPanel({ error, onRetry, adjustHref }: ErrorPanelProps) {
         ) : null}
         {presented.adjustable && adjustHref ? (
           <a className="btn" href={adjustHref}>
-            Adjust analysis
+            Change this chart
           </a>
         ) : null}
       </p>

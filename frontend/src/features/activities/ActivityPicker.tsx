@@ -40,15 +40,25 @@ const POPULAR_CATEGORIES = ['15', '13', '03', '07']
 /** How many included activities a hint names before "and N more". */
 const HINT_NAMES = 3
 
-/** "Includes sleeping; sleeplessness", or '' when nothing is known. */
-function includesHint(names: readonly string[]): string {
+/**
+ * "Includes sleeping; sleeplessness", or '' when nothing is known. A
+ * catch-all the selection lists itself is counted in "and N more", never
+ * named (review round 6).
+ */
+function includesHint({
+  names,
+  unnamed,
+}: {
+  names: readonly string[]
+  unnamed: number
+}): string {
   if (names.length === 0) return ''
   const shown = names
     .slice(0, HINT_NAMES)
     .map((name) =>
       /^\p{Lu}{2,}\b/u.test(name) ? name : name.charAt(0).toLowerCase() + name.slice(1),
     )
-  const more = names.length - shown.length
+  const more = names.length - shown.length + unnamed
   return `Includes ${shown.join('; ')}${more > 0 ? `; and ${more} more` : ''}`
 }
 
@@ -165,7 +175,7 @@ function SelectionSummary({
   if (value.preset != null) {
     const preset = presets.find((candidate) => candidate.name === value.preset)
     const hint =
-      preset && index ? includesHint(index.includedNames(preset.include, preset.exclude)) : ''
+      preset && index ? includesHint(index.included(preset.include, preset.exclude)) : ''
     return layout(
       <span className="activity-picker__name">
         {activityName(preset?.label ?? value.preset)}
@@ -179,7 +189,7 @@ function SelectionSummary({
     const entry = index.byCode.get(code)
     const hint =
       index.offeredLeafCount(code) > 1
-        ? includesHint(index.includedNames(codes, value.exclude ?? []))
+        ? includesHint(index.included(codes, value.exclude ?? []))
         : ''
     return layout(
       <span className="activity-picker__name">
@@ -233,7 +243,7 @@ function PickerPanel({
     key: `preset-${preset.name}`,
     name: activityName(preset.label),
     path: [],
-    hint: includesHint(index.includedNames(preset.include, preset.exclude)),
+    hint: includesHint(index.included(preset.include, preset.exclude)),
     selection: { preset: preset.name },
   })
   const entryOption = (entry: ActivityEntry): PickerOption => ({
@@ -250,9 +260,16 @@ function PickerPanel({
     const needle = query.trim().toLowerCase()
     if (needle === '') return []
     const synonyms = matchingSynonyms(needle)
-    const byName = offered.filter((preset) =>
-      activityName(preset.label).toLowerCase().includes(needle),
-    )
+    // A word that starts with the query ranks before one that only contains
+    // it (review round 6: "work" listed Housework before Working).
+    const startsWord = new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
+    const byName = offered
+      .filter((preset) => activityName(preset.label).toLowerCase().includes(needle))
+      .sort(
+        (a, b) =>
+          Number(!startsWord.test(activityName(a.label).toLowerCase())) -
+          Number(!startsWord.test(activityName(b.label).toLowerCase())),
+      )
     // In the synonym's own order: "chores" means housework before all
     // household activities.
     const bySynonym = synonyms
@@ -326,7 +343,7 @@ function PickerPanel({
       const entry = index.byCode.get(code)
       if (!entry || index.offeredLeafCount(code) === 0) return []
       const option = entryOption(entry)
-      return [{ ...option, hint: includesHint(index.includedNames([code])) }]
+      return [{ ...option, hint: includesHint(index.included([code])) }]
     }),
   ]
 

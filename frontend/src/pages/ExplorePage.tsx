@@ -37,6 +37,7 @@ import { PopulationFields } from '../features/population/PopulationFields'
 import { SplitPicker } from '../features/population/SplitPicker'
 import {
   choiceDimensions,
+  choiceLabels,
   compareChoices,
   deriveCompareBy,
   resolveSplit,
@@ -61,7 +62,7 @@ const OPERATION_LABELS: {
 
 /** Shown when /explore?op=…&spec=… cannot be read (review round 2). */
 const UNUSABLE_PREFILL_NOTE =
-  'The analysis in this link could not be opened in the builder, so it starts from the default analysis instead.'
+  'The chart in this link could not be opened here, so the builder starts from the default chart instead.'
 
 export function ExplorePage() {
   const meta = useMeta()
@@ -120,7 +121,7 @@ export function ExplorePage() {
   // after one that fails again (review round 2; useRetryFocus).
   return (
     <div className="explore-page">
-      <h1 tabIndex={-1}>Build an analysis</h1>
+      <h1 tabIndex={-1}>Make a chart</h1>
       {content}
     </div>
   )
@@ -172,7 +173,13 @@ function Builder({
               ? name === 'age_min' || name === 'age_max'
               : name === compareBy),
         )
-        return { ...prefilled, compareBy: touched ? 'custom' : compareBy }
+        if (touched) return { ...prefilled, compareBy: 'custom' }
+        const labels = choiceLabels(
+          compareChoices(populationMetadata.dimensions),
+          compareBy,
+          prefilled,
+        )
+        return { ...prefilled, ...labels, compareBy }
       } catch {
         // A malformed prefill link: the default analysis, with a note below.
       }
@@ -267,7 +274,7 @@ function Builder({
           role="alert"
           style={{ marginBottom: '1rem', padding: '0.7rem 1rem' }}
         >
-          <b>The analysis is not ready to run:</b> {Object.values(validation.errors).join(' ')}
+          <b>Before showing the chart:</b> {Object.values(validation.errors).join(' ')}
         </div>
       ) : null}
 

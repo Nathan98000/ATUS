@@ -57,7 +57,7 @@ frontend/src/
     activities/  lexicon.ts (client index), synonyms.ts (everyday words for
                  search), ActivityPicker
     builder/     state.ts (builder ⇄ request spec), BuilderControls,
-                 BuilderSummary (the sticky one-line summary with Analyze)
+                 BuilderSummary (the sticky one-line summary with "Show chart")
     home/        StarterPreview (a starter's answer), HomeChart (the home
                  page's split trend) — both from the snapshot only
     population/  PopulationFields (generated from population metadata),
@@ -66,7 +66,8 @@ frontend/src/
     results/     EstimateView, TrendView (+ SplitTrendView) + TrendChart,
                  CompareView + ComparisonChart, ChartFootnote, ShareButton,
                  splitComparison (a split trend's way to a confidence
-                 interval),
+                 interval), combineYears + FewDiaries (a figure from few
+                 diaries, and the latest years combined),
                  chartScale, useElementWidth
   components/ AppShell, ErrorBoundary, LoadingPanel, ErrorPanel, WarningBanner,
               AnalysisTypeIcon,
@@ -276,10 +277,10 @@ contract and of the edge have public-facing copy:
 
 | Code | Presentation |
 | --- | --- |
-| `invalid_spec`, `validation_error`, `malformed_json`, `invalid_analysis`, `unknown_activity`, `activity_not_found`, `unsupported_analysis`, `insufficient_data`, `payload_too_large` | the request is the problem: the API's own explanation, "Adjust analysis"; a 422's `details.errors[]` (`{location, message, type}`) become one line per field, e.g. "measure: Input should be …" |
+| `invalid_spec`, `validation_error`, `malformed_json`, `invalid_analysis`, `unknown_activity`, `activity_not_found`, `unsupported_analysis`, `insufficient_data`, `payload_too_large` | the request is the problem: the API's own explanation, "Change this chart"; a 422's `details.errors[]` (`{location, message, type}`) become one line per field, e.g. "measure: Input should be …" |
 | `rate_limited` | "Too many new analyses in a short time" with a `Retry-After` countdown on "Try again" (the ticking seconds are hidden from assistive technology; the message states the wait). The edge's per-network daily allowance (`details.budget: "prefix"`) instead says that the network's new analyses for today are used up and that the limit resets at 00:00 UTC (in local time), with no countdown and no "Try again"; any other wait over 15 minutes names the local time it ends |
-| `daily_capacity_reached` | the service's shared capacity for new analyses is used up for today; resets at 00:00 UTC, shown in local time. A shared allowance: the API sends `details.scope: "daily"`, the edge governor `"global"` or `"daily"`; a per-network daily denial is `rate_limited` with budget `prefix` (above). The governor's heavy-only cap (`details.budget: "heavy"`) instead says that today's long analyses (8 or more year queries: 8+ years, 4+ for a comparison) are used up while analyses of up to 7 years (3 for a comparison) still run, and offers "Adjust analysis" (review round 2) |
-| `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `schema_not_initialized`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); `analysis_timeout` also offers "Adjust analysis". `upstream_unavailable` follows `details.reason`: `connect_failed`/`circuit_open` "could not be reached", `origin_timeout` "did not answer in time", `broken_response` "broke off", `not_configured` "not set up"; only `platform_error` (or a non-JSON 5xx) says the hosting provider answered. `service_waking` and the waking-class `upstream_unavailable` are shown only after the 150 s budget, so they say the service has not answered for more than 2 minutes and that its free hosting may be paused, for example until next month, instead of promising a temporary problem: a Render suspension looks exactly like this until the owner sets the edge's pause switch (`api_paused`, below; [security.md R13](security.md#accepted-risks)) |
+| `daily_capacity_reached` | the service's shared capacity for new analyses is used up for today; resets at 00:00 UTC, shown in local time. A shared allowance: the API sends `details.scope: "daily"`, the edge governor `"global"` or `"daily"`; a per-network daily denial is `rate_limited` with budget `prefix` (above). The governor's heavy-only cap (`details.budget: "heavy"`) instead says that today's long analyses (8 or more year queries: 8+ years, 4+ for a comparison) are used up while analyses of up to 7 years (3 for a comparison) still run, and offers "Change this chart" (review round 2) |
+| `overloaded`, `analysis_timeout`, `capacity_unavailable`, `data_version_mismatch`, `service_waking`, `upstream_unavailable`, `database_unavailable`, `schema_not_initialized`, `data_not_loaded` | specific temporary-problem copy with "Try again" (honouring `Retry-After`); `analysis_timeout` also offers "Change this chart". `upstream_unavailable` follows `details.reason`: `connect_failed`/`circuit_open` "could not be reached", `origin_timeout` "did not answer in time", `broken_response` "broke off", `not_configured` "not set up"; only `platform_error` (or a non-JSON 5xx) says the hosting provider answered. `service_waking` and the waking-class `upstream_unavailable` are shown only after the 150 s budget, so they say the service has not answered for more than 2 minutes and that its free hosting may be paused, for example until next month, instead of promising a temporary problem: a Render suspension looks exactly like this until the owner sets the edge's pause switch (`api_paused`, below; [security.md R13](security.md#accepted-risks)) |
 | `database_paused`, `capacity_paused`, `api_paused`, `edge_daily_limit` | **full-page** "paused" state: free hosting quota used up, when it resets, what still works (starter examples and earlier analyses), a link home. A date is named only when the service says when the pause ends (`capacity_paused`: `resumes_at`/`Retry-After`; `api_paused`: `details.until`); `database_paused`'s fixed `Retry-After: 3600` only paces retries, so its page names no date. The governor's monthly compute budget (`capacity_paused` with `details.budget: "cu_month"`) also pauses while usage runs ahead of its pacing line, often for an hour or two early in the month, so its page says the pause spreads the month's free allowance and names when it lifts (a local time within the day, else a date), not "nearly used up … until it resets" (review round 2). `api_paused` is the owner's pause switch at the edge: "The analysis service is paused", worded by `details.reason` (the host used up this month's allowance, the host suspended it, or maintenance), and "It is not known yet when it will be back" without a date (review round 2) |
 | `not_found`, `method_not_allowed`, `unsupported_media_type` | a request outside the HTTP contract, which the page never sends on purpose: most likely a page and a service from different versions, so the copy says to reload the page; no "Try again" (the retry policy treats these as final) |
 | `forbidden_origin` | through the site the Worker always adds the edge secret, so this means the API does not accept it: the copy says the site's connection to the analysis service is misconfigured, a problem in the deployment and not in the visitor's analysis, and what still works; no "Try again" |
@@ -350,10 +351,13 @@ trend's partial year; 2019 under them went with "More options" in design
 review round 5), the home page's chart (household activities split by sex: each
 group's point-estimate trend and its 2020 partial-year estimate, in the
 bytes the split-trend page sends; `homeChartSpecs`; design review round 4),
-and each starter as the builder sends it after "Adjust analysis"
+and each starter as the builder sends it after "Change this chart"
 without a change (every default stated; for the two comparison starters
 these bytes are otherwise in no list; review round 2) — 126 for the
-2003–2025 release. Two passes:
+2003–2025 release. Since review round 6 the children-at-home starter names
+its groups “With children at home” and “Without children at home” (D10):
+its bytes changed with them, so the snapshot each deploy builds holds the
+new entry. Two passes:
 
 ```bash
 node scripts/snapshot-requests.mjs --meta meta.json --activities activities.json
@@ -374,7 +378,7 @@ stateless. The URL encodes exactly that:
 /analysis/<operation>?spec=<base64url(UTF-8 JSON, keys sorted)>
 ```
 
-- The builder never touches the URL while editing; pressing **Analyze**
+- The builder never touches the URL while editing; pressing **Show chart**
   commits one history entry.
 - Opening a share link: decode → structural validation (nonsense links get a
   friendly error page) → POST → render. Refresh reproduces the analysis.
@@ -382,7 +386,7 @@ stateless. The URL encodes exactly that:
   population values included (`has_household_children` a boolean, ages and
   `region` finite numbers, the diary dates `YYYY-MM-DD`, the rest strings):
   the API reads `"no"`, `"false"` or `"0"` as `false`, which the page would
-  have labelled "with household children", a string of digits as a Unix
+  have labelled "with children at home", a string of digits as a Unix
   time, and a `1e400` the page shows arrives as `null` (review round 4).
 - **Canonicalization:** after a successful estimate/trend run, the page
   rewrites the URL (history *replace*) using the API's canonical `spec` from
@@ -408,7 +412,7 @@ stateless. The URL encodes exactly that:
   time) and does not rewrite such a link to a canonical spec. A malformed
   split is an invalid link; a split the release's population metadata does
   not offer is refused with its own message.
-- “Adjust analysis” opens `/explore?op=…&spec=…`, which rebuilds builder
+- “Change this chart” opens `/explore?op=…&spec=…`, which rebuilds builder
   state from the spec (`features/builder/state.ts: fromRequest`).
 - **No short links** ([ADR-016](adr/ADR-016-short-share-links.md)): they
   would need server-side state — a store the edge Worker must reach to
@@ -441,9 +445,10 @@ values and standard errors.
   and from it are a thin dotted connector (`segmentPieces`), so a 2020 that
   "may not compare exactly" is not drawn as an ordinary year. The
   one-sentence answer reads full-year estimates only: the latest and the
-  first year, and no range across the years beside a partial year (review
-  round 5: "Leaving out 2020, a partial year, …" read awkwardly). If that
-  request fails, 2020 falls back to the gap below.
+  first year, and since design review round 6 (the owner's decision D9) no
+  range across the years for any trend, so every trend answers in one shape
+  and the chart shows the range. If that request fails, 2020 falls back to
+  the gap below.
 - `estimate: null` (any other unavailable year, e.g. no respondents in a
   group) renders as a labeled gap band (“No data”); the line never crosses
   it, nothing is interpolated, and the chart's small print says why, with
@@ -488,49 +493,84 @@ values and standard errors.
   “Volunteering”); only letter case and those abbreviations change, and the
   request keeps the survey's own name. Search matches the survey's names,
   their plain forms, the presets' names and everyday words (`synonyms.ts`:
-  “tv” → Watching TV, “chores” → Housework), presets first. Each popular
+  “tv” → Watching TV, “chores” → Housework), presets first, and among them
+  a word that starts with the search before one that only contains it
+  (review round 6: “work” listed Housework before Working). Each popular
   choice — the presets and four top-level categories (volunteering, sports
   and exercise, caring for household members, shopping) — and the selected
-  activity say what they include, from the lexicon's own names.
+  activity say what they include, from the lexicon's own names; a catch-all
+  a preset lists itself (“Working, n.e.c.*”) is counted in “and N more”,
+  never named (`included`; review round 6).
 - Confidence intervals are shown wherever the API provides them, always by
   their name, “95% confidence interval” — never as a “likely range”, which
   a confidence interval is not (review round 5): the estimate's interval in
   words, the trend's shaded band, the comparison's whiskers and its
   difference's interval. The small print says what the band or whiskers
-  are and why (“The survey interviews a sample of people, so each figure is
-  an estimate subject to sampling error”); the About page says what 95%
-  means (the method's coverage over repeated samples) and that the interval
-  reflects sampling error only. A trend split into groups draws no bands (it
+  are — the whiskers as “each group's” interval, not the difference's — and
+  why (“The survey interviews a sample of people, so each figure is an
+  estimate subject to sampling error”), and links, as the estimate's
+  interval line does, to the About page's “How sure are the numbers?”
+  (“What does 95% mean?”, `IntervalHelp`; review round 6), which says what
+  95% means (the method's coverage over repeated samples) and that the
+  interval reflects sampling error only. A trend split into groups draws no bands (it
   requests point estimates; a replicate-weight trend per group would cost
   about ten times as much, and two to six bands overlap): it links instead
   to a comparison of two of its groups in its latest year — the two, or the
   highest and the lowest — whose difference has its confidence interval
   (`splitComparison`, written as the builder writes that comparison, so men
-  vs women for a preset is a prewarmed snapshot entry; review round 4).
+  vs women for a preset is a prewarmed snapshot entry; review round 4),
+  “How sure is this? Compare men and women in 2025 →” (review round 6: it
+  was 17 words).
   A result without an interval says so (“No confidence interval is
   available for this estimate”). Readouts (tooltips) say values only.
+- **A figure from few diaries says so** (review round 6, the owner's
+  decision D7; `fewDiariesNote`, `fewDiariesTrendNote` in `domain/notes.ts`):
+  under 100 diaries behind an estimate, a comparison's bar or any trend
+  point (the API's `n_respondents`; nothing is computed from it), a caveat
+  reads “Only 13 people's diaries are behind this figure, too few to rely
+  on. With so few, the 95% confidence interval can understate the
+  uncertainty.”, adding, when none of them did the activity, why the
+  interval is 0 to 0. A one-year estimate or comparison then links to the
+  same analysis over the latest three years combined, leaving out 2020 —
+  or 2019 with 2020 for 2020 (`combineYearsLink`, under the site's
+  settings): the remedy the builder no longer offers as a control. A click
+  is a request (combined years are not prewarmed); viewing costs none.
 - API `warnings` always render visibly, in plain language
   (`domain/notes.ts`): caveats about the particular result (pooled years,
-  pandemic weights, a truncated interval, filter caveats) in the “Keep in
-  mind” warning style, context true of every such result (how a
-  difference's uncertainty is computed) as a quieter line, so the warning
-  style keeps its meaning. The one note never shown is that activity codes
+  the 2020 weighting — “2020 is a partial year. These figures cover only
+  the weeks the survey ran normally…”, without “weights” since review round
+  6 — a truncated interval, filter caveats) in the “Keep in mind” warning
+  style, inside the result's card between the chart and its small print
+  (review round 6: below the card they followed the source line), context
+  true of every such result (how a difference's uncertainty is computed) as
+  a quieter line, so the warning style keeps its meaning. The one note never shown is that activity codes
   are harmonized across years (`shownWarnings`; review round 5): it is true
   of every result and says nothing about this one. A warning the module
   does not recognize is shown verbatim, as a caveat. Context notes sit in
   the chart's small print (`ChartFootnote`), on one line together (review
-  round 4), above the source line, which names the number of diaries
-  behind the figure and, on the same line, the graph's author: “Source:
-  American Time Use Survey, U.S. Bureau of Labor Statistics. Graph by
-  Nathan Nguyen · X: @NathanDNguyen” (`SourceLine`, also under the home
-  page's chart; review round 5). The site's footer no longer repeats the
-  data source.
+  round 4), then the number of diaries behind the figures on a line of its
+  own (“Based on 6,146 people's diaries.”, “Diaries behind each bar: Men
+  2,922 · Women 3,224.”), then the source line, exactly as the owner wrote
+  it, with the graph's author: “Source: American Time Use Survey, U.S.
+  Bureau of Labor Statistics. Graph by Nathan Nguyen · X: @NathanDNguyen”
+  (`SourceLine`, also under the home page's chart; review round 5; since
+  review round 6 the count no longer splits it, and “X: @NathanDNguyen”
+  never breaks across lines). The site's footer no longer repeats the data
+  source.
 - Formatting precision policy (`utils/format.ts`): durations as h + m
   rounded to the minute, a whole hour as “9h” and axis ticks in the same
-  form (“9h”, “9h 10m”, never “9h 00m”; review round 4), durations inside a
-  sentence in words (“9 hours 2 minutes”), and a difference's confidence
-  interval in whole minutes when both ends are 10 minutes or more, else one decimal
-  (“2.8 to 19.4 minutes”) (detailed form: one decimal of minutes);
+  form (“9h”, “9h 10m”, never “9h 00m”; review round 4), a negative one
+  signed once (“−8m”, an interval's lower end for a small group; review
+  round 6: it read “-1h -8m”), durations inside a sentence in words (“9
+  hours 2 minutes”); data lines — the number under an estimate, a
+  comparison's difference and their intervals — in the compact form
+  (“Difference: 23m more a day for men (95% confidence interval: 14m to
+  33m)”; review round 6: “3 hours 28 minutes … 184 to 233 minutes”), with a
+  decimal of a minute only when both ends would otherwise read the same
+  (detailed form: one decimal of minutes); axis tick labels with the fewest
+  decimals at which each is its tick's exact value (review round 6: a
+  phone's 2.5% steps read “3%” and “8%”), and a count's line end in the
+  axis's short form (“277.7M”, never cut off);
   percentages one decimal (small nonzero values keep two significant digits
   rather than collapsing to “0.0”); SEs/CIs in the estimate's own scale and
   precision; a **difference** of two proportions is formatted in percentage
@@ -545,7 +585,9 @@ values and standard errors.
 - Labels a link chose are set against what was computed (R14 in
   docs/security.md; `definitionNote`): a comparison whose group names are
   not the plain description of their filters says “Groups compared: <name>
-  (<filters>)” in the small print, and an activity name that is neither a
+  (<filters>)” in the small print — a plain description from before review
+  round 6 (“With household children”) still counts as one
+  (`isPlainGroupLabel`, the owner's decision D10) — and an activity name that is neither a
   preset's own (the selection exactly that preset) nor the survey's own
   name for its one activity code names its codes. The builder writes only
   those names, so since review round 5 its links carry no such note; the
@@ -566,9 +608,17 @@ values and standard errors.
   groups are named as people (“men spent 23 minutes more a day watching TV
   than women”) only when a group's label is exactly the plain description
   of its own filters; any other label, a link's included, follows “for” as
-  written (R14). A comparison's difference is stated in one line under its
-  bars as “N more for <group>” with its 95% confidence interval as a range
-  of “more for A / more for B”. When the API's interval for the difference
+  written (R14). A comparison's difference is stated in one data line under
+  its bars, in the compact form, naming the larger group once and reading
+  its 95% confidence interval from that group's side (review round 6: it
+  restated the answer and named each group again): “Difference: under a
+  minute more a day for people with children under 18 at home (95%
+  confidence interval: 4m less to 4m more)”, “… 0.4 percentage points
+  higher on weekdays (95% confidence interval: 0.9 lower to 1.7 higher)”.
+  A split trend's answer gives each group's latest value and, since review
+  round 6 (D9), its first: “In 2025, men spent 2 hours 49 minutes a day
+  watching TV and women 2 hours 25 minutes, compared with 2 hours 46
+  minutes and 2 hours 25 minutes in 2003.” When the API's interval for the difference
   includes zero, the answer adds “but the 95% confidence interval for the
   difference includes zero”: it
   reads the interval's sign, computes nothing and claims no significance
@@ -582,7 +632,13 @@ values and standard errors.
   bars; the trend chart draws at its container's measured width
   (`useElementWidth`), with clock-like ticks ("5h 10m"), ringed points and
   its latest value labeled at the line's end (hidden while the readout
-  shows that year). A trend split into groups draws up to six lines, each
+  shows that year; the right margin fits the label, so none is cut off,
+  and is given back to the plot when no label is drawn — review round 6).
+  Year ticks keep the last regular one at least three quarters of a step
+  before the always-labeled last year (review round 6: “2021 2025” touched
+  on a phone). A duration under an hour also draws the first hour of the
+  day enlarged under the day bar, with its interval as a whisker when that
+  fits inside the hour (review round 6: 7 minutes was a sliver). A trend split into groups draws up to six lines, each
   its own colour and dash pattern (the series palette in `global.css`,
   validated together for colour-vision deficiency), with a legend above the
   chart and a readout listing every group at the year under the cursor.
@@ -603,10 +659,31 @@ values and standard errors.
   “Doing what?” (the activity, with its “Change activity” button right
   beside its name since review round 5, and “Show:”, the statistic, as one
   select under it), “For whom?” and “When?” (one year for a single number
-  or a comparison). There is no “More options” (review round 5): the
+  or a comparison; a trend's “From” offers the years up to “To” and “To”
+  the years from “From” on, so a range cannot run backwards — review round
+  6). There is no “More options” (review round 5): the
   weights and the interval are the site's (above). The sticky summary is one line
   (“Sleeping · Average time per day · Everyone age 15 and over ·
-  2003–2025”) with Analyze. Request bytes are unchanged (`toRequest`).
+  2003–2025”) with “Show chart”; on a phone's floating bar the activity
+  takes one line and who and when always the next, without the statistic
+  (review round 6: clamped to two lines, it hid who and when). Request
+  bytes are unchanged (`toRequest`).
+- One word for what the site makes: “chart” (review round 6, the owner's
+  decision D8): “Make a chart” (Explore's heading), “Show chart”, “Change
+  this chart” (the result's button, and the request-problem panels'), “Each
+  chart gets its own link to share.”, “Getting the chart ready…”, “Chart
+  ready.” (the live region). “Analysis service” still names the server in
+  the technical states, and “new analyses” the quotas.
+- A result page's other states (review round 6): a link that opens no chart
+  is a calm card — “This link doesn't open a chart”, the likely cause for a
+  link cut off when it was copied (a base64 or a JSON that ends early:
+  `CUT_OFF`), “Make a chart” and “Home” — and so is Not found; a link
+  written with settings the site no longer uses says so under its heading
+  (“This link was made with older settings. It now uses the site's current
+  ones, so its numbers may differ slightly from when it was shared.”,
+  carried in its history entry across the rewrite); on a phone an
+  estimate's “See every year, 2003–2025” follows the answer instead of
+  wrapping the buttons above it.
 - The home page's starter cards preview their answers from the static
   snapshot only (`snapshotAnalysis`): a home page visit never wakes the
   analysis service or spends its quota, and without a snapshot (development)
@@ -640,17 +717,21 @@ values and standard errors.
   focus to the page's heading (`<h1 tabIndex={-1}>`; on Home, the starter
   examples' heading) before the retry and, until it settles, back to the
   heading the page then shows whenever focus fell to `<body>` (review
-  round 1). Explore keeps its "Build an analysis" heading mounted in the
+  round 1). Explore keeps its "Make a chart" heading mounted in the
   loading and error states too, so focus stays on it while a retry runs and
   after one that fails again (review round 2).
-- After an in-app navigation (a link, Analyze, Back/Forward) focus moves to
+- After an in-app navigation (a link, "Show chart", Back/Forward) focus moves to
   the new page's `<h1>` (`AppShell`), so the change of page is announced and
   the next Tab continues from it. Not on the first page of a visit, and not
   when the analysis page only replaces its query string with the canonical
   spec (review round 2). When a full-page state (a paused quota or API, the
   edge's daily limit) then replaces the page and its focused heading, focus
   moves to the state's own heading instead of falling to `<body>`
-  (`useKeepNavigationFocus`; review round 4).
+  (`useKeepNavigationFocus`; review round 4). A link to a part of a page
+  (a result's “What does 95% mean?” → `/about#how-sure`) moves focus, and
+  the view, to that part's heading instead, also on the first page of a
+  visit, when the browser cannot scroll to a part not yet drawn (review
+  round 6).
 - Playwright runs axe checks (no serious or critical violations) on the five
   main screens, the About page, the waking state, the incompatible-API, paused-quota and
   edge-limit pages, the data-release reload notice, the
@@ -666,7 +747,7 @@ values and standard errors.
 
 ```bash
 npm test          # unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 76 Playwright runs: 51 tests in Chromium desktop, 3 mobile,
+npm run test:e2e  # 78 Playwright runs: 52 tests in Chromium desktop, 4 mobile,
                   # and the 11 @core journeys again in Firefox and in WebKit
                   # (one desktop test runs only in stack mode)
 npx playwright install firefox webkit   # once, for the cross-browser projects
@@ -1010,7 +1091,8 @@ one origin, whose Worker proxies `/api/*` to the API — so the build calls
   `scripts/build_snapshot.py`) next to the SPA's files; the SPA works
   without it.
 - **Privacy.** No cookies, no browser storage, no third-party analytics or
-  trackers. The About page ("Privacy and logs") states what the service
+  trackers. The About page ("Your privacy": three plain bullets, then the
+  full account under "Everything that is logged, and for how long") states what the service
   logs per request — request ID, route, status, timing, cache status,
   analysis key, the client IP shortened to /24 (IPv4) or /48 (IPv6), never
   request bodies — and the retention of the providers' free plans (Render
@@ -1032,7 +1114,7 @@ then replaces the metadata API calls).
 | Requests for the home page | 4 total, 1 API call (`/meta`) |
 | Route transition to /explore | ~97 ms, 3 API calls (population metadata, lexicon, presets — then cached for the session) |
 | Activity search keystrokes | 0 network requests |
-| Analysis requests | only on **Analyze** — never per keystroke |
+| Analysis requests | only on **Show chart** — never per keystroke |
 
 Slow analyses show an explanatory loading state. Uncached full-period
 variance took about 11 s on the Phase 4 laptop; the Phase 5 audit measured

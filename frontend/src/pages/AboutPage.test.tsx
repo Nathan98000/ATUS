@@ -10,7 +10,7 @@ import { renderWithProviders } from '../test/render'
 import { AboutPage } from './AboutPage'
 
 function privacySection(): HTMLElement {
-  const heading = screen.getByRole('heading', { name: 'Privacy and logs' })
+  const heading = screen.getByRole('heading', { name: 'Your privacy' })
   const section = document.createElement('div')
   // The section runs from its heading to the next h2.
   let node = heading.nextElementSibling
@@ -31,9 +31,27 @@ describe('About page: privacy and logs', () => {
     expect(text).toMatch(/no third-party analytics, trackers/)
   })
 
-  it('lists what is logged per request, with IP addresses shortened and no bodies', () => {
+  it('opens with a plain summary, the full account one click away (review round 6)', () => {
     renderWithProviders(<AboutPage />)
     const section = privacySection()
+    const summary = Array.from(section.querySelectorAll(':scope > ul > li')).map(
+      (item) => item.textContent,
+    )
+    expect(summary).toEqual([
+      'No accounts, cookies, trackers or third-party scripts.',
+      expect.stringMatching(/most common charts come from files on this site/),
+      expect.stringMatching(
+        /IP address shortened, and the hosts delete those logs within 7 days/,
+      ),
+    ])
+    expect(section.querySelector('details > summary')?.textContent).toBe(
+      'Everything that is logged, and for how long',
+    )
+  })
+
+  it('lists what is logged per request, with IP addresses shortened and no bodies', () => {
+    renderWithProviders(<AboutPage />)
+    const section = privacySection().querySelector('details') as HTMLElement
     const items = within(section)
       .getAllByRole('listitem')
       .map((item) => item.textContent)
@@ -76,5 +94,19 @@ describe('About page: privacy and logs', () => {
       /Cloudflare Workers Logs\) for 3 days \(7 days\s+from 1 December 2026\)/,
     )
     expect(text).toMatch(/under their own\s+privacy policies/)
+  })
+})
+
+describe('About page: how sure the numbers are (review round 6)', () => {
+  it('explains the 95% confidence interval where the results link to it', () => {
+    renderWithProviders(<AboutPage />)
+    const heading = screen.getByRole('heading', { name: 'How sure are the numbers?' })
+    expect(heading).toHaveAttribute('id', 'how-sure')
+    const text = (heading.nextElementSibling?.textContent ?? '').replace(/\s+/g, ' ')
+    expect(text).toContain(
+      'if the survey were repeated many times with new samples, about 95% of the intervals it produced would contain the true value for the whole population',
+    )
+    expect(text).toContain('The interval reflects sampling error only')
+    expect(document.body.textContent).not.toMatch(/likely range/i)
   })
 })

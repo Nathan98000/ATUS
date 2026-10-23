@@ -26,18 +26,31 @@ import { useMemo, useState } from 'react'
 
 import type { TrendPoint } from '../../api/types'
 import { presentUnavailableReason, shortUnavailableReason } from '../../domain/notes'
-import { formatAxisTicks, formatClockTick, formatEstimate } from '../../utils/format'
+import {
+  formatAxisTicks,
+  formatClockTick,
+  formatEstimate,
+  formatPeopleCompact,
+} from '../../utils/format'
 import { durationTicks, linearScale, niceTicks, padDomain, segmentPieces } from './chartScale'
 import { useElementWidth } from './useElementWidth'
 
 /** Drawn at the container's own width, so text keeps its CSS size. */
 const DEFAULT_WIDTH = 760
 const MIN_WIDTH = 280
-/** The right margin holds the latest value's label. */
+/** The right margin holds the latest value's label (at least this wide). */
 const MARGIN = { top: 22, right: 64, bottom: 34, left: 58 }
 const NARROW_MARGIN = { top: 22, right: 52, bottom: 34, left: 50 }
+/** The right margin when no end label is drawn: room for the last point. */
+const NO_LABEL_RIGHT = 20
 /** Room each x-axis year label needs. */
 const MIN_YEAR_TICK_SPACING = 52
+/**
+ * The last regular year tick stays at least this share of a step before the
+ * last year, which is always labeled (review round 6: "2021 2025" touched on
+ * a phone).
+ */
+const LAST_TICK_GAP = 0.75
 /** A split trend labels its lines' ends when it has at most this many lines. */
 const MAX_END_LABELS = 4
 /** Approximate width of one end-label character (13px text), for its margin. */
@@ -118,6 +131,11 @@ function showValue(value: number, unit: string): string {
   return formatEstimate(value, unit).primary
 }
 
+/** A line's end label: the value, a count in the axis's short form ("277.7M"). */
+function endValue(value: number, unit: string): string {
+  return unit === 'persons_per_day' ? formatPeopleCompact(value) : showValue(value, unit)
+}
+
 /** A short stroke of a line's colour and dash, with its point: legend and readout keys. */
 export function SeriesKey({ index }: { index: number }) {
   return (
@@ -193,7 +211,7 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
     const labels = lines.flatMap((line, index) => {
       const point = line.available[line.available.length - 1]
       return point
-        ? [{ index, point, name: line.label, value: showValue(point.value, unit) }]
+        ? [{ index, point, name: line.label, value: endValue(point.value, unit) }]
         : []
     })
     const room =
@@ -211,9 +229,19 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
     }
     return { labels, room }
   })()
-  const margin = endLabels
-    ? { ...baseMargin, right: Math.max(baseMargin.right, endLabels.room) }
-    : baseMargin
+  const last = lines[0]?.available[lines[0].available.length - 1]
+  const singleEnd = single && last ? endValue(last.value, unit) : null
+  // The right margin fits the end labels, so none is cut off (review round
+  // 6: "277.7 millio" on a phone), and gives the plot back the room when a
+  // split trend's legend alone names its lines.
+  const margin = {
+    ...baseMargin,
+    right: endLabels
+      ? Math.max(baseMargin.right, endLabels.room)
+      : singleEnd !== null
+        ? Math.max(baseMargin.right, 14 + singleEnd.length * END_LABEL_CHAR)
+        : NO_LABEL_RIGHT,
+  }
   // A little room on both sides so the first and last points clear the edges.
   const yearPad = maxYear > minYear ? 0.4 : 1
   const x = linearScale(
@@ -236,7 +264,7 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
   const xTicks = years.filter(
     (year) =>
       year === maxYear ||
-      ((year - minYear) % xTickStep === 0 && maxYear - year >= xTickStep / 2),
+      ((year - minYear) % xTickStep === 0 && maxYear - year >= xTickStep * LAST_TICK_GAP),
   )
 
   const yearWidth = years.length > 1 ? x(minYear + 1) - x(minYear) : 40
@@ -250,7 +278,6 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
     lines[lineIndex]?.partialYears?.includes(year) ?? false
   const partialYear = (year: number) => lines.some((_, index) => isPartial(index, year))
   const yearLabel = (year: number) => (partialYear(year) ? `${year} (partial year)` : `${year}`)
-  const last = lines[0]?.available[lines[0].available.length - 1]
 
   const moveActive = (direction: 1 | -1) => {
     const currentIndex =
@@ -515,7 +542,7 @@ export function TrendChart({ series, unit, measureLabel, legendTitle }: TrendCha
               className="chart-end-label"
               data-testid="end-label"
             >
-              {showValue(last.value, unit)}
+              {singleEnd}
             </text>
           ) : null}
           {/* A split trend: each line's group and latest value at its end. */}

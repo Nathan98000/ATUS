@@ -4,6 +4,7 @@ import { populationMetadataFixture } from '../../test/fixtures'
 import {
   compareChoices,
   defaultPair,
+  choiceLabels,
   deriveCompareBy,
   resolveSplit,
   seriesSpec,
@@ -81,5 +82,30 @@ describe('split trends', () => {
       variance: 'none',
     })
     expect(old?.population).toEqual({ sex: 'female', age_min: 65 })
+  })
+})
+
+describe('a link with the group names before review round 6 (D10)', () => {
+  const choices = compareChoices(dimensions)
+  const groups = {
+    groupA: { has_household_children: true },
+    groupB: { has_household_children: false },
+  } as const
+
+  it('is still the simple "Children at home" comparison', () => {
+    expect(
+      deriveCompareBy(choices, {
+        ...groups,
+        labelA: 'With household children',
+        labelB: 'Without household children',
+      }),
+    ).toBe('has_household_children')
+  })
+
+  it('reads its groups under today’s names', () => {
+    expect(choiceLabels(choices, 'has_household_children', groups)).toEqual({
+      labelA: 'With children at home',
+      labelB: 'Without children at home',
+    })
   })
 })

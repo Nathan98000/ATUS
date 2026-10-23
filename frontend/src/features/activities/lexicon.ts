@@ -32,9 +32,14 @@ export interface LexiconIndex {
   /**
    * What a selection covers, in plain names: each six-digit code's own
    * activity, and the offered activities or subcategories directly under a
-   * shorter code (less any excluded), in code order.
+   * shorter code (less any excluded), in code order. A catch-all six-digit
+   * code the selection lists itself ("Working, n.e.c.*") is counted in
+   * `unnamed` rather than named (review round 6).
    */
-  includedNames: (include: readonly string[], exclude?: readonly string[]) => string[]
+  included: (
+    include: readonly string[],
+    exclude?: readonly string[],
+  ) => { names: string[]; unnamed: number }
 }
 
 /** The lexicon's catch-all "Data Codes" category (unable to code, missing). */
@@ -105,11 +110,16 @@ export function buildLexiconIndex(entries: readonly ActivityEntry[]): LexiconInd
     return [...startsWith, ...contains].slice(0, limit)
   }
 
-  const includedNames = (include: readonly string[], exclude: readonly string[] = []) => {
+  const included = (include: readonly string[], exclude: readonly string[] = []) => {
     const names: string[] = []
+    let unnamed = 0
     for (const code of [...include].sort()) {
       const entry = byCode.get(code)
       if (!entry) continue
+      if (entry.level === 3 && !isOffered(entry)) {
+        unnamed += 1
+        continue
+      }
       const covered =
         entry.level === 3
           ? [entry]
@@ -119,7 +129,7 @@ export function buildLexiconIndex(entries: readonly ActivityEntry[]): LexiconInd
         if (!names.includes(name)) names.push(name)
       }
     }
-    return names
+    return { names, unnamed }
   }
 
   return {
@@ -131,6 +141,6 @@ export function buildLexiconIndex(entries: readonly ActivityEntry[]): LexiconInd
     offeredLeafCount: (code) => offeredLeafCounts.get(code) ?? 0,
     pathOf,
     search,
-    includedNames,
+    included,
   }
 }

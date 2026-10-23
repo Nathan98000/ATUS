@@ -8,7 +8,7 @@ import { CORE } from './helpers'
 
 test('configure, run, understand and reshare a comparison', CORE, async ({ page }) => {
   await page.goto('/explore')
-  await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible()
 
   await page.getByRole('radio', { name: 'Compare two groups' }).click()
 
@@ -18,7 +18,7 @@ test('configure, run, understand and reshare a comparison', CORE, async ({ page 
   await expect(page.getByLabel('Second group')).toHaveValue('female')
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
 
-  await page.getByRole('button', { name: 'Analyze' }).click()
+  await page.getByRole('button', { name: 'Show chart' }).click()
 
   // Fixture: men 100.0 min (1h 40m), women 66.67 min (1h 7m), beside their bars.
   const values = page.locator('.compare-chart__value')
@@ -29,12 +29,11 @@ test('configure, run, understand and reshare a comparison', CORE, async ({ page 
   await expect(
     page.getByText('In 2023, men spent 33 minutes more a day sleeping than women.'),
   ).toBeVisible()
-  // The difference comes from the API (covariance-correct), in words.
+  // The difference comes from the API (covariance-correct), in one data
+  // line, its interval read from the larger group's side (review round 6).
   const difference = page.getByTestId('difference')
-  await expect(difference).toContainText('Difference: 33 minutes more per day for men.')
-  await expect(difference).toContainText(
-    /95% confidence interval: [\d.]+ to [\d.]+ minutes more for men/,
-  )
+  await expect(difference).toContainText('Difference: 33m more a day for men')
+  await expect(difference).toContainText(/\(95% confidence interval: [\d.]+m to [\d.]+m\)/)
 
   // Both groups appear in the chart with their labels (never color-only).
   await expect(page.getByRole('img', { name: /Comparison of minutes per day/ })).toBeVisible()
@@ -45,5 +44,5 @@ test('configure, run, understand and reshare a comparison', CORE, async ({ page 
   // Reloading the URL reproduces the comparison (stateless share link).
   await page.reload()
   await expect(values.first()).toHaveText('1h 40m', { timeout: 15_000 })
-  await expect(page.getByTestId('difference')).toContainText('33 minutes more per day for men')
+  await expect(page.getByTestId('difference')).toContainText('33m more a day for men')
 })

@@ -28,7 +28,7 @@ describe('WarningBanner', () => {
     )
     expect(container).not.toHaveTextContent(/both groups/)
     expect(contextNotes(warnings)).toEqual([
-      "The difference's confidence interval accounts for both groups coming from the same survey.",
+      "The difference's interval allows for both groups coming from the same survey.",
     ])
   })
 
@@ -83,7 +83,7 @@ describe('ErrorPanel', () => {
     const alert = screen.getByRole('alert')
     expect(alert).toHaveTextContent('not statistically supported')
     expect(alert).toHaveTextContent('TUFNWGTP (the multi-year weight) is undefined')
-    expect(screen.getByRole('link', { name: 'Adjust analysis' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Change this chart' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument()
     expect(alert).toHaveTextContent('HTTP 422 · unsupported_analysis · request req-1')
   })
@@ -96,7 +96,7 @@ describe('ErrorPanel', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('could not be reached')
     screen.getByRole('button', { name: 'Try again' }).click()
     expect(onRetry).toHaveBeenCalled()
-    expect(screen.queryByRole('link', { name: 'Adjust analysis' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Change this chart' })).not.toBeInTheDocument()
   })
 
   it('treats 503 as temporary unavailability with retry', () => {

@@ -40,7 +40,7 @@ export interface PresentedError {
   hint: string | null
   /** Offer a "Try again" action. */
   retryable: boolean
-  /** Offer an "Adjust analysis" action (the request itself is the problem). */
+  /** Offer a "Change this chart" action (the request itself is the problem). */
   adjustable: boolean
   /** Seconds the service asked us to wait before trying again (drives a countdown). */
   retryAfterSeconds: number | null
@@ -167,7 +167,7 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
         heading: 'This analysis request is not valid',
         message: error.message,
         detailLines: validationDetailLines(error.details),
-        hint: 'Adjust the analysis and run it again.',
+        hint: 'Change the chart and show it again.',
         adjustable: true,
       }
     case 'unknown_activity':
@@ -246,7 +246,7 @@ function presentApiError(error: ApiError, base: Base, now: number): PresentedErr
           kind: 'limit',
           heading: 'Today’s capacity for long analyses is used up',
           message: `This free service can run a limited number of long analyses per day — those covering ${HEAVY_YEAR_QUERIES} or more years (${HEAVY_YEAR_QUERIES / 2} or more for a comparison) — and today’s are used up. Analyses of up to ${HEAVY_YEAR_QUERIES - 1} years (up to ${HEAVY_YEAR_QUERIES / 2 - 1} for a comparison) still run. The limit resets at ${utcMidnightPhrase(now)}.`,
-          hint: `Adjust the analysis to fewer years. ${STILL_WORKS}`,
+          hint: `Change the chart to fewer years. ${STILL_WORKS}`,
           adjustable: true,
         }
       }
