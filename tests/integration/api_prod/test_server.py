@@ -95,17 +95,42 @@ def production_settings(data_settings):
 
 
 def raw_request(port: int, data: bytes, *, read: bool = True) -> bytes:
+    """Send ``data`` and read the reply until the server closes the connection.
+
+    A server that answers before reading the whole request (the 413 for an
+    over-cap body) closes with the rest of the body unread, so its kernel
+    resets the connection rather than closing it cleanly: the reset can cut
+    the send short or arrive after the reply. Once the whole reply is in, the
+    reset is that close; before, it is an error. (Taking it for an error
+    either way made the chunked 413 below flaky in CI, 2026-10-23.)"""
     with socket.create_connection(("127.0.0.1", port), timeout=10) as sock:
-        sock.sendall(data)
+        try:
+            sock.sendall(data)
+        except (BrokenPipeError, ConnectionResetError):
+            if not read:
+                raise
         if not read:
             return b""
         chunks = []
         while True:
-            chunk = sock.recv(65536)
+            try:
+                chunk = sock.recv(65536)
+            except ConnectionResetError:
+                if not _whole_reply(b"".join(chunks)):
+                    raise
+                break
             if not chunk:
                 break
             chunks.append(chunk)
         return b"".join(chunks)
+
+
+def _whole_reply(reply: bytes) -> bool:
+    """Whether ``reply`` holds a complete response: its head and as many body
+    bytes as its Content-Length."""
+    head, separator, body = reply.partition(b"\r\n\r\n")
+    length = re.search(rb"(?im)^content-length:[ \t]*(\d+)[ \t]*\r?$", head)
+    return bool(separator) and length is not None and len(body) >= int(length[1])
 
 
 class TestProductionServer:
