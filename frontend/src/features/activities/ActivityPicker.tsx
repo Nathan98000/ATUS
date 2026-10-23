@@ -13,7 +13,7 @@
  * pattern, so they are disabled for this file only.
  */
 /* oxlint-disable jsx-a11y/prefer-tag-over-role, jsx-a11y/no-noninteractive-element-to-interactive-role */
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { refetchFailed, useActivities, useActivityPresets } from '../../api/queries'
 import type { ActivityEntry, ActivitySelection } from '../../api/types'
@@ -83,8 +83,7 @@ export function ActivityPicker({ value, onChange, error }: ActivityPickerProps) 
 
   return (
     <div className="activity-picker">
-      <div className="activity-picker__current">
-        <SelectionSummary value={value} index={index} presets={presetList} />
+      <SelectionSummary value={value} index={index} presets={presetList}>
         <button
           ref={toggleRef}
           type="button"
@@ -97,7 +96,7 @@ export function ActivityPicker({ value, onChange, error }: ActivityPickerProps) 
         >
           {open ? 'Close' : 'Change activity'}
         </button>
-      </div>
+      </SelectionSummary>
       {error ? <p className="error-text">{error}</p> : null}
       {open ? (
         <div className="activity-picker__panel">
@@ -137,26 +136,41 @@ export function ActivityPicker({ value, onChange, error }: ActivityPickerProps) 
   )
 }
 
+/**
+ * The selected activity: its name with the button that changes it right
+ * beside it (review round 5: at the card's far edge it read as unrelated),
+ * then what it includes.
+ */
 function SelectionSummary({
   value,
   index,
   presets,
+  children,
 }: {
   value: ActivitySelection
   index: LexiconIndex | null
   presets: readonly PresetDefinition[]
+  /** The "Change activity" button. */
+  children: ReactNode
 }) {
+  const layout = (name: ReactNode, hint: string) => (
+    <div className="activity-picker__current">
+      <div className="activity-picker__line">
+        {name}
+        {children}
+      </div>
+      {hint ? <span className="field-hint activity-picker__includes">{hint}</span> : null}
+    </div>
+  )
   if (value.preset != null) {
     const preset = presets.find((candidate) => candidate.name === value.preset)
     const hint =
       preset && index ? includesHint(index.includedNames(preset.include, preset.exclude)) : ''
-    return (
-      <div>
-        <span className="activity-picker__name">
-          {activityName(preset?.label ?? value.preset)}
-        </span>
-        {hint ? <span className="field-hint activity-picker__includes">{hint}</span> : null}
-      </div>
+    return layout(
+      <span className="activity-picker__name">
+        {activityName(preset?.label ?? value.preset)}
+      </span>,
+      hint,
     )
   }
   const codes = value.include ?? []
@@ -167,17 +181,15 @@ function SelectionSummary({
       index.offeredLeafCount(code) > 1
         ? includesHint(index.includedNames(codes, value.exclude ?? []))
         : ''
-    return (
-      <div>
-        <span className="activity-picker__name">
-          {entry ? activityName(entry.name) : `Activity ${code}`}
-        </span>
-        {hint ? <span className="field-hint activity-picker__includes">{hint}</span> : null}
-      </div>
+    return layout(
+      <span className="activity-picker__name">
+        {entry ? activityName(entry.name) : `Activity ${code}`}
+      </span>,
+      hint,
     )
   }
-  return (
-    <div>
+  return layout(
+    <span>
       <span className="activity-picker__name">
         {value.label != null ? activityName(value.label) : 'Custom selection'}
       </span>
@@ -186,7 +198,8 @@ function SelectionSummary({
         — {codes.length} codes
         {value.exclude?.length ? `, ${value.exclude.length} excluded` : ''}
       </span>
-    </div>
+    </span>,
+    '',
   )
 }
 

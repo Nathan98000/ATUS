@@ -1,7 +1,7 @@
 /**
  * Comparison result: the answer in one sentence over a bar chart from zero,
  * then the API-computed difference (group A − group B, covariance-correct
- * SE — never recomputed here) and its likely range in one line, the chart's
+ * SE — never recomputed here) and its confidence interval in one line, the chart's
  * small print, and the result's notes.
  */
 import type { CompareRequest, CompareResponse } from '../../api/types'

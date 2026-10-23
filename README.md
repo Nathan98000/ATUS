@@ -95,7 +95,7 @@ steps, configuration) and
 
 ### ATUS Explorer
 
-![ATUS Explorer showing a 2003-2025 leisure-time trend with its likely range and 2020 as a hollow partial-year point](docs/images/atus-explorer-trend.png)
+![ATUS Explorer showing a 2003-2025 leisure-time trend with its 95% confidence interval and 2020 as a hollow partial-year point](docs/images/atus-explorer-trend.png)
 
 Every number in the UI comes from the API: estimates carry their likely
 ranges, methodological notes are always displayed, 2020 appears in trends as

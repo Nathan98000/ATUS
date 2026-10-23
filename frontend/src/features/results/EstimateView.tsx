@@ -1,6 +1,6 @@
 /**
  * Point-estimate result: the answer in one sentence, the number itself with
- * its likely range, and a figure that puts it in proportion — the share of
+ * its 95% confidence interval, and a figure that puts it in proportion — the share of
  * a 24-hour day for a duration, a hundred people for a rate, the whole
  * population for a count — then the small print and the result's notes.
  */
@@ -11,11 +11,11 @@ import { WarningBanner } from '../../components/WarningBanner'
 import { contextNotes } from '../../domain/notes'
 import { interpretEstimate } from '../../domain/describe'
 import {
-  formatConfidenceLevel,
+  confidenceIntervalName,
   formatCount,
   formatEstimate,
-  formatLikelyRange,
   formatPeople,
+  formatReadableInterval,
 } from '../../utils/format'
 import { ChartFootnote } from './ChartFootnote'
 
@@ -55,14 +55,12 @@ export function EstimateView({
             <span className="stat-secondary">{valueCaption(result)}</span>
             {ci_lower != null && ci_upper != null ? (
               <p className="stat-uncertainty">
-                Likely range <b>{formatLikelyRange(ci_lower, ci_upper, unit)}</b>
-                {confidence_level != null
-                  ? ` (${formatConfidenceLevel(confidence_level)} confidence)`
-                  : ''}
+                {confidenceIntervalName(confidence_level, true)}:{' '}
+                <b>{formatReadableInterval(ci_lower, ci_upper, unit)}</b>
               </p>
             ) : (
               <p className="stat-uncertainty">
-                No likely range was requested for this estimate.
+                No confidence interval is available for this estimate.
               </p>
             )}
           </div>

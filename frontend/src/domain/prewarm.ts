@@ -23,6 +23,7 @@ import type {
 import type { BuilderState } from '../features/builder/state.ts'
 import {
   KNOWN_MEASURES,
+  PARTIAL_YEAR,
   defaultBuilderState,
   fromRequest,
   toRequest,
@@ -167,7 +168,7 @@ export interface PrewarmedAnalysis {
  * About 135 analyses: the four starters; every preset under every measure
  * (latest year); a full-period trend per preset and per tier-1 category; a
  * latest-year estimate per tier-1 category; men vs women per preset and per
- * tier-1 category; each preset in the two pandemic-weight years; the home
+ * tier-1 category; each preset in 2020 (a trend's partial year); the home
  * page's chart (two group trends and their 2020s); and each starter as the
  * builder sends it after "Adjust analysis" without a change.
  * Duplicates (same operation and bytes) are dropped, keeping the first.
@@ -222,15 +223,13 @@ export function prewarmedAnalyses(input: PrewarmInput): PrewarmedAnalysis[] {
       ...bySex,
     })
   }
-  if (input.weightSchemes.includes('pandemic')) {
-    for (const year of [2019, 2020].filter((y) => years.includes(y))) {
-      for (const preset of presets) {
-        add(`pandemic weights: ${preset}, ${year}`, 'estimate', {
-          activity: { preset },
-          weights: 'pandemic',
-          singleYear: year,
-        })
-      }
+  // 2020 alone, under its partial-year weights: what a trend's 2020 sends.
+  if (input.weightSchemes.includes('pandemic') && years.includes(PARTIAL_YEAR)) {
+    for (const preset of presets) {
+      add(`pandemic weights: ${preset}, ${PARTIAL_YEAR}`, 'estimate', {
+        activity: { preset },
+        singleYear: PARTIAL_YEAR,
+      })
     }
   }
 

@@ -14,6 +14,7 @@ import { interpretSplitTrend, populationPhrase } from '../../domain/describe'
 import { HOME_CHART, homeChartSpecs } from '../../domain/prewarm'
 import { analysisPath } from '../../domain/urlSpec'
 import { formatYears } from '../../utils/format'
+import { SourceLine } from '../results/ChartFootnote'
 import { withPartial2020 } from '../results/partial2020'
 import { TrendChart } from '../results/TrendChart'
 
@@ -62,7 +63,6 @@ export function HomeChart({ years }: { years: readonly number[] }) {
       />
       <p className="home-chart__small-print">
         Average time per day. {hasPartial ? '2020 (hollow points) is a partial year. ' : ''}
-        Source: American Time Use Survey.{' '}
         <Link
           to={analysisPath('trend', specs.trend, {
             by: HOME_CHART.split.by,
@@ -72,6 +72,7 @@ export function HomeChart({ years }: { years: readonly number[] }) {
           Open this chart
         </Link>
       </p>
+      <SourceLine className="home-chart__small-print" />
     </section>
   )
 }

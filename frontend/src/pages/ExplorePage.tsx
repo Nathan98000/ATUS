@@ -23,7 +23,7 @@ import { useRetryFocus } from '../components/useRetryFocus'
 import { isFullPageError } from '../domain/presentError'
 import { analysisPath, decodeSpec, explorePath, parseSplit } from '../domain/urlSpec'
 import { ActivityPicker } from '../features/activities/ActivityPicker'
-import { MeasureSelector, MoreOptions, YearSelector } from '../features/builder/BuilderControls'
+import { MeasureSelector, YearSelector } from '../features/builder/BuilderControls'
 import { BuilderSummary } from '../features/builder/BuilderSummary'
 import {
   defaultBuilderState,
@@ -349,13 +349,6 @@ function Builder({
               onChange={update}
             />
           </section>
-
-          <MoreOptions
-            state={state}
-            weightSchemes={meta.capabilities.weight_schemes}
-            varianceMethods={meta.capabilities.variance_methods}
-            onChange={update}
-          />
         </div>
         <BuilderSummary
           state={state}

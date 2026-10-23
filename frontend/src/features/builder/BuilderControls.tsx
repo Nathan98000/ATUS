@@ -1,22 +1,14 @@
 /**
- * Year, statistic, and "More options" controls for the analysis builder.
- * Options are driven by GET /api/v1/meta (available years, measures,
- * weight schemes) — the UI never invents capabilities.
+ * Year and statistic controls for the analysis builder. Options are driven
+ * by GET /api/v1/meta (available years, measures) — the UI never invents
+ * capabilities. The weights and the confidence interval are not choices:
+ * the site sets them (`analysisSettings`, review round 5).
  */
-import { useId, useState } from 'react'
+import { useId } from 'react'
 
-import type { MeasureInfo, WeightSchemeInfo } from '../../api/types'
-import { humanize, stripVariableJargon } from '../../domain/describe'
-import { formatConfidenceLevel } from '../../utils/format'
-import {
-  weightsForSingleYear,
-  KNOWN_MEASURES,
-  KNOWN_WEIGHT_SCHEMES,
-  type BuilderState,
-  type Measure,
-  type VarianceMethod,
-  type WeightScheme,
-} from './state'
+import type { MeasureInfo } from '../../api/types'
+import { humanize } from '../../domain/describe'
+import { KNOWN_MEASURES, PARTIAL_YEAR, type BuilderState, type Measure } from './state'
 
 /** Short human labels for the statistics this UI knows (presentation only). */
 const MEASURE_LABELS: Record<Measure, { label: string; hint: string }> = {
@@ -47,9 +39,8 @@ interface YearSelectorProps {
 
 /**
  * When: a range for a trend, one year otherwise. Several years combined
- * (pooled) is turned on under "More options" (`MoreOptions`); once on, the
- * years to combine are chosen here, where the analysis's years are always
- * visible (review round 4).
+ * (pooled) comes only from a shared link, and shows here with its years
+ * and a way back to one year, so nothing in effect is hidden.
  */
 export function YearSelector({ state, availableYears, error, onChange }: YearSelectorProps) {
   const id = useId()
@@ -102,10 +93,7 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
           <select
             id={`${id}-year`}
             value={state.singleYear ?? ''}
-            onChange={(event) => {
-              const year = Number(event.target.value)
-              onChange({ singleYear: year, ...weightsForSingleYear(year, state.weights) })
-            }}
+            onChange={(event) => onChange({ singleYear: Number(event.target.value) })}
           >
             {descending.map((year) => (
               <option key={year} value={year}>
@@ -147,9 +135,7 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
           </p>
         </fieldset>
       )}
-      {state.yearsMode === 'single' &&
-      state.singleYear === 2020 &&
-      state.weights === 'pandemic' ? (
+      {state.yearsMode === 'single' && state.singleYear === PARTIAL_YEAR ? (
         <p className="info-note" style={{ marginTop: '0.5rem' }}>
           2020 is a partial-year estimate: the survey paused that spring because of COVID-19, so
           it covers the rest of the year.
@@ -160,14 +146,14 @@ export function YearSelector({ state, availableYears, error, onChange }: YearSel
   )
 }
 
-/** Back to one year from several combined: the latest one chosen, with its weights. */
+/** Back to one year from several combined: the latest one chosen. */
 function singleYearFrom(
   state: BuilderState,
   availableYears: readonly number[],
 ): Partial<BuilderState> {
   const year = state.pooledYears.at(-1) ?? state.singleYear ?? availableYears.at(-1)
   if (year === undefined) return { yearsMode: 'single' }
-  return { yearsMode: 'single', singleYear: year, ...weightsForSingleYear(year, state.weights) }
+  return { yearsMode: 'single', singleYear: year }
 }
 
 interface MeasureSelectorProps {
@@ -209,178 +195,3 @@ export function MeasureSelector({ measures, value, onChange }: MeasureSelectorPr
     </div>
   )
 }
-
-const CONFIDENCE_LEVELS = [0.9, 0.95, 0.99]
-
-/**
- * The offered levels, plus the current one when a shared analysis carries
- * another level the API accepts (e.g. 0.975): without its own option the
- * select showed "90%" while Analyze sent 0.975, and choosing 90% fired no
- * change (review round 3).
- */
-function confidenceLevelOptions(current: number): number[] {
-  if (CONFIDENCE_LEVELS.includes(current)) return CONFIDENCE_LEVELS
-  return [...CONFIDENCE_LEVELS, current].sort((a, b) => a - b)
-}
-
-/** Our own words for the weights this UI knows; another scheme keeps the API's. */
-const WEIGHT_LABELS: Record<WeightScheme, { label: string; hint: string }> = {
-  multiyear: {
-    label: 'Standard weights (every year except 2020)',
-    hint: 'Use these for nearly everything: they make the years comparable.',
-  },
-  pandemic: {
-    label: '2020 partial-year weights (2019 and 2020 only)',
-    hint: 'They cover only the weeks of 2020 when the survey ran: January 1 – March 17 and May 10 – December 31.',
-  },
-}
-
-interface MoreOptionsProps {
-  state: BuilderState
-  weightSchemes: readonly WeightSchemeInfo[]
-  varianceMethods: readonly string[]
-  onChange: (update: Partial<BuilderState>) => void
-}
-
-/**
- * Choices few questions need: several years combined, the weights, and the
- * likely range. Open from the start whenever one is not at its default (a
- * shared link that sets one), so nothing in effect is hidden.
- */
-export function MoreOptions({
-  state,
-  weightSchemes,
-  varianceMethods,
-  onChange,
-}: MoreOptionsProps) {
-  const id = useId()
-  const [open, setOpen] = useState(
-    () =>
-      state.yearsMode === 'pooled' ||
-      state.weights !== 'multiyear' ||
-      state.variance !== 'replicate' ||
-      state.confidenceLevel !== 0.95,
-  )
-  const knownSchemes = weightSchemes.filter((scheme) =>
-    (KNOWN_WEIGHT_SCHEMES as readonly string[]).includes(scheme.name),
-  )
-
-  return (
-    <details
-      className="panel"
-      open={open}
-      onToggle={(event) => setOpen(event.currentTarget.open)}
-    >
-      <summary>More options</summary>
-      <div className="panel__body">
-        {state.operation !== 'trend' ? (
-          <label className="radio-row">
-            <input
-              type="checkbox"
-              checked={state.yearsMode === 'pooled'}
-              onChange={(event) =>
-                onChange(
-                  event.target.checked
-                    ? {
-                        yearsMode: 'pooled',
-                        pooledYears:
-                          state.pooledYears.length > 0
-                            ? state.pooledYears
-                            : state.singleYear !== null
-                              ? [state.singleYear]
-                              : [],
-                      }
-                    : singleYearFrom(state, state.pooledYears),
-                )
-              }
-            />
-            <span className="radio-row__text">
-              <b>Combine several years</b>
-              <span className="field-hint" style={{ display: 'block' }}>
-                One estimate from the diaries of several years — useful for a small group.
-              </span>
-            </span>
-          </label>
-        ) : null}
-
-        <fieldset style={{ marginTop: state.operation !== 'trend' ? '0.9rem' : 0 }}>
-          <legend>Weights</legend>
-          {knownSchemes.map((scheme) => {
-            const labels = WEIGHT_LABELS[scheme.name as WeightScheme]
-            return (
-              <label key={scheme.name} className="radio-row">
-                <input
-                  type="radio"
-                  name={`${id}-weights`}
-                  checked={state.weights === scheme.name}
-                  onChange={() => onChange({ weights: scheme.name as WeightScheme })}
-                />
-                <span className="radio-row__text">
-                  <b>{labels?.label ?? humanize(scheme.name)}</b>
-                  <span className="field-hint" style={{ display: 'block' }}>
-                    {labels?.hint ?? stripVariableJargon(scheme.description)}
-                  </span>
-                </span>
-              </label>
-            )
-          })}
-        </fieldset>
-
-        <fieldset style={{ marginTop: '0.9rem' }}>
-          <legend>Likely range</legend>
-          {varianceMethods.includes('replicate') ? (
-            <label className="radio-row">
-              <input
-                type="radio"
-                name={`${id}-variance`}
-                checked={state.variance === 'replicate'}
-                onChange={() => onChange({ variance: 'replicate' })}
-              />
-              <span className="radio-row__text">
-                <b>Show the likely range (recommended)</b>
-                <span className="field-hint" style={{ display: 'block' }}>
-                  From the survey's official replicate weights. Slower for long periods.
-                </span>
-              </span>
-            </label>
-          ) : null}
-          {varianceMethods.includes('none') ? (
-            <label className="radio-row">
-              <input
-                type="radio"
-                name={`${id}-variance`}
-                checked={state.variance === 'none'}
-                onChange={() => onChange({ variance: 'none' })}
-              />
-              <span className="radio-row__text">
-                <b>Don't show it</b>
-                <span className="field-hint" style={{ display: 'block' }}>
-                  Faster, but nothing says how precise each figure is.
-                </span>
-              </span>
-            </label>
-          ) : null}
-        </fieldset>
-
-        <div className="field" style={{ marginTop: '0.9rem', maxWidth: '14rem' }}>
-          <label htmlFor={`${id}-confidence`}>Likely range certainty</label>
-          <select
-            id={`${id}-confidence`}
-            value={state.confidenceLevel}
-            onChange={(event) => onChange({ confidenceLevel: Number(event.target.value) })}
-            disabled={state.variance === 'none'}
-          >
-            {confidenceLevelOptions(state.confidenceLevel).map((level) => (
-              <option key={level} value={level}>
-                {formatConfidenceLevel(level)}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-    </details>
-  )
-}
-
-/** VarianceMethod is exported for completeness of the builder vocabulary. */
-export type { VarianceMethod }

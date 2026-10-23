@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  confidenceIntervalName,
   formatAxisTicks,
   formatClockTick,
   formatConfidenceInterval,
@@ -10,11 +11,11 @@ import {
   formatDurationTick,
   formatDurationWords,
   formatEstimate,
-  formatLikelyRange,
   formatMinutesAsDuration,
   formatMinutesDetailed,
   formatPeople,
   formatProportionAsPercent,
+  formatReadableInterval,
   formatStandardError,
   formatValueShort,
   formatYears,
@@ -204,9 +205,18 @@ describe('readers’ forms of axis ticks and ranges', () => {
     expect([30, 45].map((tick) => formatClockTick(tick, [30, 45]))).toEqual(['30m', '45m'])
   })
 
-  it('says a likely range as clock times, or in minutes when they would read the same', () => {
-    expect(formatLikelyRange(522.995, 534.513, 'minutes_per_day')).toBe('8h 43m to 8h 55m')
-    expect(formatLikelyRange(42.2, 42.4, 'minutes_per_day')).toBe('42.2 to 42.4 min')
-    expect(formatLikelyRange(0.7135, 0.742, 'proportion_of_population')).toBe('71.4% to 74.2%')
+  it('says an interval as clock times, or in minutes when they would read the same', () => {
+    expect(formatReadableInterval(522.995, 534.513, 'minutes_per_day')).toBe('8h 43m to 8h 55m')
+    expect(formatReadableInterval(42.2, 42.4, 'minutes_per_day')).toBe('42.2 to 42.4 min')
+    expect(formatReadableInterval(0.7135, 0.742, 'proportion_of_population')).toBe(
+      '71.4% to 74.2%',
+    )
+  })
+
+  it('names an interval by its level, never as a "likely range" (review round 5)', () => {
+    expect(confidenceIntervalName(0.95)).toBe('95% confidence interval')
+    expect(confidenceIntervalName(0.975)).toBe('97.5% confidence interval')
+    expect(confidenceIntervalName(null)).toBe('confidence interval')
+    expect(confidenceIntervalName(undefined, true)).toBe('Confidence interval')
   })
 })

@@ -322,9 +322,10 @@ describe('interpretTrend', () => {
     )
   })
 
-  it('says that a partial year drawn on the chart is left out (review round 4)', () => {
-    expect(interpretTrend(trendLeisureFixture, [2020])).toContain(
-      'Leaving out 2020, a partial year, it ranged from',
+  it('names no range when the chart draws a partial year (review round 5)', () => {
+    expect(interpretTrend(trendLeisureFixture, [2020])).toBe(
+      'Americans age 15 and over spent 5 hours 10 minutes a day on leisure and sports in ' +
+        '2025, compared with 5 hours 7 minutes in 2003.',
     )
   })
 
@@ -357,8 +358,7 @@ describe('describeDifference', () => {
       larger: 'b',
       largerName: 'No household children',
       amount: '11 minutes more per day',
-      interval:
-        'Likely range: 2.8 to 19.4 minutes more for No household children (95% confidence)',
+      interval: '95% confidence interval: 2.8 to 19.4 minutes more for No household children',
       includesZero: false,
       sentence:
         'In 2025, average time a day spent on household activities was 11 minutes longer for ' +
@@ -387,11 +387,11 @@ describe('describeDifference', () => {
     )
     expect(described.largerName).toBe('people without children under 18 at home')
     expect(described.interval).toBe(
-      'Likely range: 2.8 to 19.4 minutes more for people without children under 18 at home (95% confidence)',
+      '95% confidence interval: 2.8 to 19.4 minutes more for people without children under 18 at home',
     )
   })
 
-  it('says when the likely range includes no difference (review round 4)', () => {
+  it('says when the confidence interval includes zero (review round 4)', () => {
     const straddling: CompareResponse = {
       ...compareChildrenFixture,
       difference: {
@@ -403,7 +403,9 @@ describe('describeDifference', () => {
     }
     const described = describeDifference(straddling)
     expect(described.includesZero).toBe(true)
-    expect(described.sentence).toMatch(/, but the likely range includes no difference\.$/)
+    expect(described.sentence).toMatch(
+      /, but the 95% confidence interval for the difference includes zero\.$/,
+    )
   })
 
   it('spans both groups when the interval includes zero', () => {
@@ -419,7 +421,7 @@ describe('describeDifference', () => {
     const described = describeDifference(straddling)
     expect(described.larger).toBe('a')
     expect(described.interval).toBe(
-      'Likely range: from 3.1 minutes more for No household children to 7.9 minutes more for Household children present (95% confidence)',
+      '95% confidence interval: from 3.1 minutes more for No household children to 7.9 minutes more for Household children present',
     )
   })
 
@@ -441,6 +443,11 @@ describe('describeDifference', () => {
 
 describe('definitionNote (R14)', () => {
   const presets = [{ label: 'Sleeping', include: ['0101'], exclude: [] }]
+  const surveyNames = new Map([
+    ['0101', 'Sleeping'],
+    ['15', 'Volunteer Activities'],
+    ['120303', 'Television and movies (not religious)'],
+  ])
 
   it('says nothing when the names are the plain descriptions and the activity a preset', () => {
     expect(
@@ -476,25 +483,69 @@ describe('definitionNote (R14)', () => {
     ).toBe('Groups compared: Women (men) and Men (women).')
   })
 
-  it('names the codes behind a custom activity name', () => {
+  it('says nothing about an activity under the survey’s own name (review round 5)', () => {
+    // What the builder writes for a category or an activity it lists.
+    for (const [code, name] of surveyNames) {
+      expect(
+        definitionNote(
+          'estimate',
+          { activity: { include: [code], label: name }, years: [2025] },
+          presets,
+          surveyNames,
+        ),
+      ).toBeNull()
+    }
+    // No label: the heading names the codes, not a chosen name.
+    expect(
+      definitionNote(
+        'estimate',
+        { activity: { include: ['120303'] }, years: [2025] },
+        presets,
+        surveyNames,
+      ),
+    ).toBeNull()
+  })
+
+  it('names the codes behind any other activity name', () => {
     expect(
       definitionNote(
         'estimate',
         { activity: { include: ['0101'], label: 'Working' }, years: [2025] },
         presets,
+        surveyNames,
       ),
     ).toBe('“Working” here means survey activity code 0101 and the activities under it.')
     expect(
-      definitionNote('estimate', {
-        activity: { include: ['02', '1802'], exclude: ['020903'], label: 'Chores' },
-        years: [2025],
-      }),
+      definitionNote(
+        'estimate',
+        {
+          activity: { include: ['02', '1802'], exclude: ['020903'], label: 'Chores' },
+          years: [2025],
+        },
+        presets,
+        surveyNames,
+      ),
     ).toBe(
       '“Chores” here means survey activity codes 02, 1802 and the activities under them, except 020903.',
     )
+    // A survey name on codes it does not belong to is still a chosen name.
     expect(
-      definitionNote('estimate', { activity: { include: ['120303'] }, years: [2025] }),
-    ).toBe('This activity here means survey activity code 120303.')
+      definitionNote(
+        'estimate',
+        { activity: { include: ['15'], label: 'Sleeping' }, years: [2025] },
+        presets,
+        surveyNames,
+      ),
+    ).toBe('“Sleeping” here means survey activity code 15 and the activities under it.')
+  })
+
+  it('says nothing about the activity until the survey’s names are known', () => {
+    expect(
+      definitionNote('estimate', {
+        activity: { include: ['0101'], label: 'Working' },
+        years: [2025],
+      }),
+    ).toBeNull()
   })
 })
 

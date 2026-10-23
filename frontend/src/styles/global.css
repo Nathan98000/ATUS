@@ -725,6 +725,10 @@ details.panel > .panel__body {
   color: var(--ink-faint);
 }
 
+.home-chart__small-print + .home-chart__small-print {
+  margin-top: 0.2rem;
+}
+
 @media (max-width: 900px) {
   .home-hero:has(.home-chart) {
     grid-template-columns: minmax(0, 1fr);
@@ -1392,10 +1396,14 @@ details.panel > .panel__body {
 /* ---------- Activity picker ---------- */
 
 .activity-picker__current {
+  min-width: 0;
+}
+
+/* The name, and the button that changes it right beside it. */
+.activity-picker__line {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 0.4rem 0.75rem;
   flex-wrap: wrap;
 }
 

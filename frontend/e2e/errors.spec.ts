@@ -17,7 +17,9 @@ function specUrl(operation: string, spec: object): string {
 }
 
 test('the 2020 multiyear restriction shows the API explanation', async ({ page }) => {
-  await page.goto(specUrl('estimate', { activity: { preset: 'sleep' }, years: [2020] }))
+  // 2020 alone runs under its own weights (review round 5); combined with a
+  // year they do not cover, the API still refuses it.
+  await page.goto(specUrl('estimate', { activity: { preset: 'sleep' }, years: [2020, 2023] }))
   const alert = page.getByRole('alert')
   await expect(alert).toContainText('not statistically supported', { timeout: 15_000 })
   await expect(alert).toContainText('data collection was suspended')

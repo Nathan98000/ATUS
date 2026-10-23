@@ -17,9 +17,9 @@ import type {
   TrendPoint,
 } from '../../api/types'
 // Explicit extension: prewarm.ts, which Node loads directly, imports this module.
-import { fromRequest, toRequest } from '../builder/state.ts'
+import { PARTIAL_YEAR, fromRequest, toRequest } from '../builder/state.ts'
 
-export const PARTIAL_YEAR = 2020
+export { PARTIAL_YEAR }
 
 interface PresetDefinition {
   name: string
@@ -64,8 +64,8 @@ function stableActivity(
 }
 
 /**
- * The request for a trend's 2020: the same analysis for 2020 alone under the
- * pandemic weights, written exactly as the builder writes that estimate, so
+ * The request for a trend's 2020: the same analysis for 2020 alone, written
+ * exactly as the builder writes that estimate (under the pandemic weights), so
  * the static snapshot's prewarmed "pandemic weights" entries answer a
  * preset's (src/domain/prewarm.ts).
  */
@@ -80,7 +80,6 @@ export function partial2020Spec(
       ...spec,
       activity: stableActivity(spec.activity, presets),
       years: [PARTIAL_YEAR],
-      weights: 'pandemic',
     },
     availableYears,
   )

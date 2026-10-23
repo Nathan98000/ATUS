@@ -52,3 +52,11 @@ reader sees that it differs. If that request fails, 2020 is the labeled gap
 again. Choosing 2020 alone in the builder switches to the pandemic scheme
 the same way, visibly. Details: [frontend.md](../frontend.md), "Statistical
 presentation rules".
+
+Since design review round 5 (2026-10-23) the weights are no longer a
+choice in the builder: the explorer sends the `pandemic` scheme for an
+estimate or comparison of 2020 (alone, or with 2019) and `multiyear` for
+everything else, and the result names 2020 as a partial-year estimate as
+before. The API still takes the scheme as given and refuses what it
+cannot support (2020 with any year other than 2019); the explorer's choice
+is a client-side rule, not a server-side substitution.

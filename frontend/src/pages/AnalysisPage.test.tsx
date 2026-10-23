@@ -23,6 +23,7 @@ import { Link } from 'react-router'
 import { COLD_START_BUDGET_MS } from '../api/resilience'
 import { LocationProbe, testQueryClient, withFakeClock } from '../test/render'
 import { analysisHeaders, api, errorResponse, server } from '../test/server'
+import { withAnalysisSettings } from '../features/builder/state'
 import { AnalysisPage } from './AnalysisPage'
 
 const sleepSpec: EstimateRequest = {
@@ -56,20 +57,22 @@ function renderAnalysisRoute(
 }
 
 describe('estimate results', () => {
-  it('shows the estimate, its likely range, a figure, and its small print', async () => {
+  it('shows the estimate, its confidence interval, a figure, and its small print', async () => {
     renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
 
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
     expect(screen.getByText('per day, on average')).toBeInTheDocument()
     // The interval 523.0 to 534.5 minutes, as clock times:
-    expect(screen.getByText(/Likely range/)).toHaveTextContent(
-      'Likely range 8h 43m to 8h 55m (95% confidence)',
+    expect(screen.getByText(/95% confidence interval:/)).toHaveTextContent(
+      '95% confidence interval: 8h 43m to 8h 55m',
     )
     expect(screen.getByRole('img', { name: '8h 49m out of 24 hours' })).toBeInTheDocument()
     // The sample and the source, in the small print:
     expect(screen.getByText(/2,597 people's diaries/)).toBeInTheDocument()
-    // API notes are visible, in plain language:
-    expect(screen.getByText(/coded the same way in every survey year/)).toBeInTheDocument()
+    // The note that codes are harmonized across years is not shown (review
+    // round 5), and neither is a preset's definition:
+    expect(screen.queryByText(/coded the same way/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/here means/)).not.toBeInTheDocument()
     // Nothing technical: no methodology panel, table or downloads.
     expect(screen.queryByText('How was this calculated?')).not.toBeInTheDocument()
     expect(screen.queryByText(/TUFNWGTP/)).not.toBeInTheDocument()
@@ -196,8 +199,7 @@ describe('trend and compare results', () => {
       /^2020 \(hollow point\) is a partial year: the survey paused from March 18 to May 9 because of COVID-19/,
     )
     expect(screen.queryByText(/TUFNWGTP|TU20FWGT/)).not.toBeInTheDocument()
-    // API notes must be visible on trend pages too.
-    expect(screen.getByText(/coded the same way in every survey year/)).toBeInTheDocument()
+    expect(screen.queryByText(/coded the same way/)).not.toBeInTheDocument()
     // The hidden table names 2020 as a partial year, with its value.
     const row = screen
       .getByRole('rowheader', { name: '2020 (partial year)' })
@@ -210,11 +212,11 @@ describe('trend and compare results', () => {
     expect(screen.getByText('Everyone age 15 and over · 2003–2025')).toBeInTheDocument()
     expect(screen.queryByText(/BLS table/)).not.toBeInTheDocument()
     // The answer leads, from full-year estimates only: latest and first year
-    // in words, and 2020 named only as left out (review round 4).
+    // in words, and no range beside a partial year (review round 5).
     expect(
       screen.getByText(/^Americans age 15 and over spent 5 hours 10 minutes a day/),
     ).toHaveTextContent(
-      /Leaving out 2020, a partial year, it ranged from 5 hours 4 minutes in 2024 to 5 hours 22 minutes in 2012\.$/,
+      /^Americans age 15 and over spent 5 hours 10 minutes a day on leisure and sports in 2025, compared with 5 hours 7 minutes in 2003\.$/,
     )
   })
 
@@ -254,7 +256,7 @@ describe('trend and compare results', () => {
       'Difference: 11 minutes more per day for No household children.',
     )
     expect(difference).toHaveTextContent(
-      'Likely range: 2.8 to 19.4 minutes more for No household children (95% confidence)',
+      '95% confidence interval: 2.8 to 19.4 minutes more for No household children',
     )
     expect(screen.getAllByText('1h 52m').length).toBeGreaterThan(0)
     expect(screen.getAllByText('2h 3m').length).toBeGreaterThan(0)
@@ -300,6 +302,65 @@ describe('trend and compare results', () => {
     expect(document.title).toMatch(/Men vs Women — Ages 65 and over — 2025 · ATUS Explorer$/)
     const line = screen.getByText(/Both groups: Ages 65 and over · 2025$/)
     expect(line.closest('details')).toBeNull()
+  })
+})
+
+describe('the site’s weights and 95% confidence interval (review round 5)', () => {
+  it('runs a link written with other settings under the site’s, and says so in the link', async () => {
+    const bodies: unknown[] = []
+    server.use(
+      http.post(api('/analysis/compare'), async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json(compareChildrenFixture, { headers: analysisHeaders() })
+      }),
+    )
+    const spec: CompareRequest = {
+      activity: { preset: 'household_activities_bls_table' },
+      years: [2019],
+      group_a: { has_household_children: true },
+      group_b: { has_household_children: false },
+      label_a: 'Household children present',
+      label_b: 'No household children',
+      weights: 'pandemic',
+      variance: 'none',
+      confidence_level: 0.9,
+    }
+    const settled = {
+      ...spec,
+      weights: 'multiyear',
+      variance: 'replicate',
+      confidence_level: 0.95,
+    }
+    renderAnalysisRoute(`/analysis/compare?spec=${encodeSpec(spec)}`)
+    await screen.findByTestId('difference')
+    expect(bodies).toEqual([settled])
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        `/analysis/compare?spec=${encodeSpec(settled as CompareRequest)}`,
+      ),
+    )
+  })
+
+  it('weights a 2020 estimate for 2020, and keeps a link that leaves settings out as written', async () => {
+    const bodies: unknown[] = []
+    server.use(
+      http.post(api('/analysis/estimate'), async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json(estimatePandemicFixture, { headers: analysisHeaders() })
+      }),
+    )
+    const spec: EstimateRequest = { activity: { preset: 'sleep' }, years: [2020] }
+    renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(spec)}`)
+    await screen.findByRole('note')
+    // The standard weights have no 2020; the API's defaults stay unstated.
+    expect(bodies[0]).toEqual({ ...spec, weights: 'pandemic' })
+
+    const starter: EstimateRequest = { activity: { preset: 'sleep' }, years: [2025] }
+    expect(withAnalysisSettings('estimate', starter)).toEqual(starter)
+    expect(withAnalysisSettings('trend', { ...starter, years: [2019, 2020, 2021] })).toEqual({
+      ...starter,
+      years: [2019, 2020, 2021],
+    })
   })
 })
 

@@ -113,8 +113,9 @@ export function HomePage() {
             represent all Americans age 15 and over, across every day of the week and the year.
           </li>
           <li>
-            <b>They are estimates.</b> The survey asks a sample of people, so charts show a
-            likely range around each figure: a shaded band or thin lines.
+            <b>They are estimates.</b> The survey interviews a sample of people, so each figure
+            has sampling error. Charts show it as a 95% confidence interval: a shaded band or
+            thin lines.
           </li>
           <li>
             <b>2020 is a partial year.</b> The survey paused in spring 2020 because of COVID-19,

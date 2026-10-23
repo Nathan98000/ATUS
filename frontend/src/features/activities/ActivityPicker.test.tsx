@@ -23,6 +23,16 @@ describe('ActivityPicker', () => {
     )
   })
 
+  it('puts "Change activity" right beside the activity’s name (review round 5)', async () => {
+    renderWithProviders(<ActivityPicker value={{ preset: 'sleep' }} onChange={() => {}} />)
+    const name = await screen.findByText('Sleeping', { selector: '.activity-picker__name' })
+    const line = name.parentElement as HTMLElement
+    expect(line).toHaveClass('activity-picker__line')
+    expect(within(line).getByRole('button', { name: 'Change activity' })).toBe(
+      name.nextElementSibling,
+    )
+  })
+
   it('says what a selected preset includes (review round 4)', async () => {
     renderWithProviders(
       <ActivityPicker value={{ preset: 'watching_tv' }} onChange={() => {}} />,

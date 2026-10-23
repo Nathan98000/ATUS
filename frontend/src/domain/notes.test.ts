@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { presentNote, presentUnavailableReason } from './notes'
+import { contextNotes, presentNote, presentUnavailableReason, shownWarnings } from './notes'
+
+const HARMONIZED =
+  'Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).'
 
 describe('presentNote', () => {
   it('turns every note the API sends into plain language, keeping its numbers', () => {
     const notes = [
-      'Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).',
       "The difference's standard error uses per-replicate differences, which accounts for covariance between the group estimates.",
       'Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible.',
       'Pooled estimate: represents the average day across 4 survey years (1,461 days combined).',
@@ -21,7 +23,6 @@ describe('presentNote', () => {
     }
     expect(presented.map((note) => note.kind)).toEqual([
       'context',
-      'context',
       'caveat',
       'caveat',
       'caveat',
@@ -29,9 +30,15 @@ describe('presentNote', () => {
       'caveat',
       'caveat',
     ])
-    expect(presented[3]?.text).toBe(
+    expect(presented[2]?.text).toBe(
       'This is an average day across 4 survey years combined, not a single year.',
     )
+  })
+
+  it('leaves out the note that activity codes are harmonized (review round 5)', () => {
+    const difference = "The difference's standard error uses per-replicate differences."
+    expect(shownWarnings([HARMONIZED, difference])).toEqual([difference])
+    expect(contextNotes([HARMONIZED])).toEqual([])
   })
 
   it('shows an unknown note verbatim, as a caveat', () => {

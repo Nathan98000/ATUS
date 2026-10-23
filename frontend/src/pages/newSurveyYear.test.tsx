@@ -153,15 +153,18 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     const year = screen.getByLabelText('Year')
     expect(year).toHaveValue('2026')
     expect(optionValues(year)).toEqual([...YEARS_0326].reverse())
+  })
 
-    // Several years combined: one checkbox per reported year, starting from 2026.
-    await user.click(screen.getByText('More options'))
-    await user.click(screen.getByRole('checkbox', { name: /Combine several years/ }))
+  it('a link’s combined years offer every reported year, 2026 included', async () => {
+    serve0326()
+    const pooledSpec: EstimateRequest = { activity: { preset: 'sleep' }, years: [2025, 2026] }
+    renderApp(`/explore?op=estimate&spec=${encodeSpec(pooledSpec)}`)
+    await waitForBuilder()
     const pooled = screen.getByRole('group', { name: 'Years to combine' })
     const boxes = within(pooled).getAllByRole('checkbox')
     expect(boxes.map((box) => Number(box.closest('label')?.textContent))).toEqual(YEARS_0326)
     expect(within(pooled).getByRole('checkbox', { name: '2026' })).toBeChecked()
-    expect(within(pooled).getByRole('checkbox', { name: '2025' })).not.toBeChecked()
+    expect(within(pooled).getByRole('checkbox', { name: '2024' })).not.toBeChecked()
   })
 
   it('the default analyses request 2026: a trend of 2003–2026, an estimate of [2026]', async () => {
@@ -228,9 +231,9 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     expect(row('2026')).not.toHaveTextContent('No data')
   })
 
-  it("the builder's 2020 note still follows the year and the weights", async () => {
+  it("the builder's 2020 note still follows the year", async () => {
     // A trend through 2020 says so on its chart, not in the builder (review
-    // round 4); 2020 alone switches to its partial-year weights, with a note.
+    // round 4); 2020 alone gets its partial-year weights, with a note.
     const user = userEvent.setup()
     serve0326()
     renderApp('/explore')
@@ -240,10 +243,8 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     await user.click(screen.getByRole('radio', { name: 'One number' }))
     await user.selectOptions(screen.getByLabelText('Year'), '2020')
     expect(screen.getByText(PARTIAL_NOTE)).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /2020 partial-year weights/ })).toBeChecked()
     await user.selectOptions(screen.getByLabelText('Year'), '2026')
     expect(screen.queryByText(PARTIAL_NOTE)).not.toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /Standard weights/ })).toBeChecked()
   })
 
   it('the home page and its starters follow the release, and the About page names it', async () => {
@@ -376,9 +377,9 @@ describe('the prewarm list of a 0326 deploy (§15)', () => {
   })
 
   it('uses 2026 as the latest year and 2003–2026 as the full period', () => {
-    // 130, plus the household starter as the builder re-sends it (review
+    // 121, plus the household starter as the builder re-sends it (review
     // round 2), plus the home page's chart (review round 4).
-    expect(list).toHaveLength(135)
+    expect(list).toHaveLength(126)
     for (const item of list) {
       const years = item.spec.years
       if (item.name.startsWith('pandemic weights:')) continue
@@ -391,12 +392,12 @@ describe('the prewarm list of a 0326 deploy (§15)', () => {
     }
   })
 
-  it('keeps the pandemic weights to 2019 and 2020', () => {
+  it('keeps the pandemic weights to 2020, as a trend’s partial year asks for it', () => {
     const pandemic = list.filter((item) => item.name.startsWith('pandemic weights:'))
-    expect(pandemic).toHaveLength(meta0326.capabilities.activity_presets.length * 2)
+    expect(pandemic).toHaveLength(meta0326.capabilities.activity_presets.length)
     for (const item of pandemic) {
       expect(item.spec.weights).toBe('pandemic')
-      expect([[2019], [2020]]).toContainEqual(item.spec.years)
+      expect(item.spec.years).toEqual([2020])
     }
     // Besides those, only the home chart's 2020 points use them.
     expect(

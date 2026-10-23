@@ -41,8 +41,8 @@ const input: PrewarmInput = {
 describe('prewarmedAnalyses', () => {
   const list = prewarmedAnalyses(input)
 
-  it('covers about 130 distinct analyses for the captured release', () => {
-    expect(list).toHaveLength(135)
+  it('covers about 125 distinct analyses for the captured release', () => {
+    expect(list).toHaveLength(126)
     const identities = new Set(
       list.map((item) => `${item.operation} ${stableStringify(item.spec)}`),
     )
@@ -56,7 +56,9 @@ describe('prewarmedAnalyses', () => {
     expect(counts('estimate:')).toBe(9 * 4 + 18) // presets × measures, tier-1 categories
     expect(counts('trend:')).toBe(9 + 18)
     expect(counts('compare by sex:')).toBe(9 + 18)
-    expect(counts('pandemic weights:')).toBe(9 * 2)
+    // 2020 alone, as a trend's partial year asks for it (review round 5:
+    // 2019 under the pandemic weights is no longer the builder's to send).
+    expect(counts('pandemic weights:')).toBe(9)
     expect(counts('home chart')).toBe(4) // two group trends and their 2020s
   })
 
@@ -136,7 +138,6 @@ describe('prewarmedAnalyses', () => {
       builder({
         operation: 'estimate',
         activity: { preset: 'sleep' },
-        weights: 'pandemic',
         singleYear: 2020,
       }),
     )

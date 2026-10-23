@@ -17,7 +17,12 @@ import type {
 import { WarningBanner } from '../../components/WarningBanner'
 import { interpretSplitTrend, interpretTrend, measureName } from '../../domain/describe'
 import { contextNotes, presentUnavailableReason } from '../../domain/notes'
-import { formatEstimate, formatLikelyRange, unitLabel } from '../../utils/format'
+import {
+  confidenceIntervalName,
+  formatEstimate,
+  formatReadableInterval,
+  unitLabel,
+} from '../../utils/format'
 import { ChartFootnote } from './ChartFootnote'
 import { PARTIAL_YEAR, withPartial2020 } from './partial2020'
 import { TrendChart } from './TrendChart'
@@ -99,7 +104,9 @@ export function TrendView({
               <tr>
                 <th scope="col">Year</th>
                 <th scope="col">Estimate</th>
-                <th scope="col">Likely range</th>
+                <th scope="col">
+                  {confidenceIntervalName(firstEstimate?.confidence_level, true)}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -115,7 +122,7 @@ export function TrendView({
                       <td>{formatEstimate(point.estimate.value, unit).primary}</td>
                       <td>
                         {point.estimate.ci_lower != null && point.estimate.ci_upper != null
-                          ? formatLikelyRange(
+                          ? formatReadableInterval(
                               point.estimate.ci_lower,
                               point.estimate.ci_upper,
                               unit,
@@ -158,7 +165,7 @@ export function SplitTrendView({
   note?: string | null
   /**
    * Two of the groups compared in one year, where a comparison shows the
-   * likely range a split trend does not draw (review round 4).
+   * confidence interval a split trend does not draw (review round 4).
    */
   comparison?: { path: string; text: string } | null
 }) {
@@ -202,7 +209,6 @@ export function SplitTrendView({
           notes={[
             ...(partialYears.length > 0 ? [<PartialNote key="partial" />] : []),
             ...gaps.map((point) => <GapNote key={point.year} point={point} />),
-            'Lines show estimates from a sample of people. For their likely range, compare two groups in one year.',
             ...(note != null ? [note] : []),
           ]}
           context={contextNotes(warnings)}

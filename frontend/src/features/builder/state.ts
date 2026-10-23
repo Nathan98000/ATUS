@@ -16,7 +16,6 @@ import type { CompareBy } from '../population/compareGroups.ts'
 
 export type Measure = NonNullable<EstimateRequest['measure']>
 export type WeightScheme = NonNullable<EstimateRequest['weights']>
-export type VarianceMethod = NonNullable<EstimateRequest['variance']>
 
 /**
  * Statistics this UI knows how to request and display. Intersected with the
@@ -30,11 +29,6 @@ export const KNOWN_MEASURES = [
   'average_minutes_per_participant',
   'participants_per_day',
 ] as const satisfies readonly Measure[]
-
-export const KNOWN_WEIGHT_SCHEMES = [
-  'multiyear',
-  'pandemic',
-] as const satisfies readonly WeightScheme[]
 
 export type YearsMode = 'single' | 'pooled'
 
@@ -68,9 +62,6 @@ export interface BuilderState {
   groupB: PopulationRequest
   labelA: string
   labelB: string
-  weights: WeightScheme
-  variance: VarianceMethod
-  confidenceLevel: number
 }
 
 export function defaultBuilderState(availableYears: readonly number[]): BuilderState {
@@ -96,9 +87,6 @@ export function defaultBuilderState(availableYears: readonly number[]): BuilderS
     groupB: { sex: 'female' },
     labelA: 'Men',
     labelB: 'Women',
-    weights: 'multiyear',
-    variance: 'replicate',
-    confidenceLevel: 0.95,
   }
 }
 
@@ -167,6 +155,15 @@ export function validateBuilder(
       errors.groups = 'Choose two different groups to compare.'
     }
   }
+  if (
+    state.operation !== 'trend' &&
+    state.yearsMode === 'pooled' &&
+    state.pooledYears.includes(PARTIAL_YEAR) &&
+    state.pooledYears.some((year) => !PARTIAL_WEIGHT_YEARS.includes(year))
+  ) {
+    errors.years =
+      '2020 can be combined only with 2019: the survey paused in spring 2020, so its estimates are weighted differently.'
+  }
   if (state.operation === 'trend' && state.splitBy !== null && state.splitGroups.length < 2) {
     errors.groups = 'Choose at least two groups to show.'
   }
@@ -186,14 +183,13 @@ export function toRequest(
   state: BuilderState,
   availableYears: readonly number[],
 ): AnalysisRequest {
+  const years = selectedYears(state, availableYears)
   const base: EstimateRequest = {
     measure: state.measure,
     activity: state.activity,
-    years: selectedYears(state, availableYears),
+    years,
     population: prunePopulation(state.population),
-    weights: state.weights,
-    variance: state.variance,
-    confidence_level: state.confidenceLevel,
+    ...analysisSettings(state.operation, years),
   }
   if (state.operation !== 'compare') return base
   return {
@@ -218,9 +214,6 @@ export function fromRequest(
   if (spec.measure && (KNOWN_MEASURES as readonly string[]).includes(spec.measure)) {
     state.measure = spec.measure
   }
-  if (spec.weights) state.weights = spec.weights
-  if (spec.variance) state.variance = spec.variance
-  if (spec.confidence_level != null) state.confidenceLevel = spec.confidence_level
   state.population = spec.population ?? {}
 
   // The builder can only represent years that exist in the loaded data,
@@ -271,17 +264,67 @@ export function fromRequest(
   return state
 }
 
+/** 2020, the year the survey paused in spring (March 18 – May 9). */
+export const PARTIAL_YEAR = 2020
+/** The years the 2020 partial-year (pandemic) weights cover. */
+const PARTIAL_WEIGHT_YEARS: readonly number[] = [2019, 2020]
+
+/** How every analysis is weighted and how its uncertainty is shown. */
+export interface AnalysisSettings {
+  weights: WeightScheme
+  variance: 'replicate'
+  confidence_level: 0.95
+}
+
 /**
- * The weights a single year needs: the standard multi-year weights have no
- * 2020, so choosing 2020 switches to its partial-year (pandemic) weights;
- * leaving 2020 and 2019 — the only other year those weights cover —
- * switches back. A visible choice either way (More options).
+ * The settings the site chooses for every analysis (review round 5: no
+ * "More options"): a 95% confidence interval from the survey's replicate
+ * weights, and the weights the years need. The standard multi-year weights
+ * have no 2020, so an estimate or comparison that includes 2020 uses the
+ * 2020 partial-year (pandemic) weights, which cover 2020 and 2019 only. A
+ * trend always uses the multi-year weights: its 2020 is drawn from a
+ * separate partial-year estimate (partial2020.ts).
  */
-export function weightsForSingleYear(
-  year: number,
-  weights: WeightScheme,
-): Partial<BuilderState> {
-  if (year === 2020) return { weights: 'pandemic' }
-  if (weights === 'pandemic' && year !== 2019) return { weights: 'multiyear' }
-  return {}
+export function analysisSettings(
+  operation: Operation,
+  years: readonly number[],
+): AnalysisSettings {
+  const partial =
+    operation !== 'trend' &&
+    years.includes(PARTIAL_YEAR) &&
+    years.every((year) => PARTIAL_WEIGHT_YEARS.includes(year))
+  return {
+    weights: partial ? 'pandemic' : 'multiyear',
+    variance: 'replicate',
+    confidence_level: 0.95,
+  }
+}
+
+/** What the API assumes for a setting a request leaves out. */
+const API_DEFAULTS: AnalysisSettings = {
+  weights: 'multiyear',
+  variance: 'replicate',
+  confidence_level: 0.95,
+}
+
+/**
+ * A shared link's analysis under the site's settings: a link written with
+ * other weights, another confidence level or no confidence interval runs as
+ * the builder would write it today. Only what differs is rewritten, counting
+ * a setting the link leaves out as the API's default, so a link already
+ * under the site's settings (a home-page starter's included) keeps its exact
+ * bytes, and with them its static-snapshot entry.
+ */
+export function withAnalysisSettings<T extends AnalysisRequest>(
+  operation: Operation,
+  spec: T,
+): T {
+  const settings = analysisSettings(operation, spec.years)
+  const settled = { ...spec }
+  for (const key of ['weights', 'variance', 'confidence_level'] as const) {
+    if (spec[key] !== undefined || settings[key] !== API_DEFAULTS[key]) {
+      Object.assign(settled, { [key]: settings[key] })
+    }
+  }
+  return settled
 }

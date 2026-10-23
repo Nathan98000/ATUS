@@ -5,7 +5,9 @@
  * for analysts (BLS variable names, replicate variance, the activity
  * lexicon). Result pages show every note in plain language instead. A note
  * this module does not recognize is shown exactly as the API wrote
- * it, as a caveat: a new note is never hidden or softened.
+ * it, as a caveat: a new note is never hidden or softened. The one note
+ * left out is that activity codes are harmonized across years (review round
+ * 5): it is true of every result and says nothing about this one.
  */
 
 /**
@@ -21,22 +23,18 @@ export interface PresentedNote {
   text: string
 }
 
+/** The API's note that activity codes are harmonized across years: not shown. */
+const OMITTED_NOTE = /^Activity codes use the BLS-harmonized\b/
+
 const PLAIN_NOTES: readonly {
   pattern: RegExp
   present: (match: RegExpMatchArray) => PresentedNote
 }[] = [
   {
-    pattern: /^Activity codes use the BLS-harmonized\b/,
-    present: () => ({
-      kind: 'context',
-      text: 'Activities are coded the same way in every survey year, so years can be compared directly.',
-    }),
-  },
-  {
     pattern: /^The difference's standard error uses per-replicate differences\b/,
     present: () => ({
       kind: 'context',
-      text: "The difference's likely range allows for both groups coming from the same survey.",
+      text: "The difference's confidence interval accounts for both groups coming from the same survey.",
     }),
   },
   {
@@ -92,9 +90,14 @@ export function presentNote(warning: string): PresentedNote {
   return { kind: 'caveat', text: warning }
 }
 
+/** The API's notes a result page shows (all but the omitted one). */
+export function shownWarnings(warnings: readonly string[]): string[] {
+  return warnings.filter((warning) => !OMITTED_NOTE.test(warning))
+}
+
 /** The notes that are context rather than caveats, in plain language. */
 export function contextNotes(warnings: readonly string[]): string[] {
-  return warnings
+  return shownWarnings(warnings)
     .map(presentNote)
     .filter((note) => note.kind === 'context')
     .map((note) => note.text)

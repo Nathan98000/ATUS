@@ -247,21 +247,21 @@ describe('running an analysis', () => {
   })
 })
 
-describe('several years combined (review round 4: under "More options")', () => {
-  it('turns pooling on under More options and picks the years where the years are', async () => {
+describe('several years combined, from a shared link (review round 5: no "More options")', () => {
+  it('shows a link’s combined years where the years are, and sends them', async () => {
     const user = userEvent.setup()
-    renderExplore()
+    const spec: EstimateRequest = { activity: { preset: 'sleep' }, years: [2022, 2023] }
+    renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
     await waitForBuilder()
-    await chooseOneNumber(user)
-    await user.click(screen.getByText('More options'))
-    await user.click(screen.getByRole('checkbox', { name: /Combine several years/ }))
     const years = screen.getByRole('group', { name: 'Years to combine' })
-    expect(within(years).getByRole('checkbox', { name: '2025' })).toBeChecked()
+    expect(within(years).getByRole('checkbox', { name: '2022' })).toBeChecked()
+    expect(within(years).getByRole('checkbox', { name: '2023' })).toBeChecked()
     await user.click(within(years).getByRole('checkbox', { name: '2024' }))
     await user.click(screen.getByRole('button', { name: 'Analyze' }))
     const location = screen.getByTestId('location').textContent ?? ''
     const sent = decodeSpec(location.split('spec=')[1] as string, 'estimate')
-    expect(sent.years).toEqual([2024, 2025])
+    expect(sent.years).toEqual([2022, 2023, 2024])
+    expect(sent.weights).toBe('multiyear')
   })
 
   it('goes back to one year, the latest combined, from the years themselves', async () => {
@@ -269,10 +269,27 @@ describe('several years combined (review round 4: under "More options")', () => 
     const spec: EstimateRequest = { activity: { preset: 'sleep' }, years: [2022, 2023] }
     renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
     await waitForBuilder()
-    // Pooled from a link: "More options" is open, the years on show.
-    expect(screen.getByRole('checkbox', { name: /Combine several years/ })).toBeChecked()
     await user.click(screen.getByRole('button', { name: 'Use one year instead' }))
     expect(screen.getByLabelText('Year')).toHaveValue('2023')
+  })
+
+  it('combines 2020 only with 2019, under the 2020 weights', async () => {
+    const user = userEvent.setup()
+    const spec: EstimateRequest = { activity: { preset: 'sleep' }, years: [2019, 2020] }
+    renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
+    await waitForBuilder()
+    const years = screen.getByRole('group', { name: 'Years to combine' })
+    await user.click(within(years).getByRole('checkbox', { name: '2021' }))
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /2020 can be combined only with 2019/,
+    )
+    await user.click(within(years).getByRole('checkbox', { name: '2021' }))
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    const location = screen.getByTestId('location').textContent ?? ''
+    const sent = decodeSpec(location.split('spec=')[1] as string, 'estimate')
+    expect(sent.years).toEqual([2019, 2020])
+    expect(sent.weights).toBe('pandemic')
   })
 })
 
@@ -358,64 +375,48 @@ describe('prefilling from a shared analysis', () => {
   })
 })
 
-describe('confidence levels from a shared analysis (review round 3)', () => {
-  // The builder offers 90/95/99%, but a hand-made link can carry any level
-  // the API accepts. The select showed "90%" while Analyze sent 0.975.
-  it('shows a prefilled 97.5% level as 97.5%, sends it unchanged, and still offers 90%', async () => {
-    const user = userEvent.setup()
-    const spec: EstimateRequest = {
-      activity: { preset: 'sleep' },
-      years: [2025],
-      confidence_level: 0.975,
-    }
-    renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
-    await waitForBuilder()
-    const select = screen.getByLabelText('Likely range certainty') as HTMLSelectElement
-    expect(select.selectedOptions[0]).toHaveTextContent('97.5%')
-    // Not the default: "More options" opens by itself, so it is in sight.
-    expect(screen.getByText('More options').closest('details')).toHaveAttribute('open')
-    expect(
-      within(select)
-        .getAllByRole('option')
-        .map((option) => option.textContent),
-    ).toEqual(['90%', '95%', '97.5%', '99%'])
-
-    await user.click(screen.getByRole('button', { name: 'Analyze' }))
-    const location = screen.getByTestId('location').textContent ?? ''
-    const sent = decodeSpec(location.split('spec=')[1] as string, 'estimate') as EstimateRequest
-    expect(sent.confidence_level).toBe(0.975)
-  })
-
-  it('after a prefilled 97.5% level, choosing 90% really selects and sends 0.9', async () => {
-    // In a browser, picking the option already shown fires no change: before
-    // the fix "90%" was shown for 0.975, so a real 90% was unreachable. jsdom
-    // fires change regardless, so the test above (97.5% is what is shown) is
-    // the regression check; this one pins that the extra option gives way.
-    const user = userEvent.setup()
-    const spec: EstimateRequest = {
-      activity: { preset: 'sleep' },
-      years: [2025],
-      confidence_level: 0.975,
-    }
-    renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
-    await waitForBuilder()
-    const select = screen.getByLabelText('Likely range certainty') as HTMLSelectElement
-    await user.selectOptions(select, '90%')
-    expect(select.selectedOptions[0]).toHaveTextContent('90%')
-
-    await user.click(screen.getByRole('button', { name: 'Analyze' }))
-    const location = screen.getByTestId('location').textContent ?? ''
-    const sent = decodeSpec(location.split('spec=')[1] as string, 'estimate') as EstimateRequest
-    expect(sent.confidence_level).toBe(0.9)
-  })
-
-  it('a standard level adds no extra option', async () => {
+describe('the site’s weights and confidence interval (review round 5)', () => {
+  it('offers no weights, interval or "More options" to choose', async () => {
     renderExplore()
     await waitForBuilder()
-    expect(screen.getByText('More options').closest('details')).not.toHaveAttribute('open')
-    const select = screen.getByLabelText('Likely range certainty') as HTMLSelectElement
-    expect(select.selectedOptions[0]).toHaveTextContent('95%')
-    expect(within(select).getAllByRole('option')).toHaveLength(3)
+    expect(screen.queryByText('More options')).not.toBeInTheDocument()
+    expect(screen.queryByText(/weights/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/likely range|confidence/i)).not.toBeInTheDocument()
+  })
+
+  it('sends a link’s analysis with a 95% interval and the weights its year needs', async () => {
+    const user = userEvent.setup()
+    const spec: EstimateRequest = {
+      activity: { preset: 'sleep' },
+      years: [2019],
+      weights: 'pandemic',
+      variance: 'none',
+      confidence_level: 0.975,
+    }
+    renderExplore(`/explore?op=estimate&spec=${encodeSpec(spec)}`)
+    await waitForBuilder()
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    const location = screen.getByTestId('location').textContent ?? ''
+    const sent = decodeSpec(location.split('spec=')[1] as string, 'estimate') as EstimateRequest
+    expect(sent).toMatchObject({
+      years: [2019],
+      weights: 'multiyear',
+      variance: 'replicate',
+      confidence_level: 0.95,
+    })
+  })
+
+  it('weights 2020 for 2020, and other years with the standard weights', async () => {
+    const user = userEvent.setup()
+    renderExplore()
+    await waitForBuilder()
+    await chooseOneNumber(user)
+    await user.selectOptions(screen.getByLabelText('Year'), '2020')
+    expect(screen.getByText(/2020 is a partial-year estimate/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    const location = screen.getByTestId('location').textContent ?? ''
+    const sent = decodeSpec(location.split('spec=')[1] as string, 'estimate') as EstimateRequest
+    expect(sent).toMatchObject({ years: [2020], weights: 'pandemic' })
   })
 })
 

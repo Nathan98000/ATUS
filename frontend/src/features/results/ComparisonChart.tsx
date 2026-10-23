@@ -12,6 +12,7 @@ import type { CSSProperties } from 'react'
 
 import type { EstimateValue } from '../../api/types'
 import {
+  confidenceIntervalName,
   formatAxisTicks,
   formatConfidenceInterval,
   formatDurationTick,
@@ -71,7 +72,7 @@ export function ComparisonChart({ groups, unit }: ComparisonChartProps) {
     .map((group) => {
       let text = `${group.label}: ${formatValueShort(group.estimate.value, unit)}`
       if (group.estimate.ci_lower != null && group.estimate.ci_upper != null) {
-        text += ` (likely range ${formatConfidenceInterval(group.estimate.ci_lower, group.estimate.ci_upper, unit)})`
+        text += ` (${confidenceIntervalName(group.estimate.confidence_level)} ${formatConfidenceInterval(group.estimate.ci_lower, group.estimate.ci_upper, unit)})`
       }
       return text
     })

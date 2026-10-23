@@ -214,7 +214,7 @@ export function formatConfidenceInterval(lower: number, upper: number, unit: str
  * 8h 55m"), or in minutes with one decimal when both ends round to the same
  * minute; other units as `formatConfidenceInterval`.
  */
-export function formatLikelyRange(lower: number, upper: number, unit: string): string {
+export function formatReadableInterval(lower: number, upper: number, unit: string): string {
   if (unit === 'minutes_per_day' || unit === 'minutes_per_day_of_participants') {
     const from = formatMinutesAsDuration(lower)
     const to = formatMinutesAsDuration(upper)
@@ -232,6 +232,19 @@ export function formatLikelyRange(lower: number, upper: number, unit: string): s
  */
 export function formatConfidenceLevel(level: number): string {
   return CONFIDENCE_LEVEL.format(level)
+}
+
+/**
+ * What an interval is called on the page: 0.95 → "95% confidence interval".
+ * Always by its name, never as a "likely range" (review round 5: a
+ * confidence interval is not a range the value is likely to be in).
+ */
+export function confidenceIntervalName(
+  level: number | null | undefined,
+  atStart = false,
+): string {
+  if (level != null) return `${formatConfidenceLevel(level)} confidence interval`
+  return atStart ? 'Confidence interval' : 'confidence interval'
 }
 
 /** [2025] → "2025"; [2003..2025] → "2003–2025"; [2019, 2021] → "2019, 2021". */

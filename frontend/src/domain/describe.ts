@@ -16,7 +16,7 @@ import type {
   TrendResponse,
 } from '../api/types'
 import {
-  formatConfidenceLevel,
+  confidenceIntervalName,
   formatCount,
   formatDurationWords,
   formatEstimate,
@@ -229,15 +229,19 @@ export function sharedPopulationPhrase(spec: AnalysisRequest): string | null {
  * Labels a share link chose, set against what was computed (R14 in
  * docs/security.md). A comparison's group names are free text, so when a
  * name is not the plain description of its group's filters the note says
- * which filters it stands for; a custom activity's name is free text too,
- * so the note names its activity codes — unless the selection is exactly a
- * preset under the preset's own name (the canonical form of a preset's
- * link). Null when there is nothing to add.
+ * which filters it stands for. An activity's name is free text too, so
+ * the note names its activity codes when the name is neither a preset's
+ * own (the selection exactly that preset) nor the survey's own name for
+ * its one activity code (`surveyNames`, code → name). The builder writes
+ * only those, so its links never carry this note (review round 5); while
+ * the survey's names are unknown, nothing is said about the activity.
+ * Null when there is nothing to add.
  */
 export function definitionNote(
   operation: Operation,
   spec: AnalysisRequest,
   presets: readonly { label: string; include: string[]; exclude: string[] }[] = [],
+  surveyNames?: ReadonlyMap<string, string>,
 ): string | null {
   const parts: string[] = []
   if (operation === 'compare') {
@@ -261,14 +265,23 @@ export function definitionNote(
       sameCodes(preset.include, activity.include ?? []) &&
       sameCodes(preset.exclude, activity.exclude ?? []),
   )
-  if (activity.preset == null && !isPreset && (activity.include?.length ?? 0) > 0) {
+  const codes = activity.include ?? []
+  const surveyName =
+    codes.length === 1 && (activity.exclude?.length ?? 0) === 0
+      ? surveyNames?.get(codes[0] as string)
+      : undefined
+  if (
+    activity.preset == null &&
+    !isPreset &&
+    codes.length > 0 &&
+    activity.label != null &&
+    activity.label !== '' &&
+    surveyNames !== undefined &&
+    activity.label !== surveyName
+  ) {
     // In words, with the codes themselves (review round 4: "Activity code
     // 15." alone meant nothing to a reader).
-    const codes = activity.include ?? []
-    const name =
-      activity.label != null && activity.label !== ''
-        ? `“${activityName(activity.label)}”`
-        : 'This activity'
+    const name = `“${activityName(activity.label)}”`
     // A two- or four-digit code is a category: it includes every activity
     // under it.
     const broad = codes.some((code) => code.length < 6)
@@ -553,8 +566,8 @@ function measureSubject(
  * The plain-language answer a trend leads with: the latest year, the first
  * year, and the range in between. Descriptive only: it names values the API
  * returned and makes no claim that anything rose or fell. `partialYears`:
- * years the chart draws from a partial-year estimate (2020), which the
- * answer leaves out and says so (review round 4).
+ * years the chart draws from a partial-year estimate (2020); the answer
+ * reads only the full-year points, so with one it names no range.
  */
 export function interpretTrend(
   result: TrendResponse,
@@ -579,17 +592,17 @@ export function interpretTrend(
   if (available.length > 1)
     text += `, compared with ${proseValue(first.estimate)} in ${first.year}`
   text += '.'
-  if (available.length >= 3) {
+  // The range across the years reads the trend's full-year points only, so
+  // a chart with a partial year (2020) gives no range rather than one that
+  // leaves a drawn point out (review round 5).
+  if (available.length >= 3 && partialYears.length === 0) {
     let low = first
     let high = first
     for (const point of available) {
       if (point.estimate.value < low.estimate.value) low = point
       if (point.estimate.value > high.estimate.value) high = point
     }
-    const over =
-      partialYears.length > 0
-        ? `Leaving out ${partialYears.join(' and ')}, a partial year, it`
-        : 'Over these years it'
+    const over = 'Over these years it'
     const show = (estimate: EstimateValue) =>
       formatEstimate(estimate.value, estimate.unit).primary
     text +=
@@ -692,9 +705,9 @@ export interface DifferenceDescription {
   largerName: string | null
   /** "23 minutes more per day", "6.2 percentage points higher", … */
   amount: string
-  /** "Likely range: 14 to 33 minutes more for men (95% confidence)", or null without one. */
+  /** "95% confidence interval: 14 to 33 minutes more for men", or null without one. */
   interval: string | null
-  /** Whether the difference's likely range includes no difference at all. */
+  /** Whether the difference's confidence interval includes zero. */
   includesZero: boolean
   /** The one-sentence answer a comparison leads with. */
   sentence: string
@@ -785,14 +798,13 @@ export function describeDifference(
         : isShare
           ? `${formatPercentagePoints(Math.abs(from), false)} to ${bound(to)}`
           : `${bound(from)} to ${bound(to)}`
-    const prefix = 'Likely range: '
-    const suffix = ` (${formatConfidenceLevel(level)} confidence)`
+    const prefix = `${confidenceIntervalName(level)}: `
     if (lower >= 0) {
-      interval = `${prefix}${range(lower, upper)} ${word} for ${a.name}${suffix}`
+      interval = `${prefix}${range(lower, upper)} ${word} for ${a.name}`
     } else if (upper <= 0) {
-      interval = `${prefix}${range(upper, lower)} ${word} for ${b.name}${suffix}`
+      interval = `${prefix}${range(upper, lower)} ${word} for ${b.name}`
     } else {
-      interval = `${prefix}from ${bound(lower)} ${word} for ${b.name} to ${bound(upper)} ${word} for ${a.name}${suffix}`
+      interval = `${prefix}from ${bound(lower)} ${word} for ${b.name} to ${bound(upper)} ${word} for ${a.name}`
     }
   }
 
@@ -801,7 +813,9 @@ export function describeDifference(
   const when =
     years.length === 1 ? `In ${formatYears(years)}` : `Across ${formatYears(years)} combined`
   const caveat =
-    includesZero && larger !== null ? ', but the likely range includes no difference' : ''
+    includesZero && larger !== null
+      ? `, but the ${confidenceIntervalName(level)} for the difference includes zero`
+      : ''
 
   let body: string | null = null
   if (larger !== null && big.who !== null && small.who !== null) {

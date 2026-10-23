@@ -85,13 +85,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       <footer className="site-footer">
         <div className="site-footer__inner">
           <p>
-            Data source: U.S. Bureau of Labor Statistics,{' '}
-            <a href="https://www.bls.gov/tus/" rel="noreferrer">
-              American Time Use Survey
-            </a>
-            . Estimates are survey-weighted and subject to sampling uncertainty.
-          </p>
-          <p>
             An independent project — not an official BLS product. The data release and versions
             are on the <Link to="/about#data">About page</Link>.
           </p>

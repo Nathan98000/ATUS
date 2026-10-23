@@ -36,7 +36,7 @@ test('a first-time user completes an estimate from the home page', CORE, async (
   await expect(page.locator('.stat-value')).toHaveText('2h 30m')
   await expect(page.getByText('per day, on average')).toBeVisible()
   // The interval 133.7 to 166.3 minutes, as clock times.
-  await expect(page.getByText(/Likely range/)).toContainText('2h 14m to 2h 46m')
+  await expect(page.getByText(/95% confidence interval:/)).toContainText('2h 14m to 2h 46m')
   // The figure puts it in proportion: a stretch of one 24-hour day.
   await expect(page.getByRole('img', { name: '2h 30m out of 24 hours' })).toBeVisible()
   // The small print names the sample and the source.

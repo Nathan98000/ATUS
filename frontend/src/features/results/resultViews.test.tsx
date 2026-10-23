@@ -34,7 +34,7 @@ describe('variance="none" presentation', () => {
       },
     }
     render(<EstimateView result={noVariance} />)
-    expect(screen.getByText(/No likely range was requested/)).toBeInTheDocument()
+    expect(screen.getByText(/No confidence interval is available/)).toBeInTheDocument()
     expect(screen.queryByText(/±/)).not.toBeInTheDocument()
     expect(screen.queryByText(/confidence\)/i)).not.toBeInTheDocument()
   })
@@ -77,7 +77,7 @@ describe('proportion-unit comparisons', () => {
     // The difference of two proportions is percentage points, never "%".
     expect(difference).toHaveTextContent(`3.2 percentage points higher for ${labelA}`)
     expect(difference).toHaveTextContent(
-      `Likely range: 1.0 to 5.4 percentage points higher for ${labelA} (95% confidence)`,
+      `95% confidence interval: 1.0 to 5.4 percentage points higher for ${labelA}`,
     )
     expect(difference.textContent).not.toMatch(/3\.2%/)
     // Group-level estimates remain percentages (beside their bars).
@@ -190,9 +190,7 @@ describe('confidence levels other than 90/95/99% (review round 3)', () => {
       ),
     }
     render(<TrendView result={result} />)
-    expect(
-      screen.getByText(/Shaded band: likely range \(97\.5% confidence\)/),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Shaded band: 97\.5% confidence interval\./)).toBeInTheDocument()
     expect(screen.queryByText(/98%/)).not.toBeInTheDocument()
   })
 
@@ -212,7 +210,7 @@ describe('confidence levels other than 90/95/99% (review round 3)', () => {
       difference: { ...compareChildrenFixture.difference, confidence_level: 0.9545 },
     }
     render(<CompareView result={result} />)
-    expect(screen.getByTestId('difference')).toHaveTextContent('(95.45% confidence)')
+    expect(screen.getByTestId('difference')).toHaveTextContent('95.45% confidence interval:')
   })
 })
 
@@ -224,7 +222,8 @@ describe('estimate figures', () => {
     expect(screen.getByTestId('day-fill').style.getPropertyValue('--share')).toBe(
       String(estimateSleepFixture.estimate.value / 1440),
     )
-    expect(screen.getByText(/Likely range/)).toHaveTextContent('8h 43m to 8h 55m')
+    expect(screen.getByText(/95% confidence interval:/)).toHaveTextContent('8h 43m to 8h 55m')
+    expect(screen.queryByText(/likely range/i)).not.toBeInTheDocument()
   })
 
   it('shows a rate as dots among a hundred people', () => {
@@ -237,13 +236,20 @@ describe('estimate figures', () => {
     expect(container.querySelectorAll('.hundred-grid__dot.is-filled')).toHaveLength(73)
   })
 
-  it('names the sample and the source in the small print', () => {
+  it('names the sample, the source and the graph’s author on one line', () => {
     render(<EstimateView result={estimateSleepFixture} />)
-    expect(
-      screen.getByText(/Source: American Time Use Survey, U\.S\. Bureau of Labor Statistics/),
-    ).toHaveTextContent("2,597 people's diaries")
-    // Context notes are small print, not warnings.
-    expect(screen.getByText(/Activities are coded the same way/)).toBeInTheDocument()
+    const source = screen.getByText(
+      /Source: American Time Use Survey, U\.S\. Bureau of Labor Statistics/,
+    )
+    expect(source).toHaveTextContent(
+      "Source: American Time Use Survey, U.S. Bureau of Labor Statistics · 2,597 people's diaries. Graph by Nathan Nguyen · X: @NathanDNguyen",
+    )
+    expect(screen.getByRole('link', { name: '@NathanDNguyen' })).toHaveAttribute(
+      'href',
+      'https://x.com/NathanDNguyen',
+    )
+    // The harmonized-codes note is not shown at all (review round 5).
+    expect(screen.queryByText(/coded the same way/)).not.toBeInTheDocument()
     expect(screen.queryByRole('note')).not.toBeInTheDocument()
   })
 })

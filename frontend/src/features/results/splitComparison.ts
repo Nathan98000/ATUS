@@ -1,9 +1,9 @@
 /**
- * A split trend draws no likely range: its lines are point estimates, and a
- * band per group would cost a replicate-weight trend each (review round 4).
- * Instead it links to a comparison of two of its groups in one year — the
- * latest year every group has an estimate — whose difference the API gives
- * with its likely range. The request is written exactly as the builder
+ * A split trend draws no confidence intervals: its lines are point
+ * estimates, and a band per group would cost a replicate-weight trend each
+ * (review round 4). Instead it links to a comparison of two of its groups in
+ * one year — the latest year every group has an estimate — whose difference
+ * the API gives with its 95% confidence interval. The request is written exactly as the builder
  * writes that comparison (`toRequest`), so men vs women for a preset is
  * the snapshot's prewarmed "compare by sex" entry. Nothing is computed here:
  * the groups are chosen by the trend's own values (the two for two groups,
@@ -12,7 +12,7 @@
 import type { AnalysisRequest, TrendResponse } from '../../api/types'
 import { peoplePhrase } from '../../domain/describe'
 import { analysisPath } from '../../domain/urlSpec'
-import { defaultBuilderState, toRequest, weightsForSingleYear } from '../builder/state'
+import { defaultBuilderState, toRequest } from '../builder/state'
 import {
   choiceDimensions,
   type CompareOption,
@@ -47,7 +47,6 @@ export function splitComparison(
     const [a, b] = pair
     const shared = { ...spec.population } as Record<string, unknown>
     for (const name of choiceDimensions(split.choice.by)) delete shared[name]
-    const weights = spec.weights ?? 'multiyear'
     const request = toRequest(
       {
         ...defaultBuilderState(availableYears),
@@ -62,11 +61,6 @@ export function splitComparison(
         labelA: a.label,
         labelB: b.label,
         compareBy: split.choice.by,
-        weights,
-        ...weightsForSingleYear(year, weights),
-        // The point of the comparison is its likely range.
-        variance: 'replicate',
-        confidenceLevel: spec.confidence_level ?? 0.95,
       },
       availableYears,
     )
@@ -76,7 +70,7 @@ export function splitComparison(
         : peoplePhrase({ ...shared, ...option.population })
     return {
       path: analysisPath('compare', request),
-      text: `How sure is this? Compare ${name(a)} and ${name(b)} in ${year}, with the likely range of the difference`,
+      text: `How sure is this? Compare ${name(a)} and ${name(b)} in ${year}, with a 95% confidence interval for the difference`,
     }
   }
   return null

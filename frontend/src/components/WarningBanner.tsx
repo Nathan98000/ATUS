@@ -1,4 +1,4 @@
-import { presentNote } from '../domain/notes'
+import { presentNote, shownWarnings } from '../domain/notes'
 
 /**
  * Methodological notes from the API's `warnings` array, in plain language
@@ -10,7 +10,9 @@ import { presentNote } from '../domain/notes'
  * style keeps its meaning.
  */
 export function WarningBanner({ warnings }: { warnings: readonly string[] }) {
-  const caveats = warnings.map(presentNote).filter((note) => note.kind === 'caveat')
+  const caveats = shownWarnings(warnings)
+    .map(presentNote)
+    .filter((note) => note.kind === 'caveat')
   if (caveats.length === 0) return null
   return (
     <div className="result-notes" role="note" aria-label="Notes on this result">

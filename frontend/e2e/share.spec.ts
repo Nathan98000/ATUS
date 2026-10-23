@@ -49,7 +49,9 @@ test(
 
     // Same result…
     await expect(freshPage.locator('.stat-value')).toHaveText('2h 30m', { timeout: 15_000 })
-    await expect(freshPage.getByText(/Likely range/)).toContainText('2h 14m to 2h 46m')
+    await expect(freshPage.getByText(/95% confidence interval:/)).toContainText(
+      '2h 14m to 2h 46m',
+    )
     // …and the same reconstructable configuration.
     await expect(freshPage).toHaveTitle(/Sleeping — Ages 25–54 — 2023/)
     await freshPage.getByRole('link', { name: 'Adjust analysis' }).click()
@@ -72,7 +74,7 @@ test('refreshing a result page reproduces the same analysis', CORE, async ({ pag
 
   await page.reload()
   await expect(page.locator('.stat-value')).toHaveText('2h 30m', { timeout: 15_000 })
-  await expect(page.getByText(/Likely range/)).toContainText('2h 14m to 2h 46m')
+  await expect(page.getByText(/95% confidence interval:/)).toContainText('2h 14m to 2h 46m')
 })
 
 test(

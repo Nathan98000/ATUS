@@ -118,3 +118,27 @@ test('a trend split by sex draws one line per group, with a legend', CORE, async
     ])
   }
 })
+
+test('2020 alone runs under its own partial-year weights (review round 5)', async ({
+  page,
+}) => {
+  // No weights to choose: the builder sends the pandemic weights for 2020.
+  await page.goto('/explore')
+  await page.getByRole('radio', { name: 'One number' }).click()
+  await page.getByLabel('Year', { exact: true }).selectOption('2020')
+  await expect(page.getByText(/2020 is a partial-year estimate/)).toBeVisible()
+  await expect(page.getByText('More options')).toHaveCount(0)
+  const sent = page.waitForRequest((request) =>
+    request.url().endsWith('/api/v1/analysis/estimate'),
+  )
+  await page.getByRole('button', { name: 'Analyze' }).click()
+  expect((await sent).postDataJSON()).toMatchObject({
+    years: [2020],
+    weights: 'pandemic',
+    variance: 'replicate',
+    confidence_level: 0.95,
+  })
+  // 240 minutes (the fixture's one 2020 diary), with the partial-year caveat.
+  await expect(page.locator('.stat-value')).toHaveText('4h', { timeout: 15_000 })
+  await expect(page.getByRole('note')).toContainText('not full-year figures')
+})

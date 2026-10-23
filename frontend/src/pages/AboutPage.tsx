@@ -43,13 +43,19 @@ export function AboutPage() {
 
       <h2>Why uncertainty is shown</h2>
       <p>
-        Every number here is an estimate from a sample, so it carries sampling uncertainty. The
-        likely range around each figure is a confidence interval, computed from the survey's
-        official 160 replicate weights. When two groups are compared, the likely range of their
-        difference allows for both groups coming from the same survey — it is computed by the
-        analytical engine, never in this interface. A trend split into groups draws each group's
-        estimates without a range; it links to a comparison of two of its groups in one year,
-        which shows the likely range of their difference.
+        Every number here is an estimate from a sample, so it carries sampling error. Each
+        figure is shown with a 95% confidence interval, computed from the survey's official 160
+        replicate weights. The interval is built by a method that, if the survey were repeated
+        many times with new samples, would capture the true population value in about 95% of
+        them. It reflects sampling error only, not other errors, such as people misremembering
+        their day.
+      </p>
+      <p>
+        When two groups are compared, the confidence interval for their difference accounts for
+        both groups coming from the same survey — it is computed by the analytical engine, never
+        in this interface. A trend split into groups draws each group's estimates without
+        intervals; it links to a comparison of two of its groups in one year, which shows the
+        confidence interval for their difference.
       </p>
 
       <h2>Why 2020 is special</h2>
@@ -59,9 +65,9 @@ export function AboutPage() {
         BLS published 2020 under a dedicated pandemic weighting that represents the weeks that
         were collected (January 1 – March 17 and May 10 – December 31). Trends show 2020 from
         that weighting as a hollow point, with a note that it is a partial-year estimate that
-        may not compare exactly with other years, reached by a dotted line; choosing 2020 alone
-        uses it too (it is also a "More options" choice), and the result always carries its
-        caveat.
+        may not compare exactly with other years, reached by a dotted line. Choosing 2020 alone
+        uses it too, and the result always carries its caveat. The site picks the weights
+        itself: the 2020 weighting for 2020, the standard weights for every other year.
       </p>
 
       <h2>Interpreting results</h2>

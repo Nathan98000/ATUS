@@ -3,8 +3,11 @@
  * plus `&split=…&groups=…` for a trend split into one line per group (one
  * point-estimate trend request per group; such links are not rewritten).
  *
- * The URL alone reconstructs the analysis (decode → validate → run → render).
- * After a successful estimate/trend run the URL is rewritten (replace, no
+ * The URL alone reconstructs the analysis (decode → validate → run → render),
+ * under the site's own weights and 95% confidence interval
+ * (`withAnalysisSettings`): a link written with other settings is rewritten
+ * to them before it runs. After a successful estimate/trend run the URL is
+ * rewritten (replace, no
  * history entry) to encode the API's canonical spec, so equivalent requests
  * share one canonical link — mirroring how the backend itself identifies
  * analyses. The already-fetched result is seeded into the query cache under
@@ -19,6 +22,7 @@ import {
   refetchFailed,
   useAnalyses,
   useAnalysis,
+  useActivities,
   useActivityPresets,
   useMeta,
   usePopulationMetadata,
@@ -67,16 +71,24 @@ import { CompareView } from '../features/results/CompareView'
 import { EstimateView } from '../features/results/EstimateView'
 import { ShareButton } from '../features/results/ShareButton'
 import { SplitTrendView, TrendView, type SplitSeries } from '../features/results/TrendView'
+import { withAnalysisSettings } from '../features/builder/state'
 import { needsPartial2020, partial2020Spec } from '../features/results/partial2020'
 import { splitComparison } from '../features/results/splitComparison'
 
 type ParsedLink =
   | { invalid: string }
-  | { operation: Operation; spec: AnalysisRequest; split: SplitSelection | null }
+  | {
+      operation: Operation
+      spec: AnalysisRequest
+      split: SplitSelection | null
+      /** Whether the link's own spec had other settings than the site's. */
+      resettled: boolean
+    }
 
 export function AnalysisPage() {
   const params = useParams()
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
   const parsed = useMemo((): ParsedLink => {
     const operation = params.operation
@@ -88,10 +100,12 @@ export function AnalysisPage() {
       return { invalid: 'This analysis link is missing its specification.' }
     }
     try {
+      const spec = withAnalysisSettings(operation, decodeSpec(encoded, operation))
       return {
         operation,
-        spec: decodeSpec(encoded, operation),
+        spec,
         split: parseSplit(searchParams, operation),
+        resettled: encodeSpec(spec) !== encoded,
       }
     } catch (error) {
       return {
@@ -102,6 +116,14 @@ export function AnalysisPage() {
       }
     }
   }, [params.operation, searchParams])
+
+  // The link shows what runs: one written with other settings is rewritten.
+  useEffect(() => {
+    if ('invalid' in parsed || !parsed.resettled) return
+    navigate(analysisPath(parsed.operation, parsed.spec, parsed.split), {
+      replace: true,
+    })
+  }, [parsed, navigate])
 
   if ('invalid' in parsed) {
     return <InvalidLink message={parsed.invalid} />
@@ -205,6 +227,17 @@ function AnalysisRunner({
     for (const preset of presets.data?.presets ?? []) map.set(preset.name, preset.label)
     return map
   }, [presets.data])
+  // The survey's own activity names, against which a link's label is read
+  // (definitionNote, R14). From the static snapshot, like all metadata.
+  const activities = useActivities()
+  const surveyNames = useMemo(
+    () =>
+      activities.data
+        ? new Map(activities.data.activities.map((entry) => [entry.code, entry.name]))
+        : undefined,
+    [activities.data],
+  )
+  const note = definitionNote(operation, spec, presets.data?.presets, surveyNames)
 
   const result: AnalysisResponse | undefined = query.data?.data ?? query.series?.[0]
   const activityLabel = useMemo(() => {
@@ -313,11 +346,10 @@ function AnalysisRunner({
           {operation === 'estimate' && meta.data && trendShortcut(spec) ? (
             <Link
               className="btn btn--small"
-              to={analysisPath('trend', {
-                ...spec,
-                weights: 'multiyear',
-                years: meta.data.data.years,
-              })}
+              to={analysisPath(
+                'trend',
+                withAnalysisSettings('trend', { ...spec, years: meta.data.data.years }),
+              )}
             >
               View {formatYears(meta.data.data.years)} trend
             </Link>
@@ -361,7 +393,7 @@ function AnalysisRunner({
             partial2020: partialQueries[index]?.data?.data,
           }))}
           legendTitle={resolved.choice.label}
-          note={definitionNote(operation, spec, presets.data?.presets)}
+          note={note}
           comparison={
             meta.data
               ? splitComparison(spec, resolved, query.series, meta.data.data.years)
@@ -374,7 +406,7 @@ function AnalysisRunner({
           spec={spec}
           result={query.data.data}
           partial2020={partialQueries[0]?.data?.data}
-          note={definitionNote(operation, spec, presets.data?.presets)}
+          note={note}
         />
       ) : null}
       {/* Persistent live region: reliably announces the start and end of a
@@ -393,10 +425,10 @@ function AnalysisRunner({
 
 /**
  * Whether an estimate offers its full-period trend: under the multi-year
- * weights, or a 2020 estimate under the pandemic weights (the builder's
- * choice for 2020), whose trend shows 2020 as its partial-year point. Other
- * pandemic-weight estimates (2019, or a diary-date window) have no
- * full-period counterpart.
+ * weights, or a 2020 estimate under the pandemic weights (the site's
+ * weights for 2020), whose trend shows 2020 as its partial-year point.
+ * Other pandemic-weight estimates (2019 and 2020 combined, or a diary-date
+ * window) have no full-period counterpart.
  */
 function trendShortcut(spec: AnalysisRequest): boolean {
   if (spec.weights !== 'pandemic') return true

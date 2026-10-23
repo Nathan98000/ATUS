@@ -33,7 +33,7 @@ test('configure, run, understand and reshare a comparison', CORE, async ({ page 
   const difference = page.getByTestId('difference')
   await expect(difference).toContainText('Difference: 33 minutes more per day for men.')
   await expect(difference).toContainText(
-    /Likely range: [\d.]+ to [\d.]+ minutes more for men \(95% confidence\)/,
+    /95% confidence interval: [\d.]+ to [\d.]+ minutes more for men/,
   )
 
   // Both groups appear in the chart with their labels (never color-only).

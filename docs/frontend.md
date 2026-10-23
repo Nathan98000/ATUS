@@ -65,7 +65,8 @@ frontend/src/
                  CompareGroupsPicker, SplitPicker
     results/     EstimateView, TrendView (+ SplitTrendView) + TrendChart,
                  CompareView + ComparisonChart, ChartFootnote, ShareButton,
-                 splitComparison (a split trend's way to a likely range),
+                 splitComparison (a split trend's way to a confidence
+                 interval),
                  chartScale, useElementWidth
   components/ AppShell, ErrorBoundary, LoadingPanel, ErrorPanel, WarningBanner,
               AnalysisTypeIcon,
@@ -344,13 +345,14 @@ the four home-page starters, then — built by the analysis builder's own
 `toRequest`, so the bytes match what visitors send — every preset under every
 measure, a full-period trend per preset and per tier-1 category, a
 latest-year estimate per tier-1 category, men vs women per preset and per
-tier-1 category, each preset under the pandemic weights in 2019 and
-2020, the home page's chart (household activities split by sex: each
+tier-1 category, each preset in 2020 under the pandemic weights (a
+trend's partial year; 2019 under them went with "More options" in design
+review round 5), the home page's chart (household activities split by sex: each
 group's point-estimate trend and its 2020 partial-year estimate, in the
 bytes the split-trend page sends; `homeChartSpecs`; design review round 4),
 and each starter as the builder sends it after "Adjust analysis"
 without a change (every default stated; for the two comparison starters
-these bytes are otherwise in no list; review round 2) — 135 for the
+these bytes are otherwise in no list; review round 2) — 126 for the
 2003–2025 release. Two passes:
 
 ```bash
@@ -438,17 +440,30 @@ values and standard errors.
   line does not run through it: since design review round 4 the steps to
   and from it are a thin dotted connector (`segmentPieces`), so a 2020 that
   "may not compare exactly" is not drawn as an ordinary year. The
-  one-sentence answer reads full-year estimates only and says so ("Leaving
-  out 2020, a partial year, it ranged from …"). If that request fails, 2020
-  falls back to the gap below.
+  one-sentence answer reads full-year estimates only: the latest and the
+  first year, and no range across the years beside a partial year (review
+  round 5: "Leaving out 2020, a partial year, …" read awkwardly). If that
+  request fails, 2020 falls back to the gap below.
 - `estimate: null` (any other unavailable year, e.g. no respondents in a
   group) renders as a labeled gap band (“No data”); the line never crosses
   it, nothing is interpolated, and the chart's small print says why, with
   the API's reason in plain language — never zero.
-- Choosing 2020 alone for a single number or a comparison switches the
-  weights to the pandemic weights (a visible "More options" choice) and
-  says it is a partial-year estimate; leaving 2020 switches back. A trend
-  through 2020 says so on its chart, not in the builder (review round 4).
+- **The site sets the weights and the interval** (`analysisSettings` in
+  `features/builder/state.ts`; design review round 5, which removed “More
+  options”): every analysis asks for a 95% confidence interval from the
+  replicate weights, under the standard multi-year weights — except an
+  estimate or a comparison of 2020 (alone, or combined with 2019, the only
+  other year they cover), which uses the pandemic weights and says it is a
+  partial-year estimate. A trend always uses the multi-year weights; its
+  2020 is the separate request above, and it says so on its chart, not in
+  the builder (review round 4). A shared link written with other settings
+  (90% or 99%, no interval, 2019 under the pandemic weights) runs under the
+  site's and its URL is rewritten to say so (`withAnalysisSettings`); a
+  setting the link leaves out counts as the API's default, so a link
+  already under the site's settings — a home-page starter's — keeps its
+  bytes and its snapshot entry. Several years combined is no longer offered
+  in the builder; a link that combines years shows them under “Years to
+  combine”, with “Use one year instead”, and 2020 combines only with 2019.
 - **Filters are opt-in** (`PopulationFields`): “Everyone age 15 and over”
   until one is added from “+ Add a filter”, which offers only sex, age,
   employment, education, children in the household and day of week. Region,
@@ -477,41 +492,52 @@ values and standard errors.
   choice — the presets and four top-level categories (volunteering, sports
   and exercise, caring for household members, shopping) — and the selected
   activity say what they include, from the lexicon's own names.
-- Confidence intervals are shown wherever the API provides them, as a
-  “likely range”: the estimate's range in words, the trend's shaded band,
-  the comparison's whiskers and its difference's range, each named with its
-  level in the small print. A trend split into groups draws no bands (it
+- Confidence intervals are shown wherever the API provides them, always by
+  their name, “95% confidence interval” — never as a “likely range”, which
+  a confidence interval is not (review round 5): the estimate's interval in
+  words, the trend's shaded band, the comparison's whiskers and its
+  difference's interval. The small print says what the band or whiskers
+  are and why (“The survey interviews a sample of people, so each figure is
+  an estimate subject to sampling error”); the About page says what 95%
+  means (the method's coverage over repeated samples) and that the interval
+  reflects sampling error only. A trend split into groups draws no bands (it
   requests point estimates; a replicate-weight trend per group would cost
   about ten times as much, and two to six bands overlap): it links instead
   to a comparison of two of its groups in its latest year — the two, or the
-  highest and the lowest — whose difference has its likely range
+  highest and the lowest — whose difference has its confidence interval
   (`splitComparison`, written as the builder writes that comparison, so men
   vs women for a preset is a prewarmed snapshot entry; review round 4).
-  `variance: "none"` results say explicitly that no likely range was
-  requested. Readouts (tooltips) say values only.
+  A result without an interval says so (“No confidence interval is
+  available for this estimate”). Readouts (tooltips) say values only.
 - API `warnings` always render visibly, in plain language
   (`domain/notes.ts`): caveats about the particular result (pooled years,
   pandemic weights, a truncated interval, filter caveats) in the “Keep in
-  mind” warning style, context true of every such result (the activity
-  coding, how a difference's uncertainty is computed) as a quieter line, so
-  the warning style keeps its meaning. A warning the module does not
-  recognize is shown verbatim, as a caveat. Context notes sit in the chart's
-  small print (`ChartFootnote`), on one line together (review round 4), with
-  the source line and the number of diaries behind the figure.
+  mind” warning style, context true of every such result (how a
+  difference's uncertainty is computed) as a quieter line, so the warning
+  style keeps its meaning. The one note never shown is that activity codes
+  are harmonized across years (`shownWarnings`; review round 5): it is true
+  of every result and says nothing about this one. A warning the module
+  does not recognize is shown verbatim, as a caveat. Context notes sit in
+  the chart's small print (`ChartFootnote`), on one line together (review
+  round 4), above the source line, which names the number of diaries
+  behind the figure and, on the same line, the graph's author: “Source:
+  American Time Use Survey, U.S. Bureau of Labor Statistics. Graph by
+  Nathan Nguyen · X: @NathanDNguyen” (`SourceLine`, also under the home
+  page's chart; review round 5). The site's footer no longer repeats the
+  data source.
 - Formatting precision policy (`utils/format.ts`): durations as h + m
   rounded to the minute, a whole hour as “9h” and axis ticks in the same
   form (“9h”, “9h 10m”, never “9h 00m”; review round 4), durations inside a
-  sentence in words (“9 hours 2 minutes”), and a difference's likely range
-  in whole minutes when both ends are 10 minutes or more, else one decimal
+  sentence in words (“9 hours 2 minutes”), and a difference's confidence
+  interval in whole minutes when both ends are 10 minutes or more, else one decimal
   (“2.8 to 19.4 minutes”) (detailed form: one decimal of minutes);
   percentages one decimal (small nonzero values keep two significant digits
   rather than collapsing to “0.0”); SEs/CIs in the estimate's own scale and
   precision; a **difference** of two proportions is formatted in percentage
   points (pp), matching its SE — never as “%”. Confidence levels keep every
-  digit (0.975 is “97.5%”, 0.999 “99.9%” — never rounded to another level),
-  and the builder adds a shared link's non-standard level to its 90/95/99%
-  choices rather than showing one level and sending another (review round
-  3). Raw API values are never mutated in state.
+  digit (0.975 is “97.5%”, 0.999 “99.9%” — never rounded to another level)
+  wherever a result names its level. Raw API values are never mutated in
+  state.
 - Filters are never active yet invisible. A comparison's filters for both
   groups sit under “Both groups”, one row each when set (from a link, or
   carried over from an estimate or trend), and the result names them in its
@@ -519,8 +545,12 @@ values and standard errors.
 - Labels a link chose are set against what was computed (R14 in
   docs/security.md; `definitionNote`): a comparison whose group names are
   not the plain description of their filters says “Groups compared: <name>
-  (<filters>)” in the small print, and a custom activity names its codes —
-  unless it is exactly a preset under the preset's own name.
+  (<filters>)” in the small print, and an activity name that is neither a
+  preset's own (the selection exactly that preset) nor the survey's own
+  name for its one activity code names its codes. The builder writes only
+  those names, so since review round 5 its links carry no such note; the
+  survey's names come from the activity list, read from the snapshot on
+  the result page.
 - Result headings (`resultHeading`): the statistic as the eyebrow, the
   activity's plain name (and a comparison's two groups) as the title, and
   the population and years once in the details line.
@@ -537,9 +567,10 @@ values and standard errors.
   than women”) only when a group's label is exactly the plain description
   of its own filters; any other label, a link's included, follows “for” as
   written (R14). A comparison's difference is stated in one line under its
-  bars as “N more for <group>” with its likely range as a range of “more
-  for A / more for B”. When the API's interval for the difference includes
-  zero, the answer adds “but the likely range includes no difference”: it
+  bars as “N more for <group>” with its 95% confidence interval as a range
+  of “more for A / more for B”. When the API's interval for the difference
+  includes zero, the answer adds “but the 95% confidence interval for the
+  difference includes zero”: it
   reads the interval's sign, computes nothing and claims no significance
   (the owner's decision D3, review round 4).
 - Each result is one chart with its answer as the title (2026-10-22 design
@@ -569,12 +600,11 @@ values and standard errors.
   by”, “No comparison (one line)”) and choices.
 - The builder (review round 4) opens on “Change over time”, the first of
   its three types: the default trend of each preset is prewarmed. It asks
-  “Doing what?” (with “Show:”, the statistic, as one select under the
-  activity), “For whom?” and “When?”; one year by default for a single
-  number or a comparison, with “Combine several years” under “More
-  options”, which also holds the weights and the likely range in plain
-  words (no BLS variable names) and opens by itself whenever a link sets
-  one of them away from its default. The sticky summary is one line
+  “Doing what?” (the activity, with its “Change activity” button right
+  beside its name since review round 5, and “Show:”, the statistic, as one
+  select under it), “For whom?” and “When?” (one year for a single number
+  or a comparison). There is no “More options” (review round 5): the
+  weights and the interval are the site's (above). The sticky summary is one line
   (“Sleeping · Average time per day · Everyone age 15 and over ·
   2003–2025”) with Analyze. Request bytes are unchanged (`toRequest`).
 - The home page's starter cards preview their answers from the static
@@ -636,7 +666,7 @@ values and standard errors.
 
 ```bash
 npm test          # unit/component tests (Vitest + Testing Library + MSW)
-npm run test:e2e  # 75 Playwright runs: 50 tests in Chromium desktop, 3 mobile,
+npm run test:e2e  # 76 Playwright runs: 51 tests in Chromium desktop, 3 mobile,
                   # and the 11 @core journeys again in Firefox and in WebKit
                   # (one desktop test runs only in stack mode)
 npx playwright install firefox webkit   # once, for the cross-browser projects
@@ -671,7 +701,7 @@ listing wherever `frontend/node_modules` is installed.
   error panels (incl. the `Retry-After` countdown), TrendChart partial-year and gap
   rendering and keyboard access.
 - Integration (MSW, fixtures = captured real payloads): result pages render
-  estimates, likely ranges, figures, notes and small print; split trends
+  estimates, confidence intervals, figures, notes and small print; split trends
   (one point-estimate request per group, legend, no canonical rewrite);
   URL canonicalization;
   API errors; invalid share links; the race test (a slow superseded response

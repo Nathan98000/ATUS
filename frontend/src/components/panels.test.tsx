@@ -19,17 +19,29 @@ describe('WarningBanner', () => {
 
   it('shows caveats as a warning and leaves context to the chart’s small print', () => {
     const warnings = [
-      'Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).',
+      "The difference's standard error uses per-replicate differences, which accounts for covariance between the group estimates.",
       'Pooled estimate: represents the average day across 3 survey years (1,095 days combined).',
     ]
     const { container } = render(<WarningBanner warnings={warnings} />)
     expect(container.querySelector('.warning-banner')).toHaveTextContent(
       'This is an average day across 3 survey years combined',
     )
-    expect(container).not.toHaveTextContent(/coded the same/)
+    expect(container).not.toHaveTextContent(/both groups/)
     expect(contextNotes(warnings)).toEqual([
-      'Activities are coded the same way in every survey year, so years can be compared directly.',
+      "The difference's confidence interval accounts for both groups coming from the same survey.",
     ])
+  })
+
+  it('never shows the note that activity codes are harmonized (review round 5)', () => {
+    const { container } = render(
+      <WarningBanner
+        warnings={[
+          'Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).',
+          'Pooled estimate: represents the average day across 3 survey years (1,095 days combined).',
+        ]}
+      />,
+    )
+    expect(container).not.toHaveTextContent(/lexicon|coded/)
   })
 
   it('renders nothing when every note is context', () => {
