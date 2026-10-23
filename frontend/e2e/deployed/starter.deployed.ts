@@ -30,7 +30,9 @@ test('a home-page starter analysis renders on the deployed site', async ({ page 
   // A cold origin can take about a minute to wake; the snapshot answers at once.
   await expect(page.locator('.stat-value')).toBeVisible({ timeout: 180_000 })
   await expect(page.locator('.stat-value')).not.toHaveText('')
-  await expect(page.getByText(/minutes per day/).first()).toBeVisible()
+  // The sleep starter is a duration: its caption (since the 2026-10-22 design
+  // review the page says "per day, on average", not "… minutes per day").
+  await expect(page.getByText('per day, on average')).toBeVisible()
 
   expect(policyErrors).toEqual([])
   expect(apiRequests.length).toBeLessThanOrEqual(MAX_API_REQUESTS)
