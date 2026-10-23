@@ -933,12 +933,22 @@ sends its own address from 198.19.0.0/16, and the per-visitor limits apply
 per test rather than to the whole suite), and tests that inject failures
 into `/api/v1/meta` first hide the snapshot (`withoutSnapshot`), since the
 deployed SPA would otherwise read `/meta` from `/snap/`. On 2026-10-23, at
-6b2d24a (E2E suite: `frontend/e2e` tree 4185d6b02f25,
-`frontend/playwright.config.ts` blob 18a0605b8ef4), all 65 runs passed in
-stack mode (Chromium desktop 51, mobile 3, WebKit 11), after the stack smoke
-(15/15), the edge probe (13/13) and `deploy_smoke.py` (13/13), with the API
-image built from that commit, and `deploy.yml`'s browser smoke passed. That
-run followed the 2026-10-22 and 2026-10-23 design reviews, which removed
+c880254 (E2E suite: `frontend/e2e` tree d4aae9719461,
+`frontend/playwright.config.ts` blob 18a0605b8ef4), all 67 runs passed in
+stack mode (Chromium desktop 52, mobile 4, WebKit 11), after the stack smoke
+(15/15), the edge probe (13/13) and `deploy_smoke.py` (13/13, 17 requests),
+and `deploy.yml`'s browser smoke passed. That run was on the tree then
+committed as c880254 (its suite exactly; the code differed only in two CSS
+comments and unit-test titles), with the API image built from it under
+8be59ec's label, whose API c880254 does not change. It followed design
+review round 6, which added a mobile test (the summary bar keeps who and
+when in view) and a desktop one (“What does 95% mean?” lands on its
+section), and made a test's routes stop throwing after it ends: an earlier
+run on that tree passed 66 and lost the next test to it. Before that, on
+2026-10-23, at 6b2d24a, all 65 runs had passed (Chromium desktop 51, mobile
+3, WebKit 11), after the stack smoke (15/15), the edge probe (13/13) and
+`deploy_smoke.py` (13/13), with the API image built from that commit, and
+`deploy.yml`'s browser smoke passed. That run followed the 2026-10-22 and 2026-10-23 design reviews, which removed
 tests with the features they covered (the downloads, the exact values) and
 added others. A run at 7cd7663 failed 4 of 65 where the static snapshot
 answered what a test waited to see sent (a trend's 2020 estimate, an offline
