@@ -3,7 +3,7 @@
  * API's own explanation; infrastructure failures are distinguished from
  * invalid requests.
  */
-import { expect, test } from './fixtures'
+import { expect, test, withoutSnapshot } from './fixtures'
 
 /** Builds a share URL for an arbitrary spec (same encoding as the app). */
 function specUrl(operation: string, spec: object): string {
@@ -44,6 +44,10 @@ test('an analysis started offline says so, and runs when the connection returns 
   page,
   context,
 }) => {
+  // In stack mode the starter's answer is in the static snapshot the home
+  // page has already read, so it would show offline; this is about an
+  // analysis that needs the service.
+  await withoutSnapshot(page)
   await page.goto('/')
   const starter = page.getByRole('link', { name: /How much do Americans sleep\?/ })
   await expect(starter).toBeVisible({ timeout: 15_000 })

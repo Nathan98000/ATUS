@@ -5,7 +5,7 @@
  * connector, with a note, never an interpolated or zero value. A year with no estimate at all would still be
  * a labeled gap (src/pages/AnalysisPage.test.tsx covers that fallback).
  */
-import { expect, test } from './fixtures'
+import { expect, test, withoutSnapshot } from './fixtures'
 
 import { CORE } from './helpers'
 
@@ -13,6 +13,9 @@ test(
   '2020 renders as a hollow partial-year point, explained in the small print',
   CORE,
   async ({ page }) => {
+    // The requests themselves are checked: in stack mode the snapshot would
+    // answer the prewarmed 2020 estimate without one.
+    await withoutSnapshot(page)
     await page.goto('/explore')
     await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
 
@@ -123,6 +126,8 @@ test('2020 alone runs under its own partial-year weights (review round 5)', asyn
   page,
 }) => {
   // No weights to choose: the builder sends the pandemic weights for 2020.
+  // The request is checked, so the snapshot (stack mode) is left out.
+  await withoutSnapshot(page)
   await page.goto('/explore')
   await page.getByRole('radio', { name: 'One number' }).click()
   await page.getByLabel('Year', { exact: true }).selectOption('2020')
