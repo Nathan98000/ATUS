@@ -4,7 +4,9 @@
  * points, never "%"), non-adjacent-year trend segmentation — and the
  * figures and small print each result's chart carries.
  */
-import { render, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
+import { render as renderPlain, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 
 import type { CompareResponse, EstimateResponse, TrendPoint } from '../../api/types'
@@ -18,6 +20,11 @@ import { CompareView } from './CompareView'
 import { EstimateView } from './EstimateView'
 import { TrendChart, availableSegments } from './TrendChart'
 import { TrendView } from './TrendView'
+
+/** The views link to the About page ("What does 95% mean?"): a router around them. */
+function render(ui: ReactElement) {
+  return renderPlain(<MemoryRouter>{ui}</MemoryRouter>)
+}
 
 describe('variance="none" presentation', () => {
   it('says explicitly that no uncertainty was requested — never fabricates one', () => {
@@ -75,9 +82,10 @@ describe('proportion-unit comparisons', () => {
     const difference = screen.getByTestId('difference')
     const { label_a: labelA } = compareChildrenFixture
     // The difference of two proportions is percentage points, never "%".
-    expect(difference).toHaveTextContent(`3.2 percentage points higher for ${labelA}`)
+    // One data line, the interval read from the larger group's side
+    // (review round 6).
     expect(difference).toHaveTextContent(
-      `95% confidence interval: 1.0 to 5.4 percentage points higher for ${labelA}`,
+      `Difference: 3.2 percentage points higher for ${labelA} (95% confidence interval: 1.0 to 5.4 percentage points)`,
     )
     expect(difference.textContent).not.toMatch(/3\.2%/)
     // Group-level estimates remain percentages (beside their bars).
@@ -170,7 +178,7 @@ describe('long group labels (review round 1)', () => {
 describe('confidence levels other than 90/95/99% (review round 3)', () => {
   // The API accepts any level in (0.5, 1) from a hand-made link or request;
   // the page must name the level it computed.
-  it('an estimate labels its 97.5% likely range as 97.5%, not 98%', () => {
+  it('an estimate labels its 97.5% confidence interval as 97.5%, not 98%', () => {
     const result: EstimateResponse = {
       ...estimateSleepFixture,
       estimate: { ...estimateSleepFixture.estimate, confidence_level: 0.975 },
@@ -236,13 +244,16 @@ describe('estimate figures', () => {
     expect(container.querySelectorAll('.hundred-grid__dot.is-filled')).toHaveLength(73)
   })
 
-  it('names the sample, the source and the graph’s author on one line', () => {
+  it('names the sample on its own line, then the source and the graph’s author exactly', () => {
     render(<EstimateView result={estimateSleepFixture} />)
+    // The diaries have their own line (review round 6: they broke the
+    // owner's sentence in two).
+    expect(screen.getByText("Based on 2,597 people's diaries.")).toBeInTheDocument()
     const source = screen.getByText(
       /Source: American Time Use Survey, U\.S\. Bureau of Labor Statistics/,
     )
-    expect(source).toHaveTextContent(
-      "Source: American Time Use Survey, U.S. Bureau of Labor Statistics · 2,597 people's diaries. Graph by Nathan Nguyen · X: @NathanDNguyen",
+    expect(source.textContent).toBe(
+      'Source: American Time Use Survey, U.S. Bureau of Labor Statistics. Graph by Nathan Nguyen · X: @NathanDNguyen',
     )
     expect(screen.getByRole('link', { name: '@NathanDNguyen' })).toHaveAttribute(
       'href',
@@ -251,5 +262,93 @@ describe('estimate figures', () => {
     // The harmonized-codes note is not shown at all (review round 5).
     expect(screen.queryByText(/coded the same way/)).not.toBeInTheDocument()
     expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  })
+})
+
+describe('how sure, in plain words (review round 6)', () => {
+  it('links the interval to the About page’s explanation', () => {
+    render(<EstimateView result={estimateSleepFixture} />)
+    expect(screen.getByRole('link', { name: 'What does 95% mean?' })).toHaveAttribute(
+      'href',
+      '/about#how-sure',
+    )
+  })
+
+  it('a comparison’s key says the whiskers are each group’s interval', () => {
+    render(<CompareView result={compareChildrenFixture} />)
+    expect(screen.getByText(/Thin lines:/)).toHaveTextContent(
+      "Thin lines: each group's 95% confidence interval.",
+    )
+    expect(screen.getByText(/^Diaries behind each bar:/, { selector: 'p' })).toBeInTheDocument()
+  })
+
+  it('says a figure from few diaries is too few to rely on, and why 0 to 0 (D7)', () => {
+    const few: EstimateResponse = {
+      ...estimateSleepFixture,
+      n_respondents: 13,
+      n_participants: 0,
+      estimate: {
+        value: 0,
+        unit: 'minutes_per_day',
+        standard_error: 0,
+        confidence_level: 0.95,
+        ci_lower: 0,
+        ci_upper: 0,
+      },
+    }
+    render(<EstimateView result={few} combine={{ path: '/analysis/x', years: '2023–2025' }} />)
+    const note = screen.getByRole('note')
+    expect(note).toHaveTextContent(
+      "Only 13 people's diaries are behind this figure, too few to rely on. With so few, the 95% confidence interval can understate the uncertainty. None of them did this on their diary day, which is why the interval is 0 to 0.",
+    )
+    expect(
+      screen.getByRole('link', { name: 'Combine 2023–2025 for more diaries' }),
+    ).toHaveAttribute('href', '/analysis/x')
+  })
+
+  it('says nothing more for a figure from enough diaries', () => {
+    render(
+      <EstimateView
+        result={estimateSleepFixture}
+        combine={{ path: '/x', years: '2023–2025' }}
+      />,
+    )
+    expect(screen.queryByText(/too few to rely on/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Combine/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('a duration under an hour (review round 6)', () => {
+  const minutes = (value: number, lower: number, upper: number): EstimateResponse => ({
+    ...estimateSleepFixture,
+    estimate: {
+      value,
+      unit: 'minutes_per_day',
+      standard_error: 1,
+      confidence_level: 0.95,
+      ci_lower: lower,
+      ci_upper: upper,
+    },
+  })
+
+  it('draws the first hour enlarged, with the interval as a whisker', () => {
+    render(<EstimateView result={minutes(7.2, 6.1, 8.4)} />)
+    expect(screen.getByTestId('day-hour')).toHaveTextContent('The first hour, enlarged')
+    const whisker = screen.getByTestId('day-hour-whisker')
+    expect(whisker.style.getPropertyValue('--from')).toBe(String(6.1 / 60))
+    expect(whisker.style.getPropertyValue('--to')).toBe(String(8.4 / 60))
+  })
+
+  it('draws no whisker when the interval leaves the hour', () => {
+    render(<EstimateView result={minutes(9.5, -7.8, 26.9)} />)
+    expect(screen.getByTestId('day-hour')).toBeInTheDocument()
+    expect(screen.queryByTestId('day-hour-whisker')).not.toBeInTheDocument()
+    // A negative end keeps its sign once (review round 6: "-1h -8m").
+    expect(screen.getByText(/95% confidence interval:/)).toHaveTextContent('\u22128m to 27m')
+  })
+
+  it('needs no enlarged hour for longer durations', () => {
+    render(<EstimateView result={estimateSleepFixture} />)
+    expect(screen.queryByTestId('day-hour')).not.toBeInTheDocument()
   })
 })

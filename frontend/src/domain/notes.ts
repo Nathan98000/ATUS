@@ -34,14 +34,16 @@ const PLAIN_NOTES: readonly {
     pattern: /^The difference's standard error uses per-replicate differences\b/,
     present: () => ({
       kind: 'context',
-      text: "The difference's confidence interval accounts for both groups coming from the same survey.",
+      text: "The difference's interval allows for both groups coming from the same survey.",
     }),
   },
   {
     pattern: /^Pandemic weights\b/,
     present: () => ({
       kind: 'caveat',
-      text: 'These estimates use the 2020 pandemic weights. They cover only the weeks when data collection ran normally (January 1 – March 17 and May 10 – December 31), so they are not full-year figures.',
+      // In plain words, without "weights" (review round 6); true of 2020
+      // alone and of 2019 with 2020, the only years these weights cover.
+      text: '2020 is a partial year. These figures cover only the weeks the survey ran normally (January 1 – March 17 and May 10 – December 31), so they are not full-year figures.',
     }),
   },
   {
@@ -76,7 +78,7 @@ const PLAIN_NOTES: readonly {
     pattern: /^Day-type estimates represent the average such day\b/,
     present: () => ({
       kind: 'caveat',
-      text: 'Weekday and weekend figures describe an average such day, not a share of the whole week.',
+      text: 'Each figure is for an average weekday or an average weekend day, not the whole week.',
     }),
   },
 ]
@@ -101,6 +103,49 @@ export function contextNotes(warnings: readonly string[]): string[] {
     .map(presentNote)
     .filter((note) => note.kind === 'context')
     .map((note) => note.text)
+}
+
+/**
+ * Fewer diaries than this behind a figure, and the page says it is too few
+ * to rely on (review round 6, the owner's decision D7). A choice of the
+ * site's, not a rule of the survey's: the number is the API's own
+ * `n_respondents`, and nothing is computed from it.
+ */
+export const FEW_DIARIES = 100
+
+/**
+ * The caution for a figure resting on few diaries, or null. `participants`:
+ * how many of them did the activity — none explains an interval of 0 to 0
+ * (every replicate estimate is zero), which would otherwise read as
+ * certainty. `who` names the group for a comparison's bar.
+ */
+export function fewDiariesNote(
+  diaries: number,
+  participants?: number | null,
+  who?: string,
+): string | null {
+  if (diaries >= FEW_DIARIES) return null
+  const behind = who === undefined ? 'this figure' : `the bar “${who}”`
+  let text = `Only ${diaries.toLocaleString('en-US')} people's diaries are behind ${behind}, too few to rely on. With so few, the 95% confidence interval can understate the uncertainty.`
+  if (participants === 0 && diaries > 0) {
+    text += ' None of them did this on their diary day, which is why the interval is 0 to 0.'
+  }
+  return text
+}
+
+/**
+ * The same caution for a trend whose years rest on few diaries, or null:
+ * `counts` are the drawn points' `n_respondents`; `band` says whether the
+ * chart draws a confidence band (a split trend draws none).
+ */
+export function fewDiariesTrendNote(
+  counts: readonly (number | null | undefined)[],
+  band: boolean,
+): string | null {
+  if (!counts.some((count) => count != null && count < FEW_DIARIES)) return null
+  return `Some points rest on fewer than ${FEW_DIARIES} people's diaries, too few to rely on.${
+    band ? ' With so few, the shaded band can understate the uncertainty there.' : ''
+  }`
 }
 
 /** Why a trend year has no estimate, in plain language (unrecognized: verbatim). */

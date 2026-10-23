@@ -73,6 +73,8 @@ describe('plainActivityName (review round 4)', () => {
     expect(plainActivityName('Shopping (Store, Telephone, Internet)')).toBe(
       'Shopping (store, telephone, internet)',
     )
+    // Not "work-Related" in a hint (review round 6).
+    expect(plainActivityName('Work-Related Activities')).toBe('Work-related activities')
     expect(plainActivityName('Work & Work-Related Activities')).toBe(
       'Work and work-related activities',
     )
@@ -99,9 +101,8 @@ describe('plainActivityName (review round 4)', () => {
     expect(populationPhrase({ employment_status: 'not_in_labor_force' })).toBe(
       'Not in the labor force',
     )
-    expect(populationPhrase({ has_household_children: false })).toBe(
-      'Without household children',
-    )
+    // The builder's words, "Children at home" (review round 6, D10).
+    expect(populationPhrase({ has_household_children: false })).toBe('Without children at home')
   })
 })
 
@@ -147,8 +148,12 @@ describe('titles', () => {
   })
 
   it('labels activities from spec form before results arrive', () => {
+    // A preset's own name while the preset list is on its way (review round 6).
     expect(activityLabelFromSpec({ activity: { preset: 'sleep' }, years: [2025] })).toBe(
-      'Sleep',
+      'Sleeping',
+    )
+    expect(activityLabelFromSpec({ activity: { preset: 'new_preset' }, years: [2025] })).toBe(
+      'New preset',
     )
     expect(
       activityLabelFromSpec({
@@ -314,16 +319,8 @@ describe('resultHeading', () => {
 })
 
 describe('interpretTrend', () => {
-  it('leads with the latest and first year and the range between', () => {
+  it('leads with the latest and the first year, and names no range (review round 6, D9)', () => {
     expect(interpretTrend(trendLeisureFixture)).toBe(
-      'Americans age 15 and over spent 5 hours 10 minutes a day on leisure and sports in ' +
-        '2025, compared with 5 hours 7 minutes in 2003. Over these years it ranged from ' +
-        '5 hours 4 minutes in 2024 to 5 hours 22 minutes in 2012.',
-    )
-  })
-
-  it('names no range when the chart draws a partial year (review round 5)', () => {
-    expect(interpretTrend(trendLeisureFixture, [2020])).toBe(
       'Americans age 15 and over spent 5 hours 10 minutes a day on leisure and sports in ' +
         '2025, compared with 5 hours 7 minutes in 2003.',
     )
@@ -357,8 +354,10 @@ describe('describeDifference', () => {
     expect(describeDifference(compareChildrenFixture)).toEqual({
       larger: 'b',
       largerName: 'No household children',
-      amount: '11 minutes more per day',
-      interval: '95% confidence interval: 2.8 to 19.4 minutes more for No household children',
+      // One data line, in the estimate's own form, its interval read from
+      // the larger group's side (review round 6).
+      amount: '11m more a day for No household children',
+      interval: '95% confidence interval: 3m to 19m',
       includesZero: false,
       sentence:
         'In 2025, average time a day spent on household activities was 11 minutes longer for ' +
@@ -366,19 +365,27 @@ describe('describeDifference', () => {
     })
   })
 
-  it('names built-in groups as people (review round 4)', () => {
+  it.each([
+    ['today’s names', 'With children at home', 'Without children at home'],
+    // A link shared before review round 6 (D10) still names built-in groups.
+    [
+      'the names before review round 6',
+      'With household children',
+      'Without household children',
+    ],
+  ])('names built-in groups as people, by %s (review round 4)', (_, labelA, labelB) => {
     const spec = {
       activity: { preset: 'household_activities_bls_table' },
       years: [2025],
       group_a: { has_household_children: true },
       group_b: { has_household_children: false },
-      label_a: 'With household children',
-      label_b: 'Without household children',
+      label_a: labelA,
+      label_b: labelB,
     } as CompareRequest
     const builtIn: CompareResponse = {
       ...compareChildrenFixture,
-      label_a: 'With household children',
-      label_b: 'Without household children',
+      label_a: labelA,
+      label_b: labelB,
     }
     const described = describeDifference(builtIn, spec)
     expect(described.sentence).toBe(
@@ -386,9 +393,8 @@ describe('describeDifference', () => {
         'household activities than people with children under 18 at home.',
     )
     expect(described.largerName).toBe('people without children under 18 at home')
-    expect(described.interval).toBe(
-      '95% confidence interval: 2.8 to 19.4 minutes more for people without children under 18 at home',
-    )
+    expect(described.amount).toBe('11m more a day for people without children under 18 at home')
+    expect(described.interval).toBe('95% confidence interval: 3m to 19m')
   })
 
   it('says when the confidence interval includes zero (review round 4)', () => {
@@ -403,6 +409,8 @@ describe('describeDifference', () => {
     }
     const described = describeDifference(straddling)
     expect(described.includesZero).toBe(true)
+    // Whole minutes: "less" and "more" already tell the ends apart.
+    expect(described.interval).toBe('95% confidence interval: 4m less to 4m more')
     expect(described.sentence).toMatch(
       /, but the 95% confidence interval for the difference includes zero\.$/,
     )
@@ -420,9 +428,37 @@ describe('describeDifference', () => {
     }
     const described = describeDifference(straddling)
     expect(described.larger).toBe('a')
-    expect(described.interval).toBe(
-      '95% confidence interval: from 3.1 minutes more for No household children to 7.9 minutes more for Household children present',
-    )
+    expect(described.amount).toBe('2m more a day for Household children present')
+    expect(described.interval).toBe('95% confidence interval: 3m less to 8m more')
+  })
+
+  it('reads the interval from the larger group’s side when it is the second', () => {
+    const second: CompareResponse = {
+      ...compareChildrenFixture,
+      difference: {
+        ...compareChildrenFixture.difference,
+        value: -208.2,
+        ci_lower: -233.1,
+        ci_upper: -183.6,
+      },
+    }
+    const described = describeDifference(second)
+    expect(described.amount).toBe('3h 28m more a day for No household children')
+    // Not "184 to 233 minutes" beside "3 hours 28 minutes" (review round 6).
+    expect(described.interval).toBe('95% confidence interval: 3h 4m to 3h 53m')
+  })
+
+  it('keeps a decimal only when both ends would read the same minute', () => {
+    const narrow: CompareResponse = {
+      ...compareChildrenFixture,
+      difference: {
+        ...compareChildrenFixture.difference,
+        value: 4.1,
+        ci_lower: 3.8,
+        ci_upper: 4.4,
+      },
+    }
+    expect(describeDifference(narrow).interval).toBe('95% confidence interval: 3.8m to 4.4m')
   })
 
   it('says when there is no difference at all, and pools years in words', () => {
@@ -564,7 +600,7 @@ describe('interpretSplitTrend', () => {
     spec: { ...result.spec, population },
   })
 
-  it('names each group’s latest value when there are two or three', () => {
+  it('names each group’s latest and first value when there are two or three (D9)', () => {
     // 2025: 309.6 minutes; 60 less is 249.6.
     expect(
       interpretSplitTrend([
@@ -580,7 +616,8 @@ describe('interpretSplitTrend', () => {
         },
       ]),
     ).toBe(
-      'In 2025, men spent 5 hours 10 minutes a day on leisure and sports, and women 4 hours 10 minutes.',
+      'In 2025, men spent 5 hours 10 minutes a day on leisure and sports and women 4 hours 10 minutes, ' +
+        'compared with 5 hours 7 minutes and 4 hours 7 minutes in 2003.',
     )
   })
 
@@ -599,7 +636,8 @@ describe('interpretSplitTrend', () => {
         },
       ]),
     ).toBe(
-      'In 2025, Americans age 15 and over spent 5 hours 10 minutes per weekday on leisure and sports, and 6 hours 10 minutes per weekend day.',
+      'In 2025, Americans age 15 and over spent 5 hours 10 minutes per weekday on leisure and sports ' +
+        'and 6 hours 10 minutes per weekend day, compared with 5 hours 7 minutes and 6 hours 7 minutes in 2003.',
     )
   })
 
@@ -610,7 +648,8 @@ describe('interpretSplitTrend', () => {
         { label: 'Women', result: shifted(-60) },
       ]),
     ).toBe(
-      'In 2025, average time a day spent on leisure and sports was 5 hours 10 minutes for Men and 4 hours 10 minutes for Women.',
+      'In 2025, average time a day spent on leisure and sports was 5 hours 10 minutes for Men and ' +
+        '4 hours 10 minutes for Women, compared with 5 hours 7 minutes and 4 hours 7 minutes in 2003.',
     )
   })
 

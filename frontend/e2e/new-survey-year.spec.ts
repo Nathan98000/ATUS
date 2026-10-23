@@ -48,7 +48,7 @@ test('a release announcing 2026 reaches every year control, and 2020 is still pa
 }) => {
   await announce0326(page)
   await page.goto('/explore')
-  await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible({
+  await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible({
     timeout: 15_000,
   })
   // The latest reported year is the default, newest first.

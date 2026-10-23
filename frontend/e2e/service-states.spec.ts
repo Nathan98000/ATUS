@@ -83,7 +83,7 @@ test(
     }
 
     // The builder itself (its heading is there in every state).
-    await expect(page.getByRole('button', { name: 'Analyze' })).toBeVisible({
+    await expect(page.getByRole('button', { name: 'Show chart' })).toBeVisible({
       timeout: 15_000,
     })
     await expect(page.getByText(WAKING)).toHaveCount(0)
@@ -100,7 +100,7 @@ test('a share link waiting on /meta is "preparing", and sends nothing until /met
     await route.continue()
   })
   await page.goto(sleep2023)
-  await expect(page.locator('.loading-panel')).toContainText('Preparing the analysis…')
+  await expect(page.locator('.loading-panel')).toContainText('Getting the chart ready…')
   await expect(page.getByText('Working out the number…')).toHaveCount(0)
   expect(posts()).toBe(0)
   await expect(page.locator('.stat-value')).toHaveText('1h 15m', { timeout: 15_000 })
@@ -164,6 +164,10 @@ test('a data release switch under an open page offers a reload, politely', async
   const reloaded = page.waitForEvent('load')
   await page.keyboard.press('Enter')
   await reloaded
+  // The reloaded page's own /meta may still be in its route when the test
+  // ends; its fetch then throws "Test ended" outside any test (review round
+  // 6: a stack-mode run lost the next test to it).
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
 })
 
 test("the API's own data versions: no notice while they agree, a reload offer when they differ", async ({
@@ -271,7 +275,7 @@ test('an exhausted database quota is one honest, accessible page', async ({ page
 })
 
 test(
-  'a paused page reached with Analyze takes the focus the navigation gave the analysis (review round 4)',
+  'a paused page reached with "Show chart" takes the focus the navigation gave the analysis (review round 4)',
   CORE,
   async ({ page, browserName }) => {
     // The navigation focuses the analysis heading; the paused state that then
@@ -297,7 +301,7 @@ test(
       })
     })
     await page.goto('/explore')
-    await page.getByRole('button', { name: 'Analyze' }).focus()
+    await page.getByRole('button', { name: 'Show chart' }).focus()
     await page.keyboard.press('Enter')
     const analysisHeading = page.getByRole('heading', { level: 1 })
     await expect(analysisHeading).toContainText('Sleeping', { timeout: 15_000 })
@@ -410,7 +414,7 @@ test(
     await expect(page.getByRole('link', { name: 'How much do Americans sleep?' })).toBeVisible()
 
     await page.goto('/explore')
-    await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible()
     await chooseOneNumber(page)
     await setAge(page, 25, 54)
     await page.getByLabel('Year', { exact: true }).selectOption('2023')
@@ -428,7 +432,7 @@ test(
 
     await page.goto('/about')
     await expect(page.getByRole('heading', { name: 'About ATUS Explorer' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Privacy and logs' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Your privacy' })).toBeVisible()
 
     expect(policyErrors).toEqual([])
     expect([...apiOrigins]).toEqual([new URL(baseURL as string).origin])

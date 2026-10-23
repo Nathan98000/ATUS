@@ -16,7 +16,7 @@ import type {
   PopulationRequest,
   TrendRequest,
 } from '../../api/types'
-import { populationPhrase } from '../../domain/describe'
+import { isPlainGroupLabel, populationPhrase } from '../../domain/describe'
 import type { SplitSelection } from '../../domain/urlSpec'
 
 export type CompareBy =
@@ -165,11 +165,35 @@ export function deriveCompareBy(
     const b = choice.options.find((candidate) =>
       samePopulation(candidate.population, groups.groupB),
     )
-    if (a && b && a !== b && a.label === groups.labelA && b.label === groups.labelB) {
+    if (
+      a &&
+      b &&
+      a !== b &&
+      isPlainGroupLabel(groups.labelA, a.population) &&
+      isPlainGroupLabel(groups.labelB, b.population)
+    ) {
       return choice.by
     }
   }
   return 'custom'
+}
+
+/**
+ * A simple comparison's two group names as the builder writes them now: a
+ * link's earlier plain names ("With household children", before review
+ * round 6) read as today's, so its groups show in the "Compare by" selects.
+ */
+export function choiceLabels(
+  choices: readonly CompareDimensionChoice[],
+  by: CompareBy,
+  groups: { groupA: PopulationRequest; groupB: PopulationRequest },
+): { labelA: string; labelB: string } | null {
+  const choice = choices.find((candidate) => candidate.by === by)
+  const nameOf = (population: PopulationRequest) =>
+    choice?.options.find((option) => samePopulation(option.population, population))?.label
+  const labelA = nameOf(groups.groupA)
+  const labelB = nameOf(groups.groupB)
+  return labelA !== undefined && labelB !== undefined ? { labelA, labelB } : null
 }
 
 /** The population fields a choice sets (hidden from the other filters). */

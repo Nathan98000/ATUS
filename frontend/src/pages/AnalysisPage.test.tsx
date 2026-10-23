@@ -253,10 +253,7 @@ describe('trend and compare results', () => {
     // Difference direction is explicit, in words: B is larger here.
     expect(compareChildrenFixture.difference.value).toBeLessThan(0)
     expect(difference).toHaveTextContent(
-      'Difference: 11 minutes more per day for No household children.',
-    )
-    expect(difference).toHaveTextContent(
-      '95% confidence interval: 2.8 to 19.4 minutes more for No household children',
+      'Difference: 11m more a day for No household children (95% confidence interval: 3m to 19m)',
     )
     expect(screen.getAllByText('1h 52m').length).toBeGreaterThan(0)
     expect(screen.getAllByText('2h 3m').length).toBeGreaterThan(0)
@@ -270,7 +267,7 @@ describe('trend and compare results', () => {
     // Names the link chose are set against the filters computed (R14).
     expect(
       screen.getByText(
-        'Groups compared: Household children present (with household children) and No household children (without household children).',
+        'Groups compared: Household children present (with children at home) and No household children (without children at home).',
       ),
     ).toBeInTheDocument()
     // No shared filters: the details line names only the definition and year.
@@ -377,7 +374,7 @@ describe('error handling', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('not statistically supported')
     expect(alert).toHaveTextContent(/data collection was suspended/)
-    expect(screen.getAllByRole('link', { name: 'Adjust analysis' }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('link', { name: 'Change this chart' }).length).toBeGreaterThan(0)
   })
 
   it('distinguishes a down backend from an invalid request', async () => {
@@ -395,10 +392,13 @@ describe('error handling', () => {
 
   it('shows a helpful page for malformed share links', async () => {
     renderAnalysisRoute('/analysis/estimate?spec=%%%broken%%%')
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'This analysis link cannot be opened',
+    expect(await screen.findByRole('alert')).toHaveTextContent("This link doesn't open a chart")
+    // A link cut off mid-way gets the likely cause, and two ways on (review round 6).
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'It may have been cut off when it was copied.',
     )
-    expect(screen.getByRole('link', { name: /Build an analysis/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Make a chart' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Home' })).toBeInTheDocument()
   })
 
   it('a link with a wrongly typed field is an invalid link, not the app error page (review round 2)', async () => {
@@ -413,7 +413,7 @@ describe('error handling', () => {
       const encoded = btoa(json).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
       const { unmount } = renderAnalysisRoute(`/analysis/estimate?spec=${encoded}`)
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'This analysis link cannot be opened',
+        "This link doesn't open a chart",
       )
       unmount()
     }
@@ -438,16 +438,16 @@ describe('error handling', () => {
     })
     const encoded = btoa(json).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '')
     renderAnalysisRoute(`/analysis/compare?spec=${encoded}`)
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'This analysis link cannot be opened',
-    )
-    expect(screen.queryByText(/household children/i)).not.toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent("This link doesn't open a chart")
+    expect(screen.queryByText(/children at home/i)).not.toBeInTheDocument()
     expect(posts).toBe(0)
   })
 
   it('rejects unknown analysis types in the URL', async () => {
     renderAnalysisRoute(`/analysis/median?spec=${encodeSpec(sleepSpec)}`)
-    expect(await screen.findByRole('alert')).toHaveTextContent('unknown analysis type')
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'It points to a kind of chart this site does not make.',
+    )
   })
 
   it('the heavy-only daily cap offers a shorter analysis (review round 2)', async () => {
@@ -472,7 +472,7 @@ describe('error handling', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('Today’s capacity for long analyses is used up')
     expect(alert).toHaveTextContent('Analyses of up to 7 years')
-    expect(within(alert).getByRole('link', { name: 'Adjust analysis' })).toHaveAttribute(
+    expect(within(alert).getByRole('link', { name: 'Change this chart' })).toHaveAttribute(
       'href',
       expect.stringMatching(/^\/explore\?op=trend&spec=/),
     )
@@ -550,7 +550,7 @@ describe('a trend split into groups', () => {
       screen.getByText(/^In 2025, men spent 5 hours 10 minutes a day on leisure and sports/),
     ).toBeInTheDocument()
     // No band: a link to two groups in one year, whose comparison has the
-    // likely range (review round 4), written as the builder writes it.
+    // confidence interval (review round 4), written as the builder writes it.
     const comparison = screen.getByRole('link', {
       name: /^How sure is this\? Compare men and women in 2025/,
     })
@@ -573,7 +573,7 @@ describe('a trend split into groups', () => {
     expect(screen.getByTestId('location').textContent).toContain(
       '&split=sex&groups=male,female',
     )
-    expect(screen.getByRole('link', { name: 'Adjust analysis' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Change this chart' })).toHaveAttribute(
       'href',
       expect.stringContaining('&split=sex&groups=male,female'),
     )
@@ -581,7 +581,9 @@ describe('a trend split into groups', () => {
 
   it('a split this release does not offer is an invalid link', async () => {
     renderAnalysisRoute(`/analysis/trend?spec=${encodeSpec(trend)}&split=sex&groups=male,other`)
-    expect(await screen.findByRole('heading', { name: /cannot be opened/ })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: "This link doesn't open a chart" }),
+    ).toBeInTheDocument()
     expect(screen.getByText(/groups that this data release does not offer/)).toBeInTheDocument()
   })
 
@@ -590,5 +592,65 @@ describe('a trend split into groups', () => {
     expect(
       screen.getByText('The groups in this analysis link are not valid.'),
     ).toBeInTheDocument()
+  })
+})
+
+describe('the result page, review round 6', () => {
+  it('says when a link was made with settings the site no longer uses', async () => {
+    renderAnalysisRoute(
+      `/analysis/estimate?spec=${encodeSpec({ ...sleepSpec, confidence_level: 0.9 })}`,
+    )
+    expect(await screen.findByTestId('resettled-note')).toHaveTextContent(
+      "This link was made with older settings. It now uses the site's current ones, so its numbers may differ slightly from when it was shared.",
+    )
+    await screen.findByText('8h 49m')
+    // The note outlives the rewrite to the canonical spec.
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        encodeSpec(estimateSleepFixture.spec as EstimateRequest),
+      ),
+    )
+    expect(screen.getByTestId('resettled-note')).toBeInTheDocument()
+  })
+
+  it('says nothing of the kind for a link under the site’s settings', async () => {
+    renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
+    await screen.findByText('8h 49m')
+    expect(screen.queryByTestId('resettled-note')).not.toBeInTheDocument()
+  })
+
+  it('nor for one whose keys are only in another order', async () => {
+    const unsorted = Buffer.from(
+      JSON.stringify({
+        years: [2025],
+        activity: { preset: 'sleep' },
+        measure: 'average_minutes_per_day',
+      }),
+    ).toString('base64url')
+    renderAnalysisRoute(`/analysis/estimate?spec=${unsorted}`)
+    await screen.findByText('8h 49m')
+    expect(screen.queryByTestId('resettled-note')).not.toBeInTheDocument()
+  })
+
+  it('offers the latest three years combined for a figure from few diaries (D7)', async () => {
+    server.use(
+      http.post(api('/analysis/estimate'), () =>
+        HttpResponse.json(
+          { ...estimateSleepFixture, n_respondents: 43, n_participants: 40 },
+          { headers: analysisHeaders() },
+        ),
+      ),
+    )
+    renderAnalysisRoute(`/analysis/estimate?spec=${encodeSpec(sleepSpec)}`)
+    expect(await screen.findByRole('note')).toHaveTextContent(
+      "Only 43 people's diaries are behind this figure, too few to rely on.",
+    )
+    const link = screen.getByRole('link', { name: 'Combine 2023–2025 for more diaries' })
+    const combined = decodeSpec(
+      new URL(link.getAttribute('href') ?? '', 'http://x').searchParams.get('spec') ?? '',
+      'estimate',
+    )
+    expect(combined.years).toEqual([2023, 2024, 2025])
+    expect(combined.population).toEqual(sleepSpec.population)
   })
 })

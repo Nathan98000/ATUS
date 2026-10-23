@@ -114,7 +114,7 @@ describe('cold start (F11, F12)', () => {
       expect(document.activeElement).toBe(document.body)
 
       await vi.advanceTimersByTimeAsync(17_000)
-      expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Show chart' })).toBeInTheDocument()
       expect(screen.queryByText(WAKING_MESSAGE)).not.toBeInTheDocument()
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
@@ -139,7 +139,7 @@ describe('cold start (F11, F12)', () => {
       await vi.advanceTimersByTimeAsync(100)
       expect(screen.getByText(WAKING_MESSAGE)).toBeInTheDocument()
       await vi.advanceTimersByTimeAsync(10_000)
-      expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Show chart' })).toBeInTheDocument()
       expect(calls).toBe(3)
       expect(screen.queryByText(WAKING_MESSAGE)).not.toBeInTheDocument()
     })
@@ -158,7 +158,7 @@ describe('cold start (F11, F12)', () => {
       )
       renderApp('/explore')
       await vi.advanceTimersByTimeAsync(16_000)
-      expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Show chart' })).toBeInTheDocument()
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
   })
@@ -174,7 +174,7 @@ describe('cold start (F11, F12)', () => {
       const requests = countRequests()
       renderApp(sleepRoute)
       await vi.advanceTimersByTimeAsync(4_000)
-      expect(screen.getAllByText('Preparing the analysis…').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Getting the chart ready…').length).toBeGreaterThan(0)
       expect(screen.queryByText('Working out the number…')).not.toBeInTheDocument()
       expect(requests('POST /api/v1/analysis/estimate')).toBe(0)
       await vi.advanceTimersByTimeAsync(5_000)
@@ -253,7 +253,7 @@ describe('API version check (F25)', () => {
     ).not.toBeInTheDocument()
     loaded = true
     await user.click(within(alert).getByRole('button', { name: 'Try again' }))
-    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Show chart' })).toBeInTheDocument()
   })
 })
 
@@ -444,7 +444,7 @@ describe('analysis errors (F13, F64)', () => {
     renderApp(sleepRoute)
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('This analysis took too long')
-    expect(within(alert).getByRole('link', { name: 'Adjust analysis' })).toBeInTheDocument()
+    expect(within(alert).getByRole('link', { name: 'Change this chart' })).toBeInTheDocument()
     expect(posts).toBe(1)
   })
 })
@@ -772,7 +772,7 @@ describe('no background metadata refetch (F62)', () => {
     await withFakeClock(async () => {
       const requests = countRequests()
       renderApp('/explore')
-      await screen.findByRole('button', { name: 'Analyze' })
+      await screen.findByRole('button', { name: 'Show chart' })
       expect(requests('GET /api/v1/meta')).toBe(1)
       // Before Phase 5, /meta went stale after 5 minutes and refetched on focus.
       await vi.advanceTimersByTimeAsync(30 * 60_000)
@@ -841,7 +841,7 @@ describe('one announcement per state (review round 1)', () => {
     await waitFor(() => expect(liveRegionsWith(/Working out the number…/)).not.toHaveLength(0))
     expect(liveRegionsWith(/Working out the number…/)).toHaveLength(1)
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
-    expect(liveRegionsWith(/Analysis ready\./)).toHaveLength(1)
+    expect(liveRegionsWith(/Chart ready\./)).toHaveLength(1)
   })
 })
 
@@ -909,7 +909,7 @@ describe('focus after "Try again" (review round 1)', () => {
     await waitFor(() => expect(document.activeElement).toBe(heading))
   })
 
-  it('Explore: a retry from the page-level error lands on "Build an analysis"', async () => {
+  it('Explore: a retry from the page-level error lands on "Make a chart"', async () => {
     const user = userEvent.setup()
     let failing = true
     server.use(
@@ -924,7 +924,7 @@ describe('focus after "Try again" (review round 1)', () => {
     failing = false
     retry.focus()
     await user.keyboard('{Enter}')
-    const heading = await screen.findByRole('heading', { name: 'Build an analysis' })
+    const heading = await screen.findByRole('heading', { name: 'Make a chart' })
     await waitFor(() => expect(document.activeElement).toBe(heading))
   })
 
@@ -945,12 +945,12 @@ describe('focus after "Try again" (review round 1)', () => {
     retry.focus()
     await user.keyboard('{Enter}')
     await waitFor(() => expect(document.querySelector('.loading-panel')).not.toBeNull())
-    const heading = screen.getByRole('heading', { level: 1, name: 'Build an analysis' })
+    const heading = screen.getByRole('heading', { level: 1, name: 'Make a chart' })
     expect(document.activeElement).toBe(heading)
     expect(await screen.findByRole('button', { name: 'Try again' })).toBeInTheDocument()
     expect(gets).toBe(2)
     expect(document.activeElement).toBe(
-      screen.getByRole('heading', { level: 1, name: 'Build an analysis' }),
+      screen.getByRole('heading', { level: 1, name: 'Make a chart' }),
     )
   })
 
@@ -987,13 +987,13 @@ describe('focus after in-app navigation (review round 2)', () => {
     await user.keyboard('{Enter}')
     const exploreHeading = await screen.findByRole('heading', {
       level: 1,
-      name: 'Build an analysis',
+      name: 'Make a chart',
     })
     await waitFor(() => expect(document.activeElement).toBe(exploreHeading))
 
     // One number: the builder opens on a trend (review round 4).
     await user.click(await screen.findByRole('radio', { name: 'One number' }))
-    const analyze = await screen.findByRole('button', { name: 'Analyze' })
+    const analyze = await screen.findByRole('button', { name: 'Show chart' })
     analyze.focus()
     await user.keyboard('{Enter}')
     await waitFor(() =>
@@ -1016,7 +1016,7 @@ describe('focus after in-app navigation (review round 2)', () => {
 
   it('the first page of a visit keeps focus where the browser puts it', async () => {
     renderApp('/explore')
-    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Show chart' })).toBeInTheDocument()
     expect(document.activeElement).toBe(document.body)
   })
 
@@ -1035,7 +1035,7 @@ describe('focus after in-app navigation (review round 2)', () => {
     ],
     ['database_paused', null, 'The analysis database is paused'],
   ] as const)(
-    'a %s page that replaces the analysis after Analyze takes the focus (review round 4)',
+    'a %s page that replaces the analysis after "Show chart" takes the focus (review round 4)',
     async (code, details, name) => {
       const user = userEvent.setup()
       server.use(
@@ -1046,7 +1046,7 @@ describe('focus after in-app navigation (review round 2)', () => {
       )
       renderApp('/explore')
       await user.click(await screen.findByRole('radio', { name: 'One number' }))
-      const analyze = await screen.findByRole('button', { name: 'Analyze' })
+      const analyze = await screen.findByRole('button', { name: 'Show chart' })
       analyze.focus()
       await user.keyboard('{Enter}')
       // The navigation focused the analysis heading first.
@@ -1120,7 +1120,7 @@ describe('offline (review round 1)', () => {
     vi.restoreAllMocks()
     act(() => onlineManager.setOnline(true))
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
-    expect(screen.queryByText('Preparing the analysis…')).not.toBeInTheDocument()
+    expect(screen.queryByText('Getting the chart ready…')).not.toBeInTheDocument()
   })
 
   /** The browser goes offline and back online (a Wi-Fi change, a laptop waking up). */
@@ -1186,14 +1186,14 @@ describe('background failures and retries (F26, F63)', () => {
   it('a failed background /meta refetch keeps the builder and its edits', async () => {
     const user = userEvent.setup()
     const client = renderApp('/explore')
-    await screen.findByRole('button', { name: 'Analyze' })
+    await screen.findByRole('button', { name: 'Show chart' })
     await user.selectOptions(screen.getByLabelText('Add a filter'), 'sex')
     await user.selectOptions(screen.getByLabelText('Sex'), 'female')
 
     server.use(http.get(api('/meta'), () => errorResponse(500, 'internal_error', 'Boom.')))
     await client.refetchQueries({ queryKey: ['meta'] })
 
-    expect(screen.getByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Show chart' })).toBeInTheDocument()
     expect(screen.getByLabelText('Sex')).toHaveValue('female')
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
@@ -1229,7 +1229,7 @@ describe('background failures and retries (F26, F63)', () => {
 
     failing = false
     await user.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Show chart' })).toBeInTheDocument()
     expect(requests('GET /api/v1/meta')).toBe(2)
     expect(requests('GET /api/v1/population/metadata')).toBe(2)
   })
@@ -1249,7 +1249,7 @@ describe('background failures and retries (F26, F63)', () => {
       ),
     )
     renderApp('/explore')
-    await screen.findByRole('button', { name: 'Analyze' })
+    await screen.findByRole('button', { name: 'Show chart' })
     await user.click(screen.getByRole('button', { name: 'Change activity' }))
     expect(await screen.findByText(/The activity list could not be loaded/)).toBeInTheDocument()
     const sent = requests('GET /api/v1/activities')
@@ -1325,7 +1325,7 @@ describe('static snapshot and prewake', () => {
     )
     const requests = countRequests()
     renderApp('/explore')
-    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Show chart' })).toBeInTheDocument()
     await waitFor(() => expect(wakes).toBe(1))
     expect(requests('GET /api/v1/meta')).toBe(0)
     expect(requests('GET /api/v1/population/metadata')).toBe(0)
@@ -1336,7 +1336,7 @@ describe('static snapshot and prewake', () => {
   it('without a snapshot (development, E2E) no prewake is sent', async () => {
     const requests = countRequests()
     renderApp('/explore')
-    expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Show chart' })).toBeInTheDocument()
     expect(requests('GET /api/v1/wake')).toBe(0)
   })
 
@@ -1406,8 +1406,8 @@ describe('static snapshot and prewake', () => {
       const barLabel = () =>
         screen.findByText(compareChildrenFixture.label_a, { selector: '.compare-chart__label' })
       expect(await barLabel()).toBeInTheDocument()
-      await user.click(screen.getByRole('link', { name: 'Adjust analysis' }))
-      await user.click(await screen.findByRole('button', { name: 'Analyze' }))
+      await user.click(screen.getByRole('link', { name: 'Change this chart' }))
+      await user.click(await screen.findByRole('button', { name: 'Show chart' }))
       expect(await barLabel()).toBeInTheDocument()
 
       // Snapshot entries only, no API call: the home page's previews of the

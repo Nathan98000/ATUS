@@ -24,7 +24,7 @@ test('the 2020 multiyear restriction shows the API explanation', async ({ page }
   await expect(alert).toContainText('not statistically supported', { timeout: 15_000 })
   await expect(alert).toContainText('data collection was suspended')
   await expect(alert).toContainText('TU20FWGT')
-  await expect(page.getByRole('link', { name: 'Adjust analysis' }).first()).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Change this chart' }).first()).toBeVisible()
 })
 
 test("a schema violation shows the API's field-level detail (review round 1)", async ({

@@ -37,7 +37,7 @@ export function ShareButton() {
         <input
           type="text"
           readOnly
-          aria-label="Shareable analysis link — copy it manually"
+          aria-label="Link to this chart — copy it manually"
           value={window.location.href}
           onFocus={(event) => event.target.select()}
           style={{ maxWidth: '16rem' }}

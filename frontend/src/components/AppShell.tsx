@@ -10,29 +10,37 @@ import { NavigationFocus, PAGE_HEADING } from './useRetryFocus'
  * Tab continues from it instead of from the top of the document (review
  * round 2). Not on the first page of a visit (the browser's own load), and
  * not when only the query string is replaced: that is the analysis page
- * rewriting its URL to the canonical spec, not a new page.
+ * rewriting its URL to the canonical spec, not a new page. A link to a part
+ * of a page ("/about#how-sure", from a result's "What does 95% mean?") moves
+ * focus, and so the view, to that part instead — on the first page of a
+ * visit too, since the browser cannot scroll to a part not yet drawn
+ * (review round 6).
  *
  * Returns whether a navigation has moved focus this visit, for
  * `NavigationFocus`: a full-page state that then replaces the focused
  * heading moves focus to its own (review round 4).
  */
 function useFocusOnNavigation(): RefObject<boolean> {
-  const { pathname, search } = useLocation()
+  const { pathname, search, hash } = useLocation()
   const navigationType = useNavigationType()
-  const shown = useRef({ pathname, search })
+  // No part of a page is shown yet: a first visit to "#how-sure" goes there.
+  const shown = useRef({ pathname, search, hash: '' })
   const navigated = useRef(false)
 
   useEffect(() => {
     const before = shown.current
-    shown.current = { pathname, search }
+    shown.current = { pathname, search, hash }
     const newPage =
       pathname !== before.pathname ||
       (search !== before.search && navigationType !== NavigationType.Replace)
-    if (newPage) {
-      navigated.current = true
-      document.querySelector<HTMLElement>(PAGE_HEADING)?.focus()
-    }
-  }, [pathname, search, navigationType])
+    if (newPage) navigated.current = true
+    const part =
+      hash.length > 1 && (newPage || hash !== before.hash)
+        ? document.getElementById(decodeURIComponent(hash.slice(1)))
+        : null
+    if (part !== null) part.focus()
+    else if (newPage) document.querySelector<HTMLElement>(PAGE_HEADING)?.focus()
+  }, [pathname, search, hash, navigationType])
   return navigated
 }
 
@@ -58,6 +66,7 @@ function ClockMark() {
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const navigated = useFocusOnNavigation()
+  const { pathname } = useLocation()
 
   return (
     <>
@@ -85,8 +94,15 @@ export function AppShell({ children }: { children: ReactNode }) {
       <footer className="site-footer">
         <div className="site-footer__inner">
           <p>
-            An independent project — not an official BLS product. The data release and versions
-            are on the <Link to="/about#data">About page</Link>.
+            An independent project — not an official BLS product.
+            {/* Not on the About page itself, which would link to itself. */}
+            {pathname === '/about' ? null : (
+              <>
+                {' '}
+                The data release and versions are on the{' '}
+                <Link to="/about#data">About page</Link>.
+              </>
+            )}
           </p>
         </div>
       </footer>

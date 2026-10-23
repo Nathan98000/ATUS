@@ -119,7 +119,7 @@ test('daily_capacity_reached names the reset and offers no retry', async ({ page
   await expectNoSeriousViolations(page)
 })
 
-test('analysis_timeout offers "Adjust analysis" and counts down its Retry-After', async ({
+test('analysis_timeout offers "Change this chart" and counts down its Retry-After', async ({
   page,
 }) => {
   const posts = countPosts(page)
@@ -131,11 +131,11 @@ test('analysis_timeout offers "Adjust analysis" and counts down its Retry-After'
   await expect(alert).toContainText('This analysis took too long', { timeout: 15_000 })
   const retry = alert.getByRole('button', { name: 'Try again' })
   await expect(retry).toBeDisabled()
-  await expect(alert.getByRole('link', { name: 'Adjust analysis' })).toBeVisible()
+  await expect(alert.getByRole('link', { name: 'Change this chart' })).toBeVisible()
   await expectNoSeriousViolations(page)
   await expect(retry).toBeEnabled({ timeout: 5_000 })
   expect(posts()).toBe(1)
-  await tabTo(page, alert.getByRole('link', { name: 'Adjust analysis' }))
+  await tabTo(page, alert.getByRole('link', { name: 'Change this chart' }))
 })
 
 test('overloaded is retried once automatically, then explained', async ({ page }) => {
@@ -204,7 +204,7 @@ test('the edge’s own refusals: payload_too_large, forbidden_origin, unsupporte
     await expect(alert).toContainText(`HTTP ${status} · ${code}`)
     // None of them can be helped by repeating the request.
     await expect(alert.getByRole('button', { name: 'Try again' })).toHaveCount(0)
-    await expect(alert.getByRole('link', { name: 'Adjust analysis' })).toHaveCount(
+    await expect(alert.getByRole('link', { name: 'Change this chart' })).toHaveCount(
       adjust ? 1 : 0,
     )
     await expectNoSeriousViolations(page)

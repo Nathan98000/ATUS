@@ -97,8 +97,8 @@ steps, configuration) and
 
 ![ATUS Explorer showing a 2003-2025 leisure-time trend with its 95% confidence interval and 2020 as a hollow partial-year point](docs/images/atus-explorer-trend.png)
 
-Every number in the UI comes from the API: estimates carry their likely
-ranges, methodological notes are always displayed, 2020 appears in trends as
+Every number in the UI comes from the API: estimates carry their 95%
+confidence intervals, methodological notes are always displayed, 2020 appears in trends as
 its partial-year (pandemic-weight) estimate, drawn hollow and labeled, never
 an interpolated value, and the "Copy link"
 URL encodes the full canonical specification so anyone can reproduce the

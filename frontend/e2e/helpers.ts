@@ -60,7 +60,7 @@ export async function chooseOneNumber(page: Page) {
 }
 
 export async function analyze(page: Page) {
-  await page.getByRole('button', { name: 'Analyze' }).click()
+  await page.getByRole('button', { name: 'Show chart' }).click()
 }
 
 /** A share URL for an arbitrary spec (the app's encoding: base64url of sorted-keys JSON). */

@@ -17,7 +17,7 @@ test(
     // answer the prewarmed 2020 estimate without one.
     await withoutSnapshot(page)
     await page.goto('/explore')
-    await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible()
 
     await page.getByRole('radio', { name: 'Change over time' }).click()
     await page.getByLabel('From', { exact: true }).selectOption('2019')
@@ -30,7 +30,7 @@ test(
         request.url().endsWith('/api/v1/analysis/estimate') &&
         request.postDataJSON()?.weights === 'pandemic',
     )
-    await page.getByRole('button', { name: 'Analyze' }).click()
+    await page.getByRole('button', { name: 'Show chart' }).click()
     // 2020 alone, under the pandemic weights.
     expect((await partial).postDataJSON()).toMatchObject({ years: [2020], weights: 'pandemic' })
 
@@ -60,11 +60,11 @@ test(
   CORE,
   async ({ page }) => {
     await page.goto('/explore')
-    await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible()
     await page.getByRole('radio', { name: 'Change over time' }).click()
     await page.getByLabel('From', { exact: true }).selectOption('2019')
     await page.getByLabel('To', { exact: true }).selectOption('2023')
-    await page.getByRole('button', { name: 'Analyze' }).click()
+    await page.getByRole('button', { name: 'Show chart' }).click()
 
     const chart = page.getByRole('application', { name: /Average time per day by year/ })
     await expect(chart).toBeVisible({ timeout: 15_000 })
@@ -85,7 +85,7 @@ test(
 
 test('a trend split by sex draws one line per group, with a legend', CORE, async ({ page }) => {
   await page.goto('/explore')
-  await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible()
   await page.getByRole('radio', { name: 'Change over time' }).click()
   await page.getByLabel('From', { exact: true }).selectOption('2019')
   await page.getByLabel('To', { exact: true }).selectOption('2023')
@@ -98,7 +98,7 @@ test('a trend split by sex draws one line per group, with a legend', CORE, async
   page.on('request', (request) => {
     if (request.url().endsWith('/api/v1/analysis/trend')) sent.push(request.postDataJSON())
   })
-  await page.getByRole('button', { name: 'Analyze' }).click()
+  await page.getByRole('button', { name: 'Show chart' }).click()
 
   await expect(page.locator('.chart-legend')).toContainText('Sex', { timeout: 15_000 })
   await expect(page.locator('.chart-legend')).toContainText('Men')
@@ -136,7 +136,7 @@ test('2020 alone runs under its own partial-year weights (review round 5)', asyn
   const sent = page.waitForRequest((request) =>
     request.url().endsWith('/api/v1/analysis/estimate'),
   )
-  await page.getByRole('button', { name: 'Analyze' }).click()
+  await page.getByRole('button', { name: 'Show chart' }).click()
   expect((await sent).postDataJSON()).toMatchObject({
     years: [2020],
     weights: 'pandemic',

@@ -22,13 +22,13 @@ test('the core workflow works on a phone without horizontal scrolling', async ({
   await noHorizontalScroll()
 
   await page.getByRole('link', { name: 'Make your own chart' }).click()
-  await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Analyze' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Show chart' })).toBeVisible()
   await noHorizontalScroll()
 
   await page.getByRole('radio', { name: 'One number' }).click()
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
-  await page.getByRole('button', { name: 'Analyze' }).click()
+  await page.getByRole('button', { name: 'Show chart' }).click()
   await expect(page.locator('.stat-value')).toHaveText('1h 15m', { timeout: 15_000 })
   await noHorizontalScroll()
 
@@ -36,7 +36,7 @@ test('the core workflow works on a phone without horizontal scrolling', async ({
   await page.goto('/explore')
   await page.getByRole('radio', { name: 'Change over time' }).click()
   await page.getByLabel('From', { exact: true }).selectOption('2019')
-  await page.getByRole('button', { name: 'Analyze' }).click()
+  await page.getByRole('button', { name: 'Show chart' }).click()
   await expect(page.getByTestId('point-2020')).toBeVisible({ timeout: 15_000 })
   await noHorizontalScroll()
 
@@ -46,7 +46,7 @@ test('the core workflow works on a phone without horizontal scrolling', async ({
 
 test('comparison groups stack vertically and stay readable', async ({ page }) => {
   await page.goto('/explore')
-  await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Make a chart' })).toBeVisible()
   await page.getByRole('radio', { name: 'Compare two groups' }).click()
 
   const first = page.getByLabel('First group')
@@ -64,7 +64,7 @@ test('comparison groups stack vertically and stay readable', async ({ page }) =>
   await expectNoHorizontalScroll(page)
 
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
-  await page.getByRole('button', { name: 'Analyze' }).click()
+  await page.getByRole('button', { name: 'Show chart' }).click()
   await expect(page.getByTestId('difference')).toBeVisible({ timeout: 15_000 })
 })
 
@@ -97,4 +97,18 @@ test('long labels without spaces wrap instead of widening the page (review round
   )
   await expect(page.getByTestId('difference')).toBeVisible({ timeout: 15_000 })
   await expectNoHorizontalScroll(page)
+})
+
+test('the summary bar keeps who and when in view on a phone (review round 6)', async ({
+  page,
+}) => {
+  await page.goto('/explore')
+  await expect(page.getByRole('button', { name: 'Show chart' })).toBeVisible()
+  // The activity takes one line; who and when always the next (two clamped
+  // lines used to end at "Everyone age 15 and…").
+  const who = page.locator('.builder-summary__who')
+  await expect(who).toBeVisible()
+  // "When" follows a no-break space, so a line never starts with its dot.
+  await expect(who).toHaveText(/Everyone age 15 and over\s·\s\d{4}/)
+  expect(await who.evaluate((node) => node.scrollHeight <= node.clientHeight + 1)).toBe(true)
 })

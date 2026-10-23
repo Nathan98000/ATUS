@@ -1,8 +1,11 @@
 /**
- * The chart being built, in one line, with the Analyze button. It stays in
- * view while the builder scrolls: beside the form on wide screens, as a bar
- * along the bottom of the screen on narrow ones — so running the analysis
- * never means scrolling to the end of the form first.
+ * The chart being built, in one line, with the "Show chart" button. It stays
+ * in view while the builder scrolls: beside the form on wide screens, as a
+ * bar along the bottom of the screen on narrow ones — so showing the chart
+ * never means scrolling to the end of the form first. On the narrow bar the
+ * activity takes one line and who and when always the next; the statistic,
+ * the "Show" select right under the activity, is left out there (review
+ * round 6: clamped to two lines, the bar hid who and when).
  */
 import { useMemo } from 'react'
 
@@ -73,7 +76,17 @@ export function BuilderSummary({
         Your chart
       </h2>
       <p className="builder-summary__text">
-        <b>{activity}</b> · {measureName(state.measure)} · {who} · {when}
+        <b className="builder-summary__activity">{activity}</b>
+        <span className="builder-summary__measure">
+          <span className="builder-summary__sep"> · </span>
+          {measureName(state.measure)}
+        </span>
+        <span className="builder-summary__who">
+          <span className="builder-summary__sep"> · </span>
+          {who}
+          {/* When stays whole, and a line never starts with its dot. */}
+          <span className="builder-summary__when">{`\u00a0· ${when}`}</span>
+        </span>
       </p>
       <div className="builder-summary__actions">
         <button
@@ -81,10 +94,10 @@ export function BuilderSummary({
           className="btn btn--primary builder-summary__analyze"
           onClick={onAnalyze}
         >
-          Analyze
+          Show chart
         </button>
         <p className="field-hint builder-summary__hint">
-          Running an analysis creates a shareable link.
+          Each chart gets its own link to share.
         </p>
       </div>
     </section>

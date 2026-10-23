@@ -14,6 +14,7 @@ import {
   formatMinutesAsDuration,
   formatMinutesDetailed,
   formatPeople,
+  formatPeopleCompact,
   formatProportionAsPercent,
   formatReadableInterval,
   formatStandardError,
@@ -32,6 +33,14 @@ describe('duration formatting', () => {
   it('omits hours below one hour', () => {
     expect(formatMinutesAsDuration(42.4)).toBe('42m')
     expect(formatMinutesAsDuration(0)).toBe('0m')
+  })
+
+  it('signs a negative duration once (review round 6: −7.8 read "-1h -8m")', () => {
+    expect(formatMinutesAsDuration(-7.8)).toBe('\u22128m')
+    expect(formatMinutesAsDuration(-60)).toBe('\u22121h')
+    expect(formatMinutesAsDuration(-90)).toBe('\u22121h 30m')
+    expect(formatMinutesAsDuration(-0.4)).toBe('0m')
+    expect(formatReadableInterval(-7.8, 26.9, 'minutes_per_day')).toBe('\u22128m to 27m')
   })
 
   it('keeps one decimal in the detailed form', () => {
@@ -166,6 +175,25 @@ describe('axis tick labels (review finding: no duplicate labels)', () => {
     ])
   })
 
+  it('labels each tick with its exact value (review round 6: 2.5% read "3%")', () => {
+    expect(formatAxisTicks([0, 0.025, 0.05, 0.075], 'proportion_of_population')).toEqual([
+      '0.0%',
+      '2.5%',
+      '5.0%',
+      '7.5%',
+    ])
+    expect(formatAxisTicks([0, 2_500_000, 5_000_000], 'persons_per_day')).toEqual([
+      '0.0',
+      '2.5M',
+      '5.0M',
+    ])
+  })
+
+  it('writes counts of people compactly', () => {
+    expect(formatPeopleCompact(277_712_345)).toBe('277.7M')
+    expect(formatPeopleCompact(41_200)).toBe('41,200')
+  })
+
   it('labels minute ticks plainly', () => {
     expect(formatAxisTicks([300, 320, 340], 'minutes_per_day')).toEqual(['300', '320', '340'])
   })
@@ -190,6 +218,7 @@ describe('durations in words and on axes', () => {
       '1h 30m',
       '3h',
     ])
+    expect(formatDurationTick(-15)).toBe('\u221215m')
   })
 })
 

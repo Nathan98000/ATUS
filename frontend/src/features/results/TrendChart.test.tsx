@@ -235,3 +235,37 @@ describe('TrendChart partial years and split lines (review round 4)', () => {
     ).toBeTruthy()
   })
 })
+
+describe('end labels that fit (review round 6)', () => {
+  it('labels a count of people in the axis’s short form, never cut off', () => {
+    const people: TrendPoint[] = points.map((point) =>
+      point.estimate == null
+        ? point
+        : {
+            ...point,
+            estimate: {
+              ...point.estimate,
+              value: 277_712_345,
+              unit: 'persons_per_day',
+              ci_lower: null,
+              ci_upper: null,
+            },
+          },
+    )
+    const { container } = render(
+      <TrendChart
+        series={[{ label: 'All', points: people }]}
+        unit="persons_per_day"
+        measureLabel="Number of people who do it"
+      />,
+    )
+    const label = screen.getByTestId('end-label')
+    expect(label).toHaveTextContent('277.7M')
+    // The label starts 10px after the last point and has the right margin's
+    // room: about 7.4px a character, so the viewBox holds all of it.
+    const svg = container.querySelector('svg.chart-svg') as SVGSVGElement
+    const width = Number(svg.getAttribute('width'))
+    const end = Number(label.getAttribute('x')) + '277.7M'.length * 7.4
+    expect(end).toBeLessThanOrEqual(width)
+  })
+})

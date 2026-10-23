@@ -144,7 +144,7 @@ describe('prewarmedAnalyses', () => {
   })
 
   it('every starter re-run unchanged from the builder is prewarmed too (review round 2)', () => {
-    // "Adjust analysis" then Analyze sends the builder's form of a starter
+    // "Change this chart" then "Show chart" sends the builder's form of a starter
     // (every default stated). For the comparison starters that body was in
     // no snapshot: a cold start and a governor charge for a result the
     // snapshot already held, and a second share link for it.

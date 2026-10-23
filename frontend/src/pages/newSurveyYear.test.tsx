@@ -110,7 +110,7 @@ function renderApp(route: string, client = testQueryClient()) {
 }
 
 async function waitForBuilder() {
-  expect(await screen.findByRole('button', { name: 'Analyze' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Show chart' })).toBeInTheDocument()
 }
 
 function optionValues(select: HTMLElement): number[] {
@@ -173,7 +173,7 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     renderApp('/explore')
     await waitForBuilder()
     // The builder opens on a trend (review round 4).
-    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    await user.click(screen.getByRole('button', { name: 'Show chart' }))
     expect(await screen.findByTestId('point-2026')).toBeInTheDocument()
     // The trend and, alongside it, its 2020 under the pandemic weights (the
     // mock answers with the leisure trend, so the link's canonical form names
@@ -192,7 +192,7 @@ describe('a new survey year arrives through /meta alone (§15)', () => {
     await user.click(screen.getByRole('link', { name: 'Explore' }))
     await waitForBuilder()
     await user.click(screen.getByRole('radio', { name: 'One number' }))
-    await user.click(screen.getByRole('button', { name: 'Analyze' }))
+    await user.click(screen.getByRole('button', { name: 'Show chart' }))
     expect(await screen.findByText('8h 49m')).toBeInTheDocument()
     const later = posted.slice(before)
     expect(later).toHaveLength(1)

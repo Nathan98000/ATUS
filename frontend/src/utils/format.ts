@@ -15,6 +15,9 @@
  * - confidence levels: every digit (97.5%), never rounded to another level.
  */
 
+/** The minus sign of a negative duration (U+2212, not a hyphen). */
+const MINUS = '\u2212'
+
 const INTEGER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const ONE_DECIMAL = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 1,
@@ -28,9 +31,15 @@ const CONFIDENCE_LEVEL = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 20,
 })
 
-/** 528.75 → "8h 49m"; 540 → "9h"; 42.4 → "42m"; 0.2 → "0m". */
+/**
+ * 528.75 → "8h 49m"; 540 → "9h"; 42.4 → "42m"; 0.2 → "0m"; −7.8 → "−8m".
+ * A negative value (a confidence interval's lower end for a small group)
+ * takes its sign once, before the whole duration (review round 6: −7.8 read
+ * "-1h -8m").
+ */
 export function formatMinutesAsDuration(minutes: number): string {
   const totalMinutes = Math.round(minutes)
+  if (totalMinutes < 0) return `${MINUS}${formatMinutesAsDuration(-totalMinutes)}`
   const hours = Math.floor(totalMinutes / 60)
   const rest = totalMinutes % 60
   if (hours === 0) return `${rest}m`
@@ -49,9 +58,10 @@ export function formatDurationWords(minutes: number): string {
   return rest === 0 ? hourPart : `${hourPart} ${minutePart}`
 }
 
-/** Axis label for a whole-minute tick: 0 → "0"; 30 → "30m"; 60 → "1h"; 90 → "1h 30m". */
+/** Axis label for a whole-minute tick: 0 → "0"; 30 → "30m"; 60 → "1h"; 90 → "1h 30m"; −15 → "−15m". */
 export function formatDurationTick(minutes: number): string {
   if (minutes === 0) return '0'
+  if (minutes < 0) return `${MINUS}${formatDurationTick(-minutes)}`
   const hours = Math.floor(minutes / 60)
   const rest = Math.round(minutes % 60)
   if (hours === 0) return `${rest}m`
@@ -260,23 +270,46 @@ export function formatYears(years: readonly number[]): string {
 }
 
 /**
- * Axis tick labels: chooses the fewest decimals that keep every label
- * distinct (whole percents can collide when ticks are sub-point apart).
+ * Axis tick labels: chooses the fewest decimals at which every label is its
+ * tick's exact value (review round 6: a phone's 2.5% steps read "3%" and
+ * "8%" when labels only had to differ) and no two labels collide.
  */
 export function formatAxisTicks(ticks: readonly number[], unit: string): string[] {
+  const millions = (value: number) => unit === 'persons_per_day' && Math.abs(value) >= 1_000_000
+  const scaled = (value: number): number =>
+    unit === 'proportion_of_population'
+      ? value * 100
+      : millions(value)
+        ? value / 1_000_000
+        : value
   const render = (value: number, decimals: number): string => {
-    if (unit === 'proportion_of_population') return `${(value * 100).toFixed(decimals)}%`
-    if (unit === 'persons_per_day' && Math.abs(value) >= 1_000_000) {
-      return `${(value / 1_000_000).toFixed(decimals)}M`
-    }
+    if (unit === 'proportion_of_population') return `${scaled(value).toFixed(decimals)}%`
+    if (millions(value)) return `${scaled(value).toFixed(decimals)}M`
     return value.toLocaleString('en-US', {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     })
   }
+  const exact = (value: number, decimals: number): boolean => {
+    const shown = scaled(value)
+    return (
+      Math.abs(Number(shown.toFixed(decimals)) - shown) <= 1e-9 * Math.max(1, Math.abs(shown))
+    )
+  }
   for (let decimals = 0; decimals <= 3; decimals += 1) {
     const labels = ticks.map((tick) => render(tick, decimals))
-    if (new Set(labels).size === labels.length) return labels
+    if (
+      ticks.every((tick) => exact(tick, decimals)) &&
+      new Set(labels).size === labels.length
+    ) {
+      return labels
+    }
   }
   return ticks.map((tick) => render(tick, 4))
+}
+
+/** A count of people as an axis or a line's end shows it: 277_700_000 → "277.7M"; 41_200 → "41,200". */
+export function formatPeopleCompact(count: number): string {
+  if (Math.abs(count) >= 1_000_000) return `${ONE_DECIMAL.format(count / 1_000_000)}M`
+  return INTEGER.format(count)
 }
