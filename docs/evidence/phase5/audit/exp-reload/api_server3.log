@@ -1,0 +1,398 @@
+2026-10-20 13:24:56,461.461 atus.api INFO request_id=1260512ffd15415f GET /__audit/cache/abc -> 200 in 5.5ms cache=-
+2026-10-20 13:24:56,477.477 atus.api INFO request_id=1890e69d14a44916 GET /api/v1/meta -> 200 in 7.3ms cache=-
+2026-10-20 13:25:26,359.359 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:26,359.359 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:26,360.360 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:26,361.361 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:26,361.361 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:26,361.361 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:26,362.362 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:26,362.362 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:26,363.363 atus.api INFO request_id=b406a8e7e80a4e70 POST /api/v1/analysis/estimate -> 200 in 6748.6ms cache=bypass
+2026-10-20 13:25:26,363.363 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:26,364.364 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:26,364.364 atus.api INFO request_id=3a8d1b20af3b4449 POST /api/v1/analysis/estimate -> 200 in 6749.9ms cache=bypass
+2026-10-20 13:25:26,364.364 atus.api INFO request_id=069b2ea7c9584bef POST /api/v1/analysis/estimate -> 200 in 6750.0ms cache=bypass
+2026-10-20 13:25:26,365.365 atus.api INFO request_id=e693455f38d04adf POST /api/v1/analysis/estimate -> 200 in 6749.3ms cache=bypass
+2026-10-20 13:25:26,365.365 atus.api INFO request_id=c175b153655e4a3d POST /api/v1/analysis/estimate -> 200 in 6751.0ms cache=bypass
+2026-10-20 13:25:26,366.366 atus.api INFO request_id=3d122e24db84436e POST /api/v1/analysis/estimate -> 200 in 6754.0ms cache=bypass
+2026-10-20 13:25:26,366.366 atus.api INFO request_id=2b262e90366c4b2d POST /api/v1/analysis/estimate -> 200 in 6752.1ms cache=bypass
+2026-10-20 13:25:26,366.366 atus.api INFO request_id=1f7d59d0e59d4f0c POST /api/v1/analysis/estimate -> 200 in 6751.8ms cache=bypass
+2026-10-20 13:25:26,366.366 atus.api INFO request_id=f85a6af94a2e4aa8 POST /api/v1/analysis/estimate -> 200 in 6754.5ms cache=bypass
+2026-10-20 13:25:26,366.366 atus.api INFO request_id=d2b828c5c14d4aa9 POST /api/v1/analysis/estimate -> 200 in 6750.9ms cache=bypass
+2026-10-20 13:25:26,373.373 atus.api INFO request_id=c56f43df8a94497c GET /__audit/cache/275b482b27b858bdd75dd1bc5d53c73c8f5779a9bd7b4ddaf4efd8178eb594d3 -> 200 in 0.3ms cache=-
+2026-10-20 13:25:26,377.377 atus.api INFO request_id=63b7d65ff7b04bdf GET /__audit/cache/7c903b4a3e7bf39daec0b9565fa47a331f18c511bf7be2513c28cf6047aeeb51 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:26,381.381 atus.api INFO request_id=47db8786de464cfa GET /__audit/cache/ffc08671825ad371c5a1ac7f77ab1482e3b5b0b241ed7684d5d54751c97f1907 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:26,385.385 atus.api INFO request_id=fdd4f082bcb2486d GET /__audit/cache/d5752917ba45be49fedf93f3c3f0a73da315eacd70c20c1ac2e0052292a8c256 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:26,389.389 atus.api INFO request_id=0994b80a63f74d6e GET /__audit/cache/1d4d9833d20d29285bc8909b921321c3879f3f7bdd9363738554500eeca90671 -> 200 in 0.1ms cache=-
+2026-10-20 13:25:26,392.392 atus.api INFO request_id=fbe17c6554c342e5 GET /__audit/cache/af187696a5eab817ea4c4f6143b23acdd418fb7f1567895aa767e6ea63221f18 -> 200 in 0.1ms cache=-
+2026-10-20 13:25:26,396.396 atus.api INFO request_id=c2c75eeae7d94622 GET /__audit/cache/03be9c29ae818d42869a8a78634545209bde57254002e450e14c66e50b77bc65 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:26,400.400 atus.api INFO request_id=63a1d61c2d61405e GET /__audit/cache/203d619a054328d0b072ff0b9a7f7e4697745583fdbbc53c58c20ee73b3a9893 -> 200 in 0.1ms cache=-
+2026-10-20 13:25:26,403.403 atus.api INFO request_id=3b7cfbdc25f94378 GET /__audit/cache/a80819af65f9b2e64ec1c2f24fde59abdd78476a86430e42308e0140f6c7f997 -> 200 in 0.1ms cache=-
+2026-10-20 13:25:26,406.406 atus.api INFO request_id=005190c1d569469c GET /__audit/cache/2f891ffad350761617b540cff0346c6f960999c37e798ee9145720cd06ab5799 -> 200 in 0.1ms cache=-
+2026-10-20 13:25:35,711.711 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:35,713.713 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:35,714.714 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:35,715.715 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:35,715.715 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:35,715.715 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:35,716.716 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:35,716.716 atus.api INFO request_id=7fd4f05a77f84f2c POST /api/v1/analysis/estimate -> 200 in 6765.4ms cache=bypass
+2026-10-20 13:25:35,717.717 atus.api INFO request_id=f05a71cb6d3d4cad POST /api/v1/analysis/estimate -> 200 in 6766.0ms cache=bypass
+2026-10-20 13:25:35,717.717 atus.api INFO request_id=1db4181f84194a0b POST /api/v1/analysis/estimate -> 200 in 6769.5ms cache=bypass
+2026-10-20 13:25:35,717.717 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:35,718.718 atus.api INFO request_id=21a9426551f24cc1 POST /api/v1/analysis/estimate -> 200 in 6767.9ms cache=bypass
+2026-10-20 13:25:35,718.718 atus.api INFO request_id=ea9c313560f94a15 POST /api/v1/analysis/estimate -> 200 in 6770.4ms cache=bypass
+2026-10-20 13:25:35,719.719 atus.api INFO request_id=5883fa2c27174675 POST /api/v1/analysis/estimate -> 200 in 6770.5ms cache=bypass
+2026-10-20 13:25:35,720.720 atus.api INFO request_id=72d00dc563844ab8 POST /api/v1/analysis/estimate -> 200 in 6769.3ms cache=bypass
+2026-10-20 13:25:35,720.720 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:35,720.720 atus.api INFO request_id=0b3029c1488441c0 POST /api/v1/analysis/estimate -> 200 in 6769.4ms cache=bypass
+2026-10-20 13:25:35,721.721 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:35,721.721 atus.api INFO request_id=35deac55f47243a9 POST /api/v1/analysis/estimate -> 200 in 6771.8ms cache=bypass
+2026-10-20 13:25:35,722.722 atus.api INFO request_id=fdd2b23edd2c4e69 POST /api/v1/analysis/estimate -> 200 in 6771.0ms cache=bypass
+2026-10-20 13:25:35,734.734 atus.api INFO request_id=1098cbe6543f4554 GET /__audit/cache/117d0a8db035f14aa648429beadb0b026856271001f8ed1317838022319ed1fe -> 200 in 0.3ms cache=-
+2026-10-20 13:25:35,739.739 atus.api INFO request_id=55194ee13e894468 GET /__audit/cache/f69554e2d7e404c967eea3f4594b2479b8906db4b69b827df57130ca4f982839 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:35,743.743 atus.api INFO request_id=6b11ee7326574190 GET /__audit/cache/e39e5fb539459c3b749983db115ad5a8ae5652573c7b1c282e1a0effadbe5b04 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:35,748.748 atus.api INFO request_id=12fa8bc4473d4e38 GET /__audit/cache/9fc5dfaf3ec1557b7292499c9c8a6fe1860ee8058d835a4f93f0fc98d6c7e8ed -> 200 in 0.2ms cache=-
+2026-10-20 13:25:35,752.752 atus.api INFO request_id=be34c2c99a4e4b71 GET /__audit/cache/5192a7abb4bdec1b4235f154b13a50d16d35b8020211e9837fcee65c6a9d3a14 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:35,756.756 atus.api INFO request_id=cac2d68c9c9c47d4 GET /__audit/cache/8c22430c975057b7f56f030b21e496dedafb7bac37cc21e91bd2d86237c0608e -> 200 in 0.2ms cache=-
+2026-10-20 13:25:35,759.759 atus.api INFO request_id=7915a0eb6bab4882 GET /__audit/cache/0ec656f81f797f23b32b2346c63febc55e4304c52a7d3dc052bd565be01a6f7a -> 200 in 0.1ms cache=-
+2026-10-20 13:25:35,763.763 atus.api INFO request_id=dec9477556c3465e GET /__audit/cache/3af0f2a142534ec93750207a53ce84548c089ee861f4556a9f9f425b66c359b5 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:35,767.767 atus.api INFO request_id=9a91ed2c69df4fd3 GET /__audit/cache/64e13cacab33e2730b0685c53010bb40b1c6ceedde46a51a7b6fd3338a13da99 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:35,770.770 atus.api INFO request_id=ed20e31cbdea4845 GET /__audit/cache/2961b305b80f73e60096e1843a2d3c22f41b8c4181dd40736ea4a6bdd42f62cf -> 200 in 0.1ms cache=-
+2026-10-20 13:25:44,947.947 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:44,947.947 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:44,947.947 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:44,948.948 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:44,949.949 atus.api INFO request_id=7193f9b5ad7c4a02 POST /api/v1/analysis/estimate -> 200 in 6634.4ms cache=bypass
+2026-10-20 13:25:44,949.949 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:44,950.950 atus.api INFO request_id=4dd746f4879d4760 POST /api/v1/analysis/estimate -> 200 in 6640.9ms cache=bypass
+2026-10-20 13:25:44,950.950 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:44,952.952 atus.api INFO request_id=80133ec88f5a4248 POST /api/v1/analysis/estimate -> 200 in 6642.6ms cache=bypass
+2026-10-20 13:25:44,952.952 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:44,952.952 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:44,952.952 atus.api INFO request_id=abcc14feffdf41d2 POST /api/v1/analysis/estimate -> 200 in 6637.4ms cache=bypass
+2026-10-20 13:25:44,952.952 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:44,953.953 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:44,953.953 atus.api INFO request_id=bd10f4ac71fe4f0e POST /api/v1/analysis/estimate -> 200 in 6643.8ms cache=bypass
+2026-10-20 13:25:44,954.954 atus.api INFO request_id=f25d0fdcd29e4c45 POST /api/v1/analysis/estimate -> 200 in 6644.6ms cache=bypass
+2026-10-20 13:25:44,954.954 atus.api INFO request_id=7ae0acc00e4c4ba1 POST /api/v1/analysis/estimate -> 200 in 6639.6ms cache=bypass
+2026-10-20 13:25:44,954.954 atus.api INFO request_id=d2c20af3fd244d13 POST /api/v1/analysis/estimate -> 200 in 6637.7ms cache=bypass
+2026-10-20 13:25:44,954.954 atus.api INFO request_id=d49fc87008ac42b7 POST /api/v1/analysis/estimate -> 200 in 6638.1ms cache=bypass
+2026-10-20 13:25:44,955.955 atus.api INFO request_id=ded2d9bf538d4632 POST /api/v1/analysis/estimate -> 200 in 6638.4ms cache=bypass
+2026-10-20 13:25:44,966.966 atus.api INFO request_id=30809ca5d18b4bb4 GET /__audit/cache/6fffaa94a99c8fc3362e35f09dead9b693d7f68fef84aa332b28e5e93e171886 -> 200 in 0.3ms cache=-
+2026-10-20 13:25:44,971.971 atus.api INFO request_id=e448085054364413 GET /__audit/cache/1683e8e0c94b450abae3a68e6862fab372b79b13f76bab3d178fb0272e16eb92 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:44,976.976 atus.api INFO request_id=3453e64700b940b6 GET /__audit/cache/90f451f083c9fbab2a3336cf90307f77af4bb24cc750188e06f906463a759b29 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:44,979.979 atus.api INFO request_id=734e4c7f666e422e GET /__audit/cache/4273eb43bc4eb917e6f2b05de302d56a74a951405e008868fe96e42375707bc3 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:44,982.982 atus.api INFO request_id=86d886d59a99487a GET /__audit/cache/38d80c699a529e6751e09a1376643fe1972bb9651ea8d43c76e78592ad73fad6 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:44,986.986 atus.api INFO request_id=d7db1a59bb7a4f5c GET /__audit/cache/27894e6b00646b2a8eda9ce6c42e63abab1bf6bc861f29a40b50a6b29f350e21 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:44,990.990 atus.api INFO request_id=d8ccaa6c7e2a4ddd GET /__audit/cache/1962e504a7fd265876bdae4e1061612b99c83fe8cf7491a90f44e2d8be61b862 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:44,993.993 atus.api INFO request_id=98b2d5b1d68646cb GET /__audit/cache/fba4b3f930739a5acc40aba70d5cdc721b577b4919f15a81b3494991d1665246 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:44,997.997 atus.api INFO request_id=bf2a4ee72a8c42a7 GET /__audit/cache/3db3d4822189694596c04fdc25d071da0626de6fa70b7e65e8b073f72340f07b -> 200 in 0.1ms cache=-
+2026-10-20 13:25:45,001.001 atus.api INFO request_id=648160fb54ff46b9 GET /__audit/cache/49437491c18ef156fdad44dc6c180f99fb779d90d285ba24bdb2bc3eee30a413 -> 200 in 0.1ms cache=-
+2026-10-20 13:25:54,211.211 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:54,211.211 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:54,211.211 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:54,212.212 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:54,213.213 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:54,214.214 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:54,215.215 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:54,216.216 atus.api INFO request_id=0beaa7184d6145bd POST /api/v1/analysis/estimate -> 200 in 6678.8ms cache=bypass
+2026-10-20 13:25:54,216.216 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:54,216.216 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:54,216.216 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:25:54,216.216 atus.api INFO request_id=bb27ea02d3f14cba POST /api/v1/analysis/estimate -> 200 in 6674.7ms cache=bypass
+2026-10-20 13:25:54,216.216 atus.api INFO request_id=46d91d6786644889 POST /api/v1/analysis/estimate -> 200 in 6673.1ms cache=bypass
+2026-10-20 13:25:54,217.217 atus.api INFO request_id=ca41f83f24ec4e07 POST /api/v1/analysis/estimate -> 200 in 6673.9ms cache=bypass
+2026-10-20 13:25:54,217.217 atus.api INFO request_id=ee468c75a56949f1 POST /api/v1/analysis/estimate -> 200 in 6673.8ms cache=bypass
+2026-10-20 13:25:54,218.218 atus.api INFO request_id=bb696648b7094062 POST /api/v1/analysis/estimate -> 200 in 6674.5ms cache=bypass
+2026-10-20 13:25:54,218.218 atus.api INFO request_id=983d1176756a473f POST /api/v1/analysis/estimate -> 200 in 6681.8ms cache=bypass
+2026-10-20 13:25:54,218.218 atus.api INFO request_id=83d8a669e6bf4d61 POST /api/v1/analysis/estimate -> 200 in 6676.6ms cache=bypass
+2026-10-20 13:25:54,218.218 atus.api INFO request_id=a53c7b6df0d54285 POST /api/v1/analysis/estimate -> 200 in 6680.4ms cache=bypass
+2026-10-20 13:25:54,219.219 atus.api INFO request_id=1fb609143aa0472a POST /api/v1/analysis/estimate -> 200 in 6682.4ms cache=bypass
+2026-10-20 13:25:54,225.225 atus.api INFO request_id=6c83dcd036724034 GET /__audit/cache/382fee0d99e7da4e2e6b8a583fc70e19fe43deb041bbc2259ba6b75853514151 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:54,229.229 atus.api INFO request_id=6e28fd565ca54a1a GET /__audit/cache/c3120513e2d6046cd27b8a1eaf105154fa77cc0a24a8be4811f49ef9bab5302d -> 200 in 0.2ms cache=-
+2026-10-20 13:25:54,233.233 atus.api INFO request_id=16e76fed588542ca GET /__audit/cache/8e5f0d5ec80143b894912a9e39164848bbdec83fc648aaf40f1fb004a59805f3 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:54,237.237 atus.api INFO request_id=1945e1c99aee4c6b GET /__audit/cache/f35b9e5c4c0d95467abb31a34683ae66a9610496a31ed733d4f1806c468df8a6 -> 200 in 0.1ms cache=-
+2026-10-20 13:25:54,241.241 atus.api INFO request_id=7fb3371af42a4d15 GET /__audit/cache/04dceeaaf81d2fd595a603d876d9a880a8625d6c16f2efab4604adfb6a996771 -> 200 in 0.1ms cache=-
+2026-10-20 13:25:54,244.244 atus.api INFO request_id=a5ca415f3b264a8e GET /__audit/cache/3576551003f88c987bafc702fb3f0f012274cc0113b68694f46daccbf1063d1a -> 200 in 0.1ms cache=-
+2026-10-20 13:25:54,248.248 atus.api INFO request_id=90884978ff65450c GET /__audit/cache/80431e266077191fd9db52ff2399e04dd01c7bea373688032f4bfa0e79f9a190 -> 200 in 0.2ms cache=-
+2026-10-20 13:25:54,251.251 atus.api INFO request_id=93695fb36244457f GET /__audit/cache/6391a623c93c9b08a9a5626fef4a3418218844e1652f3a04b203b1e32a07c67c -> 200 in 0.2ms cache=-
+2026-10-20 13:25:54,255.255 atus.api INFO request_id=d13c59f5e8bb415e GET /__audit/cache/285af171c324799d2aa562e4f7e8286bc782ee7b052a463a72baf3aabd627624 -> 200 in 0.1ms cache=-
+2026-10-20 13:25:54,258.258 atus.api INFO request_id=4f13f90eda5d4e2a GET /__audit/cache/d7392432fc0b14882653a6ad49881fc25ecb65d0e477f814938fe8bb33fc6377 -> 200 in 0.1ms cache=-
+2026-10-20 13:26:48,697.697 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:48,698.698 atus.api INFO request_id=2773fb5408644cf9 POST /api/v1/analysis/estimate -> 200 in 6609.7ms cache=bypass
+2026-10-20 13:26:48,699.699 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:48,699.699 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:48,700.700 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:48,702.702 atus.api INFO request_id=ea888349b1684fb7 POST /api/v1/analysis/estimate -> 200 in 6613.0ms cache=bypass
+2026-10-20 13:26:48,702.702 atus.api INFO request_id=69d91355336943cf POST /api/v1/analysis/estimate -> 200 in 6613.4ms cache=bypass
+2026-10-20 13:26:48,704.704 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:48,704.704 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:48,704.704 atus.api INFO request_id=27d13be1518c44cc POST /api/v1/analysis/estimate -> 200 in 6616.0ms cache=bypass
+2026-10-20 13:26:48,704.704 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:48,705.705 atus.api INFO request_id=a952d0611f324941 POST /api/v1/analysis/estimate -> 200 in 6616.6ms cache=bypass
+2026-10-20 13:26:48,706.706 atus.api INFO request_id=95a5b1d8a35e43a9 POST /api/v1/analysis/estimate -> 200 in 6617.2ms cache=bypass
+2026-10-20 13:26:48,706.706 atus.api INFO request_id=38f44ae69c12409a POST /api/v1/analysis/estimate -> 200 in 6618.5ms cache=bypass
+2026-10-20 13:26:48,711.711 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:48,713.713 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:48,713.713 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:48,713.713 atus.api INFO request_id=6ad885410f974c4f POST /api/v1/analysis/estimate -> 200 in 6625.3ms cache=bypass
+2026-10-20 13:26:48,714.714 atus.api INFO request_id=99f6cb3962f04439 POST /api/v1/analysis/estimate -> 200 in 6626.1ms cache=bypass
+2026-10-20 13:26:48,715.715 atus.api INFO request_id=0f3058f461ab4573 POST /api/v1/analysis/estimate -> 200 in 6626.0ms cache=bypass
+2026-10-20 13:26:48,723.723 atus.api INFO request_id=214c10a8f7194e63 POST /api/v1/analysis/estimate -> 200 in 6633.5ms cache=miss
+2026-10-20 13:26:48,726.726 atus.api INFO request_id=8efe6c089fe74325 POST /api/v1/analysis/estimate -> 200 in 6637.2ms cache=miss
+2026-10-20 13:26:49,225.225 atus.api INFO request_id=3f03b1ea69e447e5 GET /__audit/cache/2760bd9032360bbedf4fa566c8152ec8f69a7d03b82bbf8878f58aacdec93949 -> 200 in 0.4ms cache=-
+2026-10-20 13:26:49,230.230 atus.api INFO request_id=386681ef401b4b0b GET /__audit/cache/a8a7fadf58458a7c6ab166a13bf8abbaf327aaf1994078dc3458b10cdc918f2a -> 200 in 0.2ms cache=-
+2026-10-20 13:26:49,235.235 atus.api INFO request_id=afa39cc39b1b466a GET /__audit/cache/87f13e10523d110ae833869330b19c1312ace6393513965c20019159beac5565 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:49,238.238 atus.api INFO request_id=126cc2b74f9c4c86 GET /__audit/cache/6e5c0cbef3f8a1d53a7a4c13ff54946b018b907f6f5f01ac0fc529cf045f53c7 -> 200 in 0.1ms cache=-
+2026-10-20 13:26:49,242.242 atus.api INFO request_id=96c900d49d074c8d GET /__audit/cache/6eeb16fc4aaa39726c7b79952d7b4a1f8adacf463e15f360f108e177e9077e99 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:49,245.245 atus.api INFO request_id=b99aa367967a407c GET /__audit/cache/08bff0577160d60ffc519b3c8d30b9c76a1639fc7fab4153215cb63090120802 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:49,250.250 atus.api INFO request_id=d01ea70cb5434d0b GET /__audit/cache/26afe1f6e6e38a3f6a5d510b293bed1f0f5c30fd5340759114ae771d2c477961 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:49,253.253 atus.api INFO request_id=6a7f23265b274655 GET /__audit/cache/a537344b568457cdfb5de98cc9f8462111737d87d4a8caacff0a7905808b9613 -> 200 in 0.1ms cache=-
+2026-10-20 13:26:49,257.257 atus.api INFO request_id=0f834064f0ea4441 GET /__audit/cache/c1b6e35c01812a62ba8733e1042e435fb31de1dbdf4e4c7d032b974bcc6f89c3 -> 200 in 0.1ms cache=-
+2026-10-20 13:26:49,260.260 atus.api INFO request_id=2ca20263fd8745ea GET /__audit/cache/9991b72fb6d90efba5347f4ce4f8835cad35b659891ce06e0ef682f6f81651e9 -> 200 in 0.1ms cache=-
+2026-10-20 13:26:49,264.264 atus.api INFO request_id=e7c7de44feb341c3 GET /__audit/cache/a39db5a6abb2bd33815a7125cf48feb8561eb79ef6d31764f4a55acdbcd23567 -> 200 in 0.1ms cache=-
+2026-10-20 13:26:49,270.270 atus.api INFO request_id=f7598e03ba934c8b GET /__audit/cache/73e8e5b4b203977c2ed04c9ebcefb8b6f5fde6dc4bc44def29f569f8484c4e61 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:49,273.273 atus.api INFO request_id=caf214390c6e4382 GET /__audit/cache/d746d28003ff084def5c702febac704c76bca54172cbac83036e5c5a91cc37ee -> 200 in 0.1ms cache=-
+2026-10-20 13:26:49,277.277 atus.api INFO request_id=eb03cac2cdc14559 GET /__audit/cache/bf96b458d14841d8b2ad5eaf4e2a3ebfd98721582d7a728ec980f15eb3cd6768 -> 200 in 0.1ms cache=-
+2026-10-20 13:26:49,280.280 atus.api INFO request_id=cd88bba5dfc9431d GET /__audit/cache/d9b5b0b6a8fd2d16680884bc0485ead4ceedd53a26fd558b1a0e6eba0e024d21 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:49,284.284 atus.api INFO request_id=d457c09ea56c4587 GET /__audit/cache/836c832e0e76b2e48d8700a4a8aaea0abdc5ae3546deaa786876ba18f6aab876 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:49,288.288 atus.api INFO request_id=6c27437e9aa94d3c GET /__audit/cache/b386b9e5d92d045f3623e9f35240e06e173b159913ef951cc065ac0210753f63 -> 200 in 0.1ms cache=-
+2026-10-20 13:26:49,291.291 atus.api INFO request_id=2ff867289da748c7 GET /__audit/cache/a959aaf5e29592ef22a4ea52245c7bc5d218ef6b82b7f799b8349736433fbbc4 -> 200 in 0.1ms cache=-
+2026-10-20 13:26:49,295.295 atus.api INFO request_id=0331e0526b194f47 GET /__audit/cache/f69a775bc738fc191fc64852565d48296982a2ea5f0af27f939ad9421b50b0a7 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:49,299.299 atus.api INFO request_id=ce39aeee9efd409b GET /__audit/cache/8c702d9510559f7a2b0829ee29e3eab3e17e5e556319138cad172f546755abab -> 200 in 0.2ms cache=-
+2026-10-20 13:26:49,303.303 atus.api INFO request_id=04ddc85651054686 GET /__audit/cache/a51ff530ba712596480bb331e84d6c7e3a91a7e4117f485658c683d17047aa5c -> 200 in 0.1ms cache=-
+2026-10-20 13:26:49,306.306 atus.api INFO request_id=f234685c2a994dfa GET /__audit/cache/5961c99862102559c77e33256f64e249f12047b9aedc906dfea5e8985d33162a -> 200 in 0.2ms cache=-
+2026-10-20 13:26:49,310.310 atus.api INFO request_id=772bd7c6450e44fb GET /__audit/cache/2ea5ccea1b021be0d497ddab16779c405f913587e72938a73db0407ae56560fb -> 200 in 0.1ms cache=-
+2026-10-20 13:26:49,314.314 atus.api INFO request_id=0284e56f49294dbc GET /__audit/cache/84d70f3902f1c2dfa218797d7e1bd8f28095166d41d2d4739b9b1af94d9cb17c -> 200 in 0.2ms cache=-
+2026-10-20 13:26:58,554.554 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:58,555.555 atus.api INFO request_id=11fe6b8a607142b4 POST /api/v1/analysis/estimate -> 200 in 6709.3ms cache=bypass
+2026-10-20 13:26:58,558.558 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:58,559.559 atus.api INFO request_id=f06ba6ae510e4aca POST /api/v1/analysis/estimate -> 200 in 6714.5ms cache=bypass
+2026-10-20 13:26:58,563.563 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:58,566.566 atus.api INFO request_id=3fb50927890b49fa POST /api/v1/analysis/estimate -> 200 in 6721.4ms cache=bypass
+2026-10-20 13:26:58,566.566 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:58,566.566 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:58,567.567 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:58,569.569 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:58,569.569 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:58,570.570 atus.api INFO request_id=59245fbfa2d34c1c POST /api/v1/analysis/estimate -> 200 in 6725.1ms cache=bypass
+2026-10-20 13:26:58,572.572 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:58,572.572 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:26:58,572.572 atus.api INFO request_id=51649f0e6691485e POST /api/v1/analysis/estimate -> 200 in 6727.1ms cache=bypass
+2026-10-20 13:26:58,574.574 atus.api INFO request_id=9f6eabe715254f7d POST /api/v1/analysis/estimate -> 200 in 6731.2ms cache=bypass
+2026-10-20 13:26:58,575.575 atus.api INFO request_id=aed2f1554df94074 POST /api/v1/analysis/estimate -> 200 in 6730.9ms cache=bypass
+2026-10-20 13:26:58,576.576 atus.api INFO request_id=8e4c83f5ed354bd3 POST /api/v1/analysis/estimate -> 200 in 6734.1ms cache=bypass
+2026-10-20 13:26:58,576.576 atus.api INFO request_id=115cde3675ca4ce4 POST /api/v1/analysis/estimate -> 200 in 6731.4ms cache=bypass
+2026-10-20 13:26:58,576.576 atus.api INFO request_id=1ba1e11814ba428c POST /api/v1/analysis/estimate -> 200 in 6734.5ms cache=bypass
+2026-10-20 13:26:58,583.583 atus.api INFO request_id=9c390e87a1024877 POST /api/v1/analysis/estimate -> 200 in 6736.1ms cache=miss
+2026-10-20 13:26:58,584.584 atus.api INFO request_id=dbbbd156ba7b442b POST /api/v1/analysis/estimate -> 200 in 6736.9ms cache=miss
+2026-10-20 13:26:59,096.096 atus.api INFO request_id=fc95a9ad567b4e5c GET /__audit/cache/3913245ced28551721d4328ff641ada7cb83c17b1b22aa7733ed63f93ccd4501 -> 200 in 0.4ms cache=-
+2026-10-20 13:26:59,104.104 atus.api INFO request_id=86cd6718747b4e6a GET /__audit/cache/f35659418409a6a6d456aa3b307015a4529d3acc6874de375da394e2c6f312f3 -> 200 in 0.3ms cache=-
+2026-10-20 13:26:59,109.109 atus.api INFO request_id=2b7bab4ead8440f9 GET /__audit/cache/da034f885f2608ce3c0daea3d079b379421a9e29ebcb56ce1efd1c22f9916883 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,113.113 atus.api INFO request_id=442217e372b9462f GET /__audit/cache/62df1158f0048ee44939b8e655fe1b5d807d6701df2243b15f503e5e9aea88dc -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,117.117 atus.api INFO request_id=3f673bf4be3242d1 GET /__audit/cache/7d230b7f15161ed9fcfdf4468b77da341cbc3fce803f0f9237e8ea7a9f29ffcb -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,121.121 atus.api INFO request_id=78db650e66d14bf0 GET /__audit/cache/74b9b8a30bc6c89385f39d8f361e4d727cbe188d59aae06dd58b0e6e207d6b91 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,130.130 atus.api INFO request_id=57bb72f4bafb493d GET /__audit/cache/9294511d0ab3c7124366b140608ad5291c1a4bce015e94dfd07e86f0f60a10a1 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,135.135 atus.api INFO request_id=b495e2e0c6ce4be9 GET /__audit/cache/0779f3e93d66abb86939cf9ab8078220acf77dc7c788b50da9e0c4763c5b9726 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,139.139 atus.api INFO request_id=8994568083ed47d8 GET /__audit/cache/b88a030989bf8068980ed134de343263ed49a807bcff84bcc458eaa9dfbe73d8 -> 200 in 0.3ms cache=-
+2026-10-20 13:26:59,146.146 atus.api INFO request_id=a97aeb0a4f8048c6 GET /__audit/cache/758afc3b22b0db8a8ddaa3c22a7a55dcb9bcbb67656350330412daed5c506bda -> 200 in 0.3ms cache=-
+2026-10-20 13:26:59,151.151 atus.api INFO request_id=c59f185034354e7e GET /__audit/cache/e4d0a06e07f735e18f9b2158b581d7a7faeb080364fece94557850c3eb818b8b -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,155.155 atus.api INFO request_id=ac6b276aa4544474 GET /__audit/cache/38f63465d61b2311d30bb24d2fd3e2772c83f2364922af88b10d7312a04751fd -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,159.159 atus.api INFO request_id=e68d84d161d0455b GET /__audit/cache/c0a76a92ede81858b78b46a750bf9b8f16021e06a36dc75b3d3703082dcc1226 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,162.162 atus.api INFO request_id=8a04f660f5444447 GET /__audit/cache/280e0b572a59ee02c4d732822333b524fd0c3443808ffb8649168116cd548210 -> 200 in 0.3ms cache=-
+2026-10-20 13:26:59,167.167 atus.api INFO request_id=1f05f0d33ab54e8d GET /__audit/cache/88a3c1059ca99202bb14ff325d88d55f86afab3a38fac18615e221ba26a13700 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,171.171 atus.api INFO request_id=acd8ca6992464241 GET /__audit/cache/79d913e52dad755f8cfb3de08f6bc9e7d712df66b804b683af3707ba3ab728b2 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,175.175 atus.api INFO request_id=f03c716742d143aa GET /__audit/cache/9132bb55fd786d9243cfb2462d9cdb85cae61cf1beb18c38de1983cdf277dbb8 -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,180.180 atus.api INFO request_id=623ca0479a8f4387 GET /__audit/cache/a89f0e2bd8dab48658a0d0d50fe1a6c66725cd0d3739137307ae2cf940a4d273 -> 200 in 0.4ms cache=-
+2026-10-20 13:26:59,185.185 atus.api INFO request_id=018edc487e164e6f GET /__audit/cache/ecd958f76c488e38204ee510a2d2233d2d0b7b2a8f1b3f77a04a146db6a1e326 -> 200 in 0.3ms cache=-
+2026-10-20 13:26:59,191.191 atus.api INFO request_id=ac47127f08b14a09 GET /__audit/cache/979ffc806d66220b9ac26cd655eee25519954baa6a21ed8d24435acecc7ccd4f -> 200 in 0.3ms cache=-
+2026-10-20 13:26:59,196.196 atus.api INFO request_id=f47f552221814cfc GET /__audit/cache/3937834c5189f9709b5ba704d37209c43357f0bcea8d166b821c03bd685add98 -> 200 in 0.4ms cache=-
+2026-10-20 13:26:59,200.200 atus.api INFO request_id=467531637a8045f3 GET /__audit/cache/a08cffd819b563f211dbec5c1fe5432cfbd8aee290177990a6ab6c58cc013d9a -> 200 in 0.2ms cache=-
+2026-10-20 13:26:59,205.205 atus.api INFO request_id=495d6e0f7a334ea5 GET /__audit/cache/531270f27c6cce2215a8a8aec06836acc68da717a3d9ff36433ffa25f653f536 -> 200 in 0.3ms cache=-
+2026-10-20 13:26:59,210.210 atus.api INFO request_id=cd9c62ca66a040dd GET /__audit/cache/303862913295c771388e7c8b563b88860db9f5666ff2499957557fd8abc388ba -> 200 in 0.3ms cache=-
+2026-10-20 13:27:08,385.385 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:08,386.386 atus.api INFO request_id=799a9b606ee841d5 POST /api/v1/analysis/estimate -> 200 in 6637.4ms cache=bypass
+2026-10-20 13:27:08,386.386 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:08,386.386 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:08,389.389 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:08,389.389 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:08,390.390 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:08,391.391 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:08,392.392 atus.api INFO request_id=d2b2a384b1464ef8 POST /api/v1/analysis/estimate -> 200 in 6648.8ms cache=bypass
+2026-10-20 13:27:08,392.392 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:08,392.392 atus.api INFO request_id=e1bcd197ba034c6e POST /api/v1/analysis/estimate -> 200 in 6647.5ms cache=bypass
+2026-10-20 13:27:08,392.392 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:08,393.393 atus.api INFO request_id=fc07799600794d59 POST /api/v1/analysis/estimate -> 200 in 6642.9ms cache=bypass
+2026-10-20 13:27:08,393.393 atus.api INFO request_id=9ea03d289d6e4de6 POST /api/v1/analysis/estimate -> 200 in 6645.8ms cache=bypass
+2026-10-20 13:27:08,393.393 atus.api INFO request_id=d66073d87f984c6f POST /api/v1/analysis/estimate -> 200 in 6648.9ms cache=bypass
+2026-10-20 13:27:08,393.393 atus.api INFO request_id=5f7612dc93f94efc POST /api/v1/analysis/estimate -> 200 in 6645.4ms cache=bypass
+2026-10-20 13:27:08,393.393 atus.api INFO request_id=61d44c5f1d8f4985 POST /api/v1/analysis/estimate -> 200 in 6650.6ms cache=bypass
+2026-10-20 13:27:08,394.394 atus.api INFO request_id=35c6694535ef4645 POST /api/v1/analysis/estimate -> 200 in 6649.5ms cache=bypass
+2026-10-20 13:27:08,395.395 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:08,396.396 atus.api INFO request_id=7bec1ea6f5c44c60 POST /api/v1/analysis/estimate -> 200 in 6653.3ms cache=bypass
+2026-10-20 13:27:08,402.402 atus.api INFO request_id=3df308fcafd64892 POST /api/v1/analysis/estimate -> 200 in 6651.8ms cache=miss
+2026-10-20 13:27:08,402.402 atus.api INFO request_id=2483af27b36a4d12 POST /api/v1/analysis/estimate -> 200 in 6652.0ms cache=miss
+2026-10-20 13:27:08,912.912 atus.api INFO request_id=2bc8b5dacee9402a GET /__audit/cache/5ad42f6ca5a4118955f9ecbc8a12ec843b13036c5857ae00f75771dc364017e3 -> 200 in 0.4ms cache=-
+2026-10-20 13:27:08,920.920 atus.api INFO request_id=a417bff45f7b4fe0 GET /__audit/cache/4fa52e8330d44a16df07f3d33d94cfe9f9caaf60a484e6e1be4cadb4b4542c0c -> 200 in 0.3ms cache=-
+2026-10-20 13:27:08,927.927 atus.api INFO request_id=2a873bea0d3c45ee GET /__audit/cache/2c10e4182f44bab2ba0c2c3259063ca4f1528eac0434c3c6b21c79faf0262306 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:08,931.931 atus.api INFO request_id=187f6729b04a45bf GET /__audit/cache/3eaded33d520425b1d5c50e8ff57923957bf310c0f25be72631237288473201f -> 200 in 0.2ms cache=-
+2026-10-20 13:27:08,934.934 atus.api INFO request_id=64168c63f8c64556 GET /__audit/cache/0672c69d6d3796c2774c03dd904b7c1fbc7be815aa89a91415cb2bb2314e8f35 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:08,938.938 atus.api INFO request_id=e11e9623cd6e48ec GET /__audit/cache/a804738368eae46a0f9d95271a62a441344ae51b7f206dbb25dc4452e9ec2851 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,941.941 atus.api INFO request_id=184a8e7775f64c07 GET /__audit/cache/c5952e0f64326b7d6e5421cedc871821fbe31f24efc46f67a71c3a046470ae4a -> 200 in 0.2ms cache=-
+2026-10-20 13:27:08,944.944 atus.api INFO request_id=85fc8675497f498a GET /__audit/cache/61f0ba7a96d7b0c184f3c87c0b47a2ef7df23898ca3bd55d07af00c47750deb1 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,947.947 atus.api INFO request_id=26e569fb0f924401 GET /__audit/cache/0e1c9ea93a67b83134bb8847891d128ee7dd462a2ba9897ef6374d2f542a832e -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,950.950 atus.api INFO request_id=a31cc8f47373465a GET /__audit/cache/562440cf905c0b3d071aedd5fc51704bb654ca0fb33d8dc61c626fd122797766 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,954.954 atus.api INFO request_id=aadda8f7fe4a4cff GET /__audit/cache/2e5804ad6ccfee006d0d1cfc02f6cda9e0def3050bc482939be73b759565c5ef -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,957.957 atus.api INFO request_id=4573d6c63bf743a2 GET /__audit/cache/63f18b5161ece554cc3297e9136d10908df1ada374fe62e31791dcd3994eb4d7 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,960.960 atus.api INFO request_id=65e424065bda476e GET /__audit/cache/b2dc2ade781284a29c787d10c935e2acc969904faff18e038a336cd986f68c51 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,963.963 atus.api INFO request_id=5e3ceb85a0b64fee GET /__audit/cache/27c639f1cc7e8d923b92c5f633576b92afd411bc53028ffc2b868d40f805265c -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,966.966 atus.api INFO request_id=e55190e5c1c64f51 GET /__audit/cache/0f75b69c2ec70703a124ab3cc16829013ab47abae464f26cc1595a3a0e9e2c61 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,971.971 atus.api INFO request_id=ad5ba2aef01e4522 GET /__audit/cache/8192841aeb99a7bc357a830c28a08d2e7ed40140f98b93ffee11dcb11389100f -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,974.974 atus.api INFO request_id=a604d246c9684bb5 GET /__audit/cache/ab52d686ad37991fc878c32922f4709a26fbd7771aeea83898574e4886534675 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,977.977 atus.api INFO request_id=f484fb93172c4a17 GET /__audit/cache/3764ea7ee3e19487a8ae5c14608c5b5c1c4b0ba64ba901f864a15b2bfaf39778 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,980.980 atus.api INFO request_id=5baa267a91a74f71 GET /__audit/cache/17e170a2207e8dee30b9f34f470c158ec053940ff6c7cdf18c6a59e8ac58f574 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,983.983 atus.api INFO request_id=6e32f13f6bcf4053 GET /__audit/cache/d674c2ba8adee75a4e80d69b60179364d562c2e8c9f7b09c6ba7669d96331d98 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,987.987 atus.api INFO request_id=b85d570c8f9242d8 GET /__audit/cache/a9a826e924dc58c67e47da1dd3ca6276b57601d6f221d2e7cc0f12d4d4fc80c7 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,990.990 atus.api INFO request_id=326dc02292974c85 GET /__audit/cache/65ecbeb1bed6ae61fb6cd8736b96c9604d0db122447f46bf4e4ae09d3ab85bd1 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,993.993 atus.api INFO request_id=b50e66b551234cc0 GET /__audit/cache/fc8033582f1559662b84e1f11904463c943a09fd2887cd1a81bb5d23c7465d80 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:08,996.996 atus.api INFO request_id=ab8efec4ff394a3a GET /__audit/cache/35f9de080fbc008a4c128e54f4b6e8c5cf1d3eadd196053c91e2de418b2ed6b5 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:18,155.155 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:18,155.155 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:18,155.155 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:18,156.156 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:18,157.157 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:18,158.158 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:18,158.158 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:18,158.158 atus.api INFO request_id=09400a8ccf4d4035 POST /api/v1/analysis/estimate -> 200 in 6621.3ms cache=bypass
+2026-10-20 13:27:18,159.159 atus.api INFO request_id=ccfa160bba284bcd POST /api/v1/analysis/estimate -> 200 in 6627.2ms cache=bypass
+2026-10-20 13:27:18,159.159 atus.api INFO request_id=dd3cc086627b4c1a POST /api/v1/analysis/estimate -> 200 in 6630.1ms cache=bypass
+2026-10-20 13:27:18,159.159 atus.api INFO request_id=7de4d93dc2c2466d POST /api/v1/analysis/estimate -> 200 in 6628.2ms cache=bypass
+2026-10-20 13:27:18,159.159 atus.api INFO request_id=3b81972765424c8b POST /api/v1/analysis/estimate -> 200 in 6629.4ms cache=bypass
+2026-10-20 13:27:18,160.160 atus.api INFO request_id=3bbf7f8702724d32 POST /api/v1/analysis/estimate -> 200 in 6630.7ms cache=bypass
+2026-10-20 13:27:18,160.160 atus.api INFO request_id=f6eef4d6bc8540a7 POST /api/v1/analysis/estimate -> 200 in 6627.3ms cache=bypass
+2026-10-20 13:27:18,171.171 atus.api INFO request_id=992d6bcd328b4e62 POST /api/v1/analysis/estimate -> 200 in 6631.9ms cache=miss
+2026-10-20 13:27:18,175.175 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:18,175.175 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:18,175.175 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:18,176.176 atus.api INFO request_id=5f896f5a20bf4716 POST /api/v1/analysis/estimate -> 200 in 6636.8ms cache=bypass
+2026-10-20 13:27:18,176.176 atus.api INFO request_id=b2f067e4bdb6435b POST /api/v1/analysis/estimate -> 200 in 6644.8ms cache=bypass
+2026-10-20 13:27:18,176.176 atus.api INFO request_id=ed06271d763e4a46 POST /api/v1/analysis/estimate -> 200 in 6637.0ms cache=miss
+2026-10-20 13:27:18,176.176 atus.api INFO request_id=b2ed68ce700949db POST /api/v1/analysis/estimate -> 200 in 6642.5ms cache=bypass
+2026-10-20 13:27:18,682.682 atus.api INFO request_id=7b9aa45f662f4857 GET /__audit/cache/a88e18fa673c8cefaa154eba4ead8b98a22f51d00375a74c3d6a1a4ee2231be4 -> 200 in 0.4ms cache=-
+2026-10-20 13:27:18,693.693 atus.api INFO request_id=33d8d28e874d43e0 GET /__audit/cache/c22f57b082dd6274f6a6484d29106ae3635f484fe82dcb174c61a4b83d8ed539 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,697.697 atus.api INFO request_id=2875ec28097b4736 GET /__audit/cache/f0d342beacec321a9ff866d3e10e6cd7a1aec967c45436589912f148386d1c33 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,701.701 atus.api INFO request_id=6503b11c65de49a9 GET /__audit/cache/f047d6661a5edc1b8201b7442ec5b35fb3611f54fc80ed385d7237137ccfa8e9 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,705.705 atus.api INFO request_id=3d0fda3928f74b55 GET /__audit/cache/b0415351976ea92661305dc6b937bf6e32240aa2384a616b302569f416a91b65 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,709.709 atus.api INFO request_id=e2ecd9929d914227 GET /__audit/cache/18885e9b9bbf28e393c59f0d05acb2ffb11f782fb6c85230ea2a2aaeca32eb45 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,712.712 atus.api INFO request_id=cb8ce25f3e8b4a06 GET /__audit/cache/531e8a788899fc239a35434b8e0fe00fb70bae326047c2e3f118f8dd552ff685 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,716.716 atus.api INFO request_id=eab8ee2b907448ac GET /__audit/cache/c30caac7971d8ab3e59c15686992a3d55a12948218a14e2563912061f849543d -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,720.720 atus.api INFO request_id=265c583b22084e83 GET /__audit/cache/2bb6ce658d72e4f4acd771253a1896973f72b4b08293921d05fdc48e62fcef10 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:18,723.723 atus.api INFO request_id=baaa0d683e8b4b18 GET /__audit/cache/0ef502a5286f25e74f8e311bd2a079f93ae09245033e6db4fa6a10c10b4143bb -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,727.727 atus.api INFO request_id=bb429a64a3724a6e GET /__audit/cache/b2365a4eadef6817368905a45bc8fb4b45e8efbdf5d5e3f2e3c2d12312cd1830 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:18,730.730 atus.api INFO request_id=de695230390d462b GET /__audit/cache/38ca669f026e07a34d41552676715cd774c988f0316fae53c5219d928d2c9fcc -> 200 in 0.1ms cache=-
+2026-10-20 13:27:18,734.734 atus.api INFO request_id=4d76c974a1934fae GET /__audit/cache/a47463b4ae35e90be3a097594efb307b1426662b93e2ae934de61083d1a0f64f -> 200 in 0.1ms cache=-
+2026-10-20 13:27:18,737.737 atus.api INFO request_id=d2bfeeca3e6143f1 GET /__audit/cache/8786ed8d3f73d54bfd8375b8eedcbd63be80b2f5d56f4df515ebde008800cee1 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:18,742.742 atus.api INFO request_id=47e7333be09f4fc5 GET /__audit/cache/093d68d14589c225ffdca2bc9a44b89fc9c28ff21471bdc1ea16128bc250cb8f -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,746.746 atus.api INFO request_id=87a632ea1a2a4405 GET /__audit/cache/c5e73343dbe7cf4659e4987830ed19052e621fb49132c1e9d2f047fe446b4942 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:18,749.749 atus.api INFO request_id=d7f9fc11ac1e4488 GET /__audit/cache/df7b4c516f7871ac07b5452d8c7b5e1281c15e6842911c9e74ed48b6ee1019eb -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,753.753 atus.api INFO request_id=3320792ec5174c74 GET /__audit/cache/5cca898116efd2d252d586ac5d4185930fe916efe0519a59e51dd3b9dd4b023b -> 200 in 0.1ms cache=-
+2026-10-20 13:27:18,756.756 atus.api INFO request_id=a9b609ef337e4c82 GET /__audit/cache/cbec6c9e5ef2ce7885c5b0ca3d8fa816ab8753ea19866b091ce5d9b779f8bcbb -> 200 in 0.1ms cache=-
+2026-10-20 13:27:18,759.759 atus.api INFO request_id=58119de0e8fa4b55 GET /__audit/cache/0f25d8b62a014c95665de256dfe66a583f30c5a778a9934f27f44a5b77d8dc2a -> 200 in 0.1ms cache=-
+2026-10-20 13:27:18,762.762 atus.api INFO request_id=dda7fafee583479c GET /__audit/cache/fb2ba28b4f048a41b7b8f6404bfff9892e50b86c8c394131b1efb39559f091cf -> 200 in 0.1ms cache=-
+2026-10-20 13:27:18,766.766 atus.api INFO request_id=c62e376d4d3c40dd GET /__audit/cache/1c6cebd45e8e5519de2ddcbcf7243daec368622e700e186df23c4e39fc1d361c -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,769.769 atus.api INFO request_id=5af43424c8c744d7 GET /__audit/cache/f8d1f2209f519e209ee388c2a5745a4413c25812ffc1c1950fc345a3c3ab2afc -> 200 in 0.2ms cache=-
+2026-10-20 13:27:18,773.773 atus.api INFO request_id=4aef6813fffa48c0 GET /__audit/cache/910e3be7606f26001a14b19b2c7aa4250f685fa2c79fbbacace55935cb93f50c -> 200 in 0.1ms cache=-
+2026-10-20 13:27:27,955.955 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:27,955.955 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:27,956.956 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:27,956.956 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:27,957.957 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:27,957.957 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:27,958.958 atus.api INFO request_id=0ed77953033e4728 POST /api/v1/analysis/estimate -> 200 in 6644.7ms cache=bypass
+2026-10-20 13:27:27,958.958 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:27,958.958 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:27,959.959 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:27,959.959 atus.api INFO request_id=1eac99ebb47847f4 POST /api/v1/analysis/estimate -> 200 in 6643.8ms cache=bypass
+2026-10-20 13:27:27,960.960 atus.api INFO request_id=8867ea1f710f4580 POST /api/v1/analysis/estimate -> 200 in 6654.0ms cache=bypass
+2026-10-20 13:27:27,960.960 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:27,960.960 atus.api INFO request_id=c7e844be51e34f79 POST /api/v1/analysis/estimate -> 200 in 6650.4ms cache=bypass
+2026-10-20 13:27:27,960.960 atus.api INFO request_id=f7f1072828ca4089 POST /api/v1/analysis/estimate -> 200 in 6653.6ms cache=bypass
+2026-10-20 13:27:27,961.961 atus.api INFO request_id=08c33ad9f7854b2e POST /api/v1/analysis/estimate -> 200 in 6644.9ms cache=bypass
+2026-10-20 13:27:27,961.961 atus.api INFO request_id=4fe1206ca2f14e12 POST /api/v1/analysis/estimate -> 200 in 6654.9ms cache=bypass
+2026-10-20 13:27:27,961.961 atus.api INFO request_id=5b31e674391448b8 POST /api/v1/analysis/estimate -> 200 in 6653.9ms cache=bypass
+2026-10-20 13:27:27,961.961 atus.api INFO request_id=23243fb8443b46a6 POST /api/v1/analysis/estimate -> 200 in 6653.3ms cache=bypass
+2026-10-20 13:27:27,962.962 atus.api INFO request_id=349376ab78cd4bb0 POST /api/v1/analysis/estimate -> 200 in 6656.6ms cache=bypass
+2026-10-20 13:27:27,972.972 atus.api INFO request_id=f43687e15db943d1 POST /api/v1/analysis/estimate -> 200 in 6656.6ms cache=miss
+2026-10-20 13:27:27,973.973 atus.api INFO request_id=f65de397fa154964 POST /api/v1/analysis/estimate -> 200 in 6656.8ms cache=miss
+2026-10-20 13:27:28,481.481 atus.api INFO request_id=b678107ca3484458 GET /__audit/cache/ce1c42ebb281628c3decac16959510d6c45c5a491dd8b507479a55d83ae02ab3 -> 200 in 0.7ms cache=-
+2026-10-20 13:27:28,500.500 atus.api INFO request_id=8cce1651e9224ec2 GET /__audit/cache/af7fdb18b3db806945b04650c9e9da27cb1eea07679f01a346f9a0c1d292d8bf -> 200 in 0.4ms cache=-
+2026-10-20 13:27:28,507.507 atus.api INFO request_id=dbe73febc5754120 GET /__audit/cache/f37099f8c1671dcb4352c32592c58bde44e4c2a927f7b8c2328cc779b20b6b60 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:28,513.513 atus.api INFO request_id=d3326063a4b74117 GET /__audit/cache/104ad01309d6cf9573bf17503877b8ff8afab2345ab90954a7f1f310f4787edb -> 200 in 0.2ms cache=-
+2026-10-20 13:27:28,518.518 atus.api INFO request_id=a38b7d909dbe4473 GET /__audit/cache/f361d6d0f73a7db0f94b6c5d23ccfe29213071c37ec3916bff5eb6a145f40e22 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:28,523.523 atus.api INFO request_id=bb5af4c946a648e3 GET /__audit/cache/0dcfdb5fd4307800749c5560de1a15e28183e7fdadce1acc0bc3b803aa5da355 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:28,527.527 atus.api INFO request_id=804647fa439747f9 GET /__audit/cache/016b5b57116140ada100af5609d55a37520b3915493e1ed6a83dd5c18136ae07 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:28,531.531 atus.api INFO request_id=8bf40e45038848b0 GET /__audit/cache/4ab53a4348605bf0c14cac1198c7f7540e11d871a83c1e49ed2fc574c45ffa7b -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,534.534 atus.api INFO request_id=29f05f8501a24835 GET /__audit/cache/59ab9b8155ea26e393389b1f65b06b4ba207c338e1bcac5d239fb39869c8837f -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,538.538 atus.api INFO request_id=8f56d80757f14e4b GET /__audit/cache/596af88aedf5e43f6be8baef197fc372b3fb95d79b30d36558de9d8fb6693a30 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,542.542 atus.api INFO request_id=1d8ebd89f2724625 GET /__audit/cache/905e9584dab90f6436a967bc7a92845e4e4d0949de68eb309ec1ba997cd81600 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,545.545 atus.api INFO request_id=8ef9799c5ddb40fb GET /__audit/cache/c86c2e77938036b7e892101d112be2b130fbe6c703326a5963142f01dbbe076c -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,548.548 atus.api INFO request_id=0dfe5813a1994a08 GET /__audit/cache/3b6500bc69a1b15b4d2866eb8ef438a5debc413f7660c8168bbe3f73bdbff71b -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,554.554 atus.api INFO request_id=1fe04cd2e62f454d GET /__audit/cache/f1dc222e6b592f2a8c3c78736e25dccaa93d3997520527fd7dfefa118fcc6910 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,557.557 atus.api INFO request_id=a840a82f29f74320 GET /__audit/cache/bb0211d27c2148f3981330b097bfa5b0f128f73b75b0604dac920259fed26d27 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,560.560 atus.api INFO request_id=847fe5e53b124b82 GET /__audit/cache/b9181e6477b8055523eb5db47f9080369c294dfea6d115e7588bccc2e73b94d7 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,563.563 atus.api INFO request_id=1df308749bb64a7b GET /__audit/cache/28b6660c040ec3d74d791fe3ad0dde26776e17ac7e6f44c369bd288130916300 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,566.566 atus.api INFO request_id=2de2af82e54a4ded GET /__audit/cache/5636efb7f7571866ba1934d49a0a141c3653441bc0926837405629e17a180461 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,569.569 atus.api INFO request_id=2f388ae6ff1343d0 GET /__audit/cache/39539317b8960818157d0ab416331091123761a200ddd84b44be96b19bfc5e8b -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,572.572 atus.api INFO request_id=f65aeb8652dc47cc GET /__audit/cache/8af472f14b2b50e600572bbfdff209554b922e6122c14a367f977495f881f37b -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,575.575 atus.api INFO request_id=2f80ceb348a94d0f GET /__audit/cache/e60e19b0dbe155a9fdbb7e82fea485bba88d9c6315fd7423e35a1150e4daaa62 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,578.578 atus.api INFO request_id=e3ac22579ce64100 GET /__audit/cache/132e0df4cc90ffb47c5b01ca0ee047449496c82e9f144640b575aaf0258666d1 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,581.581 atus.api INFO request_id=00d24993c26a4e7e GET /__audit/cache/0a7ed6894143e04944499ed4598bf106d356ce417eb709b55eb1701be82e3fd0 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:28,584.584 atus.api INFO request_id=0e42e5599efe42f5 GET /__audit/cache/620e7d043cdbbcba954f7ededccd5938031d3e2d204b0246e98d346768050483 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:37,799.799 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:37,800.800 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:37,803.803 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:37,803.803 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:37,803.803 atus.api INFO request_id=14cc95696db744d2 POST /api/v1/analysis/estimate -> 200 in 6677.6ms cache=bypass
+2026-10-20 13:27:37,803.803 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:37,805.805 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:37,805.805 atus.api INFO request_id=da84e3e446f940d4 POST /api/v1/analysis/estimate -> 200 in 6678.9ms cache=bypass
+2026-10-20 13:27:37,805.805 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:37,805.805 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:37,805.805 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:37,806.806 atus.api WARNING data version changed during estimate computation; result returned uncached
+2026-10-20 13:27:37,806.806 atus.api INFO request_id=32fa428e68f841f9 POST /api/v1/analysis/estimate -> 200 in 6677.8ms cache=bypass
+2026-10-20 13:27:37,807.807 atus.api INFO request_id=bcd755e81df543e2 POST /api/v1/analysis/estimate -> 200 in 6668.8ms cache=bypass
+2026-10-20 13:27:37,807.807 atus.api INFO request_id=e0ff263de6d54a89 POST /api/v1/analysis/estimate -> 200 in 6668.4ms cache=bypass
+2026-10-20 13:27:37,807.807 atus.api INFO request_id=0fc9c3afbc364d82 POST /api/v1/analysis/estimate -> 200 in 6669.0ms cache=bypass
+2026-10-20 13:27:37,807.807 atus.api INFO request_id=28720c9faf3645d0 POST /api/v1/analysis/estimate -> 200 in 6668.4ms cache=bypass
+2026-10-20 13:27:37,808.808 atus.api INFO request_id=59c02d6f6fec494b POST /api/v1/analysis/estimate -> 200 in 6680.9ms cache=bypass
+2026-10-20 13:27:37,808.808 atus.api INFO request_id=f4101a6111824f90 POST /api/v1/analysis/estimate -> 200 in 6681.9ms cache=bypass
+2026-10-20 13:27:37,808.808 atus.api INFO request_id=00c9ecf6b6de4749 POST /api/v1/analysis/estimate -> 200 in 6681.1ms cache=bypass
+2026-10-20 13:27:37,813.813 atus.api INFO request_id=005dea7bb32449eb POST /api/v1/analysis/estimate -> 200 in 6673.7ms cache=miss
+2026-10-20 13:27:37,813.813 atus.api INFO request_id=5cbc0bcc5a5b4d48 POST /api/v1/analysis/estimate -> 200 in 6674.3ms cache=miss
+2026-10-20 13:27:38,327.327 atus.api INFO request_id=d2ddaf548a8c45a9 GET /__audit/cache/7a15ac1dacfe77a35a05ed534d16995b638bd9cc92e954acf09c3768372d9e4f -> 200 in 0.3ms cache=-
+2026-10-20 13:27:38,334.334 atus.api INFO request_id=abf4ccc0d78e443d GET /__audit/cache/757ece50cbc9590cf758ef816909928be20abb89ca5cad658d2c111e3c684886 -> 200 in 0.3ms cache=-
+2026-10-20 13:27:38,340.340 atus.api INFO request_id=f1adb212dc414f71 GET /__audit/cache/192eceea17113370cf8894ba3be864cc736b9a2e888f226bef7bb0f30b801185 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:38,345.345 atus.api INFO request_id=c9e5816c8c984f1a GET /__audit/cache/831ab532841734bd3d3c14d701b1ab9063af83836d092538673a46909f2fbbe5 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:38,350.350 atus.api INFO request_id=9fc71200082e4193 GET /__audit/cache/4ffc69941609967a3cb78a164eb0732272283b1362f5b4400a71179472a77c12 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:38,355.355 atus.api INFO request_id=6149a7ed3ee94390 GET /__audit/cache/383a365524753d3932f06ac7eff3fca071dbce11227b99e91fd4dba2a91a9c8a -> 200 in 0.2ms cache=-
+2026-10-20 13:27:38,359.359 atus.api INFO request_id=af26df09bf6e43f0 GET /__audit/cache/519c1b82224a02f6f4a8b75a7fd9fbca5304728bc7cff66b92d1d06100761590 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,363.363 atus.api INFO request_id=7a1c98d7e3654e41 GET /__audit/cache/7d71fdb4733bc30041978ec7a9b1d88dabe5fbcd232f3b62bb9a1b859897fdda -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,367.367 atus.api INFO request_id=91b83a6aaa774f6d GET /__audit/cache/73da243c426fe0309a6a3e9b423b826b34a15596722fbf6c693674963ca82e05 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:38,373.373 atus.api INFO request_id=54e9b081894e4ef7 GET /__audit/cache/e97145071b369cc06d71fff96d465a7605f613820f8968b7e484901717f69769 -> 200 in 0.2ms cache=-
+2026-10-20 13:27:38,377.377 atus.api INFO request_id=3a4fc914db674fd3 GET /__audit/cache/11485709f0506543d0f8bd0e649a526214168cf57dcfacb57cb6503be26880f2 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,380.380 atus.api INFO request_id=dcf81357d2e949eb GET /__audit/cache/3ec986e625da8a02d6931a3ac3f4471f0800133add2b704917a1090e6fa9b462 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,384.384 atus.api INFO request_id=213d29e9a98d404a GET /__audit/cache/30c961ddfe814924ab3c1c2cfa59b93abb9be609cac7d1d626ff1857f9c04b32 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,387.387 atus.api INFO request_id=e6bf02f110de4b3a GET /__audit/cache/9a1368cf6db62904885586469e4505fefe49cf01d2da59925c0eefb4156c7c15 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,390.390 atus.api INFO request_id=d8936a65c4564690 GET /__audit/cache/0307562083613b8f1c3845475261a4212dcce47576c055f2f773cc4b8637a2d3 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,393.393 atus.api INFO request_id=44a26833168a4050 GET /__audit/cache/7e52e8e85d9da2cc51fd74d6b9d088a1748ed7057fbd2fd34b59ee53716848f5 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,396.396 atus.api INFO request_id=fa0b884e60134061 GET /__audit/cache/a31303d83f4fe678a09756aa4284c8e3a691080d711485d606ef1e77c61fbfe9 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,399.399 atus.api INFO request_id=c10cffa00f104e41 GET /__audit/cache/05211d47afd8377abc02a6e3579eefaef2d73a795d669b09efd4999dee983f65 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,403.403 atus.api INFO request_id=5a63bfb935a14673 GET /__audit/cache/f8b2444145eb4c26685b066e17dfeb3d79f4c4a9fc9892ba8e5673b97be51594 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,405.405 atus.api INFO request_id=240fd85913544c45 GET /__audit/cache/47c5696ee79043d05bd54722e0cd93f43184cb2191927a1f982fee8576923102 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,408.408 atus.api INFO request_id=7f5a2f98e42e4774 GET /__audit/cache/08afb4fdb333c59fbb078db18887a3201c5ac8c2aa679199cbbf14017cee8406 -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,411.411 atus.api INFO request_id=8589fe6fd8864c02 GET /__audit/cache/5136226e35f6f7953943fd34af140670a7cbf220aae5c8ca516c35c1a05f801a -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,416.416 atus.api INFO request_id=13971b296b6a4a64 GET /__audit/cache/6f0c936e457945c393772223390defdf46030cb291117dc1413d895a292cee0b -> 200 in 0.1ms cache=-
+2026-10-20 13:27:38,419.419 atus.api INFO request_id=f50e417e814c4562 GET /__audit/cache/9481566b038b8e3e3b21552bfa16c3667125bd301d9f812f78efe158b9794105 -> 200 in 0.1ms cache=-

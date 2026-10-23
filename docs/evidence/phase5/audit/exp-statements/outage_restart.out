@@ -1,0 +1,66 @@
+[t=   0.00s] ============================================================ restart [] 2026-10-20T13:34:37
+[t=   0.02s] warm: (200, 'ok', 16.6, None) (200, 'ok', 3.7, 'hit')
+[t=   0.04s] API backends before: [198, 199, 200, 201]
+[t=   1.04s] docker restart begin
+[t=   1.31s] docker restart returned after 0.27s
+[t=   1.53s] DB accepting connections 0.49s after restart began
+[t=   6.70s]    poll t=0.04 status=200 code=ok 3.3ms
+[t=   6.70s]    poll t=0.55 status=200 code=ok 11.8ms
+[t=   6.70s]    poll t=1.06 status=200 code=ok 7.8ms
+[t=   6.70s]    poll t=1.57 status=503 code=database_unavailable 9.3ms
+[t=   6.70s]    poll t=2.09 status=503 code=database_unavailable 6.1ms
+[t=   6.70s]    poll t=2.60 status=503 code=database_unavailable 5.4ms
+[t=   6.70s]    poll t=3.10 status=503 code=database_unavailable 6.1ms
+[t=   6.70s]    poll t=3.61 status=200 code=ok 18.4ms
+[t=   6.70s]    poll t=4.13 status=200 code=ok 10.3ms
+[t=   6.70s]    poll t=4.65 status=200 code=ok 3.7ms
+[t=   6.70s]    poll t=5.16 status=200 code=ok 11.1ms
+[t=   6.70s]    poll t=5.67 status=200 code=ok 9.7ms
+[t=   6.70s]    poll t=6.19 status=200 code=ok 10.9ms
+[t=   6.72s] API backends after restart: [34, 35, 36, 37]
+[t=   6.72s]    seq GET /api/v1/meta -> (200, 'ok', 4.2, None)
+[t=   6.72s]    seq POST /api/v1/analysis/estimate -> (200, 'ok', 3.6, 'hit')
+[t=   6.74s]    seq POST /api/v1/analysis/estimate -> (200, 'ok', 19.6, 'miss')
+[t=   6.75s]    seq GET /ready -> (200, 'ok', 3.7, None)
+[t=   6.75s]    seq GET /api/v1/meta -> (200, 'ok', 2.6, None)
+[t=   6.75s]    seq GET /api/v1/meta -> (200, 'ok', 2.4, None)
+[t=   6.76s]    seq GET /api/v1/meta -> (200, 'ok', 3.9, None)
+[t=   6.76s]    seq GET /api/v1/meta -> (200, 'ok', 2.9, None)
+[t=   6.76s]    seq GET /api/v1/meta -> (200, 'ok', 3.4, None)
+[t=   6.76s]    seq GET /api/v1/meta -> (200, 'ok', 2.1, None)
+[t=   6.77s]    seq GET /api/v1/meta -> (200, 'ok', 2.3, None)
+[t=   6.77s]    seq GET /api/v1/meta -> (200, 'ok', 3.0, None)
+[t=   6.78s] API backends at end: [34, 35, 36, 37]
+[t=   0.00s] ============================================================ restart [] 2026-10-20T13:36:46
+[t=   0.01s] warm: (200, 'ok', 9.9, None) (200, 'ok', 2.9, 'hit')
+[t=   0.02s] API backends before: [34, 35, 36, 37, 38, 39]
+[t=   1.02s] docker restart begin
+[t=   1.28s] docker restart returned after 0.26s
+[t=   1.49s] DB accepting connections 0.47s after restart began
+[t=   6.66s]    poll t=0.02 status=200 code=ok 2.0ms
+[t=   6.66s]    poll t=0.53 status=200 code=ok 9.2ms
+[t=   6.66s]    poll t=1.04 status=200 code=ok 5.6ms
+[t=   6.66s]    poll t=1.55 status=503 code=database_unavailable 3.0ms
+[t=   6.66s]    poll t=2.05 status=503 code=database_unavailable 6.0ms
+[t=   6.66s]    poll t=2.56 status=503 code=database_unavailable 6.7ms
+[t=   6.66s]    poll t=3.07 status=503 code=database_unavailable 6.3ms
+[t=   6.66s]    poll t=3.58 status=503 code=database_unavailable 5.4ms
+[t=   6.66s]    poll t=4.09 status=503 code=database_unavailable 6.2ms
+[t=   6.66s]    poll t=4.60 status=200 code=ok 13.4ms
+[t=   6.66s]    poll t=5.12 status=200 code=ok 9.6ms
+[t=   6.66s]    poll t=5.63 status=200 code=ok 7.3ms
+[t=   6.66s]    poll t=6.15 status=200 code=ok 10.8ms
+[t=   6.68s] API backends after restart: [34, 35, 36, 37, 38, 39]
+[t=   6.69s]    seq GET /api/v1/meta -> (200, 'ok', 8.2, None)
+[t=   6.69s]    seq POST /api/v1/analysis/estimate -> (200, 'ok', 6.6, 'hit')
+[t=   6.72s]    seq POST /api/v1/analysis/estimate -> (200, 'ok', 22.6, 'miss')
+[t=   6.72s]    seq GET /ready -> (200, 'ok', 2.6, None)
+[t=   6.72s]    seq GET /api/v1/meta -> (200, 'ok', 3.1, None)
+[t=   6.73s]    seq GET /api/v1/meta -> (200, 'ok', 2.8, None)
+[t=   6.73s]    seq GET /api/v1/meta -> (200, 'ok', 2.8, None)
+[t=   6.73s]    seq GET /api/v1/meta -> (200, 'ok', 3.9, None)
+[t=   6.73s]    seq GET /api/v1/meta -> (200, 'ok', 2.6, None)
+[t=   6.74s]    seq GET /api/v1/meta -> (200, 'ok', 2.5, None)
+[t=   6.74s]    seq GET /api/v1/meta -> (200, 'ok', 2.6, None)
+[t=   6.74s]    seq GET /api/v1/meta -> (200, 'ok', 2.6, None)
+[t=   6.75s] API backends at end: [34, 35, 36, 37, 38, 39]

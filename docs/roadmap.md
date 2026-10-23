@@ -130,12 +130,141 @@ Vite, client-side only):
   110.8 kB gzip JS, home visually complete ~170 ms locally with exactly one
   API call.
 
-Deliberately not built: exports (CSV/PNG/PDF), saved analyses/accounts,
-persistent history, dark mode, SSR/SEO work.
+Deliberately not built: exports (CSV/PNG/PDF; CSV and JSON exports came in
+Phase 5 and were removed again in the 2026-10-22 design review), saved
+analyses/accounts, persistent history, dark mode, SSR/SEO work.
 
-## Phase 5 — Hardening & Deployment
+## Phase 5 — Production Hardening & $0 Deployment
 
-Deployment packaging for the API + static frontend, traffic controls (rate
-limiting) for public exposure, monitoring, performance work driven by real
-query patterns, release automation for new ATUS years, and frontend niceties
-deferred from Phase 4 (exports, short share links).
+**Status: implemented; deployment pending owner steps (see
+[deployment.md](deployment.md)).** Phase 5 is **not** complete. It is marked
+complete only when every item of the definition of done (brief §21) holds;
+the items still open are listed under "Remaining" below.
+
+Phase 5 changes how the system runs, not what it computes:
+`ANALYTICS_VERSION` stays `0.2`. How the parts fit together is in
+[architecture.md](architecture.md).
+
+### Implemented and verified locally
+
+- **Audit** ([operations.md](operations.md)): the baseline at commit
+  `387fc2d`, 71 findings and 14 recorded facts, each finding checked by two
+  independent refuters; the timed free-tier measurements of the pre-Phase-5
+  code are in
+  [evidence/phase5/01-audit-timed.md](evidence/phase5/01-audit-timed.md).
+- **Hosting decision** ([ADR-011](adr/ADR-011-hosting.md)): a judge panel
+  scored five proposals. Chosen: Cloudflare Workers Free (SPA, static
+  snapshot, and an `/api` Worker with a KV result cache and a Durable Object
+  quota governor), Render Free (the API image, by digest) and Neon Free (the
+  serving database). The runner-up, Vercel Hobby as the API host, is the
+  documented fallback: a manual procedure whose preconditions are not
+  implemented (ADR-011, amendments). The free-tier budget, failure modes,
+  owner steps and configuration reference are in [deployment.md](deployment.md).
+- **Reload without downtime and unique data versions**
+  ([ADR-013](adr/ADR-013-data-releases-and-serving-db.md)): `atus load`
+  builds the new data in a shadow schema and switches it in with one short
+  transaction; `data_version` is globally unique and committed with the data
+  (migration `0003`); release-specific values derive from the source
+  registry, and a test runs a synthetic next release (2003–2026) through
+  validation, the load, the engine and the API.
+- **Serving database** (ADR-013): `atus build-serving-db` derives a ~0.6 GB
+  database whose content hash repeats across builds, and a checksummed
+  `pg_dump` release artifact with a manifest; `atus restore-serving-db`
+  applies least-privilege roles (`scripts/ops/roles.sql`); full-database
+  commands refuse a serving database. A restore drill into a fresh
+  PostgreSQL 16 cluster as a non-superuser owner passed
+  `atus validate-analytics` (24/24) and the opt-in benchmark tests. The
+  timed drill (2026-10-21, alone on the machine) restored the release
+  artifact with the production restore tool in 15.6 s of wall time, passed
+  all 22 checks and measured `sum(pg_database_size)` at 649,903,180 B, 65%
+  of the 1,000,000,000 B budget
+  ([record, section 3](../loadtests/results/2026-10-21-emulation.md#3-a-restore-drill-timed)).
+- **Statistical equivalence** (brief §9): criterion in ADR-013 (Decision 10)
+  and `atus_pipeline.serving.equivalence`. `atus compare-serving-db` found
+  all 161 specifications equivalent on the restore drill (ADR-013). The
+  three-way HTTP replay passed 544 of 544 specifications and 84 of 84 GET
+  requests after the one plan regression it found was fixed (commit
+  `9afd1b4`; [evidence](evidence/phase5/equivalence/final-9afd1b4/README.md)).
+- **Load and quota protection in the API**
+  ([ADR-012](adr/ADR-012-load-and-quota-protection.md)): body cap, edge
+  authentication, per-client token buckets, a daily cap, admission lanes,
+  single-flight, per-transaction timeouts and a request deadline,
+  stale-connection handling, and specific error codes with `Retry-After`.
+  Cache hits, metadata and 4xx answers decided before the statistics query
+  run no SQL while the in-process data snapshot is fresh. The limits were
+  calibrated on the free-tier emulation and kept at their code defaults
+  (ADR-012, "Calibration (§13)"); the post-deploy replay on Neon must still
+  confirm them.
+- **Load tests** (brief §13; [`loadtests/`](../loadtests/README.md)): k6
+  scenarios, cold starts and a timed restore drill, run locally on
+  2026-10-21 against the production-mode stack with the real serving release,
+  the API at 0.1 CPU / 512 MB and the database at Neon's 0.25 CU floor and
+  2 CU ceiling
+  ([record](../loadtests/results/2026-10-21-emulation.md)). Uncached
+  single-year estimates with replicate SEs took 0.99 s at p50 at 0.25 CU and
+  79 ms at 2 CU. Pooled 22-year and 23-year trend worst cases took
+  21.4–21.8 s and 2.03–2.12 s, and the F66 broad-selector compare by sex
+  69–71 s at 0.25 CU. Throughput at 0.25 CU peaks at one analysis in
+  flight; at 2 CU it plateaus at about 24 analyses per second from 2
+  clients. The API's peak
+  RSS was 76.1 MiB of 512 MB. Every protection default was kept, including
+  the 85 s statement timeout, which at the floor is only 1.2 × the F66
+  compare's p99 ([ADR-012, "Calibration (§13)"](adr/ADR-012-load-and-quota-protection.md#calibration-13)).
+- **Edge** ([ADR-015](adr/ADR-015-edge-cache-snapshot-and-governor.md)): the
+  Worker in `edge/`, the KV result cache, the static snapshot of all
+  metadata and about 130 prewarmed analyses, and the quota governor.
+- **Observability** ([ADR-014](adr/ADR-014-observability.md)): JSON access
+  logs with truncated client addresses, `/metrics`, token-gated `/ready`, and
+  monitor workflows that never touch the database.
+- **Frontend** ([frontend.md](frontend.md)): API version check, cold-start
+  notice and a 150 s retry budget, quota and paused states, CSV and JSON
+  exports, a boot fallback, a same-origin production build under a strict
+  CSP, and Playwright projects for Chromium, mobile, Firefox and WebKit.
+- **Packaging**: a multi-stage, non-root API image installed from
+  hash-locked requirements; the production-mode compose stack, the free-tier
+  emulation profile and a PgBouncer profile; `scripts/smoke_stack.sh`. On
+  2026-10-20 the stack smoke (plain and emulated), the edge probe and the
+  Playwright suite through the local edge passed ([deployment.md](deployment.md),
+  step 0). Firefox, which cannot launch natively on the development machine,
+  passed on 2026-10-21 in vite-preview mode with its browser in the official
+  Playwright Linux image (`scripts/e2e_in_container.sh`,
+  [frontend.md](frontend.md#testing)); it has not run in stack mode yet.
+- **CI/CD** (`.github/workflows/`): CI for backend, supply chain, frontend,
+  edge, the image (gate, deployment tests, stack smoke, Trivy) and both E2E
+  modes; a deploy workflow that deploys the tested image by digest behind the
+  `production` environment's required reviewer; monitor workflows;
+  Dependabot.
+- **Short share links**: deferred by decision
+  ([ADR-016](adr/ADR-016-short-share-links.md)).
+
+### Remaining for the definition of done
+
+Each item must be done or verified before Phase 5 is marked complete and
+`v1.0.0` is tagged.
+
+The load tests and the timed restore drill are done (above). The
+documentation now carries their numbers, ADR-008 is amended for the Phase 5
+data version, and [deployment.md](deployment.md) matches the ADR-011
+amendments (the Vercel fallback is a documented manual procedure, not
+implemented, and no Worker var selects the API origin).
+
+1. **CI on GitHub**: the Phase 5 workflows have not yet run on GitHub-hosted
+   runners; their steps were rehearsed locally. That first run is also the
+   first native-Linux and first stack-mode Firefox E2E result.
+2. **Owner account steps** ([deployment.md](deployment.md#owner-account-setup-19)):
+   Cloudflare, Render, Neon and GitHub on free plans; publish the serving-DB
+   release artifact (`releases/current.json` says `unpublished`); restore it
+   into Neon; run the first Worker deploy; approve the first deploy run.
+3. **Prove the deployment** (deployment.md, step 8): curl and Playwright
+   against the public URL, including the security headers and CSP on the
+   real origins, the origin lock, and live recomputation of snapshot entries
+   under §9. Only then does the README show a live URL.
+4. **Post-deploy measurement** (deployment.md, steps 9 and 10): the
+   quota-budgeted replay (`scripts/replay_deployed.py`: the BLS benchmarks
+   and §9 spot checks against the deployed URL), the unknowns listed in
+   ADR-011, and the week-1 calibration of the Neon compute and timeouts. The
+   replay must confirm the emulation's calibration on Neon, F66 included
+   (ADR-012, "What stays open").
+5. **Monitors live**: the scheduled workflows stay skipped until the
+   repository variable `PUBLIC_BASE_URL` is set, after the first deploy has
+   been verified (deployment.md, owner step 4.1 and step 8).

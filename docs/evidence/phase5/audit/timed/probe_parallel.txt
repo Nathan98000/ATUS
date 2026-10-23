@@ -1,0 +1,5 @@
+parallel_default: 40.63s
+parallel_off: 19.21s
+parallel_default: 39.49s
+parallel_off: 19.11s
+ints+numeric point sums identical: True | max rel diff: 1.3361373103538273e-14

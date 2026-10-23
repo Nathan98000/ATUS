@@ -1,0 +1,10 @@
+sql_condition: a.activity_code = ANY(%(activity_codes)s)
+n param values: 116
+(667202, 4252, 11177.0, 18466.0)
+atus.replicate_weights pages 41696 bytes 341573632
+atus.respondents pages 2166 bytes 17743872
+atus.activities pages 18995 bytes 155607040
+atus.idx_activities_activity_code pages 2535 bytes 20766720
+db size ('598 MB', 627457047)
+other dbs [('atus', 627457047), ('postgres', 7699479), ('template0', 7537167), ('template1', 7765015)]
+shared_buffers ('128MB',) work_mem ('4MB',)

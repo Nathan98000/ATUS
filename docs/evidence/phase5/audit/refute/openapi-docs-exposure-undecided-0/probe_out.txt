@@ -1,0 +1,19 @@
+  from starlette.testclient import TestClient as TestClient  # noqa
+15:20:45 INFO    atus.api: request_id=20146bc994b342a4 GET /docs -> 200 in 0.2ms cache=-
+15:20:45 INFO    httpx: HTTP Request: GET http://testserver/docs "HTTP/1.1 200 OK"
+15:20:45 INFO    atus.api: request_id=7d63273becfa4599 GET /redoc -> 200 in 0.1ms cache=-
+15:20:45 INFO    httpx: HTTP Request: GET http://testserver/redoc "HTTP/1.1 200 OK"
+15:20:45 INFO    atus.api: request_id=62cebe07a84e4677 GET /docs/oauth2-redirect -> 200 in 0.1ms cache=-
+15:20:45 INFO    httpx: HTTP Request: GET http://testserver/docs/oauth2-redirect "HTTP/1.1 200 OK"
+15:20:45 INFO    atus.api: request_id=00de5c60f32a4a14 GET /openapi.json -> 200 in 30.6ms cache=-
+15:20:45 INFO    httpx: HTTP Request: GET http://testserver/openapi.json "HTTP/1.1 200 OK"
+15:20:45 INFO    atus.api: request_id=e2c69a0696524516 GET /ready -> 200 in 4.8ms cache=-
+15:20:45 INFO    httpx: HTTP Request: GET http://testserver/ready "HTTP/1.1 200 OK"
+/docs 200
+['https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css', 'https://fastapi.tiangolo.com/img/favicon.png', 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js']
+/redoc 200
+['https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700', 'https://fastapi.tiangolo.com/img/favicon.png', 'https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js']
+/docs/oauth2-redirect 200
+/openapi.json 200
+/ready 200
+{"status":"ready","database":"ok","data_loaded":true}

@@ -1,0 +1,19 @@
+scenario set { ok: true, scenario: 'g_html200_for60s', n: 2, delay: 60 }
+
+=== g_html200_for60s / home — meta requests at [0.056,1.06,3.064] (gaps [1.004,2.004]), api requests 3
+  [0.05s] 
+  [0.30s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [3.07s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+
+=== g_html200_for60s / explore — meta requests at [0.06,1.063,3.066] (gaps [1.003,2.003]), api requests 6
+  [0.03s] 
+  [0.28s] Loading the analysis builder… Fetching what the analytical service supports.
+  [3.31s] The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+
+=== g_html200_for60s / deep — meta requests at [0.061,1.063,3.066] (gaps [1.002,2.003]), api requests 6
+  [0.05s] 
+  [0.30s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [3.08s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details The analy
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.

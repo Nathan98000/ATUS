@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/conf_nan.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:42 GMT
+server: uvicorn
+content-length: 215
+content-type: application/json
+vary: Origin
+x-request-id: 7a9192ee089d4cd9
+
+{"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","confidence_level"],"message":"Input should be less than 1","type":"less_than"}]}}}
+### status=422 time_total=0.002791s size_download=215 size_upload=107

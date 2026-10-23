@@ -3,6 +3,7 @@ import type { ReactElement, ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
+import { vi } from 'vitest'
 
 export function testQueryClient(): QueryClient {
   return new QueryClient({
@@ -36,4 +37,19 @@ export function routesFor(children: ReactNode) {
       <Route path="*" element={<>{children}</>} />
     </Routes>
   )
+}
+
+/**
+ * Runs `body` on a fake clock that still advances with real time, so MSW,
+ * React and Testing Library keep working while the test jumps over long
+ * waits with `vi.advanceTimersByTimeAsync` (the cold-start retry budget,
+ * Retry-After delays, the waking-notice threshold).
+ */
+export async function withFakeClock(body: () => Promise<void>): Promise<void> {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  try {
+    await body()
+  } finally {
+    vi.useRealTimers()
+  }
 }

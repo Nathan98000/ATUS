@@ -1,0 +1,66 @@
+== index.html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Explore how Americans spend their time, using official American Time Use Survey data from the U.S. Bureau of Labor Statistics."
+    />
+    <title>ATUS Explorer</title>
+    <script type="module" crossorigin src="/assets/index-DfILjWC4.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-iJKMLZcZ.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+
+== files
+index.html
+icons.svg
+favicon.svg
+assets/index-DfILjWC4.js
+assets/index-iJKMLZcZ.css
+== JS counts
+eval(                        0
+new Function                 0
+Function(                    0
+innerHTML                    5
+outerHTML                    0
+insertAdjacentHTML           0
+document.write               0
+data:                        22
+blob:                        1
+setAttribute(`style`         0
+setAttribute("style"         0
+.cssText                     0
+createElement(`style`)       1
+createElement("style")       0
+adoptedStyleSheets           0
+insertRule                   0
+importScripts                0
+Worker(                      0
+http://                      20
+https://                     11
+wss://                       0
+ws://                        0
+sendBeacon                   0
+XMLHttpRequest               0
+fetch(                       17
+== CSS url()/import/data:
+== absolute URLs in JS
+   2 http://localhost
+   3 http://www.w3.org/1998/Math/MathML
+   7 http://www.w3.org/1999/xlink
+   5 http://www.w3.org/2000/svg
+   3 http://www.w3.org/XML/1998/namespace
+   1 https://github.com/Nathan98000/ATUS
+   1 https://github.com/Nathan98000/ATUS/blob/main/docs/analytics.md
+   1 https://github.com/ungap/url-search-params.
+   2 https://react.dev/errors/
+   2 https://reactrouter.com/en/main/routers/picking-a-router.
+   3 https://www.bls.gov/tus/
+   1 https://www.bls.gov/tus/atususersguide.pdf

@@ -1,0 +1,9 @@
+rep0 cold: status=200 wall=32.34s cache=miss
+rep0 warm: status=200 wall=33.22s cache=miss
+rep0: cold wall=32.34s db=32324.225000000002ms | warm wall=33.22s db=33193.801ms | cache: drop=False files_bytes=650134084 resident_bytes=0 resident_MB=0.0 of 620.0 MB (0.0%)
+rep1 cold: status=200 wall=48.84s cache=miss
+rep1 warm: status=200 wall=44.99s cache=miss
+rep1: cold wall=48.84s db=48824.822ms | warm wall=44.99s db=44950.94300000001ms | cache: drop=False files_bytes=650134084 resident_bytes=0 resident_MB=0.0 of 620.0 MB (0.0%)
+rep2 cold: status=200 wall=47.08s cache=miss
+rep2 warm: status=200 wall=40.91s cache=miss
+rep2: cold wall=47.08s db=47069.66799999999ms | warm wall=40.91s db=40898.842ms | cache: drop=False files_bytes=650134084 resident_bytes=0 resident_MB=0.0 of 620.0 MB (0.0%)

@@ -1,0 +1,215 @@
+.env.example:12:# BLS multi-year release identifier (suffix of the multi-year files, e.g. 0325 = 2003-2025)
+.env.example:13:ATUS_RELEASE=0325
+README.md:12:turned the official BLS 2003–2025 multi-year microdata into a validated
+README.md:47:data/staging/0325/   staged CSV data files
+README.md:78:![ATUS Explorer showing a 2003-2025 leisure-time trend with confidence bands and an explicit 2020 gap](docs/images/atus-explorer-trend.png)
+README.md:215:- [ATUS microdata files](https://www.bls.gov/tus/data.htm) · [2003–2025 files](https://www.bls.gov/tus/data/datafiles-0325.htm)
+README.md:217:- [2003–25 Interview Data Dictionary](https://www.bls.gov/tus/dictionaries/atusintcodebk0325.pdf) · [ATUS-CPS Data Dictionary](https://www.bls.gov/tus/dictionaries/atuscpscodebk0325.pdf)
+README.md:218:- [2003–2025 Activity Coding Lexicon](https://www.bls.gov/tus/lexicons/lexiconnoex0325.pdf)
+docs/adr/ADR-004-2020-handling.md:34:A 2003–2025 pooled estimate is impossible by design (it is also impossible
+docs/analytics.md:25:| **activity** | A set of 6-digit codes from the harmonized 2003–25 lexicon, selected by explicit codes or tier prefixes (a 2-/4-digit code means the tier and all descendants) with optional exclusions. Validated against `atus.activity_*` before any query. |
+docs/analytics.md:162:## Performance baseline (full 2003–25 database, Sept 2026)
+docs/api.md:182:Measured effect (in-process client, full 2003–25 database, Sept 2026):
+docs/api.md:189:| trend 2003–2025 with per-year SEs | 11.7 s | 0.003 s |
+docs/api.md:205:| data release + ingestion run (`0325`, `run N`) | loaded BLS data | `atus load` rebuilds the database |
+docs/architecture.md:12:   bls.gov ───────────────► data/raw/*.zip ───────► data/staging/0325/*.dat ──┐
+docs/data-lineage.md:7:[2003–25 Interview Data Dictionary](https://www.bls.gov/tus/dictionaries/atusintcodebk0325.pdf)
+docs/data-lineage.md:9:[ATUS-CPS Data Dictionary](https://www.bls.gov/tus/dictionaries/atuscpscodebk0325.pdf)
+docs/data-lineage.md:24:## atus.respondents ← Respondent file (`atusresp_0325.dat`)
+docs/data-lineage.md:66:## atus.household_members ← Roster file (`atusrost_0325.dat`)
+docs/data-lineage.md:76:## atus.activities ← Activity file (`atusact_0325.dat`)
+docs/data-lineage.md:98:## atus.activity_companions ← Who file (`atuswho_0325.dat`)
+docs/data-lineage.md:112:## atus.cps_persons ← ATUS-CPS file (`atuscps_0325.dat`)
+docs/data-lineage.md:139:## atus.replicate_weights ← Replicate weights file (`atuswgts_0325.dat`)
+docs/data-lineage.md:144:## atus.pandemic_replicate_weights ← Pandemic replicate weights file (`atuswgtspan_1920.dat`)
+docs/data-lineage.md:152:Extracted from `lexiconnoex0325.pdf` by `scripts/extract_lexicon.py` into the
+docs/data-lineage.md:153:committed `data/reference/activity_lexicon_0325.csv` (18 / 107 / 431 entries);
+docs/database.md:31:One row per ATUS respondent (= one completed diary day), 2003–2025.
+docs/database.md:102:  don't know / refused (1,208 rows in 2003–25).
+docs/database.md:137:extracted from the official 2003–2025 Coding Lexicon PDF by
+docs/database.md:139:`data/reference/activity_lexicon_0325.csv`. Six-digit entries carry the BLS
+docs/examples.md:3:Real analyses run against the loaded 2003–2025 database (outputs captured
+docs/examples.md:29:## 2. Leisure and sports by year, 2003–2025 (trend)
+docs/examples.md:131:  "warnings": ["Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."]
+docs/methodology.md:6:[2003–25 Interview Data Dictionary](https://www.bls.gov/tus/dictionaries/atusintcodebk0325.pdf),
+docs/methodology.md:82:the 2003–2025 multi-year lexicon: travel is tier 18 for all years (single-year
+docs/roadmap.md:11:- Reproducible acquisition of the official BLS 2003–2025 multi-year microdata
+docs/source-data.md:6:[datafiles-0325.htm](https://www.bls.gov/tus/data/datafiles-0325.htm).
+docs/source-data.md:7:The pipeline uses the **2003–2025 multi-year files** (release code `0325`,
+docs/source-data.md:17:| Respondent | `atusresp-0325.zip` | 258,954 | `respondents` |
+docs/source-data.md:18:| Roster | `atusrost-0325.zip` | 702,409 | `household_members` |
+docs/source-data.md:19:| Activity | `atusact-0325.zip` | 4,994,172 | `activities` |
+docs/source-data.md:20:| Who | `atuswho-0325.zip` | 6,358,042 | `activity_companions` |
+docs/source-data.md:21:| ATUS-CPS | `atuscps-0325.zip` | 1,583,133 | `cps_persons` (curated subset; respondent households only) |
+docs/source-data.md:22:| Replicate weights | `atuswgts-0325.zip` | 258,954 | `replicate_weights` |
+docs/source-data.md:23:| Pandemic replicate weights (2019–20) | `atuswgtspan-1920.zip` | 18,217 | `pandemic_replicate_weights` |
+docs/source-data.md:24:| Coding lexicon (PDF) | `lexiconnoex0325.pdf` | 18+107+431 codes | `activity_tier1/2`, `activity_codes` (via committed CSV) |
+docs/source-data.md:32:**Activity Summary (`atussum-0325.zip`, 258,954 records).** Per-respondent
+docs/source-data.md:68:   [datafiles-0325.htm](https://www.bls.gov/tus/data/datafiles-0325.htm) into
+docs/source-data.md:79:| atusresp-0325.zip | 16,710,282 | `026dcbf38665c749` |
+docs/source-data.md:80:| atusrost-0325.zip | 3,317,812 | `e8f1b62daf3b450e` |
+docs/source-data.md:81:| atusact-0325.zip | 83,407,298 | `8d2540316e04f784` |
+docs/source-data.md:82:| atussum-0325.zip | 16,141,000 | `a33499aa7b74e855` |
+docs/source-data.md:83:| atuswho-0325.zip | 21,346,984 | `c3f6a935ef6143c8` |
+docs/source-data.md:84:| atuscps-0325.zip | 103,926,958 | `0ea77394ff8532fb` |
+docs/source-data.md:85:| atuswgts-0325.zip | 299,670,507 | `fd1970cb6376c11e` |
+docs/source-data.md:86:| atuswgtspan-1920.zip | 57,449,948 | `3e7c50dc5d6a5ae7` |
+docs/source-data.md:91:[Interview Data Dictionary](https://www.bls.gov/tus/dictionaries/atusintcodebk0325.pdf),
+docs/source-data.md:92:[ATUS-CPS Data Dictionary](https://www.bls.gov/tus/dictionaries/atuscpscodebk0325.pdf),
+docs/source-data.md:93:[Coding Lexicon](https://www.bls.gov/tus/lexicons/lexiconnoex0325.pdf),
+frontend/openapi.json:5:  "description": "Read-only analytical API over the American Time Use Survey (ATUS) 2003-2025\nmulti-year microdata.\n\nAll estimates are **survey-weighted population statistics** computed by the\nproject's validated analytical engine (ATUS User's Guide ch. 7 estimators;\nreplicate-weight standard errors per ch. 7.5) \u2014 never unweighted sample\nmeans. 2020 has special weighting rules the engine enforces explicitly.\nMethodology: see docs/analytics.md and docs/methodology.md in the repository;\nthe engine reproduces 24 official BLS published values in its benchmark suite.\n\nResponses embed the exact canonical analysis `spec`; resubmitting it (same\n`analytics_version` and data release, see GET /api/v1/meta) reproduces the\nresult.\n",
+frontend/openapi.json:201:    "description": "Flat listing of the harmonized 2003-25 activity coding lexicon (18 major categories, 107 subcategories, 431 leaf activities), filterable by level, direct parent, and name search. In analysis requests, a 2- or 4-digit code selects itself plus all descendants.",
+frontend/openapi.json:522:      "description": "Harmonized 2003-25 lexicon code (2, 4, or 6 digits)."
+frontend/openapi.json:991:      "description": "BLS multi-year release code, e.g. '0325' = 2003-2025."
+frontend/openapi.json:1330:       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+frontend/src/api/generated.ts:76:     * @description Flat listing of the harmonized 2003-25 activity coding lexicon (18 major categories, 107 subcategories, 431 leaf activities), filterable by level, direct parent, and name search. In analysis requests, a 2- or 4-digit code selects itself plus all descendants.
+frontend/src/api/generated.ts:238:       * @description Harmonized 2003-25 lexicon code (2, 4, or 6 digits).
+frontend/src/api/generated.ts:475:       * @description BLS multi-year release code, e.g. '0325' = 2003-2025.
+frontend/src/api/generated.ts:654:     *         "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+frontend/src/features/builder/state.test.ts:13:const YEARS = Array.from({ length: 23 }, (_, index) => 2003 + index) // 2003–2025
+frontend/src/features/results/TrendChart.test.tsx:16:  it('splits the real 2003–2025 leisure trend at the unavailable 2020', () => {
+frontend/src/test/fixtures.ts:3: * against the loaded 2003–2025 database (September 2026). Never hand-edit
+frontend/src/test/fixtures.ts:46:/** Leisure 2003–2025: 22 available points, 2020 unavailable with reason. */
+frontend/src/test/fixtures/compare_children.json:50:      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+frontend/src/test/fixtures/compare_children.json:98:      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+frontend/src/test/fixtures/compare_children.json:111:    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+frontend/src/test/fixtures/error_unknown_activity.json:4:    "message": "Activity code '999999' is not a 6-digit code in the 2003-25 harmonized activity lexicon.",
+frontend/src/test/fixtures/estimate_pandemic.json:46:    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+frontend/src/test/fixtures/estimate_sleep.json:47:    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+frontend/src/test/fixtures/estimate_tv_participation.json:44:    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+frontend/src/test/fixtures/meta.json:5:    "release": "0325",
+frontend/src/test/fixtures/trend_leisure.json:374:    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+frontend/src/utils/format.ts:171:/** [2025] → "2025"; [2003..2025] → "2003–2025"; [2019, 2021] → "2019, 2021". */
+migrations/0001_core_schema.sql:53:-- Activity coding lexicon (reference data, from the BLS 2003-25 lexicon)
+scripts/benchmark_analytics.py:5:2003-25 database, so later phases can detect regressions and optimize from
+scripts/benchmark_api.py:37:        "trend: sleep 2003-2025, per-year SEs", "POST", "/api/v1/analysis/trend",
+scripts/export_openapi.py:25:        release="0325",
+scripts/extract_lexicon.py:5:(``data/reference/activity_lexicon_<release>.csv``) is the reference data the
+scripts/extract_lexicon.py:10:The lexicon PDF (e.g. https://www.bls.gov/tus/lexicons/lexiconnoex0325.pdf)
+scripts/extract_lexicon.py:19:    python scripts/extract_lexicon.py data/docs/lexiconnoex0325.pdf \
+scripts/extract_lexicon.py:20:        data/reference/activity_lexicon_0325.csv
+scripts/extract_lexicon.py:35:# 2003-25 lexicon. A future layout change makes validation fail loudly rather
+src/atus_pipeline/analytics/activities.py:3:The harmonized 2003-25 lexicon is strictly prefix-hierarchical (tier1 = first
+src/atus_pipeline/analytics/activities.py:57:                f"Activity code {code!r} is not a {tier} code in the 2003-25 "
+src/atus_pipeline/analytics/engine.py:48:    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon "
+src/atus_pipeline/analytics/spec.py:50:    """Selects activity codes from the harmonized 2003-25 lexicon.
+src/atus_pipeline/api/app.py:38:Read-only analytical API over the American Time Use Survey (ATUS) 2003-2025
+src/atus_pipeline/api/errors.py:40:        super().__init__(f"Activity code {code!r} does not exist in the 2003-25 lexicon.")
+src/atus_pipeline/api/routes/activities.py:1:"""Read-only activity-lexicon endpoints (the harmonized 2003-25 coding tree).
+src/atus_pipeline/api/routes/activities.py:54:        "Flat listing of the harmonized 2003-25 activity coding lexicon "
+src/atus_pipeline/api/schemas/activities.py:9:    code: str = Field(description="Harmonized 2003-25 lexicon code (2, 4, or 6 digits).")
+src/atus_pipeline/api/schemas/analysis.py:13:real outputs verified against the loaded 2003-25 database (see
+src/atus_pipeline/api/schemas/analysis.py:335:                        "Activity codes use the BLS-harmonized 2003-25 multi-year "
+src/atus_pipeline/api/schemas/meta.py:9:    release: str = Field(description="BLS multi-year release code, e.g. '0325' = 2003-2025.")
+src/atus_pipeline/config.py:18:DEFAULT_RELEASE = "0325"
+src/atus_pipeline/loading/loader.py:62:    return settings.reference_dir / f"activity_lexicon_{settings.release}.csv"
+src/atus_pipeline/sources.py:3:Each multi-year "release" (e.g. ``0325`` = survey years 2003-2025) is described
+src/atus_pipeline/sources.py:14:    https://www.bls.gov/tus/data/datafiles-0325.htm
+src/atus_pipeline/sources.py:23:# Exact headers of the 2003-25 multi-year files, in file order. These are used
+src/atus_pipeline/sources.py:95:def _build_release_0325() -> tuple[SourceFile, ...]:
+src/atus_pipeline/sources.py:102:            description="ATUS 2003-25 Respondent file (one record per respondent)",
+src/atus_pipeline/sources.py:103:            url=bls("atusresp-0325.zip"),
+src/atus_pipeline/sources.py:104:            zip_name="atusresp-0325.zip",
+src/atus_pipeline/sources.py:105:            dat_name="atusresp_0325.dat",
+src/atus_pipeline/sources.py:112:                "ATUS 2003-25 Roster file (household members and own nonhousehold "
+src/atus_pipeline/sources.py:115:            url=bls("atusrost-0325.zip"),
+src/atus_pipeline/sources.py:116:            zip_name="atusrost-0325.zip",
+src/atus_pipeline/sources.py:117:            dat_name="atusrost_0325.dat",
+src/atus_pipeline/sources.py:123:            description="ATUS 2003-25 Activity file (one record per diary-day activity episode)",
+src/atus_pipeline/sources.py:124:            url=bls("atusact-0325.zip"),
+src/atus_pipeline/sources.py:125:            zip_name="atusact-0325.zip",
+src/atus_pipeline/sources.py:126:            dat_name="atusact_0325.dat",
+src/atus_pipeline/sources.py:132:            description="ATUS 2003-25 Who file (one record per 'who was present' code per episode)",
+src/atus_pipeline/sources.py:133:            url=bls("atuswho-0325.zip"),
+src/atus_pipeline/sources.py:134:            zip_name="atuswho-0325.zip",
+src/atus_pipeline/sources.py:135:            dat_name="atuswho_0325.dat",
+src/atus_pipeline/sources.py:142:                "ATUS-CPS 2003-25 file (CPS records for selected persons and their "
+src/atus_pipeline/sources.py:145:            url=bls("atuscps-0325.zip"),
+src/atus_pipeline/sources.py:146:            zip_name="atuscps-0325.zip",
+src/atus_pipeline/sources.py:147:            dat_name="atuscps_0325.dat",
+src/atus_pipeline/sources.py:159:            description="ATUS 2003-25 Replicate weights file (160 replicates of TUFNWGTP)",
+src/atus_pipeline/sources.py:160:            url=bls("atuswgts-0325.zip"),
+src/atus_pipeline/sources.py:161:            zip_name="atuswgts-0325.zip",
+src/atus_pipeline/sources.py:162:            dat_name="atuswgts_0325.dat",
+src/atus_pipeline/sources.py:169:            url=bls("atuswgtspan-1920.zip"),
+src/atus_pipeline/sources.py:170:            zip_name="atuswgtspan-1920.zip",
+src/atus_pipeline/sources.py:171:            dat_name="atuswgtspan_1920.dat",
+src/atus_pipeline/sources.py:179:                "ATUS 2003-25 Activity summary file (BLS-derived per-respondent "
+src/atus_pipeline/sources.py:182:            url=bls("atussum-0325.zip"),
+src/atus_pipeline/sources.py:183:            zip_name="atussum-0325.zip",
+src/atus_pipeline/sources.py:184:            dat_name="atussum_0325.dat",
+src/atus_pipeline/sources.py:199:    "0325": _build_release_0325(),
+src/atus_pipeline/transformation/common.py:3:ATUS missing-value conventions (2003-25 Interview Data Dictionary, p. 7):
+src/atus_pipeline/transformation/tables.py:65:    # The 2003-25 respondent file contains exactly one undocumented TUECYTD=0
+src/atus_pipeline/validation/db_checks.py:170:            "anomaly: 3 episodes in the 2003-25 release carry internally inconsistent "
+src/atus_pipeline/validation/db_checks.py:418:    path = settings.reference_dir / f"activity_lexicon_{settings.release}.csv"
+src/atus_pipeline/validation/source_checks.py:29:    """Survey years covered by a multi-year release code like '0325'."""
+tests/data_quality/test_analytics_benchmarks.py:49:    """A 2003-2025 trend on the real data: every year estimable except 2020,
+tests/data_quality/test_full_database.py:3:These tests need the real database (all 2003-25 data loaded) and staged source
+tests/integration/analytics_dataset.py:88:    staging = data_dir / "staging" / "0325"
+tests/integration/analytics_dataset.py:93:        REPO_ROOT / "data" / "reference" / "activity_lexicon_0325.csv",
+tests/integration/analytics_dataset.py:94:        reference / "activity_lexicon_0325.csv",
+tests/integration/analytics_dataset.py:97:    _write(staging / "atusresp_0325.dat", RESPONDENT_COLUMNS, [
+tests/integration/analytics_dataset.py:124:    _write(staging / "atusrost_0325.dat", ROSTER_COLUMNS, [
+tests/integration/analytics_dataset.py:156:    _write(staging / "atusact_0325.dat", ACTIVITY_COLUMNS, episodes)
+tests/integration/analytics_dataset.py:163:    _write(staging / "atuswho_0325.dat", WHO_COLUMNS, who_rows)
+tests/integration/analytics_dataset.py:165:    _write(staging / "atuscps_0325.dat", CPS_REQUIRED_COLUMNS, [
+tests/integration/analytics_dataset.py:174:    _write(staging / "atuswgts_0325.dat", REPLICATE_WEIGHT_COLUMNS, [
+tests/integration/analytics_dataset.py:195:    _write(staging / "atuswgtspan_1920.dat", PANDEMIC_WEIGHT_COLUMNS, [
+tests/integration/analytics_dataset.py:208:    for source in release_files("0325"):
+tests/integration/analytics_dataset.py:210:            release="0325", key=source.key, url=source.url, zip_name=source.zip_name,
+tests/integration/analytics_dataset.py:216:                release="0325", key=source.key, dat_name=source.dat_name,
+tests/integration/analytics_dataset.py:226:        database_url=database_url, data_dir=data_dir, release="0325", log_level="INFO"
+tests/integration/api/test_api_endpoints.py:218:        assert payload["data"]["release"] == "0325"
+tests/integration/test_load_pipeline.py:52:    staging = data_dir / "staging" / "0325"
+tests/integration/test_load_pipeline.py:57:        REPO_ROOT / "data" / "reference" / "activity_lexicon_0325.csv",
+tests/integration/test_load_pipeline.py:58:        reference / "activity_lexicon_0325.csv",
+tests/integration/test_load_pipeline.py:61:    _write(staging / "atusresp_0325.dat", RESPONDENT_COLUMNS, [
+tests/integration/test_load_pipeline.py:76:    _write(staging / "atusrost_0325.dat", ROSTER_COLUMNS, [
+tests/integration/test_load_pipeline.py:83:    _write(staging / "atusact_0325.dat", ACTIVITY_COLUMNS, [
+tests/integration/test_load_pipeline.py:109:    _write(staging / "atuswho_0325.dat", WHO_COLUMNS, [
+tests/integration/test_load_pipeline.py:118:    _write(staging / "atuscps_0325.dat", CPS_REQUIRED_COLUMNS, [
+tests/integration/test_load_pipeline.py:127:    _write(staging / "atuswgts_0325.dat", REPLICATE_WEIGHT_COLUMNS, [
+tests/integration/test_load_pipeline.py:135:    _write(staging / "atuswgtspan_1920.dat", PANDEMIC_WEIGHT_COLUMNS, [
+tests/integration/test_load_pipeline.py:141:    for source in release_files("0325"):
+tests/integration/test_load_pipeline.py:143:            release="0325", key=source.key, url=source.url, zip_name=source.zip_name,
+tests/integration/test_load_pipeline.py:149:                release="0325", key=source.key, dat_name=source.dat_name,
+tests/integration/test_load_pipeline.py:160:        database_url=migrated_db, data_dir=data_dir, release="0325", log_level="INFO"
+tests/integration/test_load_pipeline.py:234:        bad_path = fixture_settings.staging_dir / "atusact_0325.dat"
+tests/unit/api/conftest.py:51:                    return ("0325", 1)   # -> data version "0325:run1"
+tests/unit/api/conftest.py:60:        data_dir=tmp_path, release="0325", log_level="WARNING",
+tests/unit/api/conftest.py:64:    application.dependency_overrides[get_data_version] = lambda: "0325:run1"
+tests/unit/api/test_cache.py:20:        assert cache_key("estimate", SPEC, "0.1", "0325:run1") == \
+tests/unit/api/test_cache.py:21:            cache_key("estimate", dict(SPEC), "0.1", "0325:run1")
+tests/unit/api/test_cache.py:25:        assert cache_key("estimate", SPEC, "0.1", "0325:run1") == \
+tests/unit/api/test_cache.py:26:            cache_key("estimate", reordered, "0.1", "0325:run1")
+tests/unit/api/test_cache.py:29:        assert cache_key("estimate", SPEC, "0.1", "0325:run1") != \
+tests/unit/api/test_cache.py:30:            cache_key("trend", SPEC, "0.1", "0325:run1")
+tests/unit/api/test_cache.py:34:        assert cache_key("estimate", SPEC, "0.1", "0325:run1") != \
+tests/unit/api/test_cache.py:35:            cache_key("estimate", other, "0.1", "0325:run1")
+tests/unit/api/test_cache.py:38:        assert cache_key("estimate", SPEC, "0.1", "0325:run1") != \
+tests/unit/api/test_cache.py:39:            cache_key("estimate", SPEC, "0.2", "0325:run1")
+tests/unit/api/test_cache.py:42:        assert cache_key("estimate", SPEC, "0.1", "0325:run1") != \
+tests/unit/api/test_cache.py:43:            cache_key("estimate", SPEC, "0.1", "0325:run2")
+tests/unit/api/test_review_hardening.py:72:        app.dependency_overrides[get_data_version] = lambda: "0325:run0"
+tests/unit/api/test_review_hardening.py:147:        data_dir=tmp_path, release="0325", log_level="WARNING",
+tests/unit/api/test_review_hardening.py:155:    application.dependency_overrides[get_data_version] = lambda: "0325:run1"
+tests/unit/test_common_transforms.py:68:        # observed in the 2003-25 respondent file: TRERNHLY = 7211.525
+tests/unit/test_lexicon_reference.py:14:LEXICON = Path(__file__).resolve().parents[2] / "data" / "reference" / "activity_lexicon_0325.csv"
+tests/unit/test_lexicon_reference.py:28:    # The 2003-25 lexicon defines 18 major categories and 431 6-digit codes
+tests/unit/test_manifest.py:17:        release="0325", key="roster", url="https://www.bls.gov/tus/datafiles/atusrost-0325.zip",
+tests/unit/test_manifest.py:18:        zip_name="atusrost-0325.zip", sha256="ab" * 32, size_bytes=123,
+tests/unit/test_manifest.py:21:        release="0325", key="roster", dat_name="atusrost_0325.dat",
+tests/unit/test_manifest.py:26:    entry = reloaded.get("0325", "roster")
+tests/unit/test_manifest.py:35:            release="0325", key="roster", dat_name="x.dat", dat_size_bytes=1, row_count=1
+tests/unit/test_manifest.py:40:    for release in ("0324", "0325"):
+tests/unit/test_manifest.py:45:    assert manifest.get("0324", "roster") is not manifest.get("0325", "roster")
+tests/unit/test_manifest.py:50:        release="0325", key="roster", url="https://example", zip_name="z.zip",
+tests/unit/test_sources.py:10:    def test_release_0325_exists(self):
+tests/unit/test_sources.py:11:        assert len(release_files("0325")) == 8
+tests/unit/test_sources.py:18:        keys = [s.key for s in release_files("0325")]
+tests/unit/test_sources.py:22:        for source in release_files("0325"):
+tests/unit/test_sources.py:26:        for source in release_files("0325"):
+tests/unit/test_sources.py:30:        for source in release_files("0325"):
+tests/unit/test_sources.py:37:            source = get_source("0325", spec.dataset_key)
+tests/unit/test_sources.py:42:        for source in release_files("0325"):

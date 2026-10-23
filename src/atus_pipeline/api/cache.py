@@ -3,11 +3,15 @@
 Analytical results are deterministic functions of (operation, canonical
 analysis specification, analytics version, data version), so those four things
 *are* the cache key — versioning is the invalidation mechanism, not TTLs. The
-data version is ``<release>:run<latest successful ingestion run id>``, which
-changes whenever `atus load` rebuilds the database.
+data version (``database/versions.py``) is the globally unique string the
+writer of the served data recorded: ``<release>:load-...`` from ``atus load``,
+``<release>:serving-...`` from the serving-DB builder. It changes whenever the
+data changes and never repeats for different data, including across rebuilt
+or replacement databases.
 
-The default backend is an in-process, thread-safe LRU (the API currently runs
-as a single process in development; see docs/api.md). The ``AnalysisCache``
+The default backend is an in-process, thread-safe LRU: the API runs as exactly
+one process in development and in production (ADR-011 process model; see
+docs/api.md), so the cache is lost on every restart. The ``AnalysisCache``
 protocol keeps the backend replaceable (e.g. Redis in a multi-process
 deployment) without touching route code. Only complete, successful result
 payloads are stored — errors are never cached, and a cache hit returns the

@@ -1,0 +1,27 @@
+src/atus_pipeline/sources.py:23:# Exact headers of the 2003-25 multi-year files, in file order. These are used
+src/atus_pipeline/sources.py:102:            description="ATUS 2003-25 Respondent file (one record per respondent)",
+src/atus_pipeline/sources.py:112:                "ATUS 2003-25 Roster file (household members and own nonhousehold "
+src/atus_pipeline/sources.py:123:            description="ATUS 2003-25 Activity file (one record per diary-day activity episode)",
+src/atus_pipeline/sources.py:132:            description="ATUS 2003-25 Who file (one record per 'who was present' code per episode)",
+src/atus_pipeline/sources.py:142:                "ATUS-CPS 2003-25 file (CPS records for selected persons and their "
+src/atus_pipeline/sources.py:159:            description="ATUS 2003-25 Replicate weights file (160 replicates of TUFNWGTP)",
+src/atus_pipeline/sources.py:179:                "ATUS 2003-25 Activity summary file (BLS-derived per-respondent "
+src/atus_pipeline/transformation/tables.py:65:    # The 2003-25 respondent file contains exactly one undocumented TUECYTD=0
+src/atus_pipeline/transformation/common.py:3:ATUS missing-value conventions (2003-25 Interview Data Dictionary, p. 7):
+src/atus_pipeline/api/schemas/activities.py:9:    code: str = Field(description="Harmonized 2003-25 lexicon code (2, 4, or 6 digits).")
+src/atus_pipeline/api/schemas/analysis.py:13:real outputs verified against the loaded 2003-25 database (see
+src/atus_pipeline/api/schemas/analysis.py:335:                        "Activity codes use the BLS-harmonized 2003-25 multi-year "
+src/atus_pipeline/api/routes/activities.py:1:"""Read-only activity-lexicon endpoints (the harmonized 2003-25 coding tree).
+src/atus_pipeline/api/routes/activities.py:54:        "Flat listing of the harmonized 2003-25 activity coding lexicon "
+src/atus_pipeline/api/errors.py:40:        super().__init__(f"Activity code {code!r} does not exist in the 2003-25 lexicon.")
+src/atus_pipeline/validation/db_checks.py:170:            "anomaly: 3 episodes in the 2003-25 release carry internally inconsistent "
+src/atus_pipeline/analytics/activities.py:3:The harmonized 2003-25 lexicon is strictly prefix-hierarchical (tier1 = first
+src/atus_pipeline/analytics/activities.py:57:                f"Activity code {code!r} is not a {tier} code in the 2003-25 "
+src/atus_pipeline/analytics/spec.py:50:    """Selects activity codes from the harmonized 2003-25 lexicon.
+src/atus_pipeline/analytics/engine.py:48:    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon "
+frontend/openapi.json:201:    "description": "Flat listing of the harmonized 2003-25 activity coding lexicon (18 major categories, 107 subcategories, 431 leaf activities), filterable by level, direct parent, and name search. In analysis requests, a 2- or 4-digit code selects itself plus all descendants.",
+frontend/openapi.json:522:      "description": "Harmonized 2003-25 lexicon code (2, 4, or 6 digits)."
+frontend/openapi.json:1330:       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+frontend/src/api/generated.ts:76:     * @description Flat listing of the harmonized 2003-25 activity coding lexicon (18 major categories, 107 subcategories, 431 leaf activities), filterable by level, direct parent, and name search. In analysis requests, a 2- or 4-digit code selects itself plus all descendants.
+frontend/src/api/generated.ts:238:       * @description Harmonized 2003-25 lexicon code (2, 4, or 6 digits).
+frontend/src/api/generated.ts:654:     *         "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."

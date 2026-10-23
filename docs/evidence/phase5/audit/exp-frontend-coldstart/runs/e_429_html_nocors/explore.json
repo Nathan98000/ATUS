@@ -1,0 +1,258 @@
+{
+  "scenario": "e_429_html_nocors",
+  "page": "explore",
+  "url": "http://localhost:4182/explore",
+  "t0_epoch": 1792518222.816,
+  "meta_request_times_s": [
+    0.069,
+    1.071,
+    3.073
+  ],
+  "meta_request_gaps_s": [
+    1.002,
+    2.002
+  ],
+  "api_requests": 6,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.056,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_429_html_nocors/explore_002s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.056,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_429_html_nocors/explore_005s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.017,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_429_html_nocors/explore_015s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.05,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_429_html_nocors/explore_030s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.057,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_429_html_nocors/explore_060s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.034,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_429_html_nocors/explore_075s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.03,
+      "main": ""
+    },
+    {
+      "t": 0.282,
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports."
+    },
+    {
+      "t": 3.316,
+      "main": "The analysis service could not be reached\n\nThe request never got an answer. Check that the API is running and reachable, then try again.\n\nTry again\n\nTechnical details"
+    }
+  ],
+  "network": [
+    {
+      "t": 0.069,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.069,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 0.071,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "t": 0.071,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "t": 1.071,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 1.071,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 1.071,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "t": 1.071,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "t": 3.073,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 3.073,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 3.074,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "failure": "net::ERR_FAILED"
+    },
+    {
+      "t": 3.074,
+      "ev": "requestfailed",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "failure": "net::ERR_FAILED"
+    }
+  ],
+  "console": [
+    {
+      "t": 0.07,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 0.071,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "t": 0.071,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 0.071,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "t": 1.071,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 1.071,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "t": 1.071,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 1.071,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "t": 3.074,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 3.074,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    },
+    {
+      "t": 3.074,
+      "type": "error",
+      "text": "Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource."
+    },
+    {
+      "t": 3.074,
+      "type": "error",
+      "text": "Failed to load resource: net::ERR_FAILED"
+    }
+  ]
+}

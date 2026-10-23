@@ -1,0 +1,99 @@
+{
+  "dimensions": [
+    {
+      "name": "age_min",
+      "type": "integer",
+      "description": "Inclusive lower age bound (interview-time roster age).",
+      "values": null,
+      "unit": "years",
+      "notes": "Age is topcoded: 80 in 2003-04, 85 from 2005 onward."
+    },
+    {
+      "name": "age_max",
+      "type": "integer",
+      "description": "Inclusive upper age bound (interview-time roster age).",
+      "values": null,
+      "unit": "years",
+      "notes": "Age is topcoded: 80 in 2003-04, 85 from 2005 onward."
+    },
+    {
+      "name": "sex",
+      "type": "category",
+      "description": "Respondent sex from the ATUS household roster (TESEX).",
+      "values": ["female", "male"],
+      "unit": null,
+      "notes": null
+    },
+    {
+      "name": "employment_status",
+      "type": "category",
+      "description": "ATUS-interview labor force status (TELFS): employed {1,2}, unemployed {3,4}, not_in_labor_force {5}.",
+      "values": ["employed", "not_in_labor_force", "unemployed"],
+      "unit": null,
+      "notes": null
+    },
+    {
+      "name": "has_household_children",
+      "type": "boolean",
+      "description": "Any household child under 18 present (TRCHILDNUM > 0). Household children, not necessarily own children.",
+      "values": null,
+      "unit": null,
+      "notes": null
+    },
+    {
+      "name": "region",
+      "type": "category",
+      "description": "Census region at the CPS interview (GEREG): 1 Northeast, 2 Midwest, 3 South, 4 West.",
+      "values": [1, 2, 3, 4],
+      "unit": null,
+      "notes": "Measured 2-5 months before the diary day."
+    },
+    {
+      "name": "state_fips",
+      "type": "category",
+      "description": "Two-digit state FIPS code at the CPS interview (GESTFIPS), e.g. '06' for California.",
+      "values": null,
+      "unit": null,
+      "notes": "Measured 2-5 months before the diary day."
+    },
+    {
+      "name": "education_level",
+      "type": "category",
+      "description": "Educational attainment at the CPS interview (PEEDUCA), grouped.",
+      "values": [
+        "bachelor_or_higher",
+        "high_school",
+        "less_than_high_school",
+        "some_college_or_associate"
+      ],
+      "unit": null,
+      "notes": "Measured 2-5 months before the diary day; missing education is excluded when this filter is used."
+    },
+    {
+      "name": "day_type",
+      "type": "category",
+      "description": "Diary day of week: weekend = Saturday/Sunday. Estimates then represent the average such day.",
+      "values": ["weekday", "weekend"],
+      "unit": null,
+      "notes": null
+    },
+    {
+      "name": "diary_date_min",
+      "type": "date",
+      "description": "Inclusive lower bound on the diary date (YYYY-MM-DD) for within-year period estimates.",
+      "values": null,
+      "unit": null,
+      "notes": null
+    },
+    {
+      "name": "diary_date_max",
+      "type": "date",
+      "description": "Inclusive upper bound on the diary date (YYYY-MM-DD).",
+      "values": null,
+      "unit": null,
+      "notes": null
+    }
+  ],
+  "missing_data_rule": "Filtering on a dimension excludes respondents whose value is missing for that dimension (from numerator and denominator alike); missing is never treated as 'no'. Unfiltered dimensions include everyone.",
+  "default_universe": "U.S. civilian noninstitutional population age 15 and over (the ATUS target population)."
+}

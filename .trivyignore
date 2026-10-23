@@ -1,0 +1,14 @@
+# Vulnerabilities the image scan accepts for a short, recorded time
+# (.github/workflows/image.yml passes this file to Trivy with --ignorefile).
+#
+# Empty unless a fixable HIGH or CRITICAL vulnerability blocks every deploy and
+# cannot be fixed forward soon: docs/operations.md, "The image scan blocks a
+# deploy". Each entry is one ID with an expiry date, preceded by a comment with
+# the date, who reviewed it, and why the vulnerable code is not reachable in
+# the API:
+#
+#   # 2026-11-02 owner: libfoo in the base image; the API never calls it; fixed in 1.2.4
+#   CVE-2026-12345 exp:2026-12-02
+#
+# Trivy stops ignoring an entry on its expiry date. The expiry is at most 31
+# days out (tests/deploy/test_infra_review_r2.py); remove the entry with the fix.

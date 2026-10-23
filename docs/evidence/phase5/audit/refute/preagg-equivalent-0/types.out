@@ -1,0 +1,19 @@
+SET
+ pg_typeof | pg_typeof | pg_typeof |    pg_typeof     
+-----------+-----------+-----------+------------------
+ bigint    | bigint    | numeric   | double precision
+(1 row)
+
+ERROR:  column r.tu06fwgt does not exist
+LINE 1: select pg_typeof(r.tu06fwgt) from atus.respondents r limit 1
+                         ^
+ max  | min | count 
+------+-----+-------
+ 1436 |   1 |     0
+(1 row)
+
+ count 
+-------
+     0
+(1 row)
+

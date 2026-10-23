@@ -1,0 +1,174 @@
+{
+  "scenario": "d_503_first3_plain",
+  "page": "home",
+  "url": "http://127.0.0.1:4182/",
+  "t0_epoch": 1792517618.08,
+  "meta_request_times_s": [
+    0.059,
+    1.062,
+    3.066
+  ],
+  "meta_request_gaps_s": [
+    1.003,
+    2.004
+  ],
+  "api_requests": 3,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.05,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/home_002s.png",
+      "url": "http://127.0.0.1:4182/",
+      "title": "ATUS Explorer",
+      "main": "Explore how Americans spend their time.\n\nEvery year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time people spend sleeping, working, caring for others, or watching TV, for any group you define.\n\nEvery number is survey-weighted and shown with its sampling uncertainty — an estimate, not a headcount.\n\nBuild your own analysis\n\nStart from a question\nLoading starter examples…\nWhat you are looking at\nWeighted estimates. Survey weights make each diary stand in for the people it represents, balanced across days of the week and the year.\nUncertainty, always. Standard errors and confidence intervals use the survey's official replicate weights.\n2020 is special. Data collection was suspended in spring 2020; the explorer shows 2020 as an explicit gap or under its dedicated methodology — never smoothed over.\n\nMore on the methodology on the About page.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading starter examples…"
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.055,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/home_005s.png",
+      "url": "http://127.0.0.1:4182/",
+      "title": "ATUS Explorer",
+      "main": "Explore how Americans spend their time.\n\nEvery year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time people spend sleeping, working, caring for others, or watching TV, for any group you define.\n\nEvery number is survey-weighted and shown with its sampling uncertainty — an estimate, not a headcount.\n\nBuild your own analysis\n\nStart from a question\nStarter examples need the analysis service, which could not be reached.\nWhat you are looking at\nWeighted estimates. Survey weights make each diary stand in for the people it represents, balanced across days of the week and the year.\nUncertainty, always. Standard errors and confidence intervals use the survey's official replicate weights.\n2020 is special. Data collection was suspended in spring 2020; the explorer shows 2020 as an explicit gap or under its dedicated methodology — never smoothed over.\n\nMore on the methodology on the About page.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Starter examples need the analysis service, which could not be reached."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.051,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/home_015s.png",
+      "url": "http://127.0.0.1:4182/",
+      "title": "ATUS Explorer",
+      "main": "Explore how Americans spend their time.\n\nEvery year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time people spend sleeping, working, caring for others, or watching TV, for any group you define.\n\nEvery number is survey-weighted and shown with its sampling uncertainty — an estimate, not a headcount.\n\nBuild your own analysis\n\nStart from a question\nStarter examples need the analysis service, which could not be reached.\nWhat you are looking at\nWeighted estimates. Survey weights make each diary stand in for the people it represents, balanced across days of the week and the year.\nUncertainty, always. Standard errors and confidence intervals use the survey's official replicate weights.\n2020 is special. Data collection was suspended in spring 2020; the explorer shows 2020 as an explicit gap or under its dedicated methodology — never smoothed over.\n\nMore on the methodology on the About page.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Starter examples need the analysis service, which could not be reached."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.058,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/home_030s.png",
+      "url": "http://127.0.0.1:4182/",
+      "title": "ATUS Explorer",
+      "main": "Explore how Americans spend their time.\n\nEvery year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time people spend sleeping, working, caring for others, or watching TV, for any group you define.\n\nEvery number is survey-weighted and shown with its sampling uncertainty — an estimate, not a headcount.\n\nBuild your own analysis\n\nStart from a question\nStarter examples need the analysis service, which could not be reached.\nWhat you are looking at\nWeighted estimates. Survey weights make each diary stand in for the people it represents, balanced across days of the week and the year.\nUncertainty, always. Standard errors and confidence intervals use the survey's official replicate weights.\n2020 is special. Data collection was suspended in spring 2020; the explorer shows 2020 as an explicit gap or under its dedicated methodology — never smoothed over.\n\nMore on the methodology on the About page.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Starter examples need the analysis service, which could not be reached."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.064,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/home_060s.png",
+      "url": "http://127.0.0.1:4182/",
+      "title": "ATUS Explorer",
+      "main": "Explore how Americans spend their time.\n\nEvery year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time people spend sleeping, working, caring for others, or watching TV, for any group you define.\n\nEvery number is survey-weighted and shown with its sampling uncertainty — an estimate, not a headcount.\n\nBuild your own analysis\n\nStart from a question\nStarter examples need the analysis service, which could not be reached.\nWhat you are looking at\nWeighted estimates. Survey weights make each diary stand in for the people it represents, balanced across days of the week and the year.\nUncertainty, always. Standard errors and confidence intervals use the survey's official replicate weights.\n2020 is special. Data collection was suspended in spring 2020; the explorer shows 2020 as an explicit gap or under its dedicated methodology — never smoothed over.\n\nMore on the methodology on the About page.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Starter examples need the analysis service, which could not be reached."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.048,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/d_503_first3_plain/home_075s.png",
+      "url": "http://127.0.0.1:4182/",
+      "title": "ATUS Explorer",
+      "main": "Explore how Americans spend their time.\n\nEvery year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time people spend sleeping, working, caring for others, or watching TV, for any group you define.\n\nEvery number is survey-weighted and shown with its sampling uncertainty — an estimate, not a headcount.\n\nBuild your own analysis\n\nStart from a question\nStarter examples need the analysis service, which could not be reached.\nWhat you are looking at\nWeighted estimates. Survey weights make each diary stand in for the people it represents, balanced across days of the week and the year.\nUncertainty, always. Standard errors and confidence intervals use the survey's official replicate weights.\n2020 is special. Data collection was suspended in spring 2020; the explorer shows 2020 as an explicit gap or under its dedicated methodology — never smoothed over.\n\nMore on the methodology on the About page.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Starter examples need the analysis service, which could not be reached."
+      ],
+      "live": []
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.041,
+      "main": ""
+    },
+    {
+      "t": 0.292,
+      "main": "Explore how Americans spend their time.\n\nEvery year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time people spend sleeping, working, caring for others, or watching TV, for any group you define.\n\nEvery number is survey-weighted and shown with its sampling uncertainty — an estimate, not a headcount.\n\nBuild your own analysis\n\nStart from a question\nLoading starter examples…\nWhat you are looking at\nWeighted estimates. Survey weights make each"
+    },
+    {
+      "t": 3.075,
+      "main": "Explore how Americans spend their time.\n\nEvery year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time people spend sleeping, working, caring for others, or watching TV, for any group you define.\n\nEvery number is survey-weighted and shown with its sampling uncertainty — an estimate, not a headcount.\n\nBuild your own analysis\n\nStart from a question\nStarter examples need the analysis service, which could not be reached.\nWhat you are looking a"
+    }
+  ],
+  "network": [
+    {
+      "t": 0.059,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.06,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    },
+    {
+      "t": 1.062,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 1.064,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    },
+    {
+      "t": 3.066,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 3.067,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    }
+  ],
+  "console": [
+    {
+      "t": 0.06,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 1.064,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 3.067,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    }
+  ]
+}

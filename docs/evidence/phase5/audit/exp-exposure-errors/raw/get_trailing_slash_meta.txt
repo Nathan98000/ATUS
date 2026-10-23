@@ -1,0 +1,11 @@
+### curl http://127.0.0.1:8206/api/v1/meta/ (port 8206)
+HTTP/1.1 307 Temporary Redirect
+date: Tue, 20 Oct 2026 17:07:51 GMT
+server: uvicorn
+content-length: 0
+location: http://127.0.0.1:8206/api/v1/meta
+vary: Origin
+x-request-id: 1cc2a7045027494e
+
+
+### status=307 time_total=0.002019s size_download=0 size_upload=0

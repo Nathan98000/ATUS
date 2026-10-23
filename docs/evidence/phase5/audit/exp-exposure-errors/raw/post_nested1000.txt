@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/nested1000.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:09:14 GMT
+server: uvicorn
+content-length: 209
+content-type: application/json
+vary: Origin
+x-request-id: 83e8c037d30b4338
+
+{"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","x"],"message":"Extra inputs are not permitted","type":"extra_forbidden"}]}}}
+### status=422 time_total=0.006031s size_download=209 size_upload=2089

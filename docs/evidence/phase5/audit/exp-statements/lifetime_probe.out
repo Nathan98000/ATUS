@@ -1,0 +1,8 @@
+13:23:54 opened, backends [205]
+13:24:04 idle t+10s backends [205] stats {'connections_num': 1, 'pool_size': 1}
+13:24:14 idle t+20s backends [205] stats {'connections_num': 1, 'pool_size': 1}
+13:24:24 idle t+30s backends [205] stats {'connections_num': 1, 'pool_size': 1}
+13:24:34 idle t+40s backends [205] stats {'connections_num': 1, 'pool_size': 1}
+13:24:44 idle t+50s backends [205] stats {'connections_num': 1, 'pool_size': 1}
+13:24:44 request on backend pid 205
+13:24:45 after return of expired conn: backends [208] connections_num 2

@@ -1,0 +1,8 @@
+171:returned uncached (`X-Cache: bypass`) instead of being stored under the
+12:class AnalyticsError(Exception):
+16:class InvalidSpecError(AnalyticsError):
+21:class UnknownActivityError(AnalyticsError):
+25:class UnsupportedAnalysisError(AnalyticsError):
+31:class InsufficientDataError(AnalyticsError):
+65:            max_size=10,
+no Retry-After

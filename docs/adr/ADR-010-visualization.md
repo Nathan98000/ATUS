@@ -9,8 +9,12 @@ confidence bands and explicitly unavailable years, and a two-group
 dot-and-interval comparison. Three behaviors are *correctness requirements*,
 not styling preferences:
 
-1. an unavailable year (2020 under the multi-year weights) must be a
-   labeled gap — no connecting line, no interpolation, never zero;
+1. an unavailable year must be a labeled gap — no connecting line, no
+   interpolation, never zero (2020 under the multi-year weights is instead
+   drawn from its separately requested partial-year estimate as a hollow,
+   labeled point since 2026-10-22, reached by a thin dotted connector rather
+   than the line itself since design review round 4, so the chart never
+   presents it as an ordinary year; see the ADR-004 amendment);
 2. confidence intervals must be first-class (bands, caps, tooltips);
 3. every data point must be reachable by keyboard with a screen-reader
    announcement, and each chart needs a data-table alternative.
@@ -39,7 +43,9 @@ aria-live description.
 ## Consequences
 
 - The 2020-gap contract is enforced by tests at three levels (pure function,
-  component render, live E2E).
+  component render, live E2E); so is the partial-year connector
+  (`segmentPieces` in `chartScale.ts`, the chart's render tests, and the
+  2020 E2E journey).
 - Bundle stays small (whole app: 110.8 kB gzip, one chunk — no chart-library
   code splitting needed).
 - New chart types are real work rather than a config object; acceptable —

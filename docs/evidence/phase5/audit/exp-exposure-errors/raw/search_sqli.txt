@@ -1,0 +1,12 @@
+### curl http://127.0.0.1:8206/api/v1/activities?search=%27%3B%20select%20pg_sleep(3)-- (port 8206)
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:10:19 GMT
+server: uvicorn
+content-length: 27
+content-type: application/json
+cache-control: public, max-age=300
+vary: Origin
+x-request-id: de0f133736ba49d9
+
+{"activities":[],"total":0}
+### status=200 time_total=0.003564s size_download=27 size_upload=0

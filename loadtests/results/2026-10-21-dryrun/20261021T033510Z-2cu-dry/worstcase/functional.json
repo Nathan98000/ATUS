@@ -1,0 +1,570 @@
+{
+ "note": "DRY RUN: tiny scale, not timed. Status codes, error codes and cache outcomes only; no latency is recorded here.",
+ "k6_exit": 0,
+ "db_statements_logged": 260,
+ "db_attribution_complete": true,
+ "timed": false,
+ "setup": {
+  "requests": 2,
+  "status": {
+   "200": 2
+  },
+  "error_codes": {}
+ },
+ "overall": {
+  "requests": 43,
+  "status": {
+   "200": 43
+  },
+  "error_codes": {},
+  "x_cache": {
+   "miss": 43
+  },
+  "expected_outcome": 43
+ },
+ "by_endpoint": {
+  "compare": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 2
+   },
+   "expected_outcome": 2
+  },
+  "estimate": {
+   "requests": 16,
+   "status": {
+    "200": 16
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 16
+   },
+   "expected_outcome": 16
+  },
+  "trend": {
+   "requests": 25,
+   "status": {
+    "200": 25
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 25
+   },
+   "expected_outcome": 25
+  }
+ },
+ "by_endpoint_cache": {
+  "compare|miss": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 2
+   },
+   "expected_outcome": 2
+  },
+  "estimate|miss": {
+   "requests": 16,
+   "status": {
+    "200": 16
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 16
+   },
+   "expected_outcome": 16
+  },
+  "trend|miss": {
+   "requests": 25,
+   "status": {
+    "200": 25
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 25
+   },
+   "expected_outcome": 25
+  }
+ },
+ "by_kind": {
+  "W1-pooled22-leisure": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "W2-trend23-12": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "W3-trend23-010101": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "W4-F66-pooled22-tier1": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "W5-F66-trend23-tier1": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "compare-edge-021": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "compare-edge-081": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "compare-edge-085": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "errors-weird-086": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "measures-weights-039": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-001": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-002": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-003": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-004": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-005": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-012": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-013": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-021": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-025": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-027": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-028": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-045": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-046": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-067": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-068": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-070": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-072": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-073": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-075": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-076": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-077": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-078": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-079": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-080": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-082": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-084": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-085": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-086": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-088": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-089": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-090": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-097": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "pooled-trends-106": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  }
+ }
+}

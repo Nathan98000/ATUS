@@ -1,0 +1,147 @@
+{
+  "scenario": "e_1027_html",
+  "page": "explore",
+  "url": "http://localhost:4182/explore",
+  "t0_epoch": 1792518147.12,
+  "meta_request_times_s": [
+    0.075
+  ],
+  "meta_request_gaps_s": [],
+  "api_requests": 2,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.059,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_1027_html/explore_002s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.029,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_1027_html/explore_005s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.04,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_1027_html/explore_015s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.038,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_1027_html/explore_030s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.055,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_1027_html/explore_060s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.045,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/e_1027_html/explore_075s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.039,
+      "main": ""
+    },
+    {
+      "t": 0.291,
+      "main": "The analysis service reported an unexpected problem\n\nThe analysis could not be completed. This is a problem in the service, not in your request.\n\nTrying again may help; if it persists, the API logs have the details.\n\nTry again\n\nTechnical details"
+    }
+  ],
+  "network": [
+    {
+      "t": 0.075,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.075,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 0.107,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 429
+    },
+    {
+      "t": 0.107,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "status": 429
+    }
+  ],
+  "console": [
+    {
+      "t": 0.107,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    },
+    {
+      "t": 0.107,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+    }
+  ]
+}

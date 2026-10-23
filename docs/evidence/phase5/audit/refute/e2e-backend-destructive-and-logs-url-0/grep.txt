@@ -1,0 +1,10 @@
+387fc2d29919ade9620c0ca23d2b72f89e0de8f8
+12:Environment: ATUS_E2E_DATABASE_URL overrides the disposable database
+37:DEFAULT_URL = "postgresql://atus:atus@localhost:5434/atus_e2e"
+49:            conn.execute(f'CREATE DATABASE "{dbname}"')
+64:    database_url = os.environ.get("ATUS_E2E_DATABASE_URL", DEFAULT_URL)
+69:            conn.execute("DROP SCHEMA IF EXISTS atus CASCADE")
+70:            conn.execute("DROP TABLE IF EXISTS public.schema_migrations")
+84:        print(f"e2e backend ready on :{args.port} (db {database_url})", flush=True)
+frontend/playwright.config.ts:3: * fixture database (scripts/e2e_backend.py) — deterministic, no BLS download
+frontend/playwright.config.ts:36:      command: `${process.env.E2E_BACKEND_PYTHON ?? '../.venv/bin/python'} ../scripts/e2e_backend.py --port 8137 --origin ${FRONTEND_ORIGIN} --origin http://127.0.0.1:4173`,

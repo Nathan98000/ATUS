@@ -1,0 +1,16 @@
+scenario set { ok: true, scenario: 'baseline', n: 2, delay: 60 }
+
+=== baseline / home — meta requests at [0.1] (gaps []), api requests 1
+  [0.04s] 
+  [0.29s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@5s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+
+=== baseline / explore — meta requests at [0.1] (gaps []), api requests 4
+  [0.04s] 
+  [0.29s] Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty for all ages (15+)
+  footer@5s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+
+=== baseline / deep — meta requests at [0.1] (gaps []), api requests 3
+  [0.04s] 
+  [0.29s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min People ages 25–54 spent an estimated 8h 49m per day o
+  footer@5s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1

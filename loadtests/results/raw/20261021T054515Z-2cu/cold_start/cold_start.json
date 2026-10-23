@@ -1,0 +1,268 @@
+{
+ "timed": true,
+ "started_utc": "2026-10-21T05:45:25.005587Z",
+ "image": {
+  "tag": "atus-api:lt-9afd1b4e2e0e",
+  "id": "sha256:059436d2576a02e03502124caf598b00b556cb6b4d6c261e2bb1edf0b25f080d",
+  "repo_digests": [
+   "atus-api@sha256:059436d2576a02e03502124caf598b00b556cb6b4d6c261e2bb1edf0b25f080d"
+  ],
+  "architecture": "arm64",
+  "os": "linux",
+  "size_bytes": 61074878,
+  "created": "2026-10-21T03:54:46.825881584Z",
+  "revision": "9afd1b4e2e0e1184e63b674a88cfc5500a6feb96",
+  "version": "0.1.0"
+ },
+ "api_limits": "--cpus=0.1 --memory=512m --memory-swap=512m",
+ "db_container_limits": {
+  "cpus": 2.0,
+  "memory_bytes": 7516192768,
+  "memory_swap_bytes": 7516192768,
+  "shm_size_bytes": 1073741824
+ },
+ "db_profile": "2cu",
+ "clock": "perf_counter immediately before `docker run`; image already in the Docker VM",
+ "not_emulated": "Render spin-up (pull, scheduling, routing), Neon wake from suspend, inter-provider round trips",
+ "runs": [
+  {
+   "i": 0,
+   "docker_run_returned_s": 0.116,
+   "to_first_health_s": 12.409,
+   "to_first_meta_s": 12.841,
+   "health_polls": 113,
+   "health_statuses_before_200": [
+    null
+   ],
+   "meta_polls": 1,
+   "meta_statuses_before_200": [],
+   "second_meta_status": 200,
+   "cgroup_after": {
+    "at": "2026-10-21T05:45:37.975605Z",
+    "cpu_stat": {
+     "usage_usec": 1292838,
+     "user_usec": 1207670,
+     "system_usec": 85168,
+     "nice_usec": 0,
+     "nr_periods": 129,
+     "nr_throttled": 127,
+     "throttled_usec": 11390368,
+     "nr_bursts": 0,
+     "burst_usec": 0
+    },
+    "memory_current": 50241536,
+    "memory_peak": 50745344,
+    "proc1": {
+     "VmHWM": "67768 kB",
+     "VmRSS": "67768 kB",
+     "Threads": "6"
+    }
+   },
+   "log_head": [
+    "{\"ts\": \"2026-10-21T05:45:37.066Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Started server process [1]\"}",
+    "{\"ts\": \"2026-10-21T05:45:37.066Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Waiting for application startup.\"}",
+    "{\"ts\": \"2026-10-21T05:45:37.266Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Application startup complete.\"}",
+    "{\"ts\": \"2026-10-21T05:45:37.266Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Uvicorn running on http://0.0.0.0:10000 (Press CTRL+C to quit)\"}",
+    "{\"ts\": \"2026-10-21T05:45:37.466Z\", \"level\": \"INFO\", \"logger\": \"atus.api.access\", \"message\": \"request_id=b1e00d7ccbf2445c GET /health -> 200 in 98.1ms db=0.0ms/0 cache=-\", \"event\": \"access\", \"request_id\": \"b1e00d7ccbf2445c\", \"method\": \"GET\", \"route\": \"/health\", \"path\": \"/health\", \"status\": 200, \"latency_ms\": 98.1, \"db_ms\": 0.0, \"db_statements\": 0, \"cache\": null, \"analysis_key\": null, \"error\": null, \"client_ip_prefix\": \"172.21.0.0/24\", \"edge_authenticated\": false, \"disconnected\": false}",
+    "{\"ts\": \"2026-10-21T05:45:37.898Z\", \"level\": \"INFO\", \"logger\": \"atus.api.access\", \"message\": \"request_id=fa36ef03b2574095 GET /api/v1/meta -> 200 in 330.6ms db=326.9ms/11 cache=-\", \"event\": \"access\", \"request_id\": \"fa36ef03b2574095\", \"method\": \"GET\", \"route\": \"/api/v1/meta\", \"path\": \"/api/v1/meta\", \"status\": 200, \"latency_ms\": 330.6, \"db_ms\": 326.9, \"db_statements\": 11, \"cache\": null, \"analysis_key\": null, \"error\": null, \"client_ip_prefix\": \"198.18.255.0/24\", \"edge_authenticated\": true, \"disconnected\": false}"
+   ]
+  },
+  {
+   "i": 1,
+   "docker_run_returned_s": 0.137,
+   "to_first_health_s": 13.848,
+   "to_first_meta_s": 14.275,
+   "health_polls": 126,
+   "health_statuses_before_200": [
+    null
+   ],
+   "meta_polls": 1,
+   "meta_statuses_before_200": [],
+   "second_meta_status": 200,
+   "cgroup_after": {
+    "at": "2026-10-21T05:45:54.636458Z",
+    "cpu_stat": {
+     "usage_usec": 1425187,
+     "user_usec": 1320882,
+     "system_usec": 104305,
+     "nice_usec": 0,
+     "nr_periods": 143,
+     "nr_throttled": 141,
+     "throttled_usec": 12590545,
+     "nr_bursts": 0,
+     "burst_usec": 0
+    },
+    "memory_current": 49819648,
+    "memory_peak": 50704384,
+    "proc1": {
+     "VmHWM": "67768 kB",
+     "VmRSS": "67768 kB",
+     "Threads": "6"
+    }
+   },
+   "log_head": [
+    "{\"ts\": \"2026-10-21T05:45:53.722Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Started server process [1]\"}",
+    "{\"ts\": \"2026-10-21T05:45:53.722Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Waiting for application startup.\"}",
+    "{\"ts\": \"2026-10-21T05:45:53.921Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Application startup complete.\"}",
+    "{\"ts\": \"2026-10-21T05:45:53.922Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Uvicorn running on http://0.0.0.0:10000 (Press CTRL+C to quit)\"}",
+    "{\"ts\": \"2026-10-21T05:45:54.137Z\", \"level\": \"INFO\", \"logger\": \"atus.api.access\", \"message\": \"request_id=988773e99fc845e0 GET /health -> 200 in 104.6ms db=0.0ms/0 cache=-\", \"event\": \"access\", \"request_id\": \"988773e99fc845e0\", \"method\": \"GET\", \"route\": \"/health\", \"path\": \"/health\", \"status\": 200, \"latency_ms\": 104.6, \"db_ms\": 0.0, \"db_statements\": 0, \"cache\": null, \"analysis_key\": null, \"error\": null, \"client_ip_prefix\": \"172.21.0.0/24\", \"edge_authenticated\": false, \"disconnected\": false}",
+    "{\"ts\": \"2026-10-21T05:45:54.564Z\", \"level\": \"INFO\", \"logger\": \"atus.api.access\", \"message\": \"request_id=5494229d2bfe4265 GET /api/v1/meta -> 200 in 342.0ms db=338.6ms/11 cache=-\", \"event\": \"access\", \"request_id\": \"5494229d2bfe4265\", \"method\": \"GET\", \"route\": \"/api/v1/meta\", \"path\": \"/api/v1/meta\", \"status\": 200, \"latency_ms\": 342.0, \"db_ms\": 338.6, \"db_statements\": 11, \"cache\": null, \"analysis_key\": null, \"error\": null, \"client_ip_prefix\": \"198.18.255.0/24\", \"edge_authenticated\": true, \"disconnected\": false}"
+   ]
+  },
+  {
+   "i": 2,
+   "docker_run_returned_s": 0.143,
+   "to_first_health_s": 13.567,
+   "to_first_meta_s": 13.879,
+   "health_polls": 123,
+   "health_statuses_before_200": [
+    null
+   ],
+   "meta_polls": 1,
+   "meta_statuses_before_200": [],
+   "second_meta_status": 200,
+   "cgroup_after": {
+    "at": "2026-10-21T05:46:10.847216Z",
+    "cpu_stat": {
+     "usage_usec": 1393056,
+     "user_usec": 1310721,
+     "system_usec": 82334,
+     "nice_usec": 0,
+     "nr_periods": 139,
+     "nr_throttled": 139,
+     "throttled_usec": 12355400,
+     "nr_bursts": 0,
+     "burst_usec": 0
+    },
+    "memory_current": 50081792,
+    "memory_peak": 50962432,
+    "proc1": {
+     "VmHWM": "67760 kB",
+     "VmRSS": "67760 kB",
+     "Threads": "6"
+    }
+   },
+   "log_head": [
+    "{\"ts\": \"2026-10-21T05:46:09.949Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Started server process [1]\"}",
+    "{\"ts\": \"2026-10-21T05:46:09.950Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Waiting for application startup.\"}",
+    "{\"ts\": \"2026-10-21T05:46:10.143Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Application startup complete.\"}",
+    "{\"ts\": \"2026-10-21T05:46:10.244Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Uvicorn running on http://0.0.0.0:10000 (Press CTRL+C to quit)\"}",
+    "{\"ts\": \"2026-10-21T05:46:10.446Z\", \"level\": \"INFO\", \"logger\": \"atus.api.access\", \"message\": \"request_id=0979b059d8ee4ca4 GET /health -> 200 in 163.1ms db=0.0ms/0 cache=-\", \"event\": \"access\", \"request_id\": \"0979b059d8ee4ca4\", \"method\": \"GET\", \"route\": \"/health\", \"path\": \"/health\", \"status\": 200, \"latency_ms\": 163.1, \"db_ms\": 0.0, \"db_statements\": 0, \"cache\": null, \"analysis_key\": null, \"error\": null, \"client_ip_prefix\": \"172.21.0.0/24\", \"edge_authenticated\": false, \"disconnected\": false}",
+    "{\"ts\": \"2026-10-21T05:46:10.758Z\", \"level\": \"INFO\", \"logger\": \"atus.api.access\", \"message\": \"request_id=abed4da13e2d4af6 GET /api/v1/meta -> 200 in 309.8ms db=307.0ms/11 cache=-\", \"event\": \"access\", \"request_id\": \"abed4da13e2d4af6\", \"method\": \"GET\", \"route\": \"/api/v1/meta\", \"path\": \"/api/v1/meta\", \"status\": 200, \"latency_ms\": 309.8, \"db_ms\": 307.0, \"db_statements\": 11, \"cache\": null, \"analysis_key\": null, \"error\": null, \"client_ip_prefix\": \"198.18.255.0/24\", \"edge_authenticated\": true, \"disconnected\": false}"
+   ]
+  },
+  {
+   "i": 3,
+   "docker_run_returned_s": 0.119,
+   "to_first_health_s": 12.875,
+   "to_first_meta_s": 13.208,
+   "health_polls": 116,
+   "health_statuses_before_200": [
+    null
+   ],
+   "meta_polls": 1,
+   "meta_statuses_before_200": [],
+   "second_meta_status": 200,
+   "cgroup_after": {
+    "at": "2026-10-21T05:46:26.408118Z",
+    "cpu_stat": {
+     "usage_usec": 1323472,
+     "user_usec": 1230529,
+     "system_usec": 92943,
+     "nice_usec": 0,
+     "nr_periods": 132,
+     "nr_throttled": 131,
+     "throttled_usec": 11735236,
+     "nr_bursts": 0,
+     "burst_usec": 0
+    },
+    "memory_current": 50167808,
+    "memory_peak": 51224576,
+    "proc1": {
+     "VmHWM": "67772 kB",
+     "VmRSS": "67772 kB",
+     "Threads": "6"
+    }
+   },
+   "log_head": [
+    "{\"ts\": \"2026-10-21T05:46:25.596Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Started server process [1]\"}",
+    "{\"ts\": \"2026-10-21T05:46:25.596Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Waiting for application startup.\"}",
+    "{\"ts\": \"2026-10-21T05:46:25.792Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Application startup complete.\"}",
+    "{\"ts\": \"2026-10-21T05:46:25.792Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Uvicorn running on http://0.0.0.0:10000 (Press CTRL+C to quit)\"}",
+    "{\"ts\": \"2026-10-21T05:46:26.002Z\", \"level\": \"INFO\", \"logger\": \"atus.api.access\", \"message\": \"request_id=0cdc74118c6b4695 GET /health -> 200 in 186.2ms db=0.0ms/0 cache=-\", \"event\": \"access\", \"request_id\": \"0cdc74118c6b4695\", \"method\": \"GET\", \"route\": \"/health\", \"path\": \"/health\", \"status\": 200, \"latency_ms\": 186.2, \"db_ms\": 0.0, \"db_statements\": 0, \"cache\": null, \"analysis_key\": null, \"error\": null, \"client_ip_prefix\": \"172.21.0.0/24\", \"edge_authenticated\": false, \"disconnected\": false}",
+    "{\"ts\": \"2026-10-21T05:46:26.335Z\", \"level\": \"INFO\", \"logger\": \"atus.api.access\", \"message\": \"request_id=dc07065aefe94a62 GET /api/v1/meta -> 200 in 330.5ms db=327.5ms/11 cache=-\", \"event\": \"access\", \"request_id\": \"dc07065aefe94a62\", \"method\": \"GET\", \"route\": \"/api/v1/meta\", \"path\": \"/api/v1/meta\", \"status\": 200, \"latency_ms\": 330.5, \"db_ms\": 327.5, \"db_statements\": 11, \"cache\": null, \"analysis_key\": null, \"error\": null, \"client_ip_prefix\": \"198.18.255.0/24\", \"edge_authenticated\": true, \"disconnected\": false}"
+   ]
+  },
+  {
+   "i": 4,
+   "docker_run_returned_s": 0.125,
+   "to_first_health_s": 12.569,
+   "to_first_meta_s": 12.967,
+   "health_polls": 114,
+   "health_statuses_before_200": [
+    null
+   ],
+   "meta_polls": 1,
+   "meta_statuses_before_200": [],
+   "second_meta_status": 200,
+   "cgroup_after": {
+    "at": "2026-10-21T05:46:41.782432Z",
+    "cpu_stat": {
+     "usage_usec": 1299075,
+     "user_usec": 1196943,
+     "system_usec": 102131,
+     "nice_usec": 0,
+     "nr_periods": 130,
+     "nr_throttled": 130,
+     "throttled_usec": 11500996,
+     "nr_bursts": 0,
+     "burst_usec": 0
+    },
+    "memory_current": 50622464,
+    "memory_peak": 50946048,
+    "proc1": {
+     "VmHWM": "67768 kB",
+     "VmRSS": "67768 kB",
+     "Threads": "6"
+    }
+   },
+   "log_head": [
+    "{\"ts\": \"2026-10-21T05:46:40.966Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Started server process [1]\"}",
+    "{\"ts\": \"2026-10-21T05:46:40.966Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Waiting for application startup.\"}",
+    "{\"ts\": \"2026-10-21T05:46:41.070Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Application startup complete.\"}",
+    "{\"ts\": \"2026-10-21T05:46:41.070Z\", \"level\": \"INFO\", \"logger\": \"uvicorn.error\", \"message\": \"Uvicorn running on http://0.0.0.0:10000 (Press CTRL+C to quit)\"}",
+    "{\"ts\": \"2026-10-21T05:46:41.272Z\", \"level\": \"INFO\", \"logger\": \"atus.api.access\", \"message\": \"request_id=7f6ea5db093a46d0 GET /health -> 200 in 119.7ms db=0.0ms/0 cache=-\", \"event\": \"access\", \"request_id\": \"7f6ea5db093a46d0\", \"method\": \"GET\", \"route\": \"/health\", \"path\": \"/health\", \"status\": 200, \"latency_ms\": 119.7, \"db_ms\": 0.0, \"db_statements\": 0, \"cache\": null, \"analysis_key\": null, \"error\": null, \"client_ip_prefix\": \"172.21.0.0/24\", \"edge_authenticated\": false, \"disconnected\": false}",
+    "{\"ts\": \"2026-10-21T05:46:41.669Z\", \"level\": \"INFO\", \"logger\": \"atus.api.access\", \"message\": \"request_id=444980c72ea64b3a GET /api/v1/meta -> 200 in 395.3ms db=293.6ms/11 cache=-\", \"event\": \"access\", \"request_id\": \"444980c72ea64b3a\", \"method\": \"GET\", \"route\": \"/api/v1/meta\", \"path\": \"/api/v1/meta\", \"status\": 200, \"latency_ms\": 395.3, \"db_ms\": 293.6, \"db_statements\": 11, \"cache\": null, \"analysis_key\": null, \"error\": null, \"client_ip_prefix\": \"198.18.255.0/24\", \"edge_authenticated\": true, \"disconnected\": false}"
+   ]
+  }
+ ],
+ "all_reached_meta": true,
+ "summary_to_first_health_s": {
+  "n": 5,
+  "min": 12.409,
+  "p50": 12.875,
+  "p95": 13.792,
+  "p99": 13.837,
+  "max": 13.848,
+  "mean": 13.054
+ },
+ "summary_to_first_meta_s": {
+  "n": 5,
+  "min": 12.841,
+  "p50": 13.208,
+  "p95": 14.196,
+  "p99": 14.259,
+  "max": 14.275,
+  "mean": 13.434
+ },
+ "summary_docker_run_returned_s": {
+  "n": 5,
+  "min": 0.116,
+  "p50": 0.125,
+  "p95": 0.142,
+  "p99": 0.143,
+  "max": 0.143,
+  "mean": 0.128
+ },
+ "finished_utc": "2026-10-21T05:46:44.025492Z"
+}

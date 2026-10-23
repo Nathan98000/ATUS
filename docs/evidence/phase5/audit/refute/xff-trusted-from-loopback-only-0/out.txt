@@ -1,0 +1,7 @@
+proxy_headers True allow 127.0.0.1,::1
+127.0.0.1 [('x-forwarded-for', '203.0.113.66')] {'c': ('203.0.113.66', 0), 's': 'http'}
+127.0.0.1 [('x-forwarded-for', '198.51.100.1, 203.0.113.77')] {'c': ('203.0.113.77', 0), 's': 'http'}
+127.0.0.1 [('x-forwarded-for', '<script>, $(id), ../../')] {'c': ('../../', 0), 's': 'http'}
+127.0.0.1 [('x-forwarded-proto', 'https')] {'c': ('127.0.0.1', 5555), 's': 'https'}
+127.0.0.1 [('forwarded', 'for=192.0.2.43;proto=https')] {'c': ('127.0.0.1', 5555), 's': 'http'}
+10.0.0.5 [('x-forwarded-for', '203.0.113.66'), ('x-forwarded-proto', 'https')] {'c': ('10.0.0.5', 5555), 's': 'http'}

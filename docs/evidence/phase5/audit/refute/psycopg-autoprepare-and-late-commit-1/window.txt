@@ -1,0 +1,96 @@
+	ORDER BY base.year
+	
+2026-10-20 18:17:23.921 UTC [1940] DETAIL:  parameters: $1 = '{120101,120199,120201,120202,120299,120301,120302,120303,120304,120305,120306,120307,120308,120309,120310,120311,120312,120313,120399,120401,120402,120403,120404,120405,120499,120501,120502,120503,1
+2026-10-20 18:17:24.009 UTC [1940] LOG:  duration: 1.820 ms  bind _pg3_0: SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+2026-10-20 18:17:24.009 UTC [1940] LOG:  duration: 0.052 ms  execute _pg3_0: SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+2026-10-20 18:17:24.102 UTC [1940] LOG:  duration: 0.127 ms  statement: COMMIT
+2026-10-20 18:17:24.102 UTC [1947] LOG:  duration: 0.150 ms  statement: SELECT 'MARK trend23_tier1_12#2#25 END'
+2026-10-20 18:17:24.407 UTC [1947] LOG:  duration: 0.204 ms  statement: SELECT 'MARK trend23_6digit_010101#2#26 BEGIN'
+2026-10-20 18:17:24.414 UTC [1940] LOG:  duration: 0.066 ms  statement: BEGIN
+2026-10-20 18:17:24.414 UTC [1940] LOG:  duration: 0.059 ms  bind _pg3_0: SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+2026-10-20 18:17:24.414 UTC [1940] LOG:  duration: 0.065 ms  execute _pg3_0: SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+2026-10-20 18:17:24.415 UTC [1940] LOG:  duration: 0.055 ms  bind _pg3_1: SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+2026-10-20 18:17:24.518 UTC [1940] LOG:  duration: 102.919 ms  execute _pg3_1: SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+2026-10-20 18:17:24.519 UTC [1940] LOG:  duration: 0.066 ms  bind _pg3_2: SELECT code FROM atus.activity_tier1
+2026-10-20 18:17:24.519 UTC [1940] LOG:  duration: 0.033 ms  execute _pg3_2: SELECT code FROM atus.activity_tier1
+2026-10-20 18:17:24.519 UTC [1940] LOG:  duration: 0.031 ms  bind _pg3_3: SELECT code FROM atus.activity_tier2
+2026-10-20 18:17:24.519 UTC [1940] LOG:  duration: 0.039 ms  execute _pg3_3: SELECT code FROM atus.activity_tier2
+2026-10-20 18:17:24.520 UTC [1940] LOG:  duration: 0.029 ms  bind _pg3_4: SELECT code, name FROM atus.activity_codes
+2026-10-20 18:17:24.520 UTC [1940] LOG:  duration: 0.186 ms  execute _pg3_4: SELECT code, name FROM atus.activity_codes
+2026-10-20 18:17:24.524 UTC [1940] LOG:  duration: 2.284 ms  bind _pg3_5: 
+	WITH activity_minutes AS (
+	    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes
+	    FROM atus.activities a
+	    WHERE a.activity_code = ANY($1)
+	    GROUP BY a.tucaseid
+	),
+	base AS (
+	    SELECT r.data_year AS year,
+	           r.tucaseid,
+	           COALESCE(m.minutes, 0) AS x,
+	           (COALESCE(m.minutes, 0) > 0)::int AS p,
+	           r.final_weight AS w
+	    FROM atus.respondents r
+	    
+	    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid
+	    WHERE r.data_year = ANY($2) AND r.final_weight > 0
+	)
+	SELECT base.year,
+	       count(*)::bigint AS n_respondents,
+	       sum(base.p)::bigint AS n_participants,
+	       sum(base.w) AS sum_w,
+	       sum(base.w * base.x) AS sum_wx,
+	       sum(base.w * base.p) AS sum_wp
+	       , ARRAY[sum(rw.tufnwgtp001::float8), sum(rw.tufnwgtp002::float8), sum(rw.tufnwgtp003::float8), sum(rw.tufnwgtp004::float8), sum(rw.tufnwgtp005::float8), sum(rw.tufnwgtp006::float8), sum(rw.tufnwgtp007::float8), sum(rw.tufnwgtp008::float8), sum(rw.tufnw
+	FROM base
+	JOIN atus.replicate_weights rw ON rw.tucaseid = base.tucaseid
+	GROUP BY base.year
+	ORDER BY base.year
+	
+2026-10-20 18:17:24.524 UTC [1940] DETAIL:  parameters: $1 = '{010101}', $2 = '{2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2021,2022,2023,2024,2025}'
+2026-10-20 18:18:15.117 UTC [1940] LOG:  duration: 50593.211 ms  execute _pg3_5: 
+	WITH activity_minutes AS (
+	    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes
+	    FROM atus.activities a
+	    WHERE a.activity_code = ANY($1)
+	    GROUP BY a.tucaseid
+	),
+	base AS (
+	    SELECT r.data_year AS year,
+	           r.tucaseid,
+	           COALESCE(m.minutes, 0) AS x,
+	           (COALESCE(m.minutes, 0) > 0)::int AS p,
+	           r.final_weight AS w
+	    FROM atus.respondents r
+	    
+	    LEFT JOIN activity_minutes m ON m.tucaseid = r.tucaseid
+	    WHERE r.data_year = ANY($2) AND r.final_weight > 0
+	)
+	SELECT base.year,
+	       count(*)::bigint AS n_respondents,
+	       sum(base.p)::bigint AS n_participants,
+	       sum(base.w) AS sum_w,
+	       sum(base.w * base.x) AS sum_wx,
+	       sum(base.w * base.p) AS sum_wp
+	       , ARRAY[sum(rw.tufnwgtp001::float8), sum(rw.tufnwgtp002::float8), sum(rw.tufnwgtp003::float8), sum(rw.tufnwgtp004::float8), sum(rw.tufnwgtp005::float8), sum(rw.tufnwgtp006::float8), sum(rw.tufnwgtp007::float8), sum(rw.tufnwgtp008::float8), sum(rw.tufnw
+	FROM base
+	JOIN atus.replicate_weights rw ON rw.tucaseid = base.tucaseid
+	GROUP BY base.year
+	ORDER BY base.year
+	
+2026-10-20 18:18:15.117 UTC [1940] DETAIL:  parameters: $1 = '{010101}', $2 = '{2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2021,2022,2023,2024,2025}'
+2026-10-20 18:18:15.208 UTC [1940] LOG:  duration: 1.555 ms  bind _pg3_0: SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+2026-10-20 18:18:15.208 UTC [1940] LOG:  duration: 0.055 ms  execute _pg3_0: SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+2026-10-20 18:18:15.212 UTC [1947] LOG:  duration: 0.178 ms  statement: SELECT 'MARK trend23_6digit_010101#2#26 END'
+2026-10-20 18:18:15.304 UTC [1940] LOG:  duration: 0.124 ms  statement: COMMIT
+2026-10-20 18:18:15.519 UTC [1947] LOG:  duration: 0.204 ms  statement: SELECT 'MARK pandemic_2019_2020_sleep#2#27 BEGIN'
+2026-10-20 18:18:15.526 UTC [1940] LOG:  duration: 0.070 ms  statement: BEGIN
+2026-10-20 18:18:15.526 UTC [1940] LOG:  duration: 0.070 ms  bind _pg3_0: SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+2026-10-20 18:18:15.526 UTC [1940] LOG:  duration: 0.074 ms  execute _pg3_0: SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1
+2026-10-20 18:18:15.527 UTC [1940] LOG:  duration: 0.060 ms  bind _pg3_1: SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+2026-10-20 18:18:15.622 UTC [1940] LOG:  duration: 94.714 ms  execute _pg3_1: SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+2026-10-20 18:18:15.623 UTC [1940] LOG:  duration: 0.083 ms  bind _pg3_2: SELECT code FROM atus.activity_tier1
+2026-10-20 18:18:15.623 UTC [1940] LOG:  duration: 0.027 ms  execute _pg3_2: SELECT code FROM atus.activity_tier1
+2026-10-20 18:18:15.623 UTC [1940] LOG:  duration: 0.037 ms  bind _pg3_3: SELECT code FROM atus.activity_tier2
+2026-10-20 18:18:15.623 UTC [1940] LOG:  duration: 0.037 ms  execute _pg3_3: SELECT code FROM atus.activity_tier2
+2026-10-20 18:18:15.624 UTC [1940] LOG:  duration: 0.026 ms  bind _pg3_4: SELECT code, name FROM atus.activity_codes

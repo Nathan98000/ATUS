@@ -1,0 +1,2279 @@
+{
+ "label": "saturation-a_neon025",
+ "date_utc": "2026-10-20T18:49:19.231674Z",
+ "ran_alone": "yes - sole ATUS audit workload; other projects' containers (supabase_*, timeblock-postgres) and host apps kept running (see env_snapshot_*.txt)",
+ "machine": "Apple M4, 10-core, 24 GB RAM, macOS 27.0.1; Docker Desktop VM 10 vCPU / 7.75 GiB",
+ "docker": "server 29.6.2 client 29.6.2",
+ "db_limits": "NanoCpus=250000000 Memory=1073741824",
+ "api_limits": "--cpus=0.1 --memory=512m --memory-swap=512m; pool max_size=10, acquire timeout 10 s (code)",
+ "session_jit": "off",
+ "bursts": [
+  {
+   "concurrency": 1,
+   "burst_wall_s": 6.10354229202494,
+   "statuses": {
+    "200": 1
+   },
+   "latency_s": {
+    "n": 1,
+    "min": 6.103084500064142,
+    "p50": 6.103084500064142,
+    "p95": 6.103084500064142,
+    "max": 6.103084500064142
+   },
+   "latency_200_s": {
+    "n": 1,
+    "min": 6.103084500064142,
+    "p50": 6.103084500064142,
+    "p95": 6.103084500064142,
+    "max": 6.103084500064142
+   },
+   "requests": [
+    {
+     "status": 200,
+     "wall_s": 6.103084500064142,
+     "bytes": 979,
+     "x_cache": "miss",
+     "request_id": "9f745347eac14da5",
+     "t_start": 530742.461201708,
+     "t_end": 530748.564286208,
+     "rel_start_s": 0.00034737493842840195,
+     "rel_end_s": 6.1034318750025705
+    }
+   ],
+   "pg_activity": [
+    [
+     0.01,
+     0,
+     1,
+     0
+    ],
+    [
+     0.51,
+     2,
+     2,
+     1
+    ],
+    [
+     1.02,
+     2,
+     2,
+     0
+    ],
+    [
+     1.59,
+     2,
+     2,
+     0
+    ],
+    [
+     2.1,
+     2,
+     2,
+     0
+    ],
+    [
+     2.69,
+     2,
+     2,
+     0
+    ],
+    [
+     3.19,
+     2,
+     2,
+     0
+    ],
+    [
+     3.7,
+     2,
+     2,
+     0
+    ],
+    [
+     4.2,
+     2,
+     2,
+     0
+    ],
+    [
+     4.71,
+     2,
+     2,
+     0
+    ],
+    [
+     5.22,
+     2,
+     2,
+     0
+    ],
+    [
+     5.72,
+     2,
+     2,
+     0
+    ],
+    [
+     6.23,
+     0,
+     1,
+     0
+    ],
+    [
+     6.73,
+     0,
+     1,
+     0
+    ],
+    [
+     7.24,
+     0,
+     1,
+     0
+    ]
+   ],
+   "cgroup_samples": [
+    "1792522181.490722876|API usage_usec 874182 user_usec 784376 system_usec 89806 nice_usec 0 nr_periods 164 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46649344|DB usage_usec 50906306 user_usec 47813961 system_usec 3092345 nice_usec 0 nr_periods 2079 nr_throttled 2034 throttled_usec 472129360 nr_bursts 0 burst_usec 0 ",
+    "1792522181.996655001|API usage_usec 875433 user_usec 784739 system_usec 90693 nice_usec 0 nr_periods 166 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46649344|DB usage_usec 50906400 user_usec 47814049 system_usec 3092350 nice_usec 0 nr_periods 2079 nr_throttled 2034 throttled_usec 472129360 nr_bursts 0 burst_usec 0 ",
+    "1792522182.506273585|API usage_usec 877159 user_usec 786386 system_usec 90773 nice_usec 0 nr_periods 168 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46649344|DB usage_usec 50906573 user_usec 47814211 system_usec 3092361 nice_usec 0 nr_periods 2079 nr_throttled 2034 throttled_usec 472129360 nr_bursts 0 burst_usec 0 ",
+    "1792522183.012929502|API usage_usec 878949 user_usec 788176 system_usec 90773 nice_usec 0 nr_periods 171 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46649344|DB usage_usec 50906699 user_usec 47814330 system_usec 3092369 nice_usec 0 nr_periods 2081 nr_throttled 2034 throttled_usec 472129360 nr_bursts 0 burst_usec 0 ",
+    "1792522183.519574752|API usage_usec 887164 user_usec 796391 system_usec 90773 nice_usec 0 nr_periods 175 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 50959230 user_usec 47856330 system_usec 3102899 nice_usec 0 nr_periods 2082 nr_throttled 2035 throttled_usec 472262886 nr_bursts 0 burst_usec 0 ",
+    "1792522184.023262627|API usage_usec 888475 user_usec 797701 system_usec 90773 nice_usec 0 nr_periods 178 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 51084883 user_usec 47965744 system_usec 3119138 nice_usec 0 nr_periods 2087 nr_throttled 2040 throttled_usec 473014449 nr_bursts 0 burst_usec 0 ",
+    "1792522184.528943503|API usage_usec 889640 user_usec 798866 system_usec 90773 nice_usec 0 nr_periods 179 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 51210019 user_usec 48076472 system_usec 3133547 nice_usec 0 nr_periods 2092 nr_throttled 2045 throttled_usec 473883605 nr_bursts 0 burst_usec 0 ",
+    "1792522185.038770170|API usage_usec 892019 user_usec 801245 system_usec 90773 nice_usec 0 nr_periods 182 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 51335356 user_usec 48184513 system_usec 3150842 nice_usec 0 nr_periods 2097 nr_throttled 2050 throttled_usec 474744189 nr_bursts 0 burst_usec 0 ",
+    "1792522185.543452045|API usage_usec 893952 user_usec 803179 system_usec 90773 nice_usec 0 nr_periods 186 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 51461594 user_usec 48291483 system_usec 3170110 nice_usec 0 nr_periods 2102 nr_throttled 2055 throttled_usec 475536482 nr_bursts 0 burst_usec 0 ",
+    "1792522186.047300045|API usage_usec 896325 user_usec 805552 system_usec 90773 nice_usec 0 nr_periods 189 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 51585677 user_usec 48403979 system_usec 3181698 nice_usec 0 nr_periods 2108 nr_throttled 2061 throttled_usec 476582787 nr_bursts 0 burst_usec 0 ",
+    "1792522186.553229795|API usage_usec 897848 user_usec 807075 system_usec 90773 nice_usec 0 nr_periods 189 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 51724648 user_usec 48541873 system_usec 3182775 nice_usec 0 nr_periods 2113 nr_throttled 2066 throttled_usec 477458280 nr_bursts 0 burst_usec 0 ",
+    "1792522187.061269962|API usage_usec 899818 user_usec 809045 system_usec 90773 nice_usec 0 nr_periods 195 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 51858794 user_usec 48671111 system_usec 3187683 nice_usec 0 nr_periods 2118 nr_throttled 2071 throttled_usec 478340509 nr_bursts 0 burst_usec 0 ",
+    "1792522187.566763837|API usage_usec 901793 user_usec 811020 system_usec 90773 nice_usec 0 nr_periods 197 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 51987462 user_usec 48795872 system_usec 3191590 nice_usec 0 nr_periods 2123 nr_throttled 2076 throttled_usec 479205295 nr_bursts 0 burst_usec 0 ",
+    "1792522188.075780463|API usage_usec 904130 user_usec 813356 system_usec 90773 nice_usec 0 nr_periods 200 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 52112145 user_usec 48896530 system_usec 3215615 nice_usec 0 nr_periods 2128 nr_throttled 2081 throttled_usec 480087970 nr_bursts 0 burst_usec 0 ",
+    "1792522188.581021796|API usage_usec 906407 user_usec 815633 system_usec 90773 nice_usec 0 nr_periods 204 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 52238080 user_usec 49006266 system_usec 3231814 nice_usec 0 nr_periods 2133 nr_throttled 2086 throttled_usec 480963453 nr_bursts 0 burst_usec 0 ",
+    "1792522189.086730338|API usage_usec 908785 user_usec 818011 system_usec 90773 nice_usec 0 nr_periods 208 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46706688|DB usage_usec 52361631 user_usec 49124852 system_usec 3236778 nice_usec 0 nr_periods 2138 nr_throttled 2091 throttled_usec 481905516 nr_bursts 0 burst_usec 0 ",
+    "1792522189.594458713|API usage_usec 915647 user_usec 824873 system_usec 90773 nice_usec 0 nr_periods 212 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46972928|DB usage_usec 52446920 user_usec 49198581 system_usec 3248338 nice_usec 0 nr_periods 2143 nr_throttled 2095 throttled_usec 482611720 nr_bursts 0 burst_usec 0 ",
+    "1792522190.100965130|API usage_usec 917441 user_usec 826558 system_usec 90883 nice_usec 0 nr_periods 216 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46710784|DB usage_usec 52447792 user_usec 49199453 system_usec 3248338 nice_usec 0 nr_periods 2144 nr_throttled 2095 throttled_usec 482611720 nr_bursts 0 burst_usec 0 ",
+    "1792522190.611390631|API usage_usec 919100 user_usec 828053 system_usec 91047 nice_usec 0 nr_periods 219 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46710784|DB usage_usec 52448489 user_usec 49200150 system_usec 3248338 nice_usec 0 nr_periods 2146 nr_throttled 2095 throttled_usec 482611720 nr_bursts 0 burst_usec 0 ",
+    "1792522191.116402756|API usage_usec 920801 user_usec 829680 system_usec 91120 nice_usec 0 nr_periods 222 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46710784|DB usage_usec 52448690 user_usec 49200351 system_usec 3248338 nice_usec 0 nr_periods 2146 nr_throttled 2095 throttled_usec 482611720 nr_bursts 0 burst_usec 0 "
+   ],
+   "sampled_window_s": 9.625679969787598,
+   "api_cpu_s": 0.046619,
+   "api_throttled_periods": 0,
+   "api_periods": 58,
+   "api_throttled_s": 0.0,
+   "api_mem_max_bytes": 46972928,
+   "db_cpu_s": 1.542384,
+   "db_throttled_s": 10.48236,
+   "max_active_api_backends": 2,
+   "max_api_backends": 2
+  },
+  {
+   "concurrency": 1,
+   "burst_wall_s": 2.2869519580854103,
+   "statuses": {
+    "200": 1
+   },
+   "latency_s": {
+    "n": 1,
+    "min": 2.2865290419431403,
+    "p50": 2.2865290419431403,
+    "p95": 2.2865290419431403,
+    "max": 2.2865290419431403
+   },
+   "latency_200_s": {
+    "n": 1,
+    "min": 2.2865290419431403,
+    "p50": 2.2865290419431403,
+    "p95": 2.2865290419431403,
+    "max": 2.2865290419431403
+   },
+   "requests": [
+    {
+     "status": 200,
+     "wall_s": 2.2865290419431403,
+     "bytes": 975,
+     "x_cache": "miss",
+     "request_id": "70a72fba7d454e70",
+     "t_start": 530757.378527416,
+     "t_end": 530759.665056458,
+     "rel_start_s": 0.0002774160820990801,
+     "rel_end_s": 2.2868064580252394
+    }
+   ],
+   "pg_activity": [
+    [
+     0.0,
+     0,
+     1,
+     0
+    ],
+    [
+     0.57,
+     2,
+     2,
+     0
+    ],
+    [
+     1.08,
+     2,
+     2,
+     0
+    ],
+    [
+     1.58,
+     2,
+     2,
+     0
+    ],
+    [
+     2.09,
+     2,
+     2,
+     0
+    ],
+    [
+     2.59,
+     0,
+     1,
+     0
+    ],
+    [
+     3.1,
+     0,
+     1,
+     0
+    ],
+    [
+     3.6,
+     0,
+     1,
+     0
+    ]
+   ],
+   "cgroup_samples": [
+    "1792522196.402666175|API usage_usec 936937 user_usec 845458 system_usec 91478 nice_usec 0 nr_periods 249 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46710784|DB usage_usec 52450567 user_usec 49201221 system_usec 3249345 nice_usec 0 nr_periods 2148 nr_throttled 2095 throttled_usec 482611720 nr_bursts 0 burst_usec 0 ",
+    "1792522196.908197634|API usage_usec 938237 user_usec 846758 system_usec 91478 nice_usec 0 nr_periods 250 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46710784|DB usage_usec 52450658 user_usec 49201307 system_usec 3249350 nice_usec 0 nr_periods 2150 nr_throttled 2095 throttled_usec 482611720 nr_bursts 0 burst_usec 0 ",
+    "1792522197.414112717|API usage_usec 940090 user_usec 848612 system_usec 91478 nice_usec 0 nr_periods 253 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46710784|DB usage_usec 52450887 user_usec 49201537 system_usec 3249350 nice_usec 0 nr_periods 2150 nr_throttled 2095 throttled_usec 482611720 nr_bursts 0 burst_usec 0 ",
+    "1792522197.924819842|API usage_usec 941815 user_usec 850330 system_usec 91485 nice_usec 0 nr_periods 257 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46710784|DB usage_usec 52451015 user_usec 49201664 system_usec 3249350 nice_usec 0 nr_periods 2150 nr_throttled 2095 throttled_usec 482611720 nr_bursts 0 burst_usec 0 ",
+    "1792522198.432264718|API usage_usec 950228 user_usec 858674 system_usec 91553 nice_usec 0 nr_periods 261 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 47288320|DB usage_usec 52501521 user_usec 49239646 system_usec 3261874 nice_usec 0 nr_periods 2151 nr_throttled 2096 throttled_usec 482716168 nr_bursts 0 burst_usec 0 ",
+    "1792522198.938048426|API usage_usec 951725 user_usec 860172 system_usec 91553 nice_usec 0 nr_periods 264 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46780416|DB usage_usec 52626683 user_usec 49355129 system_usec 3271554 nice_usec 0 nr_periods 2156 nr_throttled 2101 throttled_usec 483539143 nr_bursts 0 burst_usec 0 ",
+    "1792522199.448165635|API usage_usec 953643 user_usec 861946 system_usec 91696 nice_usec 0 nr_periods 266 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46780416|DB usage_usec 52760449 user_usec 49472566 system_usec 3287882 nice_usec 0 nr_periods 2162 nr_throttled 2107 throttled_usec 484578629 nr_bursts 0 burst_usec 0 ",
+    "1792522199.957338177|API usage_usec 955461 user_usec 863683 system_usec 91778 nice_usec 0 nr_periods 267 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46780416|DB usage_usec 52897272 user_usec 49605332 system_usec 3291939 nice_usec 0 nr_periods 2167 nr_throttled 2112 throttled_usec 485460211 nr_bursts 0 burst_usec 0 ",
+    "1792522200.467658094|API usage_usec 957289 user_usec 865428 system_usec 91861 nice_usec 0 nr_periods 270 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46780416|DB usage_usec 53028898 user_usec 49734903 system_usec 3293994 nice_usec 0 nr_periods 2172 nr_throttled 2117 throttled_usec 486338004 nr_bursts 0 burst_usec 0 ",
+    "1792522200.973615969|API usage_usec 963445 user_usec 870489 system_usec 92955 nice_usec 0 nr_periods 274 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46776320|DB usage_usec 53048093 user_usec 49748286 system_usec 3299807 nice_usec 0 nr_periods 2176 nr_throttled 2118 throttled_usec 486503602 nr_bursts 0 burst_usec 0 ",
+    "1792522201.480752136|API usage_usec 964649 user_usec 871671 system_usec 92978 nice_usec 0 nr_periods 276 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46776320|DB usage_usec 53048492 user_usec 49748660 system_usec 3299832 nice_usec 0 nr_periods 2179 nr_throttled 2118 throttled_usec 486503602 nr_bursts 0 burst_usec 0 ",
+    "1792522201.986997178|API usage_usec 966429 user_usec 873451 system_usec 92978 nice_usec 0 nr_periods 278 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46776320|DB usage_usec 53049194 user_usec 49749362 system_usec 3299832 nice_usec 0 nr_periods 2179 nr_throttled 2118 throttled_usec 486503602 nr_bursts 0 burst_usec 0 "
+   ],
+   "sampled_window_s": 5.584331035614014,
+   "api_cpu_s": 0.029492,
+   "api_throttled_periods": 0,
+   "api_periods": 29,
+   "api_throttled_s": 0.0,
+   "api_mem_max_bytes": 47288320,
+   "db_cpu_s": 0.598627,
+   "db_throttled_s": 3.891882,
+   "max_active_api_backends": 2,
+   "max_api_backends": 2
+  },
+  {
+   "concurrency": 2,
+   "burst_wall_s": 5.12941612501163,
+   "statuses": {
+    "200": 2
+   },
+   "latency_s": {
+    "n": 2,
+    "min": 5.122394167003222,
+    "p50": 5.125566437491216,
+    "p95": 5.1284214809304105,
+    "max": 5.12873870797921
+   },
+   "latency_200_s": {
+    "n": 2,
+    "min": 5.122394167003222,
+    "p50": 5.125566437491216,
+    "p95": 5.1284214809304105,
+    "max": 5.12873870797921
+   },
+   "requests": [
+    {
+     "status": 200,
+     "wall_s": 5.12873870797921,
+     "bytes": 975,
+     "x_cache": "miss",
+     "request_id": "c1d71bc95b994ffc",
+     "t_start": 530768.634542375,
+     "t_end": 530773.763281083,
+     "rel_start_s": 0.0006101670442149043,
+     "rel_end_s": 5.129348875023425
+    },
+    {
+     "status": 200,
+     "wall_s": 5.122394167003222,
+     "bytes": 975,
+     "x_cache": "miss",
+     "request_id": "6c2ef271ba1b4818",
+     "t_start": 530768.634241166,
+     "t_end": 530773.756635333,
+     "rel_start_s": 0.0003089579986408353,
+     "rel_end_s": 5.122703125001863
+    }
+   ],
+   "pg_activity": [
+    [
+     0.0,
+     0,
+     1,
+     0
+    ],
+    [
+     0.51,
+     2,
+     2,
+     0
+    ],
+    [
+     1.02,
+     3,
+     3,
+     0
+    ],
+    [
+     1.61,
+     4,
+     4,
+     0
+    ],
+    [
+     2.12,
+     4,
+     4,
+     0
+    ],
+    [
+     2.62,
+     4,
+     4,
+     0
+    ],
+    [
+     3.13,
+     4,
+     4,
+     0
+    ],
+    [
+     3.63,
+     4,
+     4,
+     0
+    ],
+    [
+     4.14,
+     4,
+     4,
+     0
+    ],
+    [
+     4.64,
+     4,
+     4,
+     0
+    ],
+    [
+     5.15,
+     0,
+     2,
+     0
+    ],
+    [
+     5.66,
+     0,
+     2,
+     0
+    ],
+    [
+     6.16,
+     0,
+     2,
+     0
+    ]
+   ],
+   "cgroup_samples": [
+    "1792522207.650406305|API usage_usec 984451 user_usec 890278 system_usec 94173 nice_usec 0 nr_periods 308 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46776320|DB usage_usec 53056978 user_usec 49754219 system_usec 3302759 nice_usec 0 nr_periods 2181 nr_throttled 2118 throttled_usec 486503602 nr_bursts 0 burst_usec 0 ",
+    "1792522208.159604833|API usage_usec 985714 user_usec 891513 system_usec 94201 nice_usec 0 nr_periods 311 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46776320|DB usage_usec 53056978 user_usec 49754219 system_usec 3302759 nice_usec 0 nr_periods 2181 nr_throttled 2118 throttled_usec 486503602 nr_bursts 0 burst_usec 0 ",
+    "1792522208.664874250|API usage_usec 987545 user_usec 893169 system_usec 94376 nice_usec 0 nr_periods 314 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46776320|DB usage_usec 53056978 user_usec 49754219 system_usec 3302759 nice_usec 0 nr_periods 2181 nr_throttled 2118 throttled_usec 486503602 nr_bursts 0 burst_usec 0 ",
+    "1792522209.170660000|API usage_usec 989399 user_usec 895023 system_usec 94376 nice_usec 0 nr_periods 318 nr_throttled 82 throttled_usec 7306537 nr_bursts 0 burst_usec 0 |APIMEM 46776320|DB usage_usec 53056978 user_usec 49754219 system_usec 3302759 nice_usec 0 nr_periods 2181 nr_throttled 2118 throttled_usec 486503602 nr_bursts 0 burst_usec 0 ",
+    "1792522209.677781000|API usage_usec 1005067 user_usec 907771 system_usec 97296 nice_usec 0 nr_periods 322 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 46931968|DB usage_usec 53124386 user_usec 49808186 system_usec 3316199 nice_usec 0 nr_periods 2183 nr_throttled 2119 throttled_usec 486675010 nr_bursts 0 burst_usec 0 ",
+    "1792522210.186786792|API usage_usec 1010642 user_usec 912304 system_usec 98338 nice_usec 0 nr_periods 327 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47136768|DB usage_usec 53250384 user_usec 49913128 system_usec 3337256 nice_usec 0 nr_periods 2188 nr_throttled 2124 throttled_usec 487843183 nr_bursts 0 burst_usec 0 ",
+    "1792522210.697078543|API usage_usec 1013405 user_usec 915067 system_usec 98338 nice_usec 0 nr_periods 331 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47136768|DB usage_usec 53376784 user_usec 50020483 system_usec 3356300 nice_usec 0 nr_periods 2193 nr_throttled 2129 throttled_usec 489219069 nr_bursts 0 burst_usec 0 ",
+    "1792522211.207736834|API usage_usec 1015684 user_usec 917235 system_usec 98449 nice_usec 0 nr_periods 334 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47136768|DB usage_usec 53499047 user_usec 50121027 system_usec 3378019 nice_usec 0 nr_periods 2198 nr_throttled 2134 throttled_usec 491161691 nr_bursts 0 burst_usec 0 ",
+    "1792522211.718658168|API usage_usec 1017382 user_usec 918863 system_usec 98519 nice_usec 0 nr_periods 338 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47136768|DB usage_usec 53625551 user_usec 50237049 system_usec 3388501 nice_usec 0 nr_periods 2203 nr_throttled 2139 throttled_usec 493036014 nr_bursts 0 burst_usec 0 ",
+    "1792522212.225102585|API usage_usec 1019826 user_usec 921259 system_usec 98566 nice_usec 0 nr_periods 341 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47136768|DB usage_usec 53751862 user_usec 50354989 system_usec 3396872 nice_usec 0 nr_periods 2208 nr_throttled 2144 throttled_usec 494916181 nr_bursts 0 burst_usec 0 ",
+    "1792522212.736100043|API usage_usec 1022448 user_usec 922935 system_usec 99513 nice_usec 0 nr_periods 345 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47136768|DB usage_usec 53877341 user_usec 50476044 system_usec 3401296 nice_usec 0 nr_periods 2213 nr_throttled 2149 throttled_usec 496786841 nr_bursts 0 burst_usec 0 ",
+    "1792522213.243980960|API usage_usec 1024847 user_usec 925291 system_usec 99556 nice_usec 0 nr_periods 349 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47132672|DB usage_usec 54001955 user_usec 50596944 system_usec 3405010 nice_usec 0 nr_periods 2218 nr_throttled 2154 throttled_usec 498677615 nr_bursts 0 burst_usec 0 ",
+    "1792522213.753576961|API usage_usec 1027490 user_usec 927867 system_usec 99623 nice_usec 0 nr_periods 353 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47132672|DB usage_usec 54152133 user_usec 50737859 system_usec 3414274 nice_usec 0 nr_periods 2224 nr_throttled 2160 throttled_usec 500909830 nr_bursts 0 burst_usec 0 ",
+    "1792522214.258705503|API usage_usec 1029953 user_usec 930330 system_usec 99623 nice_usec 0 nr_periods 356 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47132672|DB usage_usec 54277113 user_usec 50855449 system_usec 3421663 nice_usec 0 nr_periods 2229 nr_throttled 2165 throttled_usec 502802331 nr_bursts 0 burst_usec 0 ",
+    "1792522214.765315628|API usage_usec 1035561 user_usec 935818 system_usec 99742 nice_usec 0 nr_periods 360 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47140864|DB usage_usec 54368667 user_usec 50938528 system_usec 3430139 nice_usec 0 nr_periods 2234 nr_throttled 2169 throttled_usec 504206984 nr_bursts 0 burst_usec 0 ",
+    "1792522215.274204336|API usage_usec 1037314 user_usec 937572 system_usec 99742 nice_usec 0 nr_periods 363 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47140864|DB usage_usec 54369437 user_usec 50939249 system_usec 3430187 nice_usec 0 nr_periods 2235 nr_throttled 2169 throttled_usec 504206984 nr_bursts 0 burst_usec 0 ",
+    "1792522215.782753587|API usage_usec 1038457 user_usec 938624 system_usec 99832 nice_usec 0 nr_periods 365 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47140864|DB usage_usec 54369682 user_usec 50939478 system_usec 3430203 nice_usec 0 nr_periods 2235 nr_throttled 2169 throttled_usec 504206984 nr_bursts 0 burst_usec 0 "
+   ],
+   "sampled_window_s": 8.132347345352173,
+   "api_cpu_s": 0.054006,
+   "api_throttled_periods": 1,
+   "api_periods": 57,
+   "api_throttled_s": 0.016467,
+   "api_mem_max_bytes": 47140864,
+   "db_cpu_s": 1.312704,
+   "db_throttled_s": 17.703382,
+   "max_active_api_backends": 4,
+   "max_api_backends": 4
+  },
+  {
+   "concurrency": 2,
+   "burst_wall_s": 5.414685291936621,
+   "statuses": {
+    "200": 2
+   },
+   "latency_s": {
+    "n": 2,
+    "min": 4.414720666944049,
+    "p50": 4.91439312545117,
+    "p95": 5.364098338107579,
+    "max": 5.4140655839582905
+   },
+   "latency_200_s": {
+    "n": 2,
+    "min": 4.414720666944049,
+    "p50": 4.91439312545117,
+    "p95": 5.364098338107579,
+    "max": 5.4140655839582905
+   },
+   "requests": [
+    {
+     "status": 200,
+     "wall_s": 4.414720666944049,
+     "bytes": 973,
+     "x_cache": "miss",
+     "request_id": "3c03f1511e424ad1",
+     "t_start": 530782.442422666,
+     "t_end": 530786.857143333,
+     "rel_start_s": 0.0008718329481780529,
+     "rel_end_s": 4.415592499892227
+    },
+    {
+     "status": 200,
+     "wall_s": 5.4140655839582905,
+     "bytes": 974,
+     "x_cache": "miss",
+     "request_id": "d623a11158a44424",
+     "t_start": 530782.442076166,
+     "t_end": 530787.85614175,
+     "rel_start_s": 0.0005253329873085022,
+     "rel_end_s": 5.414590916945599
+    }
+   ],
+   "pg_activity": [
+    [
+     0.0,
+     0,
+     2,
+     0
+    ],
+    [
+     0.51,
+     2,
+     2,
+     0
+    ],
+    [
+     1.01,
+     4,
+     4,
+     0
+    ],
+    [
+     1.52,
+     4,
+     4,
+     0
+    ],
+    [
+     2.11,
+     4,
+     4,
+     0
+    ],
+    [
+     2.81,
+     4,
+     4,
+     0
+    ],
+    [
+     3.32,
+     4,
+     4,
+     0
+    ],
+    [
+     3.82,
+     4,
+     4,
+     0
+    ],
+    [
+     4.33,
+     3,
+     3,
+     2
+    ],
+    [
+     4.84,
+     2,
+     3,
+     0
+    ],
+    [
+     5.34,
+     1,
+     2,
+     1
+    ],
+    [
+     5.84,
+     0,
+     2,
+     0
+    ],
+    [
+     6.34,
+     0,
+     2,
+     0
+    ],
+    [
+     6.85,
+     0,
+     2,
+     0
+    ]
+   ],
+   "cgroup_samples": [
+    "1792522221.445225714|API usage_usec 1057290 user_usec 955759 system_usec 101531 nice_usec 0 nr_periods 399 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47136768|DB usage_usec 54371603 user_usec 50941278 system_usec 3430324 nice_usec 0 nr_periods 2239 nr_throttled 2169 throttled_usec 504206984 nr_bursts 0 burst_usec 0 ",
+    "1792522221.954686923|API usage_usec 1058580 user_usec 957049 system_usec 101531 nice_usec 0 nr_periods 399 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47136768|DB usage_usec 54371739 user_usec 50941406 system_usec 3430333 nice_usec 0 nr_periods 2239 nr_throttled 2169 throttled_usec 504206984 nr_bursts 0 burst_usec 0 ",
+    "1792522222.466286048|API usage_usec 1060329 user_usec 958798 system_usec 101531 nice_usec 0 nr_periods 403 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47136768|DB usage_usec 54371870 user_usec 50941529 system_usec 3430341 nice_usec 0 nr_periods 2241 nr_throttled 2169 throttled_usec 504206984 nr_bursts 0 burst_usec 0 ",
+    "1792522222.976258840|API usage_usec 1062200 user_usec 960669 system_usec 101531 nice_usec 0 nr_periods 406 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47136768|DB usage_usec 54372065 user_usec 50941712 system_usec 3430353 nice_usec 0 nr_periods 2241 nr_throttled 2169 throttled_usec 504206984 nr_bursts 0 burst_usec 0 ",
+    "1792522223.482826549|API usage_usec 1070873 user_usec 969258 system_usec 101615 nice_usec 0 nr_periods 410 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47415296|DB usage_usec 54428230 user_usec 50983648 system_usec 3444582 nice_usec 0 nr_periods 2242 nr_throttled 2170 throttled_usec 504573042 nr_bursts 0 burst_usec 0 ",
+    "1792522223.991649382|API usage_usec 1077481 user_usec 973933 system_usec 103547 nice_usec 0 nr_periods 414 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47251456|DB usage_usec 54548719 user_usec 51090374 system_usec 3458345 nice_usec 0 nr_periods 2247 nr_throttled 2175 throttled_usec 505663045 nr_bursts 0 burst_usec 0 ",
+    "1792522224.496304924|API usage_usec 1079511 user_usec 975768 system_usec 103742 nice_usec 0 nr_periods 416 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47251456|DB usage_usec 54677705 user_usec 51196446 system_usec 3481258 nice_usec 0 nr_periods 2252 nr_throttled 2180 throttled_usec 507313139 nr_bursts 0 burst_usec 0 ",
+    "1792522225.006088633|API usage_usec 1080913 user_usec 975768 system_usec 105145 nice_usec 0 nr_periods 418 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47251456|DB usage_usec 54801989 user_usec 51312124 system_usec 3489864 nice_usec 0 nr_periods 2257 nr_throttled 2185 throttled_usec 509188840 nr_bursts 0 burst_usec 0 ",
+    "1792522225.514652050|API usage_usec 1083625 user_usec 976044 system_usec 107580 nice_usec 0 nr_periods 422 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47251456|DB usage_usec 54930841 user_usec 51423231 system_usec 3507610 nice_usec 0 nr_periods 2262 nr_throttled 2190 throttled_usec 511328611 nr_bursts 0 burst_usec 0 ",
+    "1792522226.049767008|API usage_usec 1085277 user_usec 977630 system_usec 107647 nice_usec 0 nr_periods 423 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47251456|DB usage_usec 55055698 user_usec 51540343 system_usec 3515355 nice_usec 0 nr_periods 2268 nr_throttled 2196 throttled_usec 513964507 nr_bursts 0 burst_usec 0 ",
+    "1792522226.560766800|API usage_usec 1087339 user_usec 978703 system_usec 108636 nice_usec 0 nr_periods 428 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47251456|DB usage_usec 55203722 user_usec 51683607 system_usec 3520115 nice_usec 0 nr_periods 2273 nr_throttled 2201 throttled_usec 515933259 nr_bursts 0 burst_usec 0 ",
+    "1792522227.071609300|API usage_usec 1089978 user_usec 980393 system_usec 109584 nice_usec 0 nr_periods 433 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47251456|DB usage_usec 55327970 user_usec 51795663 system_usec 3532306 nice_usec 0 nr_periods 2278 nr_throttled 2206 throttled_usec 517888783 nr_bursts 0 burst_usec 0 ",
+    "1792522227.582190301|API usage_usec 1092365 user_usec 982737 system_usec 109628 nice_usec 0 nr_periods 437 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47251456|DB usage_usec 55453387 user_usec 51911689 system_usec 3541697 nice_usec 0 nr_periods 2283 nr_throttled 2211 throttled_usec 519780780 nr_bursts 0 burst_usec 0 ",
+    "1792522228.091167467|API usage_usec 1101851 user_usec 991275 system_usec 110576 nice_usec 0 nr_periods 441 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47247360|DB usage_usec 55573230 user_usec 52017931 system_usec 3555299 nice_usec 0 nr_periods 2288 nr_throttled 2216 throttled_usec 520952389 nr_bursts 0 burst_usec 0 ",
+    "1792522228.598147218|API usage_usec 1103886 user_usec 993105 system_usec 110780 nice_usec 0 nr_periods 444 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47247360|DB usage_usec 55699257 user_usec 52140031 system_usec 3559226 nice_usec 0 nr_periods 2293 nr_throttled 2221 throttled_usec 521827139 nr_bursts 0 burst_usec 0 ",
+    "1792522229.107026176|API usage_usec 1110223 user_usec 998515 system_usec 111708 nice_usec 0 nr_periods 448 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47775744|DB usage_usec 55726458 user_usec 52160440 system_usec 3566018 nice_usec 0 nr_periods 2297 nr_throttled 2223 throttled_usec 522090550 nr_bursts 0 burst_usec 0 ",
+    "1792522229.616684302|API usage_usec 1111889 user_usec 1000111 system_usec 111777 nice_usec 0 nr_periods 451 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47251456|DB usage_usec 55727357 user_usec 52161339 system_usec 3566018 nice_usec 0 nr_periods 2299 nr_throttled 2223 throttled_usec 522090550 nr_bursts 0 burst_usec 0 ",
+    "1792522230.123266718|API usage_usec 1114064 user_usec 1002265 system_usec 111798 nice_usec 0 nr_periods 454 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47251456|DB usage_usec 55728362 user_usec 52162283 system_usec 3566078 nice_usec 0 nr_periods 2299 nr_throttled 2223 throttled_usec 522090550 nr_bursts 0 burst_usec 0 ",
+    "1792522230.633625260|API usage_usec 1115594 user_usec 1002957 system_usec 112636 nice_usec 0 nr_periods 457 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47251456|DB usage_usec 55729171 user_usec 52163041 system_usec 3566130 nice_usec 0 nr_periods 2301 nr_throttled 2223 throttled_usec 522090550 nr_bursts 0 burst_usec 0 "
+   ],
+   "sampled_window_s": 9.18839955329895,
+   "api_cpu_s": 0.058304,
+   "api_throttled_periods": 0,
+   "api_periods": 58,
+   "api_throttled_s": 0.0,
+   "api_mem_max_bytes": 47775744,
+   "db_cpu_s": 1.357568,
+   "db_throttled_s": 17.883566,
+   "max_active_api_backends": 4,
+   "max_api_backends": 4
+  },
+  {
+   "concurrency": 4,
+   "burst_wall_s": 13.211238875053823,
+   "statuses": {
+    "200": 4
+   },
+   "latency_s": {
+    "n": 4,
+    "min": 7.898092208080925,
+    "p50": 9.897798229474574,
+    "p95": 12.74370418488397,
+    "max": 13.210585540975444
+   },
+   "latency_200_s": {
+    "n": 4,
+    "min": 7.898092208080925,
+    "p50": 9.897798229474574,
+    "p95": 12.74370418488397,
+    "max": 13.210585540975444
+   },
+   "requests": [
+    {
+     "status": 200,
+     "wall_s": 10.098043167032301,
+     "bytes": 974,
+     "x_cache": "miss",
+     "request_id": "80c72d361a194119",
+     "t_start": 530796.961075416,
+     "t_end": 530807.059118583,
+     "rel_start_s": 0.0008066250011324883,
+     "rel_end_s": 10.098849792033434
+    },
+    {
+     "status": 200,
+     "wall_s": 7.898092208080925,
+     "bytes": 978,
+     "x_cache": "miss",
+     "request_id": "397db2db726d48b8",
+     "t_start": 530796.961305833,
+     "t_end": 530804.859398041,
+     "rel_start_s": 0.00103704200591892,
+     "rel_end_s": 7.899129250086844
+    },
+    {
+     "status": 200,
+     "wall_s": 9.697553291916847,
+     "bytes": 979,
+     "x_cache": "miss",
+     "request_id": "218eeea2da674395",
+     "t_start": 530796.961213208,
+     "t_end": 530806.6587665,
+     "rel_start_s": 0.000944417086429894,
+     "rel_end_s": 9.698497709003277
+    },
+    {
+     "status": 200,
+     "wall_s": 13.210585540975444,
+     "bytes": 971,
+     "x_cache": "miss",
+     "request_id": "0e2282cce78a459a",
+     "t_start": 530796.96081175,
+     "t_end": 530810.171397291,
+     "rel_start_s": 0.0005429590819403529,
+     "rel_end_s": 13.211128500057384
+    }
+   ],
+   "pg_activity": [
+    [
+     0.0,
+     0,
+     2,
+     0
+    ],
+    [
+     0.59,
+     6,
+     6,
+     2
+    ],
+    [
+     1.19,
+     4,
+     4,
+     0
+    ],
+    [
+     1.79,
+     6,
+     6,
+     0
+    ],
+    [
+     2.39,
+     6,
+     6,
+     0
+    ],
+    [
+     2.9,
+     7,
+     7,
+     1
+    ],
+    [
+     3.59,
+     7,
+     8,
+     1
+    ],
+    [
+     4.19,
+     8,
+     8,
+     0
+    ],
+    [
+     4.7,
+     8,
+     8,
+     0
+    ],
+    [
+     5.2,
+     8,
+     8,
+     0
+    ],
+    [
+     5.79,
+     8,
+     8,
+     0
+    ],
+    [
+     6.3,
+     8,
+     8,
+     0
+    ],
+    [
+     6.8,
+     8,
+     8,
+     1
+    ],
+    [
+     7.31,
+     8,
+     8,
+     1
+    ],
+    [
+     7.81,
+     7,
+     7,
+     2
+    ],
+    [
+     8.32,
+     6,
+     7,
+     0
+    ],
+    [
+     8.82,
+     6,
+     7,
+     0
+    ],
+    [
+     9.33,
+     6,
+     7,
+     0
+    ],
+    [
+     9.83,
+     4,
+     6,
+     1
+    ],
+    [
+     10.39,
+     2,
+     5,
+     0
+    ],
+    [
+     10.9,
+     2,
+     5,
+     0
+    ],
+    [
+     11.4,
+     2,
+     5,
+     0
+    ],
+    [
+     11.9,
+     2,
+     5,
+     0
+    ],
+    [
+     12.41,
+     2,
+     5,
+     0
+    ],
+    [
+     12.91,
+     2,
+     5,
+     0
+    ],
+    [
+     13.42,
+     0,
+     4,
+     0
+    ],
+    [
+     13.92,
+     0,
+     4,
+     0
+    ],
+    [
+     14.42,
+     0,
+     4,
+     0
+    ]
+   ],
+   "cgroup_samples": [
+    "1792522235.991676846|API usage_usec 1133324 user_usec 1020384 system_usec 112939 nice_usec 0 nr_periods 487 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47239168|DB usage_usec 55732128 user_usec 52164015 system_usec 3568113 nice_usec 0 nr_periods 2309 nr_throttled 2223 throttled_usec 522090550 nr_bursts 0 burst_usec 0 ",
+    "1792522236.495588971|API usage_usec 1134624 user_usec 1021652 system_usec 112971 nice_usec 0 nr_periods 489 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47239168|DB usage_usec 55732261 user_usec 52164139 system_usec 3568121 nice_usec 0 nr_periods 2309 nr_throttled 2223 throttled_usec 522090550 nr_bursts 0 burst_usec 0 ",
+    "1792522237.002466055|API usage_usec 1136501 user_usec 1023441 system_usec 113060 nice_usec 0 nr_periods 493 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47239168|DB usage_usec 55732261 user_usec 52164139 system_usec 3568121 nice_usec 0 nr_periods 2309 nr_throttled 2223 throttled_usec 522090550 nr_bursts 0 burst_usec 0 ",
+    "1792522237.509028139|API usage_usec 1138416 user_usec 1024378 system_usec 114038 nice_usec 0 nr_periods 496 nr_throttled 83 throttled_usec 7323004 nr_bursts 0 burst_usec 0 |APIMEM 47239168|DB usage_usec 55732261 user_usec 52164139 system_usec 3568121 nice_usec 0 nr_periods 2309 nr_throttled 2223 throttled_usec 522090550 nr_bursts 0 burst_usec 0 ",
+    "1792522238.016396416|API usage_usec 1154758 user_usec 1035640 system_usec 119118 nice_usec 0 nr_periods 499 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47435776|DB usage_usec 55790162 user_usec 52204952 system_usec 3585210 nice_usec 0 nr_periods 2310 nr_throttled 2224 throttled_usec 522304419 nr_bursts 0 burst_usec 0 ",
+    "1792522238.526850000|API usage_usec 1179263 user_usec 1055026 system_usec 124236 nice_usec 0 nr_periods 504 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47632384|DB usage_usec 55917464 user_usec 52299224 system_usec 3618239 nice_usec 0 nr_periods 2315 nr_throttled 2229 throttled_usec 524702590 nr_bursts 0 burst_usec 0 ",
+    "1792522239.037424583|API usage_usec 1184743 user_usec 1059462 system_usec 125280 nice_usec 0 nr_periods 509 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47747072|DB usage_usec 56039722 user_usec 52407322 system_usec 3632399 nice_usec 0 nr_periods 2320 nr_throttled 2234 throttled_usec 527372409 nr_bursts 0 burst_usec 0 ",
+    "1792522239.542681959|API usage_usec 1189135 user_usec 1063134 system_usec 126001 nice_usec 0 nr_periods 513 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 56167335 user_usec 52523489 system_usec 3643845 nice_usec 0 nr_periods 2325 nr_throttled 2239 throttled_usec 529356520 nr_bursts 0 burst_usec 0 ",
+    "1792522240.051795209|API usage_usec 1191695 user_usec 1064646 system_usec 127048 nice_usec 0 nr_periods 518 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 56316800 user_usec 52656519 system_usec 3660280 nice_usec 0 nr_periods 2331 nr_throttled 2245 throttled_usec 532770462 nr_bursts 0 burst_usec 0 ",
+    "1792522240.557531084|API usage_usec 1194413 user_usec 1066300 system_usec 128113 nice_usec 0 nr_periods 520 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 56443461 user_usec 52769048 system_usec 3674412 nice_usec 0 nr_periods 2336 nr_throttled 2250 throttled_usec 535864913 nr_bursts 0 burst_usec 0 ",
+    "1792522241.064010709|API usage_usec 1197160 user_usec 1068083 system_usec 129076 nice_usec 0 nr_periods 526 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 56570487 user_usec 52883127 system_usec 3687360 nice_usec 0 nr_periods 2341 nr_throttled 2255 throttled_usec 539227882 nr_bursts 0 burst_usec 0 ",
+    "1792522241.568082751|API usage_usec 1200127 user_usec 1070943 system_usec 129183 nice_usec 0 nr_periods 528 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 56692580 user_usec 52992033 system_usec 3700547 nice_usec 0 nr_periods 2346 nr_throttled 2260 throttled_usec 542891096 nr_bursts 0 burst_usec 0 ",
+    "1792522242.075283960|API usage_usec 1202689 user_usec 1073336 system_usec 129353 nice_usec 0 nr_periods 531 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 56819970 user_usec 53109575 system_usec 3710395 nice_usec 0 nr_periods 2351 nr_throttled 2265 throttled_usec 546796323 nr_bursts 0 burst_usec 0 ",
+    "1792522242.585075752|API usage_usec 1206189 user_usec 1076672 system_usec 129517 nice_usec 0 nr_periods 535 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 56945149 user_usec 53229712 system_usec 3715436 nice_usec 0 nr_periods 2356 nr_throttled 2270 throttled_usec 550676168 nr_bursts 0 burst_usec 0 ",
+    "1792522243.093248377|API usage_usec 1209450 user_usec 1079795 system_usec 129654 nice_usec 0 nr_periods 539 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 57070804 user_usec 53342387 system_usec 3728416 nice_usec 0 nr_periods 2361 nr_throttled 2275 throttled_usec 554519273 nr_bursts 0 burst_usec 0 ",
+    "1792522243.602838669|API usage_usec 1212697 user_usec 1082907 system_usec 129790 nice_usec 0 nr_periods 544 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 57196079 user_usec 53457704 system_usec 3738374 nice_usec 0 nr_periods 2366 nr_throttled 2280 throttled_usec 558192646 nr_bursts 0 burst_usec 0 ",
+    "1792522244.113384752|API usage_usec 1215652 user_usec 1085862 system_usec 129790 nice_usec 0 nr_periods 546 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 57319921 user_usec 53570726 system_usec 3749195 nice_usec 0 nr_periods 2371 nr_throttled 2285 throttled_usec 562154259 nr_bursts 0 burst_usec 0 ",
+    "1792522244.618921961|API usage_usec 1218685 user_usec 1088785 system_usec 129900 nice_usec 0 nr_periods 549 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 57445064 user_usec 53681451 system_usec 3763612 nice_usec 0 nr_periods 2376 nr_throttled 2290 throttled_usec 566030999 nr_bursts 0 burst_usec 0 ",
+    "1792522245.128999086|API usage_usec 1220708 user_usec 1089812 system_usec 130896 nice_usec 0 nr_periods 552 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 57569435 user_usec 53797259 system_usec 3772176 nice_usec 0 nr_periods 2381 nr_throttled 2295 throttled_usec 569901925 nr_bursts 0 burst_usec 0 ",
+    "1792522245.638485587|API usage_usec 1223511 user_usec 1091428 system_usec 132083 nice_usec 0 nr_periods 555 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 48201728|DB usage_usec 57695631 user_usec 53908973 system_usec 3786658 nice_usec 0 nr_periods 2386 nr_throttled 2300 throttled_usec 573802118 nr_bursts 0 burst_usec 0 ",
+    "1792522246.145422170|API usage_usec 1231495 user_usec 1099301 system_usec 132194 nice_usec 0 nr_periods 559 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 57815591 user_usec 54011053 system_usec 3804537 nice_usec 0 nr_periods 2391 nr_throttled 2305 throttled_usec 577051022 nr_bursts 0 burst_usec 0 ",
+    "1792522246.653133087|API usage_usec 1234141 user_usec 1101876 system_usec 132264 nice_usec 0 nr_periods 564 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 57959572 user_usec 54140267 system_usec 3819304 nice_usec 0 nr_periods 2397 nr_throttled 2311 throttled_usec 580503853 nr_bursts 0 burst_usec 0 ",
+    "1792522247.157554671|API usage_usec 1236940 user_usec 1103700 system_usec 133239 nice_usec 0 nr_periods 566 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47951872|DB usage_usec 58093314 user_usec 54267449 system_usec 3825864 nice_usec 0 nr_periods 2402 nr_throttled 2316 throttled_usec 583376245 nr_bursts 0 burst_usec 0 ",
+    "1792522247.663602796|API usage_usec 1245170 user_usec 1111901 system_usec 133269 nice_usec 0 nr_periods 572 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 48205824|DB usage_usec 58215495 user_usec 54372878 system_usec 3842616 nice_usec 0 nr_periods 2407 nr_throttled 2321 throttled_usec 586161093 nr_bursts 0 burst_usec 0 ",
+    "1792522248.167999838|API usage_usec 1252140 user_usec 1118764 system_usec 133375 nice_usec 0 nr_periods 576 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 58337379 user_usec 54483008 system_usec 3854370 nice_usec 0 nr_periods 2412 nr_throttled 2326 throttled_usec 587544889 nr_bursts 0 burst_usec 0 ",
+    "1792522248.676732046|API usage_usec 1253992 user_usec 1120616 system_usec 133375 nice_usec 0 nr_periods 578 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 58461659 user_usec 54600595 system_usec 3861063 nice_usec 0 nr_periods 2417 nr_throttled 2331 throttled_usec 588470922 nr_bursts 0 burst_usec 0 ",
+    "1792522249.182217297|API usage_usec 1255340 user_usec 1121835 system_usec 133504 nice_usec 0 nr_periods 582 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 58586785 user_usec 54721777 system_usec 3865007 nice_usec 0 nr_periods 2422 nr_throttled 2336 throttled_usec 589346100 nr_bursts 0 burst_usec 0 ",
+    "1792522249.687251172|API usage_usec 1257219 user_usec 1123715 system_usec 133504 nice_usec 0 nr_periods 585 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 58710075 user_usec 54837422 system_usec 3872653 nice_usec 0 nr_periods 2427 nr_throttled 2341 throttled_usec 590288053 nr_bursts 0 burst_usec 0 ",
+    "1792522250.196139672|API usage_usec 1259378 user_usec 1125874 system_usec 133504 nice_usec 0 nr_periods 588 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 58837141 user_usec 54950091 system_usec 3887049 nice_usec 0 nr_periods 2432 nr_throttled 2346 throttled_usec 591167342 nr_bursts 0 burst_usec 0 ",
+    "1792522250.707114714|API usage_usec 1261486 user_usec 1127982 system_usec 133504 nice_usec 0 nr_periods 592 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 58961394 user_usec 55066635 system_usec 3894759 nice_usec 0 nr_periods 2437 nr_throttled 2351 throttled_usec 592043664 nr_bursts 0 burst_usec 0 ",
+    "1792522251.214352714|API usage_usec 1266868 user_usec 1133363 system_usec 133504 nice_usec 0 nr_periods 596 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 59052208 user_usec 55144833 system_usec 3907374 nice_usec 0 nr_periods 2442 nr_throttled 2355 throttled_usec 592652895 nr_bursts 0 burst_usec 0 ",
+    "1792522251.720335298|API usage_usec 1268374 user_usec 1134869 system_usec 133504 nice_usec 0 nr_periods 599 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 59052737 user_usec 55145327 system_usec 3907409 nice_usec 0 nr_periods 2443 nr_throttled 2355 throttled_usec 592652895 nr_bursts 0 burst_usec 0 ",
+    "1792522252.229203131|API usage_usec 1269894 user_usec 1136390 system_usec 133504 nice_usec 0 nr_periods 601 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 59053075 user_usec 55145643 system_usec 3907432 nice_usec 0 nr_periods 2445 nr_throttled 2355 throttled_usec 592652895 nr_bursts 0 burst_usec 0 ",
+    "1792522252.740330923|API usage_usec 1271748 user_usec 1138195 system_usec 133553 nice_usec 0 nr_periods 605 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 59053808 user_usec 55146376 system_usec 3907432 nice_usec 0 nr_periods 2445 nr_throttled 2355 throttled_usec 592652895 nr_bursts 0 burst_usec 0 "
+   ],
+   "sampled_window_s": 16.74865412712097,
+   "api_cpu_s": 0.138424,
+   "api_throttled_periods": 1,
+   "api_periods": 118,
+   "api_throttled_s": 0.090412,
+   "api_mem_max_bytes": 48205824,
+   "db_cpu_s": 3.32168,
+   "db_throttled_s": 70.562345,
+   "max_active_api_backends": 8,
+   "max_api_backends": 8
+  },
+  {
+   "concurrency": 8,
+   "burst_wall_s": 39.02512766700238,
+   "statuses": {
+    "200": 8
+   },
+   "latency_s": {
+    "n": 8,
+    "min": 18.509135916945525,
+    "p50": 25.35530860396102,
+    "p95": 38.845869295479496,
+    "max": 39.02451620798092
+   },
+   "latency_200_s": {
+    "n": 8,
+    "min": 18.509135916945525,
+    "p50": 25.35530860396102,
+    "p95": 38.845869295479496,
+    "max": 39.02451620798092
+   },
+   "requests": [
+    {
+     "status": 200,
+     "wall_s": 38.51409645797685,
+     "bytes": 978,
+     "x_cache": "miss",
+     "request_id": "10a7e2fefc3c4e63",
+     "t_start": 530819.052263625,
+     "t_end": 530857.566360083,
+     "rel_start_s": 0.0006784169236198068,
+     "rel_end_s": 38.51477487490047
+    },
+    {
+     "status": 200,
+     "wall_s": 26.20239520794712,
+     "bytes": 976,
+     "x_cache": "miss",
+     "request_id": "9890bcbac73042bd",
+     "t_start": 530819.05245275,
+     "t_end": 530845.254847958,
+     "rel_start_s": 0.0008675419958308339,
+     "rel_end_s": 26.20326274994295
+    },
+    {
+     "status": 200,
+     "wall_s": 23.503618499962613,
+     "bytes": 974,
+     "x_cache": "miss",
+     "request_id": "6cae8d72111a4d0c",
+     "t_start": 530819.05234375,
+     "t_end": 530842.55596225,
+     "rel_start_s": 0.0007585419807583094,
+     "rel_end_s": 23.50437704194337
+    },
+    {
+     "status": 200,
+     "wall_s": 18.509135916945525,
+     "bytes": 974,
+     "x_cache": "miss",
+     "request_id": "27d6731795a94374",
+     "t_start": 530819.052624083,
+     "t_end": 530837.56176,
+     "rel_start_s": 0.0010388749651610851,
+     "rel_end_s": 18.510174791910686
+    },
+    {
+     "status": 200,
+     "wall_s": 24.50822199997492,
+     "bytes": 975,
+     "x_cache": "miss",
+     "request_id": "11b0538e7aa743d6",
+     "t_start": 530819.052678416,
+     "t_end": 530843.560900416,
+     "rel_start_s": 0.0010932079749181867,
+     "rel_end_s": 24.50931520794984
+    },
+    {
+     "status": 200,
+     "wall_s": 38.006095207994804,
+     "bytes": 975,
+     "x_cache": "miss",
+     "request_id": "869bf845d6b74f78",
+     "t_start": 530819.052545333,
+     "t_end": 530857.058640541,
+     "rel_start_s": 0.0009601250058040023,
+     "rel_end_s": 38.00705533300061
+    },
+    {
+     "status": 200,
+     "wall_s": 20.50229891599156,
+     "bytes": 974,
+     "x_cache": "miss",
+     "request_id": "0582bd4607c54789",
+     "t_start": 530819.052408,
+     "t_end": 530839.554706916,
+     "rel_start_s": 0.0008227919461205602,
+     "rel_end_s": 20.50312170793768
+    },
+    {
+     "status": 200,
+     "wall_s": 39.02451620798092,
+     "bytes": 976,
+     "x_cache": "miss",
+     "request_id": "4824f232784a407a",
+     "t_start": 530819.052109,
+     "t_end": 530858.076625208,
+     "rel_start_s": 0.0005237919976934791,
+     "rel_end_s": 39.02503999997862
+    }
+   ],
+   "pg_activity": [
+    [
+     0.0,
+     0,
+     4,
+     0
+    ],
+    [
+     0.51,
+     5,
+     7,
+     3
+    ],
+    [
+     1.3,
+     10,
+     10,
+     4
+    ],
+    [
+     2.0,
+     10,
+     11,
+     3
+    ],
+    [
+     2.6,
+     10,
+     10,
+     1
+    ],
+    [
+     3.3,
+     11,
+     11,
+     1
+    ],
+    [
+     4.0,
+     11,
+     11,
+     2
+    ],
+    [
+     4.6,
+     11,
+     11,
+     2
+    ],
+    [
+     5.2,
+     12,
+     13,
+     2
+    ],
+    [
+     5.9,
+     13,
+     13,
+     4
+    ],
+    [
+     6.5,
+     13,
+     13,
+     1
+    ],
+    [
+     7.1,
+     14,
+     14,
+     6
+    ],
+    [
+     7.8,
+     15,
+     15,
+     1
+    ],
+    [
+     8.4,
+     15,
+     15,
+     0
+    ],
+    [
+     9.1,
+     15,
+     15,
+     1
+    ],
+    [
+     9.7,
+     15,
+     15,
+     0
+    ],
+    [
+     10.5,
+     15,
+     15,
+     0
+    ],
+    [
+     11.1,
+     15,
+     15,
+     2
+    ],
+    [
+     11.7,
+     15,
+     15,
+     2
+    ],
+    [
+     12.4,
+     15,
+     15,
+     1
+    ],
+    [
+     13.0,
+     15,
+     15,
+     2
+    ],
+    [
+     13.6,
+     15,
+     15,
+     2
+    ],
+    [
+     14.3,
+     15,
+     15,
+     2
+    ],
+    [
+     15.1,
+     15,
+     15,
+     3
+    ],
+    [
+     15.7,
+     15,
+     15,
+     1
+    ],
+    [
+     16.31,
+     15,
+     15,
+     1
+    ],
+    [
+     16.9,
+     15,
+     15,
+     1
+    ],
+    [
+     17.4,
+     15,
+     15,
+     2
+    ],
+    [
+     18.1,
+     15,
+     15,
+     2
+    ],
+    [
+     18.8,
+     13,
+     14,
+     3
+    ],
+    [
+     19.4,
+     13,
+     14,
+     4
+    ],
+    [
+     20.1,
+     12,
+     13,
+     1
+    ],
+    [
+     20.7,
+     11,
+     13,
+     0
+    ],
+    [
+     21.4,
+     11,
+     13,
+     3
+    ],
+    [
+     22.0,
+     11,
+     13,
+     1
+    ],
+    [
+     22.6,
+     11,
+     13,
+     1
+    ],
+    [
+     23.2,
+     10,
+     12,
+     2
+    ],
+    [
+     23.9,
+     9,
+     12,
+     0
+    ],
+    [
+     24.5,
+     8,
+     11,
+     1
+    ],
+    [
+     25.2,
+     7,
+     11,
+     1
+    ],
+    [
+     25.8,
+     7,
+     11,
+     0
+    ],
+    [
+     26.3,
+     5,
+     10,
+     1
+    ],
+    [
+     26.81,
+     5,
+     10,
+     1
+    ],
+    [
+     27.31,
+     5,
+     10,
+     1
+    ],
+    [
+     27.82,
+     5,
+     10,
+     0
+    ],
+    [
+     28.5,
+     5,
+     10,
+     0
+    ],
+    [
+     29.01,
+     5,
+     10,
+     0
+    ],
+    [
+     29.51,
+     5,
+     10,
+     0
+    ],
+    [
+     30.02,
+     5,
+     10,
+     0
+    ],
+    [
+     30.7,
+     5,
+     10,
+     1
+    ],
+    [
+     31.21,
+     5,
+     10,
+     0
+    ],
+    [
+     31.71,
+     5,
+     10,
+     0
+    ],
+    [
+     32.22,
+     5,
+     10,
+     1
+    ],
+    [
+     32.8,
+     5,
+     10,
+     1
+    ],
+    [
+     33.3,
+     5,
+     10,
+     1
+    ],
+    [
+     33.81,
+     5,
+     10,
+     2
+    ],
+    [
+     34.31,
+     5,
+     10,
+     1
+    ],
+    [
+     34.82,
+     5,
+     10,
+     0
+    ],
+    [
+     35.33,
+     5,
+     10,
+     0
+    ],
+    [
+     35.83,
+     5,
+     10,
+     0
+    ],
+    [
+     36.33,
+     5,
+     10,
+     0
+    ],
+    [
+     36.84,
+     5,
+     10,
+     0
+    ],
+    [
+     37.34,
+     5,
+     10,
+     2
+    ],
+    [
+     37.9,
+     5,
+     10,
+     0
+    ],
+    [
+     38.4,
+     3,
+     9,
+     1
+    ],
+    [
+     38.91,
+     1,
+     8,
+     0
+    ],
+    [
+     39.41,
+     0,
+     8,
+     0
+    ],
+    [
+     39.92,
+     0,
+     8,
+     0
+    ],
+    [
+     40.42,
+     0,
+     8,
+     0
+    ]
+   ],
+   "cgroup_samples": [
+    "1792522258.091883634|API usage_usec 1288923 user_usec 1155369 system_usec 133553 nice_usec 0 nr_periods 635 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 59055566 user_usec 55147140 system_usec 3908426 nice_usec 0 nr_periods 2449 nr_throttled 2355 throttled_usec 592652895 nr_bursts 0 burst_usec 0 ",
+    "1792522258.596706134|API usage_usec 1290158 user_usec 1156604 system_usec 133553 nice_usec 0 nr_periods 638 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 59055861 user_usec 55147140 system_usec 3908721 nice_usec 0 nr_periods 2449 nr_throttled 2355 throttled_usec 592652895 nr_bursts 0 burst_usec 0 ",
+    "1792522259.105802051|API usage_usec 1292026 user_usec 1158437 system_usec 133589 nice_usec 0 nr_periods 641 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 59056064 user_usec 55147140 system_usec 3908924 nice_usec 0 nr_periods 2450 nr_throttled 2355 throttled_usec 592652895 nr_bursts 0 burst_usec 0 ",
+    "1792522259.613143635|API usage_usec 1293804 user_usec 1160134 system_usec 133669 nice_usec 0 nr_periods 643 nr_throttled 84 throttled_usec 7413416 nr_bursts 0 burst_usec 0 |APIMEM 47947776|DB usage_usec 59056287 user_usec 55147140 system_usec 3909147 nice_usec 0 nr_periods 2451 nr_throttled 2355 throttled_usec 592652895 nr_bursts 0 burst_usec 0 ",
+    "1792522260.122304885|API usage_usec 1318780 user_usec 1180907 system_usec 137872 nice_usec 0 nr_periods 647 nr_throttled 85 throttled_usec 7504475 nr_bursts 0 burst_usec 0 |APIMEM 48582656|DB usage_usec 59118325 user_usec 55188063 system_usec 3930261 nice_usec 0 nr_periods 2452 nr_throttled 2356 throttled_usec 593126043 nr_bursts 0 burst_usec 0 ",
+    "1792522260.629270510|API usage_usec 1343535 user_usec 1203687 system_usec 139847 nice_usec 0 nr_periods 652 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 48558080|DB usage_usec 59234398 user_usec 55265496 system_usec 3968901 nice_usec 0 nr_periods 2457 nr_throttled 2361 throttled_usec 596481505 nr_bursts 0 burst_usec 0 ",
+    "1792522261.141133261|API usage_usec 1355823 user_usec 1213736 system_usec 142086 nice_usec 0 nr_periods 657 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 48787456|DB usage_usec 59365856 user_usec 55382462 system_usec 3983394 nice_usec 0 nr_periods 2462 nr_throttled 2366 throttled_usec 600138949 nr_bursts 0 burst_usec 0 ",
+    "1792522261.648138302|API usage_usec 1366782 user_usec 1221805 system_usec 144976 nice_usec 0 nr_periods 662 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49168384|DB usage_usec 59506622 user_usec 55494360 system_usec 4012262 nice_usec 0 nr_periods 2468 nr_throttled 2372 throttled_usec 604768417 nr_bursts 0 burst_usec 0 ",
+    "1792522262.155066678|API usage_usec 1373953 user_usec 1228640 system_usec 145312 nice_usec 0 nr_periods 666 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49070080|DB usage_usec 59640074 user_usec 55617141 system_usec 4022932 nice_usec 0 nr_periods 2473 nr_throttled 2377 throttled_usec 608461828 nr_bursts 0 burst_usec 0 ",
+    "1792522262.660147761|API usage_usec 1380670 user_usec 1235178 system_usec 145492 nice_usec 0 nr_periods 672 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49278976|DB usage_usec 59767449 user_usec 55723042 system_usec 4044406 nice_usec 0 nr_periods 2478 nr_throttled 2382 throttled_usec 613046239 nr_bursts 0 burst_usec 0 ",
+    "1792522263.166001220|API usage_usec 1386906 user_usec 1241180 system_usec 145725 nice_usec 0 nr_periods 675 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49762304|DB usage_usec 59894416 user_usec 55829132 system_usec 4065283 nice_usec 0 nr_periods 2483 nr_throttled 2387 throttled_usec 617485790 nr_bursts 0 burst_usec 0 ",
+    "1792522263.671917762|API usage_usec 1390770 user_usec 1244955 system_usec 145814 nice_usec 0 nr_periods 679 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 60019822 user_usec 55942817 system_usec 4077005 nice_usec 0 nr_periods 2488 nr_throttled 2392 throttled_usec 622347145 nr_bursts 0 burst_usec 0 ",
+    "1792522264.177412512|API usage_usec 1394723 user_usec 1247804 system_usec 146918 nice_usec 0 nr_periods 683 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 60143347 user_usec 56053859 system_usec 4089487 nice_usec 0 nr_periods 2493 nr_throttled 2397 throttled_usec 627253523 nr_bursts 0 burst_usec 0 ",
+    "1792522264.685610137|API usage_usec 1398533 user_usec 1249731 system_usec 148801 nice_usec 0 nr_periods 687 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 60270323 user_usec 56163282 system_usec 4107040 nice_usec 0 nr_periods 2498 nr_throttled 2402 throttled_usec 632081163 nr_bursts 0 burst_usec 0 ",
+    "1792522265.195693554|API usage_usec 1402318 user_usec 1253221 system_usec 149097 nice_usec 0 nr_periods 692 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 60393644 user_usec 56263316 system_usec 4130328 nice_usec 0 nr_periods 2503 nr_throttled 2407 throttled_usec 636900567 nr_bursts 0 burst_usec 0 ",
+    "1792522265.706170929|API usage_usec 1404242 user_usec 1253248 system_usec 150993 nice_usec 0 nr_periods 696 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 60518939 user_usec 56364631 system_usec 4154308 nice_usec 0 nr_periods 2508 nr_throttled 2412 throttled_usec 641737785 nr_bursts 0 burst_usec 0 ",
+    "1792522266.213383388|API usage_usec 1407426 user_usec 1256198 system_usec 151227 nice_usec 0 nr_periods 700 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 60645071 user_usec 56473838 system_usec 4171232 nice_usec 0 nr_periods 2513 nr_throttled 2417 throttled_usec 646607757 nr_bursts 0 burst_usec 0 ",
+    "1792522266.723340888|API usage_usec 1411978 user_usec 1259686 system_usec 152291 nice_usec 0 nr_periods 704 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 60765413 user_usec 56575616 system_usec 4189797 nice_usec 0 nr_periods 2518 nr_throttled 2422 throttled_usec 651485059 nr_bursts 0 burst_usec 0 ",
+    "1792522267.229152097|API usage_usec 1415377 user_usec 1262036 system_usec 153340 nice_usec 0 nr_periods 707 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 60894836 user_usec 56677792 system_usec 4217043 nice_usec 0 nr_periods 2523 nr_throttled 2427 throttled_usec 655595410 nr_bursts 0 burst_usec 0 ",
+    "1792522267.736000889|API usage_usec 1418963 user_usec 1264443 system_usec 154520 nice_usec 0 nr_periods 711 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 61019281 user_usec 56789249 system_usec 4230031 nice_usec 0 nr_periods 2528 nr_throttled 2432 throttled_usec 660250928 nr_bursts 0 burst_usec 0 ",
+    "1792522268.241938708|API usage_usec 1422775 user_usec 1268060 system_usec 154715 nice_usec 0 nr_periods 716 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 61144498 user_usec 56902776 system_usec 4241721 nice_usec 0 nr_periods 2533 nr_throttled 2437 throttled_usec 665123188 nr_bursts 0 burst_usec 0 ",
+    "1792522268.751617167|API usage_usec 1426717 user_usec 1271112 system_usec 155605 nice_usec 0 nr_periods 721 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 61293176 user_usec 57031276 system_usec 4261899 nice_usec 0 nr_periods 2539 nr_throttled 2443 throttled_usec 670950558 nr_bursts 0 burst_usec 0 ",
+    "1792522269.257218583|API usage_usec 1430443 user_usec 1274652 system_usec 155790 nice_usec 0 nr_periods 724 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 61419277 user_usec 57141127 system_usec 4278149 nice_usec 0 nr_periods 2544 nr_throttled 2448 throttled_usec 675825446 nr_bursts 0 burst_usec 0 ",
+    "1792522269.764297625|API usage_usec 1433531 user_usec 1276943 system_usec 156587 nice_usec 0 nr_periods 729 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 61543747 user_usec 57254718 system_usec 4289028 nice_usec 0 nr_periods 2549 nr_throttled 2453 throttled_usec 680504925 nr_bursts 0 burst_usec 0 ",
+    "1792522270.269477792|API usage_usec 1437029 user_usec 1278703 system_usec 158325 nice_usec 0 nr_periods 734 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 61670034 user_usec 57372238 system_usec 4297795 nice_usec 0 nr_periods 2554 nr_throttled 2458 throttled_usec 685310372 nr_bursts 0 burst_usec 0 ",
+    "1792522270.778705501|API usage_usec 1440484 user_usec 1280206 system_usec 160277 nice_usec 0 nr_periods 738 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 61794873 user_usec 57489098 system_usec 4305774 nice_usec 0 nr_periods 2559 nr_throttled 2463 throttled_usec 690195318 nr_bursts 0 burst_usec 0 ",
+    "1792522271.288082834|API usage_usec 1444181 user_usec 1281258 system_usec 162922 nice_usec 0 nr_periods 742 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 61918010 user_usec 57600098 system_usec 4317911 nice_usec 0 nr_periods 2564 nr_throttled 2468 throttled_usec 695058777 nr_bursts 0 burst_usec 0 ",
+    "1792522271.792681918|API usage_usec 1447610 user_usec 1284641 system_usec 162969 nice_usec 0 nr_periods 746 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 62044110 user_usec 57717512 system_usec 4326598 nice_usec 0 nr_periods 2569 nr_throttled 2473 throttled_usec 699893614 nr_bursts 0 burst_usec 0 ",
+    "1792522272.302784627|API usage_usec 1450267 user_usec 1287225 system_usec 163041 nice_usec 0 nr_periods 749 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 62170596 user_usec 57830122 system_usec 4340473 nice_usec 0 nr_periods 2574 nr_throttled 2478 throttled_usec 704766214 nr_bursts 0 burst_usec 0 ",
+    "1792522272.811086002|API usage_usec 1453877 user_usec 1288869 system_usec 165007 nice_usec 0 nr_periods 753 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 62295170 user_usec 57940136 system_usec 4355033 nice_usec 0 nr_periods 2579 nr_throttled 2483 throttled_usec 709644745 nr_bursts 0 burst_usec 0 ",
+    "1792522273.318873044|API usage_usec 1457410 user_usec 1290447 system_usec 166963 nice_usec 0 nr_periods 758 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 62419269 user_usec 58056576 system_usec 4362693 nice_usec 0 nr_periods 2584 nr_throttled 2488 throttled_usec 714517535 nr_bursts 0 burst_usec 0 ",
+    "1792522273.824063127|API usage_usec 1461086 user_usec 1293933 system_usec 167153 nice_usec 0 nr_periods 761 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 62544787 user_usec 58171146 system_usec 4373641 nice_usec 0 nr_periods 2589 nr_throttled 2493 throttled_usec 719386236 nr_bursts 0 burst_usec 0 ",
+    "1792522274.332018711|API usage_usec 1464811 user_usec 1295446 system_usec 169365 nice_usec 0 nr_periods 766 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 62668716 user_usec 58284924 system_usec 4383792 nice_usec 0 nr_periods 2594 nr_throttled 2498 throttled_usec 724269149 nr_bursts 0 burst_usec 0 ",
+    "1792522274.839037794|API usage_usec 1468372 user_usec 1299006 system_usec 169365 nice_usec 0 nr_periods 771 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 62791116 user_usec 58394757 system_usec 4396358 nice_usec 0 nr_periods 2599 nr_throttled 2503 throttled_usec 729086552 nr_bursts 0 burst_usec 0 ",
+    "1792522275.345482170|API usage_usec 1472259 user_usec 1301183 system_usec 171075 nice_usec 0 nr_periods 775 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 62923062 user_usec 58516374 system_usec 4406688 nice_usec 0 nr_periods 2605 nr_throttled 2509 throttled_usec 734500159 nr_bursts 0 burst_usec 0 ",
+    "1792522275.855780045|API usage_usec 1474302 user_usec 1301210 system_usec 173092 nice_usec 0 nr_periods 779 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 63068073 user_usec 58654811 system_usec 4413262 nice_usec 0 nr_periods 2610 nr_throttled 2514 throttled_usec 739605438 nr_bursts 0 burst_usec 0 ",
+    "1792522276.361175754|API usage_usec 1477512 user_usec 1304397 system_usec 173114 nice_usec 0 nr_periods 784 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 63194820 user_usec 58769974 system_usec 4424845 nice_usec 0 nr_periods 2615 nr_throttled 2519 throttled_usec 744449963 nr_bursts 0 burst_usec 0 ",
+    "1792522276.865060629|API usage_usec 1481359 user_usec 1306134 system_usec 175225 nice_usec 0 nr_periods 789 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 63312518 user_usec 58878644 system_usec 4433873 nice_usec 0 nr_periods 2620 nr_throttled 2524 throttled_usec 749307971 nr_bursts 0 burst_usec 0 ",
+    "1792522277.371072712|API usage_usec 1484791 user_usec 1309398 system_usec 175392 nice_usec 0 nr_periods 793 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 63445009 user_usec 58991677 system_usec 4453332 nice_usec 0 nr_periods 2625 nr_throttled 2529 throttled_usec 753621484 nr_bursts 0 burst_usec 0 ",
+    "1792522277.878537254|API usage_usec 1488315 user_usec 1311855 system_usec 176460 nice_usec 0 nr_periods 797 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 63569417 user_usec 59106170 system_usec 4463247 nice_usec 0 nr_periods 2630 nr_throttled 2534 throttled_usec 758475252 nr_bursts 0 burst_usec 0 ",
+    "1792522278.384727255|API usage_usec 1492052 user_usec 1313731 system_usec 178320 nice_usec 0 nr_periods 801 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 63694691 user_usec 59214198 system_usec 4480493 nice_usec 0 nr_periods 2635 nr_throttled 2539 throttled_usec 763038326 nr_bursts 0 burst_usec 0 ",
+    "1792522278.895587421|API usage_usec 1499772 user_usec 1321132 system_usec 178640 nice_usec 0 nr_periods 806 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49512448|DB usage_usec 63815480 user_usec 59314336 system_usec 4501144 nice_usec 0 nr_periods 2640 nr_throttled 2544 throttled_usec 767400392 nr_bursts 0 burst_usec 0 ",
+    "1792522279.402391338|API usage_usec 1503190 user_usec 1324383 system_usec 178806 nice_usec 0 nr_periods 810 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49512448|DB usage_usec 63943837 user_usec 59433654 system_usec 4510182 nice_usec 0 nr_periods 2645 nr_throttled 2549 throttled_usec 771578287 nr_bursts 0 burst_usec 0 ",
+    "1792522279.909852297|API usage_usec 1506425 user_usec 1326704 system_usec 179721 nice_usec 0 nr_periods 813 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49512448|DB usage_usec 64068107 user_usec 59545172 system_usec 4522935 nice_usec 0 nr_periods 2650 nr_throttled 2554 throttled_usec 775881285 nr_bursts 0 burst_usec 0 ",
+    "1792522280.418828714|API usage_usec 1511758 user_usec 1331883 system_usec 179874 nice_usec 0 nr_periods 816 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49512448|DB usage_usec 64191499 user_usec 59650576 system_usec 4540923 nice_usec 0 nr_periods 2655 nr_throttled 2559 throttled_usec 780048837 nr_bursts 0 burst_usec 0 ",
+    "1792522280.929095756|API usage_usec 1519283 user_usec 1339115 system_usec 180168 nice_usec 0 nr_periods 820 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49770496|DB usage_usec 64318934 user_usec 59765373 system_usec 4553561 nice_usec 0 nr_periods 2660 nr_throttled 2564 throttled_usec 784310727 nr_bursts 0 burst_usec 0 ",
+    "1792522281.440086589|API usage_usec 1522791 user_usec 1342567 system_usec 180224 nice_usec 0 nr_periods 824 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49512448|DB usage_usec 64443682 user_usec 59873403 system_usec 4570278 nice_usec 0 nr_periods 2665 nr_throttled 2569 throttled_usec 788711920 nr_bursts 0 burst_usec 0 ",
+    "1792522281.944921590|API usage_usec 1525988 user_usec 1345745 system_usec 180242 nice_usec 0 nr_periods 828 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49512448|DB usage_usec 64570132 user_usec 59986136 system_usec 4583995 nice_usec 0 nr_periods 2670 nr_throttled 2574 throttled_usec 793377755 nr_bursts 0 burst_usec 0 ",
+    "1792522282.453684173|API usage_usec 1528175 user_usec 1347674 system_usec 180501 nice_usec 0 nr_periods 832 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49512448|DB usage_usec 64719295 user_usec 60124303 system_usec 4594992 nice_usec 0 nr_periods 2676 nr_throttled 2580 throttled_usec 799205462 nr_bursts 0 burst_usec 0 ",
+    "1792522282.958566298|API usage_usec 1532800 user_usec 1351217 system_usec 181582 nice_usec 0 nr_periods 835 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49512448|DB usage_usec 64842431 user_usec 60228329 system_usec 4614102 nice_usec 0 nr_periods 2681 nr_throttled 2585 throttled_usec 804008649 nr_bursts 0 burst_usec 0 ",
+    "1792522283.463652715|API usage_usec 1540969 user_usec 1357231 system_usec 183738 nice_usec 0 nr_periods 839 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 64968667 user_usec 60339443 system_usec 4629224 nice_usec 0 nr_periods 2686 nr_throttled 2590 throttled_usec 808460053 nr_bursts 0 burst_usec 0 ",
+    "1792522283.970807257|API usage_usec 1544305 user_usec 1359638 system_usec 184667 nice_usec 0 nr_periods 842 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 65095309 user_usec 60451817 system_usec 4643492 nice_usec 0 nr_periods 2691 nr_throttled 2595 throttled_usec 812843978 nr_bursts 0 burst_usec 0 ",
+    "1792522284.476252882|API usage_usec 1551431 user_usec 1365381 system_usec 186049 nice_usec 0 nr_periods 847 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49512448|DB usage_usec 65215962 user_usec 60557611 system_usec 4658350 nice_usec 0 nr_periods 2696 nr_throttled 2600 throttled_usec 817021121 nr_bursts 0 burst_usec 0 ",
+    "1792522284.984581091|API usage_usec 1555062 user_usec 1368942 system_usec 186119 nice_usec 0 nr_periods 851 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49512448|DB usage_usec 65341064 user_usec 60670726 system_usec 4670338 nice_usec 0 nr_periods 2701 nr_throttled 2605 throttled_usec 820374131 nr_bursts 0 burst_usec 0 ",
+    "1792522285.494506341|API usage_usec 1557936 user_usec 1370943 system_usec 186993 nice_usec 0 nr_periods 854 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 65467949 user_usec 60777833 system_usec 4690116 nice_usec 0 nr_periods 2706 nr_throttled 2610 throttled_usec 823897078 nr_bursts 0 burst_usec 0 ",
+    "1792522286.000612383|API usage_usec 1559613 user_usec 1372620 system_usec 186993 nice_usec 0 nr_periods 858 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 65589029 user_usec 60887146 system_usec 4701882 nice_usec 0 nr_periods 2711 nr_throttled 2615 throttled_usec 827340088 nr_bursts 0 burst_usec 0 ",
+    "1792522286.509644467|API usage_usec 1564892 user_usec 1377796 system_usec 187095 nice_usec 0 nr_periods 862 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 65713396 user_usec 61001003 system_usec 4712393 nice_usec 0 nr_periods 2716 nr_throttled 2620 throttled_usec 829841568 nr_bursts 0 burst_usec 0 ",
+    "1792522287.016267842|API usage_usec 1566975 user_usec 1379752 system_usec 187222 nice_usec 0 nr_periods 866 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 65837805 user_usec 61121342 system_usec 4716463 nice_usec 0 nr_periods 2721 nr_throttled 2625 throttled_usec 832193488 nr_bursts 0 burst_usec 0 ",
+    "1792522287.525350842|API usage_usec 1569218 user_usec 1381995 system_usec 187222 nice_usec 0 nr_periods 870 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 65965062 user_usec 61238493 system_usec 4726569 nice_usec 0 nr_periods 2726 nr_throttled 2630 throttled_usec 834660616 nr_bursts 0 burst_usec 0 ",
+    "1792522288.035832342|API usage_usec 1571736 user_usec 1384431 system_usec 187305 nice_usec 0 nr_periods 872 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 66089837 user_usec 61360051 system_usec 4729785 nice_usec 0 nr_periods 2731 nr_throttled 2635 throttled_usec 837046106 nr_bursts 0 burst_usec 0 ",
+    "1792522288.546287634|API usage_usec 1573903 user_usec 1385564 system_usec 188339 nice_usec 0 nr_periods 874 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49508352|DB usage_usec 66220359 user_usec 61485250 system_usec 4735109 nice_usec 0 nr_periods 2737 nr_throttled 2641 throttled_usec 840056282 nr_bursts 0 burst_usec 0 ",
+    "1792522289.054815760|API usage_usec 1576147 user_usec 1387808 system_usec 188339 nice_usec 0 nr_periods 876 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 66360919 user_usec 61621193 system_usec 4739726 nice_usec 0 nr_periods 2742 nr_throttled 2646 throttled_usec 842455022 nr_bursts 0 burst_usec 0 ",
+    "1792522289.562065635|API usage_usec 1578383 user_usec 1389873 system_usec 188509 nice_usec 0 nr_periods 880 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 66489201 user_usec 61744785 system_usec 4744416 nice_usec 0 nr_periods 2747 nr_throttled 2651 throttled_usec 844826085 nr_bursts 0 burst_usec 0 ",
+    "1792522290.071120843|API usage_usec 1580968 user_usec 1392394 system_usec 188574 nice_usec 0 nr_periods 884 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 66614883 user_usec 61866911 system_usec 4747972 nice_usec 0 nr_periods 2752 nr_throttled 2656 throttled_usec 847186864 nr_bursts 0 burst_usec 0 ",
+    "1792522290.582325177|API usage_usec 1583524 user_usec 1394888 system_usec 188636 nice_usec 0 nr_periods 888 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 66739548 user_usec 61986262 system_usec 4753285 nice_usec 0 nr_periods 2757 nr_throttled 2661 throttled_usec 849652134 nr_bursts 0 burst_usec 0 ",
+    "1792522291.090940636|API usage_usec 1586176 user_usec 1397345 system_usec 188830 nice_usec 0 nr_periods 892 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 66863695 user_usec 62104116 system_usec 4759579 nice_usec 0 nr_periods 2762 nr_throttled 2666 throttled_usec 852108604 nr_bursts 0 burst_usec 0 ",
+    "1792522291.597505927|API usage_usec 1588817 user_usec 1399987 system_usec 188830 nice_usec 0 nr_periods 896 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 66989803 user_usec 62223993 system_usec 4765810 nice_usec 0 nr_periods 2767 nr_throttled 2671 throttled_usec 854505775 nr_bursts 0 burst_usec 0 ",
+    "1792522292.103687053|API usage_usec 1591047 user_usec 1402217 system_usec 188830 nice_usec 0 nr_periods 900 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 67115034 user_usec 62347595 system_usec 4767439 nice_usec 0 nr_periods 2772 nr_throttled 2676 throttled_usec 856856861 nr_bursts 0 burst_usec 0 ",
+    "1792522292.609642845|API usage_usec 1593575 user_usec 1404744 system_usec 188830 nice_usec 0 nr_periods 902 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 67240030 user_usec 62463457 system_usec 4776572 nice_usec 0 nr_periods 2777 nr_throttled 2681 throttled_usec 859258836 nr_bursts 0 burst_usec 0 ",
+    "1792522293.115697637|API usage_usec 1596680 user_usec 1407849 system_usec 188830 nice_usec 0 nr_periods 906 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 67364642 user_usec 62570090 system_usec 4794552 nice_usec 0 nr_periods 2782 nr_throttled 2686 throttled_usec 861708595 nr_bursts 0 burst_usec 0 ",
+    "1792522293.624266928|API usage_usec 1599527 user_usec 1410696 system_usec 188830 nice_usec 0 nr_periods 910 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 67490126 user_usec 62685323 system_usec 4804803 nice_usec 0 nr_periods 2787 nr_throttled 2691 throttled_usec 864083389 nr_bursts 0 burst_usec 0 ",
+    "1792522294.131255345|API usage_usec 1601915 user_usec 1412857 system_usec 189058 nice_usec 0 nr_periods 913 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 67608082 user_usec 62793838 system_usec 4814244 nice_usec 0 nr_periods 2792 nr_throttled 2696 throttled_usec 866456963 nr_bursts 0 burst_usec 0 ",
+    "1792522294.638099637|API usage_usec 1604719 user_usec 1415450 system_usec 189269 nice_usec 0 nr_periods 916 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 67738247 user_usec 62906101 system_usec 4832146 nice_usec 0 nr_periods 2797 nr_throttled 2701 throttled_usec 868543536 nr_bursts 0 burst_usec 0 ",
+    "1792522295.144240304|API usage_usec 1607930 user_usec 1418642 system_usec 189287 nice_usec 0 nr_periods 920 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 67864869 user_usec 63013179 system_usec 4851690 nice_usec 0 nr_periods 2802 nr_throttled 2706 throttled_usec 870923430 nr_bursts 0 burst_usec 0 ",
+    "1792522295.656897346|API usage_usec 1610836 user_usec 1421206 system_usec 189630 nice_usec 0 nr_periods 924 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 68016049 user_usec 63152341 system_usec 4863707 nice_usec 0 nr_periods 2808 nr_throttled 2712 throttled_usec 873773966 nr_bursts 0 burst_usec 0 ",
+    "1792522296.162129138|API usage_usec 1613348 user_usec 1423718 system_usec 189630 nice_usec 0 nr_periods 927 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 68140408 user_usec 63263550 system_usec 4876857 nice_usec 0 nr_periods 2813 nr_throttled 2717 throttled_usec 876128024 nr_bursts 0 burst_usec 0 ",
+    "1792522296.670334430|API usage_usec 1615896 user_usec 1426266 system_usec 189630 nice_usec 0 nr_periods 931 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 68265580 user_usec 63386893 system_usec 4878686 nice_usec 0 nr_periods 2818 nr_throttled 2722 throttled_usec 878596653 nr_bursts 0 burst_usec 0 ",
+    "1792522297.178136930|API usage_usec 1618548 user_usec 1428918 system_usec 189630 nice_usec 0 nr_periods 935 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 68388679 user_usec 63505466 system_usec 4883212 nice_usec 0 nr_periods 2823 nr_throttled 2727 throttled_usec 880976050 nr_bursts 0 burst_usec 0 ",
+    "1792522297.692035014|API usage_usec 1621379 user_usec 1431589 system_usec 189790 nice_usec 0 nr_periods 939 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49504256|DB usage_usec 68513545 user_usec 63622768 system_usec 4890776 nice_usec 0 nr_periods 2828 nr_throttled 2732 throttled_usec 883143407 nr_bursts 0 burst_usec 0 ",
+    "1792522298.201808708|API usage_usec 1629577 user_usec 1437083 system_usec 192493 nice_usec 0 nr_periods 944 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49438720|DB usage_usec 68632365 user_usec 63728360 system_usec 4904005 nice_usec 0 nr_periods 2833 nr_throttled 2737 throttled_usec 884682792 nr_bursts 0 burst_usec 0 ",
+    "1792522298.707992792|API usage_usec 1636691 user_usec 1443180 system_usec 193510 nice_usec 0 nr_periods 948 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49614848|DB usage_usec 68756970 user_usec 63833634 system_usec 4923336 nice_usec 0 nr_periods 2838 nr_throttled 2742 throttled_usec 885371614 nr_bursts 0 burst_usec 0 ",
+    "1792522299.213551458|API usage_usec 1640807 user_usec 1447051 system_usec 193755 nice_usec 0 nr_periods 953 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49356800|DB usage_usec 68831553 user_usec 63901331 system_usec 4930222 nice_usec 0 nr_periods 2843 nr_throttled 2745 throttled_usec 885592989 nr_bursts 0 burst_usec 0 ",
+    "1792522299.720456334|API usage_usec 1642233 user_usec 1448308 system_usec 193924 nice_usec 0 nr_periods 955 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49356800|DB usage_usec 68832195 user_usec 63901973 system_usec 4930222 nice_usec 0 nr_periods 2845 nr_throttled 2745 throttled_usec 885592989 nr_bursts 0 burst_usec 0 ",
+    "1792522300.231110501|API usage_usec 1643900 user_usec 1449976 system_usec 193924 nice_usec 0 nr_periods 959 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49356800|DB usage_usec 68832850 user_usec 63902603 system_usec 4930247 nice_usec 0 nr_periods 2845 nr_throttled 2745 throttled_usec 885592989 nr_bursts 0 burst_usec 0 ",
+    "1792522300.737759959|API usage_usec 1645317 user_usec 1451393 system_usec 193924 nice_usec 0 nr_periods 961 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49356800|DB usage_usec 68833499 user_usec 63903205 system_usec 4930293 nice_usec 0 nr_periods 2847 nr_throttled 2745 throttled_usec 885592989 nr_bursts 0 burst_usec 0 "
+   ],
+   "sampled_window_s": 42.64587640762329,
+   "api_cpu_s": 0.356394,
+   "api_throttled_periods": 2,
+   "api_periods": 326,
+   "api_throttled_s": 0.091839,
+   "api_mem_max_bytes": 49770496,
+   "db_cpu_s": 9.777933,
+   "db_throttled_s": 292.940094,
+   "max_active_api_backends": 15,
+   "max_api_backends": 15
+  },
+  {
+   "concurrency": 16,
+   "burst_wall_s": 45.24081541702617,
+   "statuses": {
+    "200": 10,
+    "503": 6
+   },
+   "latency_s": {
+    "n": 16,
+    "min": 10.044420709018596,
+    "p50": 26.12076377053745,
+    "p95": 45.07872664555907,
+    "max": 45.239545583026484
+   },
+   "latency_200_s": {
+    "n": 10,
+    "min": 16.625494749983773,
+    "p50": 38.67371062503662,
+    "p95": 45.143054220546034,
+    "max": 45.239545583026484
+   },
+   "requests": [
+    {
+     "status": 200,
+     "wall_s": 45.025120333069935,
+     "bytes": 976,
+     "x_cache": "miss",
+     "request_id": "054db4c0a1b9406e",
+     "t_start": 530867.131924958,
+     "t_end": 530912.157045291,
+     "rel_start_s": 0.0015018749982118607,
+     "rel_end_s": 45.02662220806815
+    },
+    {
+     "status": 503,
+     "wall_s": 10.046570542035624,
+     "bytes": 137,
+     "x_cache": null,
+     "request_id": "b30d088e0c274bdf",
+     "t_start": 530867.131993291,
+     "t_end": 530877.178563833,
+     "error_body": "{\"error\":{\"code\":\"database_unavailable\",\"message\":\"The analytical database is currently unavailable. Try again shortly.\",\"details\":null}}",
+     "rel_start_s": 0.0015702079981565475,
+     "rel_end_s": 10.048140750033781
+    },
+    {
+     "status": 200,
+     "wall_s": 39.225391165935434,
+     "bytes": 975,
+     "x_cache": "miss",
+     "request_id": "18e25d94b0f74188",
+     "t_start": 530867.132049,
+     "t_end": 530906.357440166,
+     "rel_start_s": 0.0016259170370176435,
+     "rel_end_s": 39.22701708297245
+    },
+    {
+     "status": 200,
+     "wall_s": 30.62304120801855,
+     "bytes": 974,
+     "x_cache": "miss",
+     "request_id": "262949a6149d4647",
+     "t_start": 530867.132105583,
+     "t_end": 530897.755146791,
+     "rel_start_s": 0.0016825000056996942,
+     "rel_end_s": 30.62472370802425
+    },
+    {
+     "status": 200,
+     "wall_s": 28.918367083068006,
+     "bytes": 975,
+     "x_cache": "miss",
+     "request_id": "4c41c6ead5fb4ffa",
+     "t_start": 530867.132828458,
+     "t_end": 530896.051195541,
+     "rel_start_s": 0.0024053750094026327,
+     "rel_end_s": 28.92077245807741
+    },
+    {
+     "status": 200,
+     "wall_s": 39.12238375004381,
+     "bytes": 977,
+     "x_cache": "miss",
+     "request_id": "afbf78a609274717",
+     "t_start": 530867.132213708,
+     "t_end": 530906.254597458,
+     "rel_start_s": 0.0017906250432133675,
+     "rel_end_s": 39.12417437508702
+    },
+    {
+     "status": 200,
+     "wall_s": 38.22503750002943,
+     "bytes": 974,
+     "x_cache": "miss",
+     "request_id": "37cd108aa8e44d60",
+     "t_start": 530867.132531125,
+     "t_end": 530905.357568625,
+     "rel_start_s": 0.0021080420119687915,
+     "rel_end_s": 38.2271455420414
+    },
+    {
+     "status": 200,
+     "wall_s": 42.92478191596456,
+     "bytes": 979,
+     "x_cache": "miss",
+     "request_id": "cf41578db8e34f6d",
+     "t_start": 530867.13227075,
+     "t_end": 530910.057052666,
+     "rel_start_s": 0.0018476670375093818,
+     "rel_end_s": 42.92662958300207
+    },
+    {
+     "status": 200,
+     "wall_s": 16.625494749983773,
+     "bytes": 977,
+     "x_cache": "miss",
+     "request_id": "4542e1e07f234c51",
+     "t_start": 530867.132583791,
+     "t_end": 530883.758078541,
+     "rel_start_s": 0.002160708070732653,
+     "rel_end_s": 16.627655458054505
+    },
+    {
+     "status": 503,
+     "wall_s": 10.044420709018596,
+     "bytes": 137,
+     "x_cache": null,
+     "request_id": "273fbe388ded4fbe",
+     "t_start": 530867.132318541,
+     "t_end": 530877.17673925,
+     "error_body": "{\"error\":{\"code\":\"database_unavailable\",\"message\":\"The analytical database is currently unavailable. Try again shortly.\",\"details\":null}}",
+     "rel_start_s": 0.0018954579718410969,
+     "rel_end_s": 10.046316166990437
+    },
+    {
+     "status": 503,
+     "wall_s": 10.1301742909709,
+     "bytes": 137,
+     "x_cache": null,
+     "request_id": "bd8fcb396b6144e8",
+     "t_start": 530867.13264025,
+     "t_end": 530877.262814541,
+     "error_body": "{\"error\":{\"code\":\"database_unavailable\",\"message\":\"The analytical database is currently unavailable. Try again shortly.\",\"details\":null}}",
+     "rel_start_s": 0.002217167057096958,
+     "rel_end_s": 10.132391458027996
+    },
+    {
+     "status": 503,
+     "wall_s": 10.04451500007417,
+     "bytes": 137,
+     "x_cache": null,
+     "request_id": "20d435ae27374879",
+     "t_start": 530867.132363166,
+     "t_end": 530877.176878166,
+     "error_body": "{\"error\":{\"code\":\"database_unavailable\",\"message\":\"The analytical database is currently unavailable. Try again shortly.\",\"details\":null}}",
+     "rel_start_s": 0.0019400829914957285,
+     "rel_end_s": 10.046455083065666
+    },
+    {
+     "status": 200,
+     "wall_s": 23.323160458006896,
+     "bytes": 973,
+     "x_cache": "miss",
+     "request_id": "7f847eb295864b95",
+     "t_start": 530867.13269575,
+     "t_end": 530890.455856208,
+     "rel_start_s": 0.002272667014040053,
+     "rel_end_s": 23.325433125020936
+    },
+    {
+     "status": 503,
+     "wall_s": 10.130282542086206,
+     "bytes": 137,
+     "x_cache": null,
+     "request_id": "4ed36cfbb87b40f8",
+     "t_start": 530867.132403791,
+     "t_end": 530877.262686333,
+     "error_body": "{\"error\":{\"code\":\"database_unavailable\",\"message\":\"The analytical database is currently unavailable. Try again shortly.\",\"details\":null}}",
+     "rel_start_s": 0.0019807079806923866,
+     "rel_end_s": 10.132263250066899
+    },
+    {
+     "status": 503,
+     "wall_s": 10.045694667031057,
+     "bytes": 137,
+     "x_cache": null,
+     "request_id": "e61e96ba793e4d1d",
+     "t_start": 530867.132744333,
+     "t_end": 530877.178439,
+     "error_body": "{\"error\":{\"code\":\"database_unavailable\",\"message\":\"The analytical database is currently unavailable. Try again shortly.\",\"details\":null}}",
+     "rel_start_s": 0.0023212500382214785,
+     "rel_end_s": 10.048015917069279
+    },
+    {
+     "status": 200,
+     "wall_s": 45.239545583026484,
+     "bytes": 973,
+     "x_cache": "miss",
+     "request_id": "3af582494a1e4ea3",
+     "t_start": 530867.131603625,
+     "t_end": 530912.371149208,
+     "rel_start_s": 0.0011805420508608222,
+     "rel_end_s": 45.240726125077344
+    }
+   ],
+   "pg_activity": [
+    [
+     0.0,
+     0,
+     8,
+     0
+    ],
+    [
+     0.62,
+     16,
+     17,
+     6
+    ],
+    [
+     1.32,
+     11,
+     11,
+     4
+    ],
+    [
+     1.92,
+     8,
+     10,
+     1
+    ],
+    [
+     2.62,
+     10,
+     10,
+     0
+    ],
+    [
+     3.22,
+     10,
+     10,
+     0
+    ],
+    [
+     3.92,
+     10,
+     11,
+     1
+    ],
+    [
+     4.52,
+     12,
+     13,
+     0
+    ],
+    [
+     5.42,
+     14,
+     15,
+     1
+    ],
+    [
+     6.02,
+     16,
+     17,
+     1
+    ],
+    [
+     6.82,
+     17,
+     17,
+     0
+    ],
+    [
+     7.42,
+     17,
+     17,
+     1
+    ],
+    [
+     8.02,
+     17,
+     17,
+     4
+    ],
+    [
+     8.63,
+     17,
+     17,
+     5
+    ],
+    [
+     9.32,
+     17,
+     17,
+     2
+    ],
+    [
+     10.02,
+     17,
+     17,
+     2
+    ],
+    [
+     10.92,
+     17,
+     17,
+     3
+    ],
+    [
+     11.52,
+     17,
+     17,
+     2
+    ],
+    [
+     12.33,
+     17,
+     17,
+     1
+    ],
+    [
+     12.93,
+     17,
+     17,
+     0
+    ],
+    [
+     13.72,
+     17,
+     17,
+     2
+    ],
+    [
+     14.32,
+     17,
+     17,
+     1
+    ],
+    [
+     15.03,
+     17,
+     17,
+     1
+    ],
+    [
+     15.62,
+     17,
+     17,
+     2
+    ],
+    [
+     16.22,
+     16,
+     16,
+     4
+    ],
+    [
+     17.02,
+     15,
+     16,
+     0
+    ],
+    [
+     17.72,
+     15,
+     16,
+     0
+    ],
+    [
+     18.32,
+     15,
+     16,
+     2
+    ],
+    [
+     19.02,
+     15,
+     16,
+     1
+    ],
+    [
+     19.62,
+     15,
+     16,
+     1
+    ],
+    [
+     20.42,
+     15,
+     16,
+     2
+    ],
+    [
+     21.32,
+     15,
+     16,
+     0
+    ],
+    [
+     21.93,
+     15,
+     16,
+     2
+    ],
+    [
+     22.52,
+     14,
+     15,
+     1
+    ],
+    [
+     23.12,
+     14,
+     15,
+     1
+    ],
+    [
+     23.72,
+     13,
+     15,
+     3
+    ],
+    [
+     24.32,
+     13,
+     15,
+     4
+    ],
+    [
+     24.92,
+     13,
+     15,
+     0
+    ],
+    [
+     25.62,
+     13,
+     15,
+     0
+    ],
+    [
+     26.22,
+     13,
+     15,
+     1
+    ],
+    [
+     27.12,
+     13,
+     15,
+     4
+    ],
+    [
+     27.73,
+     13,
+     15,
+     2
+    ],
+    [
+     28.33,
+     13,
+     15,
+     0
+    ],
+    [
+     28.92,
+     11,
+     14,
+     2
+    ],
+    [
+     29.52,
+     11,
+     14,
+     3
+    ],
+    [
+     30.12,
+     11,
+     14,
+     1
+    ],
+    [
+     30.82,
+     10,
+     13,
+     1
+    ],
+    [
+     31.43,
+     9,
+     13,
+     2
+    ],
+    [
+     32.03,
+     9,
+     13,
+     2
+    ],
+    [
+     32.62,
+     9,
+     13,
+     0
+    ],
+    [
+     33.32,
+     9,
+     13,
+     0
+    ],
+    [
+     33.92,
+     9,
+     13,
+     1
+    ],
+    [
+     34.52,
+     9,
+     13,
+     0
+    ],
+    [
+     35.42,
+     9,
+     13,
+     1
+    ],
+    [
+     35.93,
+     9,
+     13,
+     1
+    ],
+    [
+     36.43,
+     9,
+     13,
+     0
+    ],
+    [
+     36.94,
+     9,
+     13,
+     0
+    ],
+    [
+     37.62,
+     9,
+     13,
+     0
+    ],
+    [
+     38.23,
+     8,
+     13,
+     0
+    ],
+    [
+     38.82,
+     7,
+     12,
+     2
+    ],
+    [
+     39.42,
+     5,
+     12,
+     0
+    ],
+    [
+     39.93,
+     5,
+     12,
+     1
+    ],
+    [
+     40.43,
+     5,
+     12,
+     0
+    ],
+    [
+     40.94,
+     5,
+     12,
+     1
+    ],
+    [
+     41.44,
+     5,
+     12,
+     0
+    ],
+    [
+     41.95,
+     5,
+     12,
+     0
+    ],
+    [
+     42.45,
+     5,
+     12,
+     0
+    ],
+    [
+     42.96,
+     4,
+     12,
+     0
+    ],
+    [
+     43.52,
+     4,
+     12,
+     0
+    ],
+    [
+     44.03,
+     4,
+     12,
+     0
+    ],
+    [
+     44.53,
+     3,
+     11,
+     0
+    ],
+    [
+     45.04,
+     2,
+     11,
+     0
+    ],
+    [
+     45.54,
+     0,
+     10,
+     0
+    ],
+    [
+     46.05,
+     0,
+     10,
+     0
+    ],
+    [
+     46.55,
+     0,
+     10,
+     0
+    ]
+   ],
+   "cgroup_samples": [
+    "1792522306.178824878|API usage_usec 1662834 user_usec 1468909 system_usec 193924 nice_usec 0 nr_periods 991 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49352704|DB usage_usec 68843151 user_usec 63906071 system_usec 4937080 nice_usec 0 nr_periods 2853 nr_throttled 2745 throttled_usec 885592989 nr_bursts 0 burst_usec 0 ",
+    "1792522306.689932087|API usage_usec 1663818 user_usec 1469876 system_usec 193941 nice_usec 0 nr_periods 993 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49352704|DB usage_usec 68843305 user_usec 63906214 system_usec 4937091 nice_usec 0 nr_periods 2853 nr_throttled 2745 throttled_usec 885592989 nr_bursts 0 burst_usec 0 ",
+    "1792522307.195474879|API usage_usec 1665595 user_usec 1471565 system_usec 194030 nice_usec 0 nr_periods 995 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49352704|DB usage_usec 68843471 user_usec 63906368 system_usec 4937102 nice_usec 0 nr_periods 2853 nr_throttled 2745 throttled_usec 885592989 nr_bursts 0 burst_usec 0 ",
+    "1792522307.700245588|API usage_usec 1667363 user_usec 1472463 system_usec 194899 nice_usec 0 nr_periods 999 nr_throttled 86 throttled_usec 7505255 nr_bursts 0 burst_usec 0 |APIMEM 49352704|DB usage_usec 68843595 user_usec 63906483 system_usec 4937111 nice_usec 0 nr_periods 2853 nr_throttled 2745 throttled_usec 885592989 nr_bursts 0 burst_usec 0 ",
+    "1792522308.208693379|API usage_usec 1704197 user_usec 1499204 system_usec 204993 nice_usec 0 nr_periods 1002 nr_throttled 88 throttled_usec 7966768 nr_bursts 0 burst_usec 0 |APIMEM 50143232|DB usage_usec 68853482 user_usec 63907738 system_usec 4945744 nice_usec 0 nr_periods 2854 nr_throttled 2745 throttled_usec 885592989 nr_bursts 0 burst_usec 0 ",
+    "1792522308.717142755|API usage_usec 1730762 user_usec 1524379 system_usec 206383 nice_usec 0 nr_periods 1007 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50204672|DB usage_usec 68988567 user_usec 64007303 system_usec 4981264 nice_usec 0 nr_periods 2859 nr_throttled 2749 throttled_usec 888143058 nr_bursts 0 burst_usec 0 ",
+    "1792522309.225475880|API usage_usec 1736475 user_usec 1529654 system_usec 206820 nice_usec 0 nr_periods 1011 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50180096|DB usage_usec 69112873 user_usec 64122531 system_usec 4990342 nice_usec 0 nr_periods 2864 nr_throttled 2754 throttled_usec 892515033 nr_bursts 0 burst_usec 0 ",
+    "1792522309.735915922|API usage_usec 1748677 user_usec 1538794 system_usec 209882 nice_usec 0 nr_periods 1015 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50606080|DB usage_usec 69239400 user_usec 64231355 system_usec 5008045 nice_usec 0 nr_periods 2869 nr_throttled 2759 throttled_usec 896562455 nr_bursts 0 burst_usec 0 ",
+    "1792522310.242212130|API usage_usec 1764595 user_usec 1553499 system_usec 211095 nice_usec 0 nr_periods 1020 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 51392512|DB usage_usec 69362710 user_usec 64349452 system_usec 5013258 nice_usec 0 nr_periods 2874 nr_throttled 2764 throttled_usec 900919072 nr_bursts 0 burst_usec 0 ",
+    "1792522310.752159339|API usage_usec 1771968 user_usec 1559045 system_usec 212922 nice_usec 0 nr_periods 1025 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 69514660 user_usec 64498949 system_usec 5015710 nice_usec 0 nr_periods 2880 nr_throttled 2770 throttled_usec 906325832 nr_bursts 0 burst_usec 0 ",
+    "1792522311.257716923|API usage_usec 1775906 user_usec 1561731 system_usec 214174 nice_usec 0 nr_periods 1029 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 69641214 user_usec 64622224 system_usec 5018990 nice_usec 0 nr_periods 2885 nr_throttled 2775 throttled_usec 911230728 nr_bursts 0 burst_usec 0 ",
+    "1792522311.764334214|API usage_usec 1779874 user_usec 1565700 system_usec 214174 nice_usec 0 nr_periods 1034 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 69765674 user_usec 64739763 system_usec 5025911 nice_usec 0 nr_periods 2890 nr_throttled 2780 throttled_usec 916017682 nr_bursts 0 burst_usec 0 ",
+    "1792522312.269141006|API usage_usec 1783692 user_usec 1567642 system_usec 216049 nice_usec 0 nr_periods 1037 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 69889630 user_usec 64852164 system_usec 5037466 nice_usec 0 nr_periods 2895 nr_throttled 2785 throttled_usec 920930447 nr_bursts 0 burst_usec 0 ",
+    "1792522312.775697215|API usage_usec 1787274 user_usec 1569363 system_usec 217910 nice_usec 0 nr_periods 1041 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 70014724 user_usec 64960953 system_usec 5053771 nice_usec 0 nr_periods 2900 nr_throttled 2790 throttled_usec 925842798 nr_bursts 0 burst_usec 0 ",
+    "1792522313.285068174|API usage_usec 1791844 user_usec 1573876 system_usec 217968 nice_usec 0 nr_periods 1046 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 70140375 user_usec 65064975 system_usec 5075399 nice_usec 0 nr_periods 2905 nr_throttled 2795 throttled_usec 930210516 nr_bursts 0 burst_usec 0 ",
+    "1792522313.791480465|API usage_usec 1795940 user_usec 1577971 system_usec 217968 nice_usec 0 nr_periods 1050 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 70267202 user_usec 65168470 system_usec 5098732 nice_usec 0 nr_periods 2910 nr_throttled 2800 throttled_usec 935069826 nr_bursts 0 burst_usec 0 ",
+    "1792522314.297941841|API usage_usec 1800720 user_usec 1580746 system_usec 219974 nice_usec 0 nr_periods 1055 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 70391016 user_usec 65273977 system_usec 5117038 nice_usec 0 nr_periods 2915 nr_throttled 2805 throttled_usec 939979795 nr_bursts 0 burst_usec 0 ",
+    "1792522314.807325383|API usage_usec 1804547 user_usec 1583331 system_usec 221215 nice_usec 0 nr_periods 1059 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 70515226 user_usec 65377753 system_usec 5137473 nice_usec 0 nr_periods 2920 nr_throttled 2810 throttled_usec 944748636 nr_bursts 0 burst_usec 0 ",
+    "1792522315.313427883|API usage_usec 1808378 user_usec 1586944 system_usec 221434 nice_usec 0 nr_periods 1063 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 70639943 user_usec 65497361 system_usec 5142581 nice_usec 0 nr_periods 2925 nr_throttled 2815 throttled_usec 949596344 nr_bursts 0 burst_usec 0 ",
+    "1792522315.825965175|API usage_usec 1814062 user_usec 1590509 system_usec 223553 nice_usec 0 nr_periods 1068 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 70765835 user_usec 65616509 system_usec 5149326 nice_usec 0 nr_periods 2930 nr_throttled 2820 throttled_usec 954458964 nr_bursts 0 burst_usec 0 ",
+    "1792522316.330660467|API usage_usec 1818353 user_usec 1594524 system_usec 223828 nice_usec 0 nr_periods 1073 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 70887951 user_usec 65731259 system_usec 5156692 nice_usec 0 nr_periods 2935 nr_throttled 2825 throttled_usec 958943955 nr_bursts 0 burst_usec 0 ",
+    "1792522316.837434509|API usage_usec 1822201 user_usec 1597124 system_usec 225077 nice_usec 0 nr_periods 1078 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 71015713 user_usec 65847869 system_usec 5167843 nice_usec 0 nr_periods 2940 nr_throttled 2830 throttled_usec 963712186 nr_bursts 0 burst_usec 0 ",
+    "1792522317.343813259|API usage_usec 1825505 user_usec 1599245 system_usec 226259 nice_usec 0 nr_periods 1082 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 71141016 user_usec 65960445 system_usec 5180570 nice_usec 0 nr_periods 2945 nr_throttled 2835 throttled_usec 968561812 nr_bursts 0 burst_usec 0 ",
+    "1792522317.851952926|API usage_usec 1829179 user_usec 1600789 system_usec 228390 nice_usec 0 nr_periods 1087 nr_throttled 91 throttled_usec 9190581 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 71289470 user_usec 66098774 system_usec 5190695 nice_usec 0 nr_periods 2951 nr_throttled 2841 throttled_usec 974417097 nr_bursts 0 burst_usec 0 ",
+    "1792522318.358594384|API usage_usec 1848475 user_usec 1618059 system_usec 230416 nice_usec 0 nr_periods 1091 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 71416310 user_usec 66213791 system_usec 5202518 nice_usec 0 nr_periods 2956 nr_throttled 2846 throttled_usec 979123460 nr_bursts 0 burst_usec 0 ",
+    "1792522318.866604843|API usage_usec 1852477 user_usec 1620146 system_usec 232330 nice_usec 0 nr_periods 1096 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 71537543 user_usec 66328067 system_usec 5209476 nice_usec 0 nr_periods 2961 nr_throttled 2851 throttled_usec 983873374 nr_bursts 0 burst_usec 0 ",
+    "1792522319.372867885|API usage_usec 1856533 user_usec 1623694 system_usec 232839 nice_usec 0 nr_periods 1100 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 71665392 user_usec 66446859 system_usec 5218533 nice_usec 0 nr_periods 2966 nr_throttled 2856 throttled_usec 988637727 nr_bursts 0 burst_usec 0 ",
+    "1792522319.880211052|API usage_usec 1860363 user_usec 1624470 system_usec 235893 nice_usec 0 nr_periods 1103 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 71790019 user_usec 66557656 system_usec 5232362 nice_usec 0 nr_periods 2971 nr_throttled 2861 throttled_usec 993562314 nr_bursts 0 burst_usec 0 ",
+    "1792522320.387600260|API usage_usec 1864398 user_usec 1628124 system_usec 236274 nice_usec 0 nr_periods 1106 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 71914706 user_usec 66672226 system_usec 5242479 nice_usec 0 nr_periods 2976 nr_throttled 2866 throttled_usec 998430177 nr_bursts 0 burst_usec 0 ",
+    "1792522320.895339010|API usage_usec 1868683 user_usec 1632128 system_usec 236555 nice_usec 0 nr_periods 1111 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 72041776 user_usec 66783812 system_usec 5257964 nice_usec 0 nr_periods 2981 nr_throttled 2871 throttled_usec 1003257931 nr_bursts 0 burst_usec 0 ",
+    "1792522321.405571469|API usage_usec 1877145 user_usec 1638103 system_usec 239041 nice_usec 0 nr_periods 1115 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 72165010 user_usec 66898720 system_usec 5266289 nice_usec 0 nr_periods 2986 nr_throttled 2876 throttled_usec 1008169819 nr_bursts 0 burst_usec 0 ",
+    "1792522321.916893261|API usage_usec 1881891 user_usec 1642002 system_usec 239889 nice_usec 0 nr_periods 1119 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 72290391 user_usec 67013333 system_usec 5277057 nice_usec 0 nr_periods 2991 nr_throttled 2881 throttled_usec 1012999336 nr_bursts 0 burst_usec 0 ",
+    "1792522322.421496053|API usage_usec 1885680 user_usec 1645439 system_usec 240240 nice_usec 0 nr_periods 1123 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 72411880 user_usec 67131029 system_usec 5280850 nice_usec 0 nr_periods 2996 nr_throttled 2886 throttled_usec 1017869839 nr_bursts 0 burst_usec 0 ",
+    "1792522322.928047053|API usage_usec 1889768 user_usec 1649139 system_usec 240629 nice_usec 0 nr_periods 1127 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 72538913 user_usec 67246090 system_usec 5292822 nice_usec 0 nr_periods 3001 nr_throttled 2891 throttled_usec 1022799165 nr_bursts 0 burst_usec 0 ",
+    "1792522323.433214887|API usage_usec 1894651 user_usec 1650815 system_usec 243835 nice_usec 0 nr_periods 1130 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 72662370 user_usec 67360742 system_usec 5301627 nice_usec 0 nr_periods 3006 nr_throttled 2896 throttled_usec 1027659700 nr_bursts 0 burst_usec 0 ",
+    "1792522323.943111929|API usage_usec 1898604 user_usec 1653756 system_usec 244847 nice_usec 0 nr_periods 1135 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50982912|DB usage_usec 72789996 user_usec 67475547 system_usec 5314449 nice_usec 0 nr_periods 3011 nr_throttled 2901 throttled_usec 1032200469 nr_bursts 0 burst_usec 0 ",
+    "1792522324.454723804|API usage_usec 1905568 user_usec 1658952 system_usec 246615 nice_usec 0 nr_periods 1140 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50995200|DB usage_usec 72937944 user_usec 67601183 system_usec 5336761 nice_usec 0 nr_periods 3017 nr_throttled 2907 throttled_usec 1037985948 nr_bursts 0 burst_usec 0 ",
+    "1792522324.962470596|API usage_usec 1914229 user_usec 1667566 system_usec 246663 nice_usec 0 nr_periods 1144 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 73066400 user_usec 67721162 system_usec 5345238 nice_usec 0 nr_periods 3022 nr_throttled 2912 throttled_usec 1042821465 nr_bursts 0 burst_usec 0 ",
+    "1792522325.471651929|API usage_usec 1919022 user_usec 1670739 system_usec 248283 nice_usec 0 nr_periods 1148 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 73191864 user_usec 67838552 system_usec 5353311 nice_usec 0 nr_periods 3027 nr_throttled 2917 throttled_usec 1047702156 nr_bursts 0 burst_usec 0 ",
+    "1792522325.982490138|API usage_usec 1923714 user_usec 1675092 system_usec 248622 nice_usec 0 nr_periods 1153 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 73315838 user_usec 67953616 system_usec 5362222 nice_usec 0 nr_periods 3032 nr_throttled 2922 throttled_usec 1052596537 nr_bursts 0 burst_usec 0 ",
+    "1792522326.487642596|API usage_usec 1927586 user_usec 1677560 system_usec 250026 nice_usec 0 nr_periods 1156 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 73441186 user_usec 68069677 system_usec 5371509 nice_usec 0 nr_periods 3037 nr_throttled 2927 throttled_usec 1057462803 nr_bursts 0 burst_usec 0 ",
+    "1792522326.997919138|API usage_usec 1930290 user_usec 1680182 system_usec 250107 nice_usec 0 nr_periods 1159 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50999296|DB usage_usec 73564825 user_usec 68180512 system_usec 5384313 nice_usec 0 nr_periods 3042 nr_throttled 2932 throttled_usec 1062315904 nr_bursts 0 burst_usec 0 ",
+    "1792522327.508756305|API usage_usec 1934558 user_usec 1682765 system_usec 251793 nice_usec 0 nr_periods 1164 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50995200|DB usage_usec 73691314 user_usec 68297376 system_usec 5393937 nice_usec 0 nr_periods 3047 nr_throttled 2937 throttled_usec 1067242662 nr_bursts 0 burst_usec 0 ",
+    "1792522328.018081083|API usage_usec 1938590 user_usec 1686542 system_usec 252047 nice_usec 0 nr_periods 1168 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50995200|DB usage_usec 73813329 user_usec 68407652 system_usec 5405676 nice_usec 0 nr_periods 3052 nr_throttled 2942 throttled_usec 1071875037 nr_bursts 0 burst_usec 0 ",
+    "1792522328.526110125|API usage_usec 1942869 user_usec 1689902 system_usec 252966 nice_usec 0 nr_periods 1173 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50995200|DB usage_usec 73940362 user_usec 68523801 system_usec 5416561 nice_usec 0 nr_periods 3057 nr_throttled 2947 throttled_usec 1076656333 nr_bursts 0 burst_usec 0 ",
+    "1792522329.037115458|API usage_usec 1947290 user_usec 1690823 system_usec 256467 nice_usec 0 nr_periods 1178 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50995200|DB usage_usec 74062888 user_usec 68641302 system_usec 5421585 nice_usec 0 nr_periods 3062 nr_throttled 2952 throttled_usec 1081515914 nr_bursts 0 burst_usec 0 ",
+    "1792522329.543868625|API usage_usec 1951949 user_usec 1693969 system_usec 257980 nice_usec 0 nr_periods 1183 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50995200|DB usage_usec 74190169 user_usec 68764430 system_usec 5425738 nice_usec 0 nr_periods 3067 nr_throttled 2957 throttled_usec 1086395222 nr_bursts 0 burst_usec 0 ",
+    "1792522330.053121417|API usage_usec 1957810 user_usec 1699466 system_usec 258343 nice_usec 0 nr_periods 1188 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50995200|DB usage_usec 74336671 user_usec 68903577 system_usec 5433094 nice_usec 0 nr_periods 3073 nr_throttled 2963 throttled_usec 1091953074 nr_bursts 0 burst_usec 0 ",
+    "1792522330.559649959|API usage_usec 1962333 user_usec 1702765 system_usec 259567 nice_usec 0 nr_periods 1194 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50995200|DB usage_usec 74465120 user_usec 69014564 system_usec 5450556 nice_usec 0 nr_periods 3078 nr_throttled 2968 throttled_usec 1096536153 nr_bursts 0 burst_usec 0 ",
+    "1792522331.065679251|API usage_usec 1967078 user_usec 1704455 system_usec 262623 nice_usec 0 nr_periods 1198 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50995200|DB usage_usec 74591336 user_usec 69120581 system_usec 5470755 nice_usec 0 nr_periods 3083 nr_throttled 2973 throttled_usec 1101378612 nr_bursts 0 burst_usec 0 ",
+    "1792522331.572690960|API usage_usec 1979755 user_usec 1715788 system_usec 263967 nice_usec 0 nr_periods 1203 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50847744|DB usage_usec 74715195 user_usec 69234872 system_usec 5480322 nice_usec 0 nr_periods 3088 nr_throttled 2978 throttled_usec 1106297595 nr_bursts 0 burst_usec 0 ",
+    "1792522332.083078293|API usage_usec 1983915 user_usec 1717248 system_usec 266666 nice_usec 0 nr_periods 1207 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50823168|DB usage_usec 74840899 user_usec 69343848 system_usec 5497050 nice_usec 0 nr_periods 3093 nr_throttled 2983 throttled_usec 1110612422 nr_bursts 0 burst_usec 0 ",
+    "1792522332.590624502|API usage_usec 1987153 user_usec 1720470 system_usec 266683 nice_usec 0 nr_periods 1211 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50814976|DB usage_usec 74966014 user_usec 69460985 system_usec 5505029 nice_usec 0 nr_periods 3098 nr_throttled 2988 throttled_usec 1115529164 nr_bursts 0 burst_usec 0 ",
+    "1792522333.100693877|API usage_usec 1992250 user_usec 1724541 system_usec 267708 nice_usec 0 nr_periods 1216 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50814976|DB usage_usec 75090751 user_usec 69568470 system_usec 5522281 nice_usec 0 nr_periods 3103 nr_throttled 2993 throttled_usec 1120399772 nr_bursts 0 burst_usec 0 ",
+    "1792522333.607764836|API usage_usec 1996413 user_usec 1728424 system_usec 267988 nice_usec 0 nr_periods 1220 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50814976|DB usage_usec 75221889 user_usec 69690951 system_usec 5530937 nice_usec 0 nr_periods 3108 nr_throttled 2998 throttled_usec 1125175172 nr_bursts 0 burst_usec 0 ",
+    "1792522334.114757794|API usage_usec 2000869 user_usec 1731521 system_usec 269347 nice_usec 0 nr_periods 1223 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50814976|DB usage_usec 75339795 user_usec 69800507 system_usec 5539288 nice_usec 0 nr_periods 3113 nr_throttled 3003 throttled_usec 1129708120 nr_bursts 0 burst_usec 0 ",
+    "1792522334.622285128|API usage_usec 2004635 user_usec 1735201 system_usec 269434 nice_usec 0 nr_periods 1228 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50814976|DB usage_usec 75464301 user_usec 69908930 system_usec 5555370 nice_usec 0 nr_periods 3118 nr_throttled 3008 throttled_usec 1134610437 nr_bursts 0 burst_usec 0 ",
+    "1792522335.128665295|API usage_usec 2008761 user_usec 1739192 system_usec 269569 nice_usec 0 nr_periods 1233 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50814976|DB usage_usec 75585949 user_usec 70018803 system_usec 5567146 nice_usec 0 nr_periods 3123 nr_throttled 3013 throttled_usec 1139354630 nr_bursts 0 burst_usec 0 ",
+    "1792522335.639361837|API usage_usec 2013421 user_usec 1741703 system_usec 271718 nice_usec 0 nr_periods 1237 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50814976|DB usage_usec 75712686 user_usec 70135695 system_usec 5576991 nice_usec 0 nr_periods 3128 nr_throttled 3018 throttled_usec 1143769268 nr_bursts 0 burst_usec 0 ",
+    "1792522336.145994962|API usage_usec 2017227 user_usec 1744375 system_usec 272851 nice_usec 0 nr_periods 1240 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50814976|DB usage_usec 75841292 user_usec 70258509 system_usec 5582782 nice_usec 0 nr_periods 3134 nr_throttled 3024 throttled_usec 1148989379 nr_bursts 0 burst_usec 0 ",
+    "1792522336.654713420|API usage_usec 2020329 user_usec 1747340 system_usec 272989 nice_usec 0 nr_periods 1244 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50814976|DB usage_usec 75987044 user_usec 70392767 system_usec 5594277 nice_usec 0 nr_periods 3139 nr_throttled 3029 throttled_usec 1154107742 nr_bursts 0 burst_usec 0 ",
+    "1792522337.160376171|API usage_usec 2027129 user_usec 1752883 system_usec 274246 nice_usec 0 nr_periods 1249 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 51040256|DB usage_usec 76112180 user_usec 70508633 system_usec 5603547 nice_usec 0 nr_periods 3144 nr_throttled 3034 throttled_usec 1158732434 nr_bursts 0 burst_usec 0 ",
+    "1792522337.667154254|API usage_usec 2030249 user_usec 1755581 system_usec 274668 nice_usec 0 nr_periods 1253 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50769920|DB usage_usec 76236839 user_usec 70623877 system_usec 5612962 nice_usec 0 nr_periods 3149 nr_throttled 3039 throttled_usec 1163265963 nr_bursts 0 burst_usec 0 ",
+    "1792522338.173065254|API usage_usec 2034360 user_usec 1758656 system_usec 275703 nice_usec 0 nr_periods 1258 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50769920|DB usage_usec 76362726 user_usec 70733307 system_usec 5629418 nice_usec 0 nr_periods 3154 nr_throttled 3044 throttled_usec 1168060698 nr_bursts 0 burst_usec 0 ",
+    "1792522338.680469755|API usage_usec 2045134 user_usec 1768764 system_usec 276369 nice_usec 0 nr_periods 1263 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 51302400|DB usage_usec 76486945 user_usec 70846646 system_usec 5640299 nice_usec 0 nr_periods 3159 nr_throttled 3049 throttled_usec 1172708856 nr_bursts 0 burst_usec 0 ",
+    "1792522339.187837422|API usage_usec 2050779 user_usec 1773167 system_usec 277611 nice_usec 0 nr_periods 1268 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50769920|DB usage_usec 76610307 user_usec 70954544 system_usec 5655762 nice_usec 0 nr_periods 3164 nr_throttled 3054 throttled_usec 1177287707 nr_bursts 0 burst_usec 0 ",
+    "1792522339.695172005|API usage_usec 2054346 user_usec 1776534 system_usec 277812 nice_usec 0 nr_periods 1273 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 76735600 user_usec 71073942 system_usec 5661657 nice_usec 0 nr_periods 3169 nr_throttled 3059 throttled_usec 1181671234 nr_bursts 0 burst_usec 0 ",
+    "1792522340.200664464|API usage_usec 2058308 user_usec 1780496 system_usec 277812 nice_usec 0 nr_periods 1278 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 76860302 user_usec 71191849 system_usec 5668453 nice_usec 0 nr_periods 3174 nr_throttled 3064 throttled_usec 1186059913 nr_bursts 0 burst_usec 0 ",
+    "1792522340.706720297|API usage_usec 2063206 user_usec 1785326 system_usec 277879 nice_usec 0 nr_periods 1282 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 76985943 user_usec 71313106 system_usec 5672837 nice_usec 0 nr_periods 3179 nr_throttled 3069 throttled_usec 1190437229 nr_bursts 0 burst_usec 0 ",
+    "1792522341.214717506|API usage_usec 2066349 user_usec 1786520 system_usec 279828 nice_usec 0 nr_periods 1286 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 77110524 user_usec 71429014 system_usec 5681510 nice_usec 0 nr_periods 3184 nr_throttled 3074 throttled_usec 1194803067 nr_bursts 0 burst_usec 0 ",
+    "1792522341.721128464|API usage_usec 2069374 user_usec 1787472 system_usec 281902 nice_usec 0 nr_periods 1290 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 77235817 user_usec 71546523 system_usec 5689293 nice_usec 0 nr_periods 3189 nr_throttled 3079 throttled_usec 1199179732 nr_bursts 0 burst_usec 0 ",
+    "1792522342.229939673|API usage_usec 2072687 user_usec 1790475 system_usec 282211 nice_usec 0 nr_periods 1294 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 77361620 user_usec 71663354 system_usec 5698266 nice_usec 0 nr_periods 3194 nr_throttled 3084 throttled_usec 1203551102 nr_bursts 0 burst_usec 0 ",
+    "1792522342.739990465|API usage_usec 2074836 user_usec 1792616 system_usec 282219 nice_usec 0 nr_periods 1297 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 77486305 user_usec 71778594 system_usec 5707711 nice_usec 0 nr_periods 3199 nr_throttled 3089 throttled_usec 1207713248 nr_bursts 0 burst_usec 0 ",
+    "1792522343.247117632|API usage_usec 2078477 user_usec 1796047 system_usec 282430 nice_usec 0 nr_periods 1301 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 77636305 user_usec 71917273 system_usec 5719031 nice_usec 0 nr_periods 3205 nr_throttled 3095 throttled_usec 1212952006 nr_bursts 0 burst_usec 0 ",
+    "1792522343.761180674|API usage_usec 2082961 user_usec 1798541 system_usec 284420 nice_usec 0 nr_periods 1306 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 77759990 user_usec 72037450 system_usec 5722539 nice_usec 0 nr_periods 3210 nr_throttled 3100 throttled_usec 1217338669 nr_bursts 0 burst_usec 0 ",
+    "1792522344.267395632|API usage_usec 2086862 user_usec 1801434 system_usec 285427 nice_usec 0 nr_periods 1310 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 77883837 user_usec 72152261 system_usec 5731576 nice_usec 0 nr_periods 3215 nr_throttled 3105 throttled_usec 1221408865 nr_bursts 0 burst_usec 0 ",
+    "1792522344.775747341|API usage_usec 2090277 user_usec 1803622 system_usec 286654 nice_usec 0 nr_periods 1312 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 78010967 user_usec 72268921 system_usec 5742046 nice_usec 0 nr_periods 3220 nr_throttled 3110 throttled_usec 1225690156 nr_bursts 0 burst_usec 0 ",
+    "1792522345.282577591|API usage_usec 2094044 user_usec 1806400 system_usec 287643 nice_usec 0 nr_periods 1315 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 78134483 user_usec 72386459 system_usec 5748023 nice_usec 0 nr_periods 3225 nr_throttled 3115 throttled_usec 1230025469 nr_bursts 0 burst_usec 0 ",
+    "1792522345.789011466|API usage_usec 2097694 user_usec 1809222 system_usec 288472 nice_usec 0 nr_periods 1320 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50765824|DB usage_usec 78262386 user_usec 72502408 system_usec 5759977 nice_usec 0 nr_periods 3230 nr_throttled 3120 throttled_usec 1234536651 nr_bursts 0 burst_usec 0 ",
+    "1792522346.296927925|API usage_usec 2106982 user_usec 1817049 system_usec 289932 nice_usec 0 nr_periods 1323 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 51011584|DB usage_usec 78383102 user_usec 72607654 system_usec 5775448 nice_usec 0 nr_periods 3235 nr_throttled 3125 throttled_usec 1239102588 nr_bursts 0 burst_usec 0 ",
+    "1792522346.802781300|API usage_usec 2110586 user_usec 1819687 system_usec 290898 nice_usec 0 nr_periods 1326 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50720768|DB usage_usec 78509275 user_usec 72724897 system_usec 5784378 nice_usec 0 nr_periods 3240 nr_throttled 3130 throttled_usec 1242861538 nr_bursts 0 burst_usec 0 ",
+    "1792522347.309094217|API usage_usec 2119115 user_usec 1827907 system_usec 291208 nice_usec 0 nr_periods 1330 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50679808|DB usage_usec 78630728 user_usec 72835120 system_usec 5795608 nice_usec 0 nr_periods 3245 nr_throttled 3135 throttled_usec 1246148899 nr_bursts 0 burst_usec 0 ",
+    "1792522347.814418884|API usage_usec 2121218 user_usec 1829865 system_usec 291353 nice_usec 0 nr_periods 1333 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50667520|DB usage_usec 78750897 user_usec 72946176 system_usec 5804720 nice_usec 0 nr_periods 3250 nr_throttled 3140 throttled_usec 1248524575 nr_bursts 0 burst_usec 0 ",
+    "1792522348.320959468|API usage_usec 2123952 user_usec 1832511 system_usec 291440 nice_usec 0 nr_periods 1337 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50667520|DB usage_usec 78880798 user_usec 73066873 system_usec 5813925 nice_usec 0 nr_periods 3255 nr_throttled 3145 throttled_usec 1250902048 nr_bursts 0 burst_usec 0 ",
+    "1792522348.827388301|API usage_usec 2126897 user_usec 1835340 system_usec 291556 nice_usec 0 nr_periods 1341 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50667520|DB usage_usec 79006367 user_usec 73183348 system_usec 5823018 nice_usec 0 nr_periods 3260 nr_throttled 3150 throttled_usec 1253265548 nr_bursts 0 burst_usec 0 ",
+    "1792522349.333955885|API usage_usec 2129726 user_usec 1837925 system_usec 291800 nice_usec 0 nr_periods 1346 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50667520|DB usage_usec 79131059 user_usec 73299011 system_usec 5832048 nice_usec 0 nr_periods 3265 nr_throttled 3155 throttled_usec 1255644277 nr_bursts 0 burst_usec 0 ",
+    "1792522349.840464385|API usage_usec 2132661 user_usec 1840860 system_usec 291800 nice_usec 0 nr_periods 1351 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50667520|DB usage_usec 79256394 user_usec 73414328 system_usec 5842066 nice_usec 0 nr_periods 3270 nr_throttled 3160 throttled_usec 1258024309 nr_bursts 0 burst_usec 0 ",
+    "1792522350.354026844|API usage_usec 2135852 user_usec 1844051 system_usec 291800 nice_usec 0 nr_periods 1355 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50667520|DB usage_usec 79406332 user_usec 73557798 system_usec 5848534 nice_usec 0 nr_periods 3276 nr_throttled 3166 throttled_usec 1260859959 nr_bursts 0 burst_usec 0 ",
+    "1792522350.859565635|API usage_usec 2140727 user_usec 1848714 system_usec 292012 nice_usec 0 nr_periods 1361 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50667520|DB usage_usec 79531488 user_usec 73674277 system_usec 5857210 nice_usec 0 nr_periods 3281 nr_throttled 3171 throttled_usec 1263311598 nr_bursts 0 burst_usec 0 ",
+    "1792522351.366099261|API usage_usec 2148531 user_usec 1854212 system_usec 294319 nice_usec 0 nr_periods 1365 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50630656|DB usage_usec 79654048 user_usec 73788490 system_usec 5865557 nice_usec 0 nr_periods 3286 nr_throttled 3176 throttled_usec 1265286206 nr_bursts 0 burst_usec 0 ",
+    "1792522351.871857469|API usage_usec 2150888 user_usec 1856534 system_usec 294354 nice_usec 0 nr_periods 1369 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50630656|DB usage_usec 79778844 user_usec 73903971 system_usec 5874872 nice_usec 0 nr_periods 3291 nr_throttled 3181 throttled_usec 1267222234 nr_bursts 0 burst_usec 0 ",
+    "1792522352.382813220|API usage_usec 2153617 user_usec 1859177 system_usec 294439 nice_usec 0 nr_periods 1372 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50622464|DB usage_usec 79905141 user_usec 74025622 system_usec 5879519 nice_usec 0 nr_periods 3296 nr_throttled 3186 throttled_usec 1269082284 nr_bursts 0 burst_usec 0 ",
+    "1792522352.891038053|API usage_usec 2155095 user_usec 1860453 system_usec 294642 nice_usec 0 nr_periods 1374 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50622464|DB usage_usec 80027530 user_usec 74130993 system_usec 5896537 nice_usec 0 nr_periods 3301 nr_throttled 3191 throttled_usec 1270759989 nr_bursts 0 burst_usec 0 ",
+    "1792522353.400668303|API usage_usec 2166637 user_usec 1870948 system_usec 295689 nice_usec 0 nr_periods 1378 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50626560|DB usage_usec 80118838 user_usec 74204132 system_usec 5914706 nice_usec 0 nr_periods 3306 nr_throttled 3195 throttled_usec 1271577867 nr_bursts 0 burst_usec 0 ",
+    "1792522353.908411345|API usage_usec 2168369 user_usec 1872679 system_usec 295689 nice_usec 0 nr_periods 1382 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50618368|DB usage_usec 80119505 user_usec 74204799 system_usec 5914706 nice_usec 0 nr_periods 3309 nr_throttled 3195 throttled_usec 1271577867 nr_bursts 0 burst_usec 0 ",
+    "1792522354.419321720|API usage_usec 2170152 user_usec 1874270 system_usec 295882 nice_usec 0 nr_periods 1385 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50618368|DB usage_usec 80120145 user_usec 74205412 system_usec 5914733 nice_usec 0 nr_periods 3311 nr_throttled 3195 throttled_usec 1271577867 nr_bursts 0 burst_usec 0 ",
+    "1792522354.925061596|API usage_usec 2171980 user_usec 1875226 system_usec 296753 nice_usec 0 nr_periods 1388 nr_throttled 92 throttled_usec 9421705 nr_bursts 0 burst_usec 0 |APIMEM 50618368|DB usage_usec 80120855 user_usec 74206069 system_usec 5914785 nice_usec 0 nr_periods 3311 nr_throttled 3195 throttled_usec 1271577867 nr_bursts 0 burst_usec 0 "
+   ],
+   "sampled_window_s": 48.74623680114746,
+   "api_cpu_s": 0.509146,
+   "api_throttled_periods": 6,
+   "api_periods": 397,
+   "api_throttled_s": 1.91645,
+   "api_mem_max_bytes": 51392512,
+   "db_cpu_s": 11.277704,
+   "db_throttled_s": 385.984878,
+   "max_active_api_backends": 17,
+   "max_api_backends": 17
+  }
+ ],
+ "warmup": {
+  "status": 200,
+  "wall_s": 5.7822737919632345,
+  "bytes": 972,
+  "x_cache": "miss",
+  "request_id": "92dfe67a5fda40a2",
+  "t_start": 530729.573763833,
+  "t_end": 530735.356037625
+ },
+ "api_log_tail": "INFO:     172.17.0.1:59828 - \"GET /health HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:57026 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:64272 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:59910 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:62842 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:62854 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:61560 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:61562 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:65422 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:65404 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:65406 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:65428 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:57806 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:57820 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:57764 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:57768 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:57816 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:57834 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:57766 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:57846 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:64630 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 503 Service Unavailable\nINFO:     172.17.0.1:64648 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 503 Service Unavailable\nINFO:     172.17.0.1:64672 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 503 Service Unavailable\nINFO:     172.17.0.1:64642 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 503 Service Unavailable\nINFO:     172.17.0.1:64662 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 503 Service Unavailable\nINFO:     172.17.0.1:64646 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 503 Service Unavailable\nINFO:     172.17.0.1:64608 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:64596 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:64578 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:64614 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:64622 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:64572 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:64644 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:64626 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:64582 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     172.17.0.1:64580 - \"POST /api/v1/analysis/estimate HTTP/1.1\" 200 OK\nINFO:     Application startup complete.\nINFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)\n18:49:27 INFO    atus.api: request_id=489211b54a8b46f4 GET /health -> 200 in 194.7ms cache=-\n18:49:36 INFO    atus.api: request_id=92dfe67a5fda40a2 POST /api/v1/analysis/estimate -> 200 in 5776.5ms cache=miss\n18:49:49 INFO    atus.api: request_id=9f745347eac14da5 POST /api/v1/analysis/estimate -> 200 in 6098.0ms cache=miss\n18:50:00 INFO    atus.api: request_id=70a72fba7d454e70 POST /api/v1/analysis/estimate -> 200 in 2281.7ms cache=miss\n18:50:14 INFO    atus.api: request_id=6c2ef271ba1b4818 POST /api/v1/analysis/estimate -> 200 in 5118.1ms cache=miss\n18:50:14 INFO    atus.api: request_id=c1d71bc95b994ffc POST /api/v1/analysis/estimate -> 200 in 5125.2ms cache=miss\n18:50:27 INFO    atus.api: request_id=3c03f1511e424ad1 POST /api/v1/analysis/estimate -> 200 in 4409.8ms cache=miss\n18:50:28 INFO    atus.api: request_id=d623a11158a44424 POST /api/v1/analysis/estimate -> 200 in 5409.6ms cache=miss\n18:50:45 INFO    atus.api: request_id=397db2db726d48b8 POST /api/v1/analysis/estimate -> 200 in 7893.0ms cache=miss\n18:50:47 INFO    atus.api: request_id=218eeea2da674395 POST /api/v1/analysis/estimate -> 200 in 9692.3ms cache=miss\n18:50:47 INFO    atus.api: request_id=80c72d361a194119 POST /api/v1/analysis/estimate -> 200 in 10092.3ms cache=miss\n18:50:51 INFO    atus.api: request_id=0e2282cce78a459a POST /api/v1/analysis/estimate -> 200 in 13205.2ms cache=miss\n18:51:18 INFO    atus.api: request_id=27d6731795a94374 POST /api/v1/analysis/estimate -> 200 in 18503.3ms cache=miss\n18:51:20 INFO    atus.api: request_id=0582bd4607c54789 POST /api/v1/analysis/estimate -> 200 in 20495.4ms cache=miss\n18:51:23 INFO    atus.api: request_id=6cae8d72111a4d0c POST /api/v1/analysis/estimate -> 200 in 23497.5ms cache=miss\n18:51:24 INFO    atus.api: request_id=11b0538e7aa743d6 POST /api/v1/analysis/estimate -> 200 in 24502.8ms cache=miss\n18:51:26 INFO    atus.api: request_id=9890bcbac73042bd POST /api/v1/analysis/estimate -> 200 in 26197.0ms cache=miss\n18:51:37 INFO    atus.api: request_id=869bf845d6b74f78 POST /api/v1/analysis/estimate -> 200 in 37998.4ms cache=miss\n18:51:38 INFO    atus.api: request_id=10a7e2fefc3c4e63 POST /api/v1/analysis/estimate -> 200 in 38507.8ms cache=miss\n18:51:38 INFO    atus.api: request_id=4824f232784a407a POST /api/v1/analysis/estimate -> 200 in 39018.1ms cache=miss\n18:51:58 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.\n18:51:58 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.\n18:51:58 INFO    atus.api: request_id=20d435ae27374879 POST /api/v1/analysis/estimate -> 503 in 10030.5ms cache=-\n18:51:58 INFO    atus.api: request_id=273fbe388ded4fbe POST /api/v1/analysis/estimate -> 503 in 10031.5ms cache=-\n18:51:58 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.\n18:51:58 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.\n18:51:58 INFO    atus.api: request_id=e61e96ba793e4d1d POST /api/v1/analysis/estimate -> 503 in 10034.2ms cache=-\n18:51:58 INFO    atus.api: request_id=b30d088e0c274bdf POST /api/v1/analysis/estimate -> 503 in 10035.0ms cache=-\n18:51:58 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.\n18:51:58 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.\n18:51:58 INFO    atus.api: request_id=4ed36cfbb87b40f8 POST /api/v1/analysis/estimate -> 503 in 10118.0ms cache=-\n18:51:58 INFO    atus.api: request_id=bd8fcb396b6144e8 POST /api/v1/analysis/estimate -> 503 in 10118.9ms cache=-\n18:52:04 INFO    atus.api: request_id=4542e1e07f234c51 POST /api/v1/analysis/estimate -> 200 in 16613.3ms cache=miss\n18:52:11 INFO    atus.api: request_id=7f847eb295864b95 POST /api/v1/analysis/estimate -> 200 in 23312.2ms cache=miss\n18:52:16 INFO    atus.api: request_id=4c41c6ead5fb4ffa POST /api/v1/analysis/estimate -> 200 in 28910.0ms cache=miss\n18:52:18 INFO    atus.api: request_id=262949a6149d4647 POST /api/v1/analysis/estimate -> 200 in 30611.5ms cache=miss\n18:52:26 INFO    atus.api: request_id=37cd108aa8e44d60 POST /api/v1/analysis/estimate -> 200 in 38214.2ms cache=miss\n18:52:27 INFO    atus.api: request_id=afbf78a609274717 POST /api/v1/analysis/estimate -> 200 in 39112.1ms cache=miss\n18:52:27 INFO    atus.api: request_id=18e25d94b0f74188 POST /api/v1/analysis/estimate -> 200 in 39214.4ms cache=miss\n18:52:30 INFO    atus.api: request_id=cf41578db8e34f6d POST /api/v1/analysis/estimate -> 200 in 42912.5ms cache=miss\n18:52:33 INFO    atus.api: request_id=054db4c0a1b9406e POST /api/v1/analysis/estimate -> 200 in 45013.3ms cache=miss\n18:52:33 INFO    atus.api: request_id=3af582494a1e4ea3 POST /api/v1/analysis/estimate -> 200 in 45230.5ms cache=miss",
+ "date_end_utc": "2026-10-20T18:52:35.468014Z"
+}

@@ -1,0 +1,28 @@
+Traceback (most recent call last):
+  File "docs/evidence/phase5/audit/refute/migrations-not-packaged-1/venv/bin/atus", line 8, in <module>
+    sys.exit(cli())
+             ^^^^^
+  File "docs/evidence/phase5/audit/refute/migrations-not-packaged-1/venv/lib/python3.12/site-packages/click/core.py", line 1631, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "docs/evidence/phase5/audit/refute/migrations-not-packaged-1/venv/lib/python3.12/site-packages/click/core.py", line 1552, in main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "docs/evidence/phase5/audit/refute/migrations-not-packaged-1/venv/lib/python3.12/site-packages/click/core.py", line 2032, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "docs/evidence/phase5/audit/refute/migrations-not-packaged-1/venv/lib/python3.12/site-packages/click/core.py", line 1415, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "docs/evidence/phase5/audit/refute/migrations-not-packaged-1/venv/lib/python3.12/site-packages/click/core.py", line 910, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "docs/evidence/phase5/audit/refute/migrations-not-packaged-1/venv/lib/python3.12/site-packages/atus_pipeline/cli.py", line 106, in migrate
+    with connect(settings.database_url) as conn:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "docs/evidence/phase5/audit/refute/migrations-not-packaged-1/venv/lib/python3.12/site-packages/atus_pipeline/database/connection.py", line 10, in connect
+    return psycopg.connect(database_url)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "docs/evidence/phase5/audit/refute/migrations-not-packaged-1/venv/lib/python3.12/site-packages/psycopg/connection.py", line 126, in connect
+    raise last_ex.with_traceback(None)
+psycopg.OperationalError: connection failed: connection to server at "127.0.0.1", port 1 failed: could not receive data from server: Connection refused

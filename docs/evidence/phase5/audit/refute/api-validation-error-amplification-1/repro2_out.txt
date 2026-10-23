@@ -1,0 +1,5 @@
+extrakeys100k status 422 req 930144 resp 9730211 ratio 10.46 enc None gzip_would_be 298440 {"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","0"],"message":"Ex
+extrakeys10k status 422 req 85680 resp 965747 ratio 11.27 enc None gzip_would_be 30383 {"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","0"],"message":"Ex
+preset1m status 422 req 1000041 resp 1000297 ratio 1.00 enc None gzip_would_be 1208 {"error":{"code":"invalid_spec","message":"Unknown activity preset 'PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP
+longkey100k status 422 req 100053 resp 100208 ratio 1.00 enc None gzip_would_be 303 {"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","KKKKKKKKKKKKKKKKK
+get_activities 200 70851

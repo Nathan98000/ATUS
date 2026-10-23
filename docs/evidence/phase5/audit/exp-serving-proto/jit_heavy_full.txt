@@ -1,0 +1,6 @@
+FULL | leisure (BLS A-1) pooled 22y                            | est. cost     730383 | jit=on  exec   11890 ms | JIT total 17158.336 ms [Inlining true, Optimization true, Expressions true, Deforming true]
+FULL | leisure (BLS A-1) pooled 22y                            | est. cost     730383 | jit=off exec    5390 ms | JIT total - ms [-]
+FULL | all 18 tier-1 codes pooled 22y                          | est. cost    1488188 | jit=on  exec   15677 ms | JIT total 3150.672 ms [Inlining true, Optimization true, Expressions true, Deforming true]
+FULL | all 18 tier-1 codes pooled 22y                          | est. cost    1488188 | jit=off exec   10927 ms | JIT total - ms [-]
+FULL | sleep pooled 22y, women 25-54 bachelor+ (roster+CPS)    | est. cost     181088 | jit=on  exec    1594 ms | JIT total 912.611 ms [Inlining false, Optimization false, Expressions true, Deforming true]
+FULL | sleep pooled 22y, women 25-54 bachelor+ (roster+CPS)    | est. cost     181088 | jit=off exec    1103 ms | JIT total - ms [-]

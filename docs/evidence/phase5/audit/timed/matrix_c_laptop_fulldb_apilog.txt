@@ -1,0 +1,158 @@
+INFO:     172.17.0.1:59742 - "GET /health HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59746 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59752 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59768 - "GET /api/v1/activities HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59784 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59790 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:63918 - "POST /api/v1/analysis/compare HTTP/1.1" 200 OK
+INFO:     172.17.0.1:63932 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55694 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:65386 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55778 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55780 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55794 - "GET /api/v1/activities HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55804 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:60136 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:60146 - "POST /api/v1/analysis/compare HTTP/1.1" 200 OK
+INFO:     172.17.0.1:60152 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59020 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:58798 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:64636 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62354 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62370 - "GET /api/v1/activities HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62386 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62402 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62404 - "POST /api/v1/analysis/compare HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62406 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:57542 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:63616 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:56178 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:61314 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     172.17.0.1:61320 - "GET /api/v1/activities HTTP/1.1" 200 OK
+INFO:     172.17.0.1:61322 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:61334 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:61342 - "POST /api/v1/analysis/compare HTTP/1.1" 200 OK
+INFO:     172.17.0.1:61356 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:57350 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:58676 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59940 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59946 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59958 - "GET /api/v1/activities HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59972 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59980 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:59992 - "POST /api/v1/analysis/compare HTTP/1.1" 200 OK
+INFO:     172.17.0.1:61952 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:63056 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62560 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:64772 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:64782 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62912 - "GET /api/v1/activities HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62916 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62918 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62934 - "POST /api/v1/analysis/compare HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62940 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:56438 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:65266 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+INFO:     172.17.0.1:64432 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55736 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55752 - "GET /api/v1/activities HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55768 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55778 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55792 - "POST /api/v1/analysis/compare HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55798 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55488 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55500 - "GET /api/v1/activities HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55512 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55526 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:55536 - "POST /api/v1/analysis/compare HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62464 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62480 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62488 - "GET /api/v1/activities HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62504 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62514 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62524 - "GET /api/v1/activities HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62538 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62554 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62556 - "GET /api/v1/activities HTTP/1.1" 200 OK
+INFO:     172.17.0.1:62558 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+INFO:     Started server process [1]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+18:56:59 INFO    atus.api: request_id=0cf5afb2ab894c9c GET /health -> 200 in 7.1ms cache=-
+18:57:06 INFO    atus.api: request_id=484028ae8f954bbf POST /api/v1/analysis/estimate -> 200 in 3775.6ms cache=miss
+18:57:06 INFO    atus.api: request_id=ba5791afb00347c0 GET /api/v1/meta -> 200 in 43.9ms cache=-
+18:57:07 INFO    atus.api: request_id=e4b8d20e28864684 GET /api/v1/activities -> 200 in 9.8ms cache=-
+18:57:07 INFO    atus.api: request_id=680974b62bb24688 POST /api/v1/analysis/estimate -> 200 in 9.3ms cache=hit
+18:57:09 INFO    atus.api: request_id=1a3a639287544b4e POST /api/v1/analysis/estimate -> 200 in 2052.2ms cache=miss
+18:57:13 INFO    atus.api: request_id=037dbb3aa0264e73 POST /api/v1/analysis/compare -> 200 in 2982.4ms cache=miss
+18:57:40 INFO    atus.api: request_id=1f662a062ad94cfc POST /api/v1/analysis/estimate -> 200 in 27007.1ms cache=miss
+18:58:12 INFO    atus.api: request_id=405fb7033fdc46fd POST /api/v1/analysis/trend -> 200 in 31347.1ms cache=miss
+18:58:34 INFO    atus.api: request_id=f95fd4fb23834f91 POST /api/v1/analysis/trend -> 200 in 21982.9ms cache=miss
+18:58:38 INFO    atus.api: request_id=fd4fcdbc65114542 POST /api/v1/analysis/estimate -> 200 in 3348.1ms cache=miss
+18:58:38 INFO    atus.api: request_id=36a3f47e6dc949a4 GET /api/v1/meta -> 200 in 43.7ms cache=-
+18:58:38 INFO    atus.api: request_id=dca4e16af354436e GET /api/v1/activities -> 200 in 9.0ms cache=-
+18:58:39 INFO    atus.api: request_id=4178f323bd5244c8 POST /api/v1/analysis/estimate -> 200 in 3.1ms cache=hit
+18:58:41 INFO    atus.api: request_id=66fb86c30be24aa4 POST /api/v1/analysis/estimate -> 200 in 1764.3ms cache=miss
+18:58:44 INFO    atus.api: request_id=c0d5a9eb061b462a POST /api/v1/analysis/compare -> 200 in 2909.6ms cache=miss
+18:59:08 INFO    atus.api: request_id=fed8203798864cac POST /api/v1/analysis/estimate -> 200 in 23797.9ms cache=miss
+18:59:32 INFO    atus.api: request_id=73dc63dd8f184a6a POST /api/v1/analysis/trend -> 200 in 23981.9ms cache=miss
+18:59:57 INFO    atus.api: request_id=2edc37789594462d POST /api/v1/analysis/trend -> 200 in 24117.7ms cache=miss
+19:00:00 INFO    atus.api: request_id=1072146c98c44a73 POST /api/v1/analysis/estimate -> 200 in 3234.5ms cache=miss
+19:00:01 INFO    atus.api: request_id=5efa415769234f2e GET /api/v1/meta -> 200 in 52.8ms cache=-
+19:00:01 INFO    atus.api: request_id=89bbe79d133849d7 GET /api/v1/activities -> 200 in 7.4ms cache=-
+19:00:01 INFO    atus.api: request_id=010fe78d50094134 POST /api/v1/analysis/estimate -> 200 in 5.0ms cache=hit
+19:00:03 INFO    atus.api: request_id=d6e832e580e54c03 POST /api/v1/analysis/estimate -> 200 in 1872.1ms cache=miss
+19:00:07 INFO    atus.api: request_id=72dafb15b09d42ba POST /api/v1/analysis/compare -> 200 in 3173.9ms cache=miss
+19:00:21 INFO    atus.api: request_id=28111479f56e4479 POST /api/v1/analysis/estimate -> 200 in 13327.9ms cache=miss
+19:00:34 INFO    atus.api: request_id=888e29e407234919 POST /api/v1/analysis/trend -> 200 in 12876.7ms cache=miss
+19:00:48 INFO    atus.api: request_id=30eccbe8f808492e POST /api/v1/analysis/trend -> 200 in 13580.0ms cache=miss
+19:00:51 INFO    atus.api: request_id=4c9af20d80c542b0 POST /api/v1/analysis/estimate -> 200 in 3415.6ms cache=miss
+19:00:52 INFO    atus.api: request_id=90f195d59a3e4b81 GET /api/v1/meta -> 200 in 49.4ms cache=-
+19:00:52 INFO    atus.api: request_id=e72636b5977a445f GET /api/v1/activities -> 200 in 8.7ms cache=-
+19:00:52 INFO    atus.api: request_id=ec674647cbe54128 POST /api/v1/analysis/estimate -> 200 in 4.0ms cache=hit
+19:00:54 INFO    atus.api: request_id=34df6877504c4dca POST /api/v1/analysis/estimate -> 200 in 1776.4ms cache=miss
+19:00:58 INFO    atus.api: request_id=fb98df946e644091 POST /api/v1/analysis/compare -> 200 in 3242.8ms cache=miss
+19:01:12 INFO    atus.api: request_id=a82b9c3116974115 POST /api/v1/analysis/estimate -> 200 in 13462.3ms cache=miss
+19:01:25 INFO    atus.api: request_id=b45aa3ed88224b4a POST /api/v1/analysis/trend -> 200 in 13294.3ms cache=miss
+19:01:39 INFO    atus.api: request_id=d377d7f69a594e2c POST /api/v1/analysis/trend -> 200 in 13490.7ms cache=miss
+19:01:43 INFO    atus.api: request_id=5b4e83f106a441a7 POST /api/v1/analysis/estimate -> 200 in 3412.5ms cache=miss
+19:01:43 INFO    atus.api: request_id=ffd550e996584ebe GET /api/v1/meta -> 200 in 52.3ms cache=-
+19:01:44 INFO    atus.api: request_id=6a51ccf0ee644627 GET /api/v1/activities -> 200 in 7.2ms cache=-
+19:01:44 INFO    atus.api: request_id=a130f07607374376 POST /api/v1/analysis/estimate -> 200 in 5.1ms cache=hit
+19:01:46 INFO    atus.api: request_id=78067c4dc0284577 POST /api/v1/analysis/estimate -> 200 in 1740.0ms cache=miss
+19:01:49 INFO    atus.api: request_id=bbe24c408d014375 POST /api/v1/analysis/compare -> 200 in 3247.9ms cache=miss
+19:02:03 INFO    atus.api: request_id=f22292831b354f1f POST /api/v1/analysis/estimate -> 200 in 13669.9ms cache=miss
+19:02:19 INFO    atus.api: request_id=1f6cc9151f26443e POST /api/v1/analysis/trend -> 200 in 15557.0ms cache=miss
+19:02:34 INFO    atus.api: request_id=d11c250b52944d56 POST /api/v1/analysis/trend -> 200 in 14808.4ms cache=miss
+19:02:38 INFO    atus.api: request_id=16325e2f5e794888 POST /api/v1/analysis/estimate -> 200 in 3313.3ms cache=miss
+19:02:38 INFO    atus.api: request_id=dca280f61f974a96 GET /api/v1/meta -> 200 in 56.6ms cache=-
+19:02:39 INFO    atus.api: request_id=d47150051bf243d7 GET /api/v1/activities -> 200 in 8.2ms cache=-
+19:02:39 INFO    atus.api: request_id=9a512e99b1a145cd POST /api/v1/analysis/estimate -> 200 in 3.6ms cache=hit
+19:02:42 INFO    atus.api: request_id=f59f2ea5e98e43d9 POST /api/v1/analysis/estimate -> 200 in 2275.4ms cache=miss
+19:02:45 INFO    atus.api: request_id=f2058bfa337a4f99 POST /api/v1/analysis/compare -> 200 in 3487.8ms cache=miss
+19:03:02 INFO    atus.api: request_id=e4e63a7c0d34465a POST /api/v1/analysis/estimate -> 200 in 16094.3ms cache=miss
+19:03:19 INFO    atus.api: request_id=10b38bcd27a44e81 POST /api/v1/analysis/trend -> 200 in 16794.4ms cache=miss
+19:03:36 INFO    atus.api: request_id=26108fdf82b148bf POST /api/v1/analysis/trend -> 200 in 16457.8ms cache=miss
+19:03:39 INFO    atus.api: request_id=1971c24379414141 POST /api/v1/analysis/estimate -> 200 in 3464.2ms cache=miss
+19:03:40 INFO    atus.api: request_id=7b7335ddc6384f19 GET /api/v1/meta -> 200 in 37.7ms cache=-
+19:03:40 INFO    atus.api: request_id=5d12532bc6514fa0 GET /api/v1/activities -> 200 in 3.7ms cache=-
+19:03:40 INFO    atus.api: request_id=84b60412561d4044 POST /api/v1/analysis/estimate -> 200 in 3.8ms cache=hit
+19:03:43 INFO    atus.api: request_id=49ade74d96994e0d POST /api/v1/analysis/estimate -> 200 in 2560.5ms cache=miss
+19:03:48 INFO    atus.api: request_id=b2e6d35b929b4833 POST /api/v1/analysis/compare -> 200 in 4644.0ms cache=miss
+19:03:52 INFO    atus.api: request_id=570d34dc0f874563 POST /api/v1/analysis/estimate -> 200 in 3544.5ms cache=miss
+19:03:52 INFO    atus.api: request_id=f5313ae2f35943d6 GET /api/v1/meta -> 200 in 45.1ms cache=-
+19:03:53 INFO    atus.api: request_id=1d837970afe5497d GET /api/v1/activities -> 200 in 4.9ms cache=-
+19:03:53 INFO    atus.api: request_id=0cb0d1111cb348cd POST /api/v1/analysis/estimate -> 200 in 3.0ms cache=hit
+19:03:56 INFO    atus.api: request_id=f41952ae2f8e4d23 POST /api/v1/analysis/estimate -> 200 in 2442.1ms cache=miss
+19:04:01 INFO    atus.api: request_id=8213e01397c04179 POST /api/v1/analysis/compare -> 200 in 4615.8ms cache=miss
+19:04:04 INFO    atus.api: request_id=f0765f8b20cc4598 POST /api/v1/analysis/estimate -> 200 in 3201.6ms cache=miss
+19:04:05 INFO    atus.api: request_id=f0487715cc1b4388 GET /api/v1/meta -> 200 in 43.6ms cache=-
+19:04:05 INFO    atus.api: request_id=0b054060090e4259 GET /api/v1/activities -> 200 in 6.2ms cache=-
+19:04:05 INFO    atus.api: request_id=9ce57fefbcea4721 POST /api/v1/analysis/estimate -> 200 in 3.6ms cache=hit
+19:04:06 INFO    atus.api: request_id=cd1d065581ab4ab2 GET /api/v1/meta -> 200 in 43.1ms cache=-
+19:04:06 INFO    atus.api: request_id=3ddab3fa9edf4a58 GET /api/v1/activities -> 200 in 5.8ms cache=-
+19:04:06 INFO    atus.api: request_id=5ce8e5a213d64e63 POST /api/v1/analysis/estimate -> 200 in 3.3ms cache=hit
+19:04:07 INFO    atus.api: request_id=922fc3b33ef949b7 GET /api/v1/meta -> 200 in 44.6ms cache=-
+19:04:07 INFO    atus.api: request_id=31978d14c27a4bd0 GET /api/v1/activities -> 200 in 6.2ms cache=-
+19:04:07 INFO    atus.api: request_id=7501dacfbd7646cf POST /api/v1/analysis/estimate -> 200 in 3.6ms cache=hit

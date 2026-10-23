@@ -1,0 +1,11 @@
+### curl http://127.0.0.1:8206/api/v1/activities/%00%00 (port 8206)
+HTTP/1.1 404 Not Found
+date: Tue, 20 Oct 2026 17:10:19 GMT
+server: uvicorn
+content-length: 151
+content-type: application/json
+vary: Origin
+x-request-id: dde38bf278784e0c
+
+{"error":{"code":"activity_not_found","message":"Activity code '\\x00\\x00' does not exist in the 2003-25 lexicon.","details":{"code":"\u0000\u0000"}}}
+### status=404 time_total=0.001262s size_download=151 size_upload=0

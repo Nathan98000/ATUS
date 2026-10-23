@@ -1,0 +1,4 @@
+body bytes=104857667  server RSS before=54.2 MB
+status=422 elapsed=0.65s body={"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","activity","label"],"message
+peak sampled server RSS=499.6 MB; after=499.6 MB; max /health latency during request=0.108s (n=15)
+RSS now: 499 MB

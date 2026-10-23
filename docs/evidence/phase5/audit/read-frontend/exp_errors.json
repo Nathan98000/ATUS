@@ -1,0 +1,541 @@
+{
+  "meta_503_db_unavailable_json": {
+    "home": {
+      "settledAt": 3.323,
+      "alertText": null,
+      "tryAgainButton": 0,
+      "text": "Skip to content ATUS Explorer Explore About & methodology Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimate",
+      "home_starter": "Start from a question Starter examples need the analysis service, which could not be reached.",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "explore": {
+      "settledAt": 3.323,
+      "alertText": "The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-w",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "deeplink": {
+      "settledAt": 3.323,
+      "alertText": "The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details The ana",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "requests": [
+      "100.00 GET meta #1",
+      "100.00 GET population #1",
+      "100.00 GET presets #1",
+      "100.00 GET meta #2",
+      "100.00 GET meta #3",
+      "101.01 GET meta #4",
+      "101.01 GET meta #5",
+      "101.01 GET meta #6",
+      "103.01 GET meta #7",
+      "103.01 GET meta #8",
+      "103.01 GET meta #9"
+    ]
+  },
+  "meta_10s_pool_timeout_503_json": {
+    "home": {
+      "settledAt": 33.212,
+      "alertText": null,
+      "tryAgainButton": 0,
+      "text": "Skip to content ATUS Explorer Explore About & methodology Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimate",
+      "home_starter": "Start from a question Starter examples need the analysis service, which could not be reached.",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "deeplink": {
+      "settledAt": 33.212,
+      "alertText": "The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details The ana",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "explore": {
+      "settledAt": 33.212,
+      "alertText": "The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-w",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "requests": [
+      "103.46 GET meta #1",
+      "103.46 GET population #1",
+      "103.46 GET meta #2",
+      "103.46 GET meta #3",
+      "103.47 GET presets #1",
+      "114.47 GET meta #4",
+      "114.47 GET meta #5",
+      "114.47 GET meta #6",
+      "126.47 GET meta #7",
+      "126.47 GET meta #8",
+      "126.48 GET meta #9"
+    ]
+  },
+  "meta_503_twice_then_ok": {
+    "explore": {
+      "settledAt": 3.127,
+      "alertText": null,
+      "tryAgainButton": 0,
+      "text": "Skip to content ATUS Explorer Explore About & methodology Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty ",
+      "footer": "duct. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "requests": [
+      "136.99 GET meta #1",
+      "136.99 GET population #1",
+      "137.99 GET meta #2",
+      "139.99 GET meta #3",
+      "140.01 GET activities #1",
+      "140.01 GET presets #1"
+    ]
+  },
+  "meta_503_html_proxy_page": {
+    "home": {
+      "settledAt": 3.154,
+      "alertText": null,
+      "tryAgainButton": 0,
+      "text": "Skip to content ATUS Explorer Explore About & methodology Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimate",
+      "home_starter": "Start from a question Starter examples need the analysis service, which could not be reached.",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "explore": {
+      "settledAt": 3.154,
+      "alertText": "The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details ",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "deeplink": {
+      "settledAt": 3.154,
+      "alertText": "The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying agai",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "requests": [
+      "140.43 GET meta #1",
+      "140.43 GET meta #2",
+      "140.43 GET population #1",
+      "140.43 GET meta #3",
+      "140.44 GET presets #1",
+      "141.44 GET meta #4",
+      "141.45 GET meta #5",
+      "141.45 GET meta #6",
+      "143.44 GET meta #7",
+      "143.45 GET meta #8",
+      "143.45 GET meta #9"
+    ]
+  },
+  "meta_502_html_proxy_page": {
+    "home": {
+      "settledAt": 0.087,
+      "alertText": null,
+      "tryAgainButton": 0,
+      "text": "Skip to content ATUS Explorer Explore About & methodology Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimate",
+      "home_starter": "Start from a question Starter examples need the analysis service, which could not be reached.",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+        }
+      ]
+    },
+    "deeplink": {
+      "settledAt": 0.087,
+      "alertText": "The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying agai",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+        }
+      ]
+    },
+    "explore": {
+      "settledAt": 0.34,
+      "alertText": "The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details ",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+        }
+      ]
+    },
+    "requests": [
+      "143.91 GET meta #1",
+      "143.91 GET population #1",
+      "143.91 GET meta #2",
+      "143.91 GET meta #3",
+      "143.91 GET presets #1"
+    ]
+  },
+  "meta_429_html_worker_quota": {
+    "deeplink": {
+      "settledAt": 0.092,
+      "alertText": "The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying agai",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+        }
+      ]
+    },
+    "home": {
+      "settledAt": 0.091,
+      "alertText": null,
+      "tryAgainButton": 0,
+      "text": "Skip to content ATUS Explorer Explore About & methodology Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimate",
+      "home_starter": "Start from a question Starter examples need the analysis service, which could not be reached.",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+        }
+      ]
+    },
+    "explore": {
+      "settledAt": 0.092,
+      "alertText": "The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details ",
+      "footer": "ndependent analytical project — not an official BLS product.",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+        }
+      ]
+    },
+    "requests": [
+      "144.57 GET meta #1",
+      "144.57 GET meta #2",
+      "144.57 GET population #1",
+      "144.57 GET meta #3",
+      "144.57 GET presets #1"
+    ]
+  },
+  "analysis_429_json_retry_after": {
+    "deeplink": {
+      "settledAt": 0.332,
+      "alertText": "The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your",
+      "footer": "duct. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 429 (Too Many Requests)"
+        }
+      ]
+    },
+    "requests": [
+      "144.96 GET meta #1",
+      "144.96 GET presets #1",
+      "144.97 POST estimate #1"
+    ]
+  },
+  "analysis_503_json_overloaded_retry_after": {
+    "deeplink": {
+      "settledAt": 0.328,
+      "alertText": "The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your",
+      "footer": "duct. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "requests": [
+      "145.60 GET meta #1",
+      "145.60 GET presets #1",
+      "145.60 POST estimate #1"
+    ]
+  },
+  "analysis_504_html_proxy_timeout": {
+    "deeplink": {
+      "settledAt": 0.323,
+      "alertText": "The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your",
+      "footer": "duct. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 504 (Gateway Timeout)"
+        }
+      ]
+    },
+    "requests": [
+      "146.25 GET meta #1",
+      "146.25 GET presets #1",
+      "146.25 POST estimate #1"
+    ]
+  },
+  "analysis_503_db_unavailable_json": {
+    "deeplink": {
+      "settledAt": 0.329,
+      "alertText": "The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details",
+      "tryAgainButton": 1,
+      "text": "Skip to content ATUS Explorer Explore About & methodology ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Tech",
+      "footer": "duct. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+      "console": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+        }
+      ]
+    },
+    "requests": [
+      "146.88 GET meta #1",
+      "146.88 GET presets #1",
+      "146.89 POST estimate #1"
+    ]
+  },
+  "meta_api_version_v2": {
+    "home": {
+      "settledAt": 0.095,
+      "alertText": null,
+      "tryAgainButton": 0,
+      "text": "Skip to content ATUS Explorer Explore About & methodology Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimate",
+      "home_starter": "Start from a question How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who ",
+      "footer": "duct. Data release 0325 (2003–2025) · analytics 0.2 · API v2",
+      "console": []
+    },
+    "explore": {
+      "settledAt": 0.099,
+      "alertText": null,
+      "tryAgainButton": 0,
+      "text": "Skip to content ATUS Explorer Explore About & methodology Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty ",
+      "footer": "duct. Data release 0325 (2003–2025) · analytics 0.2 · API v2",
+      "console": []
+    },
+    "deeplink": {
+      "settledAt": 0.103,
+      "alertText": null,
+      "tryAgainButton": 0,
+      "text": "Skip to content ATUS Explorer Explore About & methodology ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min People ages 25–54 spent an estimate",
+      "footer": "duct. Data release 0325 (2003–2025) · analytics 0.2 · API v2",
+      "console": []
+    },
+    "requests": [
+      "147.53 GET meta #1",
+      "147.53 GET population #1",
+      "147.53 GET meta #2",
+      "147.53 GET meta #3",
+      "147.53 GET presets #1",
+      "147.55 GET activities #1",
+      "147.55 GET presets #2",
+      "147.55 POST estimate #1"
+    ]
+  },
+  "meta_incompatible_shape_no_data": {
+    "explore": {
+      "settledAt": 0.09,
+      "alertText": "Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer",
+      "tryAgainButton": 0,
+      "text": "Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer",
+      "footer": null,
+      "console": [
+        {
+          "type": "error",
+          "text": "TypeError: Cannot read properties of undefined (reading 'release')\n    at zi (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:125360)\n    at ts (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:49206)\n    at Jc (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:71910)\n    at hl (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:82814)\n    at Zd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127984)\n    at Jd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127067)\n    at qd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:126906)\n    at Fd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:123634)\n    at Mf (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:136037)\n    at Df (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:134601)"
+        },
+        {
+          "type": "error",
+          "text": "Unhandled application error TypeError: Cannot read properties of undefined (reading 'release')\n    at zi (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:125360)\n    at ts (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:49206)\n    at Jc (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:71910)\n    at hl (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:82814)\n    at Zd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127984)\n    at Jd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127067)\n    at qd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:126906)\n    at Fd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:123634)\n    at Mf (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:136037)\n    at Df (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:134601) \n    at zi (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:124227)\n    at To (<anonymous>)\n    at pr (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:104248)\n    at ri (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:115114)\n    at te (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:51237)\n    at Eo (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:194935)"
+        }
+      ]
+    },
+    "deeplink": {
+      "settledAt": 0.091,
+      "alertText": "Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer",
+      "tryAgainButton": 0,
+      "text": "Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer",
+      "footer": null,
+      "console": [
+        {
+          "type": "error",
+          "text": "TypeError: Cannot read properties of undefined (reading 'release')\n    at zi (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:125360)\n    at ts (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:49206)\n    at Jc (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:71910)\n    at hl (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:82814)\n    at Zd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127984)\n    at Jd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127067)\n    at qd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:126906)\n    at Fd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:123634)\n    at Mf (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:136037)\n    at Df (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:134601)"
+        },
+        {
+          "type": "error",
+          "text": "Unhandled application error TypeError: Cannot read properties of undefined (reading 'release')\n    at zi (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:125360)\n    at ts (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:49206)\n    at Jc (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:71910)\n    at hl (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:82814)\n    at Zd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127984)\n    at Jd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127067)\n    at qd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:126906)\n    at Fd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:123634)\n    at Mf (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:136037)\n    at Df (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:134601) \n    at zi (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:124227)\n    at To (<anonymous>)\n    at pr (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:104248)\n    at ri (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:115114)\n    at te (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:51237)\n    at Eo (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:194935)"
+        }
+      ]
+    },
+    "home": {
+      "settledAt": 0.091,
+      "alertText": "Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer",
+      "tryAgainButton": 0,
+      "text": "Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer",
+      "footer": null,
+      "console": [
+        {
+          "type": "error",
+          "text": "TypeError: Cannot read properties of undefined (reading 'release')\n    at zi (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:125360)\n    at ts (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:49206)\n    at Jc (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:71910)\n    at hl (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:82814)\n    at Zd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127984)\n    at Jd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127067)\n    at qd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:126906)\n    at Fd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:123634)\n    at Mf (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:136037)\n    at Df (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:134601)"
+        },
+        {
+          "type": "error",
+          "text": "Unhandled application error TypeError: Cannot read properties of undefined (reading 'release')\n    at zi (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:125360)\n    at ts (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:49206)\n    at Jc (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:71910)\n    at hl (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:82814)\n    at Zd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127984)\n    at Jd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:127067)\n    at qd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:126906)\n    at Fd (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:123634)\n    at Mf (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:136037)\n    at Df (http://127.0.0.1:47311/assets/index-DfILjWC4.js:8:134601) \n    at zi (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:124227)\n    at To (<anonymous>)\n    at pr (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:104248)\n    at ri (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:115114)\n    at te (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:51237)\n    at Eo (http://127.0.0.1:47311/assets/index-DfILjWC4.js:9:194935)"
+        }
+      ]
+    },
+    "requests": [
+      "147.95 GET meta #1",
+      "147.95 GET meta #2",
+      "147.95 GET presets #1",
+      "147.95 GET meta #3",
+      "147.95 GET population #1"
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "t_start": 1792516882.877,
+    "t_end": 1792516882.877,
+    "scenario": "baseline_realcors",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792516882.877,
+    "t_end": 1792516882.877,
+    "scenario": "baseline_realcors",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792516882.881,
+    "t_end": 1792516882.881,
+    "scenario": "baseline_realcors",
+    "origin": "http://[::1]:4182",
+    "method": "OPTIONS",
+    "path": "/api/v1/analysis/estimate",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792516882.881,
+    "t_end": 1792516882.882,
+    "scenario": "baseline_realcors",
+    "origin": "http://[::1]:4182",
+    "method": "POST",
+    "path": "/api/v1/analysis/estimate",
+    "status": 200,
+    "note": ""
+  }
+]

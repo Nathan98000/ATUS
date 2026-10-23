@@ -1,0 +1,14 @@
+max
+low 0
+high 0
+max 0
+oom 0
+oom_kill 0
+oom_group_kill 0
+154972160
+anon 4489216
+file 147566592
+shmem 146497536
+inactive_file 884736
+active_file 184320
+workingset_refault_file 4

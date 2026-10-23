@@ -1,0 +1,109 @@
+{
+ "label": "coldcache-a_oscold",
+ "date_utc": "2026-10-20T18:39:04.089356Z",
+ "ran_alone": "yes - sole ATUS audit workload; other projects' containers (supabase_*, timeblock-postgres) and host apps kept running (see env_snapshot_*.txt)",
+ "machine": "Apple M4, 10-core, 24 GB RAM, macOS 27.0.1; Docker Desktop VM 10 vCPU / 7.75 GiB",
+ "docker": "server 29.6.2 client 29.6.2",
+ "db_limits": "NanoCpus=250000000 Memory=1073741824",
+ "variant": "oscold",
+ "type": "pooled22_leisure_bls",
+ "reps": [
+  {
+   "i": 0,
+   "db_restart_s": 0.2655332499416545,
+   "page_cache_before_drop": "drop=False files_bytes=650134084 resident_bytes=344580096 resident_MB=328.6 of 620.0 MB (53.0%)",
+   "page_cache_drop": "drop=True files_bytes=650134084 resident_bytes=0 resident_MB=0.0 of 620.0 MB (0.0%)",
+   "page_cache_after_drop": "drop=False files_bytes=650134084 resident_bytes=0 resident_MB=0.0 of 620.0 MB (0.0%)",
+   "cold": {
+    "status": 200,
+    "wall_s": 32.33832629094832,
+    "bytes": 1387,
+    "x_cache": "miss",
+    "request_id": "2da4fae8f5d74e50",
+    "t_start": 530114.564792625,
+    "t_end": 530146.903118916,
+    "db_ms": 32324.225000000002,
+    "analysis_sql_ms": 32200.077,
+    "db_errors": []
+   },
+   "warm": {
+    "status": 200,
+    "wall_s": 33.220821624970995,
+    "bytes": 1387,
+    "x_cache": "miss",
+    "request_id": "93867a22319e4a64",
+    "t_start": 530146.903970583,
+    "t_end": 530180.124792208,
+    "db_ms": 33193.801,
+    "analysis_sql_ms": 33098.984000000004,
+    "db_errors": []
+   },
+   "page_cache_after_requests": "drop=False files_bytes=650458708 resident_bytes=405782528 resident_MB=387.0 of 620.3 MB (62.4%)"
+  },
+  {
+   "i": 1,
+   "db_restart_s": 0.24621962499804795,
+   "page_cache_before_drop": "drop=False files_bytes=650134084 resident_bytes=406192128 resident_MB=387.4 of 620.0 MB (62.5%)",
+   "page_cache_drop": "drop=True files_bytes=650134084 resident_bytes=0 resident_MB=0.0 of 620.0 MB (0.0%)",
+   "page_cache_after_drop": "drop=False files_bytes=650134084 resident_bytes=0 resident_MB=0.0 of 620.0 MB (0.0%)",
+   "cold": {
+    "status": 200,
+    "wall_s": 48.84417433408089,
+    "bytes": 1391,
+    "x_cache": "miss",
+    "request_id": "af7f62d9574442df",
+    "t_start": 530192.960625166,
+    "t_end": 530241.8047995,
+    "db_ms": 48824.822,
+    "analysis_sql_ms": 48796.193,
+    "db_errors": []
+   },
+   "warm": {
+    "status": 200,
+    "wall_s": 44.994598332908936,
+    "bytes": 1390,
+    "x_cache": "miss",
+    "request_id": "78f7f0c795fe4f19",
+    "t_start": 530241.807028625,
+    "t_end": 530286.801626958,
+    "db_ms": 44950.94300000001,
+    "analysis_sql_ms": 44896.964,
+    "db_errors": []
+   },
+   "page_cache_after_requests": "drop=False files_bytes=650458708 resident_bytes=405782528 resident_MB=387.0 of 620.3 MB (62.4%)"
+  },
+  {
+   "i": 2,
+   "db_restart_s": 0.22262433299329132,
+   "page_cache_before_drop": "drop=False files_bytes=650134084 resident_bytes=406192128 resident_MB=387.4 of 620.0 MB (62.5%)",
+   "page_cache_drop": "drop=True files_bytes=650134084 resident_bytes=0 resident_MB=0.0 of 620.0 MB (0.0%)",
+   "page_cache_after_drop": "drop=False files_bytes=650134084 resident_bytes=0 resident_MB=0.0 of 620.0 MB (0.0%)",
+   "cold": {
+    "status": 200,
+    "wall_s": 47.08151820790954,
+    "bytes": 1391,
+    "x_cache": "miss",
+    "request_id": "3fedce88fafe44f6",
+    "t_start": 530300.949122208,
+    "t_end": 530348.030640416,
+    "db_ms": 47069.66799999999,
+    "analysis_sql_ms": 46996.911,
+    "db_errors": []
+   },
+   "warm": {
+    "status": 200,
+    "wall_s": 40.91344975004904,
+    "bytes": 1389,
+    "x_cache": "miss",
+    "request_id": "2d4bac039e02430b",
+    "t_start": 530348.031603333,
+    "t_end": 530388.945053083,
+    "db_ms": 40898.842,
+    "analysis_sql_ms": 40805.59299999999,
+    "db_errors": []
+   },
+   "page_cache_after_requests": "drop=False files_bytes=650458708 resident_bytes=405782528 resident_MB=387.0 of 620.3 MB (62.4%)"
+  }
+ ],
+ "date_end_utc": "2026-10-20T18:43:51.403756Z"
+}

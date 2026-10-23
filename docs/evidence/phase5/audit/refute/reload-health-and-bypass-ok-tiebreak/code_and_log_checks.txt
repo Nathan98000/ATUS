@@ -1,0 +1,34 @@
+api_server.log: PoolTimeout/Timed out: 66; OperationalError: 0; 'data version changed': 4
+api_server2.log: PoolTimeout/Timed out: 143; OperationalError: 0; 'data version changed': 9
+api_server3.log: PoolTimeout/Timed out: 0; OperationalError: 0; 'data version changed': 100
+
+loader.py:36-47 _CANONICAL_TABLES order:
+_CANONICAL_TABLES = (
+    "activity_companions",
+    "activities",
+    "cps_persons",
+    "household_members",
+    "replicate_weights",
+    "pandemic_replicate_weights",
+    "respondents",
+    "activity_codes",
+    "activity_tier2",
+    "activity_tier1",
+)
+expB:   loader AE-held sample at +0.05s: ['activity_companions'] waiting_for=['activities:AccessExclusiveLock']
+
+meta.py:56-66 (run row read first, then respondents; Cache-Control public max-age=300):
+    run = conn.execute(
+        "SELECT id, release, finished_at FROM atus.ingestion_runs "
+        "WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    years = [
+        row[0] for row in
+        conn.execute("SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1")
+    ]
+    respondents = conn.execute("SELECT count(*) FROM atus.respondents").fetchone()[0]
+
+    response.headers["Cache-Control"] = "public, max-age=300"
+frontend/src/api/queries.ts:83-84:
+export function versionTag(meta: MetaResponse): string {
+  return `${meta.analytics_version}:${meta.data.release}:run${meta.data.ingestion_run_id ?? 0}`

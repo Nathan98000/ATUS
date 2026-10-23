@@ -1,0 +1,1106 @@
+[
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 75.0,
+   "confidence_level": 0.6
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 75.0,
+   "confidence_level": 0.6004
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 0,
+  "client": "client_gave_up",
+  "old_run": 12,
+  "new_run": 13,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 90.0,
+   "confidence_level": 0.611
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 1,
+  "client": "client_gave_up",
+  "old_run": 13,
+  "new_run": 14,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 90.0,
+   "confidence_level": 0.6111
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 75.0,
+   "confidence_level": 0.6209
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 75.0,
+   "confidence_level": 0.621
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 2,
+  "client": "client_gave_up",
+  "old_run": 14,
+  "new_run": 15,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 90.0,
+   "confidence_level": 0.631
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 3,
+  "client": "client_gave_up",
+  "old_run": 15,
+  "new_run": 16,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 90.0,
+   "confidence_level": 0.6311
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 75.0,
+   "confidence_level": 0.6409
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 4,
+  "client": "client_gave_up",
+  "old_run": 16,
+  "new_run": 17,
+  "loaded": "v1",
+  "expected_new_value": 75.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 75.0,
+   "confidence_level": 0.6411
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 90.0,
+   "confidence_level": 0.6504
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": false
+  },
+  "loader_rc": 0
+ },
+ {
+  "round": 5,
+  "client": "client_gave_up",
+  "old_run": 17,
+  "new_run": 18,
+  "loaded": "v2",
+  "expected_new_value": 90.0,
+  "under_old_key": {
+   "present": false
+  },
+  "under_new_key": {
+   "present": true,
+   "value": 90.0,
+   "confidence_level": 0.6511
+  },
+  "loader_rc": 0
+ }
+]

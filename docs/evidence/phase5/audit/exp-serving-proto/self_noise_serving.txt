@@ -1,0 +1,4 @@
+SERVING max_parallel_workers_per_gather = 2
+SERVING: E1 sleep 2025: 4 runs, max rel SE diff vs run 1 = 7.48e-14; point values identical across runs: True
+SERVING: T1 sleep trend 2003-2025: 4 runs, max rel SE diff vs run 1 = 5.06e-14; point values identical across runs: True
+SERVING: E3 sleep pooled 22y: 4 runs, max rel SE diff vs run 1 = 7.13e-14; point values identical across runs: True

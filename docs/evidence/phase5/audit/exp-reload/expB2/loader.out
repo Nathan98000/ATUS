@@ -1,0 +1,6 @@
+INFO:atus_pipeline.loading.loader:Ingestion run 6 started (release 0325)
+ERROR:atus_pipeline.loading.loader:Ingestion run 6 failed; database unchanged. deadlock detected
+DETAIL:  Process 2125 waits for AccessExclusiveLock on relation 34511 of database 34311; blocked by process 1948.
+Process 1948 waits for AccessShareLock on relation 34436 of database 34311; blocked by process 2125.
+HINT:  See server log for query details.
+loader exit: 1

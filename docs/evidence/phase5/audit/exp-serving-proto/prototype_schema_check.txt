@@ -1,0 +1,47 @@
+activities|tucaseid:bigint, activity_code:character, duration_minutes:smallint
+cps_persons|tucaseid:bigint, lineno:smallint, region:smallint, state_fips:character, education:smallint
+household_members|tucaseid:bigint, lineno:smallint, age:smallint, sex:smallint
+respondents|tucaseid:bigint, data_year:smallint, diary_date:date, diary_day_of_week:smallint, labor_force_status:smallint, household_children:smallint, final_weight:numeric, pandemic_weight:numeric
+pandemic_replicate_weights|bigint|1
+pandemic_replicate_weights|double precision|160
+replicate_weights|bigint|1
+replicate_weights|double precision|160
+
+            tbl             | contype |                 conname                  | convalidated 
+----------------------------+---------+------------------------------------------+--------------
+ respondents                | c       | final_weight_2020_rule                   | t
+ respondents                | c       | pandemic_weight_years                    | t
+ respondents                | c       | respondents_data_year_check              | t
+ respondents                | c       | respondents_diary_day_of_week_check      | t
+ respondents                | c       | respondents_final_weight_check           | t
+ respondents                | c       | respondents_household_children_check     | t
+ respondents                | c       | respondents_labor_force_status_check     | t
+ respondents                | c       | respondents_pandemic_weight_check        | t
+ respondents                | p       | respondents_pkey                         | t
+ household_members          | c       | household_members_age_check              | t
+ household_members          | c       | household_members_lineno_check           | t
+ household_members          | c       | household_members_sex_check              | t
+ household_members          | c       | serving_line1_only                       | t
+ household_members          | f       | household_members_tucaseid_fkey          | t
+ household_members          | p       | household_members_pkey                   | t
+ cps_persons                | c       | cps_persons_education_check              | t
+ cps_persons                | c       | cps_persons_lineno_check                 | t
+ cps_persons                | c       | cps_persons_region_check                 | t
+ cps_persons                | c       | cps_persons_state_fips_check             | t
+ cps_persons                | c       | serving_line1_only                       | t
+ cps_persons                | f       | cps_persons_tucaseid_fkey                | t
+ cps_persons                | p       | cps_persons_pkey                         | t
+ activities                 | c       | activities_duration_minutes_check        | t
+ activities                 | f       | activities_activity_code_fkey            | t
+ activities                 | f       | activities_tucaseid_fkey                 | t
+ replicate_weights          | f       | replicate_weights_tucaseid_fkey          | t
+ replicate_weights          | p       | replicate_weights_pkey                   | t
+ pandemic_replicate_weights | f       | pandemic_replicate_weights_tucaseid_fkey | t
+ pandemic_replicate_weights | p       | pandemic_replicate_weights_pkey          | t
+(29 rows)
+
+ activity_companions 
+---------------------
+ 
+(1 row)
+

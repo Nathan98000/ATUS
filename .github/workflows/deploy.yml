@@ -1,0 +1,795 @@
+# Deploy: the only path to production (ADR-011 "Deploy"; docs/deployment.md,
+# "7. First approved deploy" and "Rollback").
+#
+# Runs on a vMAJOR.MINOR.PATCH tag or a manual run from main; a push to main
+# deploys nothing (Render's image-backed service never auto-deploys, Workers
+# Builds is never connected). Jobs, each with the least permission it needs:
+#
+#   preflight  the ref is a semver tag or main; ci.yml passed on a push to
+#              main for this very commit, and the commit is on main (this
+#              workflow runs only the Worker's config tests and the SPA
+#              build); releases/current.json names a published release
+#   build      image.yml from scratch (no build cache): the strict gate,
+#              deployment tests, stack smoke plain and emulated, Trivy
+#   push       the one job with packages: write: pushes exactly the tested
+#              image (same image ID) to GHCR and outputs its digest
+#   snapshot   restores the release dump (sha256-verified) into postgres:16
+#              with the production roles (scripts/ops/roles.sql), runs the
+#              pushed digest read-only against it, builds the static snapshot
+#              and the same-origin SPA. Before any deploy step, so a failure
+#              here deploys nothing
+#   edge-config  the wrangler.jsonc invariant tests (vitest) and the KV
+#              namespace id, in a job without secrets
+#   deploy     environment `production` (the owner approves): Render deploy
+#              hook by digest, wait for the build bound to this release,
+#              wrangler deploy with the release vars, post-deploy smoke
+#              (<= 30 requests, the step's --max-requests), rollback notes in
+#              the job summary
+#   browser-smoke  after deploy, in a job without secrets: the browser
+#              smoke (<= 6 /api requests) against the public URL
+#   promote    after a passing deploy and browser smoke: tags the deployed
+#              digest `live` (the image Render's service is configured with)
+#              and `deployed-<commit>` (the next run's rollback target)
+#
+# A manual run can instead set or clear the owner's pause switch (operation
+# `pause-api` or `resume-api`; edge/src/pause.ts, docs/operations.md
+# "Pausing the API"). Then only job api-switch runs, behind the same
+# `production` approval but in its own concurrency group, so it never waits
+# behind a deploy: `wrangler secret bulk` changes the two optional
+# Worker secrets API_PAUSED_UNTIL and API_PAUSED_REASON, which makes one new
+# Worker version with the same code, site and snapshot (nothing is built, and
+# Render is never called, so it works while Render is suspended), and
+# /api/_edge/health confirms the new state. Every later deploy keeps it.
+#
+# Secrets are read from the environment by the scripts and never echoed. The
+# job that holds them installs only what it runs: the API's runtime lock for
+# the smoke's §9 comparison (binary wheels only) and the edge's lockfile for
+# wrangler; test and browser tooling runs in jobs without secrets (review
+# round 2, deploy-job-runs-dev-toolchain-before-secrets).
+name: Deploy
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: Why this manual deploy (shown in the summary)
+        type: string
+        required: false
+      operation:
+        description: deploy, or set (pause-api) / clear (resume-api) the API pause switch
+        type: choice
+        options: [deploy, pause-api, resume-api]
+        default: deploy
+      paused_until:
+        description: "pause-api: when the API is expected back, UTC YYYY-MM-DD or YYYY-MM-DDTHH:MMZ, or unknown"
+        type: string
+        required: false
+      pause_reason:
+        description: "pause-api: why it is paused"
+        type: choice
+        options: [render_quota, render_suspended, maintenance]
+        default: render_quota
+
+permissions: {}
+
+# Deploys (and re-runs of their jobs, such as promote) share one group and
+# never cancel a running one; GitHub keeps one pending run per group, so a newer
+# dispatch replaces a waiting one. The pause switch has its own group (review
+# round 3, pause-switch-queued-behind-pending-deploy): it contains a Render
+# outage, so it never waits behind a deploy that is running or awaiting
+# approval. Both change the Worker, in either order safely: `wrangler deploy`
+# keeps every secret of the latest version, and `wrangler secret bulk` changes
+# the latest version's.
+concurrency:
+  group: ${{ (github.event_name == 'workflow_dispatch' && inputs.operation != 'deploy') && 'deploy-production-switch' || 'deploy-production' }}
+  cancel-in-progress: false
+
+env:
+  GHCR_REPOSITORY: ghcr.io/nathan98000/atus-api
+  NODE_VERSION: "24"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  preflight:
+    name: Preflight
+    # Every deploy job needs this one, so the pause operations skip them all.
+    if: ${{ github.event_name == 'push' || inputs.operation == 'deploy' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      data_version: ${{ steps.release.outputs.data_version }}
+      release_tag: ${{ steps.release.outputs.release_tag }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Deploy only vMAJOR.MINOR.PATCH tags, or main by hand
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          if [ "$REF_TYPE" = tag ]; then
+            if ! [[ "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::deploy tags are vMAJOR.MINOR.PATCH; got $REF_NAME"
+              exit 1
+            fi
+          elif [ "$REF_NAME" != main ]; then
+            echo "::error::manual deploys run from main only; got $REF_NAME"
+            exit 1
+          fi
+          {
+            echo "### Deploy $REF_NAME ($GITHUB_SHA)"
+            if [ -n "$REASON" ]; then echo "Reason: $REASON"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: CI passed for this commit, and it is on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ops/github_ops.py deploy-gate --repo "$GITHUB_REPOSITORY" --sha "$GITHUB_SHA"
+
+      - name: The release manifest names a published release
+        id: release
+        run: python3 scripts/ops/release_manifest.py check --require-published
+
+  build:
+    name: Image
+    needs: preflight
+    uses: ./.github/workflows/image.yml
+    permissions:
+      contents: read
+    with:
+      build-sha: ${{ github.sha }}
+      use-cache: false
+
+  push:
+    name: Push the tested image
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_ref: ${{ steps.push.outputs.image_ref }}
+    steps:
+      - name: Download the tested image
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: atus-api-image
+          path: ${{ runner.temp }}/image
+
+      - name: Load it (same image ID as the one the build job tested)
+        env:
+          TESTED_ID: ${{ needs.build.outputs.image-id }}
+        run: |
+          docker load -i "$RUNNER_TEMP/image/atus-api.tar"
+          loaded=$(docker image inspect --format '{{.Id}}' atus-api:ci)
+          test "$loaded" = "$TESTED_ID"
+          test "$loaded" = "$(cat "$RUNNER_TEMP/image/atus-api.id")"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push by digest
+        id: push
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          tags="sha-$GITHUB_SHA"
+          docker tag atus-api:ci "$GHCR_REPOSITORY:sha-$GITHUB_SHA"
+          docker push "$GHCR_REPOSITORY:sha-$GITHUB_SHA"
+          if [ "$REF_TYPE" = tag ]; then
+            docker tag atus-api:ci "$GHCR_REPOSITORY:$REF_NAME"
+            docker push "$GHCR_REPOSITORY:$REF_NAME"
+            tags="$tags, $REF_NAME"
+          fi
+          image_ref=$(docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' atus-api:ci \
+            | grep -E "^${GHCR_REPOSITORY}@sha256:[0-9a-f]{64}$" | head -n 1)
+          if [ -z "$image_ref" ]; then
+            echo "::error::no GHCR digest recorded for the pushed image"
+            exit 1
+          fi
+          docker buildx imagetools inspect "$image_ref" > /dev/null
+          echo "image_ref=$image_ref" >> "$GITHUB_OUTPUT"
+          echo "Pushed \`$image_ref\` (tags: $tags)" >> "$GITHUB_STEP_SUMMARY"
+
+  snapshot:
+    name: Static snapshot from the release, with this image
+    needs: [preflight, push]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      packages: read
+    services:
+      postgres:
+        # Postgres 16 like Neon (ADR-011); the release is restored as a
+        # non-superuser owner with scripts/ops/roles.sql, as on Neon.
+        image: postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
+        env:
+          # Runner-local bootstrap superuser, only used to create the owner.
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --shm-size=1g
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    outputs:
+      snapshot_id: ${{ steps.snapshot.outputs.snapshot_id }}
+      data_version: ${{ steps.snapshot.outputs.data_version }}
+      analytics_version: ${{ steps.snapshot.outputs.analytics_version }}
+      response_format: ${{ steps.snapshot.outputs.response_format }}
+    env:
+      IMAGE_REF: ${{ needs.push.outputs.image_ref }}
+      DATA_VERSION: ${{ needs.preflight.outputs.data_version }}
+      API_PORT: "8571"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock.txt
+
+      - name: Install the hash-locked environment (atus restore-serving-db)
+        run: |
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
+          python -m pip install --no-deps --no-build-isolation -e .
+
+      - name: Download the release artifact (sizes and SHA-256 from releases/current.json)
+        id: release
+        run: python scripts/ops/release_manifest.py fetch --out "$RUNNER_TEMP/release"
+
+      - name: Restore it as on Neon (non-superuser owner, roles.sql, VACUUM, checks)
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          DUMP: ${{ steps.release.outputs.dump_path }}
+        run: |
+          umask 077
+          OWNER_PASSWORD=$(openssl rand -hex 24)
+          export OWNER_PASSWORD
+          echo "::add-mask::$OWNER_PASSWORD"
+          psql -v ON_ERROR_STOP=1 -d postgres <<'SQL'
+          \getenv pw OWNER_PASSWORD
+          CREATE ROLE neondb_owner LOGIN CREATEDB CREATEROLE PASSWORD :'pw';
+          CREATE DATABASE atus OWNER neondb_owner;
+          SQL
+          printf 'ATUS_OWNER_DATABASE_URL=postgresql://neondb_owner:%s@localhost:5432/atus\n' \
+            "$OWNER_PASSWORD" > "$RUNNER_TEMP/owner.env"
+          atus restore-serving-db --artifact "$DUMP" --secrets-file "$RUNNER_TEMP/owner.env" \
+            --report "$RUNNER_TEMP/restore-report.json"
+
+      - name: Log in to GHCR (read)
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run the pushed digest read-only against the restored release
+        run: |
+          umask 077
+          docker pull "$IMAGE_REF"
+          # Read with the restore's own parser (values may be single-quoted).
+          api_url=$(python -c 'import sys; from pathlib import Path
+          from atus_pipeline.serving.secrets_file import read_env_file
+          print(read_env_file(Path(sys.argv[1])).get("ATUS_API_DATABASE_URL", ""))' \
+            "$RUNNER_TEMP/owner.env")
+          if [ -z "$api_url" ]; then
+            echo "::error::the restore wrote no ATUS_API_DATABASE_URL"
+            exit 1
+          fi
+          edge_secret=$(openssl rand -hex 32)
+          echo "::add-mask::$edge_secret"
+          printf 'EDGE_AUTH_SECRET=%s\n' "$edge_secret" > "$RUNNER_TEMP/edge-secret.env"
+          # Production mode, the API role, the release's expected data version;
+          # generous per-client limits so the builder is not rate limited. The
+          # runner's postgres:16 on localhost has no TLS: the local-stack escape
+          # hatch (accepted for loopback hosts only).
+          {
+            echo "ATUS_ENV=production"
+            echo "ATUS_DATABASE_URL=$api_url"
+            echo "ATUS_DATABASE_TLS=local-stack-only"
+            echo "ATUS_EDGE_SECRETS=$edge_secret"
+            echo "ATUS_EXPECTED_DATA_VERSION=$DATA_VERSION"
+            echo "ATUS_API_RATE_ANALYSIS=100000/60"
+            echo "ATUS_API_RATE_REQUESTS=100000/60"
+            echo "ATUS_API_DAILY_ANALYSIS_CAP=100000"
+          } > "$RUNNER_TEMP/api.env"
+          docker run -d --name atus-snapshot-api --network host --read-only --tmpfs /tmp \
+            --cap-drop ALL --security-opt no-new-privileges:true \
+            --env-file "$RUNNER_TEMP/api.env" "$IMAGE_REF" \
+            atus api --host 127.0.0.1 --port "$API_PORT"
+          for _ in $(seq 1 90); do
+            if curl -fsS -o "$RUNNER_TEMP/health.json" "http://127.0.0.1:$API_PORT/health"; then
+              break
+            fi
+            sleep 2
+          done
+          build=$(python -c 'import json, sys; print(json.load(open(sys.argv[1]))["build"])' \
+            "$RUNNER_TEMP/health.json")
+          if [ "$build" != "$GITHUB_SHA" ]; then
+            echo "::error::the pulled image reports build $build, not $GITHUB_SHA"
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build the SPA (same-origin)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build the static snapshot with this image (tier L0, ADR-015)
+        id: snapshot
+        run: |
+          snapshot_id=$(python scripts/build_snapshot.py --api-base "http://127.0.0.1:$API_PORT" \
+            --edge-secret-file "$RUNNER_TEMP/edge-secret.env" \
+            --requests-script frontend/scripts/snapshot-requests.mjs \
+            --api-build "$GITHUB_SHA" --data-version "$DATA_VERSION" --out frontend/dist/snap)
+          python scripts/build_snapshot.py --verify frontend/dist/snap
+          python - "$snapshot_id" <<'PY' >> "$GITHUB_OUTPUT"
+          import json, sys
+          pointer = json.load(open("frontend/dist/snap/current.json"))
+          assert pointer["snapshot_id"] == sys.argv[1], "snapshot id mismatch"
+          for key in ("snapshot_id", "data_version", "analytics_version", "response_format"):
+              print(f"{key}={pointer[key]}")
+          PY
+
+      - name: Guard the site (bundle checks; Workers static-asset limits)
+        run: |
+          (cd frontend && npm run check:bundle)
+          files=$(find frontend/dist -type f | wc -l)
+          if [ "$files" -gt 20000 ]; then
+            echo "::error::$files files; Workers static assets allow 20,000"
+            exit 1
+          fi
+          if [ -n "$(find frontend/dist -type f -size +25M)" ]; then
+            echo "::error::a static file is over 25 MiB"
+            exit 1
+          fi
+          echo "Site: $files files, snapshot $(jq -r .snapshot_id frontend/dist/snap/current.json)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Hand the site to the deploy job
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site-dist
+          path: frontend/dist/
+          # The deploy job downloads this only after the owner approves, and a
+          # job can wait up to 30 days for that (the first deploy's bootstrap
+          # does: docs/deployment.md, step 7). A shorter retention would make a
+          # late approval fail at the download, after the image was pushed.
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: API logs
+        if: ${{ failure() }}
+        run: docker logs --tail 200 atus-snapshot-api || true
+
+      - name: Stop the API
+        if: ${{ always() }}
+        run: docker rm -f atus-snapshot-api || true
+
+  edge-config:
+    name: Edge config invariants (no secrets)
+    # vitest and its dependency tree run here, never in the job that holds
+    # the deploy secrets.
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: edge/package-lock.json
+
+      - name: The wrangler.jsonc invariants and the KV namespace id
+        working-directory: edge
+        run: |
+          npm ci
+          npx --no-install vitest run --project node
+          if grep -Eq '"id": *"0{32}"' wrangler.jsonc; then
+            echo "::error::edge/wrangler.jsonc still has the placeholder KV namespace id (owner step 1.3)"
+            exit 1
+          fi
+
+  deploy:
+    name: Deploy to production
+    needs: [push, snapshot, edge-config]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment:
+      name: production
+      url: ${{ vars.PUBLIC_BASE_URL }}
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      # A production environment variable (owner step 4.1): the browser-smoke
+      # job, which holds no environment, reads it from here.
+      public_base_url: ${{ vars.PUBLIC_BASE_URL }}
+    env:
+      IMAGE_REF: ${{ needs.push.outputs.image_ref }}
+      SNAPSHOT_ID: ${{ needs.snapshot.outputs.snapshot_id }}
+      DATA_VERSION: ${{ needs.snapshot.outputs.data_version }}
+      ANALYTICS_VERSION: ${{ needs.snapshot.outputs.analytics_version }}
+      RESPONSE_FORMAT: ${{ needs.snapshot.outputs.response_format }}
+      PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The production environment is configured
+        env:
+          HAVE_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL != '' }}
+          HAVE_ORIGIN: ${{ secrets.RENDER_ORIGIN != '' }}
+          HAVE_CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAVE_CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          missing=()
+          [ "$HAVE_HOOK" = true ] || missing+=(RENDER_DEPLOY_HOOK_URL)
+          [ "$HAVE_ORIGIN" = true ] || missing+=(RENDER_ORIGIN)
+          [ "$HAVE_CF_TOKEN" = true ] || missing+=(CLOUDFLARE_API_TOKEN)
+          [ "$HAVE_CF_ACCOUNT" = true ] || missing+=(CLOUDFLARE_ACCOUNT_ID)
+          [ -n "$PUBLIC_BASE_URL" ] || missing+=("PUBLIC_BASE_URL (variable)")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::not configured (docs/deployment.md, owner step 4): ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements/api.lock.txt
+            requirements/build.lock.txt
+
+      # The API's runtime lock (as in the image), not the dev lock: the smoke's
+      # §9 comparison imports the package, nothing more.
+      - name: Install the API's runtime lock, binary wheels only (the smoke's §9 comparison)
+        run: |
+          python -m pip install --require-hashes --no-deps --only-binary=:all: \
+            -r requirements/api.lock.txt -r requirements/build.lock.txt
+          python -m pip install --no-deps --no-build-isolation -e .
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: edge/package-lock.json
+
+      - name: Download the site (SPA + snapshot) built in the snapshot job
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: site-dist
+          path: frontend/dist
+
+      # wrangler's own install scripts (esbuild, workerd) still run here; the
+      # config tests ran in edge-config.
+      - name: Edge toolchain (wrangler pinned by edge/package-lock.json)
+        working-directory: edge
+        run: npm ci
+
+      # Before anything changes: an expired, revoked or wrong-account Cloudflare
+      # token stops the job here, not at `wrangler deploy` after the Render hook
+      # has switched the API to the new image (review round 3,
+      # cf-token-first-proven-after-render-switch). Read-only; what it prints is
+      # the Worker's rollback target for the notes below.
+      - name: The Cloudflare token works (fatal; records the Worker's current deployment)
+        working-directory: edge
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --no-install wrangler deployments status --json > "$RUNNER_TEMP/worker-before.json"
+
+      # Best effort: a deploy must also go through while the API is down (a
+      # forward fix), so an origin that does not answer is not fatal here. A wrong
+      # RENDER_ORIGIN therefore shows only in the wait step, after the hook.
+      - name: Record the build the origin runs now (rollback target)
+        id: before
+        continue-on-error: true
+        env:
+          RENDER_ORIGIN: ${{ secrets.RENDER_ORIGIN }}
+        run: python scripts/ops/render_deploy.py current-build --wake-timeout 180
+
+      - name: Previous image digest
+        id: previous
+        continue-on-error: true
+        env:
+          PREVIOUS_BUILD: ${{ steps.before.outputs.build }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The digest the running commit was deployed as: its deployed-<commit>
+          # tag, which only job promote moves. Never sha-<commit> of this run's
+          # own commit: this run's push has just moved that tag (a re-run).
+          python3 scripts/ops/github_ops.py deployed-image --owner nathan98000 \
+            --package atus-api --build "$PREVIOUS_BUILD" --this-build "$GITHUB_SHA" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Deploy the API image by digest (Render deploy hook)
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: python scripts/ops/render_deploy.py trigger --image-ref "$IMAGE_REF" --image-repo "$GHCR_REPOSITORY"
+
+      - name: Wait until Render serves this build, bound to this release (cold start, image pull)
+        env:
+          RENDER_ORIGIN: ${{ secrets.RENDER_ORIGIN }}
+          # When the origin already ran this commit (a re-run that rebuilt the
+          # image), /health cannot show the new digest going live: the script
+          # then says so as a warning.
+          PREVIOUS_BUILD: ${{ steps.before.outputs.build }}
+        # The origin must be bound to the release this run publishes (/health's
+        # expected_data_version is Render's ATUS_EXPECTED_DATA_VERSION) before
+        # wrangler deploy: a run approved before the release switch on Render
+        # fails here, with nothing published at the edge.
+        run: |
+          python scripts/ops/render_deploy.py wait --expect-build "$GITHUB_SHA" \
+            --expect-data-version "$DATA_VERSION" \
+            --previous-build "$PREVIOUS_BUILD" --timeout 900 --interval 15
+
+      - name: Deploy the edge (SPA, snapshot, Worker and its release vars)
+        working-directory: edge
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --no-install wrangler deploy \
+            --var "DATA_VERSION:$DATA_VERSION" \
+            --var "ANALYTICS_VERSION:$ANALYTICS_VERSION" \
+            --var "RESPONSE_FORMAT:$RESPONSE_FORMAT" \
+            --var "SNAPSHOT_ID:$SNAPSHOT_ID"
+
+      # Exit 3: every check passed but the quota governor refused the live
+      # recompute (OWED; review round 4, smoke-fails-on-governor-refusal). The
+      # job still fails, so `promote` tags no digest the database never ran, but
+      # the release is healthy: no rollback (docs/operations.md, Deploy step 6).
+      - name: Post-deploy smoke (at most 30 requests; secrets from the environment)
+        env:
+          RENDER_ORIGIN: ${{ secrets.RENDER_ORIGIN }}
+          EDGE_OPS_TOKEN: ${{ secrets.EDGE_OPS_TOKEN }}
+        run: |
+          args=(--base-url "$PUBLIC_BASE_URL" --expect-build "$GITHUB_SHA"
+                --expect-data-version "$DATA_VERSION" --expect-snapshot-id "$SNAPSHOT_ID"
+                --require-snapshot --recompute 2 --max-requests 30 --origin-lock
+                --report "$RUNNER_TEMP/smoke.json")
+          if [ -n "$EDGE_OPS_TOKEN" ]; then args+=(--ops-budget); fi
+          status=0
+          python scripts/ops/deploy_smoke.py "${args[@]}" || status=$?
+          if [ "$status" = 3 ]; then
+            echo "::error title=Live recompute owed (no rollback)::The quota governor refused the smoke's live analyses (the OWED rows); every other check passed and this release is serving. Do not roll back: re-run the failed jobs once the budget resumes (docs/operations.md, Deploy step 6)."
+            {
+              echo "**Live recompute owed (exit 3), not a reason to roll back.** The quota governor refused the smoke's live analyses; every other check passed. Re-run the failed jobs once the budget resumes, the time in the OWED rows (docs/operations.md, Deploy step 6)."
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"
+
+      - name: Rollback notes
+        if: ${{ always() }}
+        env:
+          PREVIOUS_BUILD: ${{ steps.before.outputs.build }}
+          PREVIOUS_IMAGE: ${{ steps.previous.outputs.image_ref }}
+          PREVIOUS_SOURCE: ${{ steps.previous.outputs.image_source }}
+        run: |
+          worker_before="(not recorded)"
+          if [ -s "$RUNNER_TEMP/worker-before.json" ]; then
+            worker_before=$(jq -c '[.versions[]? | {version_id, percentage}]' \
+              "$RUNNER_TEMP/worker-before.json" 2> /dev/null || echo "(unreadable)")
+          fi
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ### Rollback (docs/deployment.md, "Rollback")
+
+          | Component | Before this run | This run |
+          |---|---|---|
+          | API (Render) | build \`${PREVIOUS_BUILD:-unknown}\`, image \`${PREVIOUS_IMAGE:-unknown (Render → Events)}\` (${PREVIOUS_SOURCE:-not looked up}) | \`$IMAGE_REF\` |
+          | Edge (Worker + static site) | versions \`$worker_before\` | snapshot \`$SNAPSHOT_ID\`, data \`$DATA_VERSION\` |
+
+          - **Smoke failed only with OWED rows** (exit 3, live recompute owed): nothing below
+            applies; re-run the failed jobs once the budget resumes (docs/operations.md, Deploy step 6).
+          - **API:** with \`RENDER_DEPLOY_HOOK_URL\` exported from your password manager, run
+            \`python scripts/ops/render_deploy.py trigger --image-ref <previous image>\`, then
+            \`RENDER_ORIGIN=... python scripts/ops/render_deploy.py wait --expect-build <previous build>\`.
+            Then move the GHCR tag \`live\` back to it: re-run job \`promote\` of the Deploy run that
+            deployed it (GitHub allows that for 30 days; later by hand, docs/operations.md, "Rollback").
+            While another Deploy run is in progress or waits for approval, that re-run waits behind it
+            (the deploys' concurrency group): reject that run first, or move the tag by hand.
+            GHCR keeps the last 20 digests and \`live\`.
+          - **Edge:** \`cd edge && npx --no-install wrangler rollback <previous version id> --message "rollback"\`
+            (without an id: the version before the current one), then
+            \`python scripts/ops/monitors.py edge --base-url $PUBLIC_BASE_URL --expect-snapshot-id <its SNAPSHOT_ID> --expect-data-version <its DATA_VERSION>\`
+            with the vars of the version you rolled back to (\`npx --no-install wrangler versions view <version id> --json\`
+            lists them; without them the check passes on this run's edge too), and one analysis
+            through the site. If wrangler says secrets have changed since that version, decline
+            and read docs/deployment.md "Rollback" first: confirming restores the old secret values.
+          - **Data:** the release switch in reverse (ADR-013): restore the previous Render
+            \`ATUS_DATABASE_URL\` and \`ATUS_EXPECTED_DATA_VERSION\`; roll the edge back at once
+            (above; no build or scan needed); restore the previous release's manifest on main (\`git checkout <its commit> -- releases/current.json\`),
+            commit and push; wait until CI on that push has passed (preflight refuses the
+            commit until then); then \`gh workflow run deploy.yml --ref main\` and approve
+            (docs/operations.md, "Rollback").
+          EOF
+
+  browser-smoke:
+    name: Browser smoke against the public URL (one starter analysis)
+    # Without secrets: the frontend tree and the Playwright browsers are
+    # installed here, never in the job that holds the deploy secrets.
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      PUBLIC_BASE_URL: ${{ needs.deploy.outputs.public_base_url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: One starter renders, no CSP errors, at most 6 /api requests
+        working-directory: frontend
+        run: |
+          test -n "$PUBLIC_BASE_URL"
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test -c playwright.deployed.config.ts
+
+  promote:
+    name: Mark the deployed digest (Render's configured image, rollback target)
+    # Only after the deploy job, smoke included, passed: `live` is the Image
+    # URL Render's service is configured with (owner step 2.7), so a deploy
+    # not made through the hook (Manual Deploy) runs the last verified
+    # digest; ghcr-cleanup.yml never deletes it. `deployed-<commit>` names
+    # the digest that commit ran as, for the next run's rollback notes. Re-run
+    # this job of an earlier run to move `live` back after an API rollback
+    # (GitHub re-runs jobs for 30 days; after that, by hand: operations.md).
+    # The re-run joins the deploys' concurrency group (deploy-production), so it
+    # waits behind any Deploy run in progress or awaiting approval
+    # (operations.md "Rollback").
+    needs: [push, deploy, browser-smoke]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_REF: ${{ needs.push.outputs.image_ref }}
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag the deployed digest live and deployed-<commit> (same digest, no new manifest)
+        run: |
+          for tag in live "deployed-$GITHUB_SHA"; do
+            docker buildx imagetools create --prefer-index=false \
+              --tag "$GHCR_REPOSITORY:$tag" "$IMAGE_REF"
+            digest=$(docker buildx imagetools inspect "$GHCR_REPOSITORY:$tag" \
+              --format '{{json .Manifest}}' | jq -r .digest)
+            if [ "$GHCR_REPOSITORY@$digest" != "$IMAGE_REF" ]; then
+              echo "::error::$tag names $digest, not the deployed $IMAGE_REF"
+              exit 1
+            fi
+          done
+          echo "Tagged \`$IMAGE_REF\` as \`live\` and \`deployed-$GITHUB_SHA\`" >> "$GITHUB_STEP_SUMMARY"
+
+  api-switch:
+    name: Set or clear the API pause switch
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.operation != 'deploy' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: production
+      url: ${{ vars.PUBLIC_BASE_URL }}
+    permissions:
+      contents: read
+    env:
+      OPERATION: ${{ inputs.operation }}
+      PAUSED_UNTIL: ${{ inputs.paused_until }}
+      PAUSE_REASON: ${{ inputs.pause_reason }}
+      PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: From main only; check the inputs and write the secrets file
+        env:
+          REF_NAME: ${{ github.ref_name }}
+          HAVE_CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          HAVE_CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+        run: |
+          if [ "$REF_NAME" != main ]; then
+            echo "::error::the pause switch is set from main only; got $REF_NAME"
+            exit 1
+          fi
+          if [ "$HAVE_CF_TOKEN" != true ] || [ "$HAVE_CF_ACCOUNT" != true ] || [ -z "$PUBLIC_BASE_URL" ]; then
+            echo "::error::not configured (docs/deployment.md, owner step 4): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, PUBLIC_BASE_URL"
+            exit 1
+          fi
+          python3 scripts/ops/api_pause.py secrets --operation "$OPERATION" \
+            --until "$PAUSED_UNTIL" --reason "$PAUSE_REASON" --out "$RUNNER_TEMP/api-pause.json"
+          echo "### $OPERATION (until: ${PAUSED_UNTIL:-n/a}, reason: $PAUSE_REASON)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: edge/package-lock.json
+
+      - name: Edge toolchain (wrangler pinned by edge/package-lock.json)
+        working-directory: edge
+        run: npm ci
+
+      - name: Change the switch (one new Worker version; code, site and snapshot unchanged)
+        working-directory: edge
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --no-install wrangler secret bulk "$RUNNER_TEMP/api-pause.json"
+
+      - name: The edge reports the new state (/api/_edge/health, at most 6 requests)
+        run: |
+          python3 scripts/ops/api_pause.py verify --operation "$OPERATION" \
+            --until "$PAUSED_UNTIL" --reason "$PAUSE_REASON" --base-url "$PUBLIC_BASE_URL"

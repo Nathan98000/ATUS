@@ -6,7 +6,9 @@ from pydantic import BaseModel, Field
 
 
 class ActivityEntry(BaseModel):
-    code: str = Field(description="Harmonized 2003-25 lexicon code (2, 4, or 6 digits).")
+    code: str = Field(
+        description="Harmonized multi-year lexicon code of the loaded release (2, 4, or 6 digits)."
+    )
     name: str
     level: int = Field(description="1 = major category, 2 = subcategory, 3 = 6-digit activity.")
     parent_code: str | None = Field(

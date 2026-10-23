@@ -1,0 +1,11 @@
+### curl -I http://127.0.0.1:8206/docs (port 8206)
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:07:50 GMT
+server: uvicorn
+content-length: 1016
+content-type: text/html; charset=utf-8
+vary: Origin
+x-request-id: 65395eb4370b4756
+
+
+### status=200 time_total=0.001839s size_download=0 size_upload=0

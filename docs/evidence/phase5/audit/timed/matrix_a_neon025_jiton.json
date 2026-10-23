@@ -1,0 +1,442 @@
+{
+ "label": "matrix-a_neon025_jiton",
+ "date_utc": "2026-10-20T18:27:48.340229Z",
+ "ran_alone": "yes - sole ATUS audit workload; other projects' containers (supabase_*, timeblock-postgres) and host apps kept running (see env_snapshot_*.txt)",
+ "machine": "Apple M4, 10-core, 24 GB RAM, macOS 27.0.1; Docker Desktop VM 10 vCPU / 7.75 GiB",
+ "docker": "server 29.6.2 client 29.6.2",
+ "db_container": "atus-emu-pg",
+ "db_limits": "NanoCpus=250000000 Memory=1073741824",
+ "api_limits": "cpus=0.1 mem=512m",
+ "session_jit": "on",
+ "read_only_session": false,
+ "requests": [
+  {
+   "type": "est_1y_010101_2025",
+   "round": 0,
+   "tag": "est_1y_010101_2025#0#1",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 3.7181269159773365,
+   "bytes": 966,
+   "x_cache": "miss",
+   "request_id": "b68538ec78c54819",
+   "t_start": 529439.32039875,
+   "t_end": 529443.038525666,
+   "db_ms": 3710.453,
+   "analysis_sql_ms": 3695.0280000000002,
+   "db_statements": 9,
+   "db_errors": [],
+   "server_ms": 3715.8,
+   "api_ms_total_minus_db": 7.673915977336492
+  },
+  {
+   "type": "pooled22_leisure_bls",
+   "round": 0,
+   "tag": "pooled22_leisure_bls#0#2",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 74.80213520792313,
+   "bytes": 1393,
+   "x_cache": "miss",
+   "request_id": "29598e64c4344665",
+   "t_start": 529443.343037,
+   "t_end": 529518.145172208,
+   "db_ms": 74780.288,
+   "analysis_sql_ms": 74697.306,
+   "db_statements": 8,
+   "db_errors": [],
+   "server_ms": 74797.4,
+   "api_ms_total_minus_db": 21.847207923128735
+  },
+  {
+   "type": "trend23_tier1_12",
+   "round": 0,
+   "tag": "trend23_tier1_12#0#3",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 59.50381791591644,
+   "bytes": 8016,
+   "x_cache": "miss",
+   "request_id": "2c40090bc6444164",
+   "t_start": 529518.45362675,
+   "t_end": 529577.957444666,
+   "db_ms": 59463.54,
+   "analysis_sql_ms": 59196.947,
+   "db_statements": 9,
+   "db_errors": [],
+   "server_ms": 59499.9,
+   "api_ms_total_minus_db": 40.277915916442
+  },
+  {
+   "type": "est_1y_010101_2025",
+   "round": 1,
+   "tag": "est_1y_010101_2025#1#4",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 4.281203959020786,
+   "bytes": 970,
+   "x_cache": "miss",
+   "request_id": "d035de4b54a54d56",
+   "t_start": 529578.264970666,
+   "t_end": 529582.546174625,
+   "db_ms": 4267.355,
+   "analysis_sql_ms": 4009.333,
+   "db_statements": 9,
+   "db_errors": [],
+   "server_ms": 4277.1,
+   "api_ms_total_minus_db": 13.848959020786424
+  },
+  {
+   "type": "pooled22_leisure_bls",
+   "round": 1,
+   "tag": "pooled22_leisure_bls#1#5",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 57.29944845801219,
+   "bytes": 1392,
+   "x_cache": "miss",
+   "request_id": "bb5abd21e1ae4837",
+   "t_start": 529582.851429083,
+   "t_end": 529640.150877541,
+   "db_ms": 57182.746,
+   "analysis_sql_ms": 57003.127,
+   "db_statements": 9,
+   "db_errors": [],
+   "server_ms": 57285.2,
+   "api_ms_total_minus_db": 116.70245801219426
+  },
+  {
+   "type": "trend23_tier1_12",
+   "round": 1,
+   "tag": "trend23_tier1_12#1#6",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 70.79785425006412,
+   "bytes": 8016,
+   "x_cache": "miss",
+   "request_id": "54aa9906ace344fb",
+   "t_start": 529640.459367625,
+   "t_end": 529711.257221875,
+   "db_ms": 70667.24399999999,
+   "analysis_sql_ms": 70403.103,
+   "db_statements": 9,
+   "db_errors": [],
+   "server_ms": 70701.9,
+   "api_ms_total_minus_db": 130.6102500641282
+  },
+  {
+   "type": "est_1y_010101_2025",
+   "round": 2,
+   "tag": "est_1y_010101_2025#2#7",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 4.074430292006582,
+   "bytes": 969,
+   "x_cache": "miss",
+   "request_id": "3960010b2892402c",
+   "t_start": 529711.567922416,
+   "t_end": 529715.642352708,
+   "db_ms": 4057.4979999999996,
+   "analysis_sql_ms": 3900.481,
+   "db_statements": 9,
+   "db_errors": [],
+   "server_ms": 4067.9,
+   "api_ms_total_minus_db": 16.93229200658243
+  },
+  {
+   "type": "pooled22_leisure_bls",
+   "round": 2,
+   "tag": "pooled22_leisure_bls#2#8",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 64.48729987500701,
+   "bytes": 1393,
+   "x_cache": "miss",
+   "request_id": "2aff6a89f8b14c62",
+   "t_start": 529715.949527541,
+   "t_end": 529780.436827416,
+   "db_ms": 64474.16,
+   "analysis_sql_ms": 64302.808000000005,
+   "db_statements": 9,
+   "db_errors": [],
+   "server_ms": 64483.6,
+   "api_ms_total_minus_db": 13.139875007007504
+  },
+  {
+   "type": "trend23_tier1_12",
+   "round": 2,
+   "tag": "trend23_tier1_12#2#9",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 64.31679579103366,
+   "bytes": 8010,
+   "x_cache": "miss",
+   "request_id": "432c69f9846e489e",
+   "t_start": 529780.74409325,
+   "t_end": 529845.060889041,
+   "db_ms": 64279.195,
+   "analysis_sql_ms": 64100.563,
+   "db_statements": 9,
+   "db_errors": [],
+   "server_ms": 64313.6,
+   "api_ms_total_minus_db": 37.600791033655696
+  },
+  {
+   "type": "est_1y_010101_2025",
+   "round": 3,
+   "tag": "est_1y_010101_2025#3#10",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 4.163660041987896,
+   "bytes": 971,
+   "x_cache": "miss",
+   "request_id": "def2af72edcb4d47",
+   "t_start": 529845.363455333,
+   "t_end": 529849.527115375,
+   "db_ms": 4072.3570000000004,
+   "analysis_sql_ms": 4003.81,
+   "db_statements": 9,
+   "db_errors": [],
+   "server_ms": 4160.8,
+   "api_ms_total_minus_db": 91.30304198789554
+  },
+  {
+   "type": "pooled22_leisure_bls",
+   "round": 3,
+   "tag": "pooled22_leisure_bls#3#11",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 70.70587266702205,
+   "bytes": 1391,
+   "x_cache": "miss",
+   "request_id": "001afae71ac840d8",
+   "t_start": 529849.830876416,
+   "t_end": 529920.536749083,
+   "db_ms": 70690.775,
+   "analysis_sql_ms": 70495.106,
+   "db_statements": 9,
+   "db_errors": [],
+   "server_ms": 70703.7,
+   "api_ms_total_minus_db": 15.097667022055248
+  },
+  {
+   "type": "trend23_tier1_12",
+   "round": 3,
+   "tag": "trend23_tier1_12#3#12",
+   "uncached_expected": true,
+   "status": 200,
+   "wall_s": 58.50889829196967,
+   "bytes": 8012,
+   "x_cache": "miss",
+   "request_id": "f1cf09358adb48fa",
+   "t_start": 529920.843719958,
+   "t_end": 529979.35261825,
+   "db_ms": 58278.209,
+   "analysis_sql_ms": 58197.228,
+   "db_statements": 9,
+   "db_errors": [],
+   "server_ms": 58504.2,
+   "api_ms_total_minus_db": 230.68929196966928
+  }
+ ],
+ "db_cpu_before": "usage_usec 876814931\nuser_usec 815826809\nsystem_usec 60988121\nnice_usec 0\nnr_periods 9617\nnr_throttled 9388\nthrottled_usec 2420419181\nnr_bursts 0\nburst_usec 0",
+ "api_cpu_before": "usage_usec 883435\nuser_usec 783369\nsystem_usec 100065\nnice_usec 0\nnr_periods 105\nnr_throttled 86\nthrottled_usec 7548724\nnr_bursts 0\nburst_usec 0",
+ "db_cpu_after": "usage_usec 1011073162\nuser_usec 944206119\nsystem_usec 66867043\nnice_usec 0\nnr_periods 15011\nnr_throttled 14752\nthrottled_usec 3853945111\nnr_bursts 0\nburst_usec 0",
+ "api_cpu_after": "usage_usec 2755019\nuser_usec 2447951\nsystem_usec 307067\nnice_usec 0\nnr_periods 2779\nnr_throttled 96\nthrottled_usec 7882387\nnr_bursts 0\nburst_usec 0",
+ "api_mem_after": {
+  "raw": "49475584\n===\n50229248\n===\nanon 44765184\nfile 909312\nkernel 2834432\nsock 0\nshmem 0\n===\nVmHWM:\t   65872 kB\nVmRSS:\t   65872 kB\nRssAnon:\t   43452 kB\nRssFile:\t   22420 kB\nThreads:\t6\n===\n    1 65872 456008    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000\n===\nusage_usec 2765953\nuser_usec 2453495\nsystem_usec 312458\nnice_usec 0\nnr_periods 2780\nnr_throttled 97\nthrottled_usec 7899321\nnr_bursts 0\nburst_usec 0",
+  "memory_current": 49475584,
+  "memory_peak": 50229248,
+  "memory_stat": {
+   "anon": 44765184,
+   "file": 909312,
+   "kernel": 2834432,
+   "sock": 0,
+   "shmem": 0
+  },
+  "proc1": {
+   "VmHWM": "65872 kB",
+   "VmRSS": "65872 kB",
+   "RssAnon": "43452 kB",
+   "RssFile": "22420 kB",
+   "Threads": "6"
+  },
+  "ps": "1 65872 456008    6 /usr/local/bin/python3.12 /usr/local/bin/uvicorn --factory atus_pipeline.api.app:create_app --host 0.0.0.0 --port 8000",
+  "cpu_stat": {
+   "usage_usec": 2765953,
+   "user_usec": 2453495,
+   "system_usec": 312458,
+   "nice_usec": 0,
+   "nr_periods": 2780,
+   "nr_throttled": 97,
+   "throttled_usec": 7899321,
+   "nr_bursts": 0,
+   "burst_usec": 0
+  }
+ },
+ "summary": {
+  "est_1y_010101_2025": {
+   "n": 3,
+   "statuses": [
+    "200"
+   ],
+   "x_cache": [
+    "miss"
+   ],
+   "wall_s": {
+    "n": 3,
+    "min": 4.074430292006582,
+    "p50": 4.163660041987896,
+    "p95": 4.269449567317497,
+    "max": 4.281203959020786
+   },
+   "server_ms": {
+    "n": 3,
+    "min": 4067.9,
+    "p50": 4160.8,
+    "p95": 4265.47,
+    "max": 4277.1
+   },
+   "db_ms": {
+    "n": 3,
+    "min": 4057.4979999999996,
+    "p50": 4072.3570000000004,
+    "p95": 4247.8552,
+    "max": 4267.355
+   },
+   "analysis_sql_ms": {
+    "n": 3,
+    "min": 3900.481,
+    "p50": 4003.81,
+    "p95": 4008.7807000000003,
+    "max": 4009.333
+   },
+   "api_ms_total_minus_db": {
+    "n": 3,
+    "min": 13.848959020786424,
+    "p50": 16.93229200658243,
+    "p95": 83.86596698976422,
+    "max": 91.30304198789554
+   },
+   "db_statements": [
+    9
+   ],
+   "warmup_round0": [
+    {
+     "wall_s": 3.7181269159773365,
+     "db_ms": 3710.453,
+     "status": 200
+    }
+   ]
+  },
+  "pooled22_leisure_bls": {
+   "n": 3,
+   "statuses": [
+    "200"
+   ],
+   "x_cache": [
+    "miss"
+   ],
+   "wall_s": {
+    "n": 3,
+    "min": 57.29944845801219,
+    "p50": 64.48729987500701,
+    "p95": 70.08401538782054,
+    "max": 70.70587266702205
+   },
+   "server_ms": {
+    "n": 3,
+    "min": 57285.2,
+    "p50": 64483.6,
+    "p95": 70081.69,
+    "max": 70703.7
+   },
+   "db_ms": {
+    "n": 3,
+    "min": 57182.746,
+    "p50": 64474.16,
+    "p95": 70069.11349999999,
+    "max": 70690.775
+   },
+   "analysis_sql_ms": {
+    "n": 3,
+    "min": 57003.127,
+    "p50": 64302.808000000005,
+    "p95": 69875.8762,
+    "max": 70495.106
+   },
+   "api_ms_total_minus_db": {
+    "n": 3,
+    "min": 13.139875007007504,
+    "p50": 15.097667022055248,
+    "p95": 106.54197891318034,
+    "max": 116.70245801219426
+   },
+   "db_statements": [
+    9
+   ],
+   "warmup_round0": [
+    {
+     "wall_s": 74.80213520792313,
+     "db_ms": 74780.288,
+     "status": 200
+    }
+   ]
+  },
+  "trend23_tier1_12": {
+   "n": 3,
+   "statuses": [
+    "200"
+   ],
+   "x_cache": [
+    "miss"
+   ],
+   "wall_s": {
+    "n": 3,
+    "min": 58.50889829196967,
+    "p50": 64.31679579103366,
+    "p95": 70.14974840416107,
+    "max": 70.79785425006412
+   },
+   "server_ms": {
+    "n": 3,
+    "min": 58504.2,
+    "p50": 64313.6,
+    "p95": 70063.06999999999,
+    "max": 70701.9
+   },
+   "db_ms": {
+    "n": 3,
+    "min": 58278.209,
+    "p50": 64279.195,
+    "p95": 70028.43909999999,
+    "max": 70667.24399999999
+   },
+   "analysis_sql_ms": {
+    "n": 3,
+    "min": 58197.228,
+    "p50": 64100.563,
+    "p95": 69772.849,
+    "max": 70403.103
+   },
+   "api_ms_total_minus_db": {
+    "n": 3,
+    "min": 37.600791033655696,
+    "p50": 130.6102500641282,
+    "p95": 220.68138777911517,
+    "max": 230.68929196966928
+   },
+   "db_statements": [
+    9
+   ],
+   "warmup_round0": [
+    {
+     "wall_s": 59.50381791591644,
+     "db_ms": 59463.54,
+     "status": 200
+    }
+   ]
+  }
+ },
+ "date_end_utc": "2026-10-20T18:37:02.119496Z"
+}

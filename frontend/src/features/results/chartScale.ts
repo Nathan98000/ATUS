@@ -41,3 +41,64 @@ export function padDomain(min: number, max: number, fraction = 0.12): [number, n
   const pad = (max - min) * fraction
   return [min - pad, max + pad]
 }
+
+/** Round ticks from zero up to at least `max` (bar charts start at zero). */
+export function ticksFromZero(max: number, targetCount = 4): number[] {
+  const ticks = niceTicks(0, max, targetCount)
+  const last = ticks[ticks.length - 1] ?? 0
+  const step = (ticks[1] ?? 1) - (ticks[0] ?? 0)
+  if (last < max) ticks.push(Number((last + step).toFixed(10)))
+  return ticks
+}
+
+/** Durations read best on clock-like steps (15 min, 30 min, 1 h, 2 h…). */
+const DURATION_STEPS = [1, 2, 5, 10, 15, 20, 30, 60, 90, 120, 180, 240, 360, 480, 720]
+
+/** Ticks in minutes from zero up to at least `max`, on clock-like steps. */
+export function durationTicksFromZero(max: number, maxCount = 5): number[] {
+  const target = Math.max(max, 1)
+  const step =
+    DURATION_STEPS.find((candidate) => Math.ceil(target / candidate) <= maxCount) ??
+    Math.ceil(target / maxCount / 60) * 60
+  const count = Math.ceil(target / step)
+  return Array.from({ length: count + 1 }, (_, index) => index * step)
+}
+
+/**
+ * Ticks in minutes inside [min, max] on clock-like steps (5h, 5h 10m, 5h
+ * 20m…), for a line chart's axis that does not start at zero. Falls back to
+ * `niceTicks` when the range is too narrow for two whole-minute ticks.
+ */
+export function durationTicks(min: number, max: number, maxCount = 5): number[] {
+  const step = DURATION_STEPS.find(
+    (candidate) => Math.floor(max / candidate) - Math.ceil(min / candidate) + 1 <= maxCount,
+  )
+  if (step !== undefined) {
+    const ticks: number[] = []
+    for (let tick = Math.ceil(min / step) * step; tick <= max; tick += step) ticks.push(tick)
+    if (ticks.length >= 2) return ticks
+  }
+  return niceTicks(min, max, maxCount)
+}
+
+/**
+ * A run of a trend's points as lines: full-weight pieces between full-year
+ * points, and a dotted connector for each step to or from a partial-year
+ * point, so the line never presents 2020 as an ordinary year (review round
+ * 4). Each piece shares its end points with its neighbours.
+ */
+export function segmentPieces<P extends { year: number }>(
+  segment: readonly P[],
+  isPartial: (year: number) => boolean,
+): { points: P[]; partial: boolean }[] {
+  const pieces: { points: P[]; partial: boolean }[] = []
+  for (let index = 0; index < segment.length - 1; index += 1) {
+    const from = segment[index] as P
+    const to = segment[index + 1] as P
+    const partial = isPartial(from.year) || isPartial(to.year)
+    const current = pieces[pieces.length - 1]
+    if (current && current.partial === partial) current.points.push(to)
+    else pieces.push({ points: [from, to], partial })
+  }
+  return pieces
+}

@@ -1,20 +1,27 @@
 /* ATUS Explorer — design tokens and global styles.
-   Restrained analytical aesthetic: the data is the visual focus. */
+   Restrained analytical aesthetic: the data is the visual focus. The look
+   borrows from the time sheet — sage-ruled paper, ledger green, manila
+   ochre — and a semi-condensed display face (Archivo) for headings and the
+   big numbers, the way a timetable sets its times. Body text stays in the
+   system face. */
 
 :root {
-  --bg: #f6f7f8;
+  --bg: #f2f4f1;
   --surface: #ffffff;
-  --surface-raised: #fbfcfd;
-  --ink: #191d23;
-  --ink-soft: #3f4854;
-  --ink-faint: #67707c;
-  --border: #dde1e6;
-  --border-strong: #b8bfc8;
+  --surface-raised: #f8f9f7;
+  --ink: #17201c;
+  --ink-soft: #3b4641;
+  --ink-faint: #5c6762;
+  --border: #d9dfda;
+  --border-strong: #b3bcb7;
+  /* Form fields need a 3:1 outline to be found (WCAG 1.4.11). */
+  --field-border: #7f8a85;
 
-  --accent: #1d4ed8;
-  --accent-hover: #1a44bd;
-  --accent-soft: #e8eefc;
-  --accent-ink: #16357f;
+  --accent: #1d5c4d;
+  --accent-hover: #164a3e;
+  --accent-soft: #e1ede8;
+  --accent-border: #b9d3ca;
+  --accent-ink: #143e34;
 
   --warn-bg: #fdf6e3;
   --warn-border: #e4c465;
@@ -26,17 +33,35 @@
 
   --ok-ink: #166534;
 
-  /* Comparison groups: color + always a text label (never color alone). */
-  --group-a: #1d4ed8;
-  --group-b: #b45309;
+  /* Chart series: a fixed order, validated together for colour-vision
+     deficiency on white (dataviz validate_palette: worst adjacent protan
+     ΔE 9.4), each line also its own dash pattern. Marks only — text beside
+     a mark stays in the ink tokens. */
+  --series-1: #0b7f5f;
+  --series-2: #c07a12;
+  --series-3: #2f6db5;
+  --series-4: #c4473a;
+  --series-5: #8a5bb0;
+  --series-6: #3a9fc4;
+  --series-1-wash: rgba(11, 127, 95, 0.13);
+  /* Chart chrome: hairline grid, a slightly firmer baseline. */
+  --chart-grid: #e6eae7;
+  --chart-axis: #c5cdc8;
+  --chart-guide: #8e9a94;
+  --chart-empty: #e8ece9;
 
-  --ci-band: rgba(29, 78, 216, 0.14);
+  /* Comparison groups: color + always a text label (never color alone). */
+  --group-a: var(--series-1);
+  --group-b: var(--series-2);
+  /* The filled slice of the day in the clock mark. */
+  --mark-slice: #f2b84b;
 
   --radius: 8px;
   --radius-large: 12px;
-  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 6px rgba(15, 23, 42, 0.05);
+  --shadow: 0 1px 2px rgba(23, 32, 28, 0.06), 0 1px 6px rgba(23, 32, 28, 0.05);
   --font:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Archivo Variable', var(--font);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --content-width: 76rem;
@@ -59,6 +84,8 @@ body {
   font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  /* Native radios and checkboxes in the site's green, not the browser's blue. */
+  accent-color: var(--accent);
 }
 
 #root {
@@ -70,20 +97,35 @@ body {
 h1,
 h2,
 h3 {
-  line-height: 1.25;
+  font-family: var(--font-display);
+  font-stretch: 88%;
+  font-weight: 680;
+  line-height: 1.15;
   margin: 0 0 0.5rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.005em;
+  text-wrap: balance;
 }
 
 h1 {
-  font-size: 1.7rem;
+  font-size: 2.25rem;
+  letter-spacing: -0.015em;
 }
 h2 {
-  font-size: 1.25rem;
+  font-size: 1.4rem;
 }
 h3 {
-  font-size: 1.02rem;
+  font-size: 1.1rem;
+  font-stretch: 92%;
+}
+
+/* The big numbers are set like a timetable's times: the display face,
+   lining figures. */
+.stat-value,
+.compare-chart__value,
+.starter-preview__value {
+  font-family: var(--font-display);
+  font-stretch: 88%;
+  font-variant-numeric: lining-nums;
 }
 
 p {
@@ -156,24 +198,36 @@ code {
 }
 
 .wordmark {
-  font-weight: 700;
-  font-size: 1.06rem;
+  font-family: var(--font-display);
+  font-stretch: 88%;
+  font-weight: 720;
+  font-size: 1.2rem;
   letter-spacing: -0.01em;
   color: var(--ink);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
-.wordmark__badge {
-  background: var(--accent);
-  color: #fff;
-  border-radius: 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 0.15rem 0.4rem;
-  letter-spacing: 0.02em;
+.wordmark__mark {
+  width: 1.65rem;
+  height: 1.65rem;
+  flex: none;
+}
+
+.wordmark__dial {
+  fill: var(--accent);
+}
+
+.wordmark__ring {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.2;
+}
+
+.wordmark__slice {
+  fill: var(--mark-slice);
 }
 
 .site-nav {
@@ -272,6 +326,11 @@ main {
   padding: 0.3rem 0.7rem;
 }
 
+.btn--large {
+  font-size: 1.05rem;
+  padding: 0.7rem 1.4rem;
+}
+
 .btn[disabled] {
   opacity: 0.55;
   cursor: not-allowed;
@@ -305,7 +364,7 @@ select {
   font: inherit;
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--field-border);
   border-radius: var(--radius);
   padding: 0.42rem 0.6rem;
   width: 100%;
@@ -375,6 +434,13 @@ legend {
   align-items: baseline;
 }
 
+/* Plain-language caveats on a result (WarningBanner). */
+.result-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
 .error-banner {
   background: var(--error-bg);
   border: 1px solid var(--error-border);
@@ -393,9 +459,53 @@ legend {
   font-size: 0.82rem;
 }
 
+/* Site-wide service notices (ServiceNotice): persistent live regions that
+   take no space while empty. */
+.service-notice-region {
+  display: block;
+}
+
+.service-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  color: var(--accent-ink);
+  padding: 0.65rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.92rem;
+}
+
+.service-notice--reload {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+  color: var(--warn-ink);
+}
+
+/* Full-page service states (ServiceInterruption). */
+.service-interruption {
+  max-width: 40rem;
+  margin: 2rem auto;
+}
+
+.service-interruption h1 {
+  color: var(--error-ink);
+  font-size: 1.35rem;
+}
+
+.service-interruption__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+}
+
 .info-note {
   background: var(--accent-soft);
-  border: 1px solid #c7d6f5;
+  border: 1px solid var(--accent-border);
   border-radius: var(--radius);
   color: var(--accent-ink);
   padding: 0.6rem 0.9rem;
@@ -433,126 +543,9 @@ legend {
   .spinner {
     animation-duration: 2.5s;
   }
-}
-
-/* ---------- Segmented control ---------- */
-
-.segmented {
-  display: inline-flex;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  background: var(--surface);
-  padding: 3px;
-  gap: 3px;
-  flex-wrap: wrap;
-}
-
-.segmented label {
-  position: relative;
-  display: inline-flex;
-}
-
-.segmented input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.segmented span {
-  padding: 0.34rem 0.85rem;
-  border-radius: 6px;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-
-.segmented input:checked + span {
-  background: var(--accent);
-  color: #fff;
-}
-
-.segmented input:focus-visible + span {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* ---------- Chips ---------- */
-
-.chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.chip {
-  font: inherit;
-  font-size: 0.85rem;
-  font-weight: 550;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--ink-soft);
-  border-radius: 999px;
-  padding: 0.22rem 0.75rem;
-  cursor: pointer;
-}
-
-.chip:hover {
-  border-color: var(--accent);
-  color: var(--accent-ink);
-}
-
-.chip[aria-pressed='true'] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent-ink);
-}
-
-/* ---------- Data table ---------- */
-
-.table-scroll {
-  overflow-x: auto;
-}
-
-.data-table {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 0.9rem;
-}
-
-.data-table caption {
-  text-align: left;
-  font-weight: 600;
-  padding-bottom: 0.4rem;
-}
-
-.data-table th,
-.data-table td {
-  text-align: left;
-  padding: 0.42rem 0.8rem 0.42rem 0;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-
-.data-table th {
-  color: var(--ink-faint);
-  font-weight: 600;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.data-table .num {
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-
-.data-table th.num {
-  text-align: right;
+  details.panel > summary::before {
+    transition: none;
+  }
 }
 
 /* ---------- Stat display ---------- */
@@ -564,22 +557,22 @@ legend {
 }
 
 .stat-value {
-  font-size: 3.1rem;
+  font-size: 3.6rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  line-height: 1.05;
-  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .stat-secondary {
   color: var(--ink-soft);
   font-size: 1.02rem;
+  margin-top: 0.3rem;
 }
 
 .stat-uncertainty {
   color: var(--ink-faint);
-  font-size: 0.95rem;
-  margin-top: 0.5rem;
+  font-size: 0.92rem;
+  margin: 0.7rem 0 0;
 }
 
 .stat-uncertainty b {
@@ -587,7 +580,7 @@ legend {
   font-weight: 600;
 }
 
-/* ---------- Details / methodology ---------- */
+/* ---------- Details ---------- */
 
 details.panel {
   background: var(--surface);
@@ -620,45 +613,38 @@ details.panel > .panel__body {
   padding: 0 1.2rem 1.1rem;
 }
 
-.methodology-list {
-  display: grid;
-  grid-template-columns: minmax(9rem, 14rem) 1fr;
-  gap: 0.4rem 1rem;
-  margin: 0;
-  font-size: 0.92rem;
-}
-
-.methodology-list dt {
-  color: var(--ink-faint);
-  font-weight: 600;
-}
-
-.methodology-list dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
 /* ---------- Responsive ---------- */
 
 @media (max-width: 720px) {
   h1 {
-    font-size: 1.4rem;
+    font-size: 1.75rem;
   }
   .stat-value {
-    font-size: 2.4rem;
-  }
-  .methodology-list {
-    grid-template-columns: 1fr;
-    gap: 0 0;
-  }
-  .methodology-list dd {
-    margin-bottom: 0.45rem;
+    font-size: 2.8rem;
   }
   main {
     padding: 1rem 0.9rem 2.5rem;
   }
   .card {
     padding: 1rem;
+  }
+}
+
+/* A phone's header in one row: "About" alone, tighter spacing (review
+   round 4: two rows took about 50px above every chart). */
+@media (max-width: 480px) {
+  .site-header__inner {
+    gap: 0.75rem;
+    padding: 0.6rem 0.9rem;
+  }
+  .site-nav {
+    gap: 0.15rem;
+  }
+  .site-nav a {
+    padding: 0.35rem 0.55rem;
+  }
+  .site-nav__more {
+    display: none;
   }
 }
 
@@ -669,8 +655,89 @@ details.panel > .panel__body {
 }
 
 .home-hero h1 {
-  font-size: 2.1rem;
-  max-width: 34rem;
+  font-size: 3.1rem;
+  font-stretch: 85%;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  max-width: 15em;
+  margin-bottom: 1rem;
+}
+
+.home-hero__lead {
+  max-width: 42rem;
+  font-size: 1.12rem;
+  color: var(--ink-soft);
+  margin-bottom: 1.4rem;
+}
+
+/* With its chart (served from the snapshot), the hero is two columns on a
+   wide screen — words left, chart right — and on a phone the chart comes
+   straight after the headline (review round 4). */
+.home-hero:has(.home-chart) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  grid-template-areas:
+    'title chart'
+    'lead chart'
+    'action chart';
+  grid-template-rows: auto auto 1fr;
+  column-gap: 2.5rem;
+  align-items: start;
+}
+
+.home-hero:has(.home-chart) h1 {
+  grid-area: title;
+  font-size: 2.8rem;
+}
+
+.home-hero:has(.home-chart) .home-hero__lead {
+  grid-area: lead;
+}
+
+.home-hero:has(.home-chart) .home-hero__action {
+  grid-area: action;
+}
+
+.home-chart {
+  grid-area: chart;
+  padding: 1.2rem 1.3rem 1rem;
+}
+
+.home-chart__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: var(--accent);
+}
+
+.home-chart__lead {
+  font-family: var(--font-display);
+  font-stretch: 92%;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 0.8rem;
+}
+
+.home-chart__small-print {
+  margin: 0.6rem 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+}
+
+.home-chart__small-print + .home-chart__small-print {
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 900px) {
+  .home-hero:has(.home-chart) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'title' 'chart' 'lead' 'action';
+    grid-template-rows: none;
+  }
+  .home-chart {
+    margin-bottom: 1.4rem;
+  }
 }
 
 .home-examples {
@@ -687,7 +754,7 @@ details.panel > .panel__body {
 .example-card {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-large);
@@ -701,9 +768,115 @@ details.panel > .panel__body {
   border-color: var(--accent);
 }
 
+.example-card .analysis-type__icon {
+  margin-bottom: 0.25rem;
+}
+
 .example-card__question {
+  font-family: var(--font-display);
+  font-stretch: 92%;
+  font-size: 1.12rem;
   font-weight: 650;
+  line-height: 1.25;
   color: var(--accent-ink);
+}
+
+/* A starter's answer on its card (StarterPreview), from the static snapshot. */
+.starter-preview {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 0.35rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.starter-preview__value {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.starter-preview--estimate,
+.starter-preview--trend {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+}
+
+/* A 24-hour day, hour ticks every six hours, filled to the estimate. */
+.starter-preview__day {
+  display: block;
+  position: relative;
+  height: 0.7rem;
+  margin: 0.55rem 0 0.35rem;
+  background: var(--bg)
+    repeating-linear-gradient(to right, transparent 0 calc(25% - 1px), var(--border) 0 25%);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.starter-preview__day > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.starter-preview__spark {
+  display: block;
+  width: 100%;
+  height: 1.9rem;
+  overflow: visible;
+}
+
+.starter-preview__spark polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.starter-preview--compare {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.15rem 0.6rem;
+  align-items: center;
+}
+
+.starter-preview__group {
+  display: contents;
+}
+
+.starter-preview__group-label {
+  grid-column: 1 / -1;
+  margin-top: 0.2rem;
+  line-height: 1.3;
+}
+
+.starter-preview__bar {
+  display: block;
+  height: 0.55rem;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.starter-preview__bar > span {
+  display: block;
+  height: 100%;
+  background: var(--bar-color);
+  border-radius: 999px;
+}
+
+.starter-preview__group-value {
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 
 .home-notes {
@@ -722,13 +895,127 @@ details.panel > .panel__body {
 /* ---------- Explorer / builder ---------- */
 
 .explore-page {
-  max-width: 54rem;
+  max-width: 74rem;
+}
+
+/* What kind of result: three cards, each with a small picture of it. */
+.analysis-types {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0.4rem 0 1.2rem;
+  max-width: 50rem;
+}
+
+.analysis-type {
+  position: relative;
+  display: flex;
+}
+
+.analysis-type input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.analysis-type__card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-large);
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.analysis-type:hover .analysis-type__card {
+  border-color: var(--accent);
+}
+
+.analysis-type input:checked + .analysis-type__card {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  background: var(--accent-soft);
+}
+
+.analysis-type input:focus-visible + .analysis-type__card {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.analysis-type__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.analysis-type__label {
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.analysis-type__hint {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+
+.analysis-type__icon {
+  flex: none;
+  width: 2.5rem;
+  height: 1.75rem;
+}
+
+.analysis-type__track {
+  fill: var(--chart-empty);
+}
+
+.analysis-type__ink {
+  fill: var(--ink);
+}
+
+.analysis-type__mark {
+  fill: var(--series-1);
+}
+
+.analysis-type__mark-b {
+  fill: var(--series-2);
+}
+
+.analysis-type__axis {
+  stroke: var(--chart-axis);
+  stroke-width: 1.5;
+}
+
+.analysis-type__line {
+  fill: none;
+  stroke: var(--series-1);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+@media (max-width: 560px) {
+  .analysis-types {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+  .analysis-type__card {
+    padding: 0.55rem 0.8rem;
+  }
 }
 
 .builder-sections {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
+  min-width: 0;
 }
 
 .builder-section h2 {
@@ -752,44 +1039,292 @@ details.panel > .panel__body {
   font-weight: 700;
 }
 
-.builder-actions {
+/* The analysis summary with the Analyze button (BuilderSummary) stays in
+   view: a floating bar at the bottom of narrow screens, a sticky panel
+   beside the form on wide ones. Narrow screens use block layout: a sticky
+   grid item could not leave its own grid row. */
+.builder-summary {
+  position: sticky;
+  bottom: 0.6rem;
+  z-index: 10;
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  padding: 0.4rem 0 0;
+  gap: 0.8rem;
+  margin-top: 0.9rem;
+  padding: 0.6rem 0.65rem 0.6rem 0.95rem;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-large);
+  box-shadow: 0 6px 24px rgba(23, 32, 28, 0.14);
 }
 
-.builder-actions .btn {
-  padding: 0.6rem 1.6rem;
+.builder-summary__heading,
+.builder-summary__hint {
+  /* Narrow screens: one compact line. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The chart being built, in one line (review round 4: a list of five
+   labelled rows repeated the form beside it). */
+.builder-summary__text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.builder-summary__text b {
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.builder-summary__analyze {
+  flex: none;
+  padding: 0.6rem 1.4rem;
   font-size: 1.02rem;
 }
 
-.population-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
-  gap: 0.8rem 1rem;
-  align-items: start;
+@media (min-width: 64rem) {
+  .builder-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 18.5rem;
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .builder-summary {
+    top: 1rem;
+    bottom: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.9rem;
+    margin-top: 0;
+    padding: 1.1rem 1.2rem 1.2rem;
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+  }
+
+  .builder-summary__heading,
+  .builder-summary__hint {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+  }
+
+  .builder-summary__heading {
+    font-size: 1.02rem;
+  }
+
+  .builder-summary__text {
+    display: block;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+
+  .builder-summary__analyze {
+    width: 100%;
+  }
+
+  .builder-summary__hint {
+    margin: 0.45rem 0 0;
+    text-align: center;
+  }
+}
+
+/* Population filters: "Everyone" until one is added, then a row each. */
+.population-filters__empty {
+  margin: 0 0 0.6rem;
+  color: var(--ink-soft);
+}
+
+.population-filters__list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.1rem;
+}
+
+.population-filter {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.population-filter__field {
+  width: 13rem;
+  max-width: calc(100vw - 6.5rem);
+}
+
+.population-filter__remove {
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  font: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--ink-faint);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.population-filter__remove:hover {
+  color: var(--error-ink);
+  background: var(--error-bg);
+}
+
+.population-filters__add-select {
+  width: auto;
+  padding-right: 2rem;
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .age-pair {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  margin-top: 0.45rem;
 }
 
 .age-pair input {
   width: 5.2rem;
 }
 
-.more-filters summary {
-  cursor: pointer;
+/* A comparison's filters for both groups, under its two groups. */
+.compare-groups__shared {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.compare-groups__shared-label {
+  margin: 0 0 0.3rem;
   font-weight: 600;
   font-size: 0.88rem;
   color: var(--ink-soft);
 }
 
-.more-filters {
+/* A trend's lines: one for everyone, or one per group of a dimension. */
+.split-picker {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.split-picker__by {
+  max-width: 22rem;
+}
+
+.split-picker__groups {
   margin-top: 0.8rem;
+}
+
+.split-picker__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.split-picker__option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem 0.3rem 0.55rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.split-picker__option:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* A comparison's two groups: "Compare by", then one value for each. */
+.compare-groups__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.8rem 1.4rem;
+}
+
+.compare-groups__by {
+  width: 13rem;
+}
+
+/* The pair wraps below "Compare by" rather than shrink: squeezed beside it
+   on a phone, the selects cut off their own values (review round 4). */
+.compare-groups__pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.8rem;
+  flex: 1 1 18rem;
+  min-width: 0;
+}
+
+.compare-groups__value {
+  flex: 1 1 12rem;
+  max-width: 18rem;
+}
+
+@media (max-width: 560px) {
+  .compare-groups__by,
+  .compare-groups__value {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.compare-groups__value label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.compare-groups__swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 2px;
+  background: var(--series-1);
+}
+
+.compare-groups__swatch--b {
+  background: var(--series-2);
+}
+
+.compare-groups .group-editors {
+  margin-top: 1rem;
 }
 
 .group-editors {
@@ -800,9 +1335,13 @@ details.panel > .panel__body {
 
 .group-editor {
   border: 1px solid var(--border);
-  border-top: 3px solid var(--border-strong);
+  border-top: 3px solid var(--group-a);
   border-radius: var(--radius);
   padding: 0.8rem 0.9rem;
+}
+
+.group-editor--b {
+  border-top-color: var(--group-b);
 }
 
 .group-editor legend {
@@ -831,19 +1370,104 @@ details.panel > .panel__body {
   font-size: 0.92rem;
 }
 
+/* What the chart shows, under the activity. */
+.measure-select {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+  max-width: 22rem;
+}
+
+.measure-select .field-hint {
+  margin: 0.3rem 0 0;
+}
+
+/* A button that reads as a link inside a sentence. */
+.link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* ---------- Activity picker ---------- */
 
 .activity-picker__current {
+  min-width: 0;
+}
+
+/* The name, and the button that changes it right beside it. */
+.activity-picker__line {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
+  gap: 0.4rem 0.75rem;
   flex-wrap: wrap;
 }
 
 .activity-picker__name {
   font-weight: 650;
   font-size: 1.02rem;
+}
+
+/* What the selected activity includes, under its name. */
+.activity-picker__includes {
+  display: block;
+  margin-top: 0.15rem;
+}
+
+/* Popular choices: a card each, its name and what it includes. The whole
+   card is the button's target; the hint describes it (aria-describedby). */
+.popular-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.45rem;
+}
+
+.popular-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0.75rem 0.55rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.popular-option:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.popular-option__button {
+  font: inherit;
+  font-weight: 650;
+  font-size: 0.95rem;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.popular-option__button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+
+.popular-option__hint {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--ink-faint);
 }
 
 .activity-picker__panel {
@@ -958,13 +1582,32 @@ details.panel > .panel__body {
   margin-bottom: 0.15rem;
 }
 
-.eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.75rem;
-  font-weight: 700;
+/*
+ * Activity and group labels come from share links and may be one long word
+ * (up to 120 characters within the API's limits). They wrap anywhere instead
+ * of widening the page at phone width, and the flex and grid items holding
+ * them may shrink below such a word (review round 1).
+ */
+.analysis-page :is(h1, h2, h3, p, li, dd) {
+  overflow-wrap: anywhere;
+}
+
+.analysis-header > div {
+  min-width: 0;
+}
+
+.analysis-header__details {
+  margin: 0;
+  font-size: 0.9rem;
   color: var(--ink-faint);
-  margin: 0 0 0.15rem;
+}
+
+/* What was measured, above a result's title: sentence case, in the accent. */
+.eyebrow {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0 0 0.2rem;
 }
 
 .analysis-header__actions {
@@ -992,51 +1635,201 @@ details.panel > .panel__body {
   gap: 0.9rem;
 }
 
-.sample-lines {
-  margin-top: 0.9rem;
-  border-top: 1px solid var(--border);
-  padding-top: 0.7rem;
+/* The result: its answer as the chart's title, the chart, its small print. */
+.result-card {
+  padding: 1.6rem 1.8rem 1.3rem;
+}
+
+/* While a result loads: its card at about a chart's height. */
+.result-card--loading {
+  min-height: 26rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* A split trend's way to its likely range: a comparison in one year. */
+.split-comparison {
+  margin: 1rem 0 0;
   font-size: 0.92rem;
+  font-weight: 550;
+}
+
+.result-lead {
+  font-family: var(--font-display);
+  font-stretch: 92%;
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.32;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  margin: 0 0 1.3rem;
+  max-width: 46rem;
+  text-wrap: pretty;
+}
+
+/* A chart's small print: the likely-range key, notes, the source. */
+.chart-footnote {
+  margin-top: 1.2rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
+
+.chart-footnote p {
+  margin: 0.2rem 0;
+}
+
+.chart-footnote b {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.chart-key__swatch {
+  display: inline-block;
+  vertical-align: -0.1em;
+  width: 1.5rem;
+  height: 0.75rem;
+  margin-right: 0.45rem;
+}
+
+/* The band: a wash with the line through it. */
+.chart-key__swatch--band {
+  background:
+    linear-gradient(var(--series-1), var(--series-1)) center / 100% 2px no-repeat,
+    var(--series-1-wash);
+  border-radius: 2px;
+}
+
+/* The whisker: a thin line with end caps. */
+.chart-key__swatch--whisker {
+  background: linear-gradient(var(--ink-soft), var(--ink-soft)) center / 100% 1.5px no-repeat;
+  border-left: 1.5px solid var(--ink-soft);
+  border-right: 1.5px solid var(--ink-soft);
+}
+
+/* ---------- Single estimate ---------- */
+
+.estimate-hero {
+  display: grid;
+  grid-template-columns: minmax(12rem, auto) minmax(0, 1fr);
+  gap: 1.2rem 3rem;
+  align-items: center;
+}
+
+.estimate-figure {
+  min-width: 0;
+}
+
+.estimate-figure__caption {
+  margin: 0 0 0.55rem;
+  font-size: 0.9rem;
+  font-weight: 600;
   color: var(--ink-soft);
 }
 
-.sample-lines p {
-  margin: 0.15rem 0;
+/* A 24-hour day (or a whole population), filled to the estimate. */
+.day-bar {
+  position: relative;
+  height: 1.75rem;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(
+      to right,
+      transparent 0 calc(25% - 1px),
+      var(--surface) calc(25% - 1px) 25%
+    ),
+    var(--chart-empty);
+  overflow: hidden;
 }
 
-/* ---------- Charts ---------- */
+.day-bar__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: max(3px, calc(var(--share) * 100%));
+  background: var(--series-1);
+  border-radius: 0 4px 4px 0;
+}
+
+.day-bar__hours {
+  position: relative;
+  height: 1.3rem;
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.day-bar__hours span {
+  position: absolute;
+  top: 0;
+  translate: -50% 0;
+}
+
+.day-bar__hours span:first-child {
+  translate: 0 0;
+}
+
+.day-bar__hours span:last-child {
+  translate: -100% 0;
+}
+
+/* A rate among a hundred people: ten rows of ten dots. */
+.hundred-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 5px;
+  max-width: 16rem;
+}
+
+.hundred-grid__dot {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--chart-empty);
+}
+
+.hundred-grid__dot.is-filled {
+  background: var(--series-1);
+}
+
+@media (max-width: 720px) {
+  .estimate-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Trend chart ---------- */
 
 .chart-wrap {
   position: relative;
-}
-
-/* Below ~620px the chart keeps a minimum drawing width and scrolls inside
-   its own container, so axis text stays legible and the page never scrolls
-   horizontally. */
-@media (max-width: 620px) {
-  .chart-wrap {
-    overflow-x: auto;
-  }
-  .chart-wrap .chart-svg {
-    min-width: 560px;
-  }
 }
 
 .chart-svg {
   width: 100%;
   height: auto;
   display: block;
+  overflow: visible;
 }
 
 .chart-grid {
-  stroke: var(--border);
+  stroke: var(--chart-grid);
   stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.chart-baseline {
+  stroke: var(--chart-axis);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
 }
 
 .chart-tick {
   fill: var(--ink-faint);
-  font-size: 13px;
+  font-size: 12.5px;
   text-anchor: middle;
+  font-variant-numeric: tabular-nums;
 }
 
 .chart-tick--y {
@@ -1044,139 +1837,355 @@ details.panel > .panel__body {
   dominant-baseline: middle;
 }
 
-.chart-axis-label {
-  fill: var(--ink-soft);
-  font-size: 12px;
-  font-weight: 600;
-}
-
 .chart-line {
   fill: none;
-  stroke: var(--accent);
-  stroke-width: 2.2;
+  stroke: var(--series-1);
+  stroke-width: 2.5;
   stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
+/* A split trend's lines on a phone: thinner, so six of them stay apart. */
+.chart-svg.is-dense .chart-line {
+  stroke-width: 2;
+}
+
+/* To and from a partial-year point: a thin dotted connector, not the line. */
+.chart-line--partial,
+.chart-svg.is-dense .chart-line--partial {
+  stroke-width: 1.75;
+}
+
+/* Points carry a ring in the surface colour where they cross the line. */
 .chart-point {
-  fill: var(--accent);
+  fill: var(--series-1);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+/* A split trend: each group's line and points in its own colour. */
+.chart-series--2 {
+  --series: var(--series-2);
+}
+.chart-series--3 {
+  --series: var(--series-3);
+}
+.chart-series--4 {
+  --series: var(--series-4);
+}
+.chart-series--5 {
+  --series: var(--series-5);
+}
+.chart-series--6 {
+  --series: var(--series-6);
+}
+
+.chart-series .chart-line,
+.series-key .chart-line {
+  stroke: var(--series, var(--series-1));
+}
+
+.chart-series .chart-point,
+.series-key .chart-point {
+  fill: var(--series, var(--series-1));
+}
+
+/* A partial-year estimate (2020): a hollow point in the line's colour. */
+.chart-point.is-partial,
+.chart-series .chart-point.is-partial {
+  fill: var(--surface);
+  stroke: var(--series, var(--series-1));
+  stroke-width: 2.5;
+}
+
+.chart-key__swatch--partial {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2.5px solid var(--series-1);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+/* Legend and readout keys: a short stroke of the line, with its point. */
+.series-key {
+  flex: none;
+  width: 30px;
+  height: 10px;
+  overflow: visible;
+}
+
+.series-key .chart-line {
+  stroke-width: 2.5;
+}
+
+.series-key .chart-point {
+  stroke-width: 1.5;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.2rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.chart-legend__title {
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.chart-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .chart-ci-band {
-  fill: var(--ci-band);
+  fill: var(--series-1-wash);
 }
 
 .chart-guide {
-  stroke: var(--border-strong);
-  stroke-dasharray: 3 3;
+  stroke: var(--chart-guide);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.chart-end-label {
+  fill: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  dominant-baseline: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-end-label__name {
+  fill: var(--ink-soft);
+  font-weight: 500;
 }
 
 .chart-unavailable-band {
-  fill: rgba(120, 120, 125, 0.09);
+  fill: var(--surface-raised);
+  stroke: var(--chart-grid);
+  stroke-dasharray: 2 3;
 }
 
 .chart-unavailable-label {
   fill: var(--ink-faint);
   font-size: 11px;
   font-weight: 600;
-}
-
-.chart-ci-line {
-  stroke-width: 3;
-  opacity: 0.55;
-}
-
-.chart-ci-cap {
-  stroke-width: 2;
-  opacity: 0.75;
-}
-
-.chart-group-label {
-  fill: var(--ink);
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.chart-value-label {
-  fill: var(--ink-soft);
-  font-size: 12px;
   text-anchor: middle;
 }
 
+/* The readout: the value leads, the year follows. */
 .chart-tooltip {
   position: absolute;
-  top: 8px;
   display: flex;
   flex-direction: column;
   gap: 0.05rem;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 0.45rem 0.7rem;
-  font-size: 0.82rem;
+  background: rgba(23, 32, 28, 0.94);
+  color: #fff;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(23, 32, 28, 0.18);
+  padding: 0.4rem 0.65rem;
   pointer-events: none;
   white-space: nowrap;
   z-index: 5;
 }
 
-.chart-gap-note b {
-  color: var(--ink-soft);
+.chart-tooltip__value {
+  font-family: var(--font-display);
+  font-stretch: 92%;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.chart-tooltip__label {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.chart-tooltip__wrap {
+  white-space: normal;
+  max-width: 14rem;
+  font-size: 0.82rem;
+}
+
+/* A split trend's readout: one row per group, value first. */
+.chart-tooltip__row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.chart-tooltip__row b {
+  font-variant-numeric: tabular-nums;
+  min-width: 3.6rem;
+}
+
+.chart-tooltip__row .series-key .chart-point {
+  stroke: rgba(23, 32, 28, 0.94);
 }
 
 /* ---------- Compare ---------- */
 
-.compare-cards {
+/* Comparison bar chart (ComparisonChart): label | bar track | value, one
+   grid so every row's bars share the same scale and start. */
+.compare-chart {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.9rem;
-  margin-bottom: 1.1rem;
+  grid-template-columns: fit-content(14rem) minmax(0, 1fr) auto;
+  column-gap: 1rem;
+  row-gap: 0.9rem;
+  align-items: center;
+  margin: 0.4rem 0 0.4rem;
 }
 
-.compare-card {
-  border: 1px solid var(--border);
-  border-top: 3px solid var(--border-strong);
-  border-radius: var(--radius);
-  padding: 0.8rem 1rem;
+.compare-chart__row,
+.compare-chart__axis {
+  display: contents;
 }
 
-.compare-card__role {
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.7rem;
+.compare-chart__label {
+  font-weight: 650;
+  font-size: 1rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.compare-chart__track {
+  position: relative;
+  height: 2.75rem;
+}
+
+.compare-chart__track--axis {
+  grid-column: 2;
+  height: 1.3rem;
+  border-top: 1px solid var(--chart-axis);
+}
+
+.compare-chart__gridline {
+  position: absolute;
+  top: -0.45rem;
+  bottom: -0.45rem;
+  width: 1px;
+  background: var(--chart-grid);
+}
+
+/* 24px bars from a square baseline to a rounded end. */
+.compare-chart__bar {
+  position: absolute;
+  left: 0;
+  top: calc(50% - 12px);
+  height: 24px;
+  background: var(--bar-color);
+  border-radius: 0 4px 4px 0;
+}
+
+/* The confidence interval: a thin whisker with end caps, ringed in the
+   surface colour so it reads on the bar and on the background alike. */
+.compare-chart__ci {
+  position: absolute;
+  top: calc(50% - 0.75px);
+  height: 1.5px;
+  background: var(--ink);
+  box-shadow: 0 0 0 1px var(--surface);
+}
+
+.compare-chart__ci::before,
+.compare-chart__ci::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  width: 1.5px;
+  height: 11px;
+  background: var(--ink);
+  box-shadow: 0 0 0 1px var(--surface);
+}
+
+.compare-chart__ci::before {
+  left: -0.75px;
+}
+
+.compare-chart__ci::after {
+  right: -0.75px;
+}
+
+.compare-chart__value {
+  font-size: 1.3rem;
   font-weight: 700;
+  white-space: nowrap;
+}
+
+.compare-chart__tick {
+  position: absolute;
+  top: 0.3rem;
+  translate: -50% 0;
+  font-size: 0.8rem;
   color: var(--ink-faint);
-}
-
-.compare-card__value {
-  font-size: 1.9rem;
-  font-weight: 700;
-  margin: 0.1rem 0 0.1rem;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.difference-block {
-  margin-top: 1.1rem;
-  border-top: 1px solid var(--border);
-  padding-top: 0.8rem;
+.compare-chart__tick[data-edge='start'] {
+  translate: 0 0;
 }
 
-.difference-block__value {
-  font-size: 1.6rem;
-  font-weight: 700;
-  margin: 0.15rem 0;
-  font-variant-numeric: tabular-nums;
+.compare-chart__tick[data-edge='end'] {
+  translate: -100% 0;
+}
+
+/* Phones: each label above its bar, which keeps the full width. */
+@media (max-width: 560px) {
+  .compare-chart {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 0.2rem;
+  }
+  .compare-chart__label {
+    grid-column: 1 / -1;
+    margin-top: 0.35rem;
+  }
+  .compare-chart__track--axis {
+    grid-column: 1;
+  }
+  .compare-chart__value {
+    font-size: 1.1rem;
+  }
+}
+
+/* The difference, said in words beside the chart. */
+/* The difference, once, under the bars: the lead sentence already says it
+   in full (review round 4: a large box repeated it). */
+.difference-line {
+  margin: 1.1rem 0 0;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  overflow-wrap: anywhere;
+}
+
+.difference-line b {
+  color: var(--ink);
 }
 
 @media (max-width: 720px) {
-  .group-editors,
-  .compare-cards {
+  .group-editors {
     grid-template-columns: 1fr;
   }
   .analysis-header__actions {
     width: 100%;
   }
-  .home-hero h1 {
-    font-size: 1.6rem;
+  .home-hero h1,
+  .home-hero:has(.home-chart) h1 {
+    font-size: 2.2rem;
+  }
+  .result-card {
+    padding: 1.1rem 1rem 1rem;
+  }
+  .result-lead {
+    font-size: 1.18rem;
   }
 }

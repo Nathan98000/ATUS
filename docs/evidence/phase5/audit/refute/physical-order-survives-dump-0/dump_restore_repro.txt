@@ -1,0 +1,45 @@
+== pre-dump
+     attname      | correlation 
+------------------+-------------
+ activity_code    |           1
+ duration_minutes | -0.22365396
+ tucaseid         | 0.014515755
+(3 rows)
+
+ pg_database_size 
+------------------
+        627571735
+(1 row)
+
+dump exit=0 seconds=48
+-rw-r--r-- 1 root root 336546214 Oct 20 19:36 /tmp/audit_po.dump
+431ad293d6f695722265b2d29001d8fcf92a6de48cd0ceeabcee078dee5fb838  /tmp/audit_po.dump
+CREATE DATABASE
+restore exit=0 seconds=20
+== stats before ANALYZE
+     attname      | correlation 
+------------------+-------------
+ activity_code    |           1
+ duration_minutes | -0.21398139
+ tucaseid         | 0.009037515
+(3 rows)
+
+ANALYZE
+     attname      | correlation  
+------------------+--------------
+ activity_code    |            1
+ duration_minutes |  -0.23771672
+ tucaseid         | 0.0004310125
+(3 rows)
+
+ pg_database_size 
+------------------
+        628564495
+(1 row)
+
+ blk  | activity_code 
+------+---------------
+    0 | 010101
+ 9000 | 070103
+(2 rows)
+

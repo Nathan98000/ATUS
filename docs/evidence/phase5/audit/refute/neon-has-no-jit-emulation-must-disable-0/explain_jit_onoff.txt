@@ -1,0 +1,18 @@
+== jit=on run 1
+ Planning Time: 11.733 ms
+ JIT:
+   Functions: 32
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+ Execution Time: 42248.529 ms
+== jit=off run 1
+ Planning Time: 15.280 ms
+ Execution Time: 27463.228 ms
+== jit=on run 2
+ Planning Time: 12.193 ms
+ JIT:
+   Functions: 32
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+ Execution Time: 43794.277 ms
+== jit=off run 2
+ Planning Time: 13.960 ms
+ Execution Time: 42577.242 ms

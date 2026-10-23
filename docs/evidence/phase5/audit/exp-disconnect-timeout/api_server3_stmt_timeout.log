@@ -1,0 +1,15 @@
+INFO:     Started server process [66676]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8202 (Press CTRL+C to quit)
+13:13:53 INFO    atus.api: request_id=0b2a1ab5ed3c48ba GET /ready -> 200 in 8.1ms cache=-
+INFO:     127.0.0.1:62724 - "GET /ready HTTP/1.1" 200 OK
+13:14:01 ERROR   atus.api: database unavailable: QueryCanceled: canceling statement due to statement timeout
+13:14:01 INFO    atus.api: request_id=09a9fb01425b4459 POST /api/v1/analysis/trend -> 503 in 7191.9ms cache=-
+INFO:     127.0.0.1:62726 - "POST /api/v1/analysis/trend HTTP/1.1" 503 Service Unavailable
+13:14:03 INFO    atus.api: request_id=87cd31ee70504f05 GET /api/v1/meta -> 200 in 31.7ms cache=-
+INFO:     127.0.0.1:62739 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [66676]

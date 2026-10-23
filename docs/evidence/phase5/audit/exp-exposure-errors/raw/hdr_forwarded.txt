@@ -1,0 +1,11 @@
+### curl -H Forwarded: for=192.0.2.43;proto=https;host=evil.example http://127.0.0.1:8206/api/v1/meta/ (port 8206)
+HTTP/1.1 307 Temporary Redirect
+date: Tue, 20 Oct 2026 17:09:50 GMT
+server: uvicorn
+content-length: 0
+location: http://127.0.0.1:8206/api/v1/meta
+vary: Origin
+x-request-id: d580c3eec71f466c
+
+
+### status=307 time_total=0.000798s size_download=0 size_upload=0

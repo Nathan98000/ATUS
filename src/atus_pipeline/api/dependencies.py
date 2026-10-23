@@ -1,64 +1,70 @@
-"""FastAPI dependencies: settings, pooled connections, engine, cache, versions.
+"""FastAPI dependencies: settings, database, cache, engine factory, runner,
+data snapshot.
 
-Connections come from the application's ``psycopg_pool.ConnectionPool``
-(opened in the lifespan): one connection per request, returned to the pool
-afterwards (psycopg_pool resets/rolls back on return). The Phase 2
-``AnalysisEngine`` is instantiated per request around that connection — it is
-cheap (a few small lexicon lookups) and guarantees no analysis state is shared
-between concurrent requests.
+All dependencies are ``async`` and do no I/O: they hand out per-process
+objects built in the application lifespan. Database work happens inside the
+route, in exactly one worker-thread hop per transaction, through
+:meth:`Database.transaction` — so a request waiting for a connection or a
+lane holds no thread, and DB-free routes never touch the threadpool (audit
+F02). The Phase 2 ``AnalysisEngine`` is instantiated per computation around
+that transaction's connection, reusing the activity resolver and loaded
+years of the in-process data snapshot (read-only once built), so no
+analysis state is shared between concurrent requests beyond those.
+
+Tests replace ``get_database`` / ``get_engine_factory`` / ``get_cache`` via
+``app.dependency_overrides``.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from dataclasses import dataclass
 
-import psycopg
 from fastapi import Depends, Request
-from psycopg_pool import PoolTimeout
 
 from ..analytics import AnalysisEngine
 from ..config import Settings
+from .analysis_runner import AnalysisRunner, EngineFactory
 from .cache import AnalysisCache
-from .errors import DatabaseUnavailableError
+from .database import Database
+from .snapshot import SnapshotStore
 
-_CONNECTION_TIMEOUT_SECONDS = 10.0
 
-
-def get_settings(request: Request) -> Settings:
+async def get_settings(request: Request) -> Settings:
     return request.app.state.settings
 
 
-def get_cache(request: Request) -> AnalysisCache:
+async def get_cache(request: Request) -> AnalysisCache:
     return request.app.state.cache
 
 
-def get_connection(request: Request) -> Iterator[psycopg.Connection]:
-    pool = request.app.state.pool
-    try:
-        with pool.connection(timeout=_CONNECTION_TIMEOUT_SECONDS) as conn:
-            yield conn
-    except PoolTimeout as exc:
-        raise DatabaseUnavailableError(
-            "Timed out waiting for a database connection."
-        ) from exc
+async def get_database(request: Request) -> Database:
+    return request.app.state.database
 
 
-def get_engine(conn: psycopg.Connection = Depends(get_connection)) -> AnalysisEngine:
-    return AnalysisEngine(conn)
+async def get_engine_factory() -> EngineFactory:
+    return AnalysisEngine
 
 
-def read_data_version(conn: psycopg.Connection) -> str:
-    """Cache-key component that changes whenever `atus load` rebuilds the data:
-    '<release>:run<latest successful ingestion run id>'."""
-    row = conn.execute(
-        "SELECT release, id FROM atus.ingestion_runs "
-        "WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-    if row is None:
-        return "unloaded:run0"
-    release, run_id = row
-    return f"{release}:run{run_id}"
+async def get_runner(request: Request) -> AnalysisRunner:
+    return request.app.state.runner
 
 
-def get_data_version(conn: psycopg.Connection = Depends(get_connection)) -> str:
-    return read_data_version(conn)
+async def get_snapshots(request: Request) -> SnapshotStore:
+    return request.app.state.snapshots
+
+
+@dataclass(frozen=True)
+class AnalysisRuntime:
+    runner: AnalysisRunner
+    cache: AnalysisCache
+    db: Database
+    engine_factory: EngineFactory
+
+
+async def get_analysis_runtime(
+    runner: AnalysisRunner = Depends(get_runner),
+    cache: AnalysisCache = Depends(get_cache),
+    db: Database = Depends(get_database),
+    engine_factory: EngineFactory = Depends(get_engine_factory),
+) -> AnalysisRuntime:
+    return AnalysisRuntime(runner=runner, cache=cache, db=db, engine_factory=engine_factory)

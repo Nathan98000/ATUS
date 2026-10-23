@@ -1,0 +1,53 @@
+INFO:     Started server process [50184]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8202 (Press CTRL+C to quit)
+13:06:40 INFO    atus.api: request_id=ac5e7039c3d0457c GET /ready -> 200 in 9.0ms cache=-
+INFO:     127.0.0.1:61683 - "GET /ready HTTP/1.1" 200 OK
+13:06:40 INFO    atus.api: request_id=c68fe5d9f7fa4646 GET /ready -> 200 in 2.8ms cache=-
+INFO:     127.0.0.1:61684 - "GET /ready HTTP/1.1" 200 OK
+13:06:40 INFO    atus.api: request_id=01cd1f44910149b7 GET /api/v1/meta -> 200 in 29.5ms cache=-
+INFO:     127.0.0.1:61685 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:07:20 INFO    atus.api: request_id=557839e046fd46c0 POST /api/v1/analysis/trend -> 200 in 11589.5ms cache=miss
+13:07:23 INFO    atus.api: request_id=e564469b76a14f82 POST /api/v1/analysis/trend -> 200 in 2.3ms cache=hit
+INFO:     127.0.0.1:61750 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+13:07:54 ERROR   atus.api: database unavailable: DiskFull: could not resize shared memory segment "/PostgreSQL.2761490654" to 4194304 bytes: No space left on device
+13:07:54 INFO    atus.api: request_id=73df6546af62451b POST /api/v1/analysis/trend -> 503 in 14299.8ms cache=-
+13:07:54 ERROR   atus.api: database unavailable: DiskFull: could not resize shared memory segment "/PostgreSQL.3896483142" to 4194304 bytes: No space left on device
+CONTEXT:  parallel worker
+13:07:54 INFO    atus.api: request_id=ca8e76717f024076 POST /api/v1/analysis/trend -> 503 in 15718.6ms cache=-
+13:07:55 ERROR   atus.api: database unavailable: DiskFull: could not resize shared memory segment "/PostgreSQL.4195094068" to 8388608 bytes: No space left on device
+13:07:55 INFO    atus.api: request_id=07db20bad56645a0 POST /api/v1/analysis/trend -> 503 in 14436.6ms cache=-
+13:07:57 INFO    atus.api: request_id=d131f32bb1134fe2 POST /api/v1/analysis/trend -> 200 in 20852.8ms cache=miss
+13:07:59 INFO    atus.api: request_id=6653457fdfd34af9 POST /api/v1/analysis/trend -> 200 in 20997.0ms cache=miss
+13:08:02 INFO    atus.api: request_id=c2ef8e7338664a67 POST /api/v1/analysis/trend -> 200 in 2.9ms cache=hit
+INFO:     127.0.0.1:61905 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+13:09:16 ERROR   atus.api: database unavailable: DiskFull: could not resize shared memory segment "/PostgreSQL.510282956" to 4194304 bytes: No space left on device
+13:09:16 INFO    atus.api: request_id=861d71962d1c4646 POST /api/v1/analysis/trend -> 503 in 14797.3ms cache=-
+13:09:18 ERROR   atus.api: database unavailable: DiskFull: could not resize shared memory segment "/PostgreSQL.4017744202" to 4194304 bytes: No space left on device
+CONTEXT:  parallel worker
+13:09:18 INFO    atus.api: request_id=f83b7d3d177d442e POST /api/v1/analysis/trend -> 503 in 15915.1ms cache=-
+13:09:19 ERROR   atus.api: database unavailable: DiskFull: could not resize shared memory segment "/PostgreSQL.3860964408" to 8388608 bytes: No space left on device
+13:09:19 INFO    atus.api: request_id=45d5b49d623b4626 POST /api/v1/analysis/trend -> 503 in 16116.1ms cache=-
+13:09:22 INFO    atus.api: request_id=c5443d057b3c4ac7 POST /api/v1/analysis/trend -> 200 in 22915.8ms cache=miss
+13:09:23 INFO    atus.api: request_id=1dad7d0ed0944813 POST /api/v1/analysis/trend -> 200 in 22605.8ms cache=miss
+13:09:26 INFO    atus.api: request_id=7928326ed31c4867 POST /api/v1/analysis/trend -> 200 in 5.4ms cache=hit
+INFO:     127.0.0.1:62167 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+13:09:52 INFO    atus.api: request_id=ccc2832caba64eb5 GET /api/v1/activities -> 200 in 6.1ms cache=-
+INFO:     127.0.0.1:62210 - "GET /api/v1/activities HTTP/1.1" 200 OK
+13:09:55 INFO    atus.api: request_id=8e93f3de99d34c24 GET /api/v1/activities -> 200 in 6.2ms cache=-
+INFO:     127.0.0.1:62212 - "GET /api/v1/activities HTTP/1.1" 200 OK
+13:10:10 INFO    atus.api: request_id=e8724d719f11466b GET /api/v1/activities -> 200 in 6.2ms cache=-
+INFO:     127.0.0.1:62258 - "GET /api/v1/activities HTTP/1.1" 200 OK
+13:10:34 INFO    atus.api: request_id=2c7ce620d7bf42c6 POST /api/v1/analysis/trend -> 200 in 12204.1ms cache=miss
+INFO:     127.0.0.1:62315 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+13:10:52 INFO    atus.api: request_id=35fd65fefc0c4693 POST /api/v1/analysis/trend -> 200 in 14981.9ms cache=miss
+INFO:     127.0.0.1:62349 - "POST /api/v1/analysis/trend HTTP/1.1" 200 OK
+13:11:26 INFO    atus.api: request_id=9f05cb516e2e440b POST /api/v1/analysis/compare -> 200 in 31285.1ms cache=miss
+INFO:     127.0.0.1:62368 - "POST /api/v1/analysis/compare HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for background tasks to complete. (CTRL+C to force quit)
+13:12:49 INFO    atus.api: request_id=853a481ae4d54380 POST /api/v1/analysis/trend -> 200 in 11364.2ms cache=miss
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [50184]

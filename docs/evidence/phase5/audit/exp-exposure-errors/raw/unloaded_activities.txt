@@ -1,0 +1,12 @@
+### curl http://127.0.0.1:8216/api/v1/activities (port 8216)
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:12:44 GMT
+server: uvicorn
+content-length: 27
+content-type: application/json
+cache-control: public, max-age=300
+vary: Origin
+x-request-id: 96ea278f86ff442b
+
+{"activities":[],"total":0}
+### status=200 time_total=0.002436s size_download=27 size_upload=0

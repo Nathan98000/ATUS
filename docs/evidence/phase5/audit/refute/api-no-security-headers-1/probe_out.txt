@@ -1,0 +1,8 @@
+15:26:25 INFO    atus.api: request_id=b4ef98cd4ac1460e GET /docs -> 200 in 2.8ms cache=-
+15:26:26 INFO    atus.api: request_id=b09b8fde6104431d GET /openapi.json -> 200 in 229.4ms cache=-
+15:26:26 INFO    atus.api: request_id=0d69051e36144e2d GET /api/v1/nope -> 404 in 2.2ms cache=-
+15:26:26 INFO    atus.api: request_id=864d00354e184f06 GET /health -> 200 in 7.1ms cache=-
+/docs 200 {'date': 'Tue, 20 Oct 2026 19:26:25 GMT', 'server': 'uvicorn', 'content-length': '1016', 'content-type': 'text/html; charset=utf-8', 'x-request-id': 'b4ef98cd4ac1460e', 'Connection': 'close'}
+/openapi.json 200 {'date': 'Tue, 20 Oct 2026 19:26:25 GMT', 'server': 'uvicorn', 'content-length': '32892', 'content-type': 'application/json', 'x-request-id': 'b09b8fde6104431d', 'Connection': 'close'}
+/api/v1/nope 404 {'date': 'Tue, 20 Oct 2026 19:26:25 GMT', 'server': 'uvicorn', 'content-length': '67', 'content-type': 'application/json', 'x-request-id': '0d69051e36144e2d', 'Connection': 'close'}
+/health 200 {'date': 'Tue, 20 Oct 2026 19:26:25 GMT', 'server': 'uvicorn', 'content-length': '15', 'content-type': 'application/json', 'x-request-id': '864d00354e184f06', 'Connection': 'close'}

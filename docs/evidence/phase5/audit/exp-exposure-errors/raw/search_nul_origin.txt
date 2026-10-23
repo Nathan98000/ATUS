@@ -1,0 +1,11 @@
+### curl -H Origin: https://allowed.example http://127.0.0.1:8206/api/v1/activities?search=ab%00 (port 8206)
+HTTP/1.1 500 Internal Server Error
+date: Tue, 20 Oct 2026 17:10:19 GMT
+server: uvicorn
+x-request-id: 5b539e6b1b2f4170
+access-control-allow-origin: https://allowed.example
+content-length: 101
+content-type: application/json
+
+{"error":{"code":"internal_error","message":"An unexpected internal error occurred.","details":null}}
+### status=500 time_total=0.003051s size_download=101 size_upload=0

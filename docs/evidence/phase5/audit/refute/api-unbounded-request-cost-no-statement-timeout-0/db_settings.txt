@@ -1,0 +1,23 @@
+                name                 | setting | source  
+-------------------------------------+---------+---------
+ idle_in_transaction_session_timeout | 0       | default
+ idle_session_timeout                | 0       | default
+ lock_timeout                        | 0       | default
+ statement_timeout                   | 0       | default
+(4 rows)
+
+ rolname | rolconfig | rolsuper 
+---------+-----------+----------
+ atus    |           | t
+(1 row)
+
+ count 
+-------
+     0
+(1 row)
+
+         server_version          
+---------------------------------
+ 16.15 (Debian 16.15-1.pgdg13+2)
+(1 row)
+

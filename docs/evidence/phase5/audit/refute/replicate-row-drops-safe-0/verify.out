@@ -1,0 +1,26 @@
+SET
+Timing is off.
+resp_total|258954
+rw_total|258954
+prw_total|18217
+rw_allnull|8782
+rw_anynull|8782
+rw_allnull_by_year_fw|2020|t|8782
+resp2020|8782|0
+fw_null_or_nonpos_by_year|2020|8782
+rw_orphan_rows|0
+pos_fw_no_rw|0
+pos_fw_any_rep_zero|0
+prw_allzero|1466
+prw_anynull|0
+prw_allzero_by|2019|0.000000|1466
+pw_zero_by_year|2019|1466
+pw_nonpos_or_null_2019_2020|2019|0|1466
+pw_nonpos_or_null_2019_2020|2020|0|0
+pos_pw_allzero_reps|0
+pos_pw_any_zero_rep|0
+zero_pw_any_nonzero_rep|0
+pos_pw_no_prw|0
+prw_orphans|0
+dup_rw|0
+dup_prw|0

@@ -1,0 +1,52 @@
+[
+  {
+    "t_start": 1792517995.835,
+    "t_end": 1792517995.835,
+    "scenario": "e_504_html",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 504,
+    "note": ""
+  },
+  {
+    "t_start": 1792517995.836,
+    "t_end": 1792517995.836,
+    "scenario": "e_504_html",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/population/metadata",
+    "status": 504,
+    "note": ""
+  },
+  {
+    "t_start": 1792517995.836,
+    "t_end": 1792517995.836,
+    "scenario": "e_504_html",
+    "origin": "http://127.0.0.1:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 504,
+    "note": ""
+  },
+  {
+    "t_start": 1792517995.843,
+    "t_end": 1792517995.843,
+    "scenario": "e_504_html",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 504,
+    "note": ""
+  },
+  {
+    "t_start": 1792517995.843,
+    "t_end": 1792517995.843,
+    "scenario": "e_504_html",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 504,
+    "note": ""
+  }
+]

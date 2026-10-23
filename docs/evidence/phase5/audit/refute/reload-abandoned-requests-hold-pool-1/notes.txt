@@ -1,0 +1,1 @@
+Refuter verified expE/output.txt + api_log_excerpt.txt + run_loader.py (25s injected pg_sleep inside load txn after real TRUNCATE); dependencies.py:35-43 pool.connection(timeout=10) ; app.py pool max_size=10; no statement_timeout/lock_timeout/is_disconnected in src/atus_pipeline/api. No experiment rerun.

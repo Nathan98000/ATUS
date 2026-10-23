@@ -1,0 +1,21 @@
+[t=   0.00s] ============================================================ pause ['5', '2'] 2026-10-20T13:35:52
+[t=   0.01s] warm: (200, 'ok', 11.2, None) (200, 'ok', 2.4, 'hit')
+[t=   0.03s] API backends before: [33, 34, 35, 36, 37]
+[t=   0.06s] paused
+[t=   5.11s] unpaused after 5.05s
+[t=   5.11s]    in-flight #0 sent t=0.06 -> status=200 code=ok 5042.2ms
+[t=   5.11s]    in-flight #1 sent t=0.06 -> status=200 code=ok 5042.4ms
+[t=   5.11s] API backends after unpause: [33, 34, 35, 36, 37]
+[t=   5.12s]    seq GET /api/v1/meta -> (200, 'ok', 3.3, None)
+[t=   5.12s]    seq POST /api/v1/analysis/estimate -> (200, 'ok', 3.0, 'hit')
+[t=   5.15s]    seq POST /api/v1/analysis/estimate -> (200, 'ok', 24.6, 'miss')
+[t=   5.15s]    seq GET /ready -> (200, 'ok', 3.4, None)
+[t=   5.15s]    seq GET /api/v1/meta -> (200, 'ok', 2.4, None)
+[t=   5.15s]    seq GET /api/v1/meta -> (200, 'ok', 2.3, None)
+[t=   5.16s]    seq GET /api/v1/meta -> (200, 'ok', 2.3, None)
+[t=   5.16s]    seq GET /api/v1/meta -> (200, 'ok', 2.0, None)
+[t=   5.16s]    seq GET /api/v1/meta -> (200, 'ok', 2.6, None)
+[t=   5.16s]    seq GET /api/v1/meta -> (200, 'ok', 2.2, None)
+[t=   5.17s]    seq GET /api/v1/meta -> (200, 'ok', 1.9, None)
+[t=   5.17s]    seq GET /api/v1/meta -> (200, 'ok', 2.0, None)
+[t=   5.17s] API backends at end: [33, 34, 35, 36, 37]

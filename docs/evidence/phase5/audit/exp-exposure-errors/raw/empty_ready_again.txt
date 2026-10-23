@@ -1,0 +1,11 @@
+### curl http://127.0.0.1:8216/ready (port 8216)
+HTTP/1.1 503 Service Unavailable
+date: Tue, 20 Oct 2026 17:12:35 GMT
+server: uvicorn
+content-length: 111
+content-type: application/json
+vary: Origin
+x-request-id: 23d5ce00726e4a6f
+
+{"error":{"code":"schema_not_initialized","message":"Run `atus migrate` to create the schema.","details":null}}
+### status=503 time_total=0.003248s size_download=111 size_upload=0

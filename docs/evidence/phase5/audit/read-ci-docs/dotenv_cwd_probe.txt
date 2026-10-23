@@ -1,0 +1,10 @@
+find_dotenv() from config frame would search from: $REPO/src/atus_pipeline/config.py
+ATUS_RELEASE seen by load_settings with .env in CWD: 9999
+find_dotenv(usecwd=True): docs/evidence/phase5/audit/read-ci-docs/dotenv-cwd/.env
+ls: $HOME/Downloads/Projects/.env: No such file or directory
+ls: $WORKSPACE/.env: No such file or directory
+ls: $REPO/.env: No such file or directory
+ATUS_RELEASE seen via script entrypoint with .env in CWD: 0325
+Release: 0325
+Data directory: docs/evidence/phase5/audit/read-ci-docs/dotenv-cwd/data
+Manifest: empty (run `atus download`)

@@ -1,0 +1,26 @@
+SET
+ total  | hh_children_null | fw_null | pw_null 
+--------+------------------+---------+---------
+ 258954 |                0 |    8782 |  240737
+(1 row)
+
+ line1_rows | age_null | sex_null 
+------------+----------+----------
+     258954 |        0 |        0
+(1 row)
+
+ line1_rows | region_null | fips_null | edu_null 
+------------+-------------+-----------+----------
+     258954 |           0 |         0 |        0
+(1 row)
+
+ resp_without_roster_line1 | resp_without_cps_line1 
+---------------------------+------------------------
+                         0 |                      0
+(1 row)
+
+  heap  |  idx   
+--------+--------
+ 481 MB | 244 MB
+(1 row)
+

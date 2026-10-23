@@ -1,0 +1,14 @@
+== dynamic imports in frontend/src
+none
+== dist assets
+assets
+favicon.svg
+icons.svg
+index.html
+
+frontend/dist/assets:
+index-iJKMLZcZ.css
+index-zZ8NhHEV.js
+== deploy config tracked
+none
+== docs (WebFetch 2026-10-20): Workers static assets + Pages default Cache-Control: public, max-age=0, must-revalidate, ETag=file hash; Workers SPA: non-navigation misses go to Worker script if present; Pages w/o 404.html serves / for non-asset paths

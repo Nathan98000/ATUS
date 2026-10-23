@@ -13,8 +13,14 @@ import {
 const YEARS = Array.from({ length: 23 }, (_, index) => 2003 + index) // 2003–2025
 
 describe('toRequest', () => {
-  it('builds a single-year estimate request with explicit methodology', () => {
+  it('starts on a full-period trend (review round 4)', () => {
     const state = defaultBuilderState(YEARS)
+    expect(state.operation).toBe('trend')
+    expect(toRequest(state, YEARS).years).toEqual(YEARS)
+  })
+
+  it('builds a single-year estimate request with explicit methodology', () => {
+    const state = { ...defaultBuilderState(YEARS), operation: 'estimate' as const }
     expect(toRequest(state, YEARS)).toEqual({
       measure: 'average_minutes_per_day',
       activity: { preset: 'sleep' },
@@ -28,6 +34,7 @@ describe('toRequest', () => {
 
   it('sorts pooled years and prunes unset population fields', () => {
     const state = defaultBuilderState(YEARS)
+    state.operation = 'estimate'
     state.yearsMode = 'pooled'
     state.pooledYears = [2024, 2022, 2023]
     state.population = { sex: 'female', age_min: undefined }
@@ -121,6 +128,7 @@ describe('validateBuilder', () => {
 
   it('rejects an empty pooled selection and an inverted trend range', () => {
     const pooled = defaultBuilderState(YEARS)
+    pooled.operation = 'estimate'
     pooled.yearsMode = 'pooled'
     pooled.pooledYears = []
     expect(validateBuilder(pooled, YEARS).errors.years).toBeTruthy()

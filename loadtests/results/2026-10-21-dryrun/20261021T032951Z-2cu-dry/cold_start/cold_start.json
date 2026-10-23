@@ -1,0 +1,18 @@
+{
+ "note": "DRY RUN: functional only",
+ "runs": 2,
+ "all_reached_meta": true,
+ "image": {
+  "tag": "atus-api:lt-928f50e30350",
+  "id": "sha256:fec18e69d0bf18411d9335b95368cf14066cefd5a0bf3c9d202c58853e985873",
+  "repo_digests": [
+   "atus-api@sha256:fec18e69d0bf18411d9335b95368cf14066cefd5a0bf3c9d202c58853e985873"
+  ],
+  "architecture": "arm64",
+  "os": "linux",
+  "size_bytes": 61074890,
+  "created": "2026-10-21T02:53:39.343445678Z",
+  "revision": "928f50e303501cbe3bc170cfeed6bad081a38165",
+  "version": "0.1.0"
+ }
+}

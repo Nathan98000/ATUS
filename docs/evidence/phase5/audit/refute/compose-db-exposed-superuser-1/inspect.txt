@@ -1,0 +1,16 @@
+5432/tcp -> 0.0.0.0:5434
+5432/tcp -> [::]:5434
+{"5432/tcp":[{"HostIp":"","HostPort":"5434"}]} postgres:16
+atus|t
+*
+local   all             all                                     trust
+host    all             all             127.0.0.1/32            trust
+host    all             all             ::1/128                 trust
+local   replication     all                                     trust
+host    replication     all             127.0.0.1/32            trust
+host    replication     all             ::1/128                 trust
+host all all all scram-sha-256
+COMMAND     PID    USER   FD   TYPE            DEVICE SIZE/OFF NODE NAME
+com.docke 95787 nathann  123u  IPv6 0xab404db581d2c95      0t0  TCP *:5434 (LISTEN)
+	inet 127.0.0.1 netmask 0xff000000
+	inet 192.168.1.77 netmask 0xffffff00 broadcast 192.168.1.255

@@ -1,0 +1,1721 @@
+{
+ "timed": true,
+ "setup": {
+  "requests": 2,
+  "status": {
+   "200": 2
+  },
+  "error_codes": {}
+ },
+ "overall": {
+  "requests": 427,
+  "status": {
+   "200": 424,
+   "422": 3
+  },
+  "error_codes": {
+   "insufficient_data": 3
+  },
+  "x_cache": {
+   "none": 247,
+   "miss": 105,
+   "hit": 75
+  },
+  "expected_outcome": 427,
+  "window_s": 606.819,
+  "throughput_rps": 0.704,
+  "throughput_200_rps": 0.699,
+  "latency_ms": {
+   "n": 427,
+   "min": 0.5,
+   "p50": 4.7,
+   "p95": 845.8,
+   "p99": 2013.1,
+   "max": 2198.4,
+   "mean": 126.0
+  },
+  "latency_200_ms": {
+   "n": 424,
+   "min": 0.5,
+   "p50": 4.7,
+   "p95": 772.7,
+   "p99": 2013.2,
+   "max": 2198.4,
+   "mean": 120.4
+  },
+  "server_db_ms": {
+   "n": 427,
+   "min": 0,
+   "p50": 0.0,
+   "p95": 839.6,
+   "p99": 2007.6,
+   "max": 2192.8,
+   "mean": 120.5
+  },
+  "server_app_ms": {
+   "n": 427,
+   "min": 0.1,
+   "p50": 1.6,
+   "p95": 8.7,
+   "p99": 10.6,
+   "max": 519.2,
+   "mean": 3.7
+  },
+  "server_db_share_of_latency": 0.9562
+ },
+ "by_endpoint": {
+  "activities": {
+   "requests": 61,
+   "status": {
+    "200": 61
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 61
+   },
+   "expected_outcome": 61,
+   "window_s": 600.026,
+   "throughput_rps": 0.102,
+   "throughput_200_rps": 0.102,
+   "latency_ms": {
+    "n": 61,
+    "min": 2.8,
+    "p50": 9.4,
+    "p95": 14.3,
+    "p99": 218.0,
+    "max": 520.5,
+    "mean": 17.6
+   },
+   "latency_200_ms": {
+    "n": 61,
+    "min": 2.8,
+    "p50": 9.4,
+    "p95": 14.3,
+    "p99": 218.0,
+    "max": 520.5,
+    "mean": 17.6
+   },
+   "server_db_ms": {
+    "n": 61,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 61,
+    "min": 2.3,
+    "p50": 7.9,
+    "p95": 12.6,
+    "p99": 216.5,
+    "max": 519.2,
+    "mean": 16.2
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "activity_detail": {
+   "requests": 24,
+   "status": {
+    "200": 24
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 24
+   },
+   "expected_outcome": 24,
+   "window_s": 580.001,
+   "throughput_rps": 0.041,
+   "throughput_200_rps": 0.041,
+   "latency_ms": {
+    "n": 24,
+    "min": 0.5,
+    "p50": 1.2,
+    "p95": 1.8,
+    "p99": 2.1,
+    "max": 2.1,
+    "mean": 1.3
+   },
+   "latency_200_ms": {
+    "n": 24,
+    "min": 0.5,
+    "p50": 1.2,
+    "p95": 1.8,
+    "p99": 2.1,
+    "max": 2.1,
+    "mean": 1.3
+   },
+   "server_db_ms": {
+    "n": 24,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 24,
+    "min": 0.2,
+    "p50": 0.5,
+    "p95": 0.8,
+    "p99": 1.0,
+    "max": 1,
+    "mean": 0.5
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "compare": {
+   "requests": 40,
+   "status": {
+    "200": 40
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 21,
+    "hit": 19
+   },
+   "expected_outcome": 40,
+   "window_s": 590.777,
+   "throughput_rps": 0.068,
+   "throughput_200_rps": 0.068,
+   "latency_ms": {
+    "n": 40,
+    "min": 2.5,
+    "p50": 107.9,
+    "p95": 175.4,
+    "p99": 203.7,
+    "max": 216.5,
+    "mean": 78.8
+   },
+   "latency_200_ms": {
+    "n": 40,
+    "min": 2.5,
+    "p50": 107.9,
+    "p95": 175.4,
+    "p99": 203.7,
+    "max": 216.5,
+    "mean": 78.8
+   },
+   "server_db_ms": {
+    "n": 40,
+    "min": 0,
+    "p50": 102.2,
+    "p95": 172.3,
+    "p99": 198.6,
+    "max": 211.6,
+    "mean": 73.7
+   },
+   "server_app_ms": {
+    "n": 40,
+    "min": 1.1,
+    "p50": 2.5,
+    "p95": 3.5,
+    "p99": 4.0,
+    "max": 4,
+    "mean": 2.5
+   },
+   "server_db_share_of_latency": 0.9353
+  },
+  "estimate": {
+   "requests": 101,
+   "status": {
+    "200": 100,
+    "422": 1
+   },
+   "error_codes": {
+    "insufficient_data": 1
+   },
+   "x_cache": {
+    "miss": 65,
+    "hit": 35,
+    "none": 1
+   },
+   "expected_outcome": 101,
+   "window_s": 604.597,
+   "throughput_rps": 0.167,
+   "throughput_200_rps": 0.165,
+   "latency_ms": {
+    "n": 101,
+    "min": 1.3,
+    "p50": 92.6,
+    "p95": 692.4,
+    "p99": 838.2,
+    "max": 849,
+    "mean": 146.9
+   },
+   "latency_200_ms": {
+    "n": 100,
+    "min": 1.3,
+    "p50": 92.3,
+    "p95": 694.4,
+    "p99": 838.3,
+    "max": 849,
+    "mean": 147.2
+   },
+   "server_db_ms": {
+    "n": 101,
+    "min": 0,
+    "p50": 87.2,
+    "p95": 686.8,
+    "p99": 833.1,
+    "max": 842.4,
+    "mean": 142.4
+   },
+   "server_app_ms": {
+    "n": 101,
+    "min": 0.4,
+    "p50": 2.5,
+    "p95": 3.4,
+    "p99": 3.7,
+    "max": 4,
+    "mean": 2.3
+   },
+   "server_db_share_of_latency": 0.9693
+  },
+  "health": {
+   "requests": 37,
+   "status": {
+    "200": 37
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 37
+   },
+   "expected_outcome": 37,
+   "window_s": 580.003,
+   "throughput_rps": 0.064,
+   "throughput_200_rps": 0.064,
+   "latency_ms": {
+    "n": 37,
+    "min": 1.1,
+    "p50": 3.9,
+    "p95": 4.6,
+    "p99": 4.7,
+    "max": 4.7,
+    "mean": 3.7
+   },
+   "latency_200_ms": {
+    "n": 37,
+    "min": 1.1,
+    "p50": 3.9,
+    "p95": 4.6,
+    "p99": 4.7,
+    "max": 4.7,
+    "mean": 3.7
+   },
+   "server_db_ms": {
+    "n": 37,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 37,
+    "min": 0.2,
+    "p50": 0.9,
+    "p95": 1.2,
+    "p99": 1.3,
+    "max": 1.3,
+    "mean": 0.9
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "meta": {
+   "requests": 61,
+   "status": {
+    "200": 61
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 61
+   },
+   "expected_outcome": 61,
+   "window_s": 600.01,
+   "throughput_rps": 0.102,
+   "throughput_200_rps": 0.102,
+   "latency_ms": {
+    "n": 61,
+    "min": 0.7,
+    "p50": 1.9,
+    "p95": 5.0,
+    "p99": 5.2,
+    "max": 5.3,
+    "mean": 2.8
+   },
+   "latency_200_ms": {
+    "n": 61,
+    "min": 0.7,
+    "p50": 1.9,
+    "p95": 5.0,
+    "p99": 5.2,
+    "max": 5.3,
+    "mean": 2.8
+   },
+   "server_db_ms": {
+    "n": 61,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 61,
+    "min": 0.2,
+    "p50": 0.8,
+    "p95": 1.6,
+    "p99": 1.6,
+    "max": 1.6,
+    "mean": 0.9
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "population_metadata": {
+   "requests": 61,
+   "status": {
+    "200": 61
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 61
+   },
+   "expected_outcome": 61,
+   "window_s": 600.026,
+   "throughput_rps": 0.102,
+   "throughput_200_rps": 0.102,
+   "latency_ms": {
+    "n": 61,
+    "min": 0.5,
+    "p50": 1.4,
+    "p95": 1.9,
+    "p99": 2.3,
+    "max": 2.6,
+    "mean": 1.4
+   },
+   "latency_200_ms": {
+    "n": 61,
+    "min": 0.5,
+    "p50": 1.4,
+    "p95": 1.9,
+    "p99": 2.3,
+    "max": 2.6,
+    "mean": 1.4
+   },
+   "server_db_ms": {
+    "n": 61,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 61,
+    "min": 0.1,
+    "p50": 0.5,
+    "p95": 0.6,
+    "p99": 0.7,
+    "max": 0.8,
+    "mean": 0.5
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "trend": {
+   "requests": 42,
+   "status": {
+    "200": 40,
+    "422": 2
+   },
+   "error_codes": {
+    "insufficient_data": 2
+   },
+   "x_cache": {
+    "miss": 19,
+    "hit": 21,
+    "none": 2
+   },
+   "expected_outcome": 42,
+   "window_s": 589.664,
+   "throughput_rps": 0.071,
+   "throughput_200_rps": 0.068,
+   "latency_ms": {
+    "n": 42,
+    "min": 2.5,
+    "p50": 443.7,
+    "p95": 2122.6,
+    "p99": 2173.1,
+    "max": 2198.4,
+    "mean": 816.9
+   },
+   "latency_200_ms": {
+    "n": 40,
+    "min": 2.5,
+    "p50": 5.8,
+    "p95": 2128.5,
+    "p99": 2174.3,
+    "max": 2198.4,
+    "mean": 791.9
+   },
+   "server_db_ms": {
+    "n": 42,
+    "min": 0,
+    "p50": 437.8,
+    "p95": 2120.3,
+    "p99": 2167.5,
+    "max": 2192.8,
+    "mean": 812.1
+   },
+   "server_app_ms": {
+    "n": 42,
+    "min": 1,
+    "p50": 2.5,
+    "p95": 3.4,
+    "p99": 3.5,
+    "max": 3.6,
+    "mean": 2.5
+   },
+   "server_db_share_of_latency": 0.9941
+  }
+ },
+ "by_endpoint_cache": {
+  "activities|none": {
+   "requests": 61,
+   "status": {
+    "200": 61
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 61
+   },
+   "expected_outcome": 61,
+   "window_s": 600.026,
+   "throughput_rps": 0.102,
+   "throughput_200_rps": 0.102,
+   "latency_ms": {
+    "n": 61,
+    "min": 2.8,
+    "p50": 9.4,
+    "p95": 14.3,
+    "p99": 218.0,
+    "max": 520.5,
+    "mean": 17.6
+   },
+   "latency_200_ms": {
+    "n": 61,
+    "min": 2.8,
+    "p50": 9.4,
+    "p95": 14.3,
+    "p99": 218.0,
+    "max": 520.5,
+    "mean": 17.6
+   },
+   "server_db_ms": {
+    "n": 61,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 61,
+    "min": 2.3,
+    "p50": 7.9,
+    "p95": 12.6,
+    "p99": 216.5,
+    "max": 519.2,
+    "mean": 16.2
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "activity_detail|none": {
+   "requests": 24,
+   "status": {
+    "200": 24
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 24
+   },
+   "expected_outcome": 24,
+   "window_s": 580.001,
+   "throughput_rps": 0.041,
+   "throughput_200_rps": 0.041,
+   "latency_ms": {
+    "n": 24,
+    "min": 0.5,
+    "p50": 1.2,
+    "p95": 1.8,
+    "p99": 2.1,
+    "max": 2.1,
+    "mean": 1.3
+   },
+   "latency_200_ms": {
+    "n": 24,
+    "min": 0.5,
+    "p50": 1.2,
+    "p95": 1.8,
+    "p99": 2.1,
+    "max": 2.1,
+    "mean": 1.3
+   },
+   "server_db_ms": {
+    "n": 24,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 24,
+    "min": 0.2,
+    "p50": 0.5,
+    "p95": 0.8,
+    "p99": 1.0,
+    "max": 1,
+    "mean": 0.5
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "compare|hit": {
+   "requests": 19,
+   "status": {
+    "200": 19
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 19
+   },
+   "expected_outcome": 19,
+   "window_s": 537.455,
+   "throughput_rps": 0.035,
+   "throughput_200_rps": 0.035,
+   "latency_ms": {
+    "n": 19,
+    "min": 2.5,
+    "p50": 5.0,
+    "p95": 7.0,
+    "p99": 10.8,
+    "max": 11.8,
+    "mean": 5.2
+   },
+   "latency_200_ms": {
+    "n": 19,
+    "min": 2.5,
+    "p50": 5.0,
+    "p95": 7.0,
+    "p99": 10.8,
+    "max": 11.8,
+    "mean": 5.2
+   },
+   "server_db_ms": {
+    "n": 19,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 19,
+    "min": 1.1,
+    "p50": 2.2,
+    "p95": 2.5,
+    "p99": 2.7,
+    "max": 2.7,
+    "mean": 2.1
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "compare|miss": {
+   "requests": 21,
+   "status": {
+    "200": 21
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 21
+   },
+   "expected_outcome": 21,
+   "window_s": 590.777,
+   "throughput_rps": 0.036,
+   "throughput_200_rps": 0.036,
+   "latency_ms": {
+    "n": 21,
+    "min": 103.4,
+    "p50": 142.6,
+    "p95": 183.6,
+    "p99": 209.9,
+    "max": 216.5,
+    "mean": 145.4
+   },
+   "latency_200_ms": {
+    "n": 21,
+    "min": 103.4,
+    "p50": 142.6,
+    "p95": 183.6,
+    "p99": 209.9,
+    "max": 216.5,
+    "mean": 145.4
+   },
+   "server_db_ms": {
+    "n": 21,
+    "min": 97.7,
+    "p50": 136.9,
+    "p95": 178.2,
+    "p99": 204.9,
+    "max": 211.6,
+    "mean": 140.4
+   },
+   "server_app_ms": {
+    "n": 21,
+    "min": 1.2,
+    "p50": 3.2,
+    "p95": 3.9,
+    "p99": 4.0,
+    "max": 4,
+    "mean": 2.9
+   },
+   "server_db_share_of_latency": 0.9657
+  },
+  "estimate|hit": {
+   "requests": 35,
+   "status": {
+    "200": 35
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 35
+   },
+   "expected_outcome": 35,
+   "window_s": 519.266,
+   "throughput_rps": 0.067,
+   "throughput_200_rps": 0.067,
+   "latency_ms": {
+    "n": 35,
+    "min": 1.3,
+    "p50": 4.5,
+    "p95": 4.9,
+    "p99": 5.3,
+    "max": 5.5,
+    "mean": 4.0
+   },
+   "latency_200_ms": {
+    "n": 35,
+    "min": 1.3,
+    "p50": 4.5,
+    "p95": 4.9,
+    "p99": 5.3,
+    "max": 5.5,
+    "mean": 4.0
+   },
+   "server_db_ms": {
+    "n": 35,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 35,
+    "min": 0.4,
+    "p50": 1.9,
+    "p95": 2.1,
+    "p99": 2.1,
+    "max": 2.1,
+    "mean": 1.6
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "estimate|miss": {
+   "requests": 65,
+   "status": {
+    "200": 65
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 65
+   },
+   "expected_outcome": 65,
+   "window_s": 604.597,
+   "throughput_rps": 0.108,
+   "throughput_200_rps": 0.108,
+   "latency_ms": {
+    "n": 65,
+    "min": 41.9,
+    "p50": 130.8,
+    "p95": 744.4,
+    "p99": 842.1,
+    "max": 849,
+    "mean": 224.4
+   },
+   "latency_200_ms": {
+    "n": 65,
+    "min": 41.9,
+    "p50": 130.8,
+    "p95": 744.4,
+    "p99": 842.1,
+    "max": 849,
+    "mean": 224.4
+   },
+   "server_db_ms": {
+    "n": 65,
+    "min": 40.1,
+    "p50": 125.4,
+    "p95": 739.2,
+    "p99": 836.4,
+    "max": 842.4,
+    "mean": 219.6
+   },
+   "server_app_ms": {
+    "n": 65,
+    "min": 0.9,
+    "p50": 3.0,
+    "p95": 3.7,
+    "p99": 3.8,
+    "max": 4,
+    "mean": 2.7
+   },
+   "server_db_share_of_latency": 0.9786
+  },
+  "estimate|none": {
+   "requests": 1,
+   "status": {
+    "422": 1
+   },
+   "error_codes": {
+    "insufficient_data": 1
+   },
+   "x_cache": {
+    "none": 1
+   },
+   "expected_outcome": 1,
+   "window_s": 0.109,
+   "throughput_rps": 9.157,
+   "throughput_200_rps": 0.0,
+   "latency_ms": {
+    "n": 1,
+    "min": 109.2,
+    "p50": 109.2,
+    "p95": 109.2,
+    "p99": 109.2,
+    "max": 109.2,
+    "mean": 109.2
+   },
+   "latency_200_ms": {
+    "n": 0
+   },
+   "server_db_ms": {
+    "n": 1,
+    "min": 107,
+    "p50": 107,
+    "p95": 107,
+    "p99": 107,
+    "max": 107,
+    "mean": 107.0
+   },
+   "server_app_ms": {
+    "n": 1,
+    "min": 1.1,
+    "p50": 1.1,
+    "p95": 1.1,
+    "p99": 1.1,
+    "max": 1.1,
+    "mean": 1.1
+   },
+   "server_db_share_of_latency": 0.9798
+  },
+  "health|none": {
+   "requests": 37,
+   "status": {
+    "200": 37
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 37
+   },
+   "expected_outcome": 37,
+   "window_s": 580.003,
+   "throughput_rps": 0.064,
+   "throughput_200_rps": 0.064,
+   "latency_ms": {
+    "n": 37,
+    "min": 1.1,
+    "p50": 3.9,
+    "p95": 4.6,
+    "p99": 4.7,
+    "max": 4.7,
+    "mean": 3.7
+   },
+   "latency_200_ms": {
+    "n": 37,
+    "min": 1.1,
+    "p50": 3.9,
+    "p95": 4.6,
+    "p99": 4.7,
+    "max": 4.7,
+    "mean": 3.7
+   },
+   "server_db_ms": {
+    "n": 37,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 37,
+    "min": 0.2,
+    "p50": 0.9,
+    "p95": 1.2,
+    "p99": 1.3,
+    "max": 1.3,
+    "mean": 0.9
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "meta|none": {
+   "requests": 61,
+   "status": {
+    "200": 61
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 61
+   },
+   "expected_outcome": 61,
+   "window_s": 600.01,
+   "throughput_rps": 0.102,
+   "throughput_200_rps": 0.102,
+   "latency_ms": {
+    "n": 61,
+    "min": 0.7,
+    "p50": 1.9,
+    "p95": 5.0,
+    "p99": 5.2,
+    "max": 5.3,
+    "mean": 2.8
+   },
+   "latency_200_ms": {
+    "n": 61,
+    "min": 0.7,
+    "p50": 1.9,
+    "p95": 5.0,
+    "p99": 5.2,
+    "max": 5.3,
+    "mean": 2.8
+   },
+   "server_db_ms": {
+    "n": 61,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 61,
+    "min": 0.2,
+    "p50": 0.8,
+    "p95": 1.6,
+    "p99": 1.6,
+    "max": 1.6,
+    "mean": 0.9
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "population_metadata|none": {
+   "requests": 61,
+   "status": {
+    "200": 61
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 61
+   },
+   "expected_outcome": 61,
+   "window_s": 600.026,
+   "throughput_rps": 0.102,
+   "throughput_200_rps": 0.102,
+   "latency_ms": {
+    "n": 61,
+    "min": 0.5,
+    "p50": 1.4,
+    "p95": 1.9,
+    "p99": 2.3,
+    "max": 2.6,
+    "mean": 1.4
+   },
+   "latency_200_ms": {
+    "n": 61,
+    "min": 0.5,
+    "p50": 1.4,
+    "p95": 1.9,
+    "p99": 2.3,
+    "max": 2.6,
+    "mean": 1.4
+   },
+   "server_db_ms": {
+    "n": 61,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 61,
+    "min": 0.1,
+    "p50": 0.5,
+    "p95": 0.6,
+    "p99": 0.7,
+    "max": 0.8,
+    "mean": 0.5
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "trend|hit": {
+   "requests": 21,
+   "status": {
+    "200": 21
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 21
+   },
+   "expected_outcome": 21,
+   "window_s": 515.93,
+   "throughput_rps": 0.041,
+   "throughput_200_rps": 0.041,
+   "latency_ms": {
+    "n": 21,
+    "min": 2.5,
+    "p50": 5.2,
+    "p95": 5.6,
+    "p99": 5.9,
+    "max": 6.0,
+    "mean": 4.7
+   },
+   "latency_200_ms": {
+    "n": 21,
+    "min": 2.5,
+    "p50": 5.2,
+    "p95": 5.6,
+    "p99": 5.9,
+    "max": 6.0,
+    "mean": 4.7
+   },
+   "server_db_ms": {
+    "n": 21,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 21,
+    "min": 1,
+    "p50": 2.4,
+    "p95": 2.6,
+    "p99": 2.6,
+    "max": 2.6,
+    "mean": 2.1
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "trend|miss": {
+   "requests": 19,
+   "status": {
+    "200": 19
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 19
+   },
+   "expected_outcome": 19,
+   "window_s": 570.675,
+   "throughput_rps": 0.033,
+   "throughput_200_rps": 0.033,
+   "latency_ms": {
+    "n": 19,
+    "min": 881.3,
+    "p50": 1944.7,
+    "p95": 2142.8,
+    "p99": 2187.3,
+    "max": 2198.4,
+    "mean": 1661.9
+   },
+   "latency_200_ms": {
+    "n": 19,
+    "min": 881.3,
+    "p50": 1944.7,
+    "p95": 2142.8,
+    "p99": 2187.3,
+    "max": 2198.4,
+    "mean": 1661.9
+   },
+   "server_db_ms": {
+    "n": 19,
+    "min": 875.6,
+    "p50": 1938.6,
+    "p95": 2137.2,
+    "p99": 2181.7,
+    "max": 2192.8,
+    "mean": 1657.0
+   },
+   "server_app_ms": {
+    "n": 19,
+    "min": 1.1,
+    "p50": 3.0,
+    "p95": 3.4,
+    "p99": 3.6,
+    "max": 3.6,
+    "mean": 2.8
+   },
+   "server_db_share_of_latency": 0.997
+  },
+  "trend|none": {
+   "requests": 2,
+   "status": {
+    "422": 2
+   },
+   "error_codes": {
+    "insufficient_data": 2
+   },
+   "x_cache": {
+    "none": 2
+   },
+   "expected_outcome": 2,
+   "window_s": 184.627,
+   "throughput_rps": 0.011,
+   "throughput_200_rps": 0.0,
+   "latency_ms": {
+    "n": 2,
+    "min": 1299.9,
+    "p50": 1318.1,
+    "p95": 1334.5,
+    "p99": 1336.0,
+    "max": 1336.4,
+    "mean": 1318.1
+   },
+   "latency_200_ms": {
+    "n": 0
+   },
+   "server_db_ms": {
+    "n": 2,
+    "min": 1295.7,
+    "p50": 1313.2,
+    "p95": 1329.0,
+    "p99": 1330.4,
+    "max": 1330.7,
+    "mean": 1313.2
+   },
+   "server_app_ms": {
+    "n": 2,
+    "min": 2.5,
+    "p50": 2.9,
+    "p95": 3.2,
+    "p99": 3.2,
+    "max": 3.2,
+    "mean": 2.9
+   },
+   "server_db_share_of_latency": 0.9963
+  }
+ },
+ "by_kind": {
+  "activities": {
+   "requests": 61,
+   "status": {
+    "200": 61
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 61
+   },
+   "expected_outcome": 61,
+   "window_s": 600.026,
+   "throughput_rps": 0.102,
+   "throughput_200_rps": 0.102,
+   "latency_ms": {
+    "n": 61,
+    "min": 2.8,
+    "p50": 9.4,
+    "p95": 14.3,
+    "p99": 218.0,
+    "max": 520.5,
+    "mean": 17.6
+   },
+   "latency_200_ms": {
+    "n": 61,
+    "min": 2.8,
+    "p50": 9.4,
+    "p95": 14.3,
+    "p99": 218.0,
+    "max": 520.5,
+    "mean": 17.6
+   },
+   "server_db_ms": {
+    "n": 61,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 61,
+    "min": 2.3,
+    "p50": 7.9,
+    "p95": 12.6,
+    "p99": 216.5,
+    "max": 519.2,
+    "mean": 16.2
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "activity_detail": {
+   "requests": 24,
+   "status": {
+    "200": 24
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 24
+   },
+   "expected_outcome": 24,
+   "window_s": 580.001,
+   "throughput_rps": 0.041,
+   "throughput_200_rps": 0.041,
+   "latency_ms": {
+    "n": 24,
+    "min": 0.5,
+    "p50": 1.2,
+    "p95": 1.8,
+    "p99": 2.1,
+    "max": 2.1,
+    "mean": 1.3
+   },
+   "latency_200_ms": {
+    "n": 24,
+    "min": 0.5,
+    "p50": 1.2,
+    "p95": 1.8,
+    "p99": 2.1,
+    "max": 2.1,
+    "mean": 1.3
+   },
+   "server_db_ms": {
+    "n": 24,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 24,
+    "min": 0.2,
+    "p50": 0.5,
+    "p95": 0.8,
+    "p99": 1.0,
+    "max": 1,
+    "mean": 0.5
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "meta": {
+   "requests": 61,
+   "status": {
+    "200": 61
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 61
+   },
+   "expected_outcome": 61,
+   "window_s": 600.01,
+   "throughput_rps": 0.102,
+   "throughput_200_rps": 0.102,
+   "latency_ms": {
+    "n": 61,
+    "min": 0.7,
+    "p50": 1.9,
+    "p95": 5.0,
+    "p99": 5.2,
+    "max": 5.3,
+    "mean": 2.8
+   },
+   "latency_200_ms": {
+    "n": 61,
+    "min": 0.7,
+    "p50": 1.9,
+    "p95": 5.0,
+    "p99": 5.2,
+    "max": 5.3,
+    "mean": 2.8
+   },
+   "server_db_ms": {
+    "n": 61,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 61,
+    "min": 0.2,
+    "p50": 0.8,
+    "p95": 1.6,
+    "p99": 1.6,
+    "max": 1.6,
+    "mean": 0.9
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "novel_heavy": {
+   "requests": 21,
+   "status": {
+    "200": 20,
+    "422": 1
+   },
+   "error_codes": {
+    "insufficient_data": 1
+   },
+   "x_cache": {
+    "miss": 20,
+    "none": 1
+   },
+   "expected_outcome": 21,
+   "window_s": 531.324,
+   "throughput_rps": 0.04,
+   "throughput_200_rps": 0.038,
+   "latency_ms": {
+    "n": 21,
+    "min": 543.3,
+    "p50": 838.2,
+    "p95": 1362.3,
+    "p99": 1854.7,
+    "max": 1977.7,
+    "mean": 907.8
+   },
+   "latency_200_ms": {
+    "n": 20,
+    "min": 543.3,
+    "p50": 807.8,
+    "p95": 1393.1,
+    "p99": 1860.8,
+    "max": 1977.7,
+    "mean": 888.2
+   },
+   "server_db_ms": {
+    "n": 21,
+    "min": 538.7,
+    "p50": 833.1,
+    "p95": 1358.0,
+    "p99": 1849.0,
+    "max": 1971.8,
+    "mean": 903.0
+   },
+   "server_app_ms": {
+    "n": 21,
+    "min": 1.2,
+    "p50": 2.9,
+    "p95": 3.4,
+    "p99": 3.5,
+    "max": 3.5,
+    "mean": 2.7
+   },
+   "server_db_share_of_latency": 0.9947
+  },
+  "novel_light": {
+   "requests": 38,
+   "status": {
+    "200": 37,
+    "422": 1
+   },
+   "error_codes": {
+    "insufficient_data": 1
+   },
+   "x_cache": {
+    "miss": 37,
+    "none": 1
+   },
+   "expected_outcome": 38,
+   "window_s": 594.76,
+   "throughput_rps": 0.064,
+   "throughput_200_rps": 0.062,
+   "latency_ms": {
+    "n": 38,
+    "min": 41.9,
+    "p50": 110.8,
+    "p95": 188.5,
+    "p99": 225.0,
+    "max": 230.0,
+    "mean": 116.8
+   },
+   "latency_200_ms": {
+    "n": 37,
+    "min": 41.9,
+    "p50": 112.4,
+    "p95": 190.2,
+    "p99": 225.2,
+    "max": 230.0,
+    "mean": 117.1
+   },
+   "server_db_ms": {
+    "n": 38,
+    "min": 40.1,
+    "p50": 106.8,
+    "p95": 183.2,
+    "p99": 219.9,
+    "max": 224.8,
+    "mean": 112.1
+   },
+   "server_app_ms": {
+    "n": 38,
+    "min": 0.9,
+    "p50": 3.0,
+    "p95": 3.5,
+    "p99": 4.0,
+    "max": 4,
+    "mean": 2.7
+   },
+   "server_db_share_of_latency": 0.9597
+  },
+  "population_metadata": {
+   "requests": 61,
+   "status": {
+    "200": 61
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 61
+   },
+   "expected_outcome": 61,
+   "window_s": 600.026,
+   "throughput_rps": 0.102,
+   "throughput_200_rps": 0.102,
+   "latency_ms": {
+    "n": 61,
+    "min": 0.5,
+    "p50": 1.4,
+    "p95": 1.9,
+    "p99": 2.3,
+    "max": 2.6,
+    "mean": 1.4
+   },
+   "latency_200_ms": {
+    "n": 61,
+    "min": 0.5,
+    "p50": 1.4,
+    "p95": 1.9,
+    "p99": 2.3,
+    "max": 2.6,
+    "mean": 1.4
+   },
+   "server_db_ms": {
+    "n": 61,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 61,
+    "min": 0.1,
+    "p50": 0.5,
+    "p95": 0.6,
+    "p99": 0.7,
+    "max": 0.8,
+    "mean": 0.5
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "preset": {
+   "requests": 58,
+   "status": {
+    "200": 58
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 44,
+    "hit": 14
+   },
+   "expected_outcome": 58,
+   "window_s": 587.708,
+   "throughput_rps": 0.099,
+   "throughput_200_rps": 0.099,
+   "latency_ms": {
+    "n": 58,
+    "min": 1.3,
+    "p50": 130.3,
+    "p95": 2015.3,
+    "p99": 2163.2,
+    "max": 2198.4,
+    "mean": 424.7
+   },
+   "latency_200_ms": {
+    "n": 58,
+    "min": 1.3,
+    "p50": 130.3,
+    "p95": 2015.3,
+    "p99": 2163.2,
+    "max": 2198.4,
+    "mean": 424.7
+   },
+   "server_db_ms": {
+    "n": 58,
+    "min": 0,
+    "p50": 124.9,
+    "p95": 2009.6,
+    "p99": 2157.6,
+    "max": 2192.8,
+    "mean": 419.9
+   },
+   "server_app_ms": {
+    "n": 58,
+    "min": 0.4,
+    "p50": 2.9,
+    "p95": 3.5,
+    "p99": 3.7,
+    "max": 3.7,
+    "mean": 2.6
+   },
+   "server_db_share_of_latency": 0.9887
+  },
+  "revisit": {
+   "requests": 8,
+   "status": {
+    "200": 7,
+    "422": 1
+   },
+   "error_codes": {
+    "insufficient_data": 1
+   },
+   "x_cache": {
+    "hit": 7,
+    "none": 1
+   },
+   "expected_outcome": 8,
+   "window_s": 492.314,
+   "throughput_rps": 0.016,
+   "throughput_200_rps": 0.014,
+   "latency_ms": {
+    "n": 8,
+    "min": 2.6,
+    "p50": 4.8,
+    "p95": 870.4,
+    "p99": 1243.2,
+    "max": 1336.4,
+    "mean": 170.9
+   },
+   "latency_200_ms": {
+    "n": 7,
+    "min": 2.6,
+    "p50": 4.8,
+    "p95": 5.1,
+    "p99": 5.1,
+    "max": 5.2,
+    "mean": 4.4
+   },
+   "server_db_ms": {
+    "n": 8,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 865.0,
+    "p99": 1237.6,
+    "max": 1330.7,
+    "mean": 166.3
+   },
+   "server_app_ms": {
+    "n": 8,
+    "min": 1.2,
+    "p50": 2.0,
+    "p95": 2.9,
+    "p99": 3.1,
+    "max": 3.2,
+    "mean": 2.1
+   },
+   "server_db_share_of_latency": 0.9731
+  },
+  "revisit_fallback": {
+   "requests": 9,
+   "status": {
+    "200": 9
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 9
+   },
+   "expected_outcome": 9,
+   "window_s": 309.533,
+   "throughput_rps": 0.029,
+   "throughput_200_rps": 0.029,
+   "latency_ms": {
+    "n": 9,
+    "min": 2.0,
+    "p50": 4.3,
+    "p95": 4.7,
+    "p99": 4.8,
+    "max": 4.8,
+    "mean": 4.1
+   },
+   "latency_200_ms": {
+    "n": 9,
+    "min": 2.0,
+    "p50": 4.3,
+    "p95": 4.7,
+    "p99": 4.8,
+    "max": 4.8,
+    "mean": 4.1
+   },
+   "server_db_ms": {
+    "n": 9,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 9,
+    "min": 0.7,
+    "p50": 1.8,
+    "p95": 2.1,
+    "p99": 2.1,
+    "max": 2.1,
+    "mean": 1.7
+   },
+   "server_db_share_of_latency": 0.0
+  },
+  "starter": {
+   "requests": 49,
+   "status": {
+    "200": 49
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 4,
+    "hit": 45
+   },
+   "expected_outcome": 49,
+   "window_s": 593.375,
+   "throughput_rps": 0.083,
+   "throughput_200_rps": 0.083,
+   "latency_ms": {
+    "n": 49,
+    "min": 1.5,
+    "p50": 4.9,
+    "p95": 133.1,
+    "p99": 1183.6,
+    "max": 2128.0,
+    "mean": 56.3
+   },
+   "latency_200_ms": {
+    "n": 49,
+    "min": 1.5,
+    "p50": 4.9,
+    "p95": 133.1,
+    "p99": 1183.6,
+    "max": 2128.0,
+    "mean": 56.3
+   },
+   "server_db_ms": {
+    "n": 49,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 126.6,
+    "p99": 1179.8,
+    "max": 2125.9,
+    "mean": 51.6
+   },
+   "server_app_ms": {
+    "n": 49,
+    "min": 0.4,
+    "p50": 2.1,
+    "p95": 3.2,
+    "p99": 3.9,
+    "max": 4,
+    "mean": 2.0
+   },
+   "server_db_share_of_latency": 0.9171
+  },
+  "wake": {
+   "requests": 37,
+   "status": {
+    "200": 37
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 37
+   },
+   "expected_outcome": 37,
+   "window_s": 580.003,
+   "throughput_rps": 0.064,
+   "throughput_200_rps": 0.064,
+   "latency_ms": {
+    "n": 37,
+    "min": 1.1,
+    "p50": 3.9,
+    "p95": 4.6,
+    "p99": 4.7,
+    "max": 4.7,
+    "mean": 3.7
+   },
+   "latency_200_ms": {
+    "n": 37,
+    "min": 1.1,
+    "p50": 3.9,
+    "p95": 4.6,
+    "p99": 4.7,
+    "max": 4.7,
+    "mean": 3.7
+   },
+   "server_db_ms": {
+    "n": 37,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 0,
+    "mean": 0.0
+   },
+   "server_app_ms": {
+    "n": 37,
+    "min": 0.2,
+    "p50": 0.9,
+    "p95": 1.2,
+    "p99": 1.3,
+    "max": 1.3,
+    "mean": 0.9
+   },
+   "server_db_share_of_latency": 0.0
+  }
+ }
+}

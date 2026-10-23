@@ -1,0 +1,307 @@
+{
+ "note": "DRY RUN: tiny scale, not timed. Status codes, error codes and cache outcomes only; no latency is recorded here.",
+ "k6_exit": 0,
+ "db_statements_logged": 74,
+ "db_attribution_complete": true,
+ "timed": false,
+ "setup": {
+  "requests": 2,
+  "status": {
+   "200": 2
+  },
+  "error_codes": {}
+ },
+ "overall": {
+  "requests": 28,
+  "status": {
+   "200": 28
+  },
+  "error_codes": {},
+  "x_cache": {
+   "none": 16,
+   "miss": 12
+  },
+  "expected_outcome": 28
+ },
+ "by_endpoint": {
+  "activities": {
+   "requests": 4,
+   "status": {
+    "200": 4
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 4
+   },
+   "expected_outcome": 4
+  },
+  "activity_detail": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 2
+   },
+   "expected_outcome": 2
+  },
+  "compare": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 2
+   },
+   "expected_outcome": 2
+  },
+  "estimate": {
+   "requests": 5,
+   "status": {
+    "200": 5
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 5
+   },
+   "expected_outcome": 5
+  },
+  "health": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 2
+   },
+   "expected_outcome": 2
+  },
+  "meta": {
+   "requests": 4,
+   "status": {
+    "200": 4
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 4
+   },
+   "expected_outcome": 4
+  },
+  "population_metadata": {
+   "requests": 4,
+   "status": {
+    "200": 4
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 4
+   },
+   "expected_outcome": 4
+  },
+  "trend": {
+   "requests": 5,
+   "status": {
+    "200": 5
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 5
+   },
+   "expected_outcome": 5
+  }
+ },
+ "by_endpoint_cache": {
+  "activities|none": {
+   "requests": 4,
+   "status": {
+    "200": 4
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 4
+   },
+   "expected_outcome": 4
+  },
+  "activity_detail|none": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 2
+   },
+   "expected_outcome": 2
+  },
+  "compare|miss": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 2
+   },
+   "expected_outcome": 2
+  },
+  "estimate|miss": {
+   "requests": 5,
+   "status": {
+    "200": 5
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 5
+   },
+   "expected_outcome": 5
+  },
+  "health|none": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 2
+   },
+   "expected_outcome": 2
+  },
+  "meta|none": {
+   "requests": 4,
+   "status": {
+    "200": 4
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 4
+   },
+   "expected_outcome": 4
+  },
+  "population_metadata|none": {
+   "requests": 4,
+   "status": {
+    "200": 4
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 4
+   },
+   "expected_outcome": 4
+  },
+  "trend|miss": {
+   "requests": 5,
+   "status": {
+    "200": 5
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 5
+   },
+   "expected_outcome": 5
+  }
+ },
+ "by_kind": {
+  "activities": {
+   "requests": 4,
+   "status": {
+    "200": 4
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 4
+   },
+   "expected_outcome": 4
+  },
+  "activity_detail": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 2
+   },
+   "expected_outcome": 2
+  },
+  "meta": {
+   "requests": 4,
+   "status": {
+    "200": 4
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 4
+   },
+   "expected_outcome": 4
+  },
+  "novel_heavy": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 2
+   },
+   "expected_outcome": 2
+  },
+  "novel_light": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "population_metadata": {
+   "requests": 4,
+   "status": {
+    "200": 4
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 4
+   },
+   "expected_outcome": 4
+  },
+  "preset": {
+   "requests": 6,
+   "status": {
+    "200": 6
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 6
+   },
+   "expected_outcome": 6
+  },
+  "starter": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 3
+   },
+   "expected_outcome": 3
+  },
+  "wake": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 2
+   },
+   "expected_outcome": 2
+  }
+ }
+}

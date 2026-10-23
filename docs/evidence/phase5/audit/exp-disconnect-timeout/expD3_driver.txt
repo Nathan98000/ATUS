@@ -1,0 +1,5 @@
+13:13:06.160 curl --max-time 1 start
+13:13:07.185 curl exit=28 curl: (28) Operation timed out after 1005 milliseconds with 0 bytes received
+13:13:09.189 sending SIGKILL to API pid 63326
+13:13:09.295 API process exited at 13:13:09.295 (0.1s after signal)
+13:13:20.161 poller done

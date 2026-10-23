@@ -1,0 +1,6 @@
+Public docs read 2026-10-20 via WebFetch (summaries, not verbatim pages):
+- https://render.com/docs/outbound-bandwidth : tracks "network traffic sent from your workspace's services to destinations outside of Render"; included Hobby 5 GB; without payment method "Render spins down your workspace's services until the start of the next month". Page does NOT say whether metered before/after compression.
+- https://render.com/docs/web-services : lists "Brotli compression" as a feature bullet, no details (automatic? content types? metering?).
+- https://render.com/docs/free : Free services count against workspace outbound bandwidth; without payment method "suspends all of your Free services for the remainder of the month". No mention of compression.
+- https://render.com/docs/compression : 404.
+Conclusion: 5 GB (Hobby) figure is consistent with the brief; whether Render edge compression reduces metered egress for the 422 is UNVERIFIED.

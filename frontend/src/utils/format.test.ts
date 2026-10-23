@@ -1,16 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  confidenceIntervalName,
   formatAxisTicks,
+  formatClockTick,
   formatConfidenceInterval,
   formatDifferenceInterval,
   formatDifferenceValue,
   formatConfidenceLevel,
+  formatDurationTick,
+  formatDurationWords,
   formatEstimate,
   formatMinutesAsDuration,
   formatMinutesDetailed,
   formatPeople,
   formatProportionAsPercent,
+  formatReadableInterval,
   formatStandardError,
   formatValueShort,
   formatYears,
@@ -21,7 +26,7 @@ describe('duration formatting', () => {
   it('renders hours and minutes rounded to the nearest minute', () => {
     expect(formatMinutesAsDuration(528.75)).toBe('8h 49m')
     expect(formatMinutesAsDuration(541.96)).toBe('9h 2m')
-    expect(formatMinutesAsDuration(60)).toBe('1h 0m')
+    expect(formatMinutesAsDuration(60)).toBe('1h')
   })
 
   it('omits hours below one hour', () => {
@@ -88,6 +93,23 @@ describe('uncertainty formatting', () => {
     expect(formatConfidenceLevel(0.95)).toBe('95%')
     expect(formatConfidenceLevel(0.9)).toBe('90%')
   })
+
+  // Review round 3: the API accepts any level in (0.5, 1); rounding to a whole
+  // percent named a different level than the one computed (and exported).
+  it('never rounds a confidence level to a different one', () => {
+    expect(formatConfidenceLevel(0.975)).toBe('97.5%')
+    expect(formatConfidenceLevel(0.9545)).toBe('95.45%')
+    expect(formatConfidenceLevel(0.995)).toBe('99.5%')
+    expect(formatConfidenceLevel(0.999)).toBe('99.9%')
+    expect(formatConfidenceLevel(0.99999)).toBe('99.999%')
+    expect(formatConfidenceLevel(0.99)).toBe('99%')
+    // Binary × 100 noise never shows (0.57 × 100 is 56.99999999999999)…
+    expect(formatConfidenceLevel(0.57)).toBe('57%')
+    // …and no level the API accepts collapses onto 100% or 50%: the API
+    // computes 0.9999999999999996 (z ≈ 8.13), and these two are as exported.
+    expect(formatConfidenceLevel(0.9999999999999996)).toBe('99.99999999999996%')
+    expect(formatConfidenceLevel(0.5000000000000001)).toBe('50.00000000000001%')
+  })
 })
 
 describe('years and units', () => {
@@ -146,5 +168,55 @@ describe('axis tick labels (review finding: no duplicate labels)', () => {
 
   it('labels minute ticks plainly', () => {
     expect(formatAxisTicks([300, 320, 340], 'minutes_per_day')).toEqual(['300', '320', '340'])
+  })
+})
+
+describe('durations in words and on axes', () => {
+  it('writes durations for sentences', () => {
+    expect(formatDurationWords(23.2)).toBe('23 minutes')
+    expect(formatDurationWords(-11.1)).toBe('11 minutes')
+    expect(formatDurationWords(1)).toBe('1 minute')
+    expect(formatDurationWords(72)).toBe('1 hour 12 minutes')
+    expect(formatDurationWords(120)).toBe('2 hours')
+    expect(formatDurationWords(0.3)).toBe('under a minute')
+    expect(formatDurationWords(0)).toBe('0 minutes')
+  })
+
+  it('labels whole-minute ticks like a clock', () => {
+    expect([0, 30, 60, 90, 180].map(formatDurationTick)).toEqual([
+      '0',
+      '30m',
+      '1h',
+      '1h 30m',
+      '3h',
+    ])
+  })
+})
+
+describe('readers’ forms of axis ticks and ranges', () => {
+  it('labels a clock axis in the page’s one duration form (review round 4)', () => {
+    const ticks = [300, 310, 320]
+    expect(ticks.map((tick) => formatClockTick(tick, ticks))).toEqual([
+      '5h',
+      '5h 10m',
+      '5h 20m',
+    ])
+    expect([360, 420].map((tick) => formatClockTick(tick, [360, 420]))).toEqual(['6h', '7h'])
+    expect([30, 45].map((tick) => formatClockTick(tick, [30, 45]))).toEqual(['30m', '45m'])
+  })
+
+  it('says an interval as clock times, or in minutes when they would read the same', () => {
+    expect(formatReadableInterval(522.995, 534.513, 'minutes_per_day')).toBe('8h 43m to 8h 55m')
+    expect(formatReadableInterval(42.2, 42.4, 'minutes_per_day')).toBe('42.2 to 42.4 min')
+    expect(formatReadableInterval(0.7135, 0.742, 'proportion_of_population')).toBe(
+      '71.4% to 74.2%',
+    )
+  })
+
+  it('names an interval by its level, never as a "likely range" (review round 5)', () => {
+    expect(confidenceIntervalName(0.95)).toBe('95% confidence interval')
+    expect(confidenceIntervalName(0.975)).toBe('97.5% confidence interval')
+    expect(confidenceIntervalName(null)).toBe('confidence interval')
+    expect(confidenceIntervalName(undefined, true)).toBe('Confidence interval')
   })
 })

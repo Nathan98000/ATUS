@@ -1,0 +1,11 @@
+### curl http://127.0.0.1:8206/api/v1/activities?parent=01%0A (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:10:19 GMT
+server: uvicorn
+content-length: 244
+content-type: application/json
+vary: Origin
+x-request-id: 20eb28f7014e4fc4
+
+{"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["query","parent"],"message":"String should match pattern '^[0-9]{2}([0-9]{2})?$'","type":"string_pattern_mismatch"}]}}}
+### status=422 time_total=0.001868s size_download=244 size_upload=0

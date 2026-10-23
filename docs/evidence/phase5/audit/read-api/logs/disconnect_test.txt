@@ -1,0 +1,21 @@
+t=1.01s curl finished (client gave up): code/time = '000 1.001494' rc=28
+t=2.22s server-side pg_sleep sessions: [(1514, 'active', datetime.timedelta(seconds=2, microseconds=205650), 'SELECT pg_sleep($1)')]
+t=3.43s server-side pg_sleep sessions: [(1514, 'active', datetime.timedelta(seconds=3, microseconds=419955), 'SELECT pg_sleep($1)')]
+t=4.64s server-side pg_sleep sessions: [(1514, 'active', datetime.timedelta(seconds=4, microseconds=627713), 'SELECT pg_sleep($1)')]
+t=7.15s after expected completion: []
+same spec re-sent; response headers:
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:12:37 GMT
+server: uvicorn
+content-length: 1006
+content-type: application/json
+x-analysis-key: 126ce72f5e23fd6ff95f70960979a64d35893cdecffbe509e191a9d12448f74e
+x-cache: hit
+x-request-id: 4be271dd4b2d4c9b
+
+
+13:12:19 INFO    atus.api: request_id=0f65c85042b04bc1 GET /ready -> 200 in 2.3ms cache=-
+INFO:      - "GET /ready HTTP/1.1" 200 OK
+13:12:36 INFO    atus.api: request_id=844df55824224f4b POST /api/v1/analysis/estimate -> 200 in 5043.8ms cache=miss
+13:12:38 INFO    atus.api: request_id=4be271dd4b2d4c9b POST /api/v1/analysis/estimate -> 200 in 2.4ms cache=hit
+INFO:      - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK

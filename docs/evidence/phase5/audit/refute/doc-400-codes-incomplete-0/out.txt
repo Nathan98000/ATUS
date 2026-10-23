@@ -1,0 +1,7 @@
+invalid_utf8 400 application/json {"error":{"code":"http_400","message":"There was an error parsing the body","details":null}}
+nested 400 application/json {"error":{"code":"http_400","message":"There was an error parsing the body","details":null}}
+bigint 400 application/json {"error":{"code":"http_400","message":"There was an error parsing the body","details":null}}
+badjson 400 application/json {"error":{"code":"malformed_json","message":"The request body is not valid JSON.","details":{"errors":[{"location":["body","1"],"message":"JSON decode error","type":"json_invalid"}]}}}
+unknown 404 application/json {"error":{"code":"not_found","message":"Not Found","details":null}}
+put_health 405 application/json {"error":{"code":"method_not_allowed","message":"Method Not Allowed","details":null}}
+preflight 400 text/plain; charset=utf-8 Disallowed CORS origin

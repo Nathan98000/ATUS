@@ -1,0 +1,12 @@
+$REPO/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+GET /health  -> 200  pool checkouts=0
+GET /api/v1/activities/presets  -> 200  pool checkouts=0
+GET /api/v1/population/metadata  -> 200  pool checkouts=0
+GET /api/v1/activities/abc  -> 404  pool checkouts=1
+GET /api/v1/activities?level=9  -> 422  pool checkouts=1
+GET /api/v1/nope  -> 404  pool checkouts=0
+POST /api/v1/analysis/estimate (raw) -> 400  pool checkouts=0
+POST /api/v1/analysis/estimate  -> 422  pool checkouts=1
+GET /openapi.json  -> 200  pool checkouts=0
+GET /api/v1/meta  -> 200  pool checkouts=1

@@ -1,0 +1,11 @@
+Ingestion run 2 failed; database unchanged. deadlock detected
+DETAIL:  Process 3375 waits for AccessExclusiveLock on relation 38048 of database 37966; blocked by process 3373.
+Process 3373 waits for AccessShareLock on relation 38091 of database 37966; blocked by process 3375.
+HINT:  See server log for query details.
+years [2019, 2020, 2023]
+pool conn autocommit: False
+t=0.01 after _prepare, txn status=INTRANS
+waiting: (3375, 'Lock', 'TRUNCATE atus.activity_companions, atus.activities, atus.cps')
+t=1.06 api: OK [2019]
+t=1.06 loader: psycopg.errors.DeadlockDetected: deadlock detected
+last runs: [(2, 'failed', 'DeadlockDetected: deadlock detected\nDETAIL:  Process 3375 waits for AccessExclus'), (1, 'succeeded', None)]

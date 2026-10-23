@@ -73,7 +73,7 @@ export interface paths {
     }
     /**
      * List/search the activity lexicon
-     * @description Flat listing of the harmonized 2003-25 activity coding lexicon (18 major categories, 107 subcategories, 431 leaf activities), filterable by level, direct parent, and name search. In analysis requests, a 2- or 4-digit code selects itself plus all descendants.
+     * @description Flat listing of the harmonized multi-year activity coding lexicon of the loaded release (major categories, subcategories and leaf activities; see GET /api/v1/meta for the release), filterable by level, direct parent, and name search. In analysis requests, a 2- or 4-digit code selects itself plus all descendants.
      */
     get: operations['list_activities_api_v1_activities_get']
     put?: never
@@ -170,29 +170,9 @@ export interface paths {
     }
     /**
      * Liveness
-     * @description Answers whether the API process is running. No dependencies touched. Async on purpose: it bypasses the worker threadpool, so liveness stays instant even when every worker thread is busy with long analyses.
+     * @description Answers whether the API process is running, which build it is (`build`, from ATUS_BUILD_SHA), and which data version the deployment is bound to (`expected_data_version`, from ATUS_EXPECTED_DATA_VERSION; null when unset). No dependencies touched (no database, no edge authentication; HEAD works too). Async on purpose: it bypasses the worker threadpool, so liveness stays instant even when every worker thread is busy with long analyses.
      */
     get: operations['health_health_get']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/ready': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Readiness
-     * @description Verifies the dependencies needed to answer analysis requests: the database is reachable and ATUS data is loaded. The (optional) result cache is not a readiness dependency — the service degrades gracefully without it. Readiness assumes the database passed `atus validate-db` at load time; it does not re-run data-quality checks.
-     */
-    get: operations['ready_ready_get']
     put?: never
     post?: never
     delete?: never
@@ -235,7 +215,7 @@ export interface components {
     ActivityEntry: {
       /**
        * Code
-       * @description Harmonized 2003-25 lexicon code (2, 4, or 6 digits).
+       * @description Harmonized multi-year lexicon code of the loaded release (2, 4, or 6 digits).
        */
       code: string
       /** Name */
@@ -735,10 +715,23 @@ export interface components {
       /** Ci Upper */
       ci_upper?: number | null
     }
-    /** HTTPValidationError */
-    HTTPValidationError: {
-      /** Detail */
-      detail?: components['schemas']['ValidationError'][]
+    /** HealthResponse */
+    HealthResponse: {
+      /**
+       * Status
+       * @constant
+       */
+      status: 'ok'
+      /**
+       * Build
+       * @description Build identifier of the running image (ATUS_BUILD_SHA; 'dev' locally). The deploy workflow waits until it equals the deployed commit.
+       */
+      build: string
+      /**
+       * Expected Data Version
+       * @description The data version this deployment is bound to (ATUS_EXPECTED_DATA_VERSION; null when unset), read from the configuration, never the database. The deploy workflow publishes a release's snapshot only once it equals that release's data_version.
+       */
+      expected_data_version?: string | null
     }
     /** MeasureInfo */
     MeasureInfo: {
@@ -956,19 +949,6 @@ export interface components {
       /** Warnings */
       warnings: string[]
     }
-    /** ValidationError */
-    ValidationError: {
-      /** Location */
-      loc: (string | number)[]
-      /** Message */
-      msg: string
-      /** Error Type */
-      type: string
-      /** Input */
-      input?: unknown
-      /** Context */
-      ctx?: Record<string, never>
-    }
     /** WeightInfoModel */
     WeightInfoModel: {
       /** Scheme */
@@ -1032,6 +1012,24 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
+      /** @description Request body too large (payload_too_large) */
+      413: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Body is not JSON (unsupported_media_type) */
+      415: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
       /** @description Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme) */
       422: {
         headers: {
@@ -1041,7 +1039,16 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Analytical database unavailable */
+      /** @description Per-client rate limit (rate_limited); see Retry-After */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Temporarily unable to compute: overloaded, analysis_timeout, daily_capacity_reached, database_unavailable, database_paused, data_not_loaded, data_version_mismatch; see Retry-After */
       503: {
         headers: {
           [name: string]: unknown
@@ -1083,6 +1090,24 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
+      /** @description Request body too large (payload_too_large) */
+      413: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Body is not JSON (unsupported_media_type) */
+      415: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
       /** @description Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme) */
       422: {
         headers: {
@@ -1092,7 +1117,16 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Analytical database unavailable */
+      /** @description Per-client rate limit (rate_limited); see Retry-After */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Temporarily unable to compute: overloaded, analysis_timeout, daily_capacity_reached, database_unavailable, database_paused, data_not_loaded, data_version_mismatch; see Retry-After */
       503: {
         headers: {
           [name: string]: unknown
@@ -1134,6 +1168,24 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
+      /** @description Request body too large (payload_too_large) */
+      413: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Body is not JSON (unsupported_media_type) */
+      415: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
       /** @description Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme) */
       422: {
         headers: {
@@ -1143,7 +1195,16 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Analytical database unavailable */
+      /** @description Per-client rate limit (rate_limited); see Retry-After */
+      429: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Temporarily unable to compute: overloaded, analysis_timeout, daily_capacity_reached, database_unavailable, database_paused, data_not_loaded, data_version_mismatch; see Retry-After */
       503: {
         headers: {
           [name: string]: unknown
@@ -1177,13 +1238,22 @@ export interface operations {
           'application/json': components['schemas']['ActivityListResponse']
         }
       }
-      /** @description Validation Error */
+      /** @description Invalid query or path parameter (validation_error; details.errors[] lists {location, message, type}) */
       422: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['HTTPValidationError']
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Temporarily unable to read the data: database_unavailable, database_paused, overloaded, data_version_mismatch, schema_not_initialized; see Retry-After */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
         }
       }
     }
@@ -1237,13 +1307,22 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse']
         }
       }
-      /** @description Validation Error */
+      /** @description Invalid query or path parameter (validation_error; details.errors[] lists {location, message, type}) */
       422: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['HTTPValidationError']
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
+      /** @description Temporarily unable to read the data: database_unavailable, database_paused, overloaded, data_version_mismatch, schema_not_initialized; see Retry-After */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
         }
       }
     }
@@ -1286,6 +1365,15 @@ export interface operations {
           'application/json': components['schemas']['MetaResponse']
         }
       }
+      /** @description Temporarily unable to read the data: database_unavailable, database_paused, overloaded, data_version_mismatch, schema_not_initialized; see Retry-After */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorResponse']
+        }
+      }
     }
   }
   health_health_get: {
@@ -1303,38 +1391,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': {
-            [key: string]: unknown
-          }
-        }
-      }
-    }
-  }
-  ready_ready_get: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Not ready */
-      503: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorResponse']
+          'application/json': components['schemas']['HealthResponse']
         }
       }
     }

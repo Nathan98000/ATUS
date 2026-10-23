@@ -1,0 +1,15 @@
+ERROR:  column "run_id" does not exist
+LINE 1: select run_id, count(*) from atus.validation_results group b...
+               ^
+HINT:  Perhaps you meant to reference the column "validation_results.run_at".
+2026-10-20 17:25:16.671494+00|24
+2026-10-20 16:59:36.355753+00|24
+2026-09-09 16:53:30.240299+00|24
+2026-09-09 02:08:04.953393+00|38|2003 respondent count (BLS-documented)
+2026-09-09 02:08:56.051551+00|38|2003 respondent count (BLS-documented)
+2026-09-09 15:08:33.891126+00|24|analytics: A1-2025: eating and drinking, hours/day
+2026-09-09 15:20:38.461242+00|24|analytics: A1-2025: eating and drinking, hours/day
+2026-09-09 16:15:10.249849+00|24|analytics: A1-2025: eating and drinking, hours/day
+2026-09-09 16:53:30.240299+00|24|analytics: A1-2025: eating and drinking, hours/day
+2026-10-20 16:59:36.355753+00|24|analytics: A1-2025: eating and drinking, hours/day
+2026-10-20 17:25:16.671494+00|24|analytics: A1-2025: eating and drinking, hours/day

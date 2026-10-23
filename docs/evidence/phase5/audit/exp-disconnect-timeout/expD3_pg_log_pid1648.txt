@@ -1,0 +1,4 @@
+2026-10-20 17:13:17.199 UTC [1648] LOG:  could not send data to client: Broken pipe
+2026-10-20 17:13:17.199 UTC [1648] STATEMENT:  
+2026-10-20 17:13:17.199 UTC [1648] FATAL:  connection to client lost
+2026-10-20 17:13:17.199 UTC [1648] STATEMENT:  

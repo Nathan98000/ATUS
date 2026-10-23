@@ -1,0 +1,3 @@
+import_cpu_s 0.635 create_app_cpu_s 0.001 total_proc_cpu_incl_interp 0.663
+import_cpu_s 0.357 create_app_cpu_s 0.001 total_proc_cpu_incl_interp 0.378
+import_cpu_s 0.348 create_app_cpu_s 0.001 total_proc_cpu_incl_interp 0.369

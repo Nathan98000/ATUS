@@ -1,0 +1,4 @@
+FULL max_parallel_workers_per_gather = 2
+FULL: E1 sleep 2025: 3 runs, max rel SE diff vs run 1 = 1.80e-14; point values identical across runs: True
+FULL: T1 sleep trend 2003-2025: 3 runs, max rel SE diff vs run 1 = 8.57e-14; point values identical across runs: True
+FULL: E3 sleep pooled 22y: 3 runs, max rel SE diff vs run 1 = 1.87e-14; point values identical across runs: True

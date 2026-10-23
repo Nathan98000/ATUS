@@ -1,0 +1,13 @@
+start=13:13:54.473 endpoint=/api/v1/analysis/trend body={"measure": "average_minutes_per_day", "activity": {"include": ["14"]}, "years": [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025], "weights": "multiyear", "variance": "replicate"}
+elapsed=7.202s exit=0
+HTTP/1.1 503 Service Unavailable
+date: Tue, 20 Oct 2026 17:13:53 GMT
+server: uvicorn
+content-length: 137
+content-type: application/json
+x-request-id: 09a9fb01425b4459
+
+http_code=503 time_total=7.193153
+
+
+meta after timeout: 200 0.032931

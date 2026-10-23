@@ -1,0 +1,64 @@
+{
+ "note": "DRY RUN: tiny scale, not timed. Status codes, error codes and cache outcomes only; no latency is recorded here.",
+ "k6_exit": 0,
+ "db_statements_logged": 26,
+ "db_attribution_complete": true,
+ "timed": false,
+ "setup": {
+  "requests": 6,
+  "status": {
+   "200": 6
+  },
+  "error_codes": {}
+ },
+ "overall": {
+  "requests": 1,
+  "status": {
+   "200": 1
+  },
+  "error_codes": {},
+  "x_cache": {
+   "hit": 1
+  },
+  "expected_outcome": 1
+ },
+ "by_endpoint": {
+  "estimate": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 1
+   },
+   "expected_outcome": 1
+  }
+ },
+ "by_endpoint_cache": {
+  "estimate|hit": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 1
+   },
+   "expected_outcome": 1
+  }
+ },
+ "by_kind": {
+  "cached": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 1
+   },
+   "expected_outcome": 1
+  }
+ }
+}

@@ -1,0 +1,211 @@
+/**
+ * Time-budgeted retries, so a free-tier cold start is a wait rather than an
+ * error page (audit F12, F64).
+ *
+ * The free API host sleeps when idle and takes about a minute to wake; while
+ * it wakes, requests fail fast (the edge answers `service_waking` with
+ * `Retry-After`), hang, or come back as a host error page. One logical call
+ * therefore spans several attempts:
+ *
+ * - **Metadata GETs** retry every failure that is not final until
+ *   `COLD_START_BUDGET_MS` has passed, honouring `Retry-After`.
+ * - **Analysis POSTs** retry "waking" failures (the host was not up, so no
+ *   work was done) within the same budget, and other transient failures
+ *   (`overloaded`, `database_unavailable`) once. An `upstream_unavailable`
+ *   whose `details.reason` says the API may have taken the request
+ *   (`origin_timeout`: a Cloudflare 524; `broken_response`) is transient,
+ *   not waking: it is retried once, which joins the running computation or
+ *   hits the API's cache, instead of being re-sent for the whole budget. A
+ *   rate limit or a client time-out is never retried automatically: the
+ *   visitor decides.
+ * - Nothing retries a final answer: a 4xx other than a 429 with
+ *   `Retry-After`, a paused quota, an analysis time-out, a data-version
+ *   mismatch, or an incompatible API.
+ *
+ * TanStack Query's own retries are off for these queries (`retry: false`);
+ * this loop replaces them so the budget, the delays and the waking notice
+ * are decided in one place.
+ */
+import { ApiError, NetworkError, browserOffline } from './client'
+import { trackApiCall, type CallKind } from './serviceStatus'
+
+/** Total time a call keeps retrying while the service wakes (ADR-011: "within a 150 s budget"). */
+export const COLD_START_BUDGET_MS = 150_000
+
+const BACKOFF_BASE_MS = 1_000
+const BACKOFF_MAX_MS = 8_000
+const MIN_RETRY_AFTER_MS = 1_000
+
+/** How a failed attempt should be treated by the retry policy. */
+export type FailureClass = 'waking' | 'transient' | 'rate_limited' | 'final'
+
+/** Answers that retrying cannot change (or that would spend quota to no effect). */
+const FINAL_CODES = new Set([
+  'analysis_timeout',
+  'api_paused',
+  'capacity_paused',
+  'capacity_unavailable',
+  'daily_capacity_reached',
+  'data_not_loaded',
+  'data_version_mismatch',
+  'database_paused',
+  'edge_daily_limit',
+  'forbidden_origin',
+  'payload_too_large',
+  'schema_not_initialized',
+])
+
+/** The host is not answering yet: nothing was computed. */
+const WAKING_CODES = new Set(['service_waking', 'upstream_unavailable'])
+
+/** `upstream_unavailable` reasons after which the API may have computed the request. */
+const ORIGIN_MAY_HAVE_COMPUTED = new Set(['origin_timeout', 'broken_response'])
+
+function detailString(error: ApiError, name: string): string | null {
+  const value = (error.details as Record<string, unknown> | null)?.[name]
+  return typeof value === 'string' ? value : null
+}
+
+/** The service answered but could not take the request right now. */
+const TRANSIENT_CODES = new Set(['overloaded', 'database_unavailable'])
+
+export function classifyFailure(error: unknown): FailureClass {
+  if (error instanceof NetworkError) {
+    // Offline is not a cold start; say so instead of waiting out the budget.
+    if (error.offline || browserOffline()) return 'final'
+    return 'waking'
+  }
+  if (!(error instanceof ApiError)) return 'final'
+  if (FINAL_CODES.has(error.code)) return 'final'
+  if (
+    error.code === 'upstream_unavailable' &&
+    ORIGIN_MAY_HAVE_COMPUTED.has(detailString(error, 'reason') ?? '')
+  ) {
+    return 'transient'
+  }
+  if (WAKING_CODES.has(error.code)) return 'waking'
+  // The edge's per-network daily allowance: waiting until 00:00 UTC is the visitor's call.
+  if (error.code === 'rate_limited' && detailString(error, 'budget') === 'prefix')
+    return 'final'
+  if (TRANSIENT_CODES.has(error.code)) return 'transient'
+  if (error.status === 429) {
+    return error.code === 'rate_limited' && error.retryAfterSeconds !== null
+      ? 'rate_limited'
+      : 'final'
+  }
+  // A 503 with a code this build does not know: the service answered, so it
+  // is up — treat it like other temporary refusals.
+  if (error.status === 503) return 'transient'
+  // Gateway failures (502, 504, Cloudflare 52x): typical of a host that is
+  // still starting.
+  if (
+    error.status === 502 ||
+    error.status === 504 ||
+    (error.status >= 520 && error.status <= 530)
+  ) {
+    return 'waking'
+  }
+  return 'final'
+}
+
+/**
+ * The request failed because the browser was offline. Coming back online is
+ * the one event that changes such an answer, so it is the only failure a
+ * reconnect retries (`queries.ts`); every other final answer waits for the
+ * visitor, and a rate limit for its `Retry-After` and the visitor.
+ */
+export function isOfflineFailure(error: unknown): boolean {
+  return error instanceof NetworkError && error.offline
+}
+
+/** Delay before attempt `attempt + 1`: Retry-After when given, else capped exponential backoff. */
+export function retryDelayMs(error: unknown, attempt: number): number {
+  const retryAfter = error instanceof ApiError ? error.retryAfterSeconds : null
+  if (retryAfter !== null) return Math.max(MIN_RETRY_AFTER_MS, retryAfter * 1000)
+  return Math.min(BACKOFF_BASE_MS * 2 ** (attempt - 1), BACKOFF_MAX_MS)
+}
+
+function mayRetry(
+  kind: CallKind,
+  failure: FailureClass,
+  error: unknown,
+  transientRetries: number,
+): boolean {
+  if (failure === 'final') return false
+  if (kind === 'metadata') return true
+  if (failure === 'waking') return !(error instanceof NetworkError && error.timedOut)
+  if (failure === 'transient') return transientRetries < 1
+  return false
+}
+
+/** Shown as "waking": the host is not up yet, or its database is resuming. */
+function looksLikeWaking(failure: FailureClass, error: unknown): boolean {
+  return (
+    failure === 'waking' || (error instanceof ApiError && error.code === 'database_unavailable')
+  )
+}
+
+function isAbortError(error: unknown): boolean {
+  return (error as { name?: unknown } | null)?.name === 'AbortError'
+}
+
+function sleep(ms: number, signal: AbortSignal | undefined): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const aborted = () => new DOMException('The operation was aborted.', 'AbortError')
+    if (signal?.aborted) {
+      reject(aborted())
+      return
+    }
+    const onAbort = () => {
+      clearTimeout(timer)
+      reject(aborted())
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
+}
+
+export interface RetryOptions {
+  kind: CallKind
+  /** The query's abort signal: cancels both the attempt and any wait between attempts. */
+  signal?: AbortSignal
+  budgetMs?: number
+}
+
+/**
+ * Runs `attempt` until it succeeds, fails finally, or the budget would be
+ * exceeded by the next wait; the last error is rethrown unchanged.
+ */
+export async function withRetries<T>(
+  attempt: () => Promise<T>,
+  options: RetryOptions,
+): Promise<T> {
+  const budgetMs = options.budgetMs ?? COLD_START_BUDGET_MS
+  const startedAt = Date.now()
+  const tracker = trackApiCall(options.kind)
+  let transientRetries = 0
+  try {
+    for (let attemptNumber = 1; ; attemptNumber += 1) {
+      try {
+        const result = await attempt()
+        tracker.answered()
+        return result
+      } catch (error) {
+        if (isAbortError(error)) throw error
+        const failure = classifyFailure(error)
+        if (error instanceof ApiError && failure !== 'waking') tracker.answered()
+        if (!mayRetry(options.kind, failure, error, transientRetries)) throw error
+        const delay = retryDelayMs(error, attemptNumber)
+        if (Date.now() - startedAt + delay > budgetMs) throw error
+        if (failure === 'transient') transientRetries += 1
+        tracker.setWaking(looksLikeWaking(failure, error))
+        await sleep(delay, options.signal)
+      }
+    }
+  } finally {
+    tracker.finish()
+  }
+}

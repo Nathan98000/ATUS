@@ -1,17 +1,64 @@
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ApiError, NetworkError } from '../api/client'
+import { contextNotes } from '../domain/notes'
 import { estimatePandemicFixture } from '../test/fixtures'
 import { ErrorPanel } from './ErrorPanel'
 import { WarningBanner } from './WarningBanner'
 
 describe('WarningBanner', () => {
-  it('renders every warning from the API', () => {
+  it('renders every warning from the API, in plain language', () => {
     render(<WarningBanner warnings={estimatePandemicFixture.warnings} />)
-    expect(screen.getByRole('note')).toHaveTextContent(/May 10 - Dec 31/)
-    expect(screen.getByRole('note')).toHaveTextContent(
-      /annual estimates for 2020 are not possible/,
+    const note = screen.getByRole('note')
+    expect(note).toHaveTextContent(/May 10 – December 31/)
+    expect(note).toHaveTextContent(/not full-year figures/)
+    expect(note).not.toHaveTextContent(/TU20FWGT/)
+  })
+
+  it('shows caveats as a warning and leaves context to the chart’s small print', () => {
+    const warnings = [
+      "The difference's standard error uses per-replicate differences, which accounts for covariance between the group estimates.",
+      'Pooled estimate: represents the average day across 3 survey years (1,095 days combined).',
+    ]
+    const { container } = render(<WarningBanner warnings={warnings} />)
+    expect(container.querySelector('.warning-banner')).toHaveTextContent(
+      'This is an average day across 3 survey years combined',
+    )
+    expect(container).not.toHaveTextContent(/both groups/)
+    expect(contextNotes(warnings)).toEqual([
+      "The difference's confidence interval accounts for both groups coming from the same survey.",
+    ])
+  })
+
+  it('never shows the note that activity codes are harmonized (review round 5)', () => {
+    const { container } = render(
+      <WarningBanner
+        warnings={[
+          'Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).',
+          'Pooled estimate: represents the average day across 3 survey years (1,095 days combined).',
+        ]}
+      />,
+    )
+    expect(container).not.toHaveTextContent(/lexicon|coded/)
+  })
+
+  it('renders nothing when every note is context', () => {
+    render(
+      <WarningBanner
+        warnings={[
+          'Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).',
+        ]}
+      />,
+    )
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  })
+
+  it('shows a warning it does not recognize exactly as the API wrote it, as a caveat', () => {
+    const { container } = render(<WarningBanner warnings={['A brand-new caveat (XYZW).']} />)
+    expect(container.querySelector('.warning-banner')).toHaveTextContent(
+      'A brand-new caveat (XYZW).',
     )
   })
 
@@ -59,6 +106,31 @@ describe('ErrorPanel', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
   })
 
+  it('a Retry-After holds "Try again" back, keeping the countdown out of the live region', () => {
+    const error = new ApiError(503, 'overloaded', 'busy', null, null, 12)
+    render(<ErrorPanel error={error} onRetry={() => {}} />)
+    const button = screen.getByRole('button', { name: 'Try again' })
+    expect(button).toBeDisabled()
+    expect(button.querySelector('[aria-hidden="true"]')).toHaveTextContent('(12 s)')
+  })
+
+  it('a paused quota renders the full-page state instead of a panel', () => {
+    const error = new ApiError(503, 'database_paused', 'quota', null, 'req-2')
+    render(
+      <MemoryRouter initialEntries={['/explore']}>
+        <ErrorPanel error={error} onRetry={() => {}} />
+      </MemoryRouter>,
+    )
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'The analysis database is paused' }),
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('alert')).toHaveLength(1)
+    expect(screen.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute(
+      'href',
+      '/',
+    )
+  })
+
   it('never exposes stack traces for unknown errors', () => {
     render(<ErrorPanel error={new Error('secret internal detail')} />)
     const alert = screen.getByRole('alert')
@@ -70,6 +142,7 @@ describe('ErrorPanel', () => {
 
 describe('validation details (review finding: field errors surfaced)', () => {
   it('lists field-level problems from 422 validation details', () => {
+    // The API's envelope (errors.py validation_details): {location, message, type}.
     const error = new ApiError(
       422,
       'validation_error',
@@ -77,10 +150,15 @@ describe('validation details (review finding: field errors surfaced)', () => {
       {
         errors: [
           {
-            loc: ['body', 'population', 'age_min'],
-            msg: 'Input should be less than or equal to 130',
+            location: ['body', 'population', 'age_min'],
+            message: 'Input should be less than or equal to 130',
+            type: 'less_than_equal',
           },
-          { loc: ['body', 'years', 0], msg: 'Input should be greater than or equal to 2003' },
+          {
+            location: ['body', 'years', 0],
+            message: 'Input should be greater than or equal to 2003',
+            type: 'greater_than_equal',
+          },
         ],
       },
       null,

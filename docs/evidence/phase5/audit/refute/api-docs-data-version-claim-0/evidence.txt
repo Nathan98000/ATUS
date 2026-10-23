@@ -1,0 +1,63 @@
+37:| `ATUS_API_CACHE_SIZE` | `256` | analysis-result cache entries (LRU) |
+153:in-process, thread-safe LRU keyed by
+161:keys by construction (no TTLs needed for correctness; the LRU bounds
+167:in-process is documented as the single-process development default.
+182:Measured effect (in-process client, full 2003–25 database, Sept 2026):
+193:polling, or websockets) — the worst case is ~12 s once per (spec × version),
+205:| data release + ingestion run (`0325`, `run N`) | loaded BLS data | `atus load` rebuilds the database |
+    manifest = Manifest(settings.manifest_path)
+    plan = _check_staged_inputs(settings, manifest)
+
+    with conn.transaction():
+        run_id = conn.execute(
+            "INSERT INTO atus.ingestion_runs (release, pipeline_version) VALUES (%s, %s) "
+            "RETURNING id",
+            (settings.release, PIPELINE_VERSION),
+        ).fetchone()[0]
+    log.info("Ingestion run %d started (release %s)", run_id, settings.release)
+
+    results: list[TableLoadResult] = []
+    try:
+        with conn.transaction():
+            tables = ", ".join(f"atus.{t}" for t in _CANONICAL_TABLES)
+            conn.execute(f"TRUNCATE {tables}")
+            log.info("Canonical tables truncated (atomic rebuild)")
+            _load_lexicon(conn, settings)
+            respondent_ids: set[int] | None = None
+            for spec, source, staged in plan:
+                result, respondent_ids = _load_table(conn, spec, staged, respondent_ids)
+                _record_source_file(conn, run_id, settings, source, manifest, result)
+                results.append(result)
+    except Exception as exc:
+        with conn.transaction():
+            conn.execute(
+                "UPDATE atus.ingestion_runs SET status = 'failed', finished_at = now(), "
+                "notes = %s WHERE id = %s",
+                (f"{type(exc).__name__}: {exc}"[:2000], run_id),
+            )
+        log.error("Ingestion run %d failed; database unchanged. %s", run_id, exc)
+        raise
+
+    with conn.transaction():
+        conn.execute(
+            "UPDATE atus.ingestion_runs SET status = 'succeeded', finished_at = now() "
+            "WHERE id = %s",
+            (run_id,),
+        )
+    log.info("Ingestion run %d succeeded", run_id)
+    return results
+CREATE TABLE atus.ingestion_runs (
+    id               bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    release          text NOT NULL,
+def read_data_version(conn: psycopg.Connection) -> str:
+    """Cache-key component that changes whenever `atus load` rebuilds the data:
+    '<release>:run<latest successful ingestion run id>'."""
+    row = conn.execute(
+        "SELECT release, id FROM atus.ingestion_runs "
+        "WHERE status = 'succeeded' ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    if row is None:
+        return "unloaded:run0"
+    release, run_id = row
+    return f"{release}:run{run_id}"
+

@@ -33,7 +33,7 @@ from datetime import date
 
 import psycopg
 
-from ..validation.results import CheckResult
+from ..validation.results import CheckResult, persist_results
 from .engine import AnalysisEngine
 from .results import EstimateResult
 from .spec import ActivitySelector, AnalysisSpec, Measure, PopulationFilter
@@ -278,12 +278,24 @@ def build_benchmarks() -> tuple[Benchmark, ...]:
     )
 
 
-def run_benchmarks(conn: psycopg.Connection) -> list[CheckResult]:
+def run_benchmarks(conn: psycopg.Connection, *, persist: bool = True) -> list[CheckResult]:
+    """Evaluate every benchmark and, unless ``persist`` is false, record the
+    outcomes in ``atus.validation_results``.
+
+    Each benchmark runs in its own transaction (a savepoint when the caller
+    holds one open), so a database error fails that benchmark alone instead of
+    aborting every later one. Recording needs the owner/loader role; callers
+    that must report results even when recording fails (``atus
+    validate-analytics``) evaluate with ``persist=False``, print, and then call
+    :func:`~atus_pipeline.validation.results.persist_results` themselves.
+    """
     engine = AnalysisEngine(conn)
     results: list[CheckResult] = []
     for benchmark in build_benchmarks():
         try:
-            observed = benchmark.extract(engine.estimate(benchmark.spec))
+            with conn.transaction():
+                estimate = engine.estimate(benchmark.spec)
+            observed = benchmark.extract(estimate)
             delta = abs(observed - benchmark.expected)
             passed = delta <= benchmark.tolerance
             observed_text = (
@@ -301,18 +313,6 @@ def run_benchmarks(conn: psycopg.Connection) -> list[CheckResult]:
                 detail=benchmark.source,
             )
         )
-    _persist(conn, results)
+    if persist:
+        persist_results(conn, results)
     return results
-
-
-def _persist(conn: psycopg.Connection, results: list[CheckResult]) -> None:
-    with conn.transaction():
-        for result in results:
-            conn.execute(
-                """
-                INSERT INTO atus.validation_results
-                    (check_name, severity, passed, observed, detail)
-                VALUES (%s, %s, %s, %s, %s)
-                """,
-                (result.name, result.severity, result.passed, result.observed, result.detail),
-            )

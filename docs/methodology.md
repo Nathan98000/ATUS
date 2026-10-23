@@ -18,8 +18,9 @@ The weight is person-*day*-scaled: weighted totals estimate person-days, and
 population mean minutes/day = Σ(weight × minutes) / Σ(weight)
 ```
 
-(User's Guide ch. 7). Every future estimate must use `respondents.final_weight`
-(or `pandemic_weight` where applicable).
+(User's Guide ch. 7). Every estimate uses `respondents.final_weight` (or
+`pandemic_weight` where applicable); the engine never computes an unweighted
+statistic ([analytics.md](analytics.md)).
 
 ### Which weight, when
 
@@ -44,8 +45,13 @@ replication). Standard errors follow the formula in User's Guide ch. 7 —
 recompute the estimate under each replicate weight and combine the squared
 deviations from the full-sample estimate. Phase 1 stores replicates untouched
 and 1:1 with respondents (`replicate_weights`, `pandemic_replicate_weights`);
-implementing the variance formula is Phase 2's first job. Replicate weights
-are **never** to be treated as 160 additional observations.
+the Phase 2 engine implements the variance formula
+([analytics.md](analytics.md#variance-and-confidence-intervals)). Replicate
+weights are **never** to be treated as 160 additional observations. (The
+hosted serving database stores them as `float8`, the type the engine casts
+them to, and omits the all-NULL 2020 rows and the all-zero 2019 pandemic
+rows that every estimate already excludes;
+[database.md](database.md#the-serving-database).)
 
 ## 2. 2020 is a partial year — treat it as its own regime
 

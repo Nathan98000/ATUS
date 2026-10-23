@@ -1,0 +1,43 @@
+$REPO/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+15:21:19 INFO    atus.api: request_id=a1a2f79aa3824935 GET /health -> 200 in 4.8ms cache=-
+15:21:19 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '8437', hostaddr: '::1': connection failed: connection to server at "::1", port 8437 failed: could not receive data from server: Connection refused
+- host: 'localhost', port: '8437', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+15:21:19 INFO    httpx: HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+15:21:19 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '8437', hostaddr: '::1': connection failed: connection to server at "::1", port 8437 failed: could not receive data from server: Connection refused
+- host: 'localhost', port: '8437', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+15:21:20 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '8437', hostaddr: '::1': connection failed: connection to server at "::1", port 8437 failed: could not receive data from server: Connection refused
+- host: 'localhost', port: '8437', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+15:21:20 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '8437', hostaddr: '::1': connection failed: connection to server at "::1", port 8437 failed: could not receive data from server: Connection refused
+- host: 'localhost', port: '8437', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+15:21:21 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '8437', hostaddr: '::1': connection failed: connection to server at "::1", port 8437 failed: could not receive data from server: Connection refused
+- host: 'localhost', port: '8437', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+15:21:22 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '8437', hostaddr: '::1': connection failed: connection to server at "::1", port 8437 failed: could not receive data from server: Connection refused
+- host: 'localhost', port: '8437', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+15:21:25 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '8437', hostaddr: '::1': connection failed: connection to server at "::1", port 8437 failed: could not receive data from server: Connection refused
+- host: 'localhost', port: '8437', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+15:21:26 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+Multiple connection attempts failed. All failures were:
+- host: 'localhost', port: '8437', hostaddr: '::1': connection failed: connection to server at "::1", port 8437 failed: could not receive data from server: Connection refused
+- host: 'localhost', port: '8437', hostaddr: '127.0.0.1': connection failed: connection to server at "127.0.0.1", port 8437 failed: could not receive data from server: Connection refused
+15:21:29 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:21:29 INFO    atus.api: request_id=7ddd203b3bc94735 GET /ready -> 503 in 10002.0ms cache=-
+15:21:29 INFO    httpx: HTTP Request: GET http://testserver/ready "HTTP/1.1 503 Service Unavailable"
+default url used: postgresql://atus:atus@localhost:5434/atus
+startup ok (no fail-fast)
+/health 200 0.01
+/ready 503 10.0 {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}

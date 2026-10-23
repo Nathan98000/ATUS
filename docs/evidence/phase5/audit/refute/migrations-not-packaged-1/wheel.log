@@ -1,0 +1,12 @@
+Processing docs/evidence/phase5/audit/refute/migrations-not-packaged-1/src
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: atus-pipeline
+  Building wheel for atus-pipeline (pyproject.toml): started
+  Building wheel for atus-pipeline (pyproject.toml): finished with status 'done'
+  Created wheel for atus-pipeline: filename=atus_pipeline-0.1.0-py3-none-any.whl size=94852 sha256=1e2b17f9bc4c024bf0e17367193d4e993cd163395e473aa2070d89a0a5599540
+  Stored in directory: /private/var/folders/d6/837ljz795v3frmn22xzz2pg00000gn/T/pip-ephem-wheel-cache-3cjihhk2/wheels/8c/2b/0e/cfe0f8a622eb072cf1646b30614be31e1d6363ad0bc877c031
+Successfully built atus-pipeline
+
+[notice] A new release of pip is available: 25.0.1 -> 26.2.2
+[notice] To update, run: python3.12 -m pip install --upgrade pip

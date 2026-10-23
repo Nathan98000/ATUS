@@ -1,0 +1,10 @@
+checkout/v4:   using: node20
+setup-node/v4:   using: 'node20'
+setup-python/v5:   using: 'node20'
+checkout/v7:   using: node24
+setup-node/v7:   using: 'node24'
+setup-python/v7:   using: 'node24'
+checkout latest: location: https://github.com/actions/checkout/releases/tag/v7.0.1
+setup-node latest: location: https://github.com/actions/setup-node/releases/tag/v7.1.0
+setup-python latest: location: https://github.com/actions/setup-python/releases/tag/v7.0.0
+Tue Oct 20 19:19:33 UTC 2026

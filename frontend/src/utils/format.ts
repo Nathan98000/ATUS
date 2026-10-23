@@ -1,8 +1,7 @@
 /**
  * Presentation-only number formatting. These functions transform units for
  * display ("528.75" → "8h 49m"); they never change, round, or derive the
- * underlying data — raw API values stay untouched in state, and exact values
- * are always available in each result's data table.
+ * underlying data — raw API values stay untouched in state.
  *
  * Precision policy (documented in docs/frontend.md):
  * - durations: hours+minutes rounded to the nearest minute; detailed form
@@ -12,7 +11,8 @@
  *   estimate they qualify;
  * - people counts: millions with one decimal above 1M, thousands separators
  *   below;
- * - sample sizes: exact integers with thousands separators.
+ * - sample sizes: exact integers with thousands separators;
+ * - confidence levels: every digit (97.5%), never rounded to another level.
  */
 
 const INTEGER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
@@ -20,14 +20,54 @@ const ONE_DECIMAL = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 })
+// Percent style shifts the level's shortest round-trip decimal ("0.975", what
+// the API sent and the exports carry) two places — exact, unlike level × 100
+// in binary (0.57 × 100 is 56.99999999999999).
+const CONFIDENCE_LEVEL = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  maximumFractionDigits: 20,
+})
 
-/** 528.75 → "8h 49m"; 42.4 → "42m"; 0.2 → "0m". */
+/** 528.75 → "8h 49m"; 540 → "9h"; 42.4 → "42m"; 0.2 → "0m". */
 export function formatMinutesAsDuration(minutes: number): string {
   const totalMinutes = Math.round(minutes)
   const hours = Math.floor(totalMinutes / 60)
   const rest = totalMinutes % 60
   if (hours === 0) return `${rest}m`
-  return `${hours}h ${rest}m`
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`
+}
+
+/** A duration in a sentence: 23.2 → "23 minutes"; 72 → "1 hour 12 minutes"; 0.3 → "under a minute". */
+export function formatDurationWords(minutes: number): string {
+  const totalMinutes = Math.round(Math.abs(minutes))
+  if (totalMinutes === 0) return minutes === 0 ? '0 minutes' : 'under a minute'
+  const hours = Math.floor(totalMinutes / 60)
+  const rest = totalMinutes % 60
+  const minutePart = `${rest} ${rest === 1 ? 'minute' : 'minutes'}`
+  if (hours === 0) return minutePart
+  const hourPart = `${hours} ${hours === 1 ? 'hour' : 'hours'}`
+  return rest === 0 ? hourPart : `${hourPart} ${minutePart}`
+}
+
+/** Axis label for a whole-minute tick: 0 → "0"; 30 → "30m"; 60 → "1h"; 90 → "1h 30m". */
+export function formatDurationTick(minutes: number): string {
+  if (minutes === 0) return '0'
+  const hours = Math.floor(minutes / 60)
+  const rest = Math.round(minutes % 60)
+  if (hours === 0) return `${rest}m`
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest}m`
+}
+
+/**
+ * Axis label for a duration tick on an axis that does not start at zero, in
+ * the form every other duration on the page takes: 300 → "5h", 310 →
+ * "5h 10m", 45 → "45m" (review round 4: "5h 00m" here beside "5h" in the
+ * readout read as two formats). Non-whole-minute ticks (a very narrow axis)
+ * keep their decimals.
+ */
+export function formatClockTick(minutes: number, ticks: readonly number[]): string {
+  if (!ticks.every((tick) => Number.isInteger(tick))) return `${ONE_DECIMAL.format(minutes)}m`
+  return formatMinutesAsDuration(minutes)
 }
 
 /** 528.75 → "528.8". */
@@ -58,6 +98,12 @@ export function formatProportionAsPercent(proportion: number): string {
 export function formatDifferenceValue(value: number, unit: string): string {
   if (unit === 'proportion_of_population') return `${adaptiveScaled(value * 100)} pp`
   return formatValueShort(value, unit)
+}
+
+/** A difference of proportions in a sentence: 0.062 → "6.2 percentage points" (or "6.2"). */
+export function formatPercentagePoints(value: number, withUnit = true): string {
+  const points = adaptiveScaled(value * 100)
+  return withUnit ? `${points} percentage points` : points
 }
 
 export function formatDifferenceInterval(lower: number, upper: number, unit: string): string {
@@ -163,9 +209,42 @@ export function formatConfidenceInterval(lower: number, upper: number, unit: str
   }
 }
 
-/** 0.95 → "95%". */
+/**
+ * A confidence interval for readers: durations as clock times ("8h 43m to
+ * 8h 55m"), or in minutes with one decimal when both ends round to the same
+ * minute; other units as `formatConfidenceInterval`.
+ */
+export function formatReadableInterval(lower: number, upper: number, unit: string): string {
+  if (unit === 'minutes_per_day' || unit === 'minutes_per_day_of_participants') {
+    const from = formatMinutesAsDuration(lower)
+    const to = formatMinutesAsDuration(upper)
+    if (from !== to) return `${from} to ${to}`
+  }
+  return formatConfidenceInterval(lower, upper, unit)
+}
+
+/**
+ * 0.95 → "95%"; 0.975 → "97.5%"; 0.999 → "99.9%". Every digit is kept: the
+ * API accepts any level in (0.5, 1), and rounding would name a different
+ * level than the one computed (0.975 as "98%", 0.999 as "100%") (review
+ * round 3) — even 0.9999999999999996, a valid level, reads
+ * "99.99999999999996%", never "100%".
+ */
 export function formatConfidenceLevel(level: number): string {
-  return `${INTEGER.format(level * 100)}%`
+  return CONFIDENCE_LEVEL.format(level)
+}
+
+/**
+ * What an interval is called on the page: 0.95 → "95% confidence interval".
+ * Always by its name, never as a "likely range" (review round 5: a
+ * confidence interval is not a range the value is likely to be in).
+ */
+export function confidenceIntervalName(
+  level: number | null | undefined,
+  atStart = false,
+): string {
+  if (level != null) return `${formatConfidenceLevel(level)} confidence interval`
+  return atStart ? 'Confidence interval' : 'confidence interval'
 }
 
 /** [2025] → "2025"; [2003..2025] → "2003–2025"; [2019, 2021] → "2019, 2021". */

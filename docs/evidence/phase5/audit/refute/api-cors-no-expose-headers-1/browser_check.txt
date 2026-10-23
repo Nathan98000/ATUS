@@ -1,0 +1,12 @@
+{
+ "status": 200,
+ "analysisKey": null,
+ "cache": null,
+ "reqId": null,
+ "visible": [
+  "content-length",
+  "content-type"
+ ],
+ "badStatus": 422,
+ "badReqId": null
+}

@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/malformed_trunc.json http://127.0.0.1:8216/api/v1/analysis/estimate (port 8216)
+HTTP/1.1 400 Bad Request
+date: Tue, 20 Oct 2026 17:11:35 GMT
+server: uvicorn
+content-length: 185
+content-type: application/json
+vary: Origin
+x-request-id: d861473ff6b74b5d
+
+{"error":{"code":"malformed_json","message":"The request body is not valid JSON.","details":{"errors":[{"location":["body","48"],"message":"JSON decode error","type":"json_invalid"}]}}}
+### status=400 time_total=0.001209s size_download=185 size_upload=48

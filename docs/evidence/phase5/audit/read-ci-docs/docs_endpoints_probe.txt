@@ -1,0 +1,14 @@
+$REPO/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+app.docs_url /docs redoc_url /redoc openapi_url /openapi.json
+/docs 200 text/html; charset=utf-8 1016 bytes ['https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js', 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css', 'https://fastapi.tiangolo.com/img/favicon.png']
+   headers: {'x-request-id': '31686d31217b43e4'}
+/redoc 200 text/html; charset=utf-8 898 bytes ['https://cdn.jsdelivr.net/npm/redoc@2/bundles/redoc.standalone.js', 'https://fastapi.tiangolo.com/img/favicon.png', 'https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700']
+   headers: {'x-request-id': 'bf9e3558f6dc4f07'}
+/openapi.json 200 application/json 32892 bytes []
+   headers: {'x-request-id': '777119c6ae124af4'}
+/docs/oauth2-redirect 200 text/html; charset=utf-8 3012 bytes []
+   headers: {'x-request-id': '3cbc4b0c59b84541'}
+/health 200 application/json 15 bytes []
+   headers: {'x-request-id': 'c3c806a836344b9b'}
+openapi paths: ['/api/v1/activities', '/api/v1/activities/presets', '/api/v1/activities/{code}', '/api/v1/analysis/compare', '/api/v1/analysis/estimate', '/api/v1/analysis/trend', '/api/v1/meta', '/api/v1/population/metadata', '/health', '/ready']

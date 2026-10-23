@@ -1,0 +1,24 @@
+# PROTOTYPE serving DB (atus-emu-pg:5441), final state
+server_version: 16.15 (Debian 16.15-1.pgdg13+2)
+transaction_read_only: on
+table                                    rows   total_MB   heap_MB   idx_MB toast_MB
+replicate_weights                     250,172      331.2     325.8      5.4     0.00
+activities                          2,982,182      168.3     148.4     19.8     0.00
+respondents                           258,954       26.1      16.9      9.2     0.00
+cps_persons                           258,954       22.5      12.9      9.6     0.00
+pandemic_replicate_weights             16,751       22.2      21.8      0.4     0.00
+household_members                     258,954       18.8      10.9      7.8     0.00
+activity_codes                            431        0.1       0.0      0.0     0.01
+activity_tier2                            107        0.1       0.0      0.0     0.01
+activity_tier1                             18        0.1       0.0      0.0     0.01
+ingestion_runs                              1        0.1       0.0      0.0     0.01
+source_files                                0        0.0       0.0      0.0     0.01
+validation_results                          0        0.0       0.0      0.0     0.01
+SUM atus user objects                              589.5
+other user table public.schema_migrations: 0.062 MB
+pg_database_size('atus') = 627,457,047 bytes = 598.4 MB
+  db atus                          598.4 MB
+  db postgres                        7.3 MB
+  db template0                       7.2 MB
+  db template1                       7.4 MB
+sum(pg_database_size(datname)) over cluster = 650,458,708 bytes = 620.3 MB

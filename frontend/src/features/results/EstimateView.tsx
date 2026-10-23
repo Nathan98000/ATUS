@@ -1,167 +1,159 @@
 /**
- * Point-estimate result: the estimate with its uncertainty front and center,
- * the unweighted sample clearly distinguished from the weighted population,
- * API warnings always visible, and a methodology panel + exact-value table.
+ * Point-estimate result: the answer in one sentence, the number itself with
+ * its 95% confidence interval, and a figure that puts it in proportion — the share of
+ * a 24-hour day for a duration, a hundred people for a rate, the whole
+ * population for a count — then the small print and the result's notes.
  */
+import type { CSSProperties } from 'react'
+
 import type { EstimateResponse } from '../../api/types'
 import { WarningBanner } from '../../components/WarningBanner'
+import { contextNotes } from '../../domain/notes'
 import { interpretEstimate } from '../../domain/describe'
 import {
-  formatConfidenceInterval,
-  formatConfidenceLevel,
+  confidenceIntervalName,
   formatCount,
   formatEstimate,
   formatPeople,
-  formatStandardError,
-  formatYears,
-  unitLabel,
+  formatReadableInterval,
 } from '../../utils/format'
-import { MethodologyPanel, type MethodologyRow } from './MethodologyPanel'
+import { ChartFootnote } from './ChartFootnote'
 
-export function estimateMethodologyRows(result: EstimateResponse): MethodologyRow[] {
-  return [
-    { term: 'Activity', detail: activityDetail(result) },
-    { term: 'Population', detail: result.population },
-    { term: 'Statistic', detail: result.measure.replaceAll('_', ' ') },
-    { term: 'Years', detail: formatYears(result.years) },
-    {
-      term: 'Weighting',
-      detail: `${result.weight.bls_variable} (${result.weight.scheme}) — official BLS survey weights; estimates represent person-days of the civilian noninstitutional population.`,
-    },
-    {
-      term: 'Uncertainty',
-      detail:
-        result.variance_method === 'replicate'
-          ? 'Standard errors from the official 160 replicate weights (successive-difference replication).'
-          : 'None requested (point estimate only).',
-    },
-    ...(result.estimate.confidence_level != null
-      ? [
-          {
-            term: 'Confidence interval',
-            detail: `${formatConfidenceLevel(result.estimate.confidence_level)} normal approximation (estimate ± z × SE).`,
-          },
-        ]
-      : []),
-    { term: 'Days represented', detail: formatCount(result.days_in_period) },
-    { term: 'Analytics version', detail: result.analytics_version },
-  ]
-}
+const MINUTES_PER_DAY = 24 * 60
 
-function activityDetail(result: EstimateResponse): string {
-  const { label, include, exclude, leaf_code_count } = result.activity
-  let detail = `${label} — lexicon codes ${include.join(', ')}`
-  if (exclude.length > 0) detail += ` excluding ${exclude.join(', ')}`
-  detail += ` (${leaf_code_count} six-digit activities)`
-  return detail
-}
-
-export function SampleLines({ result }: { result: EstimateResponse }) {
-  return (
-    <div className="sample-lines">
-      <p>
-        <b>Survey sample:</b> {formatCount(result.n_respondents)} respondents
-        {result.measure !== 'average_minutes_per_day'
-          ? ` (${formatCount(result.n_participants)} reported the activity)`
-          : ` (${formatCount(result.n_participants)} reported this activity that day)`}
-      </p>
-      <p>
-        <b>Represents:</b> {formatPeople(result.weighted_population_per_day)} people on an
-        average day
-      </p>
-    </div>
-  )
+/** What the big number counts, under it. */
+function valueCaption(result: EstimateResponse): string {
+  switch (result.estimate.unit) {
+    case 'minutes_per_day':
+      return 'per day, on average'
+    case 'minutes_per_day_of_participants':
+      return 'per day, among people who did it'
+    default:
+      return formatEstimate(result.estimate.value, result.estimate.unit).secondary ?? ''
+  }
 }
 
 export function EstimateView({
   result,
-  analysisKey,
+  note,
 }: {
   result: EstimateResponse
-  analysisKey: string | null
+  /** What a link's own labels stand for (`definitionNote`), if anything. */
+  note?: string | null
 }) {
-  const { value, unit, standard_error, ci_lower, ci_upper, confidence_level } = result.estimate
+  const { value, unit, ci_lower, ci_upper, confidence_level } = result.estimate
   const formatted = formatEstimate(value, unit)
   const interpretation = interpretEstimate(result)
 
   return (
     <div className="result-stack">
-      <section className="card" aria-label="Estimate">
-        <div className="stat-block">
-          <span className="stat-value">{formatted.primary}</span>
-          {formatted.secondary ? (
-            <span className="stat-secondary">{formatted.secondary}</span>
-          ) : null}
-          {standard_error != null ? (
-            <p className="stat-uncertainty">
-              Standard error <b>± {formatStandardError(standard_error, unit)}</b>
-              {ci_lower != null && ci_upper != null && confidence_level != null ? (
-                <>
-                  {' · '}
-                  {formatConfidenceLevel(confidence_level)} confidence interval{' '}
-                  <b>{formatConfidenceInterval(ci_lower, ci_upper, unit)}</b>
-                </>
-              ) : null}
-            </p>
-          ) : (
-            <p className="stat-uncertainty">
-              No uncertainty was requested for this estimate (point estimate only).
-            </p>
-          )}
+      <section className="card result-card" aria-label="Estimate">
+        {interpretation ? <p className="result-lead">{interpretation}</p> : null}
+        <div className="estimate-hero">
+          <div className="stat-block">
+            <span className="stat-value">{formatted.primary}</span>
+            <span className="stat-secondary">{valueCaption(result)}</span>
+            {ci_lower != null && ci_upper != null ? (
+              <p className="stat-uncertainty">
+                {confidenceIntervalName(confidence_level, true)}:{' '}
+                <b>{formatReadableInterval(ci_lower, ci_upper, unit)}</b>
+              </p>
+            ) : (
+              <p className="stat-uncertainty">
+                No confidence interval is available for this estimate.
+              </p>
+            )}
+          </div>
+          <EstimateFigure result={result} />
         </div>
-        {interpretation ? (
-          <p style={{ marginTop: '0.9rem', marginBottom: 0 }}>{interpretation}</p>
-        ) : null}
-        <SampleLines result={result} />
+        <ChartFootnote
+          notes={note != null ? [note] : []}
+          context={contextNotes(result.warnings)}
+          sample={`${formatCount(result.n_respondents)} people's diaries`}
+        />
       </section>
 
       <WarningBanner warnings={result.warnings} />
-      <MethodologyPanel rows={estimateMethodologyRows(result)} analysisKey={analysisKey} />
+    </div>
+  )
+}
 
-      <details className="panel">
-        <summary>View exact values</summary>
-        <div className="panel__body table-scroll">
-          <table className="data-table">
-            <caption className="visually-hidden">Exact values for this estimate</caption>
-            <tbody>
-              <tr>
-                <th scope="row">Estimate ({unitLabel(unit)})</th>
-                <td className="num">{value}</td>
-              </tr>
-              {standard_error != null ? (
-                <tr>
-                  <th scope="row">Standard error</th>
-                  <td className="num">{standard_error}</td>
-                </tr>
-              ) : null}
-              {ci_lower != null && ci_upper != null ? (
-                <tr>
-                  <th scope="row">Confidence interval</th>
-                  <td className="num">
-                    {ci_lower} to {ci_upper}
-                  </td>
-                </tr>
-              ) : null}
-              <tr>
-                <th scope="row">Respondents (unweighted)</th>
-                <td className="num">{result.n_respondents}</td>
-              </tr>
-              <tr>
-                <th scope="row">Participants (unweighted)</th>
-                <td className="num">{result.n_participants}</td>
-              </tr>
-              <tr>
-                <th scope="row">Weighted population per day</th>
-                <td className="num">{result.weighted_population_per_day}</td>
-              </tr>
-              <tr>
-                <th scope="row">Days in period</th>
-                <td className="num">{result.days_in_period}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </details>
+function EstimateFigure({ result }: { result: EstimateResponse }) {
+  const { value, unit } = result.estimate
+  if (unit === 'minutes_per_day' || unit === 'minutes_per_day_of_participants') {
+    return <DayFigure minutes={value} />
+  }
+  if (unit === 'proportion_of_population') return <HundredFigure share={value} />
+  if (unit === 'persons_per_day' && result.weighted_population_per_day > 0) {
+    return <PeopleFigure people={value} population={result.weighted_population_per_day} />
+  }
+  return null
+}
+
+const HOUR_MARKS = [0, 6, 12, 18, 24]
+
+/** The estimate as a stretch of one 24-hour day. */
+function DayFigure({ minutes }: { minutes: number }) {
+  const share = Math.min(1, Math.max(0, minutes / MINUTES_PER_DAY))
+  const shown = formatEstimate(minutes, 'minutes_per_day').primary
+  return (
+    // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+    <div className="estimate-figure" role="img" aria-label={`${shown} out of 24 hours`}>
+      <p className="estimate-figure__caption">Out of a 24-hour day</p>
+      <div className="day-bar">
+        <span
+          className="day-bar__fill"
+          data-testid="day-fill"
+          style={{ '--share': share } as CSSProperties}
+        />
+      </div>
+      <div className="day-bar__hours" aria-hidden="true">
+        {HOUR_MARKS.map((hour) => (
+          <span key={hour} style={{ left: `${(hour / 24) * 100}%` }}>
+            {hour}h
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** A rate as filled dots among a hundred people. */
+function HundredFigure({ share }: { share: number }) {
+  const filled = Math.min(100, Math.max(0, Math.round(share * 100)))
+  const caption =
+    share > 0 && filled === 0
+      ? 'Fewer than 1 in every 100 people'
+      : share < 1 && filled === 100
+        ? 'Nearly everyone'
+        : `About ${filled} in every 100 people`
+  return (
+    // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+    <div className="estimate-figure" role="img" aria-label={caption}>
+      <p className="estimate-figure__caption">{caption}</p>
+      <div className="hundred-grid" aria-hidden="true">
+        {Array.from({ length: 100 }, (_, index) => (
+          <span
+            key={index}
+            className={index < filled ? 'hundred-grid__dot is-filled' : 'hundred-grid__dot'}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** A count of people against the whole population it is drawn from. */
+function PeopleFigure({ people, population }: { people: number; population: number }) {
+  const share = Math.min(1, Math.max(0, people / population))
+  const caption = `${formatPeople(people)} of ${formatPeople(population)} people`
+  return (
+    // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role
+    <div className="estimate-figure" role="img" aria-label={caption}>
+      <p className="estimate-figure__caption">{caption}</p>
+      <div className="day-bar">
+        <span className="day-bar__fill" style={{ '--share': share } as CSSProperties} />
+      </div>
     </div>
   )
 }

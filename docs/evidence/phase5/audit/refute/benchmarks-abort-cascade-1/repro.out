@@ -1,0 +1,6 @@
+error ignored in rollback on <psycopg.Connection [INERROR] (host=localhost port=5434 user=atus database=atus_refute_bac) at 0x109158680>: Explicit rollback() forbidden within a Transaction context. (Either raise Rollback() or allow an exception to propagate out of the context.)
+benchmarks: 24
+Counter({'InFailedSqlTransaction': 23, 'QueryCanceled': 1})
+QueryCanceled: canceling statement due to statement timeout
+InFailedSqlTransaction: current transaction is aborted, commands ignored until end of transaction bl
+run_benchmarks raised: InFailedSqlTransaction current transaction is aborted, commands ignored until end of transaction block

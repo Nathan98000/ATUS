@@ -1,0 +1,26 @@
+3.3.6 binary 180006 True
+    def _should_discard(
+        self,
+        prep: Prepare,
+        results: Sequence[PGresult],
+        __should_clear: Any = re.compile(
+            rb"^(?:DROP|ALTER|ROLLBACK|DISCARD ALL|DEALLOCATE ALL)\b"
+        ).match,
+    ) -> bool:
+        """Check if we need to discard our entire state: it should happen on
+    def _deallocate(self, name: bytes | None) -> PQGen[None]:
+        """
+        Deallocate one, or all, prepared statement in the session.
+
+        ``name == None`` stands for DEALLOCATE ALL.
+
+        If possible, use protocol-level commands; otherwise use SQL statements.
+
+        Note that PgBouncer doesn't support DEALLOCATE name, but it supports
+        protocol-level Close from 1.21 and DEALLOCATE ALL from 1.22.
+        """
+        if name is None or not _HAS_SEND_CLOSE:
+            stmt = b"DEALLOCATE " + name if name is not None else b"DEALLOCATE ALL"
+            yield from self._exec_command(stmt)
+            return
+

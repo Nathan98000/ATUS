@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/nested100000.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 400 Bad Request
+date: Tue, 20 Oct 2026 17:09:14 GMT
+server: uvicorn
+content-length: 92
+content-type: application/json
+vary: Origin
+x-request-id: d817c143622f4313
+
+{"error":{"code":"http_400","message":"There was an error parsing the body","details":null}}
+### status=400 time_total=0.003025s size_download=92 size_upload=200089

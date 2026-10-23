@@ -1,0 +1,30 @@
+== jit=off run 1 15:38:40
+                                       Buffers: shared hit=283 read=62364
+                                             Buffers: shared hit=282 read=853
+   Buffers: shared hit=754 read=93
+ Execution Time: 40793.930 ms
+== jit=on run 1 15:39:22
+   Buffers: shared hit=754 read=93
+ JIT:
+   Timing: Generation 52.975 ms, Inlining 119.241 ms, Optimization 3831.123 ms, Emission 6765.257 ms, Total 10768.595 ms
+ Execution Time: 52396.073 ms
+== jit=off run 2 15:40:14
+                                       Buffers: shared hit=282 read=62365
+                                             Buffers: shared hit=282 read=853
+   Buffers: shared hit=783 read=64
+ Execution Time: 41227.286 ms
+== jit=on run 2 15:40:56
+   Buffers: shared hit=783 read=64
+ JIT:
+   Timing: Generation 87.032 ms, Inlining 186.071 ms, Optimization 5006.288 ms, Emission 6030.853 ms, Total 11310.243 ms
+ Execution Time: 53293.365 ms
+== jit=off run 3 15:41:49
+                                       Buffers: shared hit=282 read=62365
+                                             Buffers: shared hit=282 read=853
+   Buffers: shared hit=756 read=91
+ Execution Time: 20692.348 ms
+== jit=on run 3 15:42:10
+   Buffers: shared hit=756 read=91
+ JIT:
+   Timing: Generation 49.320 ms, Inlining 92.106 ms, Optimization 1911.368 ms, Emission 4277.076 ms, Total 6329.870 ms
+ Execution Time: 27552.747 ms

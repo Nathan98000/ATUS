@@ -1,0 +1,342 @@
+{
+ "timed": true,
+ "setup": {
+  "requests": 2,
+  "status": {
+   "200": 2
+  },
+  "error_codes": {}
+ },
+ "overall": {
+  "requests": 354,
+  "status": {
+   "200": 107,
+   "503": 246,
+   "422": 1
+  },
+  "error_codes": {
+   "overloaded": 246,
+   "insufficient_data": 1
+  },
+  "x_cache": {
+   "miss": 107,
+   "none": 247
+  },
+  "expected_outcome": 108,
+  "window_s": 125.749,
+  "throughput_rps": 2.815,
+  "throughput_200_rps": 0.851,
+  "latency_ms": {
+   "n": 354,
+   "min": 2548.8,
+   "p50": 5014.4,
+   "p95": 7812.2,
+   "p99": 10053.9,
+   "max": 13067.1,
+   "mean": 5551.0
+  },
+  "latency_200_ms": {
+   "n": 107,
+   "min": 2548.8,
+   "p50": 6637.6,
+   "p95": 9650.2,
+   "p99": 12428.1,
+   "max": 13067.1,
+   "mean": 6679.3
+  },
+  "server_db_ms": {
+   "n": 354,
+   "min": 0,
+   "p50": 0.0,
+   "p95": 3333.2,
+   "p99": 6330.0,
+   "max": 9087.6,
+   "mean": 707.6
+  },
+  "server_app_ms": {
+   "n": 354,
+   "min": 198.6,
+   "p50": 5004.4,
+   "p95": 5101.8,
+   "p99": 5202.6,
+   "max": 5402.8,
+   "mean": 4817.8
+  },
+  "server_db_share_of_latency": 0.1275
+ },
+ "by_endpoint": {
+  "estimate": {
+   "requests": 354,
+   "status": {
+    "200": 107,
+    "503": 246,
+    "422": 1
+   },
+   "error_codes": {
+    "overloaded": 246,
+    "insufficient_data": 1
+   },
+   "x_cache": {
+    "miss": 107,
+    "none": 247
+   },
+   "expected_outcome": 108,
+   "window_s": 125.749,
+   "throughput_rps": 2.815,
+   "throughput_200_rps": 0.851,
+   "latency_ms": {
+    "n": 354,
+    "min": 2548.8,
+    "p50": 5014.4,
+    "p95": 7812.2,
+    "p99": 10053.9,
+    "max": 13067.1,
+    "mean": 5551.0
+   },
+   "latency_200_ms": {
+    "n": 107,
+    "min": 2548.8,
+    "p50": 6637.6,
+    "p95": 9650.2,
+    "p99": 12428.1,
+    "max": 13067.1,
+    "mean": 6679.3
+   },
+   "server_db_ms": {
+    "n": 354,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 3333.2,
+    "p99": 6330.0,
+    "max": 9087.6,
+    "mean": 707.6
+   },
+   "server_app_ms": {
+    "n": 354,
+    "min": 198.6,
+    "p50": 5004.4,
+    "p95": 5101.8,
+    "p99": 5202.6,
+    "max": 5402.8,
+    "mean": 4817.8
+   },
+   "server_db_share_of_latency": 0.1275
+  }
+ },
+ "by_endpoint_cache": {
+  "estimate|miss": {
+   "requests": 107,
+   "status": {
+    "200": 107
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 107
+   },
+   "expected_outcome": 107,
+   "window_s": 125.749,
+   "throughput_rps": 0.851,
+   "throughput_200_rps": 0.851,
+   "latency_ms": {
+    "n": 107,
+    "min": 2548.8,
+    "p50": 6637.6,
+    "p95": 9650.2,
+    "p99": 12428.1,
+    "max": 13067.1,
+    "mean": 6679.3
+   },
+   "latency_200_ms": {
+    "n": 107,
+    "min": 2548.8,
+    "p50": 6637.6,
+    "p95": 9650.2,
+    "p99": 12428.1,
+    "max": 13067.1,
+    "mean": 6679.3
+   },
+   "server_db_ms": {
+    "n": 107,
+    "min": 289.4,
+    "p50": 1900.3,
+    "p95": 5684.1,
+    "p99": 8145.5,
+    "max": 9087.6,
+    "mean": 2325.2
+   },
+   "server_app_ms": {
+    "n": 107,
+    "min": 198.6,
+    "p50": 4614.6,
+    "p95": 4999.6,
+    "p99": 5003.6,
+    "max": 5003.9,
+    "mean": 4346.0
+   },
+   "server_db_share_of_latency": 0.3481
+  },
+  "estimate|none": {
+   "requests": 247,
+   "status": {
+    "503": 246,
+    "422": 1
+   },
+   "error_codes": {
+    "overloaded": 246,
+    "insufficient_data": 1
+   },
+   "x_cache": {
+    "none": 247
+   },
+   "expected_outcome": 1,
+   "window_s": 124.991,
+   "throughput_rps": 1.976,
+   "throughput_200_rps": 0.0,
+   "latency_ms": {
+    "n": 247,
+    "min": 5002.3,
+    "p50": 5010.2,
+    "p95": 5433.0,
+    "p99": 5582.9,
+    "max": 6594.7,
+    "mean": 5062.2
+   },
+   "latency_200_ms": {
+    "n": 0
+   },
+   "server_db_ms": {
+    "n": 247,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 0.0,
+    "p99": 0.0,
+    "max": 1701.6,
+    "mean": 6.9
+   },
+   "server_app_ms": {
+    "n": 247,
+    "min": 4891.3,
+    "p50": 5006.7,
+    "p95": 5104.7,
+    "p99": 5258.0,
+    "max": 5402.8,
+    "mean": 5022.1
+   },
+   "server_db_share_of_latency": 0.0014
+  }
+ },
+ "by_kind": {
+  "corpus": {
+   "requests": 128,
+   "status": {
+    "200": 48,
+    "503": 80
+   },
+   "error_codes": {
+    "overloaded": 80
+   },
+   "x_cache": {
+    "miss": 48,
+    "none": 80
+   },
+   "expected_outcome": 48,
+   "window_s": 53.648,
+   "throughput_rps": 2.386,
+   "throughput_200_rps": 0.895,
+   "latency_ms": {
+    "n": 128,
+    "min": 2548.8,
+    "p50": 5102.1,
+    "p95": 7138.2,
+    "p99": 10602.4,
+    "max": 12526.7,
+    "mean": 5464.0
+   },
+   "latency_200_ms": {
+    "n": 48,
+    "min": 2548.8,
+    "p50": 5750.0,
+    "p95": 9374.2,
+    "p99": 11754.4,
+    "max": 12526.7,
+    "mean": 5991.0
+   },
+   "server_db_ms": {
+    "n": 128,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 3293.0,
+    "p99": 7167.3,
+    "max": 9087.6,
+    "mean": 779.7
+   },
+   "server_app_ms": {
+    "n": 128,
+    "min": 198.6,
+    "p50": 5004.9,
+    "p95": 5193.7,
+    "p99": 5374.2,
+    "max": 5402.8,
+    "mean": 4620.4
+   },
+   "server_db_share_of_latency": 0.1427
+  },
+  "generated": {
+   "requests": 226,
+   "status": {
+    "503": 166,
+    "200": 59,
+    "422": 1
+   },
+   "error_codes": {
+    "overloaded": 166,
+    "insufficient_data": 1
+   },
+   "x_cache": {
+    "none": 167,
+    "miss": 59
+   },
+   "expected_outcome": 60,
+   "window_s": 84.626,
+   "throughput_rps": 2.671,
+   "throughput_200_rps": 0.697,
+   "latency_ms": {
+    "n": 226,
+    "min": 5002.4,
+    "p50": 5010.2,
+    "p95": 7952.3,
+    "p99": 9658.0,
+    "max": 13067.1,
+    "mean": 5600.3
+   },
+   "latency_200_ms": {
+    "n": 59,
+    "min": 5231.7,
+    "p50": 6859.2,
+    "p95": 9556.0,
+    "p99": 11457.8,
+    "max": 13067.1,
+    "mean": 7239.3
+   },
+   "server_db_ms": {
+    "n": 226,
+    "min": 0,
+    "p50": 0.0,
+    "p95": 3297.1,
+    "p99": 5268.7,
+    "max": 8200,
+    "mean": 666.8
+   },
+   "server_app_ms": {
+    "n": 226,
+    "min": 3729.7,
+    "p50": 5004.4,
+    "p95": 5013.2,
+    "p99": 5015.0,
+    "max": 5053.7,
+    "mean": 4929.6
+   },
+   "server_db_share_of_latency": 0.1191
+  }
+ }
+}

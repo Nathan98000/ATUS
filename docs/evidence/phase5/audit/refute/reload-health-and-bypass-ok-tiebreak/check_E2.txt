@@ -1,0 +1,3 @@
+40 Counter({(200, 'bypass', 'old', False, True): 40})
+keys present: ['cached_under_key', 'dur', 'i', 'key', 'key_version', 'loaded', 'loader_rc', 'new_run', 'old_run', 'round', 'status', 'value', 'x_cache']
+rounds: Counter({0: 10, 1: 10, 2: 10, 3: 10}) dur range 6.646 6.794

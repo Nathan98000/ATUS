@@ -1,0 +1,22 @@
+Tie-break notes, fe-stale-index-asset-risk (2026-10-20). Repo HEAD is 387fc2d.
+
+CODE
+- frontend/index.html:14-15 contains an empty <div id="root"></div> and a single module entry (/src/main.tsx). There is no fallback content and no inline error handler.
+- frontend/vite.config.ts:6-14 sets no build options (no manualChunks, no cache settings).
+- frontend/src has no lazy(), import(), vite:preloadError or global error listener; grep returned no hits.
+- frontend/src/main.tsx:12-22 and components/ErrorBoundary.tsx: the ErrorBoundary is compiled into the bundle, so it cannot render when the bundle fails to load.
+- frontend/dist (gitignored, built 13:00 today) holds an unhashed index.html, a single assets/index-zZ8NhHEV.js and a single index-iJKMLZcZ.css. That is the same shape as the read-frontend log (index-DfILjWC4.js); the JS hash differs between builds.
+- git ls-files shows no wrangler, _headers, _redirects or 404.html, so there is no deploy config yet.
+
+EXPERIMENT: stale_shell.mjs -> stale_shell.log
+Playwright Chromium served by route interception (no port).
+- A. Fresh shell: the app renders (#root has 1041 chars).
+- B. Stale shell, bundle missing, SPA fallback returns index.html with 200 text/html: "Failed to load module script ... MIME type text/html", #root is empty and the page is blank.
+- C. Stale shell, bundle missing, 404: #root is empty and the page is blank.
+=> The mechanism is confirmed. A 404 also gives a blank page, so "return 404 for missing assets" does not prevent the blank page on its own.
+
+CLOUDFLARE DOCS (read 2026-10-20)
+- workers/static-assets/headers: default "Cache-Control: public, max-age=0, must-revalidate", plus an ETag that is a hash of the file. The browser revalidates every time.
+- workers/static-assets/routing/single-page-application: with no Worker script, an unmatched request gets /index.html with 200. With a Worker script, non-navigation requests that match no asset invoke the Worker. run_worker_first is available.
+- workers/static-assets/routing/advanced/gradual-rollouts: version A's HTML can reference assets/index-<hash>.js, and that request can be routed to version B, "resulting in a 404 error and a broken page". The fix is version affinity.
+- pages/configuration/serving-pages: same default Cache-Control and ETag. With no 404.html, Pages "serves the root (/) for any incoming path that does not correspond to a static asset".

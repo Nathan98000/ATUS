@@ -1,0 +1,56 @@
+loader_start=+0.000s  truncate_done(L0)=0  release(C)=+14.051s  loader_ok=False
+  event inflight_start           t=  -1.995s {'pid': 1762}
+  event inflight_statement_done  t= +13.025s 
+  event inflight_committed       t= +13.025s 
+  event loader_done              t= +14.051s {'ok': False, 'error': 'DeadlockDetected: deadlock detected\nDETAIL:  Process 1769 waits for AccessExclusiveLock on relation 34511 of database 34311; blocked by process 692.\nProcess 692 waits for AccessShareLock on relation 34436 of database 34311; blocked by process 1769.\nHINT:  See server log for query details.'}
+
+phase                     kind                  n      p50     p95     max  outcomes(status/error/x-cache/value -> n)
+1_before_load             activities          184    0.007   0.011   0.020  200/-/-/556 x184
+1_before_load             est_cached          184    0.006   0.011   0.022  200/-/hit/90.0 x184
+1_before_load             est_cached_probe     11    0.004   0.020   0.020  200/-/hit/90.0 x11
+1_before_load             est_uncached        368    0.014   0.023   0.028  200/-/miss/90.0 x368
+1_before_load             health_probe         40    0.002   0.004   0.011  200/-/-/- x40
+1_before_load             meta                184    0.005   0.009   0.021  200/-/-/6/run2 x184
+1_before_load             ready               184    0.004   0.008   0.021  200/-/-/- x184
+3_started_during_load     activities            6    0.006   0.008   0.008  200/-/-/556 x6
+3_started_during_load     est_cached            8    0.005  10.018  10.018  200/-/hit/90.0 x6; 503/database_unavailable/-/- x2
+3_started_during_load     est_cached_probe     14    6.074  10.009  10.010  200/-/hit/90.0 x10; 503/database_unavailable/-/- x4
+3_started_during_load     est_uncached         12   13.911  14.025  14.030  200/-/miss/90.0 x12
+3_started_during_load     health_probe         57    0.003   0.004   0.008  200/-/-/- x57
+3_started_during_load     meta                  4    0.005   0.005   0.005  200/-/-/6/run2 x4
+3_started_during_load     ready                 2    0.003   0.003   0.003  200/-/-/- x2
+4_started_after_release   activities          828    0.008   0.018   0.036  200/-/-/556 x828
+4_started_after_release   est_cached          828    0.005   0.010   0.036  200/-/hit/90.0 x828
+4_started_after_release   est_cached_probe     45    0.004   0.011   0.079  200/-/hit/90.0 x45
+4_started_after_release   est_uncached       1652    0.016   0.031   0.083  200/-/miss/90.0 x1652
+4_started_after_release   health_probe        183    0.002   0.005   0.013  200/-/-/- x183
+4_started_after_release   meta                828    0.005   0.010   0.078  200/-/-/6/run2 x828
+4_started_after_release   ready               829    0.004   0.010   0.068  200/-/-/- x829
+
+Requests started during the load window and completed after release:
+  ('est_uncached', '200', '-', 'miss', '90.0', '-') x12
+  ('est_cached_probe', '200', '-', 'hit', '90.0', '-') x10
+  wait: min 0.07s max 14.03s; completed +0.005..+0.023s after release
+
+503s: n=6 codes=Counter({'database_unavailable': 6}) first at start+0.39s/end+10.41s; dur p50 10.01s min 10.01s max 10.02s
+  by kind: {'est_cached': 2, 'est_cached_probe': 4}
+
+/health during load window: n=56 status=Counter({'200': 56}) p50 3.0ms p99 4.0ms max 4.0ms
+
+completions per 5 s bucket (relative to L0): bucket: ok200 / 503 / other  [non-health]
+  -15:7/0/0  -10:555/0/0  -5:553/0/0  +0:18/0/0  +10:118/6/0  +15:533/0/0  +20:536/0/0  +25:545/0/0  +30:536/0/0  +35:530/0/0  +40:559/0/0  +45:558/0/0  +50:560/0/0  +55:557/0/0
+
+estimate values by (phase, x_cache, value):
+  ('1_before_load', 'est_cached', 'hit', '90.0') x184
+  ('1_before_load', 'est_cached_probe', 'hit', '90.0') x11
+  ('1_before_load', 'est_uncached', 'miss', '90.0') x368
+  ('3_started_during_load', 'est_cached', 'hit', '90.0') x6
+  ('3_started_during_load', 'est_cached_probe', 'hit', '90.0') x10
+  ('3_started_during_load', 'est_uncached', 'miss', '90.0') x12
+  ('4_started_after_release', 'est_cached', 'hit', '90.0') x828
+  ('4_started_after_release', 'est_cached_probe', 'hit', '90.0') x45
+  ('4_started_after_release', 'est_uncached', 'miss', '90.0') x1652
+
+lock sampler: 159 samples; max API backends 10; max API backends waiting on a Lock 10
+  API lock waits by relation (sample-count): {('activities:AccessShareLock',): 272}
+  loader AE-held sample at +0.05s: ['activity_companions'] waiting_for=['activities:AccessExclusiveLock']

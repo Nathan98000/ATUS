@@ -1,0 +1,10 @@
+IGNORED      .env (.gitignore:13:.env)
+NOT IGNORED  .env.production
+NOT IGNORED  .env.production.local
+NOT IGNORED  .env.local
+IGNORED      frontend/.env (.gitignore:13:.env)
+NOT IGNORED  frontend/.env.production
+IGNORED      frontend/.env.production.local (frontend/.gitignore:13:*.local)
+IGNORED      frontend/.env.local (frontend/.gitignore:13:*.local)
+NOT IGNORED  secrets.env
+NOT IGNORED  .env.prod

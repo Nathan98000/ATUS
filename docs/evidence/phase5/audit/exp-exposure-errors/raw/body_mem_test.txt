@@ -1,0 +1,14 @@
+baseline_valid: concurrent=1 body=valid.json rss_before_kb=63936 rss_peak_kb=63936 rss_after_kb=63936
+docs/evidence/phase5/audit/exp-exposure-errors/body_mem_test.sh: line 10: 80197 Terminated: 15          PYTHONDONTWRITEBYTECODE=1 ATUS_DATABASE_URL=postgresql://atus:atus@localhost:5434/atus_audit_probe ATUS_LOG_LEVEL=WARNING nohup $REPO/.venv/bin/atus api --port 8216 > $S/server_8216_memtest.log 2>&1
+one_5mb: concurrent=1 body=big5mb.json rss_before_kb=63936 rss_peak_kb=85200 rss_after_kb=85200
+docs/evidence/phase5/audit/exp-exposure-errors/body_mem_test.sh: line 10: 80273 Terminated: 15          PYTHONDONTWRITEBYTECODE=1 ATUS_DATABASE_URL=postgresql://atus:atus@localhost:5434/atus_audit_probe ATUS_LOG_LEVEL=WARNING nohup $REPO/.venv/bin/atus api --port 8216 > $S/server_8216_memtest.log 2>&1
+one_50mb: concurrent=1 body=big50mb.json rss_before_kb=63952 rss_peak_kb=272656 rss_after_kb=272656
+docs/evidence/phase5/audit/exp-exposure-errors/body_mem_test.sh: line 10: 80387 Terminated: 15          PYTHONDONTWRITEBYTECODE=1 ATUS_DATABASE_URL=postgresql://atus:atus@localhost:5434/atus_audit_probe ATUS_LOG_LEVEL=WARNING nohup $REPO/.venv/bin/atus api --port 8216 > $S/server_8216_memtest.log 2>&1
+two_50mb: concurrent=2 body=big50mb.json rss_before_kb=63856 rss_peak_kb=430048 rss_after_kb=430048
+docs/evidence/phase5/audit/exp-exposure-errors/body_mem_test.sh: line 10: 80470 Terminated: 15          PYTHONDONTWRITEBYTECODE=1 ATUS_DATABASE_URL=postgresql://atus:atus@localhost:5434/atus_audit_probe ATUS_LOG_LEVEL=WARNING nohup $REPO/.venv/bin/atus api --port 8216 > $S/server_8216_memtest.log 2>&1
+three_50mb: concurrent=3 body=big50mb.json rss_before_kb=63856 rss_peak_kb=587152 rss_after_kb=587152
+docs/evidence/phase5/audit/exp-exposure-errors/body_mem_test.sh: line 10: 80600 Terminated: 15          PYTHONDONTWRITEBYTECODE=1 ATUS_DATABASE_URL=postgresql://atus:atus@localhost:5434/atus_audit_probe ATUS_LOG_LEVEL=WARNING nohup $REPO/.venv/bin/atus api --port 8216 > $S/server_8216_memtest.log 2>&1
+one_100mb: concurrent=1 body=big100mb.json rss_before_kb=63856 rss_peak_kb=481904 rss_after_kb=481904
+docs/evidence/phase5/audit/exp-exposure-errors/body_mem_test.sh: line 10: 80728 Terminated: 15          PYTHONDONTWRITEBYTECODE=1 ATUS_DATABASE_URL=postgresql://atus:atus@localhost:5434/atus_audit_probe ATUS_LOG_LEVEL=WARNING nohup $REPO/.venv/bin/atus api --port 8216 > $S/server_8216_memtest.log 2>&1
+eight_5mb: concurrent=8 body=big5mb.json rss_before_kb=63936 rss_peak_kb=195184 rss_after_kb=195184
+docs/evidence/phase5/audit/exp-exposure-errors/body_mem_test.sh: line 10: 80842 Terminated: 15          PYTHONDONTWRITEBYTECODE=1 ATUS_DATABASE_URL=postgresql://atus:atus@localhost:5434/atus_audit_probe ATUS_LOG_LEVEL=WARNING nohup $REPO/.venv/bin/atus api --port 8216 > $S/server_8216_memtest.log 2>&1

@@ -1,0 +1,12 @@
+# Local `wrangler dev` only: copy to .dev.vars (gitignored). These are
+# development placeholders, not secrets; production values come from
+# scripts/ops/gen_edge_secrets.sh and live only in the Worker's secret store.
+EDGE_AUTH_SECRET=dev-only-edge-secret-change-me
+# A local API started with ATUS_EDGE_SECRETS=dev-only-edge-secret-change-me
+RENDER_ORIGIN=http://127.0.0.1:8571
+OPS_TOKEN=dev-only-ops-token
+IP_HMAC_KEY=dev-only-ip-hmac-key
+# The owner's pause switch (src/pause.ts) cannot be set in this file: with
+# `secrets.required` in wrangler.jsonc, `wrangler dev` loads only those names
+# (and the vars) from it. Its values are not secret, so pass them as vars:
+#   npx --no-install wrangler dev --var API_PAUSED_UNTIL:2036-11-01 --var API_PAUSED_REASON:maintenance

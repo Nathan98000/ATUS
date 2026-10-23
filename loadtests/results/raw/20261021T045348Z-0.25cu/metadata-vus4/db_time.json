@@ -1,0 +1,28 @@
+{
+ "tag": "20261021T045348Z-0.25cu.metadata-vus4",
+ "db_ms": 0.0,
+ "by_kind_ms": {},
+ "statements": 0,
+ "lines": 0,
+ "errors": {},
+ "statement_timeouts": 0,
+ "analysis_sql_ms": 0.0,
+ "first_ts": null,
+ "last_ts": null,
+ "windows": {
+  "setup": {
+   "db_ms": 0.0,
+   "statements": 0,
+   "from": "2026-10-21T04:56:57.951000Z",
+   "to": "2026-10-21T04:56:57.961000Z"
+  },
+  "main": {
+   "db_ms": 0.0,
+   "statements": 0,
+   "from": "2026-10-21T04:56:57.961000Z",
+   "to": "2026-10-21T04:57:58.418275Z"
+  }
+ },
+ "complete": true,
+ "backends": 0
+}

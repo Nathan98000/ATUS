@@ -1,0 +1,171 @@
+           n= 0 | STARTUP_DONE
+ 200  None n= 0 | GET /health
+ 200  None n= 4 | GET /ready
+         BEGIN
+         SELECT 1
+         SELECT EXISTS (SELECT 1 FROM atus.respondents)
+         COMMIT
+ 200  None n= 5 | GET /api/v1/meta
+         BEGIN
+         SELECT id, release, finished_at FROM atus.ingestion_runs WHERE status 
+         SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1
+         SELECT count(*) FROM atus.respondents
+         COMMIT
+ 200  None n= 0 | GET /api/v1/population/metadata
+ 200  None n= 0 | GET /api/v1/activities/presets
+ 200  None n= 3 | GET /api/v1/activities (full)
+         BEGIN
+         SELECT code, name, level, parent_code, harmonization_note FROM (
+         COMMIT
+ 200  None n= 3 | GET /api/v1/activities?search=sleep
+         BEGIN
+         SELECT code, name, level, parent_code, harmonization_note FROM (
+         COMMIT
+ 200  None n= 7 | GET /api/v1/activities/010101 (detail)
+         BEGIN
+         SELECT code, name, level, parent_code, harmonization_note FROM (
+         SELECT code, name, level, parent_code, harmonization_note FROM (
+         SELECT code, name, level, parent_code, harmonization_note FROM (
+         SELECT code, name, level, parent_code, harmonization_note FROM (
+         SELECT count(*) FROM atus.activity_codes WHERE code LIKE $1
+         COMMIT
+ 404  None n= 0 | GET /api/v1/activities/abc (malformed->404)
+ 404  None n= 3 | GET /api/v1/activities/999999 (unknown->404)
+         BEGIN
+         SELECT code, name, level, parent_code, harmonization_note FROM (
+         ROLLBACK
+ 422  None n= 0 | GET /api/v1/activities?level=9 (422 query)
+ 200  miss n= 9 | POST estimate replicate (miss)
+         BEGIN
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+         SELECT code FROM atus.activity_tier1
+         SELECT code FROM atus.activity_tier2
+         SELECT code, name FROM atus.activity_codes
+         WITH activity_minutes AS (
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         COMMIT
+ 200   hit n= 3 | POST estimate replicate (hit)
+         BEGIN
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         COMMIT
+ 200  miss n= 9 | POST estimate variance=none (miss)
+         BEGIN
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+         SELECT code FROM atus.activity_tier1
+         SELECT code FROM atus.activity_tier2
+         SELECT code, name FROM atus.activity_codes
+         WITH activity_minutes AS (
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         COMMIT
+ 200  miss n= 9 | POST trend 2019,2020,2023 (miss)
+         BEGIN
+         prepared SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+         SELECT code FROM atus.activity_tier1
+         SELECT code FROM atus.activity_tier2
+         SELECT code, name FROM atus.activity_codes
+         WITH activity_minutes AS (
+         prepared SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         COMMIT
+ 200   hit n= 3 | POST trend (hit)
+         BEGIN
+         prepared SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         COMMIT
+ 200  miss n=10 | POST compare (miss)
+         BEGIN
+         prepared SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+         SELECT code FROM atus.activity_tier1
+         SELECT code FROM atus.activity_tier2
+         SELECT code, name FROM atus.activity_codes
+         WITH activity_minutes AS (
+         WITH activity_minutes AS (
+         prepared SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         COMMIT
+ 200   hit n= 3 | POST compare (hit)
+         BEGIN
+         prepared SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         COMMIT
+ 200  miss n= 9 | POST estimate cache-bust via confidence_level (miss)
+         BEGIN
+         prepared SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+         SELECT code FROM atus.activity_tier1
+         SELECT code FROM atus.activity_tier2
+         SELECT code, name FROM atus.activity_codes
+         WITH activity_minutes AS (
+         prepared SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         COMMIT
+ 200  miss n= 9 | POST estimate cache-bust via label (miss)
+         BEGIN
+         prepared SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         prepared SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+         prepared SELECT code FROM atus.activity_tier1
+         prepared SELECT code FROM atus.activity_tier2
+         prepared SELECT code, name FROM atus.activity_codes
+         WITH activity_minutes AS (
+         prepared SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         COMMIT
+ 400  None n= 0 | POST estimate malformed JSON (400)
+ 422  None n= 4 | POST estimate schema-invalid years=[] (422 validation_error)
+         BEGIN
+         prepared SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         ROLLBACK
+         DEALLOCATE ALL
+ 422  None n= 3 | POST estimate extra field (422 validation_error)
+         BEGIN
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         ROLLBACK
+ 422  None n= 3 | POST estimate duplicate years (422 invalid_spec)
+         BEGIN
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         ROLLBACK
+ 422  None n= 7 | POST estimate unknown activity (422)
+         BEGIN
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+         SELECT code FROM atus.activity_tier1
+         SELECT code FROM atus.activity_tier2
+         SELECT code, name FROM atus.activity_codes
+         ROLLBACK
+ 422  None n= 4 | POST estimate 2020 multiyear (422 unsupported)
+         BEGIN
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+         ROLLBACK
+ 422  None n= 4 | POST estimate year not loaded 2010 (422)
+         BEGIN
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+         ROLLBACK
+ 404  None n= 0 | GET /nope (404)
+ 405  None n= 0 | GET estimate (405)
+ 200  None n= 0 | GET /openapi.json
+ 200  None n= 0 | GET /docs
+ 200  None n= 0 | GET /redoc
+           n= 0 | TERMINATE
+         [FATAL] terminating connection due to administrator command
+           n= 0 | AFTER_TERMINATE_0 /api/v1/meta
+           n= 5 | AFTER_TERMINATE_1 /api/v1/meta
+         BEGIN
+         SELECT id, release, finished_at FROM atus.ingestion_runs WHERE status 
+         SELECT DISTINCT data_year FROM atus.respondents ORDER BY 1
+         SELECT count(*) FROM atus.respondents
+         COMMIT
+           n= 9 | AFTER_TERMINATE_2 /api/v1/analysis/estimate
+         BEGIN
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         SELECT DISTINCT data_year FROM atus.respondents ORDER BY data_year
+         SELECT code FROM atus.activity_tier1
+         SELECT code FROM atus.activity_tier2
+         SELECT code, name FROM atus.activity_codes
+         WITH activity_minutes AS (
+         SELECT release, id FROM atus.ingestion_runs WHERE status = 'succeeded'
+         COMMIT
+           n= 0 | TERMINATE2
+         [FATAL] terminating connection due to administrator command
+         [FATAL] terminating connection due to administrator command
+           n= 0 | AFTER_TERMINATE2 analysis-first
+           n= 0 | END

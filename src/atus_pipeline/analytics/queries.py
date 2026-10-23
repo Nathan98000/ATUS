@@ -16,6 +16,23 @@ Precision: full-sample sums are computed in ``numeric`` (exact — the BLS
 User's Guide worked example is reproduced to the last digit); replicate sums
 use ``float8`` (relative error ~1e-12, far below the 3 significant digits a
 standard error carries) to keep 480 aggregate expressions fast.
+
+Year pushdown (Phase 5, audit F39): ``activity_minutes`` only aggregates the
+respondents of the requested years. It feeds a LEFT JOIN from respondents
+already filtered to those years, so the rows it drops could never match:
+counts and ``numeric`` sums are identical, and replicate ``float8`` sums
+differ at most by summation-order noise (the §9 equivalence criterion;
+``tests/integration/test_year_pushdown.py``). A single-year request no longer
+aggregates every year's episodes.
+
+The pushed-down CTE is ``MATERIALIZED``. The respondent filters
+(``data_year``, ``<weight> > 0``, diary dates, population dimensions) are
+correlated, so the planner can estimate a dozen base rows where thousands
+exist; with an inlined CTE it then picks a nested loop that re-runs the
+activity aggregate once per respondent (the §9 equivalence run found specs
+that never finished on the full DB). Materializing computes the aggregate
+exactly once, which is also what the Phase 2-4 query's plan did. Values are
+unaffected: the same rows are aggregated and joined.
 """
 
 from __future__ import annotations
@@ -85,16 +102,29 @@ def _replicate_select(scheme: WeightScheme) -> str:
     )
 
 
+# Restricts activity_minutes to the requested years' respondents (see the
+# module docstring). tucaseid is the respondents key, so this is a semi-join.
+_YEAR_PUSHDOWN = (
+    "\n      AND a.tucaseid IN (SELECT yr.tucaseid FROM atus.respondents yr"
+    " WHERE yr.data_year = ANY(%(years)s))"
+)
+
+
 def build_query(
     *,
     activity: ResolvedActivity,
     population: PopulationSQL,
     scheme: WeightScheme,
     with_replicates: bool,
+    push_down_years: bool = True,
 ) -> str:
     """Assemble the sufficient-statistics SQL. All dynamic fragments come from
     fixed internal vocabularies (column names, validated code lists); user
-    values travel only as bound parameters."""
+    values travel only as bound parameters.
+
+    ``push_down_years=False`` renders the Phase 2-4 query (no year pushdown),
+    kept for the equivalence tests; a unit test holds it byte for byte to
+    what 387fc2d rendered (``tests/unit/analytics/phase4_queries.json``)."""
     joins = []
     if population.needs_roster:
         joins.append(
@@ -118,12 +148,15 @@ def build_query(
         if with_replicates else ""
     )
     replicate_select = _replicate_select(scheme) if with_replicates else ""
+    year_pushdown = _YEAR_PUSHDOWN if push_down_years else ""
+    # See the module docstring: compute the pushed-down aggregate once.
+    materialized = "MATERIALIZED " if push_down_years else ""
 
     return f"""
-WITH activity_minutes AS (
+WITH activity_minutes AS {materialized}(
     SELECT a.tucaseid, sum(a.duration_minutes) AS minutes
     FROM atus.activities a
-    WHERE {activity.sql_condition}
+    WHERE {activity.sql_condition}{year_pushdown}
     GROUP BY a.tucaseid
 ),
 base AS (

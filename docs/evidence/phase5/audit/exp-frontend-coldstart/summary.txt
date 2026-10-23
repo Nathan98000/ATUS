@@ -1,0 +1,1019 @@
+
+################ a2_spinup60
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=1 at [0.041]
+    responses: ['meta:200@60.057']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: Loading starter examples…
+    @ 15s title='ATUS Explorer': starter: Loading starter examples…
+    @ 30s title='ATUS Explorer': starter: Loading starter examples…
+    @ 60s title='ATUS Explorer': starter: Loading starter examples…
+    @ 75s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 60.1s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=1 at [0.042]
+    req GET /api/v1/population/metadata: n=1 at [0.042]
+    req GET /api/v1/activities: n=1 at [60.058]
+    req GET /api/v1/activities/presets: n=1 at [60.058]
+    responses: ['meta:200@60.057', 'metadata:200@60.057', 'activities:200@60.06', 'presets:200@60.06']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 15s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 30s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 60s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 75s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 60.1s:Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estim || 60.3s:Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estim
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.042]
+    req GET /api/v1/activities/presets: n=1 at [0.042]
+    req POST /api/v1/analysis/estimate: n=1 at [60.057]
+    responses: ['presets:200@60.057', 'meta:200@60.057', 'estimate:200@60.058']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 60.1s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie || 60.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+
+################ a_meta_delay60
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=1 at [0.041]
+    responses: ['meta:200@60.055']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: Loading starter examples…
+    @ 15s title='ATUS Explorer': starter: Loading starter examples…
+    @ 30s title='ATUS Explorer': starter: Loading starter examples…
+    @ 60s title='ATUS Explorer': starter: Loading starter examples…
+    @ 75s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 60.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=1 at [0.041]
+    req GET /api/v1/population/metadata: n=1 at [0.041]
+    req GET /api/v1/activities: n=1 at [60.063]
+    req GET /api/v1/activities/presets: n=1 at [60.063]
+    responses: ['metadata:200@0.042', 'meta:200@60.054', 'activities:200@60.064', 'presets:200@60.065']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 15s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 30s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 60s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 75s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 60.3s:Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estim
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.041]
+    req GET /api/v1/activities/presets: n=1 at [0.041]
+    req POST /api/v1/analysis/estimate: n=1 at [60.055]
+    responses: ['presets:200@0.051', 'meta:200@60.055', 'estimate:200@60.062']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 60.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+
+################ b2_meta_delay60_503_once
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=2 at [0.041, 61.053]
+    responses: ['meta:503@60.053', 'meta:200@61.056']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: Loading starter examples…
+    @ 15s title='ATUS Explorer': starter: Loading starter examples…
+    @ 30s title='ATUS Explorer': starter: Loading starter examples…
+    @ 60s title='ATUS Explorer': starter: Loading starter examples…
+    @ 75s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 61.1s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@60.053: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=2 at [0.042, 61.053]
+    req GET /api/v1/population/metadata: n=1 at [0.042]
+    req GET /api/v1/activities: n=1 at [61.068]
+    req GET /api/v1/activities/presets: n=1 at [61.068]
+    responses: ['metadata:200@0.042', 'meta:503@60.053', 'meta:200@61.057', 'activities:200@61.069', 'presets:200@61.069']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 15s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 30s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 60s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 75s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 61.1s:Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estim
+    console error@60.053: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=2 at [0.042, 61.053]
+    req GET /api/v1/activities/presets: n=1 at [0.042]
+    req POST /api/v1/analysis/estimate: n=1 at [61.061]
+    responses: ['presets:200@0.043', 'meta:503@60.053', 'meta:200@61.057', 'estimate:200@61.062']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 61.1s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+    console error@60.053: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+################ b_meta_delay60_503_always
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=3 at [0.043, 61.05, 123.058]
+    responses: ['meta:503@60.048', 'meta:503@121.056', 'meta:503@183.068']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: Loading starter examples…
+    @ 15s title='ATUS Explorer': starter: Loading starter examples…
+    @ 30s title='ATUS Explorer': starter: Loading starter examples…
+    @ 60s title='ATUS Explorer': starter: Loading starter examples…
+    @ 75s title='ATUS Explorer': starter: Loading starter examples…
+    @120s title='ATUS Explorer': starter: Loading starter examples…
+    @150s title='ATUS Explorer': starter: Loading starter examples…
+    @185s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @200s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 183.2s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@60.048: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@121.056: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@183.068: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=3 at [0.042, 61.049, 123.056]
+    req GET /api/v1/population/metadata: n=1 at [0.042]
+    responses: ['metadata:200@0.043', 'meta:503@60.047', 'meta:503@121.055', 'meta:503@183.067']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 15s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 30s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 60s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @ 75s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @120s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @150s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @185s title='Explore · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @200s title='Explore · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 183.2s:The analysis service is temporarily unavailable The service is up but its database is not 
+    console error@60.047: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@121.055: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@183.067: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=3 at [0.044, 61.053, 123.058]
+    req GET /api/v1/activities/presets: n=1 at [0.044]
+    responses: ['presets:200@0.055', 'meta:503@60.05', 'meta:503@121.056', 'meta:503@183.068']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @120s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @150s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @185s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @200s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 183.2s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@60.05: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@121.056: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@183.069: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+################ baseline
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=1 at [0.1]
+    responses: ['meta:200@0.102']
+    @  2s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    @  5s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=1 at [0.1]
+    req GET /api/v1/population/metadata: n=1 at [0.101]
+    req GET /api/v1/activities: n=1 at [0.116]
+    req GET /api/v1/activities/presets: n=1 at [0.116]
+    responses: ['meta:200@0.103', 'metadata:200@0.105', 'activities:200@0.128', 'presets:200@0.128']
+    @  2s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    @  5s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estim
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.1]
+    req GET /api/v1/activities/presets: n=1 at [0.1]
+    req POST /api/v1/analysis/estimate: n=1 at [0.108]
+    responses: ['meta:200@0.102', 'presets:200@0.108', 'estimate:200@0.11']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+
+################ baseline_realcors
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.054]
+    req GET /api/v1/activities/presets: n=1 at [0.054]
+    req POST /api/v1/analysis/estimate: n=1 at [0.058]
+    responses: ['meta:200@0.055', 'presets:200@0.056', 'estimate:200@0.059']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+
+################ c2_v2_changed_shape
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=1 at [0.085]
+    responses: ['meta:200@0.135']
+    @  2s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @  5s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 15s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 30s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 60s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 75s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    footer(last): (no version line)
+    transitions: 0.1s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 0.4s:Something went wrong in the application This is a problem in ATUS Explorer itself, not in 
+    console error@0.136: TypeError: Cannot read properties of undefined (reading '0') at zi (http://127.0.0.1:4182/assets/index-DehE4oRV.js:9:125410) at ts (http://127.0.0.1:4182/assets/index-DehE4oRV.js:8:49206) at Jc (http:
+    console error@0.136: Unhandled application error TypeError: Cannot read properties of undefined (reading '0') at zi (http://127.0.0.1:4182/assets/index-DehE4oRV.js:9:125410) at ts (http://127.0.0.1:4182/assets/index-DehE4
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=1 at [0.121]
+    req GET /api/v1/population/metadata: n=1 at [0.121]
+    responses: ['meta:200@0.136', 'metadata:200@0.136']
+    @  2s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @  5s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 15s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 30s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 60s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 75s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    footer(last): (no version line)
+    transitions: 0.1s:Loading the analysis builder… Fetching what the analytical service supports. || 0.4s:Something went wrong in the application This is a problem in ATUS Explorer itself, not in 
+    console error@0.137: TypeError: Cannot read properties of undefined (reading '0') at zi (http://localhost:4182/assets/index-DehE4oRV.js:9:125410) at ts (http://localhost:4182/assets/index-DehE4oRV.js:8:49206) at Jc (http:
+    console error@0.138: Unhandled application error TypeError: Cannot read properties of undefined (reading '0') at zi (http://localhost:4182/assets/index-DehE4oRV.js:9:125410) at ts (http://localhost:4182/assets/index-DehE4
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.141]
+    req GET /api/v1/activities/presets: n=1 at [0.141]
+    responses: ['meta:200@0.141', 'presets:200@0.141']
+    @  2s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @  5s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 15s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 30s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 60s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    @ 75s title='ATUS Explorer': ALERT: Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+    footer(last): (no version line)
+    transitions: 0.1s: || 0.4s:Something went wrong in the application This is a problem in ATUS Explorer itself, not in 
+    console error@0.141: TypeError: Cannot read properties of undefined (reading '0') at zi (http://[::1]:4182/assets/index-DehE4oRV.js:9:125410) at ts (http://[::1]:4182/assets/index-DehE4oRV.js:8:49206) at Jc (http://[::1]:
+    console error@0.141: Unhandled application error TypeError: Cannot read properties of undefined (reading '0') at zi (http://[::1]:4182/assets/index-DehE4oRV.js:9:125410) at ts (http://[::1]:4182/assets/index-DehE4oRV.js:8
+
+################ c3_v1_removed_404
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=1 at [0.044]
+    responses: ['meta:404@0.054']
+    @  2s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.054: Failed to load resource: the server responded with a status of 404 (Not Found)
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=1 at [0.042]
+    req GET /api/v1/population/metadata: n=1 at [0.043]
+    responses: ['meta:404@0.045', 'metadata:404@0.045']
+    @  2s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:The analysis service reported an unexpected problem The analysis could not be completed. T
+    console error@0.045: Failed to load resource: the server responded with a status of 404 (Not Found)
+    console error@0.045: Failed to load resource: the server responded with a status of 404 (Not Found)
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.045]
+    req GET /api/v1/activities/presets: n=1 at [0.045]
+    responses: ['meta:404@0.054', 'presets:404@0.055']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@0.054: Failed to load resource: the server responded with a status of 404 (Not Found)
+    console error@0.055: Failed to load resource: the server responded with a status of 404 (Not Found)
+
+################ c_v2_same_shape
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=1 at [0.061]
+    responses: ['meta:200@0.063']
+    @  2s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    @  5s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    @ 15s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    @ 30s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    @ 60s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    @ 75s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v2
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=1 at [0.062]
+    req GET /api/v1/population/metadata: n=1 at [0.062]
+    req GET /api/v1/activities: n=1 at [0.069]
+    req GET /api/v1/activities/presets: n=1 at [0.069]
+    responses: ['meta:200@0.063', 'metadata:200@0.064', 'activities:200@0.074', 'presets:200@0.074']
+    @  2s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    @  5s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    @ 15s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    @ 30s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    @ 60s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    @ 75s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v2
+    transitions: 0.0s: || 0.3s:Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estim
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.061]
+    req GET /api/v1/activities/presets: n=1 at [0.061]
+    req POST /api/v1/analysis/estimate: n=1 at [0.067]
+    responses: ['meta:200@0.063', 'presets:200@0.067', 'estimate:200@0.069']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v2
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+
+################ d_503_first2_plain
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=3 at [0.045, 1.058, 3.064]
+    responses: ['meta:503@0.056', 'meta:503@1.062', 'meta:200@3.068']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    @ 15s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    @ 30s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    @ 60s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    @ 75s title='ATUS Explorer': starter: How much do Americans sleep? Average time per day, most recent year How has leisure time changed? Yearly trend across the full period Who watches more TV — men or women? Two groups and their differenc
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 3.1s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.056: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.062: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=3 at [0.044, 1.055, 3.062]
+    req GET /api/v1/population/metadata: n=3 at [0.044, 1.057, 3.062]
+    req GET /api/v1/activities: n=3 at [3.079, 4.087, 6.09]
+    req GET /api/v1/activities/presets: n=3 at [3.079, 4.088, 6.09]
+    responses: ['meta:503@0.054', 'metadata:503@0.055', 'meta:503@1.061', 'metadata:503@1.062', 'meta:200@3.065', 'metadata:200@3.067', 'activities:503@3.084', 'presets:503@3.084', 'presets:503@4.089', 'activities:503@4.089', 'activities:200@6.091', 'presets:200@6.091']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? sleep — curated selection Change activity 2 For whom? Age
+    @ 15s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    @ 30s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    @ 60s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    @ 75s title='Explore · ATUS Explorer': Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? 
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 3.1s:Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estim || 6.1s:Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estim
+    console error@0.054: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@0.055: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.061: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.062: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@3.084: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    ... 3 more console errors
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=3 at [0.045, 1.058, 3.062]
+    req GET /api/v1/activities/presets: n=3 at [0.045, 1.058, 3.064]
+    req POST /api/v1/analysis/estimate: n=1 at [3.076]
+    responses: ['meta:503@0.056', 'presets:503@0.056', 'presets:503@1.062', 'meta:503@1.062', 'meta:200@3.066', 'presets:200@3.066', 'estimate:503@3.079']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 3.1s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie || 3.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+    console error@0.056: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@0.056: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.062: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.062: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@3.079: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+################ d_503_first3_json
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=3 at [0.047, 1.061, 3.065]
+    responses: ['meta:503@0.06', 'meta:503@1.064', 'meta:503@3.066']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 3.1s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.06: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.064: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@3.066: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=3 at [0.047, 1.058, 3.062]
+    req GET /api/v1/population/metadata: n=3 at [0.047, 1.059, 3.062]
+    responses: ['meta:503@0.058', 'metadata:503@0.06', 'meta:503@1.063', 'metadata:503@1.063', 'metadata:503@3.063', 'meta:503@3.063']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 3.1s:The analysis service is temporarily unavailable The service is up but its database is not 
+    console error@0.058: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@0.06: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.063: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.063: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@3.063: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    ... 1 more console errors
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=3 at [0.048, 1.061, 3.065]
+    req GET /api/v1/activities/presets: n=3 at [0.048, 1.061, 3.065]
+    responses: ['meta:503@0.06', 'presets:503@0.06', 'meta:503@1.064', 'presets:503@1.064', 'presets:503@3.067', 'meta:503@3.067']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 3.1s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@0.06: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@0.06: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.064: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.064: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@3.067: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    ... 1 more console errors
+
+################ d_503_first3_plain
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=3 at [0.059, 1.062, 3.066]
+    responses: ['meta:503@0.06', 'meta:503@1.064', 'meta:503@3.067']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 3.1s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.06: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.064: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@3.067: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=3 at [0.047, 1.056, 3.06]
+    req GET /api/v1/population/metadata: n=3 at [0.047, 1.056, 3.06]
+    responses: ['meta:503@0.056', 'metadata:503@0.058', 'metadata:503@1.058', 'meta:503@1.058', 'meta:503@3.061', 'metadata:503@3.061']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 3.1s:The analysis service reported an unexpected problem The analysis could not be completed. T
+    console error@0.056: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@0.058: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.058: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.058: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@3.061: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    ... 1 more console errors
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=3 at [0.06, 1.062, 3.065]
+    req GET /api/v1/activities/presets: n=3 at [0.06, 1.062, 3.065]
+    responses: ['meta:503@0.06', 'presets:503@0.061', 'presets:503@1.064', 'meta:503@1.064', 'presets:503@3.067', 'meta:503@3.067']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 3.1s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@0.06: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@0.061: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.064: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.064: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@3.067: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    ... 1 more console errors
+
+################ d_503_for60s_plain
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=3 at [0.041, 1.047, 3.053]
+    responses: ['meta:503@0.044', 'meta:503@1.053', 'meta:503@3.065']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 3.1s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.044: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.053: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@3.065: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=3 at [0.041, 1.047, 3.061]
+    req GET /api/v1/population/metadata: n=3 at [0.041, 1.047, 3.061]
+    responses: ['meta:503@0.043', 'metadata:503@0.044', 'metadata:503@1.053', 'meta:503@1.053', 'metadata:503@3.065', 'meta:503@3.065']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 3.1s:The analysis service reported an unexpected problem The analysis could not be completed. T
+    console error@0.043: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@0.044: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.053: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.053: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@3.065: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    ... 1 more console errors
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=3 at [0.041, 1.047, 3.064]
+    req GET /api/v1/activities/presets: n=3 at [0.042, 1.047, 3.064]
+    responses: ['meta:503@0.043', 'presets:503@0.044', 'presets:503@1.054', 'meta:503@1.054', 'presets:503@3.065', 'meta:503@3.065']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 3.1s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@0.043: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@0.044: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.054: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@1.054: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    console error@3.065: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+    ... 1 more console errors
+
+################ e_1027_html
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=1 at [0.072]
+    responses: ['meta:429@0.102']
+    @  2s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.103: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=1 at [0.075]
+    req GET /api/v1/population/metadata: n=1 at [0.075]
+    responses: ['meta:429@0.107', 'metadata:429@0.107']
+    @  2s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:The analysis service reported an unexpected problem The analysis could not be completed. T
+    console error@0.107: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+    console error@0.107: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.105]
+    req GET /api/v1/activities/presets: n=1 at [0.105]
+    responses: ['meta:429@0.105', 'presets:429@0.106']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@0.106: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+    console error@0.106: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+
+################ e_429_html_nocors
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=3 at [0.069, 1.073, 3.075]
+    responses: []
+    failed: ['meta:net::ERR_FAILED@0.071', 'meta:net::ERR_FAILED@1.073', 'meta:net::ERR_FAILED@3.075']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 3.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.071: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    console error@0.071: Failed to load resource: net::ERR_FAILED
+    console error@1.073: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    console error@1.073: Failed to load resource: net::ERR_FAILED
+    console error@3.075: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    ... 1 more console errors
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=3 at [0.069, 1.071, 3.073]
+    req GET /api/v1/population/metadata: n=3 at [0.069, 1.071, 3.073]
+    responses: []
+    failed: ['meta:net::ERR_FAILED@0.071', 'metadata:net::ERR_FAILED@0.071', 'metadata:net::ERR_FAILED@1.071', 'meta:net::ERR_FAILED@1.071', 'meta:net::ERR_FAILED@3.074', 'metadata:net::ERR_FAILED@3.074']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 3.3s:The analysis service could not be reached The request never got an answer. Check that the 
+    console error@0.07: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    console error@0.071: Failed to load resource: net::ERR_FAILED
+    console error@0.071: Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the req
+    console error@0.071: Failed to load resource: net::ERR_FAILED
+    console error@1.071: Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the req
+    ... 7 more console errors
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=3 at [0.057, 1.063, 3.064]
+    req GET /api/v1/activities/presets: n=3 at [0.057, 1.077, 3.08]
+    responses: []
+    failed: ['meta:net::ERR_FAILED@0.068', 'presets:net::ERR_FAILED@0.076', 'meta:net::ERR_FAILED@1.063', 'presets:net::ERR_FAILED@1.077', 'meta:net::ERR_FAILED@3.065', 'presets:net::ERR_FAILED@3.081']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 3.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@0.064: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+    console error@0.068: Failed to load resource: net::ERR_FAILED
+    console error@0.076: Access to fetch at 'http://127.0.0.1:8207/api/v1/activities/presets' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requeste
+    console error@0.076: Failed to load resource: net::ERR_FAILED
+    console error@1.063: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+    ... 7 more console errors
+
+################ e_429_json
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=1 at [0.04]
+    responses: ['meta:429@0.042']
+    @  2s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.042: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=1 at [0.039]
+    req GET /api/v1/population/metadata: n=1 at [0.04]
+    responses: ['meta:429@0.041', 'metadata:429@0.042']
+    @  2s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:The analysis service reported an unexpected problem The analysis could not be completed. T
+    console error@0.041: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+    console error@0.042: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.043]
+    req GET /api/v1/activities/presets: n=1 at [0.043]
+    responses: ['meta:429@0.044', 'presets:429@0.053']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@0.044: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+    console error@0.053: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+
+################ e_502_html
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=1 at [0.045]
+    responses: ['meta:502@0.045']
+    @  2s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.045: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=1 at [0.042]
+    req GET /api/v1/population/metadata: n=1 at [0.043]
+    responses: ['metadata:502@0.044', 'meta:502@0.045']
+    @  2s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:The analysis service reported an unexpected problem The analysis could not be completed. T
+    console error@0.044: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+    console error@0.045: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.045]
+    req GET /api/v1/activities/presets: n=1 at [0.045]
+    responses: ['presets:502@0.054', 'meta:502@0.055']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@0.054: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+    console error@0.055: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+################ e_502_html_nocors
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=3 at [0.047, 1.058, 3.06]
+    responses: []
+    failed: ['meta:net::ERR_FAILED@0.058', 'meta:net::ERR_FAILED@1.058', 'meta:net::ERR_FAILED@3.06']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 3.1s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.058: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    console error@0.058: Failed to load resource: net::ERR_FAILED
+    console error@1.058: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    console error@1.058: Failed to load resource: net::ERR_FAILED
+    console error@3.06: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    ... 1 more console errors
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=3 at [0.041, 1.045, 3.047]
+    req GET /api/v1/population/metadata: n=3 at [0.042, 1.045, 3.047]
+    responses: []
+    failed: ['meta:net::ERR_FAILED@0.046', 'metadata:net::ERR_FAILED@0.046', 'metadata:net::ERR_FAILED@1.046', 'meta:net::ERR_FAILED@1.046', 'meta:net::ERR_FAILED@3.049', 'metadata:net::ERR_FAILED@3.049']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 3.1s:The analysis service could not be reached The request never got an answer. Check that the 
+    console error@0.045: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    console error@0.046: Failed to load resource: net::ERR_FAILED
+    console error@0.046: Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the req
+    console error@0.046: Failed to load resource: net::ERR_FAILED
+    console error@1.046: Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the req
+    ... 7 more console errors
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=3 at [0.048, 1.057, 3.058]
+    req GET /api/v1/activities/presets: n=3 at [0.048, 1.058, 3.058]
+    responses: []
+    failed: ['meta:net::ERR_FAILED@0.057', 'presets:net::ERR_FAILED@0.058', 'meta:net::ERR_FAILED@1.058', 'presets:net::ERR_FAILED@1.058', 'presets:net::ERR_FAILED@3.06', 'meta:net::ERR_FAILED@3.06']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 3.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@0.057: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+    console error@0.057: Failed to load resource: net::ERR_FAILED
+    console error@0.057: Access to fetch at 'http://127.0.0.1:8207/api/v1/activities/presets' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requeste
+    console error@0.058: Failed to load resource: net::ERR_FAILED
+    console error@1.058: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+    ... 7 more console errors
+
+################ e_504_html
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=1 at [0.042]
+    responses: ['meta:504@0.044']
+    @  2s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.044: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=1 at [0.042]
+    req GET /api/v1/population/metadata: n=1 at [0.042]
+    responses: ['meta:504@0.043', 'metadata:504@0.044']
+    @  2s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:The analysis service reported an unexpected problem The analysis could not be completed. T
+    console error@0.043: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+    console error@0.044: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.049]
+    req GET /api/v1/activities/presets: n=1 at [0.05]
+    responses: ['meta:504@0.052', 'presets:504@0.052']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@0.052: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+    console error@0.052: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+
+################ f_analysis_1027_html
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.04]
+    req GET /api/v1/activities/presets: n=1 at [0.04]
+    req POST /api/v1/analysis/estimate: n=1 at [0.053]
+    responses: ['meta:200@0.041', 'presets:200@0.051', 'estimate:429@0.054']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+    console error@0.054: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+
+################ f_analysis_429_json
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.056]
+    req GET /api/v1/activities/presets: n=1 at [0.057]
+    req POST /api/v1/analysis/estimate: n=1 at [0.062]
+    responses: ['meta:200@0.057', 'presets:200@0.057', 'estimate:429@0.074']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+    console error@0.074: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+
+################ f_analysis_502_html
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.064]
+    req GET /api/v1/activities/presets: n=1 at [0.064]
+    req POST /api/v1/analysis/estimate: n=1 at [0.071]
+    responses: ['meta:200@0.065', 'presets:200@0.065', 'estimate:502@0.072']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+    console error@0.072: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+################ f_analysis_502_html_nocors
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.064]
+    req GET /api/v1/activities/presets: n=1 at [0.065]
+    req POST /api/v1/analysis/estimate: n=1 at [0.083]
+    responses: ['meta:200@0.079', 'presets:200@0.079']
+    failed: ['estimate:net::ERR_FAILED@0.084']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+    console error@0.084: Access to fetch at 'http://127.0.0.1:8207/api/v1/analysis/estimate' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested
+    console error@0.084: Failed to load resource: net::ERR_FAILED
+
+################ f_analysis_503_pooltimeout
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.067]
+    req GET /api/v1/activities/presets: n=1 at [0.068]
+    req POST /api/v1/analysis/estimate: n=1 at [0.087]
+    responses: ['meta:200@0.085', 'presets:200@0.085', 'estimate:503@0.09']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+    console error@0.091: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+################ f_analysis_504_html
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=1 at [0.055]
+    req GET /api/v1/activities/presets: n=1 at [0.055]
+    req POST /api/v1/analysis/estimate: n=1 at [0.059]
+    responses: ['meta:200@0.056', 'presets:200@0.056', 'estimate:504@0.077']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+    footer(last): Data release 0325 (2003–2025) · analytics 0.2 · API v1
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Vie
+    console error@0.077: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+
+################ g_html200_for60s
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=3 at [0.056, 1.06, 3.064]
+    responses: ['meta:200@0.058', 'meta:200@1.061', 'meta:200@3.065']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 3.1s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=3 at [0.06, 1.063, 3.066]
+    req GET /api/v1/population/metadata: n=3 at [0.06, 1.063, 3.066]
+    responses: ['meta:200@0.061', 'metadata:200@0.061', 'meta:200@1.065', 'metadata:200@1.065', 'meta:200@3.066', 'metadata:200@3.068']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 3.3s:The analysis service could not be reached The request never got an answer. Check that the 
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=3 at [0.061, 1.063, 3.066]
+    req GET /api/v1/activities/presets: n=3 at [0.061, 1.063, 3.066]
+    responses: ['meta:200@0.062', 'presets:200@0.062', 'presets:200@1.065', 'meta:200@1.065', 'presets:200@3.067', 'meta:200@3.068']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.1s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 3.1s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+
+################ g_html200_for60s_nocors
+--- home  (http://127.0.0.1:4182/...)
+    req GET /api/v1/meta: n=3 at [0.055, 1.058, 3.061]
+    responses: []
+    failed: ['meta:net::ERR_FAILED@0.058', 'meta:net::ERR_FAILED@1.06', 'meta:net::ERR_FAILED@3.062']
+    @  2s title='ATUS Explorer': starter: Loading starter examples…
+    @  5s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 15s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 30s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 60s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    @ 75s title='ATUS Explorer': starter: Starter examples need the analysis service, which could not be reached.
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur || 3.1s:Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bur
+    console error@0.057: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    console error@0.058: Failed to load resource: net::ERR_FAILED
+    console error@1.059: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    console error@1.06: Failed to load resource: net::ERR_FAILED
+    console error@3.062: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    ... 1 more console errors
+--- explore  (http://localhost:4182/explore...)
+    req GET /api/v1/meta: n=3 at [0.054, 1.058, 3.061]
+    req GET /api/v1/population/metadata: n=3 at [0.055, 1.058, 3.061]
+    responses: []
+    failed: ['meta:net::ERR_FAILED@0.058', 'metadata:net::ERR_FAILED@0.058', 'meta:net::ERR_FAILED@1.06', 'metadata:net::ERR_FAILED@1.06', 'meta:net::ERR_FAILED@3.062', 'metadata:net::ERR_FAILED@3.062']
+    @  2s title='Explore · ATUS Explorer': STATUS: Loading the analysis builder… Fetching what the analytical service supports.
+    @  5s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 15s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 30s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 60s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 75s title='Explore · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:Loading the analysis builder… Fetching what the analytical service supports. || 3.1s:The analysis service could not be reached The request never got an answer. Check that the 
+    console error@0.056: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    console error@0.058: Failed to load resource: net::ERR_FAILED
+    console error@0.058: Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the req
+    console error@0.058: Failed to load resource: net::ERR_FAILED
+    console error@1.06: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+    ... 7 more console errors
+--- deep  (http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJ...)
+    req GET /api/v1/meta: n=3 at [0.055, 1.058, 3.06]
+    req GET /api/v1/activities/presets: n=3 at [0.055, 1.058, 3.061]
+    responses: []
+    failed: ['presets:net::ERR_FAILED@0.058', 'meta:net::ERR_FAILED@0.058', 'meta:net::ERR_FAILED@1.06', 'presets:net::ERR_FAILED@1.06', 'meta:net::ERR_FAILED@3.061', 'presets:net::ERR_FAILED@3.062']
+    @  2s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': STATUS: Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant.
+    @  5s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 15s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 30s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 60s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    @ 75s title='Sleeping — Ages 25–54 — 2025 · ATUS Explorer': ALERT: The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+    footer(last): (no version line)
+    transitions: 0.0s: || 0.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Cal || 3.3s:ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The
+    console error@0.058: Access to fetch at 'http://127.0.0.1:8207/api/v1/activities/presets' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requeste
+    console error@0.058: Failed to load resource: net::ERR_FAILED
+    console error@0.058: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+    console error@0.058: Failed to load resource: net::ERR_FAILED
+    console error@1.06: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+    ... 7 more console errors

@@ -1,0 +1,31 @@
+# FULL DB (atus-postgres:5434)
+server_version: 16.15 (Debian 16.15-1.pgdg13+2)
+transaction_read_only: on
+table                                    rows   total_MB   heap_MB   idx_MB toast_MB
+activities                          4,994,172      724.8     480.8    243.9     0.00
+activity_companions                 6,358,042      547.4     316.9    230.4     0.00
+replicate_weights                     258,954      495.1     489.4      5.6     0.01
+cps_persons                           681,624       81.6      56.6     24.9     0.00
+household_members                     702,409       50.9      29.8     21.1     0.00
+respondents                           258,954       35.7      26.0      9.7     0.00
+pandemic_replicate_weights             18,217       34.3      33.9      0.4     0.01
+validation_results                        196        0.1       0.1      0.0     0.01
+activity_codes                            431        0.1       0.0      0.0     0.01
+source_files                                7        0.0       0.0      0.0     0.01
+activity_tier2                            107        0.0       0.0      0.0     0.01
+activity_tier1                             18        0.0       0.0      0.0     0.01
+ingestion_runs                              1        0.0       0.0      0.0     0.01
+SUM atus user objects                             1970.1
+other user table public.schema_migrations: 0.031 MB
+pg_database_size('atus') = 2,076,277,783 bytes = 1980.1 MB
+  db atus                         1980.1 MB
+  db atus_audit_empty                8.1 MB
+  db atus_audit_probe                8.4 MB
+  db atus_audit_rel_engine           8.7 MB
+  db atus_audit_reload               8.2 MB
+  db atus_e2e                        9.4 MB
+  db atus_test                       9.5 MB
+  db postgres                        7.3 MB
+  db template0                       7.2 MB
+  db template1                       7.3 MB
+sum(pg_database_size(datname)) over cluster = 2,154,031,822 bytes = 2054.2 MB

@@ -1,0 +1,6 @@
+database unavailable: DeadlockDetected: deadlock detected
+LINE 4:     FROM atus.activities a
+                 ^
+DETAIL:  Process 3735 waits for AccessShareLock on relation 39177 of database 38548; blocked by process 3739.
+Process 3739 waits for AccessExclusiveLock on relation 39134 of database 38548; blocked by process 3735.
+HINT:  See server log for query details.

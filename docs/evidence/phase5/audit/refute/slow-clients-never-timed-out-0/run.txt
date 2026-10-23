@@ -1,0 +1,14 @@
+t=5.0 A:open B:open C:open server_conns=3
+t=10.0 A:open B:open C:open server_conns=3
+t=15.0 A:open B:open C:open server_conns=3
+t=20.0 A:open B:open C:open server_conns=3
+t=25.0 A:open B:open C:open server_conns=3
+t=30.0 A:open B:open C:open server_conns=3
+t=35.0 A:open B:open C:open server_conns=3
+t=40.0 A:open B:open C:open server_conns=3
+t=45.0 A:open B:open C:open server_conns=3
+t=50.0 A:open B:open C:open server_conns=3
+t=55.0 A:open B:open C:open server_conns=3
+t=60.0 A:open B:open C:open server_conns=3
+t=65.0 A:open B:open C:open server_conns=3
+t=70.0 A:open B:open C:open server_conns=3

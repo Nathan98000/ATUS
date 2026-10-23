@@ -1,0 +1,3 @@
+statements 270
+[('SELECT release, id', 60), ('SELECT code', 60), ('BEGIN', 30), ('SELECT DISTINCT data_year', 30), ('SELECT code, name', 30), ('WITH analysis', 30), ('COMMIT', 30)]
+non-stmt Counter({'parameters': 30})

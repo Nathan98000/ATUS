@@ -1,0 +1,5 @@
+raised: InFailedSqlTransaction current transaction is aborted, commands ignored until end of transaction block
+24 Counter({'InFailedSqlTransaction': 23, 'UndefinedTable': 1})
+UndefinedTable: relation "atus.respondents" does not exist
+LINE 1: SELECT DISTINCT data_year FROM atus.respondents ORDER BY dat...
+                   

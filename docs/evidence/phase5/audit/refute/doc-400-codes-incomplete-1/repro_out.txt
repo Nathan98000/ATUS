@@ -1,0 +1,8 @@
+$REPO/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+  from starlette.testclient import TestClient as TestClient  # noqa
+invalid_utf8 400 {"error":{"code":"http_400","message":"There was an error parsing the body","details":null}}
+nested 400 {"error":{"code":"http_400","message":"There was an error parsing the body","details":null}}
+bigint 400 {"error":{"code":"http_400","message":"There was an error parsing the body","details":null}}
+trunc 400 {"error":{"code":"malformed_json","message":"The request body is not valid JSON.","details":{"errors":[{"location":["body","11"],"message":"JSON decode error","type":"json_invalid"}]}}}
+404 {"error":{"code":"not_found","message":"Not Found","details":null}}
+405 {"error":{"code":"method_not_allowed","message":"Method Not Allowed","details":null}}

@@ -1,0 +1,5 @@
+DeadlockDetected ['OperationalError', 'DatabaseError', 'Error'] is OperationalError: True
+LockNotAvailable ['OperationalError', 'DatabaseError', 'Error'] is OperationalError: True
+QueryCanceled ['OperationalError', 'DatabaseError', 'Error'] is OperationalError: True
+ReadOnlySqlTransaction ['InternalError', 'DatabaseError', 'Error'] is OperationalError: False
+InFailedSqlTransaction ['InternalError', 'DatabaseError', 'Error'] is OperationalError: False

@@ -1,0 +1,84 @@
+meta#0#1                                      status=200 wall=0.025s cache=None 
+activities#0#2                                status=200 wall=0.011s cache=None 
+cached_estimate#0#3                           status=200 wall=0.009s cache=hit 
+est_1y_010101_2025#0#4                        status=200 wall=0.290s cache=miss 
+cmp_1y_sex_010101_2025#0#5                    status=200 wall=0.486s cache=miss 
+pooled22_leisure_bls#0#6                      status=200 wall=2.531s cache=miss 
+trend23_tier1_12#0#7                          status=200 wall=2.247s cache=miss 
+trend23_6digit_010101#0#8                     status=200 wall=2.165s cache=miss 
+pandemic_2019_2020_sleep#0#9                  status=200 wall=0.590s cache=miss 
+meta#1#10                                     status=200 wall=0.031s cache=None 
+activities#1#11                               status=200 wall=0.010s cache=None 
+cached_estimate#1#12                          status=200 wall=0.008s cache=hit 
+est_1y_010101_2025#1#13                       status=200 wall=0.358s cache=miss 
+cmp_1y_sex_010101_2025#1#14                   status=200 wall=0.604s cache=miss 
+pooled22_leisure_bls#1#15                     status=200 wall=2.322s cache=miss 
+trend23_tier1_12#1#16                         status=200 wall=2.532s cache=miss 
+trend23_6digit_010101#1#17                    status=200 wall=2.150s cache=miss 
+pandemic_2019_2020_sleep#1#18                 status=200 wall=0.561s cache=miss 
+meta#2#19                                     status=200 wall=0.031s cache=None 
+activities#2#20                               status=200 wall=0.010s cache=None 
+cached_estimate#2#21                          status=200 wall=0.007s cache=hit 
+est_1y_010101_2025#2#22                       status=200 wall=0.422s cache=miss 
+cmp_1y_sex_010101_2025#2#23                   status=200 wall=0.693s cache=miss 
+pooled22_leisure_bls#2#24                     status=200 wall=3.877s cache=miss 
+trend23_tier1_12#2#25                         status=200 wall=2.813s cache=miss 
+trend23_6digit_010101#2#26                    status=200 wall=2.530s cache=miss 
+pandemic_2019_2020_sleep#2#27                 status=200 wall=0.540s cache=miss 
+meta#3#28                                     status=200 wall=0.029s cache=None 
+activities#3#29                               status=200 wall=0.012s cache=None 
+cached_estimate#3#30                          status=200 wall=0.005s cache=hit 
+est_1y_010101_2025#3#31                       status=200 wall=0.302s cache=miss 
+cmp_1y_sex_010101_2025#3#32                   status=200 wall=0.441s cache=miss 
+pooled22_leisure_bls#3#33                     status=200 wall=2.657s cache=miss 
+trend23_tier1_12#3#34                         status=200 wall=2.241s cache=miss 
+trend23_6digit_010101#3#35                    status=200 wall=2.149s cache=miss 
+pandemic_2019_2020_sleep#3#36                 status=200 wall=0.565s cache=miss 
+meta#4#37                                     status=200 wall=0.031s cache=None 
+activities#4#38                               status=200 wall=0.013s cache=None 
+cached_estimate#4#39                          status=200 wall=0.009s cache=hit 
+est_1y_010101_2025#4#40                       status=200 wall=0.307s cache=miss 
+cmp_1y_sex_010101_2025#4#41                   status=200 wall=0.468s cache=miss 
+pooled22_leisure_bls#4#42                     status=200 wall=2.602s cache=miss 
+trend23_tier1_12#4#43                         status=200 wall=2.783s cache=miss 
+trend23_6digit_010101#4#44                    status=200 wall=2.688s cache=miss 
+pandemic_2019_2020_sleep#4#45                 status=200 wall=0.549s cache=miss 
+meta#5#46                                     status=200 wall=0.029s cache=None 
+activities#5#47                               status=200 wall=0.017s cache=None 
+cached_estimate#5#48                          status=200 wall=0.008s cache=hit 
+est_1y_010101_2025#5#49                       status=200 wall=0.300s cache=miss 
+cmp_1y_sex_010101_2025#5#50                   status=200 wall=0.464s cache=miss 
+pooled22_leisure_bls#5#51                     status=200 wall=3.004s cache=miss 
+trend23_tier1_12#5#52                         status=200 wall=3.101s cache=miss 
+trend23_6digit_010101#5#53                    status=200 wall=2.612s cache=miss 
+pandemic_2019_2020_sleep#5#54                 status=200 wall=0.518s cache=miss 
+meta#6#55                                     status=200 wall=0.030s cache=None 
+activities#6#56                               status=200 wall=0.010s cache=None 
+cached_estimate#6#57                          status=200 wall=0.009s cache=hit 
+est_1y_010101_2025#6#58                       status=200 wall=0.298s cache=miss 
+cmp_1y_sex_010101_2025#6#59                   status=200 wall=0.444s cache=miss 
+pandemic_2019_2020_sleep#6#60                 status=200 wall=0.524s cache=miss 
+meta#7#61                                     status=200 wall=0.028s cache=None 
+activities#7#62                               status=200 wall=0.013s cache=None 
+cached_estimate#7#63                          status=200 wall=0.009s cache=hit 
+est_1y_010101_2025#7#64                       status=200 wall=0.295s cache=miss 
+cmp_1y_sex_010101_2025#7#65                   status=200 wall=0.449s cache=miss 
+pandemic_2019_2020_sleep#7#66                 status=200 wall=0.565s cache=miss 
+meta#8#67                                     status=200 wall=0.028s cache=None 
+activities#8#68                               status=200 wall=0.010s cache=None 
+cached_estimate#8#69                          status=200 wall=0.009s cache=hit 
+meta#9#70                                     status=200 wall=0.032s cache=None 
+activities#9#71                               status=200 wall=0.009s cache=None 
+cached_estimate#9#72                          status=200 wall=0.007s cache=hit 
+meta#10#73                                    status=200 wall=0.028s cache=None 
+activities#10#74                              status=200 wall=0.008s cache=None 
+cached_estimate#10#75                         status=200 wall=0.006s cache=hit 
+meta                         n=10 st=['200'] cache=['None'] wall_s[p50=0.0 p95=0.0 max=0.0] db_ms[p50=23.1 p95=24.6 max=24.7] api_ms[p50=6.6 p95=7.3 max=7.5] stmts=[5]
+activities                   n=10 st=['200'] cache=['None'] wall_s[p50=0.0 p95=0.0 max=0.0] db_ms[p50=1.6 p95=1.8 max=1.8] api_ms[p50=8.8 p95=13.6 max=15.3] stmts=[3]
+cached_estimate              n=10 st=['200'] cache=['hit'] wall_s[p50=0.0 p95=0.0 max=0.0] db_ms[p50=0.2 p95=0.4 max=0.4] api_ms[p50=7.9 p95=8.9 max=9.1] stmts=[3]
+est_1y_010101_2025           n=7 st=['200'] cache=['miss'] wall_s[p50=0.3 p95=0.4 max=0.4] db_ms[p50=293.0 p95=392.4 max=412.4] api_ms[p50=10.5 p95=12.3 max=12.4] stmts=[9]
+cmp_1y_sex_010101_2025       n=7 st=['200'] cache=['miss'] wall_s[p50=0.5 p95=0.7 max=0.7] db_ms[p50=451.4 p95=651.1 max=677.7] api_ms[p50=12.4 p95=15.1 max=15.2] stmts=[10]
+pooled22_leisure_bls         n=5 st=['200'] cache=['miss'] wall_s[p50=2.7 p95=3.7 max=3.9] db_ms[p50=2642.7 p95=3685.9 max=3860.2] api_ms[p50=16.4 p95=18.6 max=18.8] stmts=[9]
+trend23_tier1_12             n=5 st=['200'] cache=['miss'] wall_s[p50=2.8 p95=3.0 max=3.1] db_ms[p50=2756.2 p95=3020.4 max=3078.0] api_ms[p50=22.6 p95=26.2 max=26.5] stmts=[9]
+trend23_6digit_010101        n=5 st=['200'] cache=['miss'] wall_s[p50=2.5 p95=2.7 max=2.7] db_ms[p50=2507.0 p95=2650.4 max=2665.7] api_ms[p50=22.7 p95=29.7 max=31.3] stmts=[9]
+pandemic_2019_2020_sleep     n=7 st=['200'] cache=['miss'] wall_s[p50=0.5 p95=0.6 max=0.6] db_ms[p50=538.5 p95=554.3 max=554.8] api_ms[p50=10.2 p95=12.8 max=13.3] stmts=[9]

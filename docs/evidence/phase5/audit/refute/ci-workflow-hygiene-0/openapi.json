@@ -1,0 +1,2042 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "ATUS Analysis API",
+  "description": "Read-only analytical API over the American Time Use Survey (ATUS) 2003-2025\nmulti-year microdata.\n\nAll estimates are **survey-weighted population statistics** computed by the\nproject's validated analytical engine (ATUS User's Guide ch. 7 estimators;\nreplicate-weight standard errors per ch. 7.5) \u2014 never unweighted sample\nmeans. 2020 has special weighting rules the engine enforces explicitly.\nMethodology: see docs/analytics.md and docs/methodology.md in the repository;\nthe engine reproduces 24 official BLS published values in its benchmark suite.\n\nResponses embed the exact canonical analysis `spec`; resubmitting it (same\n`analytics_version` and data release, see GET /api/v1/meta) reproduces the\nresult.\n",
+  "version": "v1 (contract)"
+ },
+ "paths": {
+  "/api/v1/analysis/estimate": {
+   "post": {
+    "tags": [
+     "analysis"
+    ],
+    "summary": "Single (or pooled multi-year) estimate",
+    "description": "Computes one survey-weighted estimate for the selected activity, population, and years, with an official replicate-weight standard error and confidence interval unless `variance` is `none`. Multi-year requests are pooled into one estimate (use the trend endpoint for per-year series). Estimates are weighted population statistics per ATUS User's Guide ch. 7 \u2014 never unweighted sample means.",
+    "operationId": "estimate_api_v1_analysis_estimate_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EstimateRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/EstimateResponse"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Malformed JSON body",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "Analytical database unavailable",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/analysis/trend": {
+   "post": {
+    "tags": [
+     "analysis"
+    ],
+    "summary": "Per-year trend",
+    "description": "Computes one estimate per requested year. Years that cannot be validly estimated under the requested weight scheme (2020 under `multiyear`) are returned as explicit unavailable points with a reason \u2014 never silently dropped, and never serialized as zero.",
+    "operationId": "trend_api_v1_analysis_trend_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TrendRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TrendResponse"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Malformed JSON body",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "Analytical database unavailable",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/analysis/compare": {
+   "post": {
+    "tags": [
+     "analysis"
+    ],
+    "summary": "Two-population comparison",
+    "description": "Estimates the same measure for two populations (each group filter is merged onto the shared `population` filter) plus their difference (group_a \u2212 group_b). The difference's standard error is computed from per-replicate differences, which accounts for the covariance between the overlapping-sample group estimates.",
+    "operationId": "compare_api_v1_analysis_compare_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CompareRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/CompareResponse"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Malformed JSON body",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Schema violation, or analytically invalid/unsupported request (e.g. 2020 under the multiyear weight scheme)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "Analytical database unavailable",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/activities": {
+   "get": {
+    "tags": [
+     "activities"
+    ],
+    "summary": "List/search the activity lexicon",
+    "description": "Flat listing of the harmonized 2003-25 activity coding lexicon (18 major categories, 107 subcategories, 431 leaf activities), filterable by level, direct parent, and name search. In analysis requests, a 2- or 4-digit code selects itself plus all descendants.",
+    "operationId": "list_activities_api_v1_activities_get",
+    "parameters": [
+     {
+      "name": "level",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer",
+         "maximum": 3,
+         "minimum": 1
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Level"
+      }
+     },
+     {
+      "name": "parent",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "pattern": "^[0-9]{2}([0-9]{2})?$"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Return direct children of this 2- or 4-digit code.",
+       "title": "Parent"
+      },
+      "description": "Return direct children of this 2- or 4-digit code."
+     },
+     {
+      "name": "search",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "minLength": 2,
+         "maxLength": 80
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Search"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ActivityListResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/activities/presets": {
+   "get": {
+    "tags": [
+     "activities"
+    ],
+    "summary": "Named activity selections",
+    "description": "Curated selections usable as {'preset': name} in analysis requests, including the BLS news-release table category definitions (verified against published Table A-1 values).",
+    "operationId": "list_presets_api_v1_activities_presets_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ActivityPresetsResponse"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/activities/{code}": {
+   "get": {
+    "tags": [
+     "activities"
+    ],
+    "summary": "One lexicon code with its ancestry and children",
+    "operationId": "activity_detail_api_v1_activities__code__get",
+    "parameters": [
+     {
+      "name": "code",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Code"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ActivityDetailResponse"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Unknown activity code",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/population/metadata": {
+   "get": {
+    "tags": [
+     "population"
+    ],
+    "summary": "Supported population filter dimensions",
+    "description": "Every population dimension analysis requests may filter on, with valid values for categorical dimensions. Served from the analytical engine's own dimension registry, so this vocabulary cannot drift from what filtering actually accepts.",
+    "operationId": "population_metadata_api_v1_population_metadata_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PopulationMetadataResponse"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/meta": {
+   "get": {
+    "tags": [
+     "meta"
+    ],
+    "summary": "API, analytics, and data versions plus capability discovery",
+    "description": "What this service can compute and against which data. `api_version` is the HTTP contract; `analytics_version` is the statistical implementation (a change means computed numbers may differ); `data` identifies the loaded BLS release and ingestion run. Clients should discover capabilities here instead of hard-coding them.",
+    "operationId": "meta_api_v1_meta_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MetaResponse"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/health": {
+   "get": {
+    "tags": [
+     "system"
+    ],
+    "summary": "Liveness",
+    "description": "Answers whether the API process is running. No dependencies touched. Async on purpose: it bypasses the worker threadpool, so liveness stays instant even when every worker thread is busy with long analyses.",
+    "operationId": "health_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "type": "object",
+         "title": "Response Health Health Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/ready": {
+   "get": {
+    "tags": [
+     "system"
+    ],
+    "summary": "Readiness",
+    "description": "Verifies the dependencies needed to answer analysis requests: the database is reachable and ATUS data is loaded. The (optional) result cache is not a readiness dependency \u2014 the service degrades gracefully without it. Readiness assumes the database passed `atus validate-db` at load time; it does not re-run data-quality checks.",
+    "operationId": "ready_ready_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "503": {
+      "description": "Not ready",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorResponse"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "ActivityDetailResponse": {
+    "properties": {
+     "code": {
+      "type": "string",
+      "title": "Code"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "level": {
+      "type": "integer",
+      "title": "Level"
+     },
+     "parents": {
+      "items": {
+       "$ref": "#/components/schemas/ActivityEntry"
+      },
+      "type": "array",
+      "title": "Parents",
+      "description": "Ancestors, outermost first."
+     },
+     "children": {
+      "items": {
+       "$ref": "#/components/schemas/ActivityEntry"
+      },
+      "type": "array",
+      "title": "Children",
+      "description": "Direct children (empty for level 3)."
+     },
+     "harmonization_note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Harmonization Note"
+     },
+     "descendant_leaf_count": {
+      "type": "integer",
+      "title": "Descendant Leaf Count",
+      "description": "Number of 6-digit codes selected when this code is used in an analysis (a tier code means itself plus all descendants)."
+     }
+    },
+    "type": "object",
+    "required": [
+     "code",
+     "name",
+     "level",
+     "parents",
+     "children",
+     "descendant_leaf_count"
+    ],
+    "title": "ActivityDetailResponse"
+   },
+   "ActivityEntry": {
+    "properties": {
+     "code": {
+      "type": "string",
+      "title": "Code",
+      "description": "Harmonized 2003-25 lexicon code (2, 4, or 6 digits)."
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "level": {
+      "type": "integer",
+      "title": "Level",
+      "description": "1 = major category, 2 = subcategory, 3 = 6-digit activity."
+     },
+     "parent_code": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Parent Code",
+      "description": "Immediate parent code (null for major categories)."
+     },
+     "harmonization_note": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Harmonization Note",
+      "description": "BLS note on retired codes this harmonized code absorbs (level 3 only)."
+     }
+    },
+    "type": "object",
+    "required": [
+     "code",
+     "name",
+     "level"
+    ],
+    "title": "ActivityEntry"
+   },
+   "ActivityInfoModel": {
+    "properties": {
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "include": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Include"
+     },
+     "exclude": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Exclude"
+     },
+     "leaf_code_count": {
+      "type": "integer",
+      "title": "Leaf Code Count",
+      "description": "Number of 6-digit codes the selection resolves to."
+     }
+    },
+    "type": "object",
+    "required": [
+     "label",
+     "include",
+     "exclude",
+     "leaf_code_count"
+    ],
+    "title": "ActivityInfoModel"
+   },
+   "ActivityListResponse": {
+    "properties": {
+     "activities": {
+      "items": {
+       "$ref": "#/components/schemas/ActivityEntry"
+      },
+      "type": "array",
+      "title": "Activities"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total",
+      "description": "Entries returned after filters (the lexicon is small)."
+     }
+    },
+    "type": "object",
+    "required": [
+     "activities",
+     "total"
+    ],
+    "title": "ActivityListResponse",
+    "examples": [
+     {
+      "activities": [
+       {
+        "code": "01",
+        "level": 1,
+        "name": "Personal Care Activities"
+       },
+       {
+        "code": "0101",
+        "level": 2,
+        "name": "Sleeping",
+        "parent_code": "01"
+       },
+       {
+        "code": "010101",
+        "level": 3,
+        "name": "Sleeping",
+        "parent_code": "0101"
+       }
+      ],
+      "total": 3
+     }
+    ]
+   },
+   "ActivityPreset": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name",
+      "description": "Value to use as {'preset': name} in analysis requests."
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "include": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Include"
+     },
+     "exclude": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Exclude"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "label",
+     "include",
+     "exclude"
+    ],
+    "title": "ActivityPreset"
+   },
+   "ActivityPresetsResponse": {
+    "properties": {
+     "presets": {
+      "items": {
+       "$ref": "#/components/schemas/ActivityPreset"
+      },
+      "type": "array",
+      "title": "Presets"
+     }
+    },
+    "type": "object",
+    "required": [
+     "presets"
+    ],
+    "title": "ActivityPresetsResponse"
+   },
+   "ActivitySelection": {
+    "properties": {
+     "preset": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Preset",
+      "description": "Named selection (see GET /api/v1/activities/presets)."
+     },
+     "include": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string",
+         "pattern": "^[0-9]{2}([0-9]{2})?([0-9]{2})?$",
+         "description": "2-, 4-, or 6-digit harmonized lexicon code"
+        },
+        "type": "array",
+        "maxItems": 100
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Include",
+      "description": "Codes/tier prefixes to include."
+     },
+     "exclude": {
+      "items": {
+       "type": "string",
+       "pattern": "^[0-9]{2}([0-9]{2})?([0-9]{2})?$",
+       "description": "2-, 4-, or 6-digit harmonized lexicon code"
+      },
+      "type": "array",
+      "maxItems": 100,
+      "title": "Exclude",
+      "description": "Codes/tier prefixes to exclude."
+     },
+     "label": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 120
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "ActivitySelection",
+    "description": "Which activities to measure: a named preset, or explicit lexicon codes.\n\nA 2- or 4-digit code selects that tier and all of its descendants; an\nepisode matches when its 6-digit code falls under any `include` entry and\nunder no `exclude` entry. Codes are validated against the loaded lexicon."
+   },
+   "CapabilitiesInfo": {
+    "properties": {
+     "measures": {
+      "items": {
+       "$ref": "#/components/schemas/MeasureInfo"
+      },
+      "type": "array",
+      "title": "Measures"
+     },
+     "weight_schemes": {
+      "items": {
+       "$ref": "#/components/schemas/WeightSchemeInfo"
+      },
+      "type": "array",
+      "title": "Weight Schemes"
+     },
+     "variance_methods": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Variance Methods"
+     },
+     "confidence_level_default": {
+      "type": "number",
+      "title": "Confidence Level Default"
+     },
+     "activity_presets": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Activity Presets"
+     },
+     "population_dimensions": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Population Dimensions"
+     },
+     "limits": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Limits",
+      "description": "Request limits (max years, max activity codes, ...)."
+     },
+     "unsupported": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Unsupported",
+      "description": "Explicitly out-of-scope analysis types (do not infer support)."
+     }
+    },
+    "type": "object",
+    "required": [
+     "measures",
+     "weight_schemes",
+     "variance_methods",
+     "confidence_level_default",
+     "activity_presets",
+     "population_dimensions",
+     "limits",
+     "unsupported"
+    ],
+    "title": "CapabilitiesInfo"
+   },
+   "CompareRequest": {
+    "properties": {
+     "measure": {
+      "type": "string",
+      "enum": [
+       "average_minutes_per_day",
+       "participation_rate",
+       "average_minutes_per_participant",
+       "participants_per_day"
+      ],
+      "title": "Measure",
+      "description": "ATUS User's Guide ch. 7.4 estimator (see GET /api/v1/meta).",
+      "default": "average_minutes_per_day"
+     },
+     "activity": {
+      "$ref": "#/components/schemas/ActivitySelection"
+     },
+     "years": {
+      "items": {
+       "type": "integer",
+       "maximum": 2100.0,
+       "minimum": 2003.0,
+       "description": "ATUS survey year"
+      },
+      "type": "array",
+      "maxItems": 50,
+      "minItems": 1,
+      "title": "Years",
+      "description": "Survey years. Order-insensitive; duplicates are rejected."
+     },
+     "population": {
+      "$ref": "#/components/schemas/PopulationRequest"
+     },
+     "weights": {
+      "type": "string",
+      "enum": [
+       "multiyear",
+       "pandemic"
+      ],
+      "title": "Weights",
+      "description": "Weight scheme: 'multiyear' (TUFNWGTP; refuses 2020) or 'pandemic' (TU20FWGT; 2019/2020 only).",
+      "default": "multiyear"
+     },
+     "variance": {
+      "type": "string",
+      "enum": [
+       "replicate",
+       "none"
+      ],
+      "title": "Variance",
+      "description": "'replicate' = official 160-replicate-weight standard errors; 'none' = point estimate only (faster).",
+      "default": "replicate"
+     },
+     "confidence_level": {
+      "type": "number",
+      "exclusiveMaximum": 1.0,
+      "exclusiveMinimum": 0.5,
+      "title": "Confidence Level",
+      "default": 0.95
+     },
+     "group_a": {
+      "$ref": "#/components/schemas/PopulationRequest"
+     },
+     "group_b": {
+      "$ref": "#/components/schemas/PopulationRequest"
+     },
+     "label_a": {
+      "type": "string",
+      "maxLength": 80,
+      "title": "Label A",
+      "default": "group_a"
+     },
+     "label_b": {
+      "type": "string",
+      "maxLength": 80,
+      "title": "Label B",
+      "default": "group_b"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "activity",
+     "years",
+     "group_a",
+     "group_b"
+    ],
+    "title": "CompareRequest",
+    "description": "Two populations, one measure. Group filters are merged onto the shared\n`population` filter; the difference's standard error is computed from\nper-replicate differences (covariance-correct).",
+    "examples": [
+     {
+      "activity": {
+       "preset": "household_activities_bls_table"
+      },
+      "group_a": {
+       "sex": "male"
+      },
+      "group_b": {
+       "sex": "female"
+      },
+      "label_a": "Men",
+      "label_b": "Women",
+      "measure": "average_minutes_per_day",
+      "years": [
+       2025
+      ]
+     }
+    ]
+   },
+   "CompareResponse": {
+    "properties": {
+     "measure": {
+      "type": "string",
+      "title": "Measure"
+     },
+     "label_a": {
+      "type": "string",
+      "title": "Label A"
+     },
+     "label_b": {
+      "type": "string",
+      "title": "Label B"
+     },
+     "group_a": {
+      "$ref": "#/components/schemas/EstimateResponse"
+     },
+     "group_b": {
+      "$ref": "#/components/schemas/EstimateResponse"
+     },
+     "difference": {
+      "$ref": "#/components/schemas/EstimateValueModel",
+      "description": "group_a \u2212 group_b; SE from per-replicate differences (covariance-correct)."
+     },
+     "analytics_version": {
+      "type": "string",
+      "title": "Analytics Version"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Warnings"
+     }
+    },
+    "type": "object",
+    "required": [
+     "measure",
+     "label_a",
+     "label_b",
+     "group_a",
+     "group_b",
+     "difference",
+     "analytics_version",
+     "warnings"
+    ],
+    "title": "CompareResponse"
+   },
+   "DataInfo": {
+    "properties": {
+     "release": {
+      "type": "string",
+      "title": "Release",
+      "description": "BLS multi-year release code, e.g. '0325' = 2003-2025."
+     },
+     "years": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "title": "Years",
+      "description": "Survey years loaded and queryable."
+     },
+     "respondents": {
+      "type": "integer",
+      "title": "Respondents",
+      "description": "Unweighted respondent count in the database."
+     },
+     "last_ingested_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Ingested At",
+      "description": "Timestamp of the last successful ingestion run (ISO-8601)."
+     },
+     "ingestion_run_id": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ingestion Run Id",
+      "description": "Identifier of the last successful ingestion run."
+     }
+    },
+    "type": "object",
+    "required": [
+     "release",
+     "years",
+     "respondents"
+    ],
+    "title": "DataInfo"
+   },
+   "ErrorDetail": {
+    "properties": {
+     "code": {
+      "type": "string",
+      "title": "Code",
+      "description": "Stable machine-readable error code, e.g. 'unsupported_analysis'."
+     },
+     "message": {
+      "type": "string",
+      "title": "Message",
+      "description": "Human-readable explanation."
+     },
+     "details": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Details",
+      "description": "Optional structured context (never stack traces)."
+     }
+    },
+    "type": "object",
+    "required": [
+     "code",
+     "message"
+    ],
+    "title": "ErrorDetail"
+   },
+   "ErrorResponse": {
+    "properties": {
+     "error": {
+      "$ref": "#/components/schemas/ErrorDetail"
+     }
+    },
+    "type": "object",
+    "required": [
+     "error"
+    ],
+    "title": "ErrorResponse",
+    "examples": [
+     {
+      "error": {
+       "code": "unsupported_analysis",
+       "message": "TUFNWGTP (the multi-year weight) is undefined for 2020 because ATUS data collection was suspended Mar 18 - May 9, 2020 and the year was reweighted with a different method (TU20FWGT). A single estimate pooling 2020 with this scheme is not statistically valid. Estimate 2020 separately with weights='pandemic' (years may only be 2019 and/or 2020 under that scheme)."
+      }
+     }
+    ]
+   },
+   "EstimateRequest": {
+    "properties": {
+     "measure": {
+      "type": "string",
+      "enum": [
+       "average_minutes_per_day",
+       "participation_rate",
+       "average_minutes_per_participant",
+       "participants_per_day"
+      ],
+      "title": "Measure",
+      "description": "ATUS User's Guide ch. 7.4 estimator (see GET /api/v1/meta).",
+      "default": "average_minutes_per_day"
+     },
+     "activity": {
+      "$ref": "#/components/schemas/ActivitySelection"
+     },
+     "years": {
+      "items": {
+       "type": "integer",
+       "maximum": 2100.0,
+       "minimum": 2003.0,
+       "description": "ATUS survey year"
+      },
+      "type": "array",
+      "maxItems": 50,
+      "minItems": 1,
+      "title": "Years",
+      "description": "Survey years. Order-insensitive; duplicates are rejected."
+     },
+     "population": {
+      "$ref": "#/components/schemas/PopulationRequest"
+     },
+     "weights": {
+      "type": "string",
+      "enum": [
+       "multiyear",
+       "pandemic"
+      ],
+      "title": "Weights",
+      "description": "Weight scheme: 'multiyear' (TUFNWGTP; refuses 2020) or 'pandemic' (TU20FWGT; 2019/2020 only).",
+      "default": "multiyear"
+     },
+     "variance": {
+      "type": "string",
+      "enum": [
+       "replicate",
+       "none"
+      ],
+      "title": "Variance",
+      "description": "'replicate' = official 160-replicate-weight standard errors; 'none' = point estimate only (faster).",
+      "default": "replicate"
+     },
+     "confidence_level": {
+      "type": "number",
+      "exclusiveMaximum": 1.0,
+      "exclusiveMinimum": 0.5,
+      "title": "Confidence Level",
+      "default": 0.95
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "activity",
+     "years"
+    ],
+    "title": "EstimateRequest",
+    "description": "One estimate for the whole requested period (pooled if several years).",
+    "examples": [
+     {
+      "activity": {
+       "preset": "sleep"
+      },
+      "measure": "average_minutes_per_day",
+      "years": [
+       2025
+      ]
+     },
+     {
+      "activity": {
+       "include": [
+        "120303",
+        "120304"
+       ],
+       "label": "Watching TV"
+      },
+      "measure": "participation_rate",
+      "variance": "replicate",
+      "years": [
+       2024
+      ]
+     },
+     {
+      "activity": {
+       "preset": "sleep"
+      },
+      "measure": "average_minutes_per_day",
+      "population": {
+       "diary_date_min": "2020-05-10"
+      },
+      "weights": "pandemic",
+      "years": [
+       2020
+      ]
+     }
+    ]
+   },
+   "EstimateResponse": {
+    "properties": {
+     "measure": {
+      "type": "string",
+      "title": "Measure"
+     },
+     "estimate": {
+      "$ref": "#/components/schemas/EstimateValueModel"
+     },
+     "years": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "title": "Years"
+     },
+     "activity": {
+      "$ref": "#/components/schemas/ActivityInfoModel"
+     },
+     "population": {
+      "type": "string",
+      "title": "Population",
+      "description": "Human-readable population definition."
+     },
+     "n_respondents": {
+      "type": "integer",
+      "title": "N Respondents",
+      "description": "UNWEIGHTED sample size (respondents)."
+     },
+     "n_participants": {
+      "type": "integer",
+      "title": "N Participants",
+      "description": "UNWEIGHTED respondents with any time in the activity."
+     },
+     "weighted_population_per_day": {
+      "type": "number",
+      "title": "Weighted Population Per Day",
+      "description": "Persons represented on an average day of the period (\u03a3weights / days)."
+     },
+     "days_in_period": {
+      "type": "integer",
+      "title": "Days In Period"
+     },
+     "weight": {
+      "$ref": "#/components/schemas/WeightInfoModel"
+     },
+     "variance_method": {
+      "type": "string",
+      "title": "Variance Method"
+     },
+     "analytics_version": {
+      "type": "string",
+      "title": "Analytics Version"
+     },
+     "spec": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Spec",
+      "description": "The exact canonical analysis specification \u2014 resubmit it to reproduce this result."
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Warnings",
+      "description": "Methodological notes a client should display, never discard."
+     }
+    },
+    "type": "object",
+    "required": [
+     "measure",
+     "estimate",
+     "years",
+     "activity",
+     "population",
+     "n_respondents",
+     "n_participants",
+     "weighted_population_per_day",
+     "days_in_period",
+     "weight",
+     "variance_method",
+     "analytics_version",
+     "spec",
+     "warnings"
+    ],
+    "title": "EstimateResponse",
+    "examples": [
+     {
+      "activity": {
+       "exclude": [],
+       "include": [
+        "0101"
+       ],
+       "label": "Sleeping",
+       "leaf_code_count": 3
+      },
+      "analytics_version": "0.2",
+      "days_in_period": 365,
+      "estimate": {
+       "ci_lower": 537.7184958624899,
+       "ci_upper": 546.2099048966699,
+       "confidence_level": 0.95,
+       "standard_error": 2.166215578745084,
+       "unit": "minutes_per_day",
+       "value": 541.9642003795799
+      },
+      "measure": "average_minutes_per_day",
+      "n_participants": 6139,
+      "n_respondents": 6146,
+      "population": "civilian noninstitutional population age 15+",
+      "spec": {
+       "activity": {
+        "exclude": [],
+        "include": [
+         "0101"
+        ],
+        "label": "Sleeping"
+       },
+       "confidence_level": 0.95,
+       "measure": "average_minutes_per_day",
+       "population": {},
+       "variance": "replicate",
+       "weights": "multiyear",
+       "years": [
+        2025
+       ]
+      },
+      "variance_method": "replicate",
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+      ],
+      "weight": {
+       "bls_variable": "TUFNWGTP",
+       "column": "respondents.final_weight",
+       "scheme": "multiyear"
+      },
+      "weighted_population_per_day": 277984657.483597,
+      "years": [
+       2025
+      ]
+     }
+    ]
+   },
+   "EstimateValueModel": {
+    "properties": {
+     "value": {
+      "type": "number",
+      "title": "Value",
+      "description": "The estimate, in `unit`."
+     },
+     "unit": {
+      "type": "string",
+      "title": "Unit",
+      "description": "minutes_per_day | proportion_of_population (0-1) | minutes_per_day_of_participants | persons_per_day"
+     },
+     "standard_error": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Standard Error",
+      "description": "Replicate-weight SE (User's Guide ch. 7.5); null when variance='none'."
+     },
+     "confidence_level": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confidence Level"
+     },
+     "ci_lower": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ci Lower"
+     },
+     "ci_upper": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ci Upper"
+     }
+    },
+    "type": "object",
+    "required": [
+     "value",
+     "unit"
+    ],
+    "title": "EstimateValueModel"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "MeasureInfo": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "unit": {
+      "type": "string",
+      "title": "Unit"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "unit",
+     "description"
+    ],
+    "title": "MeasureInfo"
+   },
+   "MetaResponse": {
+    "properties": {
+     "api_version": {
+      "type": "string",
+      "title": "Api Version",
+      "description": "HTTP contract version (path prefix /api/v1)."
+     },
+     "analytics_version": {
+      "type": "string",
+      "title": "Analytics Version",
+      "description": "Statistical implementation version \u2014 a change means computed results may differ."
+     },
+     "data": {
+      "$ref": "#/components/schemas/DataInfo"
+     },
+     "capabilities": {
+      "$ref": "#/components/schemas/CapabilitiesInfo"
+     }
+    },
+    "type": "object",
+    "required": [
+     "api_version",
+     "analytics_version",
+     "data",
+     "capabilities"
+    ],
+    "title": "MetaResponse"
+   },
+   "PopulationDimension": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name",
+      "description": "Field name to use inside analysis 'population' objects."
+     },
+     "type": {
+      "type": "string",
+      "title": "Type",
+      "description": "integer | category | boolean | date"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     },
+     "values": {
+      "anyOf": [
+       {
+        "items": {},
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Values",
+      "description": "Valid values for categorical dimensions."
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Notes"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "type",
+     "description"
+    ],
+    "title": "PopulationDimension"
+   },
+   "PopulationMetadataResponse": {
+    "properties": {
+     "dimensions": {
+      "items": {
+       "$ref": "#/components/schemas/PopulationDimension"
+      },
+      "type": "array",
+      "title": "Dimensions"
+     },
+     "missing_data_rule": {
+      "type": "string",
+      "title": "Missing Data Rule",
+      "description": "How missing values interact with filters (applies to every dimension)."
+     },
+     "default_universe": {
+      "type": "string",
+      "title": "Default Universe",
+      "description": "The population when no filters are set."
+     }
+    },
+    "type": "object",
+    "required": [
+     "dimensions",
+     "missing_data_rule",
+     "default_universe"
+    ],
+    "title": "PopulationMetadataResponse"
+   },
+   "PopulationRequest": {
+    "properties": {
+     "age_min": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 130.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Age Min"
+     },
+     "age_max": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 130.0,
+        "minimum": 0.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Age Max"
+     },
+     "sex": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "male",
+         "female"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sex"
+     },
+     "employment_status": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "employed",
+         "unemployed",
+         "not_in_labor_force"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Employment Status"
+     },
+     "has_household_children": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Has Household Children"
+     },
+     "region": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "maximum": 4.0,
+        "minimum": 1.0
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Region",
+      "description": "Census region: 1 NE, 2 MW, 3 South, 4 West"
+     },
+     "state_fips": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^[0-9]{2}$"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "State Fips"
+     },
+     "education_level": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "less_than_high_school",
+         "high_school",
+         "some_college_or_associate",
+         "bachelor_or_higher"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Education Level"
+     },
+     "day_type": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "weekday",
+         "weekend"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Day Type"
+     },
+     "diary_date_min": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Diary Date Min"
+     },
+     "diary_date_max": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Diary Date Max"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "title": "PopulationRequest",
+    "description": "Respondent-level population restriction (all dimensions optional).\n\nFiltering on a dimension excludes respondents whose value is missing for\nit \u2014 missing is never treated as \"no\". See GET /api/v1/population/metadata\nfor dimension semantics and valid values."
+   },
+   "TrendPointModel": {
+    "properties": {
+     "year": {
+      "type": "integer",
+      "title": "Year"
+     },
+     "estimate": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/EstimateValueModel"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "null when the year cannot be validly estimated \u2014 see unavailable_reason. Never serialized as zero."
+     },
+     "n_respondents": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "N Respondents"
+     },
+     "n_participants": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "N Participants"
+     },
+     "weighted_population_per_day": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Weighted Population Per Day"
+     },
+     "unavailable_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unavailable Reason"
+     }
+    },
+    "type": "object",
+    "required": [
+     "year"
+    ],
+    "title": "TrendPointModel"
+   },
+   "TrendRequest": {
+    "properties": {
+     "measure": {
+      "type": "string",
+      "enum": [
+       "average_minutes_per_day",
+       "participation_rate",
+       "average_minutes_per_participant",
+       "participants_per_day"
+      ],
+      "title": "Measure",
+      "description": "ATUS User's Guide ch. 7.4 estimator (see GET /api/v1/meta).",
+      "default": "average_minutes_per_day"
+     },
+     "activity": {
+      "$ref": "#/components/schemas/ActivitySelection"
+     },
+     "years": {
+      "items": {
+       "type": "integer",
+       "maximum": 2100.0,
+       "minimum": 2003.0,
+       "description": "ATUS survey year"
+      },
+      "type": "array",
+      "maxItems": 50,
+      "minItems": 1,
+      "title": "Years",
+      "description": "Survey years. Order-insensitive; duplicates are rejected."
+     },
+     "population": {
+      "$ref": "#/components/schemas/PopulationRequest"
+     },
+     "weights": {
+      "type": "string",
+      "enum": [
+       "multiyear",
+       "pandemic"
+      ],
+      "title": "Weights",
+      "description": "Weight scheme: 'multiyear' (TUFNWGTP; refuses 2020) or 'pandemic' (TU20FWGT; 2019/2020 only).",
+      "default": "multiyear"
+     },
+     "variance": {
+      "type": "string",
+      "enum": [
+       "replicate",
+       "none"
+      ],
+      "title": "Variance",
+      "description": "'replicate' = official 160-replicate-weight standard errors; 'none' = point estimate only (faster).",
+      "default": "replicate"
+     },
+     "confidence_level": {
+      "type": "number",
+      "exclusiveMaximum": 1.0,
+      "exclusiveMinimum": 0.5,
+      "title": "Confidence Level",
+      "default": 0.95
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "activity",
+     "years"
+    ],
+    "title": "TrendRequest",
+    "description": "Per-year estimates. Years that cannot be validly estimated (e.g. 2020\nunder the multiyear weights) come back as explicit unavailable points.",
+    "examples": [
+     {
+      "activity": {
+       "preset": "leisure_and_sports_bls_table"
+      },
+      "measure": "average_minutes_per_day",
+      "years": [
+       2003,
+       2004,
+       2005,
+       2006,
+       2007,
+       2008,
+       2009,
+       2010,
+       2011,
+       2012,
+       2013,
+       2014,
+       2015,
+       2016,
+       2017,
+       2018,
+       2019,
+       2020,
+       2021,
+       2022,
+       2023,
+       2024,
+       2025
+      ]
+     }
+    ]
+   },
+   "TrendResponse": {
+    "properties": {
+     "measure": {
+      "type": "string",
+      "title": "Measure"
+     },
+     "points": {
+      "items": {
+       "$ref": "#/components/schemas/TrendPointModel"
+      },
+      "type": "array",
+      "title": "Points"
+     },
+     "activity": {
+      "$ref": "#/components/schemas/ActivityInfoModel"
+     },
+     "population": {
+      "type": "string",
+      "title": "Population"
+     },
+     "weight": {
+      "$ref": "#/components/schemas/WeightInfoModel"
+     },
+     "variance_method": {
+      "type": "string",
+      "title": "Variance Method"
+     },
+     "analytics_version": {
+      "type": "string",
+      "title": "Analytics Version"
+     },
+     "spec": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Spec"
+     },
+     "warnings": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Warnings"
+     }
+    },
+    "type": "object",
+    "required": [
+     "measure",
+     "points",
+     "activity",
+     "population",
+     "weight",
+     "variance_method",
+     "analytics_version",
+     "spec",
+     "warnings"
+    ],
+    "title": "TrendResponse"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   },
+   "WeightInfoModel": {
+    "properties": {
+     "scheme": {
+      "type": "string",
+      "title": "Scheme"
+     },
+     "bls_variable": {
+      "type": "string",
+      "title": "Bls Variable",
+      "description": "TUFNWGTP or TU20FWGT"
+     },
+     "column": {
+      "type": "string",
+      "title": "Column"
+     }
+    },
+    "type": "object",
+    "required": [
+     "scheme",
+     "bls_variable",
+     "column"
+    ],
+    "title": "WeightInfoModel"
+   },
+   "WeightSchemeInfo": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "bls_variable": {
+      "type": "string",
+      "title": "Bls Variable"
+     },
+     "valid_years": {
+      "type": "string",
+      "title": "Valid Years"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "bls_variable",
+     "valid_years",
+     "description"
+    ],
+    "title": "WeightSchemeInfo"
+   }
+  }
+ }
+}

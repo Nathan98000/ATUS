@@ -1,0 +1,1 @@
+verified by code read: client.ts:69-82,122-133; queries.ts:28-33; presentError.ts:98-108; docs/frontend.md:64-67

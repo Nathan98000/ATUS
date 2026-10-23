@@ -1,0 +1,49 @@
+{
+  "measure": "average_minutes_per_day",
+  "estimate": {
+    "value": 540.5280193373492,
+    "unit": "minutes_per_day",
+    "standard_error": 2.053407917822604,
+    "confidence_level": 0.95,
+    "ci_lower": 536.5034137728475,
+    "ci_upper": 544.5526249018509
+  },
+  "years": [2020],
+  "activity": {
+    "label": "Sleeping",
+    "include": ["0101"],
+    "exclude": [],
+    "leaf_code_count": 3
+  },
+  "population": "diary dates 2020-05-10 to (end of period)",
+  "n_respondents": 6666,
+  "n_participants": 6659,
+  "weighted_population_per_day": 264814835.04780176,
+  "days_in_period": 236,
+  "weight": {
+    "scheme": "pandemic",
+    "bls_variable": "TU20FWGT",
+    "column": "respondents.pandemic_weight"
+  },
+  "variance_method": "replicate",
+  "analytics_version": "0.2",
+  "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+      "include": ["0101"],
+      "exclude": [],
+      "label": "Sleeping"
+    },
+    "years": [2020],
+    "population": {
+      "diary_date_min": "2020-05-10"
+    },
+    "weights": "pandemic",
+    "variance": "replicate",
+    "confidence_level": 0.95
+  },
+  "warnings": [
+    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+    "Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible."
+  ]
+}

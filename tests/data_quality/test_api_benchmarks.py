@@ -30,6 +30,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from atus_pipeline.analytics import benchmarks as bm  # noqa: E402
 from atus_pipeline.api.app import create_app  # noqa: E402
+from atus_pipeline.sources import get_release  # noqa: E402
 
 # Representative subset of the 24-benchmark suite (kept small for runtime):
 # guide worked examples (mean + SE + subgroup persons/day), a published table
@@ -79,15 +80,17 @@ def test_bls_benchmark_over_http(client, benchmark):
 
 
 def test_trend_over_http_full_period(client):
+    # every survey year of the configured release (2003-2025 for 0325)
+    years = list(get_release(load_settings().release).years)
     body = {
         "activity": {"preset": "sleep"},
-        "years": list(range(2003, 2026)),
+        "years": years,
         "variance": "none",
     }
     response = client.post("/api/v1/analysis/trend", json=body)
     assert response.status_code == 200
     points = {p["year"]: p for p in response.json()["points"]}
-    assert len(points) == 23
+    assert len(points) == len(years)
     assert points[2020]["estimate"] is None
     for year, point in points.items():
         if year != 2020:

@@ -1,0 +1,618 @@
+INFO:     Started server process [89557]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8204 (Press CTRL+C to quit)
+13:21:58 INFO    atus.api: request_id=f390bf896dd5461a GET /health -> 200 in 5.9ms cache=-
+INFO:     127.0.0.1:63763 - "GET /health HTTP/1.1" 200 OK
+13:22:04 INFO    atus.api: request_id=40ec702fafad4760 GET /api/v1/meta -> 200 in 6.3ms cache=-
+INFO:     127.0.0.1:63767 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:22:04 INFO    atus.api: request_id=f5e1ceac69774587 POST /api/v1/analysis/estimate -> 200 in 23.3ms cache=miss
+INFO:     127.0.0.1:63768 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:23:04 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c73ba70>
+13:23:04 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:23:04 INFO    atus.api: request_id=261b232cfde24357 GET /api/v1/meta -> 503 in 5.0ms cache=-
+INFO:     127.0.0.1:63846 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:23:04 INFO    atus.api: request_id=b1b51bff8aa8448f POST /api/v1/analysis/estimate -> 200 in 39.1ms cache=miss
+INFO:     127.0.0.1:63848 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=d08043de56b34dda POST /api/v1/analysis/estimate -> 200 in 3.3ms cache=hit
+INFO:     127.0.0.1:63850 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=0f41e73cbf6d4bae GET /ready -> 200 in 2.3ms cache=-
+INFO:     127.0.0.1:63851 - "GET /ready HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=a9193940b1c84d7f GET /health -> 200 in 0.5ms cache=-
+INFO:     127.0.0.1:63852 - "GET /health HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=56fe334518404490 GET /api/v1/meta -> 200 in 3.6ms cache=-
+INFO:     127.0.0.1:63853 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=a729ef0f103047c2 GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:63854 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=dfdd9d54756348f7 GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:63855 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=c27d10b98d8c4aba GET /api/v1/meta -> 200 in 2.7ms cache=-
+INFO:     127.0.0.1:63856 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=f0efdde5312e444f GET /api/v1/meta -> 200 in 2.4ms cache=-
+INFO:     127.0.0.1:63857 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=6df3076c579849cc GET /api/v1/meta -> 200 in 2.3ms cache=-
+INFO:     127.0.0.1:63858 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=6f9bf21eee2a4702 GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:63859 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=e28fa6d5a7024acf GET /api/v1/meta -> 200 in 1.5ms cache=-
+INFO:     127.0.0.1:63860 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=5dda69af8d414e43 GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:63861 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=41992f7a76c34b10 GET /api/v1/meta -> 200 in 1.9ms cache=-
+INFO:     127.0.0.1:63862 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:04 INFO    atus.api: request_id=57b37e7df179422c GET /api/v1/meta -> 200 in 3.4ms cache=-
+INFO:     127.0.0.1:63863 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:05 INFO    atus.api: request_id=35cfbf8497af497e GET /api/v1/meta -> 200 in 2.2ms cache=-
+INFO:     127.0.0.1:63864 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=89ac6e3307ba4788 GET /api/v1/meta -> 200 in 2.1ms cache=-
+INFO:     127.0.0.1:63866 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=2007577e23914432 POST /api/v1/analysis/estimate -> 200 in 2.0ms cache=hit
+INFO:     127.0.0.1:63867 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:23:11 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c83bb60>
+13:23:11 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:23:11 INFO    atus.api: request_id=47fac6e24f9d4ffa GET /api/v1/meta -> 503 in 2.5ms cache=-
+INFO:     127.0.0.1:63868 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:23:11 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c839640>
+13:23:11 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:23:11 INFO    atus.api: request_id=49f816459781453b POST /api/v1/analysis/estimate -> 503 in 2.2ms cache=-
+INFO:     127.0.0.1:63870 - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:23:11 INFO    atus.api: request_id=305a555f68664c6c POST /api/v1/analysis/estimate -> 200 in 7.4ms cache=hit
+INFO:     127.0.0.1:63872 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=8c28946984a4491a GET /ready -> 200 in 2.3ms cache=-
+INFO:     127.0.0.1:63874 - "GET /ready HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=43d023f69db44930 GET /health -> 200 in 0.2ms cache=-
+INFO:     127.0.0.1:63875 - "GET /health HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=0ccdcf356ae24347 GET /api/v1/meta -> 200 in 4.8ms cache=-
+INFO:     127.0.0.1:63876 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=0a3a9142d43a42dd GET /api/v1/meta -> 200 in 4.1ms cache=-
+INFO:     127.0.0.1:63877 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=c22868986aa04fd0 GET /api/v1/meta -> 200 in 2.6ms cache=-
+INFO:     127.0.0.1:63878 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=78809f4968fe46fb GET /api/v1/meta -> 200 in 2.6ms cache=-
+INFO:     127.0.0.1:63879 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=70f077efd9a34d36 GET /api/v1/meta -> 200 in 3.3ms cache=-
+INFO:     127.0.0.1:63880 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=d1d231e468a341b3 GET /api/v1/meta -> 200 in 2.3ms cache=-
+INFO:     127.0.0.1:63881 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=bced16db9a084dfd GET /api/v1/meta -> 200 in 2.1ms cache=-
+INFO:     127.0.0.1:63882 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=a088fa9e24c94c91 GET /api/v1/meta -> 200 in 2.0ms cache=-
+INFO:     127.0.0.1:63883 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=69a0f36423f84543 GET /api/v1/meta -> 200 in 2.2ms cache=-
+INFO:     127.0.0.1:63884 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=05a035e99a8c44b7 GET /api/v1/meta -> 200 in 2.2ms cache=-
+INFO:     127.0.0.1:63885 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=59e5c27886244eef GET /api/v1/meta -> 200 in 2.3ms cache=-
+INFO:     127.0.0.1:63886 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=b3b7a17eaa5743ab GET /api/v1/meta -> 200 in 2.3ms cache=-
+INFO:     127.0.0.1:63887 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=3e50a5f9f5ce4e12 GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:63889 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:11 INFO    atus.api: request_id=4c7506034fdb465d POST /api/v1/analysis/estimate -> 200 in 1.4ms cache=hit
+INFO:     127.0.0.1:63890 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:23:12 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c7628a0>
+13:23:12 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:23:12 INFO    atus.api: request_id=e927a0f154f54dcb GET /api/v1/meta -> 503 in 0.9ms cache=-
+INFO:     127.0.0.1:63891 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:23:12 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c760da0>
+13:23:12 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:23:12 INFO    atus.api: request_id=0d8ad20b052b4a3c POST /api/v1/analysis/estimate -> 503 in 1.2ms cache=-
+INFO:     127.0.0.1:63893 - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:23:12 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c760890>
+13:23:12 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:23:12 INFO    atus.api: request_id=c3ab3501f2c145df POST /api/v1/analysis/estimate -> 503 in 1.3ms cache=-
+INFO:     127.0.0.1:63895 - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:23:12 INFO    atus.api: request_id=65d4a36d58744524 GET /ready -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:63897 - "GET /ready HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=9337f5f6339141e6 GET /health -> 200 in 0.2ms cache=-
+INFO:     127.0.0.1:63898 - "GET /health HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=6f3e055073f24ed4 GET /api/v1/meta -> 200 in 1.7ms cache=-
+INFO:     127.0.0.1:63899 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=22662ed4d5854846 GET /api/v1/meta -> 200 in 1.5ms cache=-
+INFO:     127.0.0.1:63900 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=6755b3ff067d411c GET /api/v1/meta -> 200 in 2.0ms cache=-
+INFO:     127.0.0.1:63901 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=e4422c9220f34c79 GET /api/v1/meta -> 200 in 1.2ms cache=-
+INFO:     127.0.0.1:63902 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=0b9d994c3b75451e GET /api/v1/meta -> 200 in 1.1ms cache=-
+INFO:     127.0.0.1:63903 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=b65b96f6f1f0467e GET /api/v1/meta -> 200 in 1.1ms cache=-
+INFO:     127.0.0.1:63904 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=bf8a7162d5e141ca GET /api/v1/meta -> 200 in 1.1ms cache=-
+INFO:     127.0.0.1:63905 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=169d5b306dc642e2 GET /api/v1/meta -> 200 in 1.1ms cache=-
+INFO:     127.0.0.1:63906 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=a575850171b741e1 GET /api/v1/meta -> 200 in 1.1ms cache=-
+INFO:     127.0.0.1:63907 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=64d55aae6f8843e5 GET /api/v1/meta -> 200 in 1.1ms cache=-
+INFO:     127.0.0.1:63908 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=42b185902c5448a4 GET /api/v1/meta -> 200 in 1.1ms cache=-
+INFO:     127.0.0.1:63909 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=5ef0f5418f064017 GET /api/v1/meta -> 200 in 1.3ms cache=-
+INFO:     127.0.0.1:63910 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=f8cee84919df4081 GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:63912 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=8427bf12e81b452c POST /api/v1/analysis/estimate -> 200 in 1.2ms cache=hit
+INFO:     127.0.0.1:63913 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:23:12 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c849f40>
+13:23:12 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:23:12 INFO    atus.api: request_id=725523633b1b4273 GET /api/v1/meta -> 503 in 1.0ms cache=-
+INFO:     127.0.0.1:63914 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:23:12 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c8496a0>
+13:23:12 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:23:12 INFO    atus.api: request_id=90e391b13cfa4793 POST /api/v1/analysis/estimate -> 503 in 1.1ms cache=-
+INFO:     127.0.0.1:63916 - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:23:12 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c760050>
+13:23:12 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:23:12 INFO    atus.api: request_id=3bf1581a350f4615 POST /api/v1/analysis/estimate -> 503 in 1.2ms cache=-
+INFO:     127.0.0.1:63918 - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:23:12 INFO    atus.api: request_id=66bcd34975214dba GET /ready -> 200 in 5.5ms cache=-
+INFO:     127.0.0.1:63920 - "GET /ready HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=05c2e75abff44e5e GET /health -> 200 in 0.2ms cache=-
+INFO:     127.0.0.1:63922 - "GET /health HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=1e9438200c91457c GET /api/v1/meta -> 200 in 3.0ms cache=-
+INFO:     127.0.0.1:63923 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=b812426d39ea4689 GET /api/v1/meta -> 200 in 2.8ms cache=-
+INFO:     127.0.0.1:63924 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=a247cbc63b3545c1 GET /api/v1/meta -> 200 in 2.7ms cache=-
+INFO:     127.0.0.1:63925 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=e8aea1e59b9543ac GET /api/v1/meta -> 200 in 3.2ms cache=-
+INFO:     127.0.0.1:63926 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=dabfedd45ff34d4e GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:63927 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=e6d0bcd5883243d1 GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:63928 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=341a5459e92845ae GET /api/v1/meta -> 200 in 1.7ms cache=-
+INFO:     127.0.0.1:63929 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=f118365c0df1462f GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:63930 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=6c86c23898724c73 GET /api/v1/meta -> 200 in 1.5ms cache=-
+INFO:     127.0.0.1:63931 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=b7313a294fa245f6 GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:63932 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=f2488fa1ab0f4ede GET /api/v1/meta -> 200 in 1.7ms cache=-
+INFO:     127.0.0.1:63933 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:23:12 INFO    atus.api: request_id=f75bfda7c974469e GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:63934 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:25:09 INFO    atus.api: request_id=f789420069674ba7 GET /api/v1/activities/0101 -> 200 in 16.6ms cache=-
+INFO:     127.0.0.1:64019 - "GET /api/v1/activities/0101 HTTP/1.1" 200 OK
+13:25:10 INFO    atus.api: request_id=797e49f93d4d46fe GET /api/v1/activities -> 200 in 10.3ms cache=-
+INFO:     127.0.0.1:64020 - "GET /api/v1/activities?parent=01 HTTP/1.1" 200 OK
+13:25:11 INFO    atus.api: request_id=f82babe82b934c74 GET /api/v1/activities/1 -> 404 in 2.2ms cache=-
+INFO:     127.0.0.1:64022 - "GET /api/v1/activities/1 HTTP/1.1" 404 Not Found
+13:25:12 INFO    atus.api: request_id=36e911902d524a81 GET /api/v1/activities/9999 -> 404 in 9.9ms cache=-
+INFO:     127.0.0.1:64023 - "GET /api/v1/activities/9999 HTTP/1.1" 404 Not Found
+13:34:37 INFO    atus.api: request_id=36762623ecf045db GET /api/v1/meta -> 200 in 7.1ms cache=-
+INFO:     127.0.0.1:64524 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:37 INFO    atus.api: request_id=a8ffe51af2654ba3 POST /api/v1/analysis/estimate -> 200 in 3.1ms cache=hit
+INFO:     127.0.0.1:64525 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:34:37 INFO    atus.api: request_id=d11995e9a41245b4 GET /api/v1/meta -> 200 in 2.6ms cache=-
+INFO:     127.0.0.1:64527 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:37 INFO    atus.api: request_id=680ca6ccd845426a GET /api/v1/meta -> 200 in 7.6ms cache=-
+INFO:     127.0.0.1:64528 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:38 INFO    atus.api: request_id=54dd1f3387984328 GET /api/v1/meta -> 200 in 5.3ms cache=-
+INFO:     127.0.0.1:64529 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:38 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c848380>
+13:34:38 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:34:38 INFO    atus.api: request_id=4cb7976d01454c7e GET /api/v1/meta -> 503 in 6.6ms cache=-
+INFO:     127.0.0.1:64532 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:34:39 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c84b8f0>
+13:34:39 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:34:39 INFO    atus.api: request_id=1328d93768914d62 GET /api/v1/meta -> 503 in 3.4ms cache=-
+INFO:     127.0.0.1:64534 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:34:39 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c84be60>
+13:34:39 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:34:39 INFO    atus.api: request_id=e36c84b261594993 GET /api/v1/meta -> 503 in 2.7ms cache=-
+INFO:     127.0.0.1:64536 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:34:40 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c849d60>
+13:34:40 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:34:40 INFO    atus.api: request_id=dcdd3be9bcc14cd5 GET /api/v1/meta -> 503 in 3.2ms cache=-
+INFO:     127.0.0.1:64538 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:34:40 INFO    atus.api: request_id=a6eb185179924723 GET /api/v1/meta -> 200 in 14.0ms cache=-
+INFO:     127.0.0.1:64540 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:41 INFO    atus.api: request_id=3442de9a97d9401e GET /api/v1/meta -> 200 in 7.6ms cache=-
+INFO:     127.0.0.1:64542 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:41 INFO    atus.api: request_id=cf1c8d7cb1ef47c5 GET /api/v1/meta -> 200 in 2.5ms cache=-
+INFO:     127.0.0.1:64543 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:42 INFO    atus.api: request_id=d3231c167de242b1 GET /api/v1/meta -> 200 in 8.1ms cache=-
+INFO:     127.0.0.1:64544 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:43 INFO    atus.api: request_id=10d70611cfac4bb1 GET /api/v1/meta -> 200 in 6.9ms cache=-
+INFO:     127.0.0.1:64545 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:43 INFO    atus.api: request_id=fe20549010cb4e44 GET /api/v1/meta -> 200 in 7.4ms cache=-
+INFO:     127.0.0.1:64546 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=097ffcc0edab4098 GET /api/v1/meta -> 200 in 2.7ms cache=-
+INFO:     127.0.0.1:64548 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=b494c2d79f724435 POST /api/v1/analysis/estimate -> 200 in 2.4ms cache=hit
+INFO:     127.0.0.1:64549 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=a1da6ff281044f82 POST /api/v1/analysis/estimate -> 200 in 18.4ms cache=miss
+INFO:     127.0.0.1:64550 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=345bb486f5ba4f75 GET /ready -> 200 in 2.3ms cache=-
+INFO:     127.0.0.1:64551 - "GET /ready HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=a440522b525a4c9b GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:64552 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=77f195828c98402e GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:64553 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=e5b10d66e92e4686 GET /api/v1/meta -> 200 in 2.9ms cache=-
+INFO:     127.0.0.1:64554 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=1869cd9f3d55446b GET /api/v1/meta -> 200 in 2.0ms cache=-
+INFO:     127.0.0.1:64555 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=1ca2f7d4fe0944be GET /api/v1/meta -> 200 in 2.6ms cache=-
+INFO:     127.0.0.1:64556 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=2d3e48dd5b26490c GET /api/v1/meta -> 200 in 1.4ms cache=-
+INFO:     127.0.0.1:64557 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=1735b6be51b34dae GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:64558 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:34:44 INFO    atus.api: request_id=f919f31dee0d4a97 GET /api/v1/meta -> 200 in 2.2ms cache=-
+INFO:     127.0.0.1:64559 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:03 INFO    atus.api: request_id=dc61bcbff9b44926 GET /api/v1/meta -> 200 in 3.8ms cache=-
+INFO:     127.0.0.1:64579 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:03 INFO    atus.api: request_id=8cc2d2cc1507457a GET /api/v1/meta -> 200 in 3.7ms cache=-
+INFO:     127.0.0.1:64580 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:04 INFO    atus.api: request_id=01c0ed84e35c4151 GET /api/v1/meta -> 200 in 4.3ms cache=-
+INFO:     127.0.0.1:64581 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:04 INFO    atus.api: request_id=576e0a68d6754e27 GET /api/v1/meta -> 200 in 2.7ms cache=-
+INFO:     127.0.0.1:64583 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:05 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c848b30>
+13:35:05 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:35:05 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:05 INFO    atus.api: request_id=ae72ffdcebec45b3 GET /api/v1/meta -> 503 in 3.1ms cache=-
+INFO:     127.0.0.1:64584 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:35:05 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c73bda0>
+13:35:05 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:05 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:35:05 INFO    atus.api: request_id=dee3af90aa2d484e GET /api/v1/meta -> 503 in 3.6ms cache=-
+INFO:     127.0.0.1:64586 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:35:06 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c81f5f0>
+13:35:06 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+13:35:06 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:35:06 INFO    atus.api: request_id=e5419bcbf44d4b3b GET /api/v1/meta -> 503 in 2.0ms cache=-
+INFO:     127.0.0.1:64588 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:35:06 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:06 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:06 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c81f920>
+13:35:06 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:35:06 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:06 INFO    atus.api: request_id=bb9c74fb27fc45f7 GET /api/v1/meta -> 503 in 1.9ms cache=-
+INFO:     127.0.0.1:64592 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:35:07 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+13:35:07 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:07 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:08 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:08 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:08 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:09 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:09 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:10 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:12 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:12 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 5442 failed: could not receive data from server: Connection refused
+13:35:13 INFO    atus.api: request_id=9effcce0f4af4a9a GET /api/v1/meta -> 200 in 5958.1ms cache=-
+INFO:     127.0.0.1:64595 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:13 INFO    atus.api: request_id=e75d6784e92f4b98 GET /api/v1/meta -> 200 in 3.1ms cache=-
+INFO:     127.0.0.1:64610 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:14 INFO    atus.api: request_id=a2fda3882a6e4026 GET /api/v1/meta -> 200 in 3.0ms cache=-
+INFO:     127.0.0.1:64611 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:14 INFO    atus.api: request_id=4457a65fac9c4218 GET /api/v1/meta -> 200 in 3.0ms cache=-
+INFO:     127.0.0.1:64613 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:15 INFO    atus.api: request_id=e460a2dde25a41e0 GET /api/v1/meta -> 200 in 3.1ms cache=-
+INFO:     127.0.0.1:64614 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:15 INFO    atus.api: request_id=3ae78bd070194e76 GET /api/v1/meta -> 200 in 3.3ms cache=-
+INFO:     127.0.0.1:64615 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:16 INFO    atus.api: request_id=c7cd48600f4a4885 GET /api/v1/meta -> 200 in 2.4ms cache=-
+INFO:     127.0.0.1:64616 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:16 INFO    atus.api: request_id=ff58ffb160bd481b GET /api/v1/meta -> 200 in 2.9ms cache=-
+INFO:     127.0.0.1:64617 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:17 INFO    atus.api: request_id=ca4f8219d58f4d20 GET /api/v1/meta -> 200 in 3.1ms cache=-
+INFO:     127.0.0.1:64618 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:17 INFO    atus.api: request_id=ade5bf0be34d4375 GET /api/v1/meta -> 200 in 2.4ms cache=-
+INFO:     127.0.0.1:64619 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:18 INFO    atus.api: request_id=5260d081b6a7493d GET /api/v1/meta -> 200 in 2.7ms cache=-
+INFO:     127.0.0.1:64620 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:18 INFO    atus.api: request_id=c078f3afe0704add GET /api/v1/meta -> 200 in 2.7ms cache=-
+INFO:     127.0.0.1:64621 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:19 INFO    atus.api: request_id=f2f0bcbb777b42b9 GET /api/v1/meta -> 200 in 3.3ms cache=-
+INFO:     127.0.0.1:64622 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:19 INFO    atus.api: request_id=a978d1fe70fc4ec3 GET /api/v1/meta -> 200 in 2.3ms cache=-
+INFO:     127.0.0.1:64623 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:20 INFO    atus.api: request_id=44a4d6e18eef47fc GET /api/v1/meta -> 200 in 3.6ms cache=-
+INFO:     127.0.0.1:64624 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:20 INFO    atus.api: request_id=0c6624ac9f8f47ed GET /api/v1/meta -> 200 in 2.3ms cache=-
+INFO:     127.0.0.1:64627 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:21 INFO    atus.api: request_id=123740f53b0047d8 GET /api/v1/meta -> 200 in 3.7ms cache=-
+INFO:     127.0.0.1:64628 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:21 INFO    atus.api: request_id=d8807c49df7647e1 GET /api/v1/meta -> 200 in 2.4ms cache=-
+INFO:     127.0.0.1:64629 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:22 INFO    atus.api: request_id=8583a133e0f14aef GET /api/v1/meta -> 200 in 3.2ms cache=-
+INFO:     127.0.0.1:64630 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:22 INFO    atus.api: request_id=375eb1281fa44dde GET /api/v1/meta -> 200 in 3.4ms cache=-
+INFO:     127.0.0.1:64631 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:23 INFO    atus.api: request_id=a40a983495264040 GET /api/v1/meta -> 200 in 2.0ms cache=-
+INFO:     127.0.0.1:64632 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:23 INFO    atus.api: request_id=bc7866faaeb44a91 GET /api/v1/meta -> 200 in 1.9ms cache=-
+INFO:     127.0.0.1:64633 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:24 INFO    atus.api: request_id=0652e93451414b79 GET /api/v1/meta -> 200 in 2.5ms cache=-
+INFO:     127.0.0.1:64634 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:24 INFO    atus.api: request_id=973fd00e47814425 GET /api/v1/meta -> 200 in 2.2ms cache=-
+INFO:     127.0.0.1:64635 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:25 INFO    atus.api: request_id=ba4a33df04ef498e GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:64636 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:25 INFO    atus.api: request_id=52ba4b3139004cff GET /api/v1/meta -> 200 in 2.5ms cache=-
+INFO:     127.0.0.1:64637 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:26 INFO    atus.api: request_id=97f07b5ffd104fa9 GET /api/v1/meta -> 200 in 2.1ms cache=-
+INFO:     127.0.0.1:64638 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:26 INFO    atus.api: request_id=d092d8995be44398 GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:64639 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:27 INFO    atus.api: request_id=d54d3cceef334124 GET /api/v1/meta -> 200 in 2.2ms cache=-
+INFO:     127.0.0.1:64640 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:27 INFO    atus.api: request_id=a45cd00e86864fe7 GET /api/v1/meta -> 200 in 2.6ms cache=-
+INFO:     127.0.0.1:64641 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:28 INFO    atus.api: request_id=0996bd4bb79747cd GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:64642 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:28 INFO    atus.api: request_id=cb76a9f4d77d48f7 GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:64643 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:29 INFO    atus.api: request_id=ba6b31d69fa3464a GET /api/v1/meta -> 200 in 2.7ms cache=-
+INFO:     127.0.0.1:64644 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:29 INFO    atus.api: request_id=290ec9a20da9472b GET /api/v1/meta -> 200 in 2.4ms cache=-
+INFO:     127.0.0.1:64645 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:30 INFO    atus.api: request_id=60d5267335bb4a9a GET /api/v1/meta -> 200 in 2.0ms cache=-
+INFO:     127.0.0.1:64646 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:30 INFO    atus.api: request_id=4b00b0effd4a434d GET /api/v1/meta -> 200 in 2.8ms cache=-
+INFO:     127.0.0.1:64647 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:31 INFO    atus.api: request_id=082fb61f8f4c4541 GET /api/v1/meta -> 200 in 2.6ms cache=-
+INFO:     127.0.0.1:64648 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:31 INFO    atus.api: request_id=e82bd397c6d04aac GET /api/v1/meta -> 200 in 2.6ms cache=-
+INFO:     127.0.0.1:64649 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:32 INFO    atus.api: request_id=3451a8869dca489f GET /api/v1/meta -> 200 in 2.6ms cache=-
+INFO:     127.0.0.1:64650 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:32 INFO    atus.api: request_id=bb78215122c14400 GET /api/v1/meta -> 200 in 2.3ms cache=-
+INFO:     127.0.0.1:64651 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:33 INFO    atus.api: request_id=00f3f1bcbfa54c6d GET /api/v1/meta -> 200 in 2.2ms cache=-
+INFO:     127.0.0.1:64652 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:33 INFO    atus.api: request_id=31784c1ffaa14d4a GET /api/v1/meta -> 200 in 6.7ms cache=-
+INFO:     127.0.0.1:64653 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:34 INFO    atus.api: request_id=d8057ce38e8c4eeb GET /api/v1/meta -> 200 in 3.7ms cache=-
+INFO:     127.0.0.1:64654 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:34 INFO    atus.api: request_id=144b83fbeb364ae1 GET /api/v1/meta -> 200 in 2.4ms cache=-
+INFO:     127.0.0.1:64655 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:35 INFO    atus.api: request_id=289958e83d084c11 GET /api/v1/meta -> 200 in 2.5ms cache=-
+INFO:     127.0.0.1:64656 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:35 INFO    atus.api: request_id=b6a6da4258734ce7 GET /api/v1/meta -> 200 in 2.4ms cache=-
+INFO:     127.0.0.1:64657 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:36 INFO    atus.api: request_id=989e2f5553bb44ac GET /api/v1/meta -> 200 in 1.7ms cache=-
+INFO:     127.0.0.1:64658 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:36 INFO    atus.api: request_id=e5598d266ed94c86 GET /api/v1/meta -> 200 in 2.5ms cache=-
+INFO:     127.0.0.1:64659 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:37 INFO    atus.api: request_id=81ed36fe7b194ecd GET /api/v1/meta -> 200 in 2.5ms cache=-
+INFO:     127.0.0.1:64660 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:37 INFO    atus.api: request_id=41849a8a6da24a75 GET /api/v1/meta -> 200 in 2.1ms cache=-
+INFO:     127.0.0.1:64661 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:38 INFO    atus.api: request_id=5df1480c67344d35 GET /api/v1/meta -> 200 in 2.2ms cache=-
+INFO:     127.0.0.1:64662 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:38 INFO    atus.api: request_id=09d10df889954190 GET /api/v1/meta -> 200 in 2.2ms cache=-
+INFO:     127.0.0.1:64663 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:39 INFO    atus.api: request_id=9c5e6812de8d44c1 GET /api/v1/meta -> 200 in 3.0ms cache=-
+INFO:     127.0.0.1:64664 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:39 INFO    atus.api: request_id=d774f77aaa684f23 GET /api/v1/meta -> 200 in 2.1ms cache=-
+INFO:     127.0.0.1:64665 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:40 INFO    atus.api: request_id=e699afcf25094d42 GET /api/v1/meta -> 200 in 2.8ms cache=-
+INFO:     127.0.0.1:64666 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:41 INFO    atus.api: request_id=16e3e72d0b3e42bd GET /api/v1/meta -> 200 in 2.6ms cache=-
+INFO:     127.0.0.1:64667 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:41 INFO    atus.api: request_id=9b811bfb7ab84b3f GET /api/v1/meta -> 200 in 2.4ms cache=-
+INFO:     127.0.0.1:64668 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:42 INFO    atus.api: request_id=7081cd92f76749ed GET /api/v1/meta -> 200 in 2.0ms cache=-
+INFO:     127.0.0.1:64669 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:42 INFO    atus.api: request_id=46890786d9234a0c GET /api/v1/meta -> 200 in 2.4ms cache=-
+INFO:     127.0.0.1:64670 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:43 INFO    atus.api: request_id=bfbabd5ffe004ebd GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:64671 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:52 INFO    atus.api: request_id=5b668a852eea42f0 GET /api/v1/meta -> 200 in 2.7ms cache=-
+INFO:     127.0.0.1:64674 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:52 INFO    atus.api: request_id=6320d1f76a7a48da POST /api/v1/analysis/estimate -> 200 in 1.9ms cache=hit
+INFO:     127.0.0.1:64675 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=9ab607d313e34316 GET /api/v1/meta -> 200 in 5040.4ms cache=-
+INFO:     127.0.0.1:64677 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=6b62a9e03b884e7b GET /api/v1/meta -> 200 in 5041.1ms cache=-
+INFO:     127.0.0.1:64678 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=dbd60551b46e4f5b GET /api/v1/meta -> 200 in 2.2ms cache=-
+INFO:     127.0.0.1:64680 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=45469af4d39a45a0 POST /api/v1/analysis/estimate -> 200 in 2.1ms cache=hit
+INFO:     127.0.0.1:64681 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=855af7aa094f4762 POST /api/v1/analysis/estimate -> 200 in 23.1ms cache=miss
+INFO:     127.0.0.1:64682 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=7ff785c9b9f345bf GET /ready -> 200 in 2.0ms cache=-
+INFO:     127.0.0.1:64683 - "GET /ready HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=811400d2b6e0464b GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:64684 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=a5d04969667a45b5 GET /api/v1/meta -> 200 in 1.5ms cache=-
+INFO:     127.0.0.1:64685 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=77df3c4271cf4a42 GET /api/v1/meta -> 200 in 1.5ms cache=-
+INFO:     127.0.0.1:64686 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=b8f5e465f93546b8 GET /api/v1/meta -> 200 in 1.4ms cache=-
+INFO:     127.0.0.1:64687 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=c574b843b16344ab GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:64688 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=6a9b38d0a60d4ae1 GET /api/v1/meta -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:64689 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=c290ad07f8204781 GET /api/v1/meta -> 200 in 1.4ms cache=-
+INFO:     127.0.0.1:64690 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:35:57 INFO    atus.api: request_id=3ba5f72c395f40db GET /api/v1/meta -> 200 in 1.3ms cache=-
+INFO:     127.0.0.1:64691 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:03 INFO    atus.api: request_id=5306631f44f14351 GET /api/v1/meta -> 200 in 2.1ms cache=-
+INFO:     127.0.0.1:64694 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:03 INFO    atus.api: request_id=4996758dacab4147 POST /api/v1/analysis/estimate -> 200 in 1.6ms cache=hit
+INFO:     127.0.0.1:64695 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:36:13 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:36:13 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:36:13 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:36:13 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:36:13 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:36:13 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:36:13 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+13:36:13 INFO    atus.api: request_id=5a2257ffbd074385 GET /api/v1/meta -> 503 in 10009.7ms cache=-
+INFO:     127.0.0.1:64699 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:13 INFO    atus.api: request_id=bc11ba85d3b74784 GET /api/v1/meta -> 503 in 10009.4ms cache=-
+INFO:     127.0.0.1:64705 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:13 INFO    atus.api: request_id=30607f49ca274369 GET /api/v1/meta -> 503 in 10009.7ms cache=-
+INFO:     127.0.0.1:64708 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:13 INFO    atus.api: request_id=d7d77be3847f4d27 GET /api/v1/meta -> 503 in 10010.0ms cache=-
+INFO:     127.0.0.1:64704 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:13 INFO    atus.api: request_id=93b2749fa75140fd GET /api/v1/meta -> 503 in 10010.2ms cache=-
+INFO:     127.0.0.1:64703 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:13 INFO    atus.api: request_id=caae72a2b6cb4ac7 GET /api/v1/meta -> 503 in 10010.5ms cache=-
+INFO:     127.0.0.1:64706 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:13 INFO    atus.api: request_id=6b8be310f9954fe8 GET /api/v1/meta -> 503 in 10010.7ms cache=-
+INFO:     127.0.0.1:64707 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:19 INFO    atus.api: request_id=5d9078ab10274b64 GET /api/v1/meta -> 200 in 15027.3ms cache=-
+INFO:     127.0.0.1:64697 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=a6a5fbc7b94d48bb GET /api/v1/meta -> 200 in 15026.8ms cache=-
+INFO:     127.0.0.1:64701 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=26677d50955044ef GET /api/v1/meta -> 200 in 15027.4ms cache=-
+INFO:     127.0.0.1:64700 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=be7c1fc17133459d GET /api/v1/meta -> 200 in 15027.5ms cache=-
+INFO:     127.0.0.1:64702 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=8a2c66954bd441c3 GET /api/v1/meta -> 200 in 15028.6ms cache=-
+INFO:     127.0.0.1:64698 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=0c57f39493754830 GET /api/v1/meta -> 200 in 1.7ms cache=-
+INFO:     127.0.0.1:64729 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=5ff285ada13e477e POST /api/v1/analysis/estimate -> 200 in 1.3ms cache=hit
+INFO:     127.0.0.1:64730 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=97bfc380fdbb4d67 POST /api/v1/analysis/estimate -> 200 in 10.8ms cache=miss
+INFO:     127.0.0.1:64731 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=27526c7f075a4d4f GET /ready -> 200 in 1.3ms cache=-
+INFO:     127.0.0.1:64732 - "GET /ready HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=3ce92929995647ca GET /api/v1/meta -> 200 in 1.3ms cache=-
+INFO:     127.0.0.1:64733 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=0643d667b3b34dc7 GET /api/v1/meta -> 200 in 1.5ms cache=-
+INFO:     127.0.0.1:64734 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=e355a0bc3d6a4883 GET /api/v1/meta -> 200 in 1.3ms cache=-
+INFO:     127.0.0.1:64735 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=af55963718314848 GET /api/v1/meta -> 200 in 2.0ms cache=-
+INFO:     127.0.0.1:64736 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=6e60f9f2be1d4d7b GET /api/v1/meta -> 200 in 1.4ms cache=-
+INFO:     127.0.0.1:64737 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=dcabbe61769a44b3 GET /api/v1/meta -> 200 in 1.3ms cache=-
+INFO:     127.0.0.1:64738 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=4913bd6385ef4a20 GET /api/v1/meta -> 200 in 1.3ms cache=-
+INFO:     127.0.0.1:64739 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:19 INFO    atus.api: request_id=32ac13396ddf4aef GET /api/v1/meta -> 200 in 1.3ms cache=-
+INFO:     127.0.0.1:64740 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:38 INFO    atus.api: request_id=a6673c899dc74a7b GET /api/v1/meta -> 200 in 2.6ms cache=-
+INFO:     127.0.0.1:64744 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:38 INFO    atus.api: request_id=2803777dc22944aa POST /api/v1/analysis/estimate -> 200 in 1.4ms cache=hit
+INFO:     127.0.0.1:64745 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:36:39 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c839af0>
+13:36:39 ERROR   atus.api: database unavailable: OperationalError: consuming input failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+13:36:39 INFO    atus.api: request_id=64fdf1deaecd4249 GET /api/v1/meta -> 503 in 1.1ms cache=-
+INFO:     127.0.0.1:64750 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:39 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c83b140>
+13:36:39 ERROR   atus.api: database unavailable: OperationalError: consuming input failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+13:36:39 INFO    atus.api: request_id=01de83adecdb415d POST /api/v1/analysis/estimate -> 503 in 1.1ms cache=-
+INFO:     127.0.0.1:64752 - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:36:39 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c83ba10>
+13:36:39 ERROR   atus.api: database unavailable: OperationalError: consuming input failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+13:36:39 INFO    atus.api: request_id=d6d169a09e164be8 GET /api/v1/meta -> 503 in 1.2ms cache=-
+INFO:     127.0.0.1:64754 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:39 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c8391c0>
+13:36:39 ERROR   atus.api: database unavailable: OperationalError: consuming input failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+13:36:39 INFO    atus.api: request_id=faa685ea4d8542bc GET /api/v1/meta -> 503 in 0.8ms cache=-
+INFO:     127.0.0.1:64756 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:39 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c81f170>
+13:36:39 ERROR   atus.api: database unavailable: OperationalError: consuming input failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+13:36:39 INFO    atus.api: request_id=0d3f6efd47fd4bd4 GET /api/v1/meta -> 503 in 1.0ms cache=-
+INFO:     127.0.0.1:64758 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:39 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c838500>
+13:36:39 ERROR   atus.api: database unavailable: OperationalError: consuming input failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+13:36:39 INFO    atus.api: request_id=75cc9781bf274b7e GET /api/v1/meta -> 503 in 0.9ms cache=-
+INFO:     127.0.0.1:64760 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:39 INFO    atus.api: request_id=9a791d30e4f649a0 GET /api/v1/meta -> 200 in 2.5ms cache=-
+INFO:     127.0.0.1:64762 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:39 INFO    atus.api: request_id=f75f7a6830ae4db3 GET /api/v1/meta -> 200 in 1.7ms cache=-
+INFO:     127.0.0.1:64763 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:39 INFO    atus.api: request_id=d6997837114345b1 GET /api/v1/meta -> 200 in 1.5ms cache=-
+INFO:     127.0.0.1:64764 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:39 INFO    atus.api: request_id=bbf847d6fc0e4db0 GET /api/v1/meta -> 200 in 1.7ms cache=-
+INFO:     127.0.0.1:64765 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:46 INFO    atus.api: request_id=e6872190cb52472f GET /api/v1/meta -> 200 in 2.5ms cache=-
+INFO:     127.0.0.1:64766 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:46 INFO    atus.api: request_id=4299d70e432c473e POST /api/v1/analysis/estimate -> 200 in 2.1ms cache=hit
+INFO:     127.0.0.1:64767 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:36:46 INFO    atus.api: request_id=81ccfd8e789d4840 GET /api/v1/meta -> 200 in 1.3ms cache=-
+INFO:     127.0.0.1:64769 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:47 INFO    atus.api: request_id=b54a47e1502c4d3d GET /api/v1/meta -> 200 in 5.8ms cache=-
+INFO:     127.0.0.1:64770 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:47 INFO    atus.api: request_id=080f89ecdb2c45b3 GET /api/v1/meta -> 200 in 4.1ms cache=-
+INFO:     127.0.0.1:64771 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:48 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c839a90>
+13:36:48 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:36:48 INFO    atus.api: request_id=17b5a8d0d7a2428c GET /api/v1/meta -> 503 in 1.6ms cache=-
+INFO:     127.0.0.1:64774 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:48 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c84a870>
+13:36:48 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:36:48 INFO    atus.api: request_id=aec759bc685d4d6a GET /api/v1/meta -> 503 in 3.3ms cache=-
+INFO:     127.0.0.1:64776 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:49 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c84b6b0>
+13:36:49 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:36:49 INFO    atus.api: request_id=07865502169d4fd0 GET /api/v1/meta -> 503 in 3.1ms cache=-
+INFO:     127.0.0.1:64778 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:49 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c867a70>
+13:36:49 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:36:49 INFO    atus.api: request_id=6edc1014e1af4f89 GET /api/v1/meta -> 503 in 2.7ms cache=-
+INFO:     127.0.0.1:64780 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:50 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c84acf0>
+13:36:50 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:36:50 INFO    atus.api: request_id=b389a6c3dcb146d8 GET /api/v1/meta -> 503 in 2.9ms cache=-
+INFO:     127.0.0.1:64782 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:50 WARNING psycopg.pool: discarding closed connection: <psycopg.Connection [BAD] at 0x10c84b650>
+13:36:50 ERROR   atus.api: database unavailable: AdminShutdown: terminating connection due to administrator command
+13:36:50 INFO    atus.api: request_id=28020086d8cf4bfd GET /api/v1/meta -> 503 in 3.0ms cache=-
+INFO:     127.0.0.1:64784 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:36:51 INFO    atus.api: request_id=f2f103846efb48ba GET /api/v1/meta -> 200 in 10.7ms cache=-
+INFO:     127.0.0.1:64786 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:51 INFO    atus.api: request_id=fac8afdd09624a98 GET /api/v1/meta -> 200 in 6.8ms cache=-
+INFO:     127.0.0.1:64787 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:52 INFO    atus.api: request_id=0336dec45cba4b9e GET /api/v1/meta -> 200 in 6.3ms cache=-
+INFO:     127.0.0.1:64788 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:52 INFO    atus.api: request_id=423336d939e24182 GET /api/v1/meta -> 200 in 7.6ms cache=-
+INFO:     127.0.0.1:64789 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=3bbb57b46b7c445c GET /api/v1/meta -> 200 in 5.6ms cache=-
+INFO:     127.0.0.1:64791 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=2b20b77a31e24f89 POST /api/v1/analysis/estimate -> 200 in 4.5ms cache=hit
+INFO:     127.0.0.1:64792 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=48be2a5cec9c40c3 POST /api/v1/analysis/estimate -> 200 in 20.7ms cache=miss
+INFO:     127.0.0.1:64793 - "POST /api/v1/analysis/estimate HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=aac9d577b2524b8a GET /ready -> 200 in 1.5ms cache=-
+INFO:     127.0.0.1:64794 - "GET /ready HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=4c703df879d048eb GET /api/v1/meta -> 200 in 2.0ms cache=-
+INFO:     127.0.0.1:64795 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=948e47be01ce41d4 GET /api/v1/meta -> 200 in 1.9ms cache=-
+INFO:     127.0.0.1:64796 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=20b6985439fb4f6c GET /api/v1/meta -> 200 in 1.9ms cache=-
+INFO:     127.0.0.1:64797 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=e68e560ef0c2475b GET /api/v1/meta -> 200 in 2.7ms cache=-
+INFO:     127.0.0.1:64798 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=30715f7eeeca49e8 GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:64799 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=4e1dce849e31437f GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:64800 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=4626aa84efdb44ff GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:64801 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:36:53 INFO    atus.api: request_id=90cafe8f354e48cb GET /api/v1/meta -> 200 in 1.8ms cache=-
+INFO:     127.0.0.1:64802 - "GET /api/v1/meta HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [89557]

@@ -1,0 +1,17 @@
+# Advisories the SPA's runtime audit accepts for a short, recorded time
+# (.github/workflows/ci.yml, job frontend: npm audit --omit=dev, high and
+# above, through ../deploy/ci/audit_gate.py npm).
+#
+# Empty unless an advisory blocks every deploy and cannot be fixed forward
+# soon (often: no fixed version exists yet): docs/operations.md, "A dependency
+# audit blocks a deploy". Each entry is one GHSA ID (the one in the
+# advisory's github.com/advisories URL, which npm audit reports) with an
+# expiry date, preceded by a comment with the date, who reviewed it, and why
+# the vulnerable code is not reachable in the SPA bundle:
+#
+#   # 2026-11-02 owner: libfoo in the SPA bundle; the affected path never runs; no fix yet
+#   GHSA-xxxx-xxxx-xxxx exp:2026-12-02
+#
+# The gate stops accepting an entry on its expiry date, and refuses this file
+# when an entry has no reason or expires more than 31 days out. Remove the
+# entry with the fix.

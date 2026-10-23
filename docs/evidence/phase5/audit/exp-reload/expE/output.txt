@@ -1,0 +1,20 @@
+# console capture of expE.sh (tee into this dir failed because the dir was created by the script; copied verbatim from the run)
+client1: http=000 t=2.002813
+client2: http=000 t=2.002224
+client3: http=000 t=2.002266
+client6: http=000 t=2.003412
+client4: http=000 t=2.006266
+client5: http=000 t=2.006833
+client7: http=000 t=2.006744
+client12: http=000 t=2.006011
+client11: http=000 t=2.006344
+client9: http=000 t=2.005653
+client10: http=000 t=2.005428
+client8: http=000 t=2.006204
+--- 5 s after all clients disconnected:
+{"borrowed":12,"total":40,"tasks_waiting":0,"pool_size":10,"pool_available":0,"requests_waiting":2,"requests_errors":140,"requests_num":18079}
+API backends (state, wait_type, wait_event, n): [('active', 'Lock', 'relation', 10)]
+--- a new cached-spec request now (pool should be exhausted):
+http=503 t=10.003564
+loader exit 0
+{"borrowed":0,"total":40,"tasks_waiting":0,"pool_size":10,"pool_available":10,"requests_waiting":0,"requests_errors":143,"requests_num":18080}

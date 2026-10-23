@@ -1,0 +1,18 @@
+27c27
+< ATUS_DATABASE_URL=postgresql://atus:atus@localhost:5434/atus    0.13s user 0.02s system 1% cpu 8.955 total
+---
+> ATUS_DATABASE_URL=postgresql://atus:atus@localhost:5441/atus    0.12s user 0.02s system 6% cpu 2.300 total
+docs/evidence/phase5/audit/exp-serving-proto/extremes2.txt:relSEdiff=3.60e-13
+docs/evidence/phase5/audit/exp-serving-proto/extremes2.txt:relSEdiff=1.11e-13
+docs/evidence/phase5/audit/exp-serving-proto/extremes2.txt:relSEdiff=4.14e-14
+docs/evidence/phase5/audit/exp-serving-proto/extremes2.txt:relSEdiff=5.74e-14
+docs/evidence/phase5/audit/exp-serving-proto/extremes2.txt:relSEdiff=3.36e-15
+docs/evidence/phase5/audit/exp-serving-proto/extremes2.txt:relSEdiff=2.82e-13
+docs/evidence/phase5/audit/exp-serving-proto/extremes2.txt:relSEdiff=6.28e-14
+docs/evidence/phase5/audit/exp-serving-proto/extremes.txt:relSEdiff=3.56e-14
+docs/evidence/phase5/audit/exp-serving-proto/extremes.txt:relSEdiff=6.24e-13
+docs/evidence/phase5/audit/exp-serving-proto/extremes.txt:relSEdiff=1.31e-02
+docs/evidence/phase5/audit/exp-serving-proto/extremes.txt:relSEdiff=nan
+docs/evidence/phase5/audit/exp-serving-proto/extremes.txt:relSEdiff=0.00e+00
+OVERALL {"max_rel_se": 1.281320448397332e-13, "max_rel_ci": 1.7445033247162036e-15, "exact_mismatch": [], "exact_fields": 1727, "tol_fields": 177, "tol_exact": 26}
+fixture specs: 281; byte-identical JSON results (incl. errors): 281; different: 0

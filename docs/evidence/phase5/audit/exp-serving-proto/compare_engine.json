@@ -1,0 +1,3981 @@
+{
+ "benchmarks": [
+  {
+   "name": "UG ch7.4: TV watching 2007, mean minutes/day",
+   "full_value": 157.39475385293406,
+   "serving_value": 157.39475385293406,
+   "value_identical": true,
+   "expected": 157.395,
+   "max_rel_se": 3.2961753356075934e-14,
+   "exact_mismatch": [],
+   "seconds_full": 1.115,
+   "seconds_serving": 0.156
+  },
+  {
+   "name": "UG ch7.5: TV watching 2007, replicate-weight SE (hours)",
+   "full_value": 0.029303478519167595,
+   "serving_value": 0.029303478519169278,
+   "value_identical": false,
+   "expected": 0.0293,
+   "max_rel_se": 3.2204011899614807e-14,
+   "exact_mismatch": [],
+   "seconds_full": 0.944,
+   "seconds_serving": 0.144
+  },
+  {
+   "name": "UG App J: persons in the South doing housework per day, 2006",
+   "full_value": 29517002.76933455,
+   "serving_value": 29517002.76933455,
+   "value_identical": true,
+   "expected": 29517003,
+   "max_rel_se": 3.067840523360934e-15,
+   "exact_mismatch": [],
+   "seconds_full": 0.705,
+   "seconds_serving": 0.087
+  },
+  {
+   "name": "UG App J: unweighted participant count in that subpopulation",
+   "full_value": 1861.0,
+   "serving_value": 1861.0,
+   "value_identical": true,
+   "expected": 1861,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.293,
+   "seconds_serving": 0.041
+  },
+  {
+   "name": "A1-2025: sleeping, hours/day",
+   "full_value": 9.032736672992998,
+   "serving_value": 9.032736672992998,
+   "value_identical": true,
+   "expected": 9.03,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.26,
+   "seconds_serving": 0.072
+  },
+  {
+   "name": "A1-2025: sleeping, percent participating",
+   "full_value": 99.89696386210063,
+   "serving_value": 99.89696386210063,
+   "value_identical": true,
+   "expected": 99.9,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.262,
+   "seconds_serving": 0.077
+  },
+  {
+   "name": "A1-2025: sleeping, hours/day of participants",
+   "full_value": 9.04205325545422,
+   "serving_value": 9.04205325545422,
+   "value_identical": true,
+   "expected": 9.04,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.259,
+   "seconds_serving": 0.072
+  },
+  {
+   "name": "A1-2025: sleeping, men, hours/day",
+   "full_value": 8.929832849816016,
+   "serving_value": 8.929832849816016,
+   "value_identical": true,
+   "expected": 8.93,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.441,
+   "seconds_serving": 0.081
+  },
+  {
+   "name": "A1-2025: sleeping, women, hours/day",
+   "full_value": 9.13080103487446,
+   "serving_value": 9.13080103487446,
+   "value_identical": true,
+   "expected": 9.13,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.441,
+   "seconds_serving": 0.078
+  },
+  {
+   "name": "A1-2025: watching TV, hours/day",
+   "full_value": 2.610538898816506,
+   "serving_value": 2.610538898816506,
+   "value_identical": true,
+   "expected": 2.61,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.223,
+   "seconds_serving": 0.051
+  },
+  {
+   "name": "A1-2025: watching TV, percent participating",
+   "full_value": 74.33457555915916,
+   "serving_value": 74.33457555915916,
+   "value_identical": true,
+   "expected": 74.3,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.223,
+   "seconds_serving": 0.051
+  },
+  {
+   "name": "A1-2025: household activities (A-1 definition), hours/day",
+   "full_value": 1.992638130518063,
+   "serving_value": 1.992638130518063,
+   "value_identical": true,
+   "expected": 1.99,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.276,
+   "seconds_serving": 0.119
+  },
+  {
+   "name": "A1-2025: household activities (A-1 definition), percent participating",
+   "full_value": 80.94528696668169,
+   "serving_value": 80.94528696668169,
+   "value_identical": true,
+   "expected": 80.9,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.286,
+   "seconds_serving": 0.104
+  },
+  {
+   "name": "A1-2025: household activities (A-1 definition), women, hours/day",
+   "full_value": 2.3841920841443285,
+   "serving_value": 2.3841920841443285,
+   "value_identical": true,
+   "expected": 2.38,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.469,
+   "seconds_serving": 0.107
+  },
+  {
+   "name": "A1-2025: leisure and sports, hours/day",
+   "full_value": 5.160668182635777,
+   "serving_value": 5.160668182635777,
+   "value_identical": true,
+   "expected": 5.16,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.343,
+   "seconds_serving": 0.15
+  },
+  {
+   "name": "A1-2025: leisure and sports, percent participating",
+   "full_value": 95.11251107593763,
+   "serving_value": 95.11251107593763,
+   "value_identical": true,
+   "expected": 95.1,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.345,
+   "seconds_serving": 0.134
+  },
+  {
+   "name": "A1-2025: leisure and sports, hours/day of participants",
+   "full_value": 5.425856308762063,
+   "serving_value": 5.425856308762063,
+   "value_identical": true,
+   "expected": 5.43,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.342,
+   "seconds_serving": 0.134
+  },
+  {
+   "name": "A1-2025: eating and drinking, hours/day",
+   "full_value": 1.2121641471211353,
+   "serving_value": 1.2121641471211353,
+   "value_identical": true,
+   "expected": 1.21,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.269,
+   "seconds_serving": 0.097
+  },
+  {
+   "name": "A1-2025: eating and drinking, percent participating",
+   "full_value": 96.87937227559738,
+   "serving_value": 96.87937227559738,
+   "value_identical": true,
+   "expected": 96.9,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.263,
+   "seconds_serving": 0.082
+  },
+  {
+   "name": "A1-2025: working and work-related, hours/day",
+   "full_value": 3.315888618336558,
+   "serving_value": 3.315888618336558,
+   "value_identical": true,
+   "expected": 3.32,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.151,
+   "seconds_serving": 0.041
+  },
+  {
+   "name": "A1-2025: working and work-related, hours/day of participants",
+   "full_value": 7.9846612197583795,
+   "serving_value": 7.9846612197583795,
+   "value_identical": true,
+   "expected": 7.98,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.155,
+   "seconds_serving": 0.035
+  },
+  {
+   "name": "NR-2020: sleeping, hours/day (May 10 - Dec 31, TU20FWGT)",
+   "full_value": 9.008800322289153,
+   "serving_value": 9.008800322289153,
+   "value_identical": true,
+   "expected": 9.01,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.274,
+   "seconds_serving": 0.069
+  },
+  {
+   "name": "NR-2020: watching TV, hours/day (May 10 - Dec 31, TU20FWGT)",
+   "full_value": 3.0547559769225976,
+   "serving_value": 3.0547559769225976,
+   "value_identical": true,
+   "expected": 3.05,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.238,
+   "seconds_serving": 0.059
+  },
+  {
+   "name": "NR-2020: watching TV, percent participating (May 10 - Dec 31)",
+   "full_value": 78.79768653516965,
+   "serving_value": 78.79768653516965,
+   "value_identical": true,
+   "expected": 78.8,
+   "max_rel_se": 0.0,
+   "exact_mismatch": [],
+   "seconds_full": 0.233,
+   "seconds_serving": 0.052
+  }
+ ],
+ "cases": [
+  {
+   "name": "E1 estimate sleep 2025",
+   "mode": "estimate",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 5.002169140810348e-14,
+   "max_rel_ci": 4.228489017818314e-16,
+   "exact_fields": 26,
+   "tol_fields": 3,
+   "tol_exact": 0,
+   "exact_mismatch": [],
+   "seconds_full": 1.026,
+   "seconds_serving": 0.149,
+   "full": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "estimate": {
+      "value": 541.9642003795799,
+      "unit": "minutes_per_day",
+      "standard_error": 2.166215578745132,
+      "confidence_level": 0.95,
+      "ci_lower": 537.7184958624898,
+      "ci_upper": 546.20990489667
+     },
+     "years": [
+      2025
+     ],
+     "activity": {
+      "label": "Sleeping",
+      "include": [
+       "0101"
+      ],
+      "exclude": [],
+      "leaf_code_count": 3
+     },
+     "population": "civilian noninstitutional population age 15+",
+     "n_respondents": 6146,
+     "n_participants": 6139,
+     "weighted_population_per_day": 277984657.483597,
+     "days_in_period": 365,
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "0101"
+       ],
+       "exclude": [],
+       "label": "Sleeping"
+      },
+      "years": [
+       2025
+      ],
+      "population": {},
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "estimate": {
+      "value": 541.9642003795799,
+      "unit": "minutes_per_day",
+      "standard_error": 2.1662155787452404,
+      "confidence_level": 0.95,
+      "ci_lower": 537.7184958624896,
+      "ci_upper": 546.2099048966702
+     },
+     "years": [
+      2025
+     ],
+     "activity": {
+      "label": "Sleeping",
+      "include": [
+       "0101"
+      ],
+      "exclude": [],
+      "leaf_code_count": 3
+     },
+     "population": "civilian noninstitutional population age 15+",
+     "n_respondents": 6146,
+     "n_participants": 6139,
+     "weighted_population_per_day": 277984657.483597,
+     "days_in_period": 365,
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "0101"
+       ],
+       "exclude": [],
+       "label": "Sleeping"
+      },
+      "years": [
+       2025
+      ],
+      "population": {},
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+     ]
+    }
+   }
+  },
+  {
+   "name": "E2 estimate leisure women 25-54 employed 2025 (roster join)",
+   "mode": "estimate",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 2.540817664116483e-15,
+   "max_rel_ci": 1.3928894345988884e-16,
+   "exact_fields": 36,
+   "tol_fields": 3,
+   "tol_exact": 0,
+   "exact_mismatch": [],
+   "seconds_full": 0.534,
+   "seconds_serving": 0.176,
+   "full": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "estimate": {
+      "value": 217.7512253772242,
+      "unit": "minutes_per_day",
+      "standard_error": 6.991280265748396,
+      "confidence_level": 0.95,
+      "ci_lower": 204.04856785053173,
+      "ci_upper": 231.45388290391665
+     },
+     "years": [
+      2025
+     ],
+     "activity": {
+      "label": "Leisure and sports (BLS table A-1 definition)",
+      "include": [
+       "12",
+       "13",
+       "1812",
+       "1813"
+      ],
+      "exclude": [],
+      "leaf_code_count": 116
+     },
+     "population": "age 25-54, sex=female, employment_status=employed",
+     "n_respondents": 1038,
+     "n_participants": 971,
+     "weighted_population_per_day": 49819511.858126506,
+     "days_in_period": 365,
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "12",
+        "13",
+        "1812",
+        "1813"
+       ],
+       "exclude": [],
+       "label": "Leisure and sports (BLS table A-1 definition)"
+      },
+      "years": [
+       2025
+      ],
+      "population": {
+       "age_min": 25,
+       "age_max": 54,
+       "sex": "female",
+       "employment_status": "employed"
+      },
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "estimate": {
+      "value": 217.7512253772242,
+      "unit": "minutes_per_day",
+      "standard_error": 6.991280265748379,
+      "confidence_level": 0.95,
+      "ci_lower": 204.04856785053175,
+      "ci_upper": 231.45388290391662
+     },
+     "years": [
+      2025
+     ],
+     "activity": {
+      "label": "Leisure and sports (BLS table A-1 definition)",
+      "include": [
+       "12",
+       "13",
+       "1812",
+       "1813"
+      ],
+      "exclude": [],
+      "leaf_code_count": 116
+     },
+     "population": "age 25-54, sex=female, employment_status=employed",
+     "n_respondents": 1038,
+     "n_participants": 971,
+     "weighted_population_per_day": 49819511.858126506,
+     "days_in_period": 365,
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "12",
+        "13",
+        "1812",
+        "1813"
+       ],
+       "exclude": [],
+       "label": "Leisure and sports (BLS table A-1 definition)"
+      },
+      "years": [
+       2025
+      ],
+      "population": {
+       "age_min": 25,
+       "age_max": 54,
+       "sex": "female",
+       "employment_status": "employed"
+      },
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+     ]
+    }
+   }
+  },
+  {
+   "name": "E3 estimate sleep pooled 22 years (worst case)",
+   "mode": "estimate",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 2.391887168899373e-14,
+   "max_rel_ci": 2.159946330121956e-16,
+   "exact_fields": 69,
+   "tol_fields": 3,
+   "tol_exact": 0,
+   "exact_mismatch": [],
+   "seconds_full": 11.954,
+   "seconds_serving": 1.613,
+   "full": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "estimate": {
+      "value": 527.050628255368,
+      "unit": "minutes_per_day",
+      "standard_error": 0.36204632495524447,
+      "confidence_level": 0.95,
+      "ci_lower": 526.3410304977207,
+      "ci_upper": 527.7602260130153
+     },
+     "years": [
+      2003,
+      2004,
+      2005,
+      2006,
+      2007,
+      2008,
+      2009,
+      2010,
+      2011,
+      2012,
+      2013,
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+     ],
+     "activity": {
+      "label": "Sleeping",
+      "include": [
+       "0101"
+      ],
+      "exclude": [],
+      "leaf_code_count": 3
+     },
+     "population": "civilian noninstitutional population age 15+",
+     "n_respondents": 250172,
+     "n_participants": 249901,
+     "weighted_population_per_day": 250846080.57825452,
+     "days_in_period": 8035,
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "0101"
+       ],
+       "exclude": [],
+       "label": "Sleeping"
+      },
+      "years": [
+       2003,
+       2004,
+       2005,
+       2006,
+       2007,
+       2008,
+       2009,
+       2010,
+       2011,
+       2012,
+       2013,
+       2014,
+       2015,
+       2016,
+       2017,
+       2018,
+       2019,
+       2021,
+       2022,
+       2023,
+       2024,
+       2025
+      ],
+      "population": {},
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Pooled estimate: represents the average day across 22 survey years (8,035 days combined)."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "estimate": {
+      "value": 527.050628255368,
+      "unit": "minutes_per_day",
+      "standard_error": 0.36204632495525313,
+      "confidence_level": 0.95,
+      "ci_lower": 526.3410304977206,
+      "ci_upper": 527.7602260130154
+     },
+     "years": [
+      2003,
+      2004,
+      2005,
+      2006,
+      2007,
+      2008,
+      2009,
+      2010,
+      2011,
+      2012,
+      2013,
+      2014,
+      2015,
+      2016,
+      2017,
+      2018,
+      2019,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+     ],
+     "activity": {
+      "label": "Sleeping",
+      "include": [
+       "0101"
+      ],
+      "exclude": [],
+      "leaf_code_count": 3
+     },
+     "population": "civilian noninstitutional population age 15+",
+     "n_respondents": 250172,
+     "n_participants": 249901,
+     "weighted_population_per_day": 250846080.57825452,
+     "days_in_period": 8035,
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "0101"
+       ],
+       "exclude": [],
+       "label": "Sleeping"
+      },
+      "years": [
+       2003,
+       2004,
+       2005,
+       2006,
+       2007,
+       2008,
+       2009,
+       2010,
+       2011,
+       2012,
+       2013,
+       2014,
+       2015,
+       2016,
+       2017,
+       2018,
+       2019,
+       2021,
+       2022,
+       2023,
+       2024,
+       2025
+      ],
+      "population": {},
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Pooled estimate: represents the average day across 22 survey years (8,035 days combined)."
+     ]
+    }
+   }
+  },
+  {
+   "name": "E4 estimate participants/day work, South, weekday, 2010 (CPS join)",
+   "mode": "estimate",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 4.172491539767437e-15,
+   "max_rel_ci": 1.7208458620829858e-16,
+   "exact_fields": 31,
+   "tol_fields": 3,
+   "tol_exact": 0,
+   "exact_mismatch": [],
+   "seconds_full": 0.757,
+   "seconds_serving": 0.107,
+   "full": {
+    "ok": {
+     "measure": "participants_per_day",
+     "estimate": {
+      "value": 45920883.99251715,
+      "unit": "persons_per_day",
+      "standard_error": 1339232.3014762367,
+      "confidence_level": 0.95,
+      "ci_lower": 43296036.91469104,
+      "ci_upper": 48545731.07034326
+     },
+     "years": [
+      2010
+     ],
+     "activity": {
+      "label": "Working and work-related activities (BLS table A-1 definition)",
+      "include": [
+       "05",
+       "1805"
+      ],
+      "exclude": [],
+      "leaf_code_count": 23
+     },
+     "population": "day_type=weekday, Census region 3",
+     "n_respondents": 2391,
+     "n_participants": 1228,
+     "weighted_population_per_day": 87914570.1201385,
+     "days_in_period": 261,
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "participants_per_day",
+      "activity": {
+       "include": [
+        "05",
+        "1805"
+       ],
+       "exclude": [],
+       "label": "Working and work-related activities (BLS table A-1 definition)"
+      },
+      "years": [
+       2010
+      ],
+      "population": {
+       "region": 3,
+       "day_type": "weekday"
+      },
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Day-type estimates represent the average such day (weights are day-of-week calibrated), not a share of the overall week."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "participants_per_day",
+     "estimate": {
+      "value": 45920883.99251715,
+      "unit": "persons_per_day",
+      "standard_error": 1339232.3014762423,
+      "confidence_level": 0.95,
+      "ci_lower": 43296036.91469103,
+      "ci_upper": 48545731.07034327
+     },
+     "years": [
+      2010
+     ],
+     "activity": {
+      "label": "Working and work-related activities (BLS table A-1 definition)",
+      "include": [
+       "05",
+       "1805"
+      ],
+      "exclude": [],
+      "leaf_code_count": 23
+     },
+     "population": "day_type=weekday, Census region 3",
+     "n_respondents": 2391,
+     "n_participants": 1228,
+     "weighted_population_per_day": 87914570.1201385,
+     "days_in_period": 261,
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "participants_per_day",
+      "activity": {
+       "include": [
+        "05",
+        "1805"
+       ],
+       "exclude": [],
+       "label": "Working and work-related activities (BLS table A-1 definition)"
+      },
+      "years": [
+       2010
+      ],
+      "population": {
+       "region": 3,
+       "day_type": "weekday"
+      },
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Day-type estimates represent the average such day (weights are day-of-week calibrated), not a share of the overall week."
+     ]
+    }
+   }
+  },
+  {
+   "name": "E5 estimate min/participant housework, CA, children, pooled 2015-2019",
+   "mode": "estimate",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 1.306094755092791e-15,
+   "max_rel_ci": 1.5008450061434759e-16,
+   "exact_fields": 37,
+   "tol_fields": 3,
+   "tol_exact": 0,
+   "exact_mismatch": [],
+   "seconds_full": 0.719,
+   "seconds_serving": 0.091,
+   "full": {
+    "ok": {
+     "measure": "average_minutes_per_participant",
+     "estimate": {
+      "value": 104.01547701230108,
+      "unit": "minutes_per_day_of_participants",
+      "standard_error": 4.760182148851195,
+      "confidence_level": 0.95,
+      "ci_lower": 94.68569144070226,
+      "ci_upper": 113.3452625838999
+     },
+     "years": [
+      2015,
+      2016,
+      2017,
+      2018,
+      2019
+     ],
+     "activity": {
+      "label": "Housework",
+      "include": [
+       "0201"
+      ],
+      "exclude": [],
+      "leaf_code_count": 5
+     },
+     "population": "household children under 18 present, state FIPS 06",
+     "n_respondents": 2032,
+     "n_participants": 827,
+     "weighted_population_per_day": 11343098.857330393,
+     "days_in_period": 1826,
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_participant",
+      "activity": {
+       "include": [
+        "0201"
+       ],
+       "exclude": [],
+       "label": "Housework"
+      },
+      "years": [
+       2015,
+       2016,
+       2017,
+       2018,
+       2019
+      ],
+      "population": {
+       "has_household_children": true,
+       "state_fips": "06"
+      },
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Pooled estimate: represents the average day across 5 survey years (1,826 days combined)."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "average_minutes_per_participant",
+     "estimate": {
+      "value": 104.01547701230108,
+      "unit": "minutes_per_day_of_participants",
+      "standard_error": 4.760182148851189,
+      "confidence_level": 0.95,
+      "ci_lower": 94.68569144070227,
+      "ci_upper": 113.34526258389988
+     },
+     "years": [
+      2015,
+      2016,
+      2017,
+      2018,
+      2019
+     ],
+     "activity": {
+      "label": "Housework",
+      "include": [
+       "0201"
+      ],
+      "exclude": [],
+      "leaf_code_count": 5
+     },
+     "population": "household children under 18 present, state FIPS 06",
+     "n_respondents": 2032,
+     "n_participants": 827,
+     "weighted_population_per_day": 11343098.857330393,
+     "days_in_period": 1826,
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_participant",
+      "activity": {
+       "include": [
+        "0201"
+       ],
+       "exclude": [],
+       "label": "Housework"
+      },
+      "years": [
+       2015,
+       2016,
+       2017,
+       2018,
+       2019
+      ],
+      "population": {
+       "has_household_children": true,
+       "state_fips": "06"
+      },
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Pooled estimate: represents the average day across 5 survey years (1,826 days combined)."
+     ]
+    }
+   }
+  },
+  {
+   "name": "E6 estimate TV 2020 pandemic weights May10-Dec31",
+   "mode": "estimate",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 3.834282417261554e-14,
+   "max_rel_ci": 1.2793657201136868e-15,
+   "exact_fields": 31,
+   "tol_fields": 3,
+   "tol_exact": 0,
+   "exact_mismatch": [],
+   "seconds_full": 0.899,
+   "seconds_serving": 0.129,
+   "full": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "estimate": {
+      "value": 183.28535861535585,
+      "unit": "minutes_per_day",
+      "standard_error": 2.837606742879719,
+      "confidence_level": 0.95,
+      "ci_lower": 177.72375159702358,
+      "ci_upper": 188.84696563368811
+     },
+     "years": [
+      2020
+     ],
+     "activity": {
+      "label": "Watching TV",
+      "include": [
+       "120303",
+       "120304"
+      ],
+      "exclude": [],
+      "leaf_code_count": 2
+     },
+     "population": "diary dates 2020-05-10 to 2020-12-31",
+     "n_respondents": 6666,
+     "n_participants": 5466,
+     "weighted_population_per_day": 264814835.04780176,
+     "days_in_period": 236,
+     "weight": {
+      "scheme": "pandemic",
+      "bls_variable": "TU20FWGT",
+      "column": "respondents.pandemic_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "120303",
+        "120304"
+       ],
+       "exclude": [],
+       "label": "Watching TV"
+      },
+      "years": [
+       2020
+      ],
+      "population": {
+       "diary_date_min": "2020-05-10",
+       "diary_date_max": "2020-12-31"
+      },
+      "weights": "pandemic",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "estimate": {
+      "value": 183.28535861535585,
+      "unit": "minutes_per_day",
+      "standard_error": 2.8376067428796103,
+      "confidence_level": 0.95,
+      "ci_lower": 177.7237515970238,
+      "ci_upper": 188.8469656336879
+     },
+     "years": [
+      2020
+     ],
+     "activity": {
+      "label": "Watching TV",
+      "include": [
+       "120303",
+       "120304"
+      ],
+      "exclude": [],
+      "leaf_code_count": 2
+     },
+     "population": "diary dates 2020-05-10 to 2020-12-31",
+     "n_respondents": 6666,
+     "n_participants": 5466,
+     "weighted_population_per_day": 264814835.04780176,
+     "days_in_period": 236,
+     "weight": {
+      "scheme": "pandemic",
+      "bls_variable": "TU20FWGT",
+      "column": "respondents.pandemic_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "120303",
+        "120304"
+       ],
+       "exclude": [],
+       "label": "Watching TV"
+      },
+      "years": [
+       2020
+      ],
+      "population": {
+       "diary_date_min": "2020-05-10",
+       "diary_date_max": "2020-12-31"
+      },
+      "weights": "pandemic",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible."
+     ]
+    }
+   }
+  },
+  {
+   "name": "T1 trend sleep 2003-2025 multiyear (2020 unavailable)",
+   "mode": "trend",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 1.281320448397332e-13,
+   "max_rel_ci": 8.63086460215669e-16,
+   "exact_fields": 222,
+   "tol_fields": 66,
+   "tol_exact": 11,
+   "exact_mismatch": [],
+   "seconds_full": 11.656,
+   "seconds_serving": 1.58,
+   "full": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "points": [
+      {
+       "year": 2003,
+       "estimate": {
+        "value": 514.0136264327542,
+        "unit": "minutes_per_day",
+        "standard_error": 1.1067958368080655,
+        "confidence_level": 0.95,
+        "ci_lower": 511.84434645437153,
+        "ci_upper": 516.1829064111369
+       },
+       "n_respondents": 20720,
+       "n_participants": 20689,
+       "weighted_population_per_day": 225290906.57729694,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2004,
+       "estimate": {
+        "value": 512.7716222056152,
+        "unit": "minutes_per_day",
+        "standard_error": 1.5317516536462328,
+        "confidence_level": 0.95,
+        "ci_lower": 509.76944413120896,
+        "ci_upper": 515.7738002800215
+       },
+       "n_respondents": 13973,
+       "n_participants": 13962,
+       "weighted_population_per_day": 227481690.36628637,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2005,
+       "estimate": {
+        "value": 517.4985921280305,
+        "unit": "minutes_per_day",
+        "standard_error": 1.3818291656721156,
+        "confidence_level": 0.95,
+        "ci_lower": 514.7902567305262,
+        "ci_upper": 520.2069275255349
+       },
+       "n_respondents": 13038,
+       "n_participants": 13026,
+       "weighted_population_per_day": 230427482.34397337,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2006,
+       "estimate": {
+        "value": 517.6198428423759,
+        "unit": "minutes_per_day",
+        "standard_error": 1.4291451411257556,
+        "confidence_level": 0.95,
+        "ci_lower": 514.818769837089,
+        "ci_upper": 520.4209158476627
+       },
+       "n_respondents": 12943,
+       "n_participants": 12932,
+       "weighted_population_per_day": 233122400.31982487,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2007,
+       "estimate": {
+        "value": 514.4126270861493,
+        "unit": "minutes_per_day",
+        "standard_error": 1.4600267846483634,
+        "confidence_level": 0.95,
+        "ci_lower": 511.5510271717747,
+        "ci_upper": 517.274227000524
+       },
+       "n_respondents": 12248,
+       "n_participants": 12237,
+       "weighted_population_per_day": 236105785.1782806,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2008,
+       "estimate": {
+        "value": 516.131983420915,
+        "unit": "minutes_per_day",
+        "standard_error": 1.392463671808087,
+        "confidence_level": 0.95,
+        "ci_lower": 513.4028047743908,
+        "ci_upper": 518.8611620674393
+       },
+       "n_respondents": 12723,
+       "n_participants": 12709,
+       "weighted_population_per_day": 238007117.8346863,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2009,
+       "estimate": {
+        "value": 520.3402896704384,
+        "unit": "minutes_per_day",
+        "standard_error": 1.4052244637312885,
+        "confidence_level": 0.95,
+        "ci_lower": 517.5861003313305,
+        "ci_upper": 523.0944790095464
+       },
+       "n_respondents": 13133,
+       "n_participants": 13121,
+       "weighted_population_per_day": 239898189.76348066,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2010,
+       "estimate": {
+        "value": 519.9264541802336,
+        "unit": "minutes_per_day",
+        "standard_error": 1.4447986325628213,
+        "confidence_level": 0.95,
+        "ci_lower": 517.0947008954977,
+        "ci_upper": 522.7582074649695
+       },
+       "n_respondents": 13260,
+       "n_participants": 13244,
+       "weighted_population_per_day": 241913480.40825018,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2011,
+       "estimate": {
+        "value": 522.8595978505548,
+        "unit": "minutes_per_day",
+        "standard_error": 1.5454144801293843,
+        "confidence_level": 0.95,
+        "ci_lower": 519.8306411283145,
+        "ci_upper": 525.8885545727951
+       },
+       "n_respondents": 12479,
+       "n_participants": 12469,
+       "weighted_population_per_day": 243651203.13918173,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2012,
+       "estimate": {
+        "value": 523.8314047840096,
+        "unit": "minutes_per_day",
+        "standard_error": 1.564930884338818,
+        "confidence_level": 0.95,
+        "ci_lower": 520.7641966124111,
+        "ci_upper": 526.8986129556081
+       },
+       "n_respondents": 12443,
+       "n_participants": 12430,
+       "weighted_population_per_day": 247385526.91834423,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2013,
+       "estimate": {
+        "value": 524.2905924378111,
+        "unit": "minutes_per_day",
+        "standard_error": 1.5919779127201323,
+        "confidence_level": 0.95,
+        "ci_lower": 521.1703730646964,
+        "ci_upper": 527.4108118109259
+       },
+       "n_respondents": 11385,
+       "n_participants": 11373,
+       "weighted_population_per_day": 249810847.61846536,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2014,
+       "estimate": {
+        "value": 527.7948314320631,
+        "unit": "minutes_per_day",
+        "standard_error": 1.4984343125435218,
+        "confidence_level": 0.95,
+        "ci_lower": 524.8579541462788,
+        "ci_upper": 530.7317087178475
+       },
+       "n_respondents": 11592,
+       "n_participants": 11583,
+       "weighted_population_per_day": 252086923.151403,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2015,
+       "estimate": {
+        "value": 530.0471816324435,
+        "unit": "minutes_per_day",
+        "standard_error": 1.6133632101460074,
+        "confidence_level": 0.95,
+        "ci_lower": 526.8850478465754,
+        "ci_upper": 533.2093154183117
+       },
+       "n_respondents": 10905,
+       "n_participants": 10890,
+       "weighted_population_per_day": 255023486.0216686,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2016,
+       "estimate": {
+        "value": 527.1997663044273,
+        "unit": "minutes_per_day",
+        "standard_error": 1.6921528087394275,
+        "confidence_level": 0.95,
+        "ci_lower": 523.8832077429597,
+        "ci_upper": 530.5163248658948
+       },
+       "n_respondents": 10493,
+       "n_participants": 10478,
+       "weighted_population_per_day": 257745877.55759296,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2017,
+       "estimate": {
+        "value": 528.178154819018,
+        "unit": "minutes_per_day",
+        "standard_error": 1.6116559189012039,
+        "confidence_level": 0.95,
+        "ci_lower": 525.0193672625009,
+        "ci_upper": 531.3369423755352
+       },
+       "n_respondents": 10223,
+       "n_participants": 10208,
+       "weighted_population_per_day": 259204264.39967412,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2018,
+       "estimate": {
+        "value": 528.9572984253997,
+        "unit": "minutes_per_day",
+        "standard_error": 2.015818077227913,
+        "confidence_level": 0.95,
+        "ci_lower": 525.0063675946482,
+        "ci_upper": 532.9082292561512
+       },
+       "n_respondents": 9593,
+       "n_participants": 9583,
+       "weighted_population_per_day": 261895319.49253744,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2019,
+       "estimate": {
+        "value": 530.4326934864532,
+        "unit": "minutes_per_day",
+        "standard_error": 1.8194931392792775,
+        "confidence_level": 0.95,
+        "ci_lower": 526.8665524633482,
+        "ci_upper": 533.9988345095583
+       },
+       "n_respondents": 9435,
+       "n_participants": 9427,
+       "weighted_population_per_day": 263362365.19553494,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2020,
+       "estimate": null,
+       "n_respondents": null,
+       "n_participants": null,
+       "weighted_population_per_day": null,
+       "unavailable_reason": "TUFNWGTP is undefined for 2020 (pandemic collection suspension); estimate 2020 separately with weights='pandemic'."
+      },
+      {
+       "year": 2021,
+       "estimate": {
+        "value": 537.0806307344757,
+        "unit": "minutes_per_day",
+        "standard_error": 1.795928957884676,
+        "confidence_level": 0.95,
+        "ci_lower": 533.5606746582291,
+        "ci_upper": 540.6005868107222
+       },
+       "n_respondents": 9087,
+       "n_participants": 9076,
+       "weighted_population_per_day": 265629665.57447377,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2022,
+       "estimate": {
+        "value": 540.9649026349693,
+        "unit": "minutes_per_day",
+        "standard_error": 1.8956680471432987,
+        "confidence_level": 0.95,
+        "ci_lower": 537.2494615359251,
+        "ci_upper": 544.6803437340136
+       },
+       "n_respondents": 8136,
+       "n_participants": 8123,
+       "weighted_population_per_day": 268366501.58752683,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2023,
+       "estimate": {
+        "value": 544.2697905997309,
+        "unit": "minutes_per_day",
+        "standard_error": 1.7591349051280138,
+        "confidence_level": 0.95,
+        "ci_lower": 540.8219495417327,
+        "ci_upper": 547.717631657729
+       },
+       "n_respondents": 8548,
+       "n_participants": 8539,
+       "weighted_population_per_day": 271336907.19774604,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2024,
+       "estimate": {
+        "value": 542.1679224495292,
+        "unit": "minutes_per_day",
+        "standard_error": 2.269167634940061,
+        "confidence_level": 0.95,
+        "ci_lower": 537.7204356101628,
+        "ci_upper": 546.6154092888956
+       },
+       "n_respondents": 7669,
+       "n_participants": 7663,
+       "weighted_population_per_day": 272912483.3776282,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2025,
+       "estimate": {
+        "value": 541.9642003795799,
+        "unit": "minutes_per_day",
+        "standard_error": 2.166215578745036,
+        "confidence_level": 0.95,
+        "ci_lower": 537.71849586249,
+        "ci_upper": 546.2099048966697
+       },
+       "n_respondents": 6146,
+       "n_participants": 6139,
+       "weighted_population_per_day": 277984657.483597,
+       "unavailable_reason": null
+      }
+     ],
+     "activity": {
+      "label": "Sleeping",
+      "include": [
+       "0101"
+      ],
+      "exclude": [],
+      "leaf_code_count": 3
+     },
+     "population": "civilian noninstitutional population age 15+",
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "0101"
+       ],
+       "exclude": [],
+       "label": "Sleeping"
+      },
+      "years": [
+       2003,
+       2004,
+       2005,
+       2006,
+       2007,
+       2008,
+       2009,
+       2010,
+       2011,
+       2012,
+       2013,
+       2014,
+       2015,
+       2016,
+       2017,
+       2018,
+       2019,
+       2020,
+       2021,
+       2022,
+       2023,
+       2024,
+       2025
+      ],
+      "population": {},
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "points": [
+      {
+       "year": 2003,
+       "estimate": {
+        "value": 514.0136264327542,
+        "unit": "minutes_per_day",
+        "standard_error": 1.106795836808092,
+        "confidence_level": 0.95,
+        "ci_lower": 511.8443464543715,
+        "ci_upper": 516.182906411137
+       },
+       "n_respondents": 20720,
+       "n_participants": 20689,
+       "weighted_population_per_day": 225290906.57729694,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2004,
+       "estimate": {
+        "value": 512.7716222056152,
+        "unit": "minutes_per_day",
+        "standard_error": 1.5317516536464124,
+        "confidence_level": 0.95,
+        "ci_lower": 509.7694441312086,
+        "ci_upper": 515.7738002800219
+       },
+       "n_respondents": 13973,
+       "n_participants": 13962,
+       "weighted_population_per_day": 227481690.36628637,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2005,
+       "estimate": {
+        "value": 517.4985921280305,
+        "unit": "minutes_per_day",
+        "standard_error": 1.3818291656719428,
+        "confidence_level": 0.95,
+        "ci_lower": 514.7902567305265,
+        "ci_upper": 520.2069275255345
+       },
+       "n_respondents": 13038,
+       "n_participants": 13026,
+       "weighted_population_per_day": 230427482.34397337,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2006,
+       "estimate": {
+        "value": 517.6198428423759,
+        "unit": "minutes_per_day",
+        "standard_error": 1.4291451411256912,
+        "confidence_level": 0.95,
+        "ci_lower": 514.8187698370891,
+        "ci_upper": 520.4209158476626
+       },
+       "n_respondents": 12943,
+       "n_participants": 12932,
+       "weighted_population_per_day": 233122400.31982487,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2007,
+       "estimate": {
+        "value": 514.4126270861493,
+        "unit": "minutes_per_day",
+        "standard_error": 1.4600267846483879,
+        "confidence_level": 0.95,
+        "ci_lower": 511.55102717177465,
+        "ci_upper": 517.274227000524
+       },
+       "n_respondents": 12248,
+       "n_participants": 12237,
+       "weighted_population_per_day": 236105785.1782806,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2008,
+       "estimate": {
+        "value": 516.131983420915,
+        "unit": "minutes_per_day",
+        "standard_error": 1.3924636718081784,
+        "confidence_level": 0.95,
+        "ci_lower": 513.4028047743906,
+        "ci_upper": 518.8611620674395
+       },
+       "n_respondents": 12723,
+       "n_participants": 12709,
+       "weighted_population_per_day": 238007117.8346863,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2009,
+       "estimate": {
+        "value": 520.3402896704384,
+        "unit": "minutes_per_day",
+        "standard_error": 1.4052244637314006,
+        "confidence_level": 0.95,
+        "ci_lower": 517.5861003313303,
+        "ci_upper": 523.0944790095466
+       },
+       "n_respondents": 13133,
+       "n_participants": 13121,
+       "weighted_population_per_day": 239898189.76348066,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2010,
+       "estimate": {
+        "value": 519.9264541802336,
+        "unit": "minutes_per_day",
+        "standard_error": 1.4447986325628768,
+        "confidence_level": 0.95,
+        "ci_lower": 517.0947008954976,
+        "ci_upper": 522.7582074649696
+       },
+       "n_respondents": 13260,
+       "n_participants": 13244,
+       "weighted_population_per_day": 241913480.40825018,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2011,
+       "estimate": {
+        "value": 522.8595978505548,
+        "unit": "minutes_per_day",
+        "standard_error": 1.5454144801293404,
+        "confidence_level": 0.95,
+        "ci_lower": 519.8306411283146,
+        "ci_upper": 525.888554572795
+       },
+       "n_respondents": 12479,
+       "n_participants": 12469,
+       "weighted_population_per_day": 243651203.13918173,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2012,
+       "estimate": {
+        "value": 523.8314047840096,
+        "unit": "minutes_per_day",
+        "standard_error": 1.5649308843388345,
+        "confidence_level": 0.95,
+        "ci_lower": 520.7641966124111,
+        "ci_upper": 526.8986129556081
+       },
+       "n_respondents": 12443,
+       "n_participants": 12430,
+       "weighted_population_per_day": 247385526.91834423,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2013,
+       "estimate": {
+        "value": 524.2905924378111,
+        "unit": "minutes_per_day",
+        "standard_error": 1.5919779127201834,
+        "confidence_level": 0.95,
+        "ci_lower": 521.1703730646964,
+        "ci_upper": 527.4108118109259
+       },
+       "n_respondents": 11385,
+       "n_participants": 11373,
+       "weighted_population_per_day": 249810847.61846536,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2014,
+       "estimate": {
+        "value": 527.7948314320631,
+        "unit": "minutes_per_day",
+        "standard_error": 1.498434312543429,
+        "confidence_level": 0.95,
+        "ci_lower": 524.857954146279,
+        "ci_upper": 530.7317087178473
+       },
+       "n_respondents": 11592,
+       "n_participants": 11583,
+       "weighted_population_per_day": 252086923.151403,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2015,
+       "estimate": {
+        "value": 530.0471816324435,
+        "unit": "minutes_per_day",
+        "standard_error": 1.6133632101458006,
+        "confidence_level": 0.95,
+        "ci_lower": 526.8850478465758,
+        "ci_upper": 533.2093154183112
+       },
+       "n_respondents": 10905,
+       "n_participants": 10890,
+       "weighted_population_per_day": 255023486.0216686,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2016,
+       "estimate": {
+        "value": 527.1997663044273,
+        "unit": "minutes_per_day",
+        "standard_error": 1.692152808739551,
+        "confidence_level": 0.95,
+        "ci_lower": 523.8832077429595,
+        "ci_upper": 530.5163248658951
+       },
+       "n_respondents": 10493,
+       "n_participants": 10478,
+       "weighted_population_per_day": 257745877.55759296,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2017,
+       "estimate": {
+        "value": 528.178154819018,
+        "unit": "minutes_per_day",
+        "standard_error": 1.6116559189011448,
+        "confidence_level": 0.95,
+        "ci_lower": 525.019367262501,
+        "ci_upper": 531.336942375535
+       },
+       "n_respondents": 10223,
+       "n_participants": 10208,
+       "weighted_population_per_day": 259204264.39967412,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2018,
+       "estimate": {
+        "value": 528.9572984253997,
+        "unit": "minutes_per_day",
+        "standard_error": 2.0158180772279057,
+        "confidence_level": 0.95,
+        "ci_lower": 525.0063675946482,
+        "ci_upper": 532.9082292561512
+       },
+       "n_respondents": 9593,
+       "n_participants": 9583,
+       "weighted_population_per_day": 261895319.49253744,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2019,
+       "estimate": {
+        "value": 530.4326934864532,
+        "unit": "minutes_per_day",
+        "standard_error": 1.8194931392792357,
+        "confidence_level": 0.95,
+        "ci_lower": 526.8665524633482,
+        "ci_upper": 533.9988345095583
+       },
+       "n_respondents": 9435,
+       "n_participants": 9427,
+       "weighted_population_per_day": 263362365.19553494,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2020,
+       "estimate": null,
+       "n_respondents": null,
+       "n_participants": null,
+       "weighted_population_per_day": null,
+       "unavailable_reason": "TUFNWGTP is undefined for 2020 (pandemic collection suspension); estimate 2020 separately with weights='pandemic'."
+      },
+      {
+       "year": 2021,
+       "estimate": {
+        "value": 537.0806307344757,
+        "unit": "minutes_per_day",
+        "standard_error": 1.795928957884566,
+        "confidence_level": 0.95,
+        "ci_lower": 533.5606746582293,
+        "ci_upper": 540.600586810722
+       },
+       "n_respondents": 9087,
+       "n_participants": 9076,
+       "weighted_population_per_day": 265629665.57447377,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2022,
+       "estimate": {
+        "value": 540.9649026349693,
+        "unit": "minutes_per_day",
+        "standard_error": 1.895668047143295,
+        "confidence_level": 0.95,
+        "ci_lower": 537.2494615359251,
+        "ci_upper": 544.6803437340136
+       },
+       "n_respondents": 8136,
+       "n_participants": 8123,
+       "weighted_population_per_day": 268366501.58752683,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2023,
+       "estimate": {
+        "value": 544.2697905997309,
+        "unit": "minutes_per_day",
+        "standard_error": 1.759134905127875,
+        "confidence_level": 0.95,
+        "ci_lower": 540.8219495417329,
+        "ci_upper": 547.7176316577288
+       },
+       "n_respondents": 8548,
+       "n_participants": 8539,
+       "weighted_population_per_day": 271336907.19774604,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2024,
+       "estimate": {
+        "value": 542.1679224495292,
+        "unit": "minutes_per_day",
+        "standard_error": 2.269167634939862,
+        "confidence_level": 0.95,
+        "ci_lower": 537.7204356101631,
+        "ci_upper": 546.6154092888953
+       },
+       "n_respondents": 7669,
+       "n_participants": 7663,
+       "weighted_population_per_day": 272912483.3776282,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2025,
+       "estimate": {
+        "value": 541.9642003795799,
+        "unit": "minutes_per_day",
+        "standard_error": 2.1662155787451236,
+        "confidence_level": 0.95,
+        "ci_lower": 537.7184958624898,
+        "ci_upper": 546.20990489667
+       },
+       "n_respondents": 6146,
+       "n_participants": 6139,
+       "weighted_population_per_day": 277984657.483597,
+       "unavailable_reason": null
+      }
+     ],
+     "activity": {
+      "label": "Sleeping",
+      "include": [
+       "0101"
+      ],
+      "exclude": [],
+      "leaf_code_count": 3
+     },
+     "population": "civilian noninstitutional population age 15+",
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "0101"
+       ],
+       "exclude": [],
+       "label": "Sleeping"
+      },
+      "years": [
+       2003,
+       2004,
+       2005,
+       2006,
+       2007,
+       2008,
+       2009,
+       2010,
+       2011,
+       2012,
+       2013,
+       2014,
+       2015,
+       2016,
+       2017,
+       2018,
+       2019,
+       2020,
+       2021,
+       2022,
+       2023,
+       2024,
+       2025
+      ],
+      "population": {},
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+     ]
+    }
+   }
+  },
+  {
+   "name": "T2 trend TV 2019-2020 pandemic weights, participation",
+   "mode": "trend",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 1.226601083354278e-13,
+   "max_rel_ci": 1.7445033247162036e-15,
+   "exact_fields": 38,
+   "tol_fields": 6,
+   "tol_exact": 0,
+   "exact_mismatch": [],
+   "seconds_full": 1.455,
+   "seconds_serving": 0.225,
+   "full": {
+    "ok": {
+     "measure": "participation_rate",
+     "points": [
+      {
+       "year": 2019,
+       "estimate": {
+        "value": 0.7753502911093132,
+        "unit": "proportion_of_population",
+        "standard_error": 0.005946931170592817,
+        "confidence_level": 0.95,
+        "ci_lower": 0.7636945201964127,
+        "ci_upper": 0.7870060620222137
+       },
+       "n_respondents": 7969,
+       "n_participants": 6355,
+       "weighted_population_per_day": 263433552.14037713,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2020,
+       "estimate": {
+        "value": 0.7935264625556103,
+        "unit": "proportion_of_population",
+        "standard_error": 0.005777403871972253,
+        "confidence_level": 0.95,
+        "ci_lower": 0.7822029590424024,
+        "ci_upper": 0.8048499660688182
+       },
+       "n_respondents": 8782,
+       "n_participants": 7197,
+       "weighted_population_per_day": 264561703.3536752,
+       "unavailable_reason": null
+      }
+     ],
+     "activity": {
+      "label": "Watching TV",
+      "include": [
+       "120303",
+       "120304"
+      ],
+      "exclude": [],
+      "leaf_code_count": 2
+     },
+     "population": "civilian noninstitutional population age 15+",
+     "weight": {
+      "scheme": "pandemic",
+      "bls_variable": "TU20FWGT",
+      "column": "respondents.pandemic_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "participation_rate",
+      "activity": {
+       "include": [
+        "120303",
+        "120304"
+       ],
+       "exclude": [],
+       "label": "Watching TV"
+      },
+      "years": [
+       2019,
+       2020
+      ],
+      "population": {},
+      "weights": "pandemic",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "participation_rate",
+     "points": [
+      {
+       "year": 2019,
+       "estimate": {
+        "value": 0.7753502911093132,
+        "unit": "proportion_of_population",
+        "standard_error": 0.005946931170592087,
+        "confidence_level": 0.95,
+        "ci_lower": 0.763694520196414,
+        "ci_upper": 0.7870060620222123
+       },
+       "n_respondents": 7969,
+       "n_participants": 6355,
+       "weighted_population_per_day": 263433552.14037713,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2020,
+       "estimate": {
+        "value": 0.7935264625556103,
+        "unit": "proportion_of_population",
+        "standard_error": 0.005777403871971877,
+        "confidence_level": 0.95,
+        "ci_lower": 0.7822029590424032,
+        "ci_upper": 0.8048499660688174
+       },
+       "n_respondents": 8782,
+       "n_participants": 7197,
+       "weighted_population_per_day": 264561703.3536752,
+       "unavailable_reason": null
+      }
+     ],
+     "activity": {
+      "label": "Watching TV",
+      "include": [
+       "120303",
+       "120304"
+      ],
+      "exclude": [],
+      "leaf_code_count": 2
+     },
+     "population": "civilian noninstitutional population age 15+",
+     "weight": {
+      "scheme": "pandemic",
+      "bls_variable": "TU20FWGT",
+      "column": "respondents.pandemic_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "participation_rate",
+      "activity": {
+       "include": [
+        "120303",
+        "120304"
+       ],
+       "exclude": [],
+       "label": "Watching TV"
+      },
+      "years": [
+       2019,
+       2020
+      ],
+      "population": {},
+      "weights": "pandemic",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible."
+     ]
+    }
+   }
+  },
+  {
+   "name": "T3 trend leisure 2003-2019 men 65+ (topcode warning)",
+   "mode": "trend",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 2.0350670165429413e-14,
+   "max_rel_ci": 7.619241893037307e-16,
+   "exact_fields": 180,
+   "tol_fields": 51,
+   "tol_exact": 2,
+   "exact_mismatch": [],
+   "seconds_full": 1.415,
+   "seconds_serving": 0.617,
+   "full": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "points": [
+      {
+       "year": 2003,
+       "estimate": {
+        "value": 451.25861661674645,
+        "unit": "minutes_per_day",
+        "standard_error": 6.982991026675187,
+        "confidence_level": 0.95,
+        "ci_lower": 437.57220570009673,
+        "ci_upper": 464.94502753339617
+       },
+       "n_respondents": 1364,
+       "n_participants": 1345,
+       "weighted_population_per_day": 14506035.378075037,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2004,
+       "estimate": {
+        "value": 470.29385663915264,
+        "unit": "minutes_per_day",
+        "standard_error": 7.930993860548092,
+        "confidence_level": 0.95,
+        "ci_lower": 454.7493943108701,
+        "ci_upper": 485.83831896743516
+       },
+       "n_respondents": 974,
+       "n_participants": 963,
+       "weighted_population_per_day": 14717256.777879817,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2005,
+       "estimate": {
+        "value": 489.61630972089273,
+        "unit": "minutes_per_day",
+        "standard_error": 10.638261768717067,
+        "confidence_level": 0.95,
+        "ci_lower": 468.7656997960979,
+        "ci_upper": 510.46691964568754
+       },
+       "n_respondents": 792,
+       "n_participants": 784,
+       "weighted_population_per_day": 14945206.303291183,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2006,
+       "estimate": {
+        "value": 471.33056501334687,
+        "unit": "minutes_per_day",
+        "standard_error": 8.84823080155106,
+        "confidence_level": 0.95,
+        "ci_lower": 453.9883513154088,
+        "ci_upper": 488.67277871128493
+       },
+       "n_respondents": 810,
+       "n_participants": 797,
+       "weighted_population_per_day": 15210716.188597301,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2007,
+       "estimate": {
+        "value": 467.3011184228604,
+        "unit": "minutes_per_day",
+        "standard_error": 9.956357704811069,
+        "confidence_level": 0.95,
+        "ci_lower": 447.7870159042328,
+        "ci_upper": 486.81522094148795
+       },
+       "n_respondents": 794,
+       "n_participants": 777,
+       "weighted_population_per_day": 15523256.407987414,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2008,
+       "estimate": {
+        "value": 476.78412806899746,
+        "unit": "minutes_per_day",
+        "standard_error": 10.081262619377068,
+        "confidence_level": 0.95,
+        "ci_lower": 457.0252164163285,
+        "ci_upper": 496.54303972166645
+       },
+       "n_respondents": 869,
+       "n_participants": 861,
+       "weighted_population_per_day": 16006114.773146285,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2009,
+       "estimate": {
+        "value": 465.8474637576336,
+        "unit": "minutes_per_day",
+        "standard_error": 9.294535135146116,
+        "confidence_level": 0.95,
+        "ci_lower": 447.6305096397051,
+        "ci_upper": 484.06441787556207
+       },
+       "n_respondents": 876,
+       "n_participants": 865,
+       "weighted_population_per_day": 16353560.134541877,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2010,
+       "estimate": {
+        "value": 468.3710136846575,
+        "unit": "minutes_per_day",
+        "standard_error": 8.890782936320562,
+        "confidence_level": 0.95,
+        "ci_lower": 450.94539933510595,
+        "ci_upper": 485.79662803420905
+       },
+       "n_respondents": 908,
+       "n_participants": 893,
+       "weighted_population_per_day": 16766623.128394846,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2011,
+       "estimate": {
+        "value": 451.6071838702163,
+        "unit": "minutes_per_day",
+        "standard_error": 9.44838167407045,
+        "confidence_level": 0.95,
+        "ci_lower": 433.08869607685,
+        "ci_upper": 470.12567166358264
+       },
+       "n_respondents": 883,
+       "n_participants": 867,
+       "weighted_population_per_day": 17429505.57681614,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2012,
+       "estimate": {
+        "value": 469.84982423007534,
+        "unit": "minutes_per_day",
+        "standard_error": 8.114541977875087,
+        "confidence_level": 0.95,
+        "ci_lower": 453.94561420240177,
+        "ci_upper": 485.7540342577489
+       },
+       "n_respondents": 990,
+       "n_participants": 976,
+       "weighted_population_per_day": 18433522.2674417,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2013,
+       "estimate": {
+        "value": 467.3916835664972,
+        "unit": "minutes_per_day",
+        "standard_error": 9.958926064063444,
+        "confidence_level": 0.95,
+        "ci_lower": 447.8725471562356,
+        "ci_upper": 486.9108199767588
+       },
+       "n_respondents": 969,
+       "n_participants": 954,
+       "weighted_population_per_day": 19190831.54561506,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2014,
+       "estimate": {
+        "value": 469.52315436975357,
+        "unit": "minutes_per_day",
+        "standard_error": 8.656365896284283,
+        "confidence_level": 0.95,
+        "ci_lower": 452.5569889760356,
+        "ci_upper": 486.48931976347154
+       },
+       "n_respondents": 991,
+       "n_participants": 980,
+       "weighted_population_per_day": 19971291.277537793,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2015,
+       "estimate": {
+        "value": 465.74005695364116,
+        "unit": "minutes_per_day",
+        "standard_error": 8.955179051680675,
+        "confidence_level": 0.95,
+        "ci_lower": 448.18822853723947,
+        "ci_upper": 483.29188537004285
+       },
+       "n_respondents": 941,
+       "n_participants": 933,
+       "weighted_population_per_day": 20650941.774503432,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2016,
+       "estimate": {
+        "value": 465.86484530750977,
+        "unit": "minutes_per_day",
+        "standard_error": 8.303998277362927,
+        "confidence_level": 0.95,
+        "ci_lower": 449.5893077561958,
+        "ci_upper": 482.1403828588237
+       },
+       "n_respondents": 998,
+       "n_participants": 988,
+       "weighted_population_per_day": 21451851.3383451,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2017,
+       "estimate": {
+        "value": 469.90991328389975,
+        "unit": "minutes_per_day",
+        "standard_error": 10.00263959993365,
+        "confidence_level": 0.95,
+        "ci_lower": 450.30509991769566,
+        "ci_upper": 489.51472665010385
+       },
+       "n_respondents": 1039,
+       "n_participants": 1023,
+       "weighted_population_per_day": 22193372.485571906,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2018,
+       "estimate": {
+        "value": 475.9792860016414,
+        "unit": "minutes_per_day",
+        "standard_error": 8.690357393325295,
+        "confidence_level": 0.95,
+        "ci_lower": 458.94649849794246,
+        "ci_upper": 493.01207350534037
+       },
+       "n_respondents": 1058,
+       "n_participants": 1048,
+       "weighted_population_per_day": 23016510.482691683,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2019,
+       "estimate": {
+        "value": 473.31800543739917,
+        "unit": "minutes_per_day",
+        "standard_error": 7.884301399618716,
+        "confidence_level": 0.95,
+        "ci_lower": 457.86505865088776,
+        "ci_upper": 488.77095222391057
+       },
+       "n_respondents": 1071,
+       "n_participants": 1059,
+       "weighted_population_per_day": 23743128.315238357,
+       "unavailable_reason": null
+      }
+     ],
+     "activity": {
+      "label": "Leisure and sports (BLS table A-1 definition)",
+      "include": [
+       "12",
+       "13",
+       "1812",
+       "1813"
+      ],
+      "exclude": [],
+      "leaf_code_count": 116
+     },
+     "population": "age 65-85, sex=male",
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "12",
+        "13",
+        "1812",
+        "1813"
+       ],
+       "exclude": [],
+       "label": "Leisure and sports (BLS table A-1 definition)"
+      },
+      "years": [
+       2003,
+       2004,
+       2005,
+       2006,
+       2007,
+       2008,
+       2009,
+       2010,
+       2011,
+       2012,
+       2013,
+       2014,
+       2015,
+       2016,
+       2017,
+       2018,
+       2019
+      ],
+      "population": {
+       "age_min": 65,
+       "age_max": 85,
+       "sex": "male"
+      },
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Roster age is topcoded (80 in 2003-04, 85 from 2005), so age bounds of 80+ select topcoded groups, not exact ages."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "points": [
+      {
+       "year": 2003,
+       "estimate": {
+        "value": 451.25861661674645,
+        "unit": "minutes_per_day",
+        "standard_error": 6.982991026675045,
+        "confidence_level": 0.95,
+        "ci_lower": 437.572205700097,
+        "ci_upper": 464.9450275333959
+       },
+       "n_respondents": 1364,
+       "n_participants": 1345,
+       "weighted_population_per_day": 14506035.378075037,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2004,
+       "estimate": {
+        "value": 470.29385663915264,
+        "unit": "minutes_per_day",
+        "standard_error": 7.930993860548148,
+        "confidence_level": 0.95,
+        "ci_lower": 454.74939431087,
+        "ci_upper": 485.83831896743527
+       },
+       "n_respondents": 974,
+       "n_participants": 963,
+       "weighted_population_per_day": 14717256.777879817,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2005,
+       "estimate": {
+        "value": 489.61630972089273,
+        "unit": "minutes_per_day",
+        "standard_error": 10.638261768716891,
+        "confidence_level": 0.95,
+        "ci_lower": 468.76569979609826,
+        "ci_upper": 510.4669196456872
+       },
+       "n_respondents": 792,
+       "n_participants": 784,
+       "weighted_population_per_day": 14945206.303291183,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2006,
+       "estimate": {
+        "value": 471.33056501334687,
+        "unit": "minutes_per_day",
+        "standard_error": 8.84823080155103,
+        "confidence_level": 0.95,
+        "ci_lower": 453.98835131540886,
+        "ci_upper": 488.6727787112849
+       },
+       "n_respondents": 810,
+       "n_participants": 797,
+       "weighted_population_per_day": 15210716.188597301,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2007,
+       "estimate": {
+        "value": 467.3011184228604,
+        "unit": "minutes_per_day",
+        "standard_error": 9.956357704810998,
+        "confidence_level": 0.95,
+        "ci_lower": 447.78701590423293,
+        "ci_upper": 486.81522094148784
+       },
+       "n_respondents": 794,
+       "n_participants": 777,
+       "weighted_population_per_day": 15523256.407987414,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2008,
+       "estimate": {
+        "value": 476.78412806899746,
+        "unit": "minutes_per_day",
+        "standard_error": 10.081262619377155,
+        "confidence_level": 0.95,
+        "ci_lower": 457.0252164163283,
+        "ci_upper": 496.5430397216666
+       },
+       "n_respondents": 869,
+       "n_participants": 861,
+       "weighted_population_per_day": 16006114.773146285,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2009,
+       "estimate": {
+        "value": 465.8474637576336,
+        "unit": "minutes_per_day",
+        "standard_error": 9.294535135146287,
+        "confidence_level": 0.95,
+        "ci_lower": 447.63050963970477,
+        "ci_upper": 484.0644178755624
+       },
+       "n_respondents": 876,
+       "n_participants": 865,
+       "weighted_population_per_day": 16353560.134541877,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2010,
+       "estimate": {
+        "value": 468.3710136846575,
+        "unit": "minutes_per_day",
+        "standard_error": 8.890782936320626,
+        "confidence_level": 0.95,
+        "ci_lower": 450.94539933510583,
+        "ci_upper": 485.79662803420916
+       },
+       "n_respondents": 908,
+       "n_participants": 893,
+       "weighted_population_per_day": 16766623.128394846,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2011,
+       "estimate": {
+        "value": 451.6071838702163,
+        "unit": "minutes_per_day",
+        "standard_error": 9.448381674070408,
+        "confidence_level": 0.95,
+        "ci_lower": 433.08869607685006,
+        "ci_upper": 470.1256716635826
+       },
+       "n_respondents": 883,
+       "n_participants": 867,
+       "weighted_population_per_day": 17429505.57681614,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2012,
+       "estimate": {
+        "value": 469.84982423007534,
+        "unit": "minutes_per_day",
+        "standard_error": 8.114541977875142,
+        "confidence_level": 0.95,
+        "ci_lower": 453.94561420240166,
+        "ci_upper": 485.754034257749
+       },
+       "n_respondents": 990,
+       "n_participants": 976,
+       "weighted_population_per_day": 18433522.2674417,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2013,
+       "estimate": {
+        "value": 467.3916835664972,
+        "unit": "minutes_per_day",
+        "standard_error": 9.958926064063602,
+        "confidence_level": 0.95,
+        "ci_lower": 447.8725471562353,
+        "ci_upper": 486.91081997675906
+       },
+       "n_respondents": 969,
+       "n_participants": 954,
+       "weighted_population_per_day": 19190831.54561506,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2014,
+       "estimate": {
+        "value": 469.52315436975357,
+        "unit": "minutes_per_day",
+        "standard_error": 8.65636589628421,
+        "confidence_level": 0.95,
+        "ci_lower": 452.55698897603577,
+        "ci_upper": 486.48931976347137
+       },
+       "n_respondents": 991,
+       "n_participants": 980,
+       "weighted_population_per_day": 19971291.277537793,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2015,
+       "estimate": {
+        "value": 465.74005695364116,
+        "unit": "minutes_per_day",
+        "standard_error": 8.955179051680744,
+        "confidence_level": 0.95,
+        "ci_lower": 448.18822853723935,
+        "ci_upper": 483.29188537004296
+       },
+       "n_respondents": 941,
+       "n_participants": 933,
+       "weighted_population_per_day": 20650941.774503432,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2016,
+       "estimate": {
+        "value": 465.86484530750977,
+        "unit": "minutes_per_day",
+        "standard_error": 8.303998277362902,
+        "confidence_level": 0.95,
+        "ci_lower": 449.5893077561958,
+        "ci_upper": 482.1403828588237
+       },
+       "n_respondents": 998,
+       "n_participants": 988,
+       "weighted_population_per_day": 21451851.3383451,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2017,
+       "estimate": {
+        "value": 469.90991328389975,
+        "unit": "minutes_per_day",
+        "standard_error": 10.00263959993359,
+        "confidence_level": 0.95,
+        "ci_lower": 450.30509991769577,
+        "ci_upper": 489.51472665010374
+       },
+       "n_respondents": 1039,
+       "n_participants": 1023,
+       "weighted_population_per_day": 22193372.485571906,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2018,
+       "estimate": {
+        "value": 475.9792860016414,
+        "unit": "minutes_per_day",
+        "standard_error": 8.690357393325423,
+        "confidence_level": 0.95,
+        "ci_lower": 458.94649849794223,
+        "ci_upper": 493.0120735053406
+       },
+       "n_respondents": 1058,
+       "n_participants": 1048,
+       "weighted_population_per_day": 23016510.482691683,
+       "unavailable_reason": null
+      },
+      {
+       "year": 2019,
+       "estimate": {
+        "value": 473.31800543739917,
+        "unit": "minutes_per_day",
+        "standard_error": 7.884301399618652,
+        "confidence_level": 0.95,
+        "ci_lower": 457.8650586508879,
+        "ci_upper": 488.77095222391046
+       },
+       "n_respondents": 1071,
+       "n_participants": 1059,
+       "weighted_population_per_day": 23743128.315238357,
+       "unavailable_reason": null
+      }
+     ],
+     "activity": {
+      "label": "Leisure and sports (BLS table A-1 definition)",
+      "include": [
+       "12",
+       "13",
+       "1812",
+       "1813"
+      ],
+      "exclude": [],
+      "leaf_code_count": 116
+     },
+     "population": "age 65-85, sex=male",
+     "weight": {
+      "scheme": "multiyear",
+      "bls_variable": "TUFNWGTP",
+      "column": "respondents.final_weight"
+     },
+     "variance_method": "replicate",
+     "analytics_version": "0.2",
+     "spec": {
+      "measure": "average_minutes_per_day",
+      "activity": {
+       "include": [
+        "12",
+        "13",
+        "1812",
+        "1813"
+       ],
+       "exclude": [],
+       "label": "Leisure and sports (BLS table A-1 definition)"
+      },
+      "years": [
+       2003,
+       2004,
+       2005,
+       2006,
+       2007,
+       2008,
+       2009,
+       2010,
+       2011,
+       2012,
+       2013,
+       2014,
+       2015,
+       2016,
+       2017,
+       2018,
+       2019
+      ],
+      "population": {
+       "age_min": 65,
+       "age_max": 85,
+       "sex": "male"
+      },
+      "weights": "multiyear",
+      "variance": "replicate",
+      "confidence_level": 0.95
+     },
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Roster age is topcoded (80 in 2003-04, 85 from 2005), so age bounds of 80+ select topcoded groups, not exact ages."
+     ]
+    }
+   }
+  },
+  {
+   "name": "C1 compare household activities 2025 men vs women",
+   "mode": "compare",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 5.3753732114759404e-15,
+   "max_rel_ci": 5.216232992406433e-16,
+   "exact_fields": 75,
+   "tol_fields": 9,
+   "tol_exact": 0,
+   "exact_mismatch": [],
+   "seconds_full": 1.661,
+   "seconds_serving": 0.3,
+   "full": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "label_a": "men",
+     "label_b": "women",
+     "group_a": {
+      "measure": "average_minutes_per_day",
+      "estimate": {
+       "value": 94.90566294157962,
+       "unit": "minutes_per_day",
+       "standard_error": 2.5371150172396386,
+       "confidence_level": 0.95,
+       "ci_lower": 89.93300888315422,
+       "ci_upper": 99.87831700000503
+      },
+      "years": [
+       2025
+      ],
+      "activity": {
+       "label": "Household activities (BLS table A-1 definition)",
+       "include": [
+        "02",
+        "1802"
+       ],
+       "exclude": [
+        "020903",
+        "020904"
+       ],
+       "leaf_code_count": 31
+      },
+      "population": "sex=male",
+      "n_respondents": 2922,
+      "n_participants": 2299,
+      "weighted_population_per_day": 135645291.5223291,
+      "days_in_period": 365,
+      "weight": {
+       "scheme": "multiyear",
+       "bls_variable": "TUFNWGTP",
+       "column": "respondents.final_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "average_minutes_per_day",
+       "activity": {
+        "include": [
+         "02",
+         "1802"
+        ],
+        "exclude": [
+         "020903",
+         "020904"
+        ],
+        "label": "Household activities (BLS table A-1 definition)"
+       },
+       "years": [
+        2025
+       ],
+       "population": {
+        "sex": "male"
+       },
+       "weights": "multiyear",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+      ]
+     },
+     "group_b": {
+      "measure": "average_minutes_per_day",
+      "estimate": {
+       "value": 143.0515250486597,
+       "unit": "minutes_per_day",
+       "standard_error": 2.7263118947285507,
+       "confidence_level": 0.95,
+       "ci_lower": 137.7080519243686,
+       "ci_upper": 148.3949981729508
+      },
+      "years": [
+       2025
+      ],
+      "activity": {
+       "label": "Household activities (BLS table A-1 definition)",
+       "include": [
+        "02",
+        "1802"
+       ],
+       "exclude": [
+        "020903",
+        "020904"
+       ],
+       "leaf_code_count": 31
+      },
+      "population": "sex=female",
+      "n_respondents": 3224,
+      "n_participants": 2861,
+      "weighted_population_per_day": 142339365.9612679,
+      "days_in_period": 365,
+      "weight": {
+       "scheme": "multiyear",
+       "bls_variable": "TUFNWGTP",
+       "column": "respondents.final_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "average_minutes_per_day",
+       "activity": {
+        "include": [
+         "02",
+         "1802"
+        ],
+        "exclude": [
+         "020903",
+         "020904"
+        ],
+        "label": "Household activities (BLS table A-1 definition)"
+       },
+       "years": [
+        2025
+       ],
+       "population": {
+        "sex": "female"
+       },
+       "weights": "multiyear",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+      ]
+     },
+     "difference": {
+      "value": -48.14586210708008,
+      "unit": "minutes_per_day",
+      "standard_error": 3.714651068165889,
+      "confidence_level": 0.95,
+      "ci_lower": -55.42644441581846,
+      "ci_upper": -40.865279798341696
+     },
+     "analytics_version": "0.2",
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "The difference's standard error uses per-replicate differences, which accounts for covariance between the group estimates."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "label_a": "men",
+     "label_b": "women",
+     "group_a": {
+      "measure": "average_minutes_per_day",
+      "estimate": {
+       "value": 94.90566294157962,
+       "unit": "minutes_per_day",
+       "standard_error": 2.5371150172396324,
+       "confidence_level": 0.95,
+       "ci_lower": 89.93300888315423,
+       "ci_upper": 99.87831700000501
+      },
+      "years": [
+       2025
+      ],
+      "activity": {
+       "label": "Household activities (BLS table A-1 definition)",
+       "include": [
+        "02",
+        "1802"
+       ],
+       "exclude": [
+        "020903",
+        "020904"
+       ],
+       "leaf_code_count": 31
+      },
+      "population": "sex=male",
+      "n_respondents": 2922,
+      "n_participants": 2299,
+      "weighted_population_per_day": 135645291.5223291,
+      "days_in_period": 365,
+      "weight": {
+       "scheme": "multiyear",
+       "bls_variable": "TUFNWGTP",
+       "column": "respondents.final_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "average_minutes_per_day",
+       "activity": {
+        "include": [
+         "02",
+         "1802"
+        ],
+        "exclude": [
+         "020903",
+         "020904"
+        ],
+        "label": "Household activities (BLS table A-1 definition)"
+       },
+       "years": [
+        2025
+       ],
+       "population": {
+        "sex": "male"
+       },
+       "weights": "multiyear",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+      ]
+     },
+     "group_b": {
+      "measure": "average_minutes_per_day",
+      "estimate": {
+       "value": 143.0515250486597,
+       "unit": "minutes_per_day",
+       "standard_error": 2.726311894728536,
+       "confidence_level": 0.95,
+       "ci_lower": 137.70805192436862,
+       "ci_upper": 148.39499817295078
+      },
+      "years": [
+       2025
+      ],
+      "activity": {
+       "label": "Household activities (BLS table A-1 definition)",
+       "include": [
+        "02",
+        "1802"
+       ],
+       "exclude": [
+        "020903",
+        "020904"
+       ],
+       "leaf_code_count": 31
+      },
+      "population": "sex=female",
+      "n_respondents": 3224,
+      "n_participants": 2861,
+      "weighted_population_per_day": 142339365.9612679,
+      "days_in_period": 365,
+      "weight": {
+       "scheme": "multiyear",
+       "bls_variable": "TUFNWGTP",
+       "column": "respondents.final_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "average_minutes_per_day",
+       "activity": {
+        "include": [
+         "02",
+         "1802"
+        ],
+        "exclude": [
+         "020903",
+         "020904"
+        ],
+        "label": "Household activities (BLS table A-1 definition)"
+       },
+       "years": [
+        2025
+       ],
+       "population": {
+        "sex": "female"
+       },
+       "weights": "multiyear",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+      ]
+     },
+     "difference": {
+      "value": -48.14586210708008,
+      "unit": "minutes_per_day",
+      "standard_error": 3.714651068165879,
+      "confidence_level": 0.95,
+      "ci_lower": -55.42644441581844,
+      "ci_upper": -40.86527979834172
+     },
+     "analytics_version": "0.2",
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "The difference's standard error uses per-replicate differences, which accounts for covariance between the group estimates."
+     ]
+    }
+   }
+  },
+  {
+   "name": "C2 compare work participation bachelor+ vs <HS pooled 22y",
+   "mode": "compare",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 3.362161761208953e-15,
+   "max_rel_ci": 1.8877910465038574e-16,
+   "exact_fields": 157,
+   "tol_fields": 9,
+   "tol_exact": 4,
+   "exact_mismatch": [],
+   "seconds_full": 4.105,
+   "seconds_serving": 1.44,
+   "full": {
+    "ok": {
+     "measure": "participation_rate",
+     "label_a": "group_a",
+     "label_b": "group_b",
+     "group_a": {
+      "measure": "participation_rate",
+      "estimate": {
+       "value": 0.5613989253766184,
+       "unit": "proportion_of_population",
+       "standard_error": 0.001947373432024127,
+       "confidence_level": 0.95,
+       "ci_lower": 0.5575821435854009,
+       "ci_upper": 0.5652157071678359
+      },
+      "years": [
+       2003,
+       2004,
+       2005,
+       2006,
+       2007,
+       2008,
+       2009,
+       2010,
+       2011,
+       2012,
+       2013,
+       2014,
+       2015,
+       2016,
+       2017,
+       2018,
+       2019,
+       2021,
+       2022,
+       2023,
+       2024,
+       2025
+      ],
+      "activity": {
+       "label": "Working and work-related activities (BLS table A-1 definition)",
+       "include": [
+        "05",
+        "1805"
+       ],
+       "exclude": [],
+       "leaf_code_count": 23
+      },
+      "population": "education_level=bachelor_or_higher",
+      "n_respondents": 85003,
+      "n_participants": 39613,
+      "weighted_population_per_day": 77102030.90408976,
+      "days_in_period": 8035,
+      "weight": {
+       "scheme": "multiyear",
+       "bls_variable": "TUFNWGTP",
+       "column": "respondents.final_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "participation_rate",
+       "activity": {
+        "include": [
+         "05",
+         "1805"
+        ],
+        "exclude": [],
+        "label": "Working and work-related activities (BLS table A-1 definition)"
+       },
+       "years": [
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+       ],
+       "population": {
+        "education_level": "bachelor_or_higher"
+       },
+       "weights": "multiyear",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+       "Education comes from the CPS interview 2-5 months before the diary day and excludes respondents with missing CPS education.",
+       "Pooled estimate: represents the average day across 22 survey years (8,035 days combined)."
+      ]
+     },
+     "group_b": {
+      "measure": "participation_rate",
+      "estimate": {
+       "value": 0.26001387012932053,
+       "unit": "proportion_of_population",
+       "standard_error": 0.0032598907037340572,
+       "confidence_level": 0.95,
+       "ci_lower": 0.25362460175646484,
+       "ci_upper": 0.26640313850217623
+      },
+      "years": [
+       2003,
+       2004,
+       2005,
+       2006,
+       2007,
+       2008,
+       2009,
+       2010,
+       2011,
+       2012,
+       2013,
+       2014,
+       2015,
+       2016,
+       2017,
+       2018,
+       2019,
+       2021,
+       2022,
+       2023,
+       2024,
+       2025
+      ],
+      "activity": {
+       "label": "Working and work-related activities (BLS table A-1 definition)",
+       "include": [
+        "05",
+        "1805"
+       ],
+       "exclude": [],
+       "leaf_code_count": 23
+      },
+      "population": "education_level=less_than_high_school",
+      "n_respondents": 35106,
+      "n_participants": 7595,
+      "weighted_population_per_day": 40440264.973222785,
+      "days_in_period": 8035,
+      "weight": {
+       "scheme": "multiyear",
+       "bls_variable": "TUFNWGTP",
+       "column": "respondents.final_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "participation_rate",
+       "activity": {
+        "include": [
+         "05",
+         "1805"
+        ],
+        "exclude": [],
+        "label": "Working and work-related activities (BLS table A-1 definition)"
+       },
+       "years": [
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+       ],
+       "population": {
+        "education_level": "less_than_high_school"
+       },
+       "weights": "multiyear",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+       "Education comes from the CPS interview 2-5 months before the diary day and excludes respondents with missing CPS education.",
+       "Pooled estimate: represents the average day across 22 survey years (8,035 days combined)."
+      ]
+     },
+     "difference": {
+      "value": 0.30138505524729786,
+      "unit": "proportion_of_population",
+      "standard_error": 0.003740672250198204,
+      "confidence_level": 0.95,
+      "ci_lower": 0.29405347235894097,
+      "ci_upper": 0.30871663813565475
+     },
+     "analytics_version": "0.2",
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Education comes from the CPS interview 2-5 months before the diary day and excludes respondents with missing CPS education.",
+      "Pooled estimate: represents the average day across 22 survey years (8,035 days combined).",
+      "The difference's standard error uses per-replicate differences, which accounts for covariance between the group estimates."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "participation_rate",
+     "label_a": "group_a",
+     "label_b": "group_b",
+     "group_a": {
+      "measure": "participation_rate",
+      "estimate": {
+       "value": 0.5613989253766184,
+       "unit": "proportion_of_population",
+       "standard_error": 0.001947373432024126,
+       "confidence_level": 0.95,
+       "ci_lower": 0.5575821435854009,
+       "ci_upper": 0.5652157071678359
+      },
+      "years": [
+       2003,
+       2004,
+       2005,
+       2006,
+       2007,
+       2008,
+       2009,
+       2010,
+       2011,
+       2012,
+       2013,
+       2014,
+       2015,
+       2016,
+       2017,
+       2018,
+       2019,
+       2021,
+       2022,
+       2023,
+       2024,
+       2025
+      ],
+      "activity": {
+       "label": "Working and work-related activities (BLS table A-1 definition)",
+       "include": [
+        "05",
+        "1805"
+       ],
+       "exclude": [],
+       "leaf_code_count": 23
+      },
+      "population": "education_level=bachelor_or_higher",
+      "n_respondents": 85003,
+      "n_participants": 39613,
+      "weighted_population_per_day": 77102030.90408976,
+      "days_in_period": 8035,
+      "weight": {
+       "scheme": "multiyear",
+       "bls_variable": "TUFNWGTP",
+       "column": "respondents.final_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "participation_rate",
+       "activity": {
+        "include": [
+         "05",
+         "1805"
+        ],
+        "exclude": [],
+        "label": "Working and work-related activities (BLS table A-1 definition)"
+       },
+       "years": [
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+       ],
+       "population": {
+        "education_level": "bachelor_or_higher"
+       },
+       "weights": "multiyear",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+       "Education comes from the CPS interview 2-5 months before the diary day and excludes respondents with missing CPS education.",
+       "Pooled estimate: represents the average day across 22 survey years (8,035 days combined)."
+      ]
+     },
+     "group_b": {
+      "measure": "participation_rate",
+      "estimate": {
+       "value": 0.26001387012932053,
+       "unit": "proportion_of_population",
+       "standard_error": 0.0032598907037340507,
+       "confidence_level": 0.95,
+       "ci_lower": 0.25362460175646484,
+       "ci_upper": 0.26640313850217623
+      },
+      "years": [
+       2003,
+       2004,
+       2005,
+       2006,
+       2007,
+       2008,
+       2009,
+       2010,
+       2011,
+       2012,
+       2013,
+       2014,
+       2015,
+       2016,
+       2017,
+       2018,
+       2019,
+       2021,
+       2022,
+       2023,
+       2024,
+       2025
+      ],
+      "activity": {
+       "label": "Working and work-related activities (BLS table A-1 definition)",
+       "include": [
+        "05",
+        "1805"
+       ],
+       "exclude": [],
+       "leaf_code_count": 23
+      },
+      "population": "education_level=less_than_high_school",
+      "n_respondents": 35106,
+      "n_participants": 7595,
+      "weighted_population_per_day": 40440264.973222785,
+      "days_in_period": 8035,
+      "weight": {
+       "scheme": "multiyear",
+       "bls_variable": "TUFNWGTP",
+       "column": "respondents.final_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "participation_rate",
+       "activity": {
+        "include": [
+         "05",
+         "1805"
+        ],
+        "exclude": [],
+        "label": "Working and work-related activities (BLS table A-1 definition)"
+       },
+       "years": [
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+       ],
+       "population": {
+        "education_level": "less_than_high_school"
+       },
+       "weights": "multiyear",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+       "Education comes from the CPS interview 2-5 months before the diary day and excludes respondents with missing CPS education.",
+       "Pooled estimate: represents the average day across 22 survey years (8,035 days combined)."
+      ]
+     },
+     "difference": {
+      "value": 0.30138505524729786,
+      "unit": "proportion_of_population",
+      "standard_error": 0.0037406722501981916,
+      "confidence_level": 0.95,
+      "ci_lower": 0.294053472358941,
+      "ci_upper": 0.3087166381356547
+     },
+     "analytics_version": "0.2",
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Education comes from the CPS interview 2-5 months before the diary day and excludes respondents with missing CPS education.",
+      "Pooled estimate: represents the average day across 22 survey years (8,035 days combined).",
+      "The difference's standard error uses per-replicate differences, which accounts for covariance between the group estimates."
+     ]
+    }
+   }
+  },
+  {
+   "name": "C3 compare 2020 pandemic employed vs NILF, eating, excl. window",
+   "mode": "compare",
+   "kind": "ok",
+   "error_full": null,
+   "error_serving": null,
+   "max_rel_se": 0.0,
+   "max_rel_ci": 0.0,
+   "exact_fields": 68,
+   "tol_fields": 9,
+   "tol_exact": 9,
+   "exact_mismatch": [],
+   "seconds_full": 1.369,
+   "seconds_serving": 0.194,
+   "full": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "label_a": "group_a",
+     "label_b": "group_b",
+     "group_a": {
+      "measure": "average_minutes_per_day",
+      "estimate": {
+       "value": 62.785999887774096,
+       "unit": "minutes_per_day",
+       "standard_error": 0.8685222394894945,
+       "confidence_level": 0.95,
+       "ci_lower": 61.08372757860262,
+       "ci_upper": 64.48827219694557
+      },
+      "years": [
+       2020
+      ],
+      "activity": {
+       "label": "Eating and drinking",
+       "include": [
+        "11"
+       ],
+       "exclude": [],
+       "leaf_code_count": 5
+      },
+      "population": "employment_status=employed, diary dates 2020-05-10 to (end of period)",
+      "n_respondents": 3778,
+      "n_participants": 3630,
+      "weighted_population_per_day": 155737484.6157777,
+      "days_in_period": 236,
+      "weight": {
+       "scheme": "pandemic",
+       "bls_variable": "TU20FWGT",
+       "column": "respondents.pandemic_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "average_minutes_per_day",
+       "activity": {
+        "include": [
+         "11"
+        ],
+        "exclude": [],
+        "label": "Eating and drinking"
+       },
+       "years": [
+        2020
+       ],
+       "population": {
+        "employment_status": "employed",
+        "diary_date_min": "2020-05-10"
+       },
+       "weights": "pandemic",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+       "Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible."
+      ]
+     },
+     "group_b": {
+      "measure": "average_minutes_per_day",
+      "estimate": {
+       "value": 66.27626087126671,
+       "unit": "minutes_per_day",
+       "standard_error": 1.2416208557808206,
+       "confidence_level": 0.95,
+       "ci_lower": 63.84272871148251,
+       "ci_upper": 68.70979303105092
+      },
+      "years": [
+       2020
+      ],
+      "activity": {
+       "label": "Eating and drinking",
+       "include": [
+        "11"
+       ],
+       "exclude": [],
+       "leaf_code_count": 5
+      },
+      "population": "employment_status=not_in_labor_force, diary dates 2020-05-10 to (end of period)",
+      "n_respondents": 2610,
+      "n_participants": 2520,
+      "weighted_population_per_day": 95625634.1855971,
+      "days_in_period": 236,
+      "weight": {
+       "scheme": "pandemic",
+       "bls_variable": "TU20FWGT",
+       "column": "respondents.pandemic_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "average_minutes_per_day",
+       "activity": {
+        "include": [
+         "11"
+        ],
+        "exclude": [],
+        "label": "Eating and drinking"
+       },
+       "years": [
+        2020
+       ],
+       "population": {
+        "employment_status": "not_in_labor_force",
+        "diary_date_min": "2020-05-10"
+       },
+       "weights": "pandemic",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+       "Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible."
+      ]
+     },
+     "difference": {
+      "value": -3.490260983492618,
+      "unit": "minutes_per_day",
+      "standard_error": 1.4836026441269308,
+      "confidence_level": 0.95,
+      "ci_lower": -6.398068733349796,
+      "ci_upper": -0.58245323363544
+     },
+     "analytics_version": "0.2",
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible.",
+      "The difference's standard error uses per-replicate differences, which accounts for covariance between the group estimates."
+     ]
+    }
+   },
+   "serving": {
+    "ok": {
+     "measure": "average_minutes_per_day",
+     "label_a": "group_a",
+     "label_b": "group_b",
+     "group_a": {
+      "measure": "average_minutes_per_day",
+      "estimate": {
+       "value": 62.785999887774096,
+       "unit": "minutes_per_day",
+       "standard_error": 0.8685222394894945,
+       "confidence_level": 0.95,
+       "ci_lower": 61.08372757860262,
+       "ci_upper": 64.48827219694557
+      },
+      "years": [
+       2020
+      ],
+      "activity": {
+       "label": "Eating and drinking",
+       "include": [
+        "11"
+       ],
+       "exclude": [],
+       "leaf_code_count": 5
+      },
+      "population": "employment_status=employed, diary dates 2020-05-10 to (end of period)",
+      "n_respondents": 3778,
+      "n_participants": 3630,
+      "weighted_population_per_day": 155737484.6157777,
+      "days_in_period": 236,
+      "weight": {
+       "scheme": "pandemic",
+       "bls_variable": "TU20FWGT",
+       "column": "respondents.pandemic_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "average_minutes_per_day",
+       "activity": {
+        "include": [
+         "11"
+        ],
+        "exclude": [],
+        "label": "Eating and drinking"
+       },
+       "years": [
+        2020
+       ],
+       "population": {
+        "employment_status": "employed",
+        "diary_date_min": "2020-05-10"
+       },
+       "weights": "pandemic",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+       "Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible."
+      ]
+     },
+     "group_b": {
+      "measure": "average_minutes_per_day",
+      "estimate": {
+       "value": 66.27626087126671,
+       "unit": "minutes_per_day",
+       "standard_error": 1.2416208557808206,
+       "confidence_level": 0.95,
+       "ci_lower": 63.84272871148251,
+       "ci_upper": 68.70979303105092
+      },
+      "years": [
+       2020
+      ],
+      "activity": {
+       "label": "Eating and drinking",
+       "include": [
+        "11"
+       ],
+       "exclude": [],
+       "leaf_code_count": 5
+      },
+      "population": "employment_status=not_in_labor_force, diary dates 2020-05-10 to (end of period)",
+      "n_respondents": 2610,
+      "n_participants": 2520,
+      "weighted_population_per_day": 95625634.1855971,
+      "days_in_period": 236,
+      "weight": {
+       "scheme": "pandemic",
+       "bls_variable": "TU20FWGT",
+       "column": "respondents.pandemic_weight"
+      },
+      "variance_method": "replicate",
+      "analytics_version": "0.2",
+      "spec": {
+       "measure": "average_minutes_per_day",
+       "activity": {
+        "include": [
+         "11"
+        ],
+        "exclude": [],
+        "label": "Eating and drinking"
+       },
+       "years": [
+        2020
+       ],
+       "population": {
+        "employment_status": "not_in_labor_force",
+        "diary_date_min": "2020-05-10"
+       },
+       "weights": "pandemic",
+       "variance": "replicate",
+       "confidence_level": 0.95
+      },
+      "warnings": [
+       "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+       "Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible."
+      ]
+     },
+     "difference": {
+      "value": -3.490260983492618,
+      "unit": "minutes_per_day",
+      "standard_error": 1.4836026441269308,
+      "confidence_level": 0.95,
+      "ci_lower": -6.398068733349796,
+      "ci_upper": -0.58245323363544
+     },
+     "analytics_version": "0.2",
+     "warnings": [
+      "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).",
+      "Pandemic weights (TU20FWGT): estimates represent only the comparable collection windows Jan 1 - Mar 17 and May 10 - Dec 31; annual estimates for 2020 are not possible.",
+      "The difference's standard error uses per-replicate differences, which accounts for covariance between the group estimates."
+     ]
+    }
+   }
+  },
+  {
+   "name": "X1 error: multiyear weights with 2020",
+   "mode": "estimate",
+   "kind": "error",
+   "error_full": "UnsupportedAnalysisError: TUFNWGTP (the multi-year weight) is undefined for 2020 because ATUS data collection was suspended Mar 18 - May 9, 2020 and the year was reweighted with a different method (TU20FWGT). A single estimate pooling 2020 with this scheme is not statistically valid. Estimate 2020 separately with weights='pandemic' (years may only be 2019 and/or 2020 under that scheme), and the remaining years [2019] under weights='multiyear'.",
+   "error_serving": "UnsupportedAnalysisError: TUFNWGTP (the multi-year weight) is undefined for 2020 because ATUS data collection was suspended Mar 18 - May 9, 2020 and the year was reweighted with a different method (TU20FWGT). A single estimate pooling 2020 with this scheme is not statistically valid. Estimate 2020 separately with weights='pandemic' (years may only be 2019 and/or 2020 under that scheme), and the remaining years [2019] under weights='multiyear'.",
+   "max_rel_se": 0.0,
+   "max_rel_ci": 0.0,
+   "exact_fields": 1,
+   "tol_fields": 0,
+   "tol_exact": 0,
+   "exact_mismatch": [],
+   "seconds_full": 0.0,
+   "seconds_serving": 0.0,
+   "full": {
+    "error": "UnsupportedAnalysisError: TUFNWGTP (the multi-year weight) is undefined for 2020 because ATUS data collection was suspended Mar 18 - May 9, 2020 and the year was reweighted with a different method (TU20FWGT). A single estimate pooling 2020 with this scheme is not statistically valid. Estimate 2020 separately with weights='pandemic' (years may only be 2019 and/or 2020 under that scheme), and the remaining years [2019] under weights='multiyear'."
+   },
+   "serving": {
+    "error": "UnsupportedAnalysisError: TUFNWGTP (the multi-year weight) is undefined for 2020 because ATUS data collection was suspended Mar 18 - May 9, 2020 and the year was reweighted with a different method (TU20FWGT). A single estimate pooling 2020 with this scheme is not statistically valid. Estimate 2020 separately with weights='pandemic' (years may only be 2019 and/or 2020 under that scheme), and the remaining years [2019] under weights='multiyear'."
+   }
+  },
+  {
+   "name": "X2 error: unknown activity code",
+   "mode": "estimate",
+   "kind": "error",
+   "error_full": "UnknownActivityError: Activity code '999999' is not a 6-digit code in the 2003-25 harmonized activity lexicon.",
+   "error_serving": "UnknownActivityError: Activity code '999999' is not a 6-digit code in the 2003-25 harmonized activity lexicon.",
+   "max_rel_se": 0.0,
+   "max_rel_ci": 0.0,
+   "exact_fields": 1,
+   "tol_fields": 0,
+   "tol_exact": 0,
+   "exact_mismatch": [],
+   "seconds_full": 0.0,
+   "seconds_serving": 0.0,
+   "full": {
+    "error": "UnknownActivityError: Activity code '999999' is not a 6-digit code in the 2003-25 harmonized activity lexicon."
+   },
+   "serving": {
+    "error": "UnknownActivityError: Activity code '999999' is not a 6-digit code in the 2003-25 harmonized activity lexicon."
+   }
+  },
+  {
+   "name": "X3 error: year not loaded",
+   "mode": "estimate",
+   "kind": "error",
+   "error_full": "InvalidSpecError: Year(s) [2026] are not in the database (loaded: 2003-2025).",
+   "error_serving": "InvalidSpecError: Year(s) [2026] are not in the database (loaded: 2003-2025).",
+   "max_rel_se": 0.0,
+   "max_rel_ci": 0.0,
+   "exact_fields": 1,
+   "tol_fields": 0,
+   "tol_exact": 0,
+   "exact_mismatch": [],
+   "seconds_full": 0.0,
+   "seconds_serving": 0.0,
+   "full": {
+    "error": "InvalidSpecError: Year(s) [2026] are not in the database (loaded: 2003-2025)."
+   },
+   "serving": {
+    "error": "InvalidSpecError: Year(s) [2026] are not in the database (loaded: 2003-2025)."
+   }
+  }
+ ],
+ "overall": {
+  "max_rel_se": 1.281320448397332e-13,
+  "max_rel_ci": 1.7445033247162036e-15,
+  "exact_mismatch": [],
+  "exact_fields": 1727,
+  "tol_fields": 177,
+  "tol_exact": 26
+ }
+}

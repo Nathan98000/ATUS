@@ -1,0 +1,29 @@
+Traceback (most recent call last):
+  File "$REPO/.venv/bin/atus", line 8, in <module>
+    sys.exit(cli())
+             ^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/click/core.py", line 1631, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/click/core.py", line 1552, in main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/click/core.py", line 2032, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/click/core.py", line 1415, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/.venv/lib/python3.12/site-packages/click/core.py", line 910, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/src/atus_pipeline/analytics_cli.py", line 364, in validate_analytics
+    results = run_benchmarks(conn)
+              ^^^^^^^^^^^^^^^^^^^^
+  File "$REPO/src/atus_pipeline/analytics/benchmarks.py", line 304, in run_benchmarks
+    _persist(conn, results)
+  File "$REPO/src/atus_pipeline/analytics/benchmarks.py", line 311, in _persist
+    conn.execute(
+  File "$REPO/.venv/lib/python3.12/site-packages/psycopg/connection.py", line 304, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.ReadOnlySqlTransaction: cannot execute INSERT in a read-only transaction

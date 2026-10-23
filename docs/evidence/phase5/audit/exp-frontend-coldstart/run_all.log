@@ -1,0 +1,556 @@
+##### 13:21:22 START baseline_realcors --pages deep --checkpoints 2,5 --label baseline_realcors
+scenario set { ok: true, scenario: 'baseline_realcors', n: 2, delay: 60 }
+
+=== baseline_realcors / deep — meta requests at [0.054] (gaps []), api requests 3
+  [0.01s] 
+  [0.27s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min People ages 25–54 spent an estimated 8h 49m per day o
+  footer@5s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+##### 13:21:27 END baseline_realcors
+##### 13:21:27 START a_meta_delay60 --delay 60 --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'a_meta_delay60', n: 2, delay: 60 }
+
+=== a_meta_delay60 / home — meta requests at [0.041] (gaps []), api requests 1
+  [0.02s] 
+  [0.28s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [60.25s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+
+=== a_meta_delay60 / explore — meta requests at [0.041] (gaps []), api requests 4
+  [0.02s] 
+  [0.28s] Loading the analysis builder… Fetching what the analytical service supports.
+  [60.25s] Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty for all ages (15+)
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+
+=== a_meta_delay60 / deep — meta requests at [0.041] (gaps []), api requests 3
+  [0.02s] 
+  [0.28s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [60.25s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min People ages 25–54 spent an estimated 8h 49m per day o
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+##### 13:22:43 END a_meta_delay60
+##### 13:22:43 START a2_spinup60 --delay 60 --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'a2_spinup60', n: 2, delay: 60 }
+
+=== a2_spinup60 / home — meta requests at [0.041] (gaps []), api requests 1
+  [0.02s] 
+  [0.28s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [60.06s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+
+=== a2_spinup60 / explore — meta requests at [0.042] (gaps []), api requests 4
+  [0.02s] 
+  [0.28s] Loading the analysis builder… Fetching what the analytical service supports.
+  [60.06s] Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? sleep — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty for all ages (15+). S
+  [60.31s] Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty for all ages (15+)
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+
+=== a2_spinup60 / deep — meta requests at [0.042] (gaps []), api requests 3
+  [0.02s] 
+  [0.28s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [60.06s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating es
+  [60.31s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min People ages 25–54 spent an estimated 8h 49m per day o
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+##### 13:23:59 END a2_spinup60
+##### 13:23:59 START b2_meta_delay60_503_once --delay 60 --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'b2_meta_delay60_503_once', n: 2, delay: 60 }
+
+=== b2_meta_delay60_503_once / home — meta requests at [0.041,61.053] (gaps [61.012]), api requests 2
+  [0.03s] 
+  [0.28s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [61.09s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @60.053s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== b2_meta_delay60_503_once / explore — meta requests at [0.042,61.053] (gaps [61.011]), api requests 5
+  [0.03s] 
+  [0.28s] Loading the analysis builder… Fetching what the analytical service supports.
+  [61.09s] Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty for all ages (15+)
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @60.053s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== b2_meta_delay60_503_once / deep — meta requests at [0.042,61.053] (gaps [61.011]), api requests 4
+  [0.03s] 
+  [0.28s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [61.09s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min People ages 25–54 spent an estimated 8h 49m per day o
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @60.053s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+##### 13:25:14 END b2_meta_delay60_503_once
+##### 13:25:14 START b_meta_delay60_503_always --delay 60 --checkpoints 2,5,15,30,60,75,120,150,185,200
+scenario set { ok: true, scenario: 'b_meta_delay60_503_always', n: 2, delay: 60 }
+
+=== b_meta_delay60_503_always / home — meta requests at [0.043,61.05,123.058] (gaps [61.007,62.008]), api requests 3
+  [0.02s] 
+  [0.27s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [183.22s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@200s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @60.048s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @121.056s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @183.068s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== b_meta_delay60_503_always / explore — meta requests at [0.042,61.049,123.056] (gaps [61.007,62.007]), api requests 4
+  [0.02s] 
+  [0.27s] Loading the analysis builder… Fetching what the analytical service supports.
+  [183.22s] The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+  footer@200s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @60.047s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @121.055s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @183.067s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== b_meta_delay60_503_always / deep — meta requests at [0.044,61.053,123.058] (gaps [61.009,62.005]), api requests 4
+  [0.02s] 
+  [0.27s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [183.22s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details The analysis could not be
+  footer@200s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @60.05s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @121.056s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @183.069s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+##### 13:28:35 END b_meta_delay60_503_always
+##### 13:28:35 START c_v2_same_shape --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'c_v2_same_shape', n: 2, delay: 60 }
+
+=== c_v2_same_shape / home — meta requests at [0.061] (gaps []), api requests 1
+  [0.03s] 
+  [0.28s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v2
+
+=== c_v2_same_shape / explore — meta requests at [0.062] (gaps []), api requests 4
+  [0.02s] 
+  [0.27s] Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty for all ages (15+)
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v2
+
+=== c_v2_same_shape / deep — meta requests at [0.061] (gaps []), api requests 3
+  [0.02s] 
+  [0.27s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend 8h 49m 528.8 minutes per day Standard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min People ages 25–54 spent an estimated 8h 49m per day o
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v2
+##### 13:29:50 END c_v2_same_shape
+##### 13:29:50 START c2_v2_changed_shape --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'c2_v2_changed_shape', n: 2, delay: 60 }
+
+=== c2_v2_changed_shape / home — meta requests at [0.085] (gaps []), api requests 1
+  [0.14s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [0.39s] Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+  footer@75s: 
+  console error @0.136s: TypeError: Cannot read properties of undefined (reading '0')
+    at zi (http://127.0.0.1:4182/assets/index-DehE4oRV.js:9:125410)
+    at ts (http://127.0.0.1:4182/assets/index-DehE4oRV.js:8:49206)
+    
+  console error @0.136s: Unhandled application error TypeError: Cannot read properties of undefined (reading '0')
+    at zi (http://127.0.0.1:4182/assets/index-DehE4oRV.js:9:125410)
+    at ts (http://127.0.0.1:4182/assets/ind
+
+=== c2_v2_changed_shape / explore — meta requests at [0.121] (gaps []), api requests 2
+  [0.14s] Loading the analysis builder… Fetching what the analytical service supports.
+  [0.39s] Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+  footer@75s: 
+  console error @0.137s: TypeError: Cannot read properties of undefined (reading '0')
+    at zi (http://localhost:4182/assets/index-DehE4oRV.js:9:125410)
+    at ts (http://localhost:4182/assets/index-DehE4oRV.js:8:49206)
+    
+  console error @0.138s: Unhandled application error TypeError: Cannot read properties of undefined (reading '0')
+    at zi (http://localhost:4182/assets/index-DehE4oRV.js:9:125410)
+    at ts (http://localhost:4182/assets/ind
+
+=== c2_v2_changed_shape / deep — meta requests at [0.141] (gaps []), api requests 2
+  [0.12s] 
+  [0.38s] Something went wrong in the application This is a problem in ATUS Explorer itself, not in your analysis. Reloading the page usually recovers it. Reload ATUS Explorer
+  footer@75s: 
+  console error @0.141s: TypeError: Cannot read properties of undefined (reading '0')
+    at zi (http://[::1]:4182/assets/index-DehE4oRV.js:9:125410)
+    at ts (http://[::1]:4182/assets/index-DehE4oRV.js:8:49206)
+    at Jc (h
+  console error @0.141s: Unhandled application error TypeError: Cannot read properties of undefined (reading '0')
+    at zi (http://[::1]:4182/assets/index-DehE4oRV.js:9:125410)
+    at ts (http://[::1]:4182/assets/index-DehE4
+##### 13:31:06 END c2_v2_changed_shape
+##### 13:31:06 START c3_v1_removed_404 --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'c3_v1_removed_404', n: 2, delay: 60 }
+
+=== c3_v1_removed_404 / home — meta requests at [0.044] (gaps []), api requests 1
+  [0.02s] 
+  [0.28s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.054s: Failed to load resource: the server responded with a status of 404 (Not Found)
+
+=== c3_v1_removed_404 / explore — meta requests at [0.042] (gaps []), api requests 2
+  [0.02s] 
+  [0.28s] The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.045s: Failed to load resource: the server responded with a status of 404 (Not Found)
+  console error @0.045s: Failed to load resource: the server responded with a status of 404 (Not Found)
+
+=== c3_v1_removed_404 / deep — meta requests at [0.045] (gaps []), api requests 2
+  [0.02s] 
+  [0.27s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it 
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.054s: Failed to load resource: the server responded with a status of 404 (Not Found)
+  console error @0.055s: Failed to load resource: the server responded with a status of 404 (Not Found)
+##### 13:32:22 END c3_v1_removed_404
+##### 13:32:22 START d_503_firstN_plain --n 2 --checkpoints 2,5,15,30,60,75 --label d_503_first2_plain
+scenario set { ok: true, scenario: 'd_503_firstN_plain', n: 2, delay: 60 }
+
+=== d_503_first2_plain / home — meta requests at [0.045,1.058,3.064] (gaps [1.013,2.006]), api requests 3
+  [0.04s] 
+  [0.29s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [3.08s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @0.056s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.062s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== d_503_first2_plain / explore — meta requests at [0.044,1.055,3.062] (gaps [1.011,2.007]), api requests 12
+  [0.04s] 
+  [0.29s] Loading the analysis builder… Fetching what the analytical service supports.
+  [3.08s] Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? sleep — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty for all ages (15+). S
+  [6.11s] Build an analysis Doing what · for whom · when · measured how — then Analyze. Single estimate Trend over time Compare two groups 1 Doing what? Sleeping — curated selection Change activity 2 For whom? Age Minimum age – Maximum age Leave empty for all ages (15+)
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @0.054s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @0.055s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.061s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.062s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.084s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.084s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== d_503_first2_plain / deep — meta requests at [0.045,1.058,3.062] (gaps [1.013,2.004]), api requests 7
+  [0.04s] 
+  [0.29s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [3.08s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating es
+  [3.33s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying a
+  footer@75s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @0.056s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @0.056s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.062s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.062s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.079s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+##### 13:33:37 END d_503_firstN_plain
+##### 13:33:37 START d_503_firstN_plain --n 3 --checkpoints 2,5,15,30,60,75 --label d_503_first3_plain
+scenario set { ok: true, scenario: 'd_503_firstN_plain', n: 3, delay: 60 }
+
+=== d_503_first3_plain / home — meta requests at [0.059,1.062,3.066] (gaps [1.003,2.004]), api requests 3
+  [0.04s] 
+  [0.29s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [3.08s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.06s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.064s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.067s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== d_503_first3_plain / explore — meta requests at [0.047,1.056,3.06] (gaps [1.009,2.004]), api requests 6
+  [0.04s] 
+  [0.29s] Loading the analysis builder… Fetching what the analytical service supports.
+  [3.08s] The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.056s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @0.058s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.058s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.058s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.061s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.061s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== d_503_first3_plain / deep — meta requests at [0.06,1.062,3.065] (gaps [1.002,2.003]), api requests 6
+  [0.04s] 
+  [0.29s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [3.08s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it 
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.06s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @0.061s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.064s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.064s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.067s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.067s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+##### 13:34:53 END d_503_firstN_plain
+##### 13:34:53 START d_503_firstN_json --n 3 --checkpoints 2,5,15,30,60,75 --label d_503_first3_json
+scenario set { ok: true, scenario: 'd_503_firstN_json', n: 3, delay: 60 }
+
+=== d_503_first3_json / home — meta requests at [0.047,1.061,3.065] (gaps [1.014,2.004]), api requests 3
+  [0.03s] 
+  [0.28s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [3.07s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.06s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.064s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.066s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== d_503_first3_json / explore — meta requests at [0.047,1.058,3.062] (gaps [1.011,2.004]), api requests 6
+  [0.03s] 
+  [0.28s] Loading the analysis builder… Fetching what the analytical service supports.
+  [3.07s] The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.058s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @0.06s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.063s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.063s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.063s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.063s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== d_503_first3_json / deep — meta requests at [0.048,1.061,3.065] (gaps [1.013,2.004]), api requests 6
+  [0.03s] 
+  [0.28s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [3.07s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details The analysis could not be
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.06s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @0.06s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.064s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.064s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.067s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.067s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+##### 13:36:08 END d_503_firstN_json
+##### 13:36:08 START d_503_for60s_plain --delay 60 --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'd_503_for60s_plain', n: 2, delay: 60 }
+
+=== d_503_for60s_plain / home — meta requests at [0.041,1.047,3.053] (gaps [1.006,2.006]), api requests 3
+  [0.02s] 
+  [0.27s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [3.07s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.044s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.053s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.065s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== d_503_for60s_plain / explore — meta requests at [0.041,1.047,3.061] (gaps [1.006,2.014]), api requests 6
+  [0.02s] 
+  [0.27s] Loading the analysis builder… Fetching what the analytical service supports.
+  [3.08s] The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.043s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @0.044s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.053s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.053s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.065s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.065s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+
+=== d_503_for60s_plain / deep — meta requests at [0.041,1.047,3.064] (gaps [1.006,2.017]), api requests 6
+  [0.02s] 
+  [0.27s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [3.08s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it 
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.043s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @0.044s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.054s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @1.054s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.065s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+  console error @3.065s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+##### 13:37:24 END d_503_for60s_plain
+##### 13:37:24 START e_502_html --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'e_502_html', n: 2, delay: 60 }
+
+=== e_502_html / home — meta requests at [0.045] (gaps []), api requests 1
+  [0.02s] 
+  [0.28s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.045s: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+=== e_502_html / explore — meta requests at [0.042] (gaps []), api requests 2
+  [0.02s] 
+  [0.27s] The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.044s: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+  console error @0.045s: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+
+=== e_502_html / deep — meta requests at [0.045] (gaps []), api requests 2
+  [0.02s] 
+  [0.27s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it 
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.054s: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+  console error @0.055s: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+##### 13:38:40 END e_502_html
+##### 13:38:40 START e_502_html_nocors --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'e_502_html_nocors', n: 2, delay: 60 }
+
+=== e_502_html_nocors / home — meta requests at [0.047,1.058,3.06] (gaps [1.011,2.002]), api requests 3
+  [0.04s] 
+  [0.29s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [3.06s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.058s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @0.058s: Failed to load resource: net::ERR_FAILED
+  console error @1.058s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @1.058s: Failed to load resource: net::ERR_FAILED
+  console error @3.06s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @3.06s: Failed to load resource: net::ERR_FAILED
+
+=== e_502_html_nocors / explore — meta requests at [0.041,1.045,3.047] (gaps [1.004,2.002]), api requests 6
+  [0.03s] 
+  [0.28s] Loading the analysis builder… Fetching what the analytical service supports.
+  [3.05s] The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.045s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @0.046s: Failed to load resource: net::ERR_FAILED
+  console error @0.046s: Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the req
+  console error @0.046s: Failed to load resource: net::ERR_FAILED
+  console error @1.046s: Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the req
+  console error @1.046s: Failed to load resource: net::ERR_FAILED
+
+=== e_502_html_nocors / deep — meta requests at [0.048,1.057,3.058] (gaps [1.009,2.001]), api requests 6
+  [0.03s] 
+  [0.28s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [3.30s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details The analy
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.057s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+  console error @0.057s: Failed to load resource: net::ERR_FAILED
+  console error @0.057s: Access to fetch at 'http://127.0.0.1:8207/api/v1/activities/presets' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requeste
+  console error @0.058s: Failed to load resource: net::ERR_FAILED
+  console error @1.058s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+  console error @1.058s: Failed to load resource: net::ERR_FAILED
+##### 13:39:55 END e_502_html_nocors
+##### 13:39:55 START e_504_html --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'e_504_html', n: 2, delay: 60 }
+
+=== e_504_html / home — meta requests at [0.042] (gaps []), api requests 1
+  [0.04s] 
+  [0.29s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.044s: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+
+=== e_504_html / explore — meta requests at [0.042] (gaps []), api requests 2
+  [0.04s] 
+  [0.29s] The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.043s: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+  console error @0.044s: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+
+=== e_504_html / deep — meta requests at [0.049] (gaps []), api requests 2
+  [0.05s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [0.30s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it 
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.052s: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+  console error @0.052s: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+##### 13:41:10 END e_504_html
+##### 13:41:10 START e_429_json --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'e_429_json', n: 2, delay: 60 }
+
+=== e_429_json / home — meta requests at [0.04] (gaps []), api requests 1
+  [0.02s] 
+  [0.28s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.042s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+
+=== e_429_json / explore — meta requests at [0.039] (gaps []), api requests 2
+  [0.02s] 
+  [0.28s] The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.041s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+  console error @0.042s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+
+=== e_429_json / deep — meta requests at [0.043] (gaps []), api requests 2
+  [0.02s] 
+  [0.28s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it 
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.044s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+  console error @0.053s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+##### 13:42:26 END e_429_json
+##### 13:42:26 START e_1027_html --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'e_1027_html', n: 2, delay: 60 }
+
+=== e_1027_html / home — meta requests at [0.072] (gaps []), api requests 1
+  [0.04s] 
+  [0.29s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.103s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+
+=== e_1027_html / explore — meta requests at [0.075] (gaps []), api requests 2
+  [0.04s] 
+  [0.29s] The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it persists, the API logs have the details. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.107s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+  console error @0.107s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+
+=== e_1027_html / deep — meta requests at [0.105] (gaps []), api requests 2
+  [0.04s] 
+  [0.29s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying again may help; if it 
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.106s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+  console error @0.106s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+##### 13:43:42 END e_1027_html
+##### 13:43:42 START e_429_html_nocors --checkpoints 2,5,15,30,60,75
+scenario set { ok: true, scenario: 'e_429_html_nocors', n: 2, delay: 60 }
+
+=== e_429_html_nocors / home — meta requests at [0.069,1.073,3.075] (gaps [1.004,2.002]), api requests 3
+  [0.03s] 
+  [0.28s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [3.32s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.071s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @0.071s: Failed to load resource: net::ERR_FAILED
+  console error @1.073s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @1.073s: Failed to load resource: net::ERR_FAILED
+  console error @3.075s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @3.075s: Failed to load resource: net::ERR_FAILED
+
+=== e_429_html_nocors / explore — meta requests at [0.069,1.071,3.073] (gaps [1.002,2.002]), api requests 6
+  [0.03s] 
+  [0.28s] Loading the analysis builder… Fetching what the analytical service supports.
+  [3.32s] The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.07s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @0.071s: Failed to load resource: net::ERR_FAILED
+  console error @0.071s: Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the req
+  console error @0.071s: Failed to load resource: net::ERR_FAILED
+  console error @1.071s: Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the req
+  console error @1.071s: Failed to load resource: net::ERR_FAILED
+
+=== e_429_html_nocors / deep — meta requests at [0.057,1.063,3.064] (gaps [1.006,2.001]), api requests 6
+  [0.03s] 
+  [0.28s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [3.31s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details The analy
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.064s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+  console error @0.068s: Failed to load resource: net::ERR_FAILED
+  console error @0.076s: Access to fetch at 'http://127.0.0.1:8207/api/v1/activities/presets' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requeste
+  console error @0.076s: Failed to load resource: net::ERR_FAILED
+  console error @1.063s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+  console error @1.063s: Failed to load resource: net::ERR_FAILED
+##### 13:44:57 END e_429_html_nocors
+##### 13:44:57 START f_analysis_502_html --pages deep --checkpoints 2,5,15,30
+scenario set { ok: true, scenario: 'f_analysis_502_html', n: 2, delay: 60 }
+
+=== f_analysis_502_html / deep — meta requests at [0.064] (gaps []), api requests 3
+  [0.02s] 
+  [0.27s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying a
+  footer@30s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @0.072s: Failed to load resource: the server responded with a status of 502 (Bad Gateway)
+##### 13:45:28 END f_analysis_502_html
+##### 13:45:28 START f_analysis_502_html_nocors --pages deep --checkpoints 2,5,15,30
+scenario set { ok: true, scenario: 'f_analysis_502_html_nocors', n: 2, delay: 60 }
+
+=== f_analysis_502_html_nocors / deep — meta requests at [0.064] (gaps []), api requests 3
+  [0.02s] 
+  [0.27s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Techni
+  footer@30s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @0.084s: Access to fetch at 'http://127.0.0.1:8207/api/v1/analysis/estimate' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested
+  console error @0.084s: Failed to load resource: net::ERR_FAILED
+##### 13:45:59 END f_analysis_502_html_nocors
+##### 13:45:59 START f_analysis_504_html --pages deep --checkpoints 2,5,15,30
+scenario set { ok: true, scenario: 'f_analysis_504_html', n: 2, delay: 60 }
+
+=== f_analysis_504_html / deep — meta requests at [0.055] (gaps []), api requests 3
+  [0.02s] 
+  [0.27s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying a
+  footer@30s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @0.077s: Failed to load resource: the server responded with a status of 504 (Gateway Timeout)
+##### 13:46:30 END f_analysis_504_html
+##### 13:46:30 START f_analysis_429_json --pages deep --checkpoints 2,5,15,30
+scenario set { ok: true, scenario: 'f_analysis_429_json', n: 2, delay: 60 }
+
+=== f_analysis_429_json / deep — meta requests at [0.056] (gaps []), api requests 3
+  [0.02s] 
+  [0.27s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying a
+  footer@30s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @0.074s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+##### 13:47:00 END f_analysis_429_json
+##### 13:47:00 START f_analysis_1027_html --pages deep --checkpoints 2,5,15,30
+scenario set { ok: true, scenario: 'f_analysis_1027_html', n: 2, delay: 60 }
+
+=== f_analysis_1027_html / deep — meta requests at [0.04] (gaps []), api requests 3
+  [0.01s] 
+  [0.26s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service reported an unexpected problem The analysis could not be completed. This is a problem in the service, not in your request. Trying a
+  footer@30s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @0.054s: Failed to load resource: the server responded with a status of 429 (Too Many Requests)
+##### 13:47:31 END f_analysis_1027_html
+##### 13:47:31 START f_analysis_503_pooltimeout --pages deep --checkpoints 2,5,15,30
+scenario set { ok: true, scenario: 'f_analysis_503_pooltimeout', n: 2, delay: 60 }
+
+=== f_analysis_503_pooltimeout / deep — meta requests at [0.067] (gaps []), api requests 3
+  [0.02s] 
+  [0.27s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis View 2003–2025 trend The analysis service is temporarily unavailable The service is up but its database is not ready. Try again in a moment. Try again Technical details The 
+  footer@30s: ted and subject to sampling uncertainty. An independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1
+  console error @0.091s: Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+##### 13:48:02 END f_analysis_503_pooltimeout
+ALL DONE 13:48:02

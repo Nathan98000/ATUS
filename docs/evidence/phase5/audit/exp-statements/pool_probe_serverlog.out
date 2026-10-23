@@ -1,0 +1,10 @@
+2026-10-20 17:29:20.453 UTC [123] pool-probe atus@atus LOG:  disconnection: session time: 0:19:58.945 user=atus database=atus host=192.168.65.1 port=46341
+2026-10-20 17:34:22.301 UTC [116] pool-probe atus@atus LOG:  disconnection: session time: 0:25:00.841 user=atus database=atus host=192.168.65.1 port=30865
+2026-10-20 17:34:22.301 UTC [122] pool-probe atus@atus LOG:  disconnection: session time: 0:25:00.800 user=atus database=atus host=192.168.65.1 port=34005
+2026-10-20 17:34:22.302 UTC [120] pool-probe atus@atus LOG:  disconnection: session time: 0:25:00.814 user=atus database=atus host=192.168.65.1 port=25481
+2026-10-20 17:34:22.302 UTC [113] pool-probe atus@atus LOG:  disconnection: session time: 0:25:01.861 user=atus database=atus host=192.168.65.1 port=50708
+2026-10-20 17:34:22.302 UTC [115] pool-probe atus@atus LOG:  disconnection: session time: 0:25:00.849 user=atus database=atus host=192.168.65.1 port=38615
+2026-10-20 17:34:22.302 UTC [119] pool-probe atus@atus LOG:  disconnection: session time: 0:25:00.821 user=atus database=atus host=192.168.65.1 port=28154
+2026-10-20 17:34:22.303 UTC [121] pool-probe atus@atus LOG:  disconnection: session time: 0:25:00.808 user=atus database=atus host=192.168.65.1 port=45503
+2026-10-20 17:34:22.304 UTC [118] pool-probe atus@atus LOG:  disconnection: session time: 0:25:00.830 user=atus database=atus host=192.168.65.1 port=49297
+2026-10-20 17:34:22.305 UTC [117] pool-probe atus@atus LOG:  disconnection: session time: 0:25:00.838 user=atus database=atus host=192.168.65.1 port=62603

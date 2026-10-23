@@ -1,0 +1,26 @@
+== rw_null_pattern_by_year_and_final_weight
+   (2020, True, None, 160, 8782)
+== rw_all_null_rows
+   (8782,)
+== rw_zero_cells_in_rows_with_final_weight_gt0
+   (0,)
+== respondents_fw_gt0_without_rw_row
+   (0,)
+== respondents_pw_gt0_without_pw_row
+   (0,)
+== pw_all_zero_rows_by_year_and_pandemic_weight
+   (2019, False, True, 1466)
+== pw_rows_with_nulls
+   (0,)
+== pw_zero_weight_respondents_with_nonzero_reps
+   (0,)
+== pw_pos_weight_with_all_zero_reps
+   (0,)
+== respondent_weight_profile
+   (False, 0, 0, 240737, 240737, 0, 0, 240737)
+   (True, 8782, 0, 9435, 0, 1466, 16751, 18217)
+== pw_table_rows_by_year
+   (2019, 9435)
+   (2020, 8782)
+== sum_types
+   ('bigint', 'bigint', 'numeric', 'numeric')

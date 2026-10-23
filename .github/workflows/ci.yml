@@ -1,17 +1,71 @@
+# Continuous integration: every pull request and every push to main.
+#
+# Deploys nothing and pushes nothing: deploy.yml is the only deploy path
+# (tags and manual runs, behind the `production` environment's reviewer).
+# Every third-party action is pinned to a full commit SHA (the version is in
+# the comment; Dependabot keeps both current). Jobs:
+#
+#   backend      ruff, unit, deployment-file and integration tests on Python
+#                3.11 and 3.12 (hash-locked install, postgres:16 service);
+#                OpenAPI drift (3.12)
+#   supply-chain pip-audit of the API image's runtime lock; actionlint
+#   frontend     typecheck, lint, format, Vitest, production build, bundle
+#                guard, API-type drift, npm audit
+#   edge         the Worker: typecheck, lint, format, tests (incl. the
+#                wrangler.jsonc invariants), npm audit
+#   (each audit through deploy/ci/audit_gate.py and its reviewed, expiring
+#   allowlist: .pip-audit-ignore, frontend/ and edge/.npm-audit-ignore)
+#   image        image.yml: build once, strict gate, deployment tests, stack
+#                smoke (plain and free-tier emulation), Trivy
+#   e2e          Playwright, every project (Chromium, mobile, Firefox, WebKit),
+#                against the vite-preview build and the real API
+#   e2e-stack    the tested image in the production compose stack behind the
+#                edge Worker (wrangler dev): scripts/smoke_stack.sh --edge --e2e,
+#                i.e. the API smoke, the SPA and static snapshot, the edge
+#                probe, deploy.yml's post-deploy smoke (deploy_smoke.py), the
+#                whole Playwright suite in stack mode (E2E_BASE_URL), every
+#                project, and deploy.yml's browser smoke
 name: CI
 
 on:
+  pull_request:
   push:
     branches: [main]
-  pull_request:
+
+permissions: read-all
+
+# Pushes to main never cancel a running CI run, but GitHub keeps one pending
+# run per group: a push that queues while another waits cancels the waiting
+# one, and a push of several commits runs CI on its head only. deploy.yml's
+# gate (github_ops.py deploy-gate) needs a green push run for exactly the
+# commit it deploys, and says which of these happened when there is none.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  NODE_VERSION: "24"
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
+  backend:
+    name: Backend (Python ${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
     services:
       postgres:
-        image: postgres:16
+        # postgres:16 (16.15), pinned by digest like docker-compose.prod.yml.
+        image: postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
         env:
+          # A throwaway, runner-local database for the disposable test
+          # databases the suites create; not a secret.
           POSTGRES_USER: atus
           POSTGRES_PASSWORD: atus
           POSTGRES_DB: atus
@@ -21,53 +75,212 @@ jobs:
           --health-cmd "pg_isready -U atus"
           --health-interval 5s
           --health-timeout 3s
-          --health-retries 10
+          --health-retries 20
+    env:
+      ATUS_TEST_DATABASE_URL: postgresql://atus:atus@localhost:5434/atus_test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # The full history, for the docs tests that read a dated commit (they
+          # skip without it). The stack-mode E2E record's guard compares the
+          # suite's git object ids instead, so a branch landed squashed, rebased
+          # or curated (which drops the recorded commit) passes too (review
+          # round 4); ATUS_REQUIRE_GIT_HISTORY fails it here without git.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements/dev.lock.txt
+
+      - name: Install the hash-locked dev environment
+        run: |
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
+          python -m pip install --no-deps --no-build-isolation -e .
+          python -m pip check
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Unit tests
+        run: python -m pytest tests/unit -q -p no:cacheprovider
+
+      - name: Deployment-file tests (static; container tests run in the image job)
+        env:
+          ATUS_REQUIRE_GIT_HISTORY: "1"
+        run: python -m pytest tests/deploy -q -p no:cacheprovider
+
+      - name: Integration tests (disposable databases on the postgres:16 service)
+        run: python -m pytest tests/integration -q -p no:cacheprovider
+
+      - name: OpenAPI drift (frontend/openapi.json is what the API serves)
+        if: matrix.python == '3.12'
+        run: |
+          python scripts/export_openapi.py
+          git diff --exit-code -- frontend/openapi.json
+
+  supply-chain:
+    name: Supply chain (pip-audit, actionlint)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - name: Install
-        run: pip install -e ".[dev]"
-      - name: Lint
-        run: ruff check .
-      - name: Unit tests
-        run: pytest tests/unit -q
-      - name: Integration tests (disposable test database)
-        run: pytest tests/integration -q
+          cache: pip
+          cache-dependency-path: requirements/ci-tools.lock.txt
+
+      - name: Install the hash-locked CI tools in their own environment
+        run: |
+          python -m venv "$RUNNER_TEMP/ci-tools"
+          "$RUNNER_TEMP/ci-tools/bin/python" -m pip install --require-hashes --no-deps \
+            --only-binary=:all: -r requirements/ci-tools.lock.txt
+          echo "$RUNNER_TEMP/ci-tools/bin" >> "$GITHUB_PATH"
+
+      # Each audit fails on any advisory, fixed or not; an advisory with no fix
+      # yet is accepted only by a reviewed entry with an expiry at most 31 days
+      # out (deploy/ci/audit_gate.py; docs/operations.md, "A dependency audit
+      # blocks a deploy"), as the image scan's .trivyignore.
+      - name: pip-audit of the API image's runtime lock (allowlist .pip-audit-ignore)
+        run: python3 deploy/ci/audit_gate.py pip --ignore-file .pip-audit-ignore -- --strict --require-hashes --disable-pip -r requirements/api.lock.txt
+
+      - name: Install actionlint (pinned version, verified checksum)
         env:
-          ATUS_TEST_DATABASE_URL: postgresql://atus:atus@localhost:5434/atus_test
+          ACTIONLINT_VERSION: "1.7.12"
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        run: |
+          archive="$RUNNER_TEMP/actionlint.tar.gz"
+          curl -fsSL --retry 3 -o "$archive" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  ${archive}" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/actionlint-bin"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/actionlint-bin" actionlint
+          echo "$RUNNER_TEMP/actionlint-bin" >> "$GITHUB_PATH"
+
+      - name: actionlint (workflow syntax, expressions, ShellCheck on every run step)
+        run: actionlint -color
 
   frontend:
-    runs-on: ubuntu-latest
+    name: Frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: "22"
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install
+
+      - name: Install (lockfile only)
         run: npm ci
+
       - name: Typecheck
         run: npm run typecheck
+
       - name: Lint
         run: npm run lint
+
       - name: Format check
         run: npm run format:check
+
+      - name: API types match openapi.json (F30 drift check)
+        run: npm run check:api-types
+
       - name: Unit and component tests
         run: npm test
-      - name: Production build
+
+      - name: Production build (same-origin, no VITE_API_BASE_URL)
         run: npm run build
 
-  frontend-e2e:
-    runs-on: ubuntu-latest
+      - name: Bundle guard (no dev API address, CSP-safe HTML, _headers rules, /openapi.json)
+        run: npm run check:bundle
+
+      - name: npm audit (runtime dependencies, high and above; allowlist .npm-audit-ignore)
+        run: python3 ../deploy/ci/audit_gate.py npm --ignore-file .npm-audit-ignore --audit-level high -- --omit=dev
+
+  edge:
+    name: Edge Worker
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: edge
+    env:
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: edge/package-lock.json
+
+      - name: Install (lockfile only; wrangler is pinned here)
+        run: npm ci
+
+      - name: Typecheck (generates worker-configuration.d.ts first)
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Tests (workerd via Miniflare, plus the wrangler.jsonc invariants)
+        run: npm test
+
+      - name: npm audit (runtime dependencies; allowlist .npm-audit-ignore)
+        run: python3 ../deploy/ci/audit_gate.py npm --ignore-file .npm-audit-ignore -- --omit=dev
+
+  image:
+    name: Image
+    uses: ./.github/workflows/image.yml
+    permissions:
+      contents: read
+    with:
+      build-sha: ${{ github.sha }}
+      use-cache: true
+
+  e2e:
+    name: E2E (vite preview, all browsers)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
     services:
       postgres:
-        image: postgres:16
+        image: postgres:16@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94
         env:
           POSTGRES_USER: atus
           POSTGRES_PASSWORD: atus
@@ -78,27 +291,128 @@ jobs:
           --health-cmd "pg_isready -U atus"
           --health-interval 5s
           --health-timeout 3s
-          --health-retries 10
+          --health-retries 20
+    env:
+      CI: "1"
+      E2E_BACKEND_PYTHON: python
+      ATUS_E2E_DATABASE_URL: postgresql://atus:atus@localhost:5434/atus_e2e
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
-      - name: Install backend
-        run: pip install -e ".[dev]"
-      - uses: actions/setup-node@v4
+          cache: pip
+          cache-dependency-path: requirements/dev.lock.txt
+
+      - name: Install the backend (hash-locked)
+        run: |
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
+          python -m pip install --no-deps --no-build-isolation -e .
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "22"
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Install frontend
+
+      - name: Install the frontend (lockfile only)
+        working-directory: frontend
         run: npm ci
+
+      - name: Install the Playwright browsers and their system packages
         working-directory: frontend
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: End-to-end tests (real API on the fixture database; every project)
         working-directory: frontend
-      - name: End-to-end tests (real API on the fixture database)
         run: npm run test:e2e
+
+      - name: Keep the Playwright report and traces
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-e2e
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  e2e-stack:
+    name: E2E through the edge Worker (production compose stack)
+    needs: image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      ATUS_STACK_IMAGE: atus-api:ci
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download the tested image
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: atus-api-image
+          path: ${{ runner.temp }}/image
+
+      - name: Load it (and prove it is the image the image job tested)
+        run: |
+          docker load -i "$RUNNER_TEMP/image/atus-api.tar"
+          loaded=$(docker image inspect --format '{{.Id}}' "$ATUS_STACK_IMAGE")
+          test "$loaded" = "$(cat "$RUNNER_TEMP/image/atus-api.id")"
+
+      # The host-side steps (scripts/build_snapshot.py, deploy/stack/edge_probe.py)
+      # need only the standard library; scripts/ops/deploy_smoke.py, deploy.yml's
+      # post-deploy gate run here too, needs the package for its §9 comparison.
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock.txt
+
+      - name: Install the hash-locked environment (deploy_smoke.py's §9 comparison)
+        run: |
+          python -m pip install --require-hashes --no-deps --only-binary=:all: -r requirements/dev.lock.txt
+          python -m pip install --no-deps --no-build-isolation -e .
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install the frontend (lockfile only) and the Playwright browsers
         working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium firefox webkit
+
+      - name: The public origin, end to end (API smoke, SPA + snapshot, edge probe, Playwright stack mode)
         env:
-          E2E_BACKEND_PYTHON: python
+          ATUS_BUILD_SHA: ${{ github.sha }}
+          # Every project: Firefox launches on Linux (not on macOS 27).
+          E2E_PROJECTS: desktop mobile firefox webkit
+        run: scripts/smoke_stack.sh --no-build --project "atus-ci-edge-${GITHUB_RUN_ID}" --edge --e2e
+
+      - name: Keep the Playwright report and traces
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-e2e-stack
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 14
+          if-no-files-found: ignore

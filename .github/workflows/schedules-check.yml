@@ -1,0 +1,68 @@
+# Weekly schedule check and owner reminder (ADR-011 "Risks": GitHub disables
+# scheduled workflows "when no repository activity has occurred in 60 days",
+# and scheduled runs can be delayed or dropped).
+#
+# Fails loudly, and so emails the owner, when a scheduled workflow is not
+# active, when a monitor has stopped running, or when the default branch has
+# had no commit for 28 days (four more weekly runs come before the 60-day
+# cutoff). Not the repository's pushed_at: Dependabot's weekly branch pushes
+# keep that fresh, and GitHub does not say whether they count as activity.
+# Mondays at 09:41 UTC, off the hour, when GitHub's scheduler is busiest. It
+# reads workflow, run and commit metadata through the GitHub REST API (the
+# endpoints `gh api` calls) with the run's read-only token. If this workflow is
+# itself disabled it cannot alert: a monthly look at the Actions tab is the
+# backstop (docs/deployment.md, "Monitoring and alerting").
+name: Schedules check
+
+on:
+  schedule:
+    - cron: "41 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: schedules-check
+  cancel-in-progress: false
+
+jobs:
+  schedules:
+    name: Scheduled workflows are enabled and running
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Check out the ops scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/ops
+
+      - name: Check every scheduled workflow and the repository's activity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/ops/github_ops.py schedules --repo "$GITHUB_REPOSITORY"
+
+      # Only the run summary: a passing run emails no one (owner step 4.4), so
+      # the owner opens it, or the copy in docs/deployment.md ("Owner
+      # checklist"), which tests/deploy/test_docs_accuracy_r2.py keeps equal.
+      - name: Owner reminder
+        if: ${{ always() }}
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<'EOF'
+          ### Owner checklist (docs/deployment.md, "Monitoring and alerting")
+          Weekly (no monitor watches these):
+          - Render outbound bandwidth this month (Render → workspace usage): 5 GB a month, and the
+            service pauses until the 1st when it runs out. Above about 3.5 GB, find the cause in
+            the Render logs (direct hits: `edge_authenticated: false`, 403).
+          - If the quota report shows no "Worker requests today" line (no analytics token): the
+            account's Worker requests on the Cloudflare dashboard, 100,000 a day.
+          Monthly:
+          - The Cloudflare API tokens expire 90 days after creation: rotate them before then.
+          - Quota reports: any warning this month? Neon CU-hours and egress on the Neon console.
+          - Render: no suspension or card notice; the service is still on the Free plan.
+          - GitHub: Actions notifications still set to email on failed workflows.
+          EOF

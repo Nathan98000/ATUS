@@ -1,0 +1,92 @@
+[
+  {
+    "t_start": 1792516888.27,
+    "t_end": 1792516888.27,
+    "scenario": "a_meta_delay60",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/population/metadata",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792516888.271,
+    "t_end": 1792516888.271,
+    "scenario": "a_meta_delay60",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792516888.27,
+    "t_end": 1792516948.277,
+    "scenario": "a_meta_delay60",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "delayed 60.0s"
+  },
+  {
+    "t_start": 1792516888.271,
+    "t_end": 1792516948.277,
+    "scenario": "a_meta_delay60",
+    "origin": "http://127.0.0.1:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "delayed 60.0s"
+  },
+  {
+    "t_start": 1792516888.27,
+    "t_end": 1792516948.278,
+    "scenario": "a_meta_delay60",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "delayed 60.0s"
+  },
+  {
+    "t_start": 1792516948.282,
+    "t_end": 1792516948.282,
+    "scenario": "a_meta_delay60",
+    "origin": "http://[::1]:4182",
+    "method": "OPTIONS",
+    "path": "/api/v1/analysis/estimate",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792516948.284,
+    "t_end": 1792516948.284,
+    "scenario": "a_meta_delay60",
+    "origin": "http://[::1]:4182",
+    "method": "POST",
+    "path": "/api/v1/analysis/estimate",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792516948.291,
+    "t_end": 1792516948.291,
+    "scenario": "a_meta_delay60",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792516948.29,
+    "t_end": 1792516948.291,
+    "scenario": "a_meta_delay60",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/activities",
+    "status": 200,
+    "note": ""
+  }
+]

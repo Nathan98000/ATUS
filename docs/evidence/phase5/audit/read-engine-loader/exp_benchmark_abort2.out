@@ -1,0 +1,1 @@
+run_benchmarks raised (results never printed): InFailedSqlTransaction current transaction is aborted, commands ignored until end of transaction block

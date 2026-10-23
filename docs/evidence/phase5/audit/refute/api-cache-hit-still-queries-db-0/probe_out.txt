@@ -1,0 +1,4 @@
+estimate cache-hit EXC(fake hit payload failed response validation after handler returned) ResponseValidationError ['CHECKOUT', ['SELECT', 'release,', 'id', 'FROM']]
+estimate schema-invalid extra 422 None ['CHECKOUT', ['SELECT', 'release,', 'id', 'FROM']]
+estimate malformed json 400 None []
+activities level=9 422 None ['CHECKOUT']

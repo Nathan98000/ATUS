@@ -1,0 +1,5 @@
+13:12:38.433 curl --max-time 1 start
+13:12:39.445 curl exit=28 curl: (28) Operation timed out after 1004 milliseconds with 0 bytes received
+13:12:41.448 sending SIGTERM to API pid 50184
+13:12:49.947 API process exited at 13:12:49.947 (8.5s after signal)
+13:12:52.436 poller done

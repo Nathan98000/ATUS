@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/unicode_preset.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:42 GMT
+server: uvicorn
+content-length: 328
+content-type: application/json
+vary: Origin
+x-request-id: 441bc965065e47d6
+
+{"error":{"code":"invalid_spec","message":"Unknown activity preset 'sleep\\x00; DROP TABLE x;--😴'. Known presets: eating_and_drinking, eating_and_drinking_bls_table, household_activities_bls_table, housework, leisure_and_sports_bls_table, sleep, watching_tv, work_main_and_other_jobs, work_related_bls_table","details":null}}
+### status=422 time_total=0.003628s size_download=328 size_upload=148

@@ -1,0 +1,15 @@
+2026-10-20 17:13:35.569 UTC [1769] ERROR:  deadlock detected
+2026-10-20 17:13:35.569 UTC [1769] DETAIL:  Process 1769 waits for AccessExclusiveLock on relation 34511 of database 34311; blocked by process 692.
+	Process 692 waits for AccessShareLock on relation 34436 of database 34311; blocked by process 1769.
+	Process 1769: TRUNCATE atus.activity_companions, atus.activities, atus.cps_persons, atus.household_members, atus.replicate_weights, atus.pandemic_replicate_weights, atus.respondents, atus.activity_codes, atus.activity_tier2, atus.activity_tier1
+	Process 692: 
+	WITH activity_minutes AS (
+	    SELECT a.tucaseid, sum(a.duration_minutes) AS minutes
+	    FROM atus.activities a
+	    WHERE a.activity_code = ANY($1)
+	    GROUP BY a.tucaseid
+	),
+	base AS (
+	    SELECT r.data_year AS year,
+	           r.tucaseid,
+	           COALESCE(m.minutes, 0) AS x,

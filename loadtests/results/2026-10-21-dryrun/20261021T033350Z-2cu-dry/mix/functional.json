@@ -1,0 +1,153 @@
+{
+ "note": "DRY RUN: tiny scale, not timed. Status codes, error codes and cache outcomes only; no latency is recorded here.",
+ "k6_exit": 0,
+ "db_statements_logged": 31,
+ "db_attribution_complete": true,
+ "timed": false,
+ "setup": {
+  "requests": 2,
+  "status": {
+   "200": 2
+  },
+  "error_codes": {}
+ },
+ "overall": {
+  "requests": 8,
+  "status": {
+   "200": 8
+  },
+  "error_codes": {},
+  "x_cache": {
+   "miss": 5,
+   "none": 3
+  },
+  "expected_outcome": 8
+ },
+ "by_endpoint": {
+  "compare": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "estimate": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 3
+   },
+   "expected_outcome": 3
+  },
+  "health": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  },
+  "trend": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  }
+ },
+ "by_endpoint_cache": {
+  "compare|miss": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  },
+  "estimate|miss": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 3
+   },
+   "expected_outcome": 3
+  },
+  "health|none": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  },
+  "trend|miss": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 1
+   },
+   "expected_outcome": 1
+  }
+ },
+ "by_kind": {
+  "novel_heavy": {
+   "requests": 2,
+   "status": {
+    "200": 2
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 2
+   },
+   "expected_outcome": 2
+  },
+  "novel_light": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "miss": 3
+   },
+   "expected_outcome": 3
+  },
+  "wake": {
+   "requests": 3,
+   "status": {
+    "200": 3
+   },
+   "error_codes": {},
+   "x_cache": {
+    "none": 3
+   },
+   "expected_outcome": 3
+  }
+ }
+}

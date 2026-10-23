@@ -1,0 +1,6 @@
+INFO:     Started server process [63326]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8202 (Press CTRL+C to quit)
+13:13:04 INFO    atus.api: request_id=426641dfaa2e4668 GET /ready -> 200 in 9.4ms cache=-
+INFO:     127.0.0.1:62652 - "GET /ready HTTP/1.1" 200 OK

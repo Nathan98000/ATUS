@@ -1,0 +1,11 @@
+### curl -H X-Request-ID: attacker-chosen-id-1234 http://127.0.0.1:8206/health (port 8206)
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:09:50 GMT
+server: uvicorn
+content-length: 15
+content-type: application/json
+vary: Origin
+x-request-id: e160d9c05a7a480f
+
+{"status":"ok"}
+### status=200 time_total=0.000820s size_download=15 size_upload=0

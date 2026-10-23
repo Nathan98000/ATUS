@@ -1,0 +1,15 @@
+26:      - uses: actions/checkout@v4
+27:      - uses: actions/setup-python@v5
+29:          python-version: "3.12"
+31:        run: pip install -e ".[dev]"
+47:      - uses: actions/checkout@v4
+48:      - uses: actions/setup-node@v4
+50:          node-version: "22"
+54:        run: npm ci
+83:      - uses: actions/checkout@v4
+84:      - uses: actions/setup-python@v5
+86:          python-version: "3.12"
+88:        run: pip install -e ".[dev]"
+89:      - uses: actions/setup-node@v4
+91:          node-version: "22"
+95:        run: npm ci

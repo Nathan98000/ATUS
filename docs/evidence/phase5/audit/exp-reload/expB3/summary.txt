@@ -1,0 +1,50 @@
+loader_start=-8.060s  truncate_done(L0)=0  release(C)=+20.051s  loader_ok=True
+  event inflight_start           t= -10.047s {'pid': 2192}
+  event inflight_statement_done  t=  -0.025s 
+  event inflight_committed       t=  -0.024s 
+  event hold_start               t=  +0.008s {'hold': 20.0, 'backend_pid': 2193}
+  event hold_end                 t= +20.013s 
+  event loader_done              t= +20.051s {'ok': True}
+
+phase                     kind                  n      p50     p95     max  outcomes(status/error/x-cache/value -> n)
+1_before_load             activities          178    0.012   0.019   0.032  200/-/-/556 x178
+1_before_load             est_cached          180    0.011   0.019   0.026  200/-/hit/90.0 x180
+1_before_load             health_probe         40    0.002   0.006   0.013  200/-/-/- x40
+1_before_load             meta                180    0.011   0.019   0.028  200/-/-/6/run4 x180
+1_before_load             ready               179    0.009   0.017   0.026  200/-/-/- x179
+1_before_load             threads_probe        10    0.003   0.017   0.017  200/-/-/b0/w0/pa10/pw0 x5; 200/-/-/b1/w0/pa9/pw0 x2; 200/-/-/b3/w0/pa8/pw0 x1; 200/-/-/b2/w0/pa7/pw0 x1; 200/-/-/b1/w0/pa10/pw0 x1
+2_inflight_at_load_start  activities            2    0.004   0.005   0.005  200/-/-/556 x2
+2_inflight_at_load_start  ready                 1    0.003   0.003   0.003  200/-/-/- x1
+3_started_during_load     activities          146    0.011   0.020  20.031  200/-/-/556 x146
+3_started_during_load     est_cached          146    0.009   0.019   0.034  200/-/hit/90.0 x146
+3_started_during_load     health_probe        112    0.004   0.006   0.013  200/-/-/- x112
+3_started_during_load     meta                146    0.010   0.021  20.033  200/-/-/6/run4 x146
+3_started_during_load     ready               148    0.007   0.015  20.026  200/-/-/- x148
+3_started_during_load     threads_probe        29    0.004   0.005   0.007  200/-/-/b8/w0/pa2/pw0 x20; 200/-/-/b0/w0/pa10/pw0 x9
+4_started_after_release   activities          214    0.010   0.019   0.032  200/-/-/556 x214
+4_started_after_release   est_cached          216    0.008   0.018   0.048  200/-/hit/75.0 x214; 200/-/miss/75.0 x2
+4_started_after_release   health_probe         47    0.002   0.005   0.011  200/-/-/- x47
+4_started_after_release   meta                214    0.008   0.018   0.042  200/-/-/6/run7 x214
+4_started_after_release   ready               212    0.007   0.018   0.031  200/-/-/- x212
+4_started_after_release   threads_probe        11    0.002   0.013   0.013  200/-/-/b0/w0/pa10/pw0 x7; 200/-/-/b2/w0/pa7/pw0 x2; 200/-/-/b2/w0/pa6/pw0 x1; 200/-/-/b1/w0/pa9/pw0 x1
+
+Requests started during the load window and completed after release:
+  ('ready', '200', '-', '-', '-', '-') x4
+  ('activities', '200', '-', '-', '556', '-') x2
+  ('meta', '200', '-', '-', '6', '4') x2
+  wait: min 19.95s max 20.03s; completed +0.007..+0.018s after release
+
+/health during load window: n=112 status=Counter({'200': 112}) p50 4.0ms p99 9.0ms max 13.0ms
+
+completions per 5 s bucket (relative to L0): bucket: ok200 / 503 / other  [non-health]
+  -20:228/0/0  -15:357/0/0  -10:366/0/0  -5:365/0/0  +0:6/0/0  +5:5/0/0  +10:5/0/0  +15:5/0/0  +20:362/0/0  +25:368/0/0  +30:145/0/0
+
+estimate values by (phase, x_cache, value):
+  ('1_before_load', 'est_cached', 'hit', '90.0') x180
+  ('3_started_during_load', 'est_cached', 'hit', '90.0') x146
+  ('4_started_after_release', 'est_cached', 'hit', '75.0') x214
+  ('4_started_after_release', 'est_cached', 'miss', '75.0') x2
+
+lock sampler: 120 samples; max API backends 10; max API backends waiting on a Lock 8
+  API lock waits by relation (sample-count): {('respondents:AccessShareLock',): 236, ('activity_tier1:AccessShareLock',): 80}
+  loader AE-held sample at -8.01s: ['activity_companions'] waiting_for=['activities:AccessExclusiveLock']

@@ -1,0 +1,28 @@
+  [PASS] analytics: UG ch7.4: TV watching 2007, mean minutes/day                           157.3948 (published 157.3950, |Δ|=0.00025)
+  [PASS] analytics: UG ch7.5: TV watching 2007, replicate-weight SE (hours)                0.0293 (published 0.0293, |Δ|=0.00000)
+  [PASS] analytics: UG App J: persons in the South doing housework per day, 2006           29,517,002.7693 (published 29,517,003.0000, |Δ|=0.23067)
+  [PASS] analytics: UG App J: unweighted participant count in that subpopulation           1,861.0000 (published 1,861.0000, |Δ|=0.00000)
+  [PASS] analytics: A1-2025: sleeping, hours/day                                           9.0327 (published 9.0300, |Δ|=0.00274)
+  [PASS] analytics: A1-2025: sleeping, percent participating                               99.8970 (published 99.9000, |Δ|=0.00304)
+  [PASS] analytics: A1-2025: sleeping, hours/day of participants                           9.0421 (published 9.0400, |Δ|=0.00205)
+  [PASS] analytics: A1-2025: sleeping, men, hours/day                                      8.9298 (published 8.9300, |Δ|=0.00017)
+  [PASS] analytics: A1-2025: sleeping, women, hours/day                                    9.1308 (published 9.1300, |Δ|=0.00080)
+  [PASS] analytics: A1-2025: watching TV, hours/day                                        2.6105 (published 2.6100, |Δ|=0.00054)
+  [PASS] analytics: A1-2025: watching TV, percent participating                            74.3346 (published 74.3000, |Δ|=0.03458)
+  [PASS] analytics: A1-2025: household activities (A-1 definition), hours/day              1.9926 (published 1.9900, |Δ|=0.00264)
+  [PASS] analytics: A1-2025: household activities (A-1 definition), percent participating  80.9453 (published 80.9000, |Δ|=0.04529)
+  [PASS] analytics: A1-2025: household activities (A-1 definition), women, hours/day       2.3842 (published 2.3800, |Δ|=0.00419)
+  [PASS] analytics: A1-2025: leisure and sports, hours/day                                 5.1607 (published 5.1600, |Δ|=0.00067)
+  [PASS] analytics: A1-2025: leisure and sports, percent participating                     95.1125 (published 95.1000, |Δ|=0.01251)
+  [PASS] analytics: A1-2025: leisure and sports, hours/day of participants                 5.4259 (published 5.4300, |Δ|=0.00414)
+  [PASS] analytics: A1-2025: eating and drinking, hours/day                                1.2122 (published 1.2100, |Δ|=0.00216)
+  [PASS] analytics: A1-2025: eating and drinking, percent participating                    96.8794 (published 96.9000, |Δ|=0.02063)
+  [PASS] analytics: A1-2025: working and work-related, hours/day                           3.3159 (published 3.3200, |Δ|=0.00411)
+  [PASS] analytics: A1-2025: working and work-related, hours/day of participants           7.9847 (published 7.9800, |Δ|=0.00466)
+  [PASS] analytics: NR-2020: sleeping, hours/day (May 10 - Dec 31, TU20FWGT)               9.0088 (published 9.0100, |Δ|=0.00120)
+  [PASS] analytics: NR-2020: watching TV, hours/day (May 10 - Dec 31, TU20FWGT)            3.0548 (published 3.0500, |Δ|=0.00476)
+  [PASS] analytics: NR-2020: watching TV, percent participating (May 10 - Dec 31)          78.7977 (published 78.8000, |Δ|=0.00231)
+
+24 passed, 0 failed, 0 warnings
+ATUS_DATABASE_URL=postgresql://atus:atus@localhost:5441/atus    0.12s user 0.02s system 6% cpu 2.300 total
+exit=0

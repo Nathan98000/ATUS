@@ -1,0 +1,54 @@
+INFO:     Started server process [62518]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8216 (Press CTRL+C to quit)
+13:12:35 INFO    atus.api: request_id=955966e3d6cc465d GET /health -> 200 in 5.2ms cache=-
+INFO:     127.0.0.1:62574 - "GET /health HTTP/1.1" 200 OK
+13:12:35 INFO    atus.api: request_id=4a23b3aca8d1415a GET /health -> 200 in 0.2ms cache=-
+INFO:     127.0.0.1:62575 - "GET /health HTTP/1.1" 200 OK
+13:12:35 WARNING atus.api: readiness failed: schema_not_initialized
+13:12:35 INFO    atus.api: request_id=47e8743d4d9d4f83 GET /ready -> 503 in 3.7ms cache=-
+INFO:     127.0.0.1:62576 - "GET /ready HTTP/1.1" 503 Service Unavailable
+13:12:35 ERROR   atus.api: schema not initialized: relation "atus.ingestion_runs" does not exist
+LINE 1: SELECT id, release, finished_at FROM atus.ingestion_runs WHE...
+                                             ^
+13:12:35 INFO    atus.api: request_id=5b45c3d560004a0f GET /api/v1/meta -> 503 in 2.8ms cache=-
+INFO:     127.0.0.1:62577 - "GET /api/v1/meta HTTP/1.1" 503 Service Unavailable
+13:12:35 ERROR   atus.api: schema not initialized: relation "atus.activity_tier1" does not exist
+LINE 5:     FROM atus.activity_tier1
+                 ^
+13:12:35 INFO    atus.api: request_id=979d1eeb7e4a41af GET /api/v1/activities -> 503 in 3.1ms cache=-
+INFO:     127.0.0.1:62578 - "GET /api/v1/activities HTTP/1.1" 503 Service Unavailable
+13:12:35 ERROR   atus.api: schema not initialized: relation "atus.activity_tier1" does not exist
+LINE 5:     FROM atus.activity_tier1
+                 ^
+13:12:35 INFO    atus.api: request_id=9796964c685e46ee GET /api/v1/activities/0101 -> 503 in 3.0ms cache=-
+INFO:     127.0.0.1:62579 - "GET /api/v1/activities/0101 HTTP/1.1" 503 Service Unavailable
+13:12:35 ERROR   atus.api: schema not initialized: relation "atus.ingestion_runs" does not exist
+LINE 1: SELECT release, id FROM atus.ingestion_runs WHERE status = '...
+                                ^
+13:12:35 INFO    atus.api: request_id=a4b8946e30d94a13 POST /api/v1/analysis/estimate -> 503 in 2.4ms cache=-
+INFO:     127.0.0.1:62580 - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:12:35 ERROR   atus.api: schema not initialized: relation "atus.ingestion_runs" does not exist
+LINE 1: SELECT release, id FROM atus.ingestion_runs WHERE status = '...
+                                ^
+13:12:35 INFO    atus.api: request_id=5ddf45c3d2da458e POST /api/v1/analysis/estimate -> 503 in 2.7ms cache=-
+INFO:     127.0.0.1:62582 - "POST /api/v1/analysis/estimate HTTP/1.1" 503 Service Unavailable
+13:12:35 WARNING atus.api: readiness failed: schema_not_initialized
+13:12:35 INFO    atus.api: request_id=23d5ce00726e4a6f GET /ready -> 503 in 2.4ms cache=-
+INFO:     127.0.0.1:62583 - "GET /ready HTTP/1.1" 503 Service Unavailable
+13:12:44 WARNING atus.api: readiness failed: data_not_loaded
+13:12:44 INFO    atus.api: request_id=eb26b24d480645a1 GET /ready -> 503 in 1.9ms cache=-
+INFO:     127.0.0.1:62620 - "GET /ready HTTP/1.1" 503 Service Unavailable
+13:12:44 INFO    atus.api: request_id=c544f93a47a64417 GET /api/v1/meta -> 200 in 2.5ms cache=-
+INFO:     127.0.0.1:62621 - "GET /api/v1/meta HTTP/1.1" 200 OK
+13:12:44 INFO    atus.api: request_id=96ea278f86ff442b GET /api/v1/activities -> 200 in 1.6ms cache=-
+INFO:     127.0.0.1:62622 - "GET /api/v1/activities HTTP/1.1" 200 OK
+13:12:44 INFO    atus.api: request_id=87d3ed4f110c4912 POST /api/v1/analysis/estimate -> 422 in 2.3ms cache=-
+INFO:     127.0.0.1:62623 - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+13:12:44 INFO    atus.api: request_id=b98ac81085b946d7 POST /api/v1/analysis/estimate -> 422 in 2.0ms cache=-
+INFO:     127.0.0.1:62624 - "POST /api/v1/analysis/estimate HTTP/1.1" 422 Unprocessable Entity
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [62518]

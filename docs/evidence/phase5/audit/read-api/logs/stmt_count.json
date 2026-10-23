@@ -1,0 +1,259 @@
+{
+ "pool_stats": {
+  "connections_num": 4,
+  "connections_ms": 11,
+  "requests_num": 27,
+  "usage_ms": 76,
+  "returns_bad": 2,
+  "requests_queued": 1,
+  "requests_wait_ms": 1,
+  "pool_min": 1,
+  "pool_max": 10,
+  "pool_size": 2,
+  "pool_available": 1,
+  "requests_waiting": 0
+ },
+ "api_pids": [
+  1329,
+  1343,
+  1344,
+  1345
+ ],
+ "killed": [
+  [
+   1329,
+   true
+  ]
+ ],
+ "killed2": [
+  [
+   1343,
+   true
+  ],
+  [
+   1344,
+   true
+  ]
+ ],
+ "results": [
+  [
+   "GET /health",
+   200,
+   null,
+   ""
+  ],
+  [
+   "GET /ready",
+   200,
+   null,
+   ""
+  ],
+  [
+   "GET /api/v1/meta",
+   200,
+   null,
+   ""
+  ],
+  [
+   "GET /api/v1/population/metadata",
+   200,
+   null,
+   ""
+  ],
+  [
+   "GET /api/v1/activities/presets",
+   200,
+   null,
+   ""
+  ],
+  [
+   "GET /api/v1/activities (full)",
+   200,
+   null,
+   ""
+  ],
+  [
+   "GET /api/v1/activities?search=sleep",
+   200,
+   null,
+   ""
+  ],
+  [
+   "GET /api/v1/activities/010101 (detail)",
+   200,
+   null,
+   ""
+  ],
+  [
+   "GET /api/v1/activities/abc (malformed->404)",
+   404,
+   null,
+   "{\"error\":{\"code\":\"activity_not_found\",\"message\":\"Activity code 'abc' does not exist in the 2003-25 lexicon.\",\"details\":{\"code\":\"abc\"}}}"
+  ],
+  [
+   "GET /api/v1/activities/999999 (unknown->404)",
+   404,
+   null,
+   "{\"error\":{\"code\":\"activity_not_found\",\"message\":\"Activity code '999999' does not exist in the 2003-25 lexicon.\",\"details\":{\"code\":\"999999\"}}}"
+  ],
+  [
+   "GET /api/v1/activities?level=9 (422 query)",
+   422,
+   null,
+   "{\"error\":{\"code\":\"validation_error\",\"message\":\"The request does not match the API schema.\",\"details\":{\"errors\":[{\"location\":[\"query\",\"level\"],\"message\":\"Input should be less than or equal to 3\",\"type\":\"less_than_equal\"}]}}}"
+  ],
+  [
+   "POST estimate replicate (miss)",
+   200,
+   "miss",
+   ""
+  ],
+  [
+   "POST estimate replicate (hit)",
+   200,
+   "hit",
+   ""
+  ],
+  [
+   "POST estimate variance=none (miss)",
+   200,
+   "miss",
+   ""
+  ],
+  [
+   "POST trend 2019,2020,2023 (miss)",
+   200,
+   "miss",
+   ""
+  ],
+  [
+   "POST trend (hit)",
+   200,
+   "hit",
+   ""
+  ],
+  [
+   "POST compare (miss)",
+   200,
+   "miss",
+   ""
+  ],
+  [
+   "POST compare (hit)",
+   200,
+   "hit",
+   ""
+  ],
+  [
+   "POST estimate cache-bust via confidence_level (miss)",
+   200,
+   "miss",
+   ""
+  ],
+  [
+   "POST estimate cache-bust via label (miss)",
+   200,
+   "miss",
+   ""
+  ],
+  [
+   "POST estimate malformed JSON (400)",
+   400,
+   null,
+   "{\"error\":{\"code\":\"malformed_json\",\"message\":\"The request body is not valid JSON.\",\"details\":{\"errors\":[{\"location\":[\"body\",\"1\"],\"message\":\"JSON decode error\",\"type\":\"json_invalid\"}]}}}"
+  ],
+  [
+   "POST estimate schema-invalid years=[] (422 validation_error)",
+   422,
+   null,
+   "{\"error\":{\"code\":\"validation_error\",\"message\":\"The request does not match the API schema.\",\"details\":{\"errors\":[{\"location\":[\"body\",\"years\"],\"message\":\"List should have at least 1 item after validation, not 0\",\"type\":\"too_short\"}]}}}"
+  ],
+  [
+   "POST estimate extra field (422 validation_error)",
+   422,
+   null,
+   "{\"error\":{\"code\":\"validation_error\",\"message\":\"The request does not match the API schema.\",\"details\":{\"errors\":[{\"location\":[\"body\",\"bogus\"],\"message\":\"Extra inputs are not permitted\",\"type\":\"extra_forbidden\"}]}}}"
+  ],
+  [
+   "POST estimate duplicate years (422 invalid_spec)",
+   422,
+   null,
+   "{\"error\":{\"code\":\"invalid_spec\",\"message\":\"Year 2023 appears more than once\",\"details\":null}}"
+  ],
+  [
+   "POST estimate unknown activity (422)",
+   422,
+   null,
+   "{\"error\":{\"code\":\"unknown_activity\",\"message\":\"Activity code '999999' is not a 6-digit code in the 2003-25 harmonized activity lexicon.\",\"details\":null}}"
+  ],
+  [
+   "POST estimate 2020 multiyear (422 unsupported)",
+   422,
+   null,
+   "{\"error\":{\"code\":\"unsupported_analysis\",\"message\":\"TUFNWGTP (the multi-year weight) is undefined for 2020 because ATUS data collection was suspended Mar 18 - May 9, 2020 and the year was reweighted with a different method (TU20FWGT). A single estimate pooling 2020 with this scheme is not statistical"
+  ],
+  [
+   "POST estimate year not loaded 2010 (422)",
+   422,
+   null,
+   "{\"error\":{\"code\":\"invalid_spec\",\"message\":\"Year(s) [2010] are not in the database (loaded: 2019-2023).\",\"details\":null}}"
+  ],
+  [
+   "GET /nope (404)",
+   404,
+   null,
+   "{\"error\":{\"code\":\"not_found\",\"message\":\"Not Found\",\"details\":null}}"
+  ],
+  [
+   "GET estimate (405)",
+   405,
+   null,
+   "{\"error\":{\"code\":\"method_not_allowed\",\"message\":\"Method Not Allowed\",\"details\":null}}"
+  ],
+  [
+   "GET /openapi.json",
+   200,
+   null,
+   ""
+  ],
+  [
+   "GET /docs",
+   200,
+   null,
+   ""
+  ],
+  [
+   "GET /redoc",
+   200,
+   null,
+   ""
+  ]
+ ],
+ "dead_conn": [
+  [
+   0,
+   "/api/v1/meta",
+   503,
+   "{\"error\":{\"code\":\"database_unavailable\",\"message\":\"The analytical database is currently unavailable. Try again shortly.\",\"details\":null}}"
+  ],
+  [
+   1,
+   "/api/v1/meta",
+   200,
+   "{\"api_version\":\"v1\",\"analytics_version\":\"0.2\",\"data\":{\"release\":\"0325\",\"years\":[2019,2020,2023],\"respondents\":6,\"last_ingested_at\":\"2026-10-20T17:09:56.808885+00:00\",\"ingestion_run_id\":1},\"capabilitie"
+  ],
+  [
+   2,
+   "/api/v1/analysis/estimate",
+   200,
+   "{\"measure\":\"average_minutes_per_day\",\"estimate\":{\"value\":75.0,\"unit\":\"minutes_per_day\",\"standard_error\":null,\"confidence_level\":null,\"ci_lower\":null,\"ci_upper\":null},\"years\":[2023],\"activity\":{\"label\""
+  ],
+  [
+   "analysis-first-after-kill",
+   "/api/v1/analysis/estimate",
+   503,
+   "{\"error\":{\"code\":\"database_unavailable\",\"message\":\"The analytical database is currently unavailable. Try again shortly.\",\"details\":null}}"
+  ]
+ ],
+ "statements": {}
+}

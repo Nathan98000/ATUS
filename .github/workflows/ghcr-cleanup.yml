@@ -1,0 +1,51 @@
+# GHCR retention (ADR-011 "Rollback"): keep the newest 20 versions (digests) of
+# ghcr.io/nathan98000/atus-api, weekly, and always the one tagged `live`, the
+# image Render's service is configured with. Render keeps no images, so these
+# are the API's rollback targets; deploy.yml pushes one version per deploy.
+#
+# Deletes through the GitHub REST API with this run's token, which needs the
+# package's "Manage Actions access" to give this repository the Admin role
+# (packages pushed by this repository's workflows get it; docs/deployment.md,
+# owner step 4.5). A manual run defaults to a dry run.
+name: GHCR cleanup
+
+on:
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only list what would be deleted
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ghcr-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Keep the newest 20 image digests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out the ops scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: scripts/ops
+
+      - name: Delete all but the newest 20 versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          args=(--owner nathan98000 --package atus-api --keep 20 --max-delete 50)
+          if [ "$DRY_RUN" = true ]; then args+=(--dry-run); fi
+          python3 scripts/ops/github_ops.py ghcr-cleanup "${args[@]}"

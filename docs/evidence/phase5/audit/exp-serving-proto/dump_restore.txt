@@ -1,0 +1,41 @@
+== pg_dump -Fc (pg_dump pg_dump (PostgreSQL) 16.15 (Debian 16.15-1.pgdg13+2))
+dump seconds: 23
+-rw-r--r-- 1 root root 336547206 Oct 20 17:36 /tmp/serving_proto.dump
+e2f45a24b40644696ad855cfbd4a847e8a6ab8c0db1e3d1de1f78eb1ffef7a79  /tmp/serving_proto.dump
+CREATE DATABASE
+pg_restore exit=0
+restore seconds: 6
+VACUUM
+     attname      | correlation  
+------------------+--------------
+ tucaseid         | 0.0028649725
+ activity_code    |            1
+ duration_minutes |  -0.22713923
+(3 rows)
+
+ restored | restored_bytes | original_bytes 
+----------+----------------+----------------
+ 600 MB   |      628867599 |      629046295
+(1 row)
+
+          relname           | pg_total_relation_size 
+----------------------------+------------------------
+ replicate_weights          |              347734016
+ activities                 |              176939008
+ respondents                |               27533312
+ cps_persons                |               24084480
+ pandemic_replicate_weights |               23625728
+ household_members          |               20013056
+(6 rows)
+
+ block | activity_code 
+-------+---------------
+     0 | 010101
+  9000 | 070103
+(2 rows)
+
+                                                                obj_description                                                                 
+------------------------------------------------------------------------------------------------------------------------------------------------
+ ATUS SERVING database (prototype) build proto-20261020T172359Z-e5748e84; derived read-only from the full DB; do not run atus load/migrate here
+(1 row)
+

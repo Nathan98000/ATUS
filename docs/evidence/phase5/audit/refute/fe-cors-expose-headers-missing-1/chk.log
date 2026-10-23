@@ -1,0 +1,2 @@
+{'x-analysis-key': 'k', 'x-cache': 'miss', 'content-length': '2', 'content-type': 'application/json', 'access-control-allow-origin': 'https://fe.example', 'vary': 'Origin'}
+expose header: None

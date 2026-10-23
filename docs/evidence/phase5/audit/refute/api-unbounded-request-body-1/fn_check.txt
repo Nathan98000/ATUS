@@ -1,0 +1,10 @@
+  from starlette.testclient import TestClient as TestClient  # noqa
+15:12:06 ERROR   atus.api: database unavailable: PoolClosed: the pool 'atus-api' is not open yet
+15:12:06 INFO    atus.api: request_id=23bb28681c2640f0 POST /api/v1/analysis/estimate -> 503 in 3.5ms cache=-
+15:12:06 INFO    httpx: HTTP Request: POST http://testserver/api/v1/analysis/estimate "HTTP/1.1 503 Service Unavailable"
+15:12:06 ERROR   atus.api: database unavailable: PoolClosed: the pool 'atus-api' is not open yet
+15:12:06 INFO    atus.api: request_id=e3780695a64f4b73 POST /api/v1/analysis/estimate -> 503 in 16.2ms cache=-
+15:12:06 INFO    httpx: HTTP Request: POST http://testserver/api/v1/analysis/estimate "HTTP/1.1 503 Service Unavailable"
+create_app sig: (settings: 'Settings | None' = None, *, open_pool: 'bool' = True) -> 'FastAPI'
+1 MB body (1048643 bytes): status=503 resp_len=137 {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+20 MB body (20971587 bytes): status=503 resp_len=137 {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}

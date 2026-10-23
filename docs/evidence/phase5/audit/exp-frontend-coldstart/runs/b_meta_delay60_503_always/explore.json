@@ -1,0 +1,243 @@
+{
+  "scenario": "b_meta_delay60_503_always",
+  "page": "explore",
+  "url": "http://localhost:4182/explore",
+  "t0_epoch": 1792517115.059,
+  "meta_request_times_s": [
+    0.042,
+    61.049,
+    123.056
+  ],
+  "meta_request_gaps_s": [
+    61.007,
+    62.007
+  ],
+  "api_requests": 4,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.051,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/explore_002s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.046,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/explore_005s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.053,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/explore_015s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.043,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/explore_030s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.039,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/explore_060s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.044,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/explore_075s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 120,
+      "actual_t": 120.045,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/explore_120s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 150,
+      "actual_t": 150.063,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/explore_150s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 185,
+      "actual_t": 185.047,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/explore_185s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    },
+    {
+      "checkpoint_s": 200,
+      "actual_t": 200.05,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/b_meta_delay60_503_always/explore_200s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [
+        "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details"
+      ],
+      "status": [],
+      "live": []
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.019,
+      "main": ""
+    },
+    {
+      "t": 0.271,
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports."
+    },
+    {
+      "t": 183.218,
+      "main": "The analysis service is temporarily unavailable\n\nThe service is up but its database is not ready. Try again in a moment.\n\nTry again\n\nTechnical details"
+    }
+  ],
+  "network": [
+    {
+      "t": 0.042,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.042,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 0.043,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "status": 200
+    },
+    {
+      "t": 60.047,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    },
+    {
+      "t": 61.049,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 121.055,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    },
+    {
+      "t": 123.056,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 183.067,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 503
+    }
+  ],
+  "console": [
+    {
+      "t": 60.047,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 121.055,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    },
+    {
+      "t": 183.067,
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 503 (Service Unavailable)"
+    }
+  ]
+}

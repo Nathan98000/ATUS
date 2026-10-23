@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/valid.json http://127.0.0.1:8216/api/v1/analysis/estimate (port 8216)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:12:44 GMT
+server: uvicorn
+content-length: 152
+content-type: application/json
+vary: Origin
+x-request-id: 87d3ed4f110c4912
+
+{"error":{"code":"insufficient_data","message":"The database contains no respondents — run the Phase 1 pipeline (`atus load`) first.","details":null}}
+### status=422 time_total=0.003203s size_download=152 size_upload=115

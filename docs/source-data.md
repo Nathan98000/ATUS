@@ -35,8 +35,10 @@ derivable from the Activity file joined to Respondent/Roster/CPS. Loading it
 would duplicate 4.99M episodes in aggregated form. It *is* downloaded and
 staged, because it serves as an independent cross-check: `atus validate-db`
 recomputes per-case-per-code totals from loaded episodes and compares them
-against this file (2,000-case sample). Phase 2 can materialize an equivalent
-summary as a view/table when query patterns demand it.
+against this file (2,000-case sample). The hosted serving database (Phase 5)
+does store a per-respondent, per-code aggregate, but derives it from the
+loaded episodes, not from this file
+([database.md](database.md#the-serving-database)).
 
 ## Files deliberately excluded from Phase 1
 
@@ -97,13 +99,78 @@ Stored in `data/docs/` (gitignored, re-downloadable):
 
 ## Adding the next release (e.g. 2003–2026, `0326`)
 
-1. Add a `_build_release_0326()` entry in `src/atus_pipeline/sources.py` with
-   the new URLs and the record counts from the new `*_info.txt` files.
-2. Regenerate the lexicon CSV if BLS publishes `lexiconnoex0326.pdf`
-   (`scripts/extract_lexicon.py`), review the diff.
+Everything release-specific derives from one registry entry in
+`src/atus_pipeline/sources.py`: archive and data-file names, URLs, the
+expected survey years, the staging directory, the lexicon file, and the
+lexicon span shown in analysis warnings ("2003-26"). The full procedure and
+its rationale are in
+[ADR-013](adr/ADR-013-data-releases-and-serving-db.md#new-atus-year-procedure-eg-2003-2026-release-0326);
+the data-side steps are:
+
+1. Add one entry to `_REGISTRY`:
+   `multiyear_release("0326", first_year=2003, last_year=2026, expected_rows={...})`,
+   with the record count from every new `*_info.txt`. If BLS widened the
+   ATUS-CPS or activity-summary file, pass the new `cps_column_count` /
+   `summary_column_count`. Nothing else in the code should need an edit;
+   `tests/integration/test_release_checklist.py` runs a synthetic `0326`
+   through the whole pipeline to keep it that way.
+2. Commit the new lexicon CSV (next section).
 3. Check BLS's changes documentation for new variables/values; adjust
    transformers, CHECK bounds, and year-specific validation expectations if
-   needed.
-4. Set `ATUS_RELEASE=0326` and run the pipeline. The load is a full atomic
-   rebuild — BLS re-releases all years, and weights/codes for past years can
-   change between releases.
+   needed. Source validation (`atus validate-source`) fails loudly on a
+   header change.
+4. Set `ATUS_RELEASE=0326` and run the pipeline. The load rebuilds every
+   table — BLS re-releases all years, and weights/codes for past years can
+   change between releases — in a shadow schema, and switches to it in one
+   short transaction (`atus load --validate` checks the new data first). A
+   running API keeps serving the previous data until the switch and is
+   never interrupted by the load.
+5. Re-run `atus validate-analytics`. The 24 benchmarks reproduce values BLS
+   published for specific years; run them unchanged, record any value BLS
+   revised instead of editing the expectation, and add the new year's
+   published values as new benchmarks.
+6. For the hosted deployment: build the serving database from the validated
+   full database (`atus build-serving-db`), run the equivalence checks,
+   restore it into a new database, and switch the API's `ATUS_DATABASE_URL`
+   and `ATUS_EXPECTED_DATA_VERSION` together; the previous database stays
+   available for rollback. Steps:
+   [ADR-013](adr/ADR-013-data-releases-and-serving-db.md#release-procedure-on-the-free-stack-15)
+   and the runbooks in [operations.md](operations.md#runbooks).
+
+## The activity lexicon changes per release
+
+Each multi-year release comes with its own coding lexicon
+(`lexiconnoex<release>.pdf`, e.g.
+[lexiconnoex0325.pdf](https://www.bls.gov/tus/lexicons/lexiconnoex0325.pdf)):
+the codes of **all** survey years in that release are harmonized to it, so the
+lexicon is a property of the release, not of a survey year. Between releases
+BLS can add codes, retire codes (absorbing them into a harmonized code, with
+a note such as "includes 020601 (all years), 020602 (2008 and later years)"),
+rename entries, and change notes.
+
+How the pipeline follows it:
+
+- **One committed CSV per release:** `data/reference/activity_lexicon_<release>.csv`
+  (`level, code, name, harmonization_note`), generated from the release's PDF
+  by `scripts/extract_lexicon.py` and reviewed as a diff against the previous
+  release's CSV. The parser anchors on the code columns' x-positions measured
+  on the 2003–25 PDF; a layout change makes the structural tests fail rather
+  than mis-parse. `tests/unit/test_sources.py` requires a committed lexicon
+  for every registered release; `tests/unit/test_lexicon_reference.py`
+  checks the 0325 CSV's structure and counts (add the new release's counts
+  there).
+- **Loading:** `atus load` loads the lexicon of `ATUS_RELEASE` into
+  `activity_tier1/2` and `activity_codes`. Every episode's code must exist in
+  it (foreign key), so a lexicon that does not match the Activity file fails
+  the load before anything goes live.
+- **Validation:** `atus validate-db` compares the loaded lexicon with the CSV,
+  and the activity-summary cross-check compares per-code minute totals with
+  BLS's own summary file (whose `t`-columns are the release's 6-digit codes).
+- **Served text:** the engine names the loaded release's lexicon in every
+  result's harmonization warning and in unknown-code errors ("the 2003-26
+  harmonized activity lexicon"), read from `ingestion_runs.release`.
+- **Review by hand:** the activity presets in `analytics/spec.py` (including
+  the BLS news-release table definitions) and the benchmarks reference codes;
+  a retired or renamed code changes their meaning. Shareable analysis links
+  (ADR-009) embed codes too: a link that names a code the new lexicon retired
+  is answered with an unknown-code error, never silently remapped.

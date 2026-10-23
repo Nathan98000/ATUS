@@ -1,0 +1,37 @@
+scenario set { ok: true, scenario: 'g_html200_for60s_nocors', n: 2, delay: 60 }
+
+=== g_html200_for60s_nocors / home — meta requests at [0.055,1.058,3.061] (gaps [1.003,2.003]), api requests 3
+  [0.05s] 
+  [0.30s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  [3.07s] Explore how Americans spend their time. Every year, the American Time Use Survey (U.S. Bureau of Labor Statistics) asks thousands of people to recount one full day — minute by minute. This explorer turns those diaries into population estimates: how much time p
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.057s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @0.058s: Failed to load resource: net::ERR_FAILED
+  console error @1.059s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @1.06s: Failed to load resource: net::ERR_FAILED
+  console error @3.062s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://127.0.0.1:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @3.062s: Failed to load resource: net::ERR_FAILED
+
+=== g_html200_for60s_nocors / explore — meta requests at [0.054,1.058,3.061] (gaps [1.004,2.003]), api requests 6
+  [0.05s] 
+  [0.30s] Loading the analysis builder… Fetching what the analytical service supports.
+  [3.07s] The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.056s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @0.058s: Failed to load resource: net::ERR_FAILED
+  console error @0.058s: Access to fetch at 'http://127.0.0.1:8207/api/v1/population/metadata' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the req
+  console error @0.058s: Failed to load resource: net::ERR_FAILED
+  console error @1.06s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://localhost:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+  console error @1.06s: Failed to load resource: net::ERR_FAILED
+
+=== g_html200_for60s_nocors / deep — meta requests at [0.055,1.058,3.06] (gaps [1.003,2.002]), api requests 6
+  [0.02s] 
+  [0.28s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis Calculating estimate… Standard errors over long periods can take around ten seconds the first time; repeated analyses are nearly instant. Calculating estimate…
+  [3.30s] ESTIMATE Sleeping — Ages 25–54 — 2025 Ages 25–54 · 2025 Share analysis Adjust analysis The analysis service could not be reached The request never got an answer. Check that the API is running and reachable, then try again. Try again Technical details The analy
+  footer@75s: s, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty. An independent analytical project — not an official BLS product.
+  console error @0.058s: Access to fetch at 'http://127.0.0.1:8207/api/v1/activities/presets' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requeste
+  console error @0.058s: Failed to load resource: net::ERR_FAILED
+  console error @0.058s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+  console error @0.058s: Failed to load resource: net::ERR_FAILED
+  console error @1.06s: Access to fetch at 'http://127.0.0.1:8207/api/v1/meta' from origin 'http://[::1]:4182' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+  console error @1.06s: Failed to load resource: net::ERR_FAILED

@@ -1,0 +1,8 @@
+== unset
+function vi(){return`http://localhost:8000`
+== empty
+function vi(){return`http://localhost:8000`
+== slash
+function vi(){return`/`
+== envlocal
+function vi(){return`http://localhost:8123`

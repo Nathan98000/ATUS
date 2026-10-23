@@ -1,0 +1,10 @@
+== tests/unit
+194 tests collected in 0.22s
+== tests/unit/api
+53 tests collected in 0.01s
+== tests/integration
+50 tests collected in 0.13s
+== tests/integration/api
+24 tests collected in 0.13s
+== tests/data_quality
+no tests collected in 0.04s

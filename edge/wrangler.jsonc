@@ -1,0 +1,101 @@
+// Cloudflare Worker for the public ATUS origin (ADR-011).
+//
+// One workers.dev origin serves the SPA and the static result snapshot as
+// static assets (free: a request for a file that exists, or a navigation, never
+// invokes the Worker), and runs this Worker first for `/api` and `/api/*`,
+// where it proxies an allowlist of routes to the never-published Render
+// origin. A non-navigation request that matches no file (an unfurler fetching
+// a share link, a stale tab's missing /snap file) also invokes it, and is
+// metered (ADR-011 "Request flow").
+//
+// Invariants asserted by test/node/config.test.ts (and so by CI, ADR-011 "Deploy"):
+//   - no `cache` block: Workers Cache bills requests that are otherwise free;
+//   - `preview_urls: false` and `workers_dev: true`;
+//   - `run_worker_first` lists both "/api" and "/api/*";
+//   - SPA `not_found_handling`.
+// Never connect Workers Builds or a Git repository; CI deploys with
+// `wrangler deploy` and passes the release vars with `--var NAME:value`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The public hostname is https://<name>.<account-subdomain>.workers.dev and
+  // is baked into every share link: choose it once.
+  "name": "atus",
+  "main": "src/index.ts",
+  // >= 2025-04-01 so navigation requests that match no asset get the SPA's
+  // index.html without invoking the Worker (assets_navigation_prefers_asset_serving).
+  "compatibility_date": "2026-08-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  // Wrangler usage telemetry off: no calls to Cloudflare beyond what a command needs.
+  "send_metrics": false,
+  "assets": {
+    "directory": "../frontend/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Both forms: "/api/*" alone does not match the bare "/api" path.
+    "run_worker_first": ["/api", "/api/*"]
+  },
+  // Non-secret configuration, and every var the Worker reads. The deploy
+  // workflow overrides the release-bound values (DATA_VERSION,
+  // ANALYTICS_VERSION, RESPONSE_FORMAT, SNAPSHOT_ID) with `--var`; the empty
+  // defaults make the edge result cache store nothing (version gate). No var
+  // selects the API origin: that is the RENDER_ORIGIN secret alone.
+  "vars": {
+    "API_VERSION": "v1",
+    "ANALYTICS_VERSION": "",
+    "DATA_VERSION": "",
+    "RESPONSE_FORMAT": "1",
+    "SNAPSHOT_ID": "",
+    // Bump by hand to orphan every edge-cached result at once. Not the purge
+    // after a Cloudflare compromise: its next value is public, so that is a
+    // rotated IP_HMAC_KEY (docs/deployment.md "Rotation", item 5).
+    "EPOCH": "1",
+    // "off" disables the /api/v1/wake prewake call.
+    "PREWAKE": "on",
+    // Neon project id (not secret). With the optional NEON_API_KEY secret the
+    // governor paces against Neon's own month-to-date usage (ADR-015);
+    // empty = conservative mode.
+    "NEON_PROJECT_ID": ""
+  },
+  // Secrets are never in this file. Generate them with
+  // scripts/ops/gen_edge_secrets.sh (writes ~/.config/atus/edge.env, chmod 600)
+  // and load each with `npx --no-install wrangler secret put <NAME>` piped from that file:
+  //   EDGE_AUTH_SECRET  sent as X-ATUS-Edge-Auth; the API's ATUS_EDGE_SECRETS accepts it
+  //   RENDER_ORIGIN     https://<service>.onrender.com, never published
+  //   OPS_TOKEN         bearer for /api/_ops/budget
+  //   IP_HMAC_KEY       key for the governor's HMAC of client IP prefixes; it also
+  //                     names the governor's instance and tags every KV entry
+  //   NEON_API_KEY      optional, project-scoped key for the governor's usage poll
+  // `wrangler deploy` refuses to publish while a required secret is missing; a
+  // Worker's very first deploy therefore passes them with `--secrets-file`,
+  // filtered to these names exactly as gen_edge_secrets.sh prints it. Never
+  // the whole edge.env: it also holds the API's ATUS_OPS_TOKEN.
+  "secrets": {
+    "required": ["EDGE_AUTH_SECRET", "RENDER_ORIGIN", "OPS_TOKEN", "IP_HMAC_KEY"]
+  },
+  // Persistent analysis-result cache (ADR-011 "Edge tiers"). The namespace id
+  // is not secret: replace the placeholder with the id printed by
+  // `npx --no-install wrangler kv namespace create atus-results --update-config=false`
+  // (after `npm ci` here). Without that flag wrangler's default answers add a second
+  // binding, which test/node/config.test.ts refuses.
+  "kv_namespaces": [
+    {
+      "binding": "RESULT_CACHE",
+      "id": "00000000000000000000000000000000"
+    }
+  ],
+  // Quota governor (ADR-015): one SQLite-backed Durable Object, named by an
+  // HMAC of IP_HMAC_KEY, admits uncached analyses (Workers Free offers only
+  // the SQLite backend).
+  "durable_objects": {
+    "bindings": [{ "name": "GOVERNOR", "class_name": "Governor" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Governor"] }],
+  // Workers Logs keeps the Worker's own JSON line (no client IP). Invocation
+  // logs stay off: Cloudflare's per-request records can carry request headers,
+  // CF-Connecting-IP included (ADR-014, "Workers invocation logs").
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": false }
+  }
+}

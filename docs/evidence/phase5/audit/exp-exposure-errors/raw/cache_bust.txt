@@ -1,0 +1,32 @@
+BODY {"activity":{"include":["0101"]},"years":[2023]}
+HTTP/1.1 200 OK
+x-analysis-key: b2e1d5aadbd7e0ceb63337f9b6055f10889c50ec9d7c766a6bf06cdeabf7d3d8
+x-cache: hit
+BODY {"activity":{"include":["0101"]},"years":[2023]}
+HTTP/1.1 200 OK
+x-analysis-key: b2e1d5aadbd7e0ceb63337f9b6055f10889c50ec9d7c766a6bf06cdeabf7d3d8
+x-cache: hit
+BODY {"activity":{"include":["0101"],"label":"a"},"years":[2023]}
+HTTP/1.1 200 OK
+x-analysis-key: f0de985cf4f4e680418f970d986e68c8c77421e0c2664b5c4d470a80e6dfde46
+x-cache: miss
+BODY {"activity":{"include":["0101"],"label":"b"},"years":[2023]}
+HTTP/1.1 200 OK
+x-analysis-key: 04197a7f259932bd4a5380948db863bc60922d707205d51ab54c019bce17cbab
+x-cache: miss
+BODY {"activity":{"include":["0101","0101"]},"years":[2023]}
+HTTP/1.1 200 OK
+x-analysis-key: c737b61d4bb6a16b982e6756c4354c3dfdc06f19b41055a32da2cf9712f5c47c
+x-cache: hit
+BODY {"activity":{"include":["0101","0101","0101"]},"years":[2023]}
+HTTP/1.1 200 OK
+x-analysis-key: b948ba3d9c621a14f745bd84d0d60edade19eafbba57b18b31ad2221bb996537
+x-cache: miss
+BODY {"activity":{"include":["0101"]},"years":[2023],"confidence_level":0.9500001}
+HTTP/1.1 200 OK
+x-analysis-key: b734a4f8797ba9a1aba93eb39321b1510c27b1cb87e142fc06ea4590d8629ee0
+x-cache: miss
+BODY {"activity":{"include":["010101","010102","010199"]},"years":[2023]}
+HTTP/1.1 200 OK
+x-analysis-key: c80a8370174ff50f0fd83c72298c6dd24b82960edb72ea512ba41d7cb156bccc
+x-cache: miss

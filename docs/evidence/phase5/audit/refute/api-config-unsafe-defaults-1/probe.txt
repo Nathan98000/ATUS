@@ -1,0 +1,10 @@
+--ready
+{"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}} 503
+--8438 (PORT env)
+ 000
+--pids
+62207 $REPO/.venv/bin/python3.12 $REPO/.venv/bin/atus api --port 8437
+60754 $HOME/Downloads/Coaching_Videos/firstcut/.venv/bin/python3 -B -c from multiprocessing.resource_tracker import main;main(7)
+62209 $REPO/.venv/bin/python3.12 -B -c from multiprocessing.resource_tracker import main;main(6)
+62210 $REPO/.venv/bin/python3.12 -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=7, pipe_handle=9) --multiprocessing-fork
+62211 $REPO/.venv/bin/python3.12 -B -c from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=7, pipe_handle=13) --multiprocessing-fork

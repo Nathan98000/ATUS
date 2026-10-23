@@ -1,0 +1,22 @@
+default_transaction_read_only = on
+200 - GET /ready 
+200 - GET /api/v1/meta 
+200 - GET /api/v1/activities 
+200 - GET /api/v1/activities?search=sle&level=3 
+200 - GET /api/v1/activities/0101 
+200 - GET /api/v1/activities/010101 
+404 - GET /api/v1/activities/999999 activity_not_found
+200 - GET /api/v1/activities/presets 
+200 - GET /api/v1/population/metadata 
+200 miss POST /api/v1/analysis/estimate 
+200 hit POST /api/v1/analysis/estimate 
+200 miss POST /api/v1/analysis/trend 
+200 miss POST /api/v1/analysis/estimate 
+200 miss POST /api/v1/analysis/compare 
+200 miss POST /api/v1/analysis/estimate 
+200 hit POST /api/v1/analysis/estimate 
+200 miss POST /api/v1/analysis/trend 
+200 miss POST /api/v1/analysis/estimate 
+200 miss POST /api/v1/analysis/compare 
+422 - POST /api/v1/analysis/estimate unsupported_analysis
+422 - POST /api/v1/analysis/estimate validation_error

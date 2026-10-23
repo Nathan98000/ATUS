@@ -15,6 +15,50 @@ longer overstate the effective sample. No weighted estimate changed; both
 fixes affect denominators/counts for those specific request shapes. `0.1`:
 initial Phase 2 implementation, validated against 24 official BLS values.
 
+The version changes only when computed numbers could differ. That includes
+redefining an activity preset's codes (`ACTIVITY_PRESETS` in
+`src/atus_pipeline/analytics/spec.py`) or removing a preset: requests name
+presets, and edge-cached results are keyed by the request bytes, not by the
+preset's definition ([ADR-015](adr/ADR-015-edge-cache-snapshot-and-governor.md#staleness-across-releases)),
+so `tests/unit/analytics/test_preset_vocabulary.py` pins every preset to this
+version and fails on such a change. `tests/unit/api/test_response_format.py`
+pins the real engine's responses to a fixed set of requests, numbers included
+(to 12 significant digits), to this version and `RESPONSE_FORMAT`
+(`ENGINE_PINNED`, review round 4): a number change without a bump fails it,
+and a bump adds the new fingerprints there. Engine changes
+that keep every number equal under the §9 equivalence criterion (counts and
+point sums exact; standard errors and CIs within floating-point summation
+noise) keep the version, and are listed here:
+
+- **Phase 5, still `0.2`: year pushdown and a materialized CTE**
+  (`src/atus_pipeline/analytics/queries.py`, commits `9769f52` and
+  `9afd1b4`; audit F39). The `activity_minutes` CTE now aggregates only the
+  episodes of respondents in the requested years (`AND a.tucaseid IN (SELECT
+  ... WHERE data_year = ANY(%(years)s))`), and it is `MATERIALIZED`, so the
+  aggregate is computed once even when the planner misestimates correlated
+  respondent filters (the inlined form let it pick a nested loop that re-ran
+  the aggregate per respondent; two specifications timed out at the §9
+  harness's 600 s limit on the full database). The dropped rows could never
+  match the LEFT JOIN from respondents already restricted to those years, so
+  counts and `numeric` sums are identical, and replicate `float8` sums can differ only by
+  summation order. Evidence: `tests/unit/analytics/test_year_pushdown_sql.py`
+  (the rendered SQL differs from the Phase 2-4 query only by the pushdown and
+  `MATERIALIZED`, and the Phase 2-4 query it renders is byte for byte the
+  text the Phase 1-4 code, 387fc2d, rendered: frozen in
+  `tests/unit/analytics/phase4_queries.json` for shapes covering every branch); `tests/integration/test_year_pushdown.py` (old and new
+  queries return the same counts and `numeric` sums, and replicate sums
+  within the §9 tolerance); the opt-in full-database check
+  `tests/data_quality/test_query_plans.py`; and the final §9 HTTP replay
+  after `9afd1b4`: all 544 specifications and 84 GET requests equivalent
+  across the Phase 1-4 API and the Phase 5 API on the full database and the
+  Phase 5 API on the serving database, with largest scaled SE/CI differences
+  of 4.24e-15 and 2.79e-15 against the 1e-12 bound
+  ([`evidence/phase5/equivalence/final-9afd1b4/`](evidence/phase5/equivalence/final-9afd1b4/README.md);
+  criterion in [operations.md](operations.md#equivalence-criterion-9)).
+  Design and the earlier read-only full-database comparison:
+  [ADR-013](adr/ADR-013-data-releases-and-serving-db.md), Decision 9 and its
+  amendment.
+
 ## Vocabulary
 
 | Term | Meaning here |
@@ -112,9 +156,17 @@ worked example exactly). Grain safety follows structurally: episode totals
 collapse to one row per respondent before the respondent-level weight is
 joined once. See [ADR-005](adr/ADR-005-summary-vs-episodes.md).
 
+The engine reads activities only as that per-respondent sum over leaf
+codes, so it runs unchanged on the hosted serving database, which stores one
+row per (respondent, activity code) with the summed minutes instead of the
+episodes ([database.md](database.md#the-serving-database)). The §9
+equivalence run found every statistic equivalent between the two databases
+under its criterion.
+
 Analyses that need episode context (location, time of day, who was present)
-would join `activities`/`activity_companions` directly; Phase 2 exposes
+would join `activities`/`activity_companions` directly; the engine exposes
 respondent-day measures only, and the who/where dimensions are future work.
+The serving database has neither the episodes nor `activity_companions`.
 
 ## Published-table category mappings
 
@@ -132,8 +184,8 @@ Every analysis is a serializable spec (`AnalysisSpec.to_dict()/from_dict()`),
 runnable from JSON via `atus analyze run --spec file.json`, and every result
 embeds: the exact spec, weight variable, variance method, D, sample sizes,
 `analytics_version`, and methodological warnings. The same engine call
-(`AnalysisEngine.estimate/trend/compare`) is the interface Phase 3's API will
-consume — nothing statistical lives in the CLI.
+(`AnalysisEngine.estimate/trend/compare`) is what the HTTP API calls
+([api.md](api.md)) — nothing statistical lives in the CLI or the API.
 
 ## Errors instead of silent fallbacks
 
@@ -153,13 +205,27 @@ atus analyze trend --activity leisure_and_sports_bls_table --start-year 2003 --e
 atus analyze compare --activity household_activities_bls_table --year 2025 \
     --group-a sex=male --group-b sex=female --label-a Men --label-b Women
 atus analyze run --spec docs/examples/leisure_trend.json --trend --json
-atus validate-analytics          # reproduce official BLS estimates
+atus validate-analytics          # reproduce official BLS estimates; records results
+                                 # in atus.validation_results (--no-persist: print only)
 ```
 
 Add `--json` to any command for machine-readable output (the result object's
 `to_dict()`).
 
 ## Performance baseline (full 2003–25 database, Sept 2026)
+
+Historical: measured with the Phase 2 code on a laptop, before the Phase 5
+year pushdown. The Phase 5 audit timed the pre-pushdown code again, on the
+laptop and under free-tier emulation
+([`evidence/phase5/01-audit-timed.md`](evidence/phase5/01-audit-timed.md)).
+For the current code under free-tier emulation (2026-10-21,
+[`../loadtests/results/2026-10-21-emulation.md`](../loadtests/results/2026-10-21-emulation.md),
+sections 5.2, 5.3 and 6): an uncached single-year estimate with replicate SEs
+took 0.99 s at p50 at Neon's 0.25 CU floor and 79 ms at 2 CU; pooled
+22-year leisure and 23-year trends 21.4–21.8 s and 2.03–2.12 s; all 18
+tier-1 codes pooled or trended (the F66 broad selector) 33.5–35.0 s and
+2.67–2.68 s. The laptop baseline on the full database took 0.34 s for the
+single-year estimates and 10.9–11.0 s for pooled leisure and the trends.
 
 | Analysis | seconds |
 | --- | --- |
@@ -171,5 +237,7 @@ Add `--json` to any command for machine-readable output (the result object's
 | 22-year trend with per-year SEs | 11.1 |
 
 (`scripts/benchmark_analytics.py`.) The multi-year cases scan all 259k × 160
-replicate values once; acceptable for Phase 2, and the obvious first target if
-Phase 5 profiling demands caching or materialization.
+replicate values once. Phase 5 left this arithmetic unchanged; it added the
+year pushdown above and, in front of the engine, the edge result cache and
+the static snapshot (ADR-015). The API's in-process result cache dates from
+Phase 3.

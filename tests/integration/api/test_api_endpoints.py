@@ -8,6 +8,8 @@ verifiable by pencil and paper.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import psycopg
 import pytest
 from fastapi.testclient import TestClient
@@ -19,32 +21,40 @@ from tests.integration.analytics_dataset import analytics_settings
 pytestmark = pytest.mark.integration
 
 
+OPS_TOKEN = "t" * 40
+OPS = {"Authorization": f"Bearer {OPS_TOKEN}"}
+
+
 @pytest.fixture(scope="module")
 def client(tmp_path_factory, migrated_db):
     settings = analytics_settings(tmp_path_factory.mktemp("api"), migrated_db)
     with psycopg.connect(settings.database_url) as conn:
         load_all(conn, settings)
-    app = create_app(settings)
+    app = create_app(replace(settings, ops_token=OPS_TOKEN))
     with TestClient(app, raise_server_exceptions=False) as test_client:
         yield test_client
 
 
 class TestSystemEndpoints:
     def test_health(self, client):
-        assert client.get("/health").json() == {"status": "ok"}
+        assert client.get("/health").json() == {"status": "ok", "build": "dev",
+                                                 "expected_data_version": None}
 
     def test_ready_with_loaded_data(self, client):
-        response = client.get("/ready")
+        response = client.get("/ready", headers=OPS)
         assert response.status_code == 200
-        assert response.json()["data_loaded"] is True
+        payload = response.json()
+        assert payload["data_loaded"] is True
+        assert payload["data_version"].startswith("0325:")
+        assert client.get("/ready").status_code == 404  # no token: not revealed
 
     def test_ready_reports_unreachable_database(self, tmp_path):
         settings = analytics_settings(
             tmp_path / "brokendb", "postgresql://atus:atus@127.0.0.1:6553/nope"
         )
-        app = create_app(settings)
+        app = create_app(replace(settings, ops_token=OPS_TOKEN))
         with TestClient(app, raise_server_exceptions=False) as broken:
-            response = broken.get("/ready")
+            response = broken.get("/ready", headers=OPS)
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "database_unavailable"
 
@@ -157,6 +167,59 @@ class TestAnalysisEndpoints:
         response = client.post("/api/v1/analysis/estimate", json=body)
         assert response.status_code == 422
         assert response.json()["error"]["code"] == "insufficient_data"
+
+    @pytest.mark.parametrize(
+        ("operation", "extra"),
+        [("estimate", {}), ("trend", {"years": [2019, 2023]}),
+         ("compare", {"group_a": {"sex": "male"}, "group_b": {"sex": "female"}})],
+    )
+    def test_a_confidence_level_without_a_quantile_is_refused_uncharged(
+            self, client, operation, extra):
+        """Review r2 (confidence-level-max-double-500): with the real engine,
+        1 - 2**-53 ran the statistics query, then failed in the z quantile
+        (StatisticsError: 500 internal_error), charged like a computation."""
+        runner = client.app.state.runner
+        before = runner.computations
+        body = {**self.BODY, "confidence_level": 1 - 2**-53, **extra}
+        response = client.post(f"/api/v1/analysis/{operation}", json=body)
+        assert response.status_code == 422, response.text
+        assert response.json()["error"]["code"] == "invalid_spec"
+        assert runner.computations == before
+        nearest_valid = client.post(f"/api/v1/analysis/{operation}",
+                                    json={**body, "confidence_level": 1 - 2**-52})
+        assert nearest_valid.status_code == 200, nearest_valid.text
+
+    @pytest.mark.parametrize(
+        ("operation", "extra"),
+        [("estimate", {}), ("trend", {"years": [2019, 2023]}),
+         ("compare", {"group_a": {"sex": "male"}, "group_b": {"sex": "female"}})],
+    )
+    def test_a_variance_none_answer_keeps_any_confidence_level(self, client, operation, extra):
+        """Review r2 verification: with variance "none" the engine computes no
+        interval and never reads the level, so 1 - 2**-53 always answered 200.
+        The refusal above covers replicate variance only: this answer, and its
+        statistics, stay what they were."""
+        body = {**self.BODY, "variance": "none", **extra}
+        largest = client.post(f"/api/v1/analysis/{operation}",
+                              json={**body, "confidence_level": 1 - 2**-53})
+        assert largest.status_code == 200, largest.text
+        default = client.post(f"/api/v1/analysis/{operation}", json=body)
+        assert default.status_code == 200, default.text
+
+        def echoed_levels(payload) -> list[float]:
+            """Remove (and return) the level each echoed spec carries."""
+            if isinstance(payload, list):
+                return [level for item in payload for level in echoed_levels(item)]
+            if not isinstance(payload, dict):
+                return []
+            levels = [payload["spec"].pop("confidence_level")] if "spec" in payload else []
+            return levels + [level for key, value in payload.items()
+                             for level in echoed_levels(value)]
+
+        echoed, answer = largest.json(), default.json()
+        assert set(echoed_levels(echoed)) == {1 - 2**-53}
+        assert set(echoed_levels(answer)) == {0.95}
+        assert echoed == answer                 # every statistic, as before
 
 
 class TestActivitiesEndpoints:

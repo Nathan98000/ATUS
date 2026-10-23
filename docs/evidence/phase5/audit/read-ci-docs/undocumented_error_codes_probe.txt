@@ -1,0 +1,6 @@
+GET /nope 404 not_found
+DELETE /api/v1/meta 405 method_not_allowed
+GET /api/v1/analysis/estimate 405 method_not_allowed
+POST /api/v1/analysis/estimate 400 malformed_json
+POST /api/v1/analysis/estimate 503 database_unavailable
+POST /api/v1/analysis/estimate 503 database_unavailable

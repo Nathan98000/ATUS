@@ -1,0 +1,26 @@
+13:08:57.974 body={"measure": "average_minutes_per_day", "activity": {"include": ["05"]}, "years": [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025], "weights": "multiyear", "variance": "replicate"}
+13:08:59.480 request 1: curl --max-time 1 start
+13:09:00.499 request 1: curl exit=28 (28 = timed out, client disconnected) stdout='http_code=000 time_total=1.005392' stderr='curl: (28) Operation timed out after 1005 milliseconds with 0 bytes received' elapsed=1.02s
+13:09:00.499 request 2: curl --max-time 1 start
+13:09:01.517 request 2: curl exit=28 (28 = timed out, client disconnected) stdout='http_code=000 time_total=1.001557' stderr='curl: (28) Operation timed out after 1001 milliseconds with 0 bytes received' elapsed=1.02s
+13:09:01.517 request 3: curl --max-time 1 start
+13:09:02.543 request 3: curl exit=28 (28 = timed out, client disconnected) stdout='http_code=000 time_total=1.005369' stderr='curl: (28) Operation timed out after 1005 milliseconds with 0 bytes received' elapsed=1.03s
+13:09:02.543 request 4: curl --max-time 1 start
+13:09:03.574 request 4: curl exit=28 (28 = timed out, client disconnected) stdout='http_code=000 time_total=1.006871' stderr='curl: (28) Operation timed out after 1006 milliseconds with 0 bytes received' elapsed=1.03s
+13:09:03.574 request 5: curl --max-time 1 start
+13:09:04.607 request 5: curl exit=28 (28 = timed out, client disconnected) stdout='http_code=000 time_total=1.004853' stderr='curl: (28) Operation timed out after 1004 milliseconds with 0 bytes received' elapsed=1.03s
+13:09:04.608 all 5 client(s) disconnected; waiting for poller to see backends idle
+13:09:25.248 poller finished (20.6s after last disconnect)
+13:09:26.284 follow-up identical request (full wait): exit=0 elapsed=0.031s
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:09:25 GMT
+server: uvicorn
+content-length: 7982
+content-type: application/json
+x-analysis-key: 02a8c090ea92b535744103c542c221173ab8e3aa80d1c016c3aae86743d3fa4e
+x-cache: hit
+x-request-id: 7928326ed31c4867
+
+http_code=200 time_total=0.007726
+
+

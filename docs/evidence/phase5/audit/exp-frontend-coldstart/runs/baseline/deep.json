@@ -1,0 +1,97 @@
+{
+  "scenario": "baseline",
+  "page": "deep",
+  "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+  "t0_epoch": 1792516857.148,
+  "meta_request_times_s": [
+    0.1
+  ],
+  "meta_request_gaps_s": [],
+  "api_requests": 3,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.067,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/baseline/deep_002s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nView 2003–2025 trend\n8h 49m\n528.8 minutes per day\n\nStandard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min\n\nPeople ages 25–54 spent an estimated 8h 49m per day on “Sleeping” in 2025, averaged across all days of the week.\n\nSurvey sample: 2,597 respondents (2,594 reported this activity that day)\n\nRepresents: 131.1 million people on an average day\n\nⓘ\nNote on interpreting this result\n\nActivity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).\n\nHow was this calculated?\nView exact values\n\nAnalysis ready.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+      "alerts": [],
+      "status": [
+        ""
+      ],
+      "live": [
+        "Analysis ready."
+      ]
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.048,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/baseline/deep_005s.png",
+      "url": "http://[::1]:4182/analysis/estimate?spec=eyJhY3Rpdml0eSI6eyJleGNsdWRlIjpbXSwiaW5jbHVkZSI6WyIwMTAxIl0sImxhYmVsIjoiU2xlZXBpbmcifSwiY29uZmlkZW5jZV9sZXZlbCI6MC45NSwibWVhc3VyZSI6ImF2ZXJhZ2VfbWludXRlc19wZXJfZGF5IiwicG9wdWxhdGlvbiI6eyJhZ2VfbWF4Ijo1NCwiYWdlX21pbiI6MjV9LCJ2YXJpYW5jZSI6InJlcGxpY2F0ZSIsIndlaWdodHMiOiJtdWx0aXllYXIiLCJ5ZWFycyI6WzIwMjVdfQ",
+      "title": "Sleeping — Ages 25–54 — 2025 · ATUS Explorer",
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nView 2003–2025 trend\n8h 49m\n528.8 minutes per day\n\nStandard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min\n\nPeople ages 25–54 spent an estimated 8h 49m per day on “Sleeping” in 2025, averaged across all days of the week.\n\nSurvey sample: 2,597 respondents (2,594 reported this activity that day)\n\nRepresents: 131.1 million people on an average day\n\nⓘ\nNote on interpreting this result\n\nActivity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).\n\nHow was this calculated?\nView exact values\n\nAnalysis ready.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+      "alerts": [],
+      "status": [
+        ""
+      ],
+      "live": [
+        "Analysis ready."
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.041,
+      "main": ""
+    },
+    {
+      "t": 0.292,
+      "main": "ESTIMATE\n\nSleeping — Ages 25–54 — 2025\n\nAges 25–54 · 2025\n\nShare analysis\nAdjust analysis\nView 2003–2025 trend\n8h 49m\n528.8 minutes per day\n\nStandard error ± 2.9 min · 95% confidence interval 523.0 to 534.5 min\n\nPeople ages 25–54 spent an estimated 8h 49m per day on “Sleeping” in 2025, averaged across all days of the week.\n\nSurvey sample: 2,597 respondents (2,594 reported this activity that day)\n\nRepresents: 131.1 million people on an average day\n\nⓘ\nNote on interpreting this result\n\nActivity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction).\n\nHow w"
+    }
+  ],
+  "network": [
+    {
+      "t": 0.1,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.1,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities/presets"
+    },
+    {
+      "t": 0.102,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 200
+    },
+    {
+      "t": 0.108,
+      "ev": "request",
+      "method": "POST",
+      "url": "/api/v1/analysis/estimate"
+    },
+    {
+      "t": 0.108,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/activities/presets",
+      "status": 200
+    },
+    {
+      "t": 0.11,
+      "ev": "response",
+      "method": "POST",
+      "url": "/api/v1/analysis/estimate",
+      "status": 200
+    }
+  ],
+  "console": []
+}

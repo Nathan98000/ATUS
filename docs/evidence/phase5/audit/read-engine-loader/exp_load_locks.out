@@ -1,0 +1,24 @@
+baseline before reload: ('0325:run1', 75.0, 5.5901699437494745)
+t=  0.03s loader: start load_all
+t=  0.05s loader: TRUNCATE executed (inside data transaction)
+t=  1.07s audit-rr-engine: REPEATABLE READ snapshot taken, data_version=0325:run1
+t=  1.07s audit-rc-engine: data_version read in 0.020s -> 0325:run1
+t=  2.07s pg_locks: loader AccessExclusive on tables ['activities', 'activity_codes', 'activity_companions', 'activity_tier1', 'activity_tier2', 'cps_persons', 'cps_persons_pkey', 'household_members', 'household_members_pkey', 'pandemic_replicate_weights', 'pandemic_replicate_weights_pkey', 'replicate_weights', 'replicate_weights_pkey', 'respondents']
+t=  2.07s pg_locks: waiting (not granted) = [('audit-lexicon', 'AccessShareLock', 'activity_codes'), ('audit-locktimeout', 'AccessShareLock', 'respondents'), ('audit-meta', 'AccessShareLock', 'respondents'), ('audit-rc-engine', 'AccessShareLock', 'respondents'), ('audit-rr-engine', 'AccessShareLock', 'respondents')]
+t=  3.07s audit-locktimeout: LockNotAvailable after 2.02s
+t=  7.84s audit-rr-engine: InsufficientDataError after 6.79s: The database contains no respondents — run the Phase 1 pipeline (`atus load`) first.
+t=  7.84s audit-meta: /meta-style count(*) respondents=6 after 6.79s
+t=  7.84s audit-lexicon: /activities-style lexicon read rows=431 after 6.79s
+t=  7.84s loader: load_all returned (data committed + status 'succeeded')
+t=  7.85s audit-rc-engine: estimate returned after 6.80s value=75.0 se=5.590170 version before/after=0325:run1/0325:run2
+baseline after reload: ('0325:run2', 75.0, 5.5901699437494745)
+
+--- scenario 2 ---
+t=  0.01s long reader: holds ACCESS SHARE on respondents in an open transaction (simulated 4 s analysis)
+t=  0.02s loader: start load_all
+t=  0.52s audit-late-lexicon: /activities-style lexicon read rows=431 after 0.01s
+t=  1.02s pg_locks: loader AccessExclusive on tables ['activities', 'activity_companions', 'cps_persons', 'household_members', 'pandemic_replicate_weights', 'replicate_weights']
+t=  1.02s pg_locks: waiting (not granted) = [('audit-loader', 'AccessExclusiveLock', 'respondents')]
+t=  4.03s long reader: committed/rolled back (releases ACCESS SHARE)
+t=  4.04s loader: TRUNCATE executed (inside data transaction)
+t=  4.06s loader: load_all returned (data committed + status 'succeeded')

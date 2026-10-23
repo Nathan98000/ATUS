@@ -1,0 +1,52 @@
+[
+  {
+    "t_start": 1792517391.408,
+    "t_end": 1792517391.408,
+    "scenario": "c2_v2_changed_shape",
+    "origin": "http://127.0.0.1:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "api_version=v2"
+  },
+  {
+    "t_start": 1792517391.419,
+    "t_end": 1792517391.42,
+    "scenario": "c2_v2_changed_shape",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "api_version=v2"
+  },
+  {
+    "t_start": 1792517391.421,
+    "t_end": 1792517391.421,
+    "scenario": "c2_v2_changed_shape",
+    "origin": "http://localhost:4182",
+    "method": "GET",
+    "path": "/api/v1/population/metadata",
+    "status": 200,
+    "note": ""
+  },
+  {
+    "t_start": 1792517391.449,
+    "t_end": 1792517391.449,
+    "scenario": "c2_v2_changed_shape",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/meta",
+    "status": 200,
+    "note": "api_version=v2"
+  },
+  {
+    "t_start": 1792517391.449,
+    "t_end": 1792517391.449,
+    "scenario": "c2_v2_changed_shape",
+    "origin": "http://[::1]:4182",
+    "method": "GET",
+    "path": "/api/v1/activities/presets",
+    "status": 200,
+    "note": ""
+  }
+]

@@ -1,0 +1,9 @@
+13:16:47 INFO    atus.api: request_id=abed6f9c82ca401d GET /health -> 200 in 3.5ms cache=-
+13:16:47 INFO    httpx: HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+13:16:47 INFO    atus.api: request_id=98c7b03cd3da48e1 GET /api/v1/nope -> 404 in 0.2ms cache=-
+13:16:47 INFO    httpx: HTTP Request: GET http://testserver/api/v1/nope "HTTP/1.1 404 Not Found"
+13:16:47 INFO    atus.api: request_id=8a805865eeba4d60 OPTIONS /api/v1/analysis/estimate -> 200 in 0.1ms cache=-
+13:16:47 INFO    httpx: HTTP Request: OPTIONS http://testserver/api/v1/analysis/estimate "HTTP/1.1 200 OK"
+/health 200 {'access-control-allow-origin': 'https://frontend.example', 'x-request-id': 'abed6f9c82ca401d'}
+/api/v1/nope 404 {'access-control-allow-origin': 'https://frontend.example', 'x-request-id': '98c7b03cd3da48e1'}
+preflight 200 {'access-control-allow-methods': 'GET, POST', 'access-control-max-age': '600', 'access-control-allow-headers': 'Accept, Accept-Language, Content-Language, Content-Type', 'access-control-allow-origin': 'https://frontend.example'}

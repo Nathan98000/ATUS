@@ -1,0 +1,66 @@
+ statement_timeout 
+-------------------
+ 0
+(1 row)
+
+ idle_in_transaction_session_timeout 
+-------------------------------------
+ 0
+(1 row)
+
+ lock_timeout 
+--------------
+ 0
+(1 row)
+
+ERROR:  unrecognized configuration parameter "transaction_timeout"
+ tcp_keepalives_idle 
+---------------------
+ 0
+(1 row)
+
+ client_connection_check_interval 
+----------------------------------
+ 0
+(1 row)
+
+ max_connections 
+-----------------
+ 100
+(1 row)
+
+ max_parallel_workers_per_gather 
+---------------------------------
+ 2
+(1 row)
+
+ work_mem 
+----------
+ 4MB
+(1 row)
+
+ rolname | rolconfig | rolsuper 
+---------+-----------+----------
+ atus    |           | t
+(1 row)
+
+ datname | rolname | setconfig 
+---------+---------+-----------
+(0 rows)
+
+                name                 | setting | source  | sourcefile 
+-------------------------------------+---------+---------+------------
+ client_connection_check_interval    | 0       | default | 
+ idle_in_transaction_session_timeout | 0       | default | 
+ idle_session_timeout                | 0       | default | 
+ statement_timeout                   | 0       | default | 
+ tcp_keepalives_count                | 0       | default | 
+ tcp_keepalives_idle                 | 0       | default | 
+ tcp_keepalives_interval             | 0       | default | 
+(7 rows)
+
+                                                          version                                                           
+----------------------------------------------------------------------------------------------------------------------------
+ PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+(1 row)
+

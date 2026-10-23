@@ -1,0 +1,65 @@
+loader_start=-0.027s  truncate_done(L0)=0  release(C)=+60.091s  loader_ok=True
+  event hold_start               t=  +0.006s {'hold': 60.0, 'backend_pid': 1043}
+  event hold_end                 t= +60.061s 
+  event loader_done              t= +60.091s {'ok': True}
+
+phase                     kind                  n      p50     p95     max  outcomes(status/error/x-cache/value -> n)
+1_before_load             activities          180    0.007   0.018   0.029  200/-/-/556 x180
+1_before_load             est_cached          180    0.006   0.016   0.034  200/-/hit/75.0 x180
+1_before_load             est_cached_probe     10    0.005   0.017   0.017  200/-/hit/75.0 x10
+1_before_load             est_uncached        360    0.016   0.028   0.046  200/-/miss/75.0 x360
+1_before_load             health_probe         40    0.002   0.007   0.007  200/-/-/- x40
+1_before_load             meta                181    0.006   0.018   0.037  200/-/-/6/run1 x181
+1_before_load             ready               182    0.005   0.014   0.030  200/-/-/- x182
+2_inflight_at_load_start  est_cached_probe      1    0.006   0.006   0.006  200/-/hit/75.0 x1
+2_inflight_at_load_start  est_uncached          1    0.012   0.012   0.012  200/-/miss/75.0 x1
+3_started_during_load     activities            5   10.007  60.105  60.105  200/-/-/556 x3; 503/database_unavailable/-/- x2
+3_started_during_load     est_cached            5    0.005   9.467   9.467  200/-/hit/75.0 x3; 200/-/miss/90.0 x2
+3_started_during_load     est_cached_probe     60   10.008  10.010  10.011  503/database_unavailable/-/- x50; 200/-/hit/90.0 x6; 200/-/miss/90.0 x4
+3_started_during_load     est_uncached          8   60.010  60.132  60.132  200/-/bypass/90.0 x4; 503/database_unavailable/-/- x4
+3_started_during_load     health_probe        240    0.003   0.004   0.022  200/-/-/- x240
+3_started_during_load     meta                  5   60.048  60.108  60.108  200/-/-/6/run1 x3; 503/database_unavailable/-/- x2
+3_started_during_load     ready                 3   10.008  60.010  60.010  503/database_unavailable/-/- x2; 200/-/-/- x1
+4_started_after_release   activities          533    0.008   0.021   0.033  200/-/-/556 x533
+4_started_after_release   est_cached          535    0.006   0.013   0.030  200/-/hit/90.0 x535
+4_started_after_release   est_cached_probe     29    0.004   0.010   0.011  200/-/hit/90.0 x29
+4_started_after_release   est_uncached       1074    0.019   0.028   0.044  200/-/miss/90.0 x1074
+4_started_after_release   health_probe        119    0.002   0.005   0.009  200/-/-/- x119
+4_started_after_release   meta                530    0.006   0.016   0.035  200/-/-/6/run2 x530
+4_started_after_release   ready               530    0.005   0.011   0.022  200/-/-/- x530
+
+Requests started during the load window and completed after release:
+  ('est_cached_probe', '200', '-', 'hit', '90.0', '-') x6
+  ('est_uncached', '200', '-', 'bypass', '90.0', '-') x4
+  ('est_cached_probe', '200', '-', 'miss', '90.0', '-') x4
+  ('meta', '200', '-', '-', '6', '1') x3
+  ('activities', '200', '-', '-', '556', '-') x2
+  ('est_cached', '200', '-', 'miss', '90.0', '-') x2
+  wait: min 0.12s max 60.13s; completed +0.006..+0.047s after release
+
+503s: n=60 codes=Counter({'database_unavailable': 60}) first at start+0.12s/end+10.13s; dur p50 10.01s min 10.00s max 10.01s
+  by kind: {'est_uncached': 4, 'est_cached_probe': 50, 'ready': 2, 'meta': 2, 'activities': 2}
+
+/health during load window: n=240 status=Counter({'200': 240}) p50 3.0ms p99 5.0ms max 22.0ms
+
+completions per 5 s bucket (relative to L0): bucket: ok200 / 503 / other  [non-health]
+  -15:13/0/0  -10:532/0/0  -5:551/0/0  +0:3/0/0  +10:0/7/0  +15:0/5/0  +20:0/7/0  +25:0/5/0  +30:0/7/0  +35:0/4/0  +40:0/7/0  +45:0/5/0  +50:0/7/0  +55:0/5/0  +60:544/1/0  +65:557/0/0  +70:538/0/0  +75:549/0/0  +80:537/0/0  +85:528/0/0
+
+estimate values by (phase, x_cache, value):
+  ('1_before_load', 'est_cached', 'hit', '75.0') x180
+  ('1_before_load', 'est_cached_probe', 'hit', '75.0') x10
+  ('1_before_load', 'est_uncached', 'miss', '75.0') x360
+  ('2_inflight_at_load_start', 'est_cached_probe', 'hit', '75.0') x1
+  ('2_inflight_at_load_start', 'est_uncached', 'miss', '75.0') x1
+  ('3_started_during_load', 'est_cached', 'hit', '75.0') x3
+  ('3_started_during_load', 'est_cached', 'miss', '90.0') x2
+  ('3_started_during_load', 'est_cached_probe', 'hit', '90.0') x6
+  ('3_started_during_load', 'est_cached_probe', 'miss', '90.0') x4
+  ('3_started_during_load', 'est_uncached', 'bypass', '90.0') x4
+  ('4_started_after_release', 'est_cached', 'hit', '90.0') x535
+  ('4_started_after_release', 'est_cached_probe', 'hit', '90.0') x29
+  ('4_started_after_release', 'est_uncached', 'miss', '90.0') x1074
+
+lock sampler: 219 samples; max API backends 10; max API backends waiting on a Lock 10
+  API lock waits by relation (sample-count): {('respondents:AccessShareLock',): 957, ('activity_tier1:AccessShareLock',): 239}
+  loader AE-held sample at +0.03s: ['activities', 'activity_codes', 'activity_companions', 'activity_tier1', 'activity_tier2', 'cps_persons', 'household_members', 'pandemic_replicate_weights', 'replicate_weights', 'respondents'] waiting_for=None

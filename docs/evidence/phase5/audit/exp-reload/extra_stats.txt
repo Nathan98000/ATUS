@@ -1,0 +1,5 @@
+expA: hold window 60.12s; max threads borrowed=None max tasks waiting for a thread=None; DB-backed requests started in window=86, completed 200 inside window=5 (['activities', 'est_cached', 'ready']), 503=60
+expC: hold window 45.10s; max threads borrowed=40 max tasks waiting for a thread=93; DB-backed requests started in window=186, completed 200 inside window=6 (['activities', 'est_cached']), 503=140
+expB: hold window 14.05s; max threads borrowed=None max tasks waiting for a thread=None; DB-backed requests started in window=46, completed 200 inside window=18 (['activities', 'est_cached', 'meta', 'ready']), 503=6
+expB2: hold window 9.05s; max threads borrowed=4 max tasks waiting for a thread=0; DB-backed requests started in window=4, completed 200 inside window=2 (['est_uncached']), 503=0
+expB3: hold window 28.11s; max threads borrowed=8 max tasks waiting for a thread=0; DB-backed requests started in window=586, completed 200 inside window=578 (['activities', 'est_cached', 'meta', 'ready']), 503=0

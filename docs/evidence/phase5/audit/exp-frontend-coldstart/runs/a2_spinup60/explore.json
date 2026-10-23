@@ -1,0 +1,168 @@
+{
+  "scenario": "a2_spinup60",
+  "page": "explore",
+  "url": "http://localhost:4182/explore",
+  "t0_epoch": 1792516963.765,
+  "meta_request_times_s": [
+    0.042
+  ],
+  "meta_request_gaps_s": [],
+  "api_requests": 4,
+  "snapshots": [
+    {
+      "checkpoint_s": 2,
+      "actual_t": 2.046,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/a2_spinup60/explore_002s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 5,
+      "actual_t": 5.04,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/a2_spinup60/explore_005s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 15,
+      "actual_t": 15.064,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/a2_spinup60/explore_015s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 30,
+      "actual_t": 30.06,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/a2_spinup60/explore_030s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 60,
+      "actual_t": 60.06,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/a2_spinup60/explore_060s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product.",
+      "alerts": [],
+      "status": [
+        "Loading the analysis builder…\n\nFetching what the analytical service supports."
+      ],
+      "live": []
+    },
+    {
+      "checkpoint_s": 75,
+      "actual_t": 75.073,
+      "screenshot": "docs/evidence/phase5/audit/exp-frontend-coldstart/runs/a2_spinup60/explore_075s.png",
+      "url": "http://localhost:4182/explore",
+      "title": "Explore · ATUS Explorer",
+      "main": "Build an analysis\n\nDoing what · for whom · when · measured how — then Analyze.\n\nSingle estimate\nTrend over time\nCompare two groups\n1\nDoing what?\nSleeping — curated selection\nChange activity\n2\nFor whom?\nAge\nMinimum age\n–\nMaximum age\n\nLeave empty for all ages (15+).\n\nSex\nAny\nFemale\nMale\nEmployment\nAny\nEmployed\nNot in the labor force\nUnemployed\nChildren in household\nAny\nYes\nNo\n\nAny household child under 18 present. Household children, not necessarily own children.\n\nEducation\nAny\nBachelor's degree or higher\nHigh school\nLess than high school\nSome college or associate degree\nDay of week\nAny\nWeekdays\nWeekends\nMore filters\n\nFiltering on a dimension excludes respondents whose value is missing for that dimension (from numerator and denominator alike); missing is never treated as 'no'. Unfiltered dimensions include everyone.\n\n3\nWhen?\nSingle year\nPooled years\nYear\n2025\n2024\n2023\n2022\n2021\n2020\n2019\n2018\n2017\n2016\n2015\n2014\n2013\n2012\n2011\n2010\n2009\n2008\n2007\n2006\n2005\n2004\n2003\n4\nMeasured how?\nAverage time per day\nAcross everyone in the population, including people who did not do the activity that day.\nParticipation rate\nShare of the population doing the activity on an average day.\nTime among participants\nAverage time among only those who did the activity that day.\nPeople per day\nNumber of people doing the activity on an average day.\nAdvanced methodology\nAnalyze\n\nRunning an analysis creates a shareable link.",
+      "footer": "Data source: U.S. Bureau of Labor Statistics, American Time Use Survey. Estimates are survey-weighted and subject to sampling uncertainty.\n\nAn independent analytical project — not an official BLS product. Data release 0325 (2003–2025) · analytics 0.2 · API v1",
+      "alerts": [],
+      "status": [],
+      "live": []
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.023,
+      "main": ""
+    },
+    {
+      "t": 0.276,
+      "main": "Loading the analysis builder…\n\nFetching what the analytical service supports."
+    },
+    {
+      "t": 60.06,
+      "main": "Build an analysis\n\nDoing what · for whom · when · measured how — then Analyze.\n\nSingle estimate\nTrend over time\nCompare two groups\n1\nDoing what?\nsleep — curated selection\nChange activity\n2\nFor whom?\nAge\nMinimum age\n–\nMaximum age\n\nLeave empty for all ages (15+).\n\nSex\nAny\nFemale\nMale\nEmployment\nAny\nEmployed\nNot in the labor force\nUnemployed\nChildren in household\nAny\nYes\nNo\n\nAny household child under 18 present. Household children, not necessarily own children.\n\nEducation\nAny\nBachelor's degree or higher\nHigh school\nLess than high school\nSome college or associate degree\nDay of week\nAny\nWeekdays\nWe"
+    },
+    {
+      "t": 60.312,
+      "main": "Build an analysis\n\nDoing what · for whom · when · measured how — then Analyze.\n\nSingle estimate\nTrend over time\nCompare two groups\n1\nDoing what?\nSleeping — curated selection\nChange activity\n2\nFor whom?\nAge\nMinimum age\n–\nMaximum age\n\nLeave empty for all ages (15+).\n\nSex\nAny\nFemale\nMale\nEmployment\nAny\nEmployed\nNot in the labor force\nUnemployed\nChildren in household\nAny\nYes\nNo\n\nAny household child under 18 present. Household children, not necessarily own children.\n\nEducation\nAny\nBachelor's degree or higher\nHigh school\nLess than high school\nSome college or associate degree\nDay of week\nAny\nWeekdays"
+    }
+  ],
+  "network": [
+    {
+      "t": 0.042,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/meta"
+    },
+    {
+      "t": 0.042,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/population/metadata"
+    },
+    {
+      "t": 60.057,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/meta",
+      "status": 200
+    },
+    {
+      "t": 60.057,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/population/metadata",
+      "status": 200
+    },
+    {
+      "t": 60.058,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities"
+    },
+    {
+      "t": 60.058,
+      "ev": "request",
+      "method": "GET",
+      "url": "/api/v1/activities/presets"
+    },
+    {
+      "t": 60.06,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/activities",
+      "status": 200
+    },
+    {
+      "t": 60.06,
+      "ev": "response",
+      "method": "GET",
+      "url": "/api/v1/activities/presets",
+      "status": 200
+    }
+  ],
+  "console": []
+}

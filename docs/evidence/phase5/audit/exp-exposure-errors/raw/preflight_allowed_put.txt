@@ -1,0 +1,15 @@
+### curl -X OPTIONS -H Origin: https://allowed.example -H Access-Control-Request-Method: PUT http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 400 Bad Request
+date: Tue, 20 Oct 2026 17:07:51 GMT
+server: uvicorn
+vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers, Access-Control-Request-Private-Network
+access-control-allow-methods: GET, POST
+access-control-max-age: 600
+access-control-allow-headers: Accept, Accept-Language, Content-Language, Content-Type
+access-control-allow-origin: https://allowed.example
+content-length: 22
+content-type: text/plain; charset=utf-8
+x-request-id: 116f69057ef740c5
+
+Disallowed CORS method
+### status=400 time_total=0.001658s size_download=22 size_upload=0

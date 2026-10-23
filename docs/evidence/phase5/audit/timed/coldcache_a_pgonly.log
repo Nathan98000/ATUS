@@ -1,0 +1,6 @@
+rep0 cold: status=200 wall=40.43s cache=miss
+rep0 warm: status=200 wall=38.48s cache=miss
+rep0: cold wall=40.43s db=40408.115ms | warm wall=38.48s db=38435.147ms | cache: drop=False files_bytes=650134084 resident_bytes=406192128 resident_MB=387.4 of 620.0 MB (62.5%)
+rep1 cold: status=200 wall=39.88s cache=miss
+rep1 warm: status=200 wall=38.90s cache=miss
+rep1: cold wall=39.88s db=39855.122ms | warm wall=38.90s db=38880.121999999996ms | cache: drop=False files_bytes=650134084 resident_bytes=406192128 resident_MB=387.4 of 620.0 MB (62.5%)

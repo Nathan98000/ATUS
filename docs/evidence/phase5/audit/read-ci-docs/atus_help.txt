@@ -1,0 +1,28 @@
+Usage: atus [OPTIONS] COMMAND [ARGS]...
+
+  ``atus`` command-line interface: one subcommand per pipeline stage.
+
+  atus download            fetch official BLS source files into data/raw/ atus
+  extract             stage the CSV data members into data/staging/<release>/
+  atus validate-source     file-level checks of staged data (pre-load) atus
+  migrate             create/upgrade the database schema atus load
+  transform staged data and load it (atomic rebuild) atus validate-db
+  data-quality checks against the loaded database atus analyze ...         run
+  analyses with the Phase 2 statistical engine atus validate-analytics
+  reproduce official BLS estimates (benchmark suite) atus status
+  show manifest and database state
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  analyze             Run analyses against the loaded ATUS database...
+  api                 Run the read-only analytical HTTP API (Phase 3).
+  download            Download official BLS source files into data/raw/.
+  extract             Extract data files from the raw archives into the...
+  load                Transform staged data and load the canonical schema...
+  migrate             Apply pending database migrations.
+  status              Show manifest and database state.
+  validate-analytics  Reproduce official BLS estimates through the engine...
+  validate-db         Run data-quality checks against the loaded database.
+  validate-source     Validate staged source files before loading.

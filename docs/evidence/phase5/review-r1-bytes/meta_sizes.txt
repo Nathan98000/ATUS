@@ -1,0 +1,18 @@
+06:40:03 INFO    atus.api.access: request_id=7d8ec789da084263 GET /api/v1/meta -> 200 db=/11 cache=-
+06:40:03 INFO    atus.api.access: request_id=1acafa49eefc4c9a GET /api/v1/meta -> 200 db=/0 cache=-
+06:40:03 INFO    atus.api.access: request_id=842db67fdb2d4051 GET /api/v1/activities -> 200 db=/0 cache=-
+06:40:03 INFO    atus.api.access: request_id=fdfcb353053a4c25 GET /api/v1/activities -> 200 db=/0 cache=-
+06:40:03 INFO    atus.api.access: request_id=9aa1d06ed09b4fcc GET /api/v1/activities/presets -> 200 db=/0 cache=-
+06:40:03 INFO    atus.api.access: request_id=d81d695cc3b341da GET /api/v1/activities/presets -> 200 db=/0 cache=-
+06:40:03 INFO    atus.api.access: request_id=33e71ab8d1164fbc GET /api/v1/population/metadata -> 200 db=/0 cache=-
+06:40:03 INFO    atus.api.access: request_id=76a4ceb37d3f43c0 GET /api/v1/population/metadata -> 200 db=/0 cache=-
+06:40:03 INFO    atus.api.access: request_id=607d3e0703074299 GET /api/v1/activities/0101 -> 200 db=/0 cache=-
+06:40:03 INFO    atus.api.access: request_id=443369e6717d4774 GET /api/v1/activities/0101 -> 200 db=/0 cache=-
+06:40:03 INFO    atus.api.access: request_id=a3598c30ecb04fc1 GET /api/v1/activities/18 -> 200 db=/0 cache=-
+06:40:03 INFO    atus.api.access: request_id=69f22deb8c26479b GET /api/v1/activities/18 -> 200 db=/0 cache=-
+/api/v1/meta                        status=200 raw_body=   2360 B  content-encoding=gzip  ~gzip_body=  1126 B  resp_headers~534 B  server-timing=db;dur=0, app;dur=*
+/api/v1/activities                  status=200 raw_body=  70851 B  content-encoding=gzip  ~gzip_body=  8521 B  resp_headers~508 B  server-timing=db;dur=0, app;dur=*
+/api/v1/activities/presets          status=200 raw_body=   1039 B  content-encoding=gzip  ~gzip_body=   351 B  resp_headers~463 B  server-timing=db;dur=0, app;dur=*
+/api/v1/population/metadata         status=200 raw_body=   2675 B  content-encoding=gzip  ~gzip_body=  1011 B  resp_headers~464 B  server-timing=db;dur=0, app;dur=*
+/api/v1/activities/0101             status=200 raw_body=    516 B  content-encoding=None  ~gzip_body=   516 B  resp_headers~460 B  server-timing=db;dur=0, app;dur=*
+/api/v1/activities/18               status=200 raw_body=   2332 B  content-encoding=gzip  ~gzip_body=   481 B  resp_headers~507 B  server-timing=db;dur=0, app;dur=*

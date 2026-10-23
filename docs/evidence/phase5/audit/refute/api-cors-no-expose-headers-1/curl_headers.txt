@@ -1,0 +1,24 @@
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 19:31:25 GMT
+server: uvicorn
+content-length: 2255
+content-type: application/json
+cache-control: public, max-age=300
+access-control-allow-origin: http://localhost:4173
+vary: Origin
+x-request-id: 13c99d19ec214d14
+
+{"api_version":"v1","analytics_version":"0.2","data":{"release":"0325","years":[2019,2020,2023],"respondents":6,"last_ingested_at":"2026-10-20T19:31:20.444247+00:00","ingestion_run_id":1},"capabilities":{"measures":[{"name":"average_minutes_per_day","unit":"minutes_per_day","description":"Σ(w·minutes)/Σ(w): average minutes per day across the whole selected population, participants and non-participants alike."},{"name":"participation_rate","unit":"proportion_of_population","description":"Σ(w·participant)/Σ(w): share of the population doing the activity on an average day (a proportion 0-1; a daily rate, not a longer-period one)."},{"name":"average_minutes_per_participant","unit":"minutes_per_day_of_participants","description":"Σ(w·minutes)/Σ(w·participant): average minutes per day among those who did the activity that day."},{"name":"participants_per_day","unit":"persons_per_day","description":"Σ(w·participant)/days: number of persons doing the activity on an average day of the period."}],"weight_schemes":[{"name":"multiyear","bls_variable":"TUFNWGTP","valid_years":"2003-2019, 2021 and later (refuses 2020)","description":"BLS multi-year weight, comparable across years."},{"name":"pandemic","bls_variable":"TU20FWGT","valid_years":"2019 and 2020 only","description":"2020-method weight representing the collection-comparable windows Jan 1-Mar 17 and May 10-Dec 31."}],"variance_methods":["replicate","none"],"confidence_level_default":0.95,"activity_presets":["eating_and_drinking","eating_and_drinking_bls_table","household_activities_bls_table","housework","leisure_and_sports_bls_table","sleep","watching_tv","work_main_and_other_jobs","work_related_bls_table"],"population_dimensions":["age_min","age_max","sex","employment_status","has_household_children","region","state_fips","education_level","day_type","diary_date_min","diary_date_max"],"limits":{"max_years_per_request":50,"max_include_codes_per_selection":100,"max_exclude_codes_per_selection":100},"unsupported":["medians and percentiles (distributional statistics)","episode-context analyses (location, time of day, who was present)","ATUS module data (Eating & Health, Well-Being, Leave) and module weights","significance tests (estimates, SEs, and CIs only)"]}}---
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 19:31:25 GMT
+server: uvicorn
+vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers, Access-Control-Request-Private-Network
+access-control-allow-methods: GET, POST
+access-control-max-age: 600
+access-control-allow-headers: Accept, Accept-Language, Content-Language, Content-Type
+access-control-allow-origin: http://localhost:4173
+content-length: 2
+content-type: text/plain; charset=utf-8
+x-request-id: 09a91994f1d841a2
+
+OK

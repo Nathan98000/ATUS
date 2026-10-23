@@ -1,0 +1,36 @@
+### /health
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 19:30:05 GMT
+server: uvicorn
+content-length: 15
+content-type: application/json
+x-request-id: 614198b9682e4a96
+
+{"status":"ok"}
+### /ready
+HTTP/1.1 503 Service Unavailable
+date: Tue, 20 Oct 2026 19:30:05 GMT
+server: uvicorn
+content-length: 137
+content-type: application/json
+x-request-id: 010fe6c756984ad5
+
+{"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+### /api/v1/activities
+HTTP/1.1 503 Service Unavailable
+date: Tue, 20 Oct 2026 19:30:15 GMT
+server: uvicorn
+content-length: 137
+content-type: application/json
+x-request-id: 4f131c46fb5749ab
+
+{"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}
+### /api/v1/meta
+HTTP/1.1 503 Service Unavailable
+date: Tue, 20 Oct 2026 19:30:25 GMT
+server: uvicorn
+content-length: 137
+content-type: application/json
+x-request-id: bd245ddcb1e04ed3
+
+{"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}

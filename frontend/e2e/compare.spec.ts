@@ -1,49 +1,49 @@
 /**
  * The comparison scenario (spec §139): two groups, API-computed difference,
- * methodology, and a reproducible share link.
+ * the chart's small print, and a reproducible share link.
  */
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
-test('configure, run, understand and reshare a comparison', async ({ page }) => {
+import { CORE } from './helpers'
+
+test('configure, run, understand and reshare a comparison', CORE, async ({ page }) => {
   await page.goto('/explore')
   await expect(page.getByRole('heading', { name: 'Build an analysis' })).toBeVisible()
 
   await page.getByRole('radio', { name: 'Compare two groups' }).click()
 
-  const groupA = page.getByRole('group', { name: 'Group A' })
-  const groupB = page.getByRole('group', { name: 'Group B' })
-  await groupA.getByLabel('Name').fill('Men')
-  await groupA.getByLabel('Sex').selectOption('male')
-  await groupB.getByLabel('Name').fill('Women')
-  await groupB.getByLabel('Sex').selectOption('female')
+  // One choice and two values: men vs women is where a comparison starts.
+  await expect(page.getByLabel('Compare by')).toHaveValue('sex')
+  await expect(page.getByLabel('First group')).toHaveValue('male')
+  await expect(page.getByLabel('Second group')).toHaveValue('female')
   await page.getByLabel('Year', { exact: true }).selectOption('2023')
 
   await page.getByRole('button', { name: 'Analyze' }).click()
 
-  // Fixture: men 100.0 min (1h 40m), women 66.67 min (1h 7m).
-  await expect(page.locator('.compare-card__value').first()).toHaveText('1h 40m', {
-    timeout: 15_000,
-  })
-  await expect(page.locator('.compare-card__value').nth(1)).toHaveText('1h 7m')
+  // Fixture: men 100.0 min (1h 40m), women 66.67 min (1h 7m), beside their bars.
+  const values = page.locator('.compare-chart__value')
+  await expect(values.first()).toHaveText('1h 40m', { timeout: 15_000 })
+  await expect(values.nth(1)).toHaveText('1h 7m')
 
-  // The difference comes from the API (covariance-correct), labeled A − B.
+  // The answer names the groups as people (review round 4).
+  await expect(
+    page.getByText('In 2023, men spent 33 minutes more a day sleeping than women.'),
+  ).toBeVisible()
+  // The difference comes from the API (covariance-correct), in words.
   const difference = page.getByTestId('difference')
-  await expect(difference).toContainText('Men − Women')
-  await expect(difference).toContainText('+33.3 min')
-  await expect(difference).toContainText('± 11.8 min')
-  await expect(difference).toContainText('A positive difference means “Men”')
+  await expect(difference).toContainText('Difference: 33 minutes more per day for men.')
+  await expect(difference).toContainText(
+    /95% confidence interval: [\d.]+ to [\d.]+ minutes more for men/,
+  )
 
   // Both groups appear in the chart with their labels (never color-only).
   await expect(page.getByRole('img', { name: /Comparison of minutes per day/ })).toBeVisible()
 
-  // Methodology explains the difference semantics.
-  await page.getByText('How was this calculated?').click()
-  await expect(page.locator('dd', { hasText: 'per-replicate differences' })).toBeVisible()
+  // The small print explains the difference's uncertainty.
+  await expect(page.getByText(/both groups coming from the same survey/)).toBeVisible()
 
   // Reloading the URL reproduces the comparison (stateless share link).
   await page.reload()
-  await expect(page.locator('.compare-card__value').first()).toHaveText('1h 40m', {
-    timeout: 15_000,
-  })
-  await expect(page.getByTestId('difference')).toContainText('+33.3 min')
+  await expect(values.first()).toHaveText('1h 40m', { timeout: 15_000 })
+  await expect(page.getByTestId('difference')).toContainText('33 minutes more per day for men')
 })

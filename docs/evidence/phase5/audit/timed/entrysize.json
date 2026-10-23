@@ -1,0 +1,26 @@
+{
+ "estimate_1y_SE": {
+  "payload_deep_bytes": 4524,
+  "key_bytes": 105,
+  "json_bytes": 1040,
+  "approx_lru_overhead_bytes": 316
+ },
+ "estimate_pooled22_SE": {
+  "payload_deep_bytes": 5778,
+  "key_bytes": 105,
+  "json_bytes": 1506,
+  "approx_lru_overhead_bytes": 316
+ },
+ "compare_1y_SE": {
+  "payload_deep_bytes": 8343,
+  "key_bytes": 105,
+  "json_bytes": 2624,
+  "approx_lru_overhead_bytes": 316
+ },
+ "trend23_SE": {
+  "payload_deep_bytes": 21171,
+  "key_bytes": 105,
+  "json_bytes": 8528,
+  "approx_lru_overhead_bytes": 316
+ }
+}

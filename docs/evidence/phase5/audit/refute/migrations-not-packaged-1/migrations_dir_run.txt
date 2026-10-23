@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "docs/evidence/phase5/audit/refute/migrations-not-packaged-1/venv/lib/python3.12/site-packages/atus_pipeline/cli.py", line 172, in _migrations_dir
+    raise click.ClickException(
+click.exceptions.ClickException: migrations directory not found at docs/evidence/phase5/audit/refute/migrations-not-packaged-1/venv/lib/python3.12/migrations; run from the repository root

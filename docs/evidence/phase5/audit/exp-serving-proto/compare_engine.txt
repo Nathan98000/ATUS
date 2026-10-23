@@ -1,0 +1,40 @@
+BM UG ch7.4: TV watching 2007, mean minutes/day                           full=157.39475385293406 serv=157.39475385293406 same=True relSE=3.30e-14 mism=0
+BM UG ch7.5: TV watching 2007, replicate-weight SE (hours)                full=0.029303478519167595 serv=0.029303478519169278 same=False relSE=3.22e-14 mism=0
+BM UG App J: persons in the South doing housework per day, 2006           full=29517002.76933455 serv=29517002.76933455 same=True relSE=3.07e-15 mism=0
+BM UG App J: unweighted participant count in that subpopulation           full=1861.0 serv=1861.0 same=True relSE=0.00e+00 mism=0
+BM A1-2025: sleeping, hours/day                                           full=9.032736672992998 serv=9.032736672992998 same=True relSE=0.00e+00 mism=0
+BM A1-2025: sleeping, percent participating                               full=99.89696386210063 serv=99.89696386210063 same=True relSE=0.00e+00 mism=0
+BM A1-2025: sleeping, hours/day of participants                           full=9.04205325545422 serv=9.04205325545422 same=True relSE=0.00e+00 mism=0
+BM A1-2025: sleeping, men, hours/day                                      full=8.929832849816016 serv=8.929832849816016 same=True relSE=0.00e+00 mism=0
+BM A1-2025: sleeping, women, hours/day                                    full=9.13080103487446 serv=9.13080103487446 same=True relSE=0.00e+00 mism=0
+BM A1-2025: watching TV, hours/day                                        full=2.610538898816506 serv=2.610538898816506 same=True relSE=0.00e+00 mism=0
+BM A1-2025: watching TV, percent participating                            full=74.33457555915916 serv=74.33457555915916 same=True relSE=0.00e+00 mism=0
+BM A1-2025: household activities (A-1 definition), hours/day              full=1.992638130518063 serv=1.992638130518063 same=True relSE=0.00e+00 mism=0
+BM A1-2025: household activities (A-1 definition), percent participating  full=80.94528696668169 serv=80.94528696668169 same=True relSE=0.00e+00 mism=0
+BM A1-2025: household activities (A-1 definition), women, hours/day       full=2.3841920841443285 serv=2.3841920841443285 same=True relSE=0.00e+00 mism=0
+BM A1-2025: leisure and sports, hours/day                                 full=5.160668182635777 serv=5.160668182635777 same=True relSE=0.00e+00 mism=0
+BM A1-2025: leisure and sports, percent participating                     full=95.11251107593763 serv=95.11251107593763 same=True relSE=0.00e+00 mism=0
+BM A1-2025: leisure and sports, hours/day of participants                 full=5.425856308762063 serv=5.425856308762063 same=True relSE=0.00e+00 mism=0
+BM A1-2025: eating and drinking, hours/day                                full=1.2121641471211353 serv=1.2121641471211353 same=True relSE=0.00e+00 mism=0
+BM A1-2025: eating and drinking, percent participating                    full=96.87937227559738 serv=96.87937227559738 same=True relSE=0.00e+00 mism=0
+BM A1-2025: working and work-related, hours/day                           full=3.315888618336558 serv=3.315888618336558 same=True relSE=0.00e+00 mism=0
+BM A1-2025: working and work-related, hours/day of participants           full=7.9846612197583795 serv=7.9846612197583795 same=True relSE=0.00e+00 mism=0
+BM NR-2020: sleeping, hours/day (May 10 - Dec 31, TU20FWGT)               full=9.008800322289153 serv=9.008800322289153 same=True relSE=0.00e+00 mism=0
+BM NR-2020: watching TV, hours/day (May 10 - Dec 31, TU20FWGT)            full=3.0547559769225976 serv=3.0547559769225976 same=True relSE=0.00e+00 mism=0
+BM NR-2020: watching TV, percent participating (May 10 - Dec 31)          full=78.79768653516965 serv=78.79768653516965 same=True relSE=0.00e+00 mism=0
+CASE E1 estimate sleep 2025                                         ok    relSE=5.00e-14 relCI=4.23e-16 exact=26 mism=0 tol_exact=0/3 t_full=1.03s t_serv=0.15s
+CASE E2 estimate leisure women 25-54 employed 2025 (roster join)    ok    relSE=2.54e-15 relCI=1.39e-16 exact=36 mism=0 tol_exact=0/3 t_full=0.53s t_serv=0.18s
+CASE E3 estimate sleep pooled 22 years (worst case)                 ok    relSE=2.39e-14 relCI=2.16e-16 exact=69 mism=0 tol_exact=0/3 t_full=11.95s t_serv=1.61s
+CASE E4 estimate participants/day work, South, weekday, 2010 (CPS j ok    relSE=4.17e-15 relCI=1.72e-16 exact=31 mism=0 tol_exact=0/3 t_full=0.76s t_serv=0.11s
+CASE E5 estimate min/participant housework, CA, children, pooled 20 ok    relSE=1.31e-15 relCI=1.50e-16 exact=37 mism=0 tol_exact=0/3 t_full=0.72s t_serv=0.09s
+CASE E6 estimate TV 2020 pandemic weights May10-Dec31               ok    relSE=3.83e-14 relCI=1.28e-15 exact=31 mism=0 tol_exact=0/3 t_full=0.90s t_serv=0.13s
+CASE T1 trend sleep 2003-2025 multiyear (2020 unavailable)          ok    relSE=1.28e-13 relCI=8.63e-16 exact=222 mism=0 tol_exact=11/66 t_full=11.66s t_serv=1.58s
+CASE T2 trend TV 2019-2020 pandemic weights, participation          ok    relSE=1.23e-13 relCI=1.74e-15 exact=38 mism=0 tol_exact=0/6 t_full=1.46s t_serv=0.22s
+CASE T3 trend leisure 2003-2019 men 65+ (topcode warning)           ok    relSE=2.04e-14 relCI=7.62e-16 exact=180 mism=0 tol_exact=2/51 t_full=1.42s t_serv=0.62s
+CASE C1 compare household activities 2025 men vs women              ok    relSE=5.38e-15 relCI=5.22e-16 exact=75 mism=0 tol_exact=0/9 t_full=1.66s t_serv=0.30s
+CASE C2 compare work participation bachelor+ vs <HS pooled 22y      ok    relSE=3.36e-15 relCI=1.89e-16 exact=157 mism=0 tol_exact=4/9 t_full=4.11s t_serv=1.44s
+CASE C3 compare 2020 pandemic employed vs NILF, eating, excl. windo ok    relSE=0.00e+00 relCI=0.00e+00 exact=68 mism=0 tol_exact=9/9 t_full=1.37s t_serv=0.19s
+CASE X1 error: multiyear weights with 2020                          error relSE=0.00e+00 relCI=0.00e+00 exact=1 mism=0 tol_exact=0/0 t_full=0.00s t_serv=0.00s
+CASE X2 error: unknown activity code                                error relSE=0.00e+00 relCI=0.00e+00 exact=1 mism=0 tol_exact=0/0 t_full=0.00s t_serv=0.00s
+CASE X3 error: year not loaded                                      error relSE=0.00e+00 relCI=0.00e+00 exact=1 mism=0 tol_exact=0/0 t_full=0.00s t_serv=0.00s
+OVERALL {"max_rel_se": 1.281320448397332e-13, "max_rel_ci": 1.7445033247162036e-15, "exact_mismatch": [], "exact_fields": 1727, "tol_fields": 177, "tol_exact": 26}

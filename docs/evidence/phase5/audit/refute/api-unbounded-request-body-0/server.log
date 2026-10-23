@@ -1,0 +1,7 @@
+15:12:11 ERROR   atus.api: database unavailable: PoolClosed: the pool 'atus-api' is not open yet
+15:12:12 ERROR   atus.api: database unavailable: PoolClosed: the pool 'atus-api' is not open yet
+15:12:13 ERROR   atus.api: database unavailable: PoolClosed: the pool 'atus-api' is not open yet
+15:12:14 ERROR   atus.api: database unavailable: PoolClosed: the pool 'atus-api' is not open yet
+15:12:16 ERROR   atus.api: database unavailable: PoolClosed: the pool 'atus-api' is not open yet
+15:12:16 ERROR   atus.api: database unavailable: PoolClosed: the pool 'atus-api' is not open yet
+15:12:16 ERROR   atus.api: database unavailable: PoolClosed: the pool 'atus-api' is not open yet

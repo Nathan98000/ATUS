@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/age_inverted.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:43 GMT
+server: uvicorn
+content-length: 84
+content-type: application/json
+vary: Origin
+x-request-id: 63cbfaa5985f4edf
+
+{"error":{"code":"invalid_spec","message":"age_min 80 > age_max 20","details":null}}
+### status=422 time_total=0.003549s size_download=84 size_upload=161

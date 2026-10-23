@@ -1,0 +1,158 @@
+INFO:     Started server process [84806]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+15:28:39 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 1 failed: could not receive data from server: Connection refused
+INFO:     Uvicorn running on http://127.0.0.1:8297 (Press CTRL+C to quit)
+15:28:40 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 1 failed: could not receive data from server: Connection refused
+15:28:42 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 1 failed: could not receive data from server: Connection refused
+15:28:42 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 1 failed: could not receive data from server: Connection refused
+15:28:43 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 1 failed: Connection refused
+	Is the server running on that host and accepting TCP/IP connections?
+15:28:45 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 1 failed: could not receive data from server: Connection refused
+15:28:46 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 1 failed: could not receive data from server: Connection refused
+15:28:49 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 1 failed: could not receive data from server: Connection refused
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 INFO    atus.api: request_id=7d71c00aef9040c9 GET /ready -> 503 in 10017.2ms cache=-
+INFO:     127.0.0.1:52631 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=d6ac3d66c2564ff8 GET /ready -> 503 in 10027.6ms cache=-
+INFO:     127.0.0.1:52630 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=296a4e23260d4e73 GET /ready -> 503 in 10017.6ms cache=-
+INFO:     127.0.0.1:52632 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=a0b40313a04d4da5 GET /ready -> 503 in 10018.0ms cache=-
+INFO:     127.0.0.1:52633 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 INFO    atus.api: request_id=4a29958fda4742b4 GET /ready -> 503 in 10024.9ms cache=-
+INFO:     127.0.0.1:52634 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 INFO    atus.api: request_id=97ac9d3e55c3466c GET /ready -> 503 in 10018.6ms cache=-
+INFO:     127.0.0.1:52669 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 INFO    atus.api: request_id=edcc239408f04d55 GET /ready -> 503 in 10019.6ms cache=-
+INFO:     127.0.0.1:52652 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 INFO    atus.api: request_id=999461f2f1bc4d35 GET /ready -> 503 in 10020.0ms cache=-
+INFO:     127.0.0.1:52656 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 INFO    atus.api: request_id=d3ffa0604f34479e GET /ready -> 503 in 10021.0ms cache=-
+INFO:     127.0.0.1:52650 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 INFO    atus.api: request_id=69ed0f3d336f4f85 GET /ready -> 503 in 10020.5ms cache=-
+INFO:     127.0.0.1:52665 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:28:52 INFO    atus.api: request_id=4695be2b1f6d4ae0 GET /ready -> 503 in 10022.2ms cache=-
+INFO:     127.0.0.1:52636 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=2b0a618c800842c4 GET /ready -> 503 in 10021.2ms cache=-
+INFO:     127.0.0.1:52657 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=7510b299589a43b4 GET /ready -> 503 in 10022.7ms cache=-
+INFO:     127.0.0.1:52643 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=f7693d1fe3c243a4 GET /ready -> 503 in 10022.4ms cache=-
+INFO:     127.0.0.1:52653 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=18ff1fa5fe47450a GET /ready -> 503 in 10022.7ms cache=-
+INFO:     127.0.0.1:52649 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=ede099691bc84f9e GET /ready -> 503 in 10023.2ms cache=-
+INFO:     127.0.0.1:52641 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=12a494434afc4c6d GET /ready -> 503 in 10022.3ms cache=-
+INFO:     127.0.0.1:52663 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=a5a8617fd2c049f2 GET /ready -> 503 in 10023.5ms cache=-
+INFO:     127.0.0.1:52640 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=f77d2dfd70554304 GET /ready -> 503 in 10023.4ms cache=-
+INFO:     127.0.0.1:52645 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=cd4464bf82ab4399 GET /ready -> 503 in 10024.1ms cache=-
+INFO:     127.0.0.1:52635 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=bba5da602e9e4cb3 GET /ready -> 503 in 10022.9ms cache=-
+INFO:     127.0.0.1:52664 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=a7ab9687a8be4426 GET /ready -> 503 in 10023.5ms cache=-
+INFO:     127.0.0.1:52655 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=9ea5fe0593f9486d GET /ready -> 503 in 10023.1ms cache=-
+INFO:     127.0.0.1:52667 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=d4dd636b1f0f4bf6 GET /ready -> 503 in 10023.7ms cache=-
+INFO:     127.0.0.1:52658 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=01a45d3dd6be45a2 GET /ready -> 503 in 10024.9ms cache=-
+INFO:     127.0.0.1:52639 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=78de7ca3d0634062 GET /ready -> 503 in 10023.8ms cache=-
+INFO:     127.0.0.1:52662 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=c39b958191174ffe GET /ready -> 503 in 10024.3ms cache=-
+INFO:     127.0.0.1:52654 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=fd1443136d114068 GET /ready -> 503 in 10024.2ms cache=-
+INFO:     127.0.0.1:52660 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=fc3f10d635e8413b GET /ready -> 503 in 10024.3ms cache=-
+INFO:     127.0.0.1:52659 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=9934a15936f04af5 GET /ready -> 503 in 10025.2ms cache=-
+INFO:     127.0.0.1:52644 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=fc323518fd7945f2 GET /ready -> 503 in 10025.2ms cache=-
+INFO:     127.0.0.1:52647 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=c6e913d1edf8451c GET /ready -> 503 in 10024.3ms cache=-
+INFO:     127.0.0.1:52668 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=a8eb501a26774fe1 GET /ready -> 503 in 10025.9ms cache=-
+INFO:     127.0.0.1:52638 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=b6618bcbf9de44d1 GET /ready -> 503 in 10025.5ms cache=-
+INFO:     127.0.0.1:52648 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=54e4b23dfc174946 GET /ready -> 503 in 10025.0ms cache=-
+INFO:     127.0.0.1:52661 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=2b2a84970cd34e11 GET /ready -> 503 in 10026.4ms cache=-
+INFO:     127.0.0.1:52637 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=fe7518915da54482 GET /ready -> 503 in 10025.0ms cache=-
+INFO:     127.0.0.1:52666 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=c241bd1b62ed4b69 GET /ready -> 503 in 10025.9ms cache=-
+INFO:     127.0.0.1:52651 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=045271e647944a53 GET /ready -> 503 in 10026.3ms cache=-
+INFO:     127.0.0.1:52646 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=1d00f67c44294a84 GET /ready -> 503 in 10026.6ms cache=-
+INFO:     127.0.0.1:52642 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:28:52 INFO    atus.api: request_id=3cb33a227356435b GET /api/v1/population/metadata -> 200 in 9107.4ms cache=-
+INFO:     127.0.0.1:52677 - "GET /api/v1/population/metadata HTTP/1.1" 200 OK
+15:28:52 INFO    atus.api: request_id=0e3e489ead624b1a GET /health -> 200 in 0.5ms cache=-
+INFO:     127.0.0.1:52630 - "GET /health HTTP/1.1" 200 OK
+15:28:55 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 1 failed: could not receive data from server: Connection refused
+15:28:56 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 1 failed: could not receive data from server: Connection refused
+15:29:02 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:29:02 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:29:02 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:29:02 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:29:02 INFO    atus.api: request_id=81671c66fd1d47da GET /ready -> 503 in 20014.1ms cache=-
+INFO:     127.0.0.1:52670 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:29:02 INFO    atus.api: request_id=5897e43dc812413f GET /ready -> 503 in 20014.2ms cache=-
+INFO:     127.0.0.1:52671 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:29:02 INFO    atus.api: request_id=43c1ded564ac4b6f GET /ready -> 503 in 20014.4ms cache=-
+INFO:     127.0.0.1:52673 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:29:02 INFO    atus.api: request_id=1abb7bcdc0414aff GET /ready -> 503 in 20014.6ms cache=-
+INFO:     127.0.0.1:52672 - "GET /ready HTTP/1.1" 503 Service Unavailable
+15:29:02 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:29:02 INFO    atus.api: request_id=9030452ee2424692 GET /ready -> 503 in 20021.9ms cache=-
+INFO:     127.0.0.1:52674 - "GET /ready HTTP/1.1" 503 Service Unavailable
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [84806]

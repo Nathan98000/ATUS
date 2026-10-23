@@ -1,0 +1,31 @@
+[t=   0.00s] ============================================================ pause ['15', '12'] 2026-10-20T13:36:03
+[t=   0.01s] warm: (200, 'ok', 10.6, None) (200, 'ok', 2.4, 'hit')
+[t=   0.02s] API backends before: [33, 34, 35, 36, 37]
+[t=   0.06s] paused
+[t=  15.09s] unpaused after 15.04s
+[t=  15.09s]    in-flight #0 sent t=0.06 -> status=200 code=ok 15029.6ms
+[t=  15.09s]    in-flight #1 sent t=0.06 -> status=200 code=ok 15029.9ms
+[t=  15.09s]    in-flight #2 sent t=0.06 -> status=503 code=database_unavailable 10014.7ms
+[t=  15.09s]    in-flight #3 sent t=0.06 -> status=200 code=ok 15030.2ms
+[t=  15.09s]    in-flight #4 sent t=0.06 -> status=200 code=ok 15030.0ms
+[t=  15.09s]    in-flight #5 sent t=0.06 -> status=200 code=ok 15029.3ms
+[t=  15.09s]    in-flight #6 sent t=0.06 -> status=503 code=database_unavailable 10014.2ms
+[t=  15.09s]    in-flight #7 sent t=0.06 -> status=503 code=database_unavailable 10013.8ms
+[t=  15.09s]    in-flight #8 sent t=0.06 -> status=503 code=database_unavailable 10013.6ms
+[t=  15.09s]    in-flight #9 sent t=0.06 -> status=503 code=database_unavailable 10013.5ms
+[t=  15.09s]    in-flight #10 sent t=0.06 -> status=503 code=database_unavailable 10013.5ms
+[t=  15.09s]    in-flight #11 sent t=0.06 -> status=503 code=database_unavailable 10013.1ms
+[t=  15.10s] API backends after unpause: [33, 34, 35, 36, 37, 45]
+[t=  15.10s]    seq GET /api/v1/meta -> (200, 'ok', 2.4, None)
+[t=  15.10s]    seq POST /api/v1/analysis/estimate -> (200, 'ok', 1.9, 'hit')
+[t=  15.11s]    seq POST /api/v1/analysis/estimate -> (200, 'ok', 11.6, 'miss')
+[t=  15.12s]    seq GET /ready -> (200, 'ok', 2.1, None)
+[t=  15.12s]    seq GET /api/v1/meta -> (200, 'ok', 2.0, None)
+[t=  15.12s]    seq GET /api/v1/meta -> (200, 'ok', 2.1, None)
+[t=  15.12s]    seq GET /api/v1/meta -> (200, 'ok', 2.0, None)
+[t=  15.12s]    seq GET /api/v1/meta -> (200, 'ok', 2.8, None)
+[t=  15.13s]    seq GET /api/v1/meta -> (200, 'ok', 2.0, None)
+[t=  15.13s]    seq GET /api/v1/meta -> (200, 'ok', 2.1, None)
+[t=  15.13s]    seq GET /api/v1/meta -> (200, 'ok', 1.9, None)
+[t=  15.13s]    seq GET /api/v1/meta -> (200, 'ok', 1.9, None)
+[t=  15.14s] API backends at end: [33, 34, 35, 36, 37, 45]

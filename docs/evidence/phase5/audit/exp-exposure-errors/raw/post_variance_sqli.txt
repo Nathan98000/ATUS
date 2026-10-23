@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/variance_sqli.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:43 GMT
+server: uvicorn
+content-length: 221
+content-type: application/json
+vary: Origin
+x-request-id: c5c3a6518df0459e
+
+{"error":{"code":"validation_error","message":"The request does not match the API schema.","details":{"errors":[{"location":["body","variance"],"message":"Input should be 'replicate' or 'none'","type":"literal_error"}]}}}
+### status=422 time_total=0.003769s size_download=221 size_upload=114

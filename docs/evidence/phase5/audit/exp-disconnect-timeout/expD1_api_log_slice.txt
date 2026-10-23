@@ -1,0 +1,6 @@
+INFO:     Shutting down
+INFO:     Waiting for background tasks to complete. (CTRL+C to force quit)
+13:12:49 INFO    atus.api: request_id=853a481ae4d54380 POST /api/v1/analysis/trend -> 200 in 11364.2ms cache=miss
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [50184]

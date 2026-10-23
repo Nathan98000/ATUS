@@ -1,0 +1,55 @@
+--- 13:07:07.261 client_backends_active=0 parallel_workers=0 client_backends_idle=1
+    573 |  | client backend | idle | 17:06:40.084 | 27.2 | Client | ClientRead | COMMIT
+--- 13:07:08.261 client_backends_active=0 parallel_workers=0 client_backends_idle=1
+    573 |  | client backend | idle | 17:06:40.084 | 28.2 | Client | ClientRead | COMMIT
+--- 13:07:09.264 client_backends_active=1 parallel_workers=2 client_backends_idle=0
+    573 |  | client backend | active | 17:07:08.757 | 0.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    619 | 573 | parallel worker | active | 17:07:08.757 | 0.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    620 | 573 | parallel worker | active | 17:07:08.757 | 0.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:07:10.266 client_backends_active=1 parallel_workers=2 client_backends_idle=0
+    573 |  | client backend | active | 17:07:08.757 | 1.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    619 | 573 | parallel worker | active | 17:07:08.757 | 1.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    620 | 573 | parallel worker | active | 17:07:08.757 | 1.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:07:11.271 client_backends_active=1 parallel_workers=2 client_backends_idle=0
+    573 |  | client backend | active | 17:07:08.757 | 2.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    619 | 573 | parallel worker | active | 17:07:08.757 | 2.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    620 | 573 | parallel worker | active | 17:07:08.757 | 2.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:07:12.275 client_backends_active=1 parallel_workers=2 client_backends_idle=0
+    573 |  | client backend | active | 17:07:08.757 | 3.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    619 | 573 | parallel worker | active | 17:07:08.757 | 3.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    620 | 573 | parallel worker | active | 17:07:08.757 | 3.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:07:13.279 client_backends_active=1 parallel_workers=2 client_backends_idle=0
+    573 |  | client backend | active | 17:07:08.757 | 4.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    619 | 573 | parallel worker | active | 17:07:08.757 | 4.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    620 | 573 | parallel worker | active | 17:07:08.757 | 4.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:07:14.283 client_backends_active=1 parallel_workers=2 client_backends_idle=0
+    573 |  | client backend | active | 17:07:08.757 | 5.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    619 | 573 | parallel worker | active | 17:07:08.757 | 5.5 | IPC | HashBuildHashInner |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    620 | 573 | parallel worker | active | 17:07:08.757 | 5.5 | IPC | HashBuildHashInner |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:07:15.289 client_backends_active=1 parallel_workers=2 client_backends_idle=0
+    573 |  | client backend | active | 17:07:08.757 | 6.5 | IO | BufFileWrite |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    619 | 573 | parallel worker | active | 17:07:08.757 | 6.5 | IO | DataFileRead |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    620 | 573 | parallel worker | active | 17:07:08.757 | 6.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:07:16.294 client_backends_active=1 parallel_workers=2 client_backends_idle=0
+    573 |  | client backend | active | 17:07:08.757 | 7.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    619 | 573 | parallel worker | active | 17:07:08.757 | 7.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    620 | 573 | parallel worker | active | 17:07:08.757 | 7.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:07:17.299 client_backends_active=1 parallel_workers=2 client_backends_idle=0
+    573 |  | client backend | active | 17:07:08.757 | 8.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    619 | 573 | parallel worker | active | 17:07:08.757 | 8.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    620 | 573 | parallel worker | active | 17:07:08.757 | 8.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:07:18.302 client_backends_active=1 parallel_workers=2 client_backends_idle=0
+    573 |  | client backend | active | 17:07:08.757 | 9.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    619 | 573 | parallel worker | active | 17:07:08.757 | 9.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    620 | 573 | parallel worker | active | 17:07:08.757 | 9.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:07:19.308 client_backends_active=1 parallel_workers=2 client_backends_idle=0
+    573 |  | client backend | active | 17:07:08.757 | 10.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    619 | 573 | parallel worker | active | 17:07:08.757 | 10.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+    620 | 573 | parallel worker | active | 17:07:08.757 | 10.5 |  |  |  WITH activity_minutes AS ( SELECT a.tucaseid, sum(a.duratio
+--- 13:07:20.310 client_backends_active=0 parallel_workers=0 client_backends_idle=1
+    573 |  | client backend | idle | 17:07:20.258 | 0.1 | Client | ClientRead | COMMIT
+--- 13:07:21.316 client_backends_active=0 parallel_workers=0 client_backends_idle=1
+    573 |  | client backend | idle | 17:07:20.258 | 1.1 | Client | ClientRead | COMMIT
+--- 13:07:22.321 client_backends_active=0 parallel_workers=0 client_backends_idle=1
+    573 |  | client backend | idle | 17:07:20.258 | 2.1 | Client | ClientRead | COMMIT
+--- 13:07:22.321 stopping: 3 consecutive polls with no active audit backend

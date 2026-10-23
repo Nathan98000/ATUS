@@ -28,7 +28,7 @@ export function ShareButton() {
   return (
     <span className="share-button">
       <button type="button" className="btn btn--small" onClick={copy}>
-        Share analysis
+        Copy link
       </button>
       <output className={state === 'copied' ? 'share-button__status' : 'visually-hidden'}>
         {state === 'copied' ? 'Link copied.' : ''}

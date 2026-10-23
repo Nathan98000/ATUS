@@ -1,0 +1,86 @@
+Tue Oct 20 18:00:37 UTC 2026
+
+Apple M4
+10
+25769803776
+ProductName:		macOS
+ProductVersion:		27.0.1
+BuildVersion:		26A434
+
+Client:
+ Version:           29.6.2
+ API version:       1.55
+ Go version:        go1.26.5
+ Git commit:        dfc4efb
+ Built:             Thu Jul 16 16:11:17 2026
+ OS/Arch:           darwin/arm64
+ Context:           desktop-linux
+
+Server: Docker Desktop 4.85.0 (235549)
+ Engine:
+  Version:          29.6.2
+  API version:      1.55 (minimum version 1.40)
+  Go version:       go1.26.5
+  Git commit:       3d80467
+  Built:            Thu Jul 16 16:13:03 2026
+  OS/Arch:          linux/arm64
+  Experimental:     false
+ containerd:
+  Version:          v2.2.5
+  GitCommit:        e53c7c1516c3b2bff98eb76f1f4117477e6f4e66
+ runc:
+  Version:          1.3.6
+  GitCommit:        v1.3.6-0-g491b69ba
+ docker-init:
+  Version:          0.19.0
+  GitCommit:        de40ad0
+
+VM: NCPU=10 MemTotal=8321515520 OS=Docker Desktop Kernel=6.12.76-linuxkit cgroup=2 driver=overlayfs
+
+atus-emu-pg	postgres:16	Up 39 minutes
+atus-postgres	postgres:16	Up 3 hours
+supabase_db_dogtrax-dev	public.ecr.aws/supabase/postgres:17.6.1.156	Up 11 days (healthy)
+supabase_studio_dogtrax-dev	public.ecr.aws/supabase/studio:2026.07.27-sha-cbb076d	Up 11 days (healthy)
+supabase_pg_meta_dogtrax-dev	public.ecr.aws/supabase/postgres-meta:v0.96.6	Up 11 days (healthy)
+supabase_storage_dogtrax-dev	public.ecr.aws/supabase/storage-api:v1.67.20	Up 11 days (healthy)
+supabase_rest_dogtrax-dev	public.ecr.aws/supabase/postgrest:v14.15	Up 11 days
+supabase_realtime_dogtrax-dev	public.ecr.aws/supabase/realtime:v2.120.3	Up 11 days (healthy)
+supabase_inbucket_dogtrax-dev	public.ecr.aws/supabase/mailpit:v1.30.2	Up 11 days (healthy)
+supabase_auth_dogtrax-dev	public.ecr.aws/supabase/gotrue:v2.194.0	Up 11 days (healthy)
+supabase_kong_dogtrax-dev	public.ecr.aws/supabase/kong:2.8.1	Up 11 days (healthy)
+timeblock-postgres	postgres:16-alpine	Up 11 days (healthy)
+
+CONTAINER ID   NAME                            CPU %     MEM USAGE / LIMIT    MEM %     NET I/O           BLOCK I/O         PIDS
+7336820f1e9a   atus-emu-pg                     0.01%     223.9MiB / 7.75GiB   2.82%     757MB / 1.57GB    21.5MB / 3.61GB   6
+ca327d3eff57   atus-postgres                   0.00%     257MiB / 7.75GiB     3.24%     55.3MB / 1.96GB   2.13GB / 2.53GB   6
+fbb703b5e7af   supabase_db_dogtrax-dev         0.09%     121.6MiB / 7.75GiB   1.53%     244MB / 154MB     61.2MB / 973MB    18
+fb13f80bb5c4   supabase_studio_dogtrax-dev     0.00%     287.7MiB / 7.75GiB   3.62%     5.69kB / 126B     123MB / 0B        13
+50d3948b9b30   supabase_pg_meta_dogtrax-dev    0.53%     144.8MiB / 7.75GiB   1.82%     6.2kB / 126B      68.8MB / 0B       21
+27eff6f45a6f   supabase_storage_dogtrax-dev    0.01%     239.3MiB / 7.75GiB   3.02%     2.61MB / 2.93MB   151MB / 0B        12
+c65a6eed7c52   supabase_rest_dogtrax-dev       0.14%     191.7MiB / 7.75GiB   2.42%     210kB / 74kB      51.1MB / 0B       34
+66bc318febd2   supabase_realtime_dogtrax-dev   0.27%     314.8MiB / 7.75GiB   3.97%     151MB / 241MB     57.9MB / 0B       44
+00f796281fa8   supabase_inbucket_dogtrax-dev   0.00%     30.54MiB / 7.75GiB   0.38%     6.16kB / 126B     19.4MB / 500kB    12
+35c6986818bd   supabase_auth_dogtrax-dev       0.00%     17.06MiB / 7.75GiB   0.22%     19.2kB / 12.8kB   1.35MB / 0B       13
+068580fcb447   supabase_kong_dogtrax-dev       0.01%     160.8MiB / 7.75GiB   2.03%     623kB / 164kB     17.1MB / 65.5kB   3
+4e163584f1e4   timeblock-postgres              0.00%     44.79MiB / 7.75GiB   0.56%     1.75kB / 126B     29.8MB / 315kB    6
+
+ Sleep On Power Button 1
+ hibernatefile        /var/vm/sleepimage
+ networkoversleep     0
+ disksleep            10
+ sleep                1 (sleep prevented by sharingd, coreaudiod, coreaudiod, Brave Browser, useractivityd, caffeinate, Claude, powerd)
+ displaysleep         120 (display sleep prevented by Brave Browser)
+ lowpowermode         0
+14:00  up 13 days, 22:08, 1 user, load averages: 2.98 2.98 3.31
+ %CPU    RSS COMM
+ 38.2 2668832 $HOME/Downloads/Coaching_Videos/firstcut/.venv/bin/python3
+ 28.3  71808 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+ 20.8 1472976 /System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine
+ 13.2 128976 /Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/155.1.97.56/Helpers/Brave Browser Helper.app/Contents/MacOS/Brave Browser Helper
+ 10.0  26096 /usr/sbin/coreaudiod
+  7.0 371216 $HOME/Library/Application Support/Claude/claude-code/2.1.299/4fa9694b7975/claude.app/Contents/MacOS/claude
+  6.4 260208 /Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/155.1.97.56/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)
+  5.6  57888 /Applications/Claude.app/Contents/Frameworks/Claude Helper.app/Contents/MacOS/Claude Helper
+  5.1 260880 /Applications/Brave Browser.app/Contents/Frameworks/Brave Browser Framework.framework/Versions/155.1.97.56/Helpers/Brave Browser Helper (Renderer).app/Contents/MacOS/Brave Browser Helper (Renderer)
+  3.0 846016 /Applications/Claude.app/Contents/Frameworks/Claude Helper (Renderer).app/Contents/MacOS/Claude Helper (Renderer)
+  2.9  15872 /System/Library/Frameworks/VideoToolbox.framework/Versions/A/XPCServices/VTDecoderXPCService.xpc/Contents/MacOS/VTDecoderXPCService

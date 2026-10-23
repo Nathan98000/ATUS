@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/compare_conflict.json http://127.0.0.1:8206/api/v1/analysis/compare (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:31 GMT
+server: uvicorn
+content-length: 157
+content-type: application/json
+vary: Origin
+x-request-id: 21e89a76c387449f
+
+{"error":{"code":"invalid_spec","message":"Comparison group filter conflicts with the shared population filter on 'sex': 'male' vs 'female'","details":null}}
+### status=422 time_total=0.005380s size_download=157 size_upload=164

@@ -1,0 +1,100 @@
+{
+ "before": {
+  "api": {
+   "at": "2026-10-21T05:27:36.375839Z",
+   "cpu_stat": {
+    "usage_usec": 1445627,
+    "user_usec": 1351285,
+    "system_usec": 94342,
+    "nice_usec": 0,
+    "nr_periods": 145,
+    "nr_throttled": 145,
+    "throttled_usec": 12894938,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "memory_current": 50151424,
+   "memory_peak": 51220480,
+   "proc1": {
+    "VmHWM": "67764 kB",
+    "VmRSS": "67764 kB",
+    "Threads": "6"
+   }
+  },
+  "db": {
+   "at": "2026-10-21T05:27:36.445667Z",
+   "cpu_stat": {
+    "usage_usec": 866877,
+    "user_usec": 606814,
+    "system_usec": 260063,
+    "nice_usec": 0,
+    "nr_periods": 89,
+    "nr_throttled": 0,
+    "throttled_usec": 0,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "memory_current": 58433536,
+   "memory_peak": 62611456
+  }
+ },
+ "after": {
+  "api": {
+   "at": "2026-10-21T05:27:54.372033Z",
+   "cpu_stat": {
+    "usage_usec": 1534123,
+    "user_usec": 1433194,
+    "system_usec": 100929,
+    "nice_usec": 0,
+    "nr_periods": 192,
+    "nr_throttled": 145,
+    "throttled_usec": 12894938,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "memory_current": 52068352,
+   "memory_peak": 52678656,
+   "proc1": {
+    "VmHWM": "69416 kB",
+    "VmRSS": "69416 kB",
+    "Threads": "6"
+   }
+  },
+  "db": {
+   "at": "2026-10-21T05:27:54.447465Z",
+   "cpu_stat": {
+    "usage_usec": 16776612,
+    "user_usec": 15668770,
+    "system_usec": 1107842,
+    "nice_usec": 0,
+    "nr_periods": 235,
+    "nr_throttled": 18,
+    "throttled_usec": 1525905,
+    "nr_bursts": 0,
+    "burst_usec": 0
+   },
+   "memory_current": 302145536,
+   "memory_peak": 457084928
+  }
+ },
+ "api_delta": {
+  "cpu_usage_s": 0.088,
+  "nr_periods": 47,
+  "nr_throttled": 0,
+  "throttled_s": 0.0,
+  "memory_peak_after": 52678656,
+  "proc1_after": {
+   "VmHWM": "69416 kB",
+   "VmRSS": "69416 kB",
+   "Threads": "6"
+  }
+ },
+ "db_delta": {
+  "cpu_usage_s": 15.91,
+  "nr_periods": 146,
+  "nr_throttled": 18,
+  "throttled_s": 1.526,
+  "memory_peak_after": 457084928,
+  "proc1_after": null
+ }
+}

@@ -1,0 +1,10 @@
+ id | release |  status   | pipeline_version 
+----+---------+-----------+------------------
+  1 | 0325    | succeeded | 0.1.0
+(1 row)
+
+ last_value | is_called 
+------------+-----------
+          1 | t
+(1 row)
+

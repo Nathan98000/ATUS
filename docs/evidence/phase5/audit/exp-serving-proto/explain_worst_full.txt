@@ -1,0 +1,122 @@
+===== FULL run 1 =====
+Finalize GroupAggregate  (cost=678160.61..678222.61 rows=23 width=210) (actual time=11496.465..11501.810 rows=22 loops=1)
+  Group Key: r.data_year
+  Buffers: shared hit=123950 read=127932, temp read=34769 written=39260
+  ->  Gather Merge  (cost=678160.61..678165.97 rows=46 width=3954) (actual time=11496.367..11501.386 rows=66 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=123950 read=127932, temp read=34769 written=39260
+        ->  Sort  (cost=677160.58..677160.64 rows=23 width=3954) (actual time=11460.604..11460.617 rows=22 loops=3)
+              Sort Key: r.data_year
+              Sort Method: quicksort  Memory: 113kB
+              Buffers: shared hit=123950 read=127932, temp read=34769 written=39260
+              Worker 0:  Sort Method: quicksort  Memory: 113kB
+              Worker 1:  Sort Method: quicksort  Memory: 113kB
+              ->  Partial HashAggregate  (cost=677159.66..677160.06 rows=23 width=3954) (actual time=11460.478..11460.549 rows=22 loops=3)
+                    Group Key: r.data_year
+                    Batches: 1  Memory Usage: 280kB
+                    Buffers: shared hit=123936 read=127932, temp read=34769 written=39260
+                    Worker 0:  Batches: 1  Memory Usage: 280kB
+                    Worker 1:  Batches: 1  Memory Usage: 280kB
+                    ->  Hash Left Join  (cost=127775.22..192035.10 rows=100336 width=1620) (actual time=6795.322..7089.756 rows=83391 loops=3)
+                          Hash Cond: (r.tucaseid = m.tucaseid)
+                          Buffers: shared hit=123936 read=127932, temp read=34769 written=39260
+                          ->  Parallel Hash Join  (cost=6475.74..70472.23 rows=100336 width=1620) (actual time=6060.278..6192.708 rows=83391 loops=3)
+                                Hash Cond: (rw.tucaseid = r.tucaseid)
+                                Buffers: shared read=65968
+                                ->  Parallel Seq Scan on replicate_weights rw  (cost=0.00..63714.45 rows=107445 width=1608) (actual time=0.046..39.332 rows=86318 loops=3)
+                                      Buffers: shared read=62640
+                                ->  Parallel Hash  (cost=5216.26..5216.26 rows=100758 width=20) (actual time=6059.951..6059.952 rows=83391 loops=3)
+                                      Buckets: 262144  Batches: 1  Memory Usage: 15840kB
+                                      Buffers: shared read=3328
+                                      ->  Parallel Seq Scan on respondents r  (cost=0.06..5216.26 rows=100758 width=20) (actual time=5482.124..5493.298 rows=83391 loops=3)
+                                            Filter: ((final_weight > '0'::numeric) AND (data_year = ANY ('{2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2021,2022,2023,2024,2025}'::smallint[])))
+                                            Rows Removed by Filter: 2927
+                                            Buffers: shared read=3328
+                          ->  Hash  (cost=119859.56..119859.56 rows=115194 width=16) (actual time=734.952..734.956 rows=258673 loops=3)
+                                Buckets: 262144 (originally 131072)  Batches: 2 (originally 1)  Memory Usage: 8105kB
+                                Buffers: shared hit=123936 read=61964, temp read=5532 written=11727
+                                ->  Subquery Scan on m  (cost=111997.33..119859.56 rows=115194 width=16) (actual time=628.100..713.321 rows=258673 loops=3)
+                                      Buffers: shared hit=123936 read=61964, temp read=5532 written=10023
+                                      ->  HashAggregate  (cost=111997.33..118707.62 rows=115194 width=16) (actual time=628.094..702.365 rows=258673 loops=3)
+                                            Group Key: a.tucaseid
+                                            Batches: 5  Memory Usage: 8241kB  Disk Usage: 15752kB
+                                            Buffers: shared hit=123936 read=61964, temp read=5532 written=10023
+                                            Worker 0:  Batches: 5  Memory Usage: 8241kB  Disk Usage: 15752kB
+                                            Worker 1:  Batches: 5  Memory Usage: 8241kB  Disk Usage: 15752kB
+                                            ->  Bitmap Heap Scan on activities a  (cost=6172.40..75534.56 rows=569175 width=10) (actual time=18.030..454.757 rows=567822 loops=3)
+                                                  Recheck Cond: (activity_code = ANY ('{010101,010102,010199}'::bpchar[]))
+                                                  Heap Blocks: exact=61513
+                                                  Buffers: shared hit=123936 read=61964
+                                                  ->  Bitmap Index Scan on idx_activities_activity_code  (cost=0.00..6030.11 rows=569175 width=0) (actual time=11.390..11.390 rows=567822 loops=3)
+                                                        Index Cond: (activity_code = ANY ('{010101,010102,010199}'::bpchar[]))
+                                                        Buffers: shared hit=910 read=451
+Planning:
+  Buffers: shared hit=699 read=83
+Planning Time: 21.274 ms
+JIT:
+  Functions: 111
+  Options: Inlining true, Optimization true, Expressions true, Deforming true
+  Timing: Generation 47.856 ms, Inlining 116.451 ms, Optimization 2826.036 ms, Emission 13603.246 ms, Total 16593.589 ms
+Execution Time: 11529.761 ms
+===== FULL run 2 =====
+Finalize GroupAggregate  (cost=678160.61..678222.61 rows=23 width=210) (actual time=12460.742..12467.858 rows=22 loops=1)
+  Group Key: r.data_year
+  Buffers: shared hit=123950 read=127932, temp read=34769 written=39260
+  ->  Gather Merge  (cost=678160.61..678165.97 rows=46 width=3954) (actual time=12460.620..12467.348 rows=66 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=123950 read=127932, temp read=34769 written=39260
+        ->  Sort  (cost=677160.58..677160.64 rows=23 width=3954) (actual time=12407.440..12407.451 rows=22 loops=3)
+              Sort Key: r.data_year
+              Sort Method: quicksort  Memory: 113kB
+              Buffers: shared hit=123950 read=127932, temp read=34769 written=39260
+              Worker 0:  Sort Method: quicksort  Memory: 113kB
+              Worker 1:  Sort Method: quicksort  Memory: 113kB
+              ->  Partial HashAggregate  (cost=677159.66..677160.06 rows=23 width=3954) (actual time=12407.301..12407.376 rows=22 loops=3)
+                    Group Key: r.data_year
+                    Batches: 1  Memory Usage: 280kB
+                    Buffers: shared hit=123936 read=127932, temp read=34769 written=39260
+                    Worker 0:  Batches: 1  Memory Usage: 280kB
+                    Worker 1:  Batches: 1  Memory Usage: 280kB
+                    ->  Hash Left Join  (cost=127775.22..192035.10 rows=100336 width=1620) (actual time=7539.621..7839.281 rows=83391 loops=3)
+                          Hash Cond: (r.tucaseid = m.tucaseid)
+                          Buffers: shared hit=123936 read=127932, temp read=34769 written=39260
+                          ->  Parallel Hash Join  (cost=6475.74..70472.23 rows=100336 width=1620) (actual time=6971.378..7105.740 rows=83391 loops=3)
+                                Hash Cond: (rw.tucaseid = r.tucaseid)
+                                Buffers: shared read=65968
+                                ->  Parallel Seq Scan on replicate_weights rw  (cost=0.00..63714.45 rows=107445 width=1608) (actual time=0.062..41.465 rows=86318 loops=3)
+                                      Buffers: shared read=62640
+                                ->  Parallel Hash  (cost=5216.26..5216.26 rows=100758 width=20) (actual time=6970.968..6970.969 rows=83391 loops=3)
+                                      Buckets: 262144  Batches: 1  Memory Usage: 15808kB
+                                      Buffers: shared read=3328
+                                      ->  Parallel Seq Scan on respondents r  (cost=0.06..5216.26 rows=100758 width=20) (actual time=6051.106..6062.616 rows=83391 loops=3)
+                                            Filter: ((final_weight > '0'::numeric) AND (data_year = ANY ('{2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2021,2022,2023,2024,2025}'::smallint[])))
+                                            Rows Removed by Filter: 2927
+                                            Buffers: shared read=3328
+                          ->  Hash  (cost=119859.56..119859.56 rows=115194 width=16) (actual time=568.155..568.158 rows=258673 loops=3)
+                                Buckets: 262144 (originally 131072)  Batches: 2 (originally 1)  Memory Usage: 8105kB
+                                Buffers: shared hit=123936 read=61964, temp read=5532 written=11727
+                                ->  Subquery Scan on m  (cost=111997.33..119859.56 rows=115194 width=16) (actual time=454.978..544.438 rows=258673 loops=3)
+                                      Buffers: shared hit=123936 read=61964, temp read=5532 written=10023
+                                      ->  HashAggregate  (cost=111997.33..118707.62 rows=115194 width=16) (actual time=454.974..533.128 rows=258673 loops=3)
+                                            Group Key: a.tucaseid
+                                            Batches: 5  Memory Usage: 8241kB  Disk Usage: 15752kB
+                                            Buffers: shared hit=123936 read=61964, temp read=5532 written=10023
+                                            Worker 0:  Batches: 5  Memory Usage: 8241kB  Disk Usage: 15752kB
+                                            Worker 1:  Batches: 5  Memory Usage: 8241kB  Disk Usage: 15752kB
+                                            ->  Bitmap Heap Scan on activities a  (cost=6172.40..75534.56 rows=569175 width=10) (actual time=18.474..319.221 rows=567822 loops=3)
+                                                  Recheck Cond: (activity_code = ANY ('{010101,010102,010199}'::bpchar[]))
+                                                  Heap Blocks: exact=61513
+                                                  Buffers: shared hit=123936 read=61964
+                                                  ->  Bitmap Index Scan on idx_activities_activity_code  (cost=0.00..6030.11 rows=569175 width=0) (actual time=12.368..12.368 rows=567822 loops=3)
+                                                        Index Cond: (activity_code = ANY ('{010101,010102,010199}'::bpchar[]))
+                                                        Buffers: shared hit=910 read=451
+Planning:
+  Buffers: shared hit=3 read=13
+Planning Time: 17.605 ms
+JIT:
+  Functions: 111
+  Options: Inlining true, Optimization true, Expressions true, Deforming true
+  Timing: Generation 55.421 ms, Inlining 108.583 ms, Optimization 3281.166 ms, Emission 14881.179 ms, Total 18326.348 ms
+Execution Time: 12491.575 ms

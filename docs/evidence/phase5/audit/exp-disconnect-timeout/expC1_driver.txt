@@ -1,0 +1,14 @@
+start=13:10:21.817 endpoint=/api/v1/analysis/trend body={"measure": "average_minutes_per_day", "activity": {"include": ["11"]}, "years": [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025], "weights": "multiyear", "variance": "replicate"}
+elapsed=12.215s exit=0
+HTTP/1.1 200 OK
+date: Tue, 20 Oct 2026 17:10:21 GMT
+server: uvicorn
+content-length: 7949
+content-type: application/json
+x-analysis-key: d8f50266970d8fcc97444b4795a420fd41d8ed871d4c148803724e4454954d0c
+x-cache: miss
+x-request-id: 2c7ce620d7bf42c6
+
+http_code=200 time_total=12.205564
+
+

@@ -1,0 +1,8 @@
+15:21:27 ERROR   atus.api: database unavailable: DatabaseUnavailableError: Timed out waiting for a database connection.
+15:21:27 INFO    atus.api: request_id=5ff2276510874582 GET /ready -> 503 in 10006.8ms cache=-
+15:21:27 INFO    httpx: HTTP Request: GET http://testserver/ready "HTTP/1.1 503 Service Unavailable"
+cwd docs/evidence/phase5/audit/refute/config-silent-db-default-0/cwdtest db postgresql://atus:atus@localhost:5434/atus log_level(from cwd .env would be DEBUGPROBE): INFO
+config file $REPO/src/atus_pipeline/config.py
+find_dotenv from config dir would be repo .env exists? False
+health 200
+ready 503 10.01 s {"error":{"code":"database_unavailable","message":"The analytical database is currently unavailable. Try again shortly.","details":null}}

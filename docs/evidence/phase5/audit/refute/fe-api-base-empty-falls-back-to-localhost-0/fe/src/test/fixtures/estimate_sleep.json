@@ -1,0 +1,49 @@
+{
+  "measure": "average_minutes_per_day",
+  "estimate": {
+    "value": 528.7543524721476,
+    "unit": "minutes_per_day",
+    "standard_error": 2.938283489022278,
+    "confidence_level": 0.95,
+    "ci_lower": 522.9954226572953,
+    "ci_upper": 534.5132822869999
+  },
+  "years": [2025],
+  "activity": {
+    "label": "Sleeping",
+    "include": ["0101"],
+    "exclude": [],
+    "leaf_code_count": 3
+  },
+  "population": "age 25-54",
+  "n_respondents": 2597,
+  "n_participants": 2594,
+  "weighted_population_per_day": 131100441.9822422,
+  "days_in_period": 365,
+  "weight": {
+    "scheme": "multiyear",
+    "bls_variable": "TUFNWGTP",
+    "column": "respondents.final_weight"
+  },
+  "variance_method": "replicate",
+  "analytics_version": "0.2",
+  "spec": {
+    "measure": "average_minutes_per_day",
+    "activity": {
+      "include": ["0101"],
+      "exclude": [],
+      "label": "Sleeping"
+    },
+    "years": [2025],
+    "population": {
+      "age_min": 25,
+      "age_max": 54
+    },
+    "weights": "multiyear",
+    "variance": "replicate",
+    "confidence_level": 0.95
+  },
+  "warnings": [
+    "Activity codes use the BLS-harmonized 2003-25 multi-year lexicon (cross-year comparable by construction)."
+  ]
+}

@@ -1,0 +1,19 @@
+INFO:     Started server process [84120]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+15:28:25 WARNING psycopg.pool: error connecting in 'atus-api': connection failed: connection to server at "127.0.0.1", port 1 failed: could not receive data from server: Connection refused
+INFO:     Uvicorn running on http://127.0.0.1:8437 (Press CTRL+C to quit)
+15:28:25 INFO    atus.api: request_id=8526bbef1a884986 GET / -> 404 in 6.7ms cache=-
+INFO:     127.0.0.1:52602 - "GET / HTTP/1.1" 404 Not Found
+15:28:25 INFO    atus.api: request_id=c8456c3c7f7640e5 GET /api/v1/meta/ -> 307 in 0.2ms cache=-
+INFO:     127.0.0.1:52603 - "GET /api/v1/meta/ HTTP/1.1" 307 Temporary Redirect
+15:28:25 INFO    atus.api: request_id=71d093df9a9b4092 GET /api/v1/meta/ -> 307 in 0.2ms cache=-
+INFO:     127.0.0.1:52604 - "GET /api/v1/meta/ HTTP/1.1" 307 Temporary Redirect
+15:28:25 INFO    atus.api: request_id=6c444587538d4e09 GET /api/v1/meta/ -> 307 in 0.2ms cache=-
+INFO:     127.0.0.1:52605 - "GET /api/v1/meta/ HTTP/1.1" 307 Temporary Redirect
+15:28:25 INFO    atus.api: request_id=80240b459cb340eb POST /api/v1/analysis/ -> 404 in 0.2ms cache=-
+INFO:     127.0.0.1:52606 - "POST /api/v1/analysis/ HTTP/1.1" 404 Not Found
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [84120]

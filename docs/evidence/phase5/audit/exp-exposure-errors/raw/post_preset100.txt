@@ -1,0 +1,11 @@
+### curl -X POST -H Content-Type: application/json --data-binary @docs/evidence/phase5/audit/exp-exposure-errors/payloads/preset100.json http://127.0.0.1:8206/api/v1/analysis/estimate (port 8206)
+HTTP/1.1 422 Unprocessable Entity
+date: Tue, 20 Oct 2026 17:08:42 GMT
+server: uvicorn
+content-length: 397
+content-type: application/json
+vary: Origin
+x-request-id: 7c0ff2e2d8a54acf
+
+{"error":{"code":"invalid_spec","message":"Unknown activity preset 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'. Known presets: eating_and_drinking, eating_and_drinking_bls_table, household_activities_bls_table, housework, leisure_and_sports_bls_table, sleep, watching_tv, work_main_and_other_jobs, work_related_bls_table","details":null}}
+### status=422 time_total=0.003093s size_download=397 size_upload=208

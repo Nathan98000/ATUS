@@ -39,3 +39,20 @@ class ErrorResponse(BaseModel):
             ]
         }
     }
+
+
+DATA_ROUTE_503 = {
+    "model": ErrorResponse,
+    "description": "Temporarily unable to read the data: database_unavailable, "
+                   "database_paused, overloaded, data_version_mismatch, "
+                   "schema_not_initialized; see Retry-After",
+}
+"""The 503 every route answering from the served data can return."""
+
+PARAMETER_422 = {
+    "model": ErrorResponse,
+    "description": "Invalid query or path parameter (validation_error; details.errors[] "
+                   "lists {location, message, type})",
+}
+"""The 422 of a GET route with validated parameters: the API's envelope, not
+FastAPI's default HTTPValidationError, which the API never sends."""

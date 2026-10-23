@@ -1,0 +1,108 @@
+{
+ "note": "DRY RUN: tiny scale, not timed. Status codes, error codes and cache outcomes only; no latency is recorded here.",
+ "k6_exit": 0,
+ "db_statements_logged": 130,
+ "db_attribution_complete": true,
+ "timed": false,
+ "setup": {
+  "requests": 24,
+  "status": {
+   "200": 24
+  },
+  "error_codes": {}
+ },
+ "overall": {
+  "requests": 22,
+  "status": {
+   "200": 22
+  },
+  "error_codes": {},
+  "x_cache": {
+   "hit": 22
+  },
+  "expected_outcome": 22
+ },
+ "by_endpoint": {
+  "compare": {
+   "requests": 11,
+   "status": {
+    "200": 11
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 11
+   },
+   "expected_outcome": 11
+  },
+  "estimate": {
+   "requests": 10,
+   "status": {
+    "200": 10
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 10
+   },
+   "expected_outcome": 10
+  },
+  "trend": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 1
+   },
+   "expected_outcome": 1
+  }
+ },
+ "by_endpoint_cache": {
+  "compare|hit": {
+   "requests": 11,
+   "status": {
+    "200": 11
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 11
+   },
+   "expected_outcome": 11
+  },
+  "estimate|hit": {
+   "requests": 10,
+   "status": {
+    "200": 10
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 10
+   },
+   "expected_outcome": 10
+  },
+  "trend|hit": {
+   "requests": 1,
+   "status": {
+    "200": 1
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 1
+   },
+   "expected_outcome": 1
+  }
+ },
+ "by_kind": {
+  "cached": {
+   "requests": 22,
+   "status": {
+    "200": 22
+   },
+   "error_codes": {},
+   "x_cache": {
+    "hit": 22
+   },
+   "expected_outcome": 22
+  }
+ }
+}
