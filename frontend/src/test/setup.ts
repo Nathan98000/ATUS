@@ -7,7 +7,7 @@ import { resetServiceStatus } from '../api/serviceStatus'
 import { resetSnapshot } from '../api/snapshot'
 import { server } from './server'
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 afterEach(() => {
   cleanup() // vitest runs without globals, so RTL cannot auto-register this
   server.resetHandlers()
