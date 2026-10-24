@@ -81,6 +81,31 @@ async function settle(
   await governor().settle(leaseId, { kind, dbMs })
 }
 
+/**
+ * Admit and settle `count` analyses inside the governor, calling the methods the
+ * RPC calls reach. Sent as RPC, the 600 round trips of 300 analyses took
+ * 1.4–2.7 s on GitHub's runners and sometimes passed Vitest's 5 s timeout; the
+ * timed-out loop then kept writing while the next tests ran, and failed them too.
+ */
+async function admitAndSettleEach(
+  count: number,
+  analysis: (i: number) => {
+    prefix: string
+    costClass: 'light' | 'heavy'
+    kind: SettleKind
+    dbMs: number | null
+  },
+): Promise<void> {
+  await runInDurableObject(governor(), async (instance: Governor) => {
+    for (let i = 0; i < count; i += 1) {
+      const { prefix, costClass, kind, dbMs } = analysis(i)
+      const result = await instance.admit({ prefix, costClass })
+      if (!result.ok) throw new Error(`analysis ${i} denied: ${result.budget}`)
+      await instance.settle(result.leaseId, { kind, dbMs })
+    }
+  })
+}
+
 type DayTotals = {
   admitted: number
   heavy: number
@@ -248,7 +273,12 @@ describe('daily counts', () => {
 
   it('refuses a prefix after 300 admissions in a day, refunded ones included', async () => {
     controlClock(T)
-    for (let i = 0; i < 300; i += 1) await settle(await admitted(), 'not_reached')
+    await admitAndSettleEach(300, () => ({
+      prefix: PREFIX,
+      costClass: 'light',
+      kind: 'not_reached',
+      dbMs: null,
+    }))
     expect(await prefixCount()).toBe(0)
     expect(await day()).toMatchObject({ admitted: 0, refunded: 300 })
     const usage = await rowsDuring(async () => {
@@ -886,10 +916,12 @@ describe('Neon egress without ground truth', () => {
     // networks were all admitted, and nothing else bounded their egress.
     controlClock(T)
     await seedGroundTruth()
-    for (let i = 0; i < 300; i += 1) {
-      const lease = await admitted(`${Math.floor(i / 60)}`.repeat(32), 'heavy')
-      await settle(lease, 'rejected', 1200)
-    }
+    await admitAndSettleEach(300, (i) => ({
+      prefix: `${Math.floor(i / 60)}`.repeat(32),
+      costClass: 'heavy',
+      kind: 'rejected',
+      dbMs: 1200,
+    }))
     expect(await day()).toMatchObject({ admitted: 300, heavy: 300, refunded: 0 })
     expect(await denied(OTHER, 'heavy')).toMatchObject({
       code: 'daily_capacity_reached',

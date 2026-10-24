@@ -231,17 +231,27 @@ describe('denials (no origin call)', () => {
       error: { code: 'rate_limited', message: 'x', details: null },
     })
     const calls = mockOrigin(() => apiJson(shed, 429, { 'retry-after': '10' }))
-    for (let i = 0; i < 300; i += 1) {
-      const response = await callWorker(...post('203.0.113.7', `{"years":[2024],"n":${i}}`))
+    const sendShed = async (n: number) => {
+      const response = await callWorker(...post('203.0.113.7', `{"years":[2024],"n":${n}}`))
       expect(response.status).toBe(429)
     }
-    expect(calls).toHaveLength(300)
+    for (let i = 0; i < 61; i += 1) await sendShed(i)
+    expect(calls).toHaveLength(61)
+    expect((await report()).prefixes).toMatchObject({ max_admitted: 0, max_attempts: 61 })
+    // Attempts 62 to 299 are counted directly: 300 requests through the Worker
+    // took 2.3–2.7 s on GitHub's runners and once passed Vitest's 5 s timeout.
+    // governor.test.ts admits all 300 ("refunded ones included").
+    expect(await governorSql('UPDATE prefixes SET attempts = 299 RETURNING attempts')).toEqual([
+      { attempts: 299 },
+    ])
+    await sendShed(299)
+    expect(calls).toHaveLength(62)
     const budget = await report()
-    expect(budget.analyses).toMatchObject({ admitted: 0, refunded: 300 })
+    expect(budget.analyses).toMatchObject({ admitted: 0, refunded: 62 })
     expect(budget.prefixes).toMatchObject({ max_admitted: 0, max_attempts: 300 })
     // The 301st is refused at the edge, until midnight, without an origin call.
     const refused = await callWorker(...post('203.0.113.8', '{"years":[2024],"n":300}'))
-    expect(calls).toHaveLength(300)
+    expect(calls).toHaveLength(62)
     expect(refused.status).toBe(429)
     expect(refused.headers.get('retry-after')).toBe(String((MIDNIGHT - T) / 1000))
     expect((await readEnvelope(refused)).details).toMatchObject({

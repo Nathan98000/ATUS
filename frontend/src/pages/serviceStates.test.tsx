@@ -803,9 +803,15 @@ describe('one announcement per state (review round 1)', () => {
   }
 
   it('the waking state is announced by the notice alone, not by three regions', async () => {
+    // All metadata comes from the snapshot, as on the deployed site, so the
+    // estimate is the only API call. Any API answer ends the waking state: with
+    // the lexicon from the API, a slow runner could answer it after the
+    // prewake's "waking", and the notice was gone before the assertions.
     await installSnapshot({
       get: {
         '/api/v1/meta': metaFixture,
+        '/api/v1/population/metadata': populationMetadataFixture,
+        '/api/v1/activities': activitiesFixture,
         '/api/v1/activities/presets': presetsFixture,
       },
     })
