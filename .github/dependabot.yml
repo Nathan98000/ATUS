@@ -38,6 +38,14 @@ updates:
     commit-message:
       prefix: "deps(python)"
 
+  # Two holds on /frontend, each to lift when its cause is fixed upstream:
+  # - TypeScript stays on 5.x: openapi-typescript (npm run generate:api-types)
+  #   declares a TypeScript 5.x peer range, so a major bump fails `npm ci` with
+  #   ERESOLVE (#7).
+  # - @playwright/test skips 1.64.x: its WebKit 27.2 reports a style-src-attr CSP
+  #   violation for every <select> (microsoft/playwright#43416, WebKit bug
+  #   327752), which fails every WebKit journey's policy check (#6). See the
+  #   FIREFOX_WITHOUT_COOP note in frontend/playwright.config.ts.
   - package-ecosystem: npm
     directory: "/frontend"
     schedule:
@@ -51,6 +59,11 @@ updates:
     groups:
       frontend-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@playwright/test"
+        versions: ["1.64.x"]
     commit-message:
       prefix: "deps(frontend)"
 
