@@ -13,7 +13,7 @@
 # node:22-slim (Debian bookworm, glibc: workerd has no musl build), pinned by
 # its multi-arch index digest. A literal FROM line, so Dependabot's docker
 # ecosystem can propose digest bumps (it cannot follow ARG-based FROM lines).
-FROM node:22-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+FROM node:22-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee
 
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
     NPM_CONFIG_FUND=false \
